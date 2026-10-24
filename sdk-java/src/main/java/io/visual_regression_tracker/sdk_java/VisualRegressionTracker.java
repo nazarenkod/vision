@@ -110,6 +110,11 @@ public class VisualRegressionTracker {
                 errorMessage = "";
                 break;
         }
+        if (errorMessage.isEmpty() && testResultDTO.getA11y() != null && testResultDTO.getA11y().getNewCount() > 0
+                && Boolean.TRUE.equals(configuration.getFailOnNewA11yIssues())) {
+            errorMessage = "New accessibility issues (" + testResultDTO.getA11y().getNewCount() + "): "
+                    .concat(testResultDTO.getUrl());
+        }
 
         if (!errorMessage.isEmpty()) {
             if (configuration.getEnableSoftAssert()) {
@@ -124,6 +129,36 @@ public class VisualRegressionTracker {
 
     public TestRunResult track(String name, String imageBase64) throws IOException, InterruptedException {
         return track(name, imageBase64, TestRunOptions.builder().build());
+    }
+
+    /**
+     * Takes the screenshot and the page source from a Selenium or Appium driver and tracks them,
+     * so the server can also check accessibility and describe changes by element.
+     * Platform and screen density are read from the driver's capabilities; values set in
+     * {@code testRunOptions} take precedence. Works with Selenide: {@code trackDriver(WebDriverRunner.getWebDriver(), name)}.
+     */
+    public TestRunResult trackDriver(org.openqa.selenium.WebDriver driver, String name, TestRunOptions testRunOptions)
+            throws IOException, InterruptedException {
+        DriverCapture capture = DriverCapture.of(driver);
+        TestRunOptions options = testRunOptions == null ? TestRunOptions.builder().build() : testRunOptions;
+        TestRunOptions withTree = TestRunOptions.builder()
+                .os(options.getOs())
+                .browser(options.getBrowser())
+                .viewport(options.getViewport())
+                .device(options.getDevice())
+                .customTags(options.getCustomTags())
+                .diffTollerancePercent(options.getDiffTollerancePercent())
+                .ignoreAreas(options.getIgnoreAreas())
+                .uiTree(options.getUiTree() != null ? options.getUiTree() : capture.getPageSource())
+                .uiTreeFormat(options.getUiTreeFormat() != null ? options.getUiTreeFormat() : capture.getUiTreeFormat())
+                .deviceDensity(options.getDeviceDensity() != null ? options.getDeviceDensity() : capture.getDeviceDensity())
+                .build();
+        return track(name, capture.getImageBase64(), withTree);
+    }
+
+    public TestRunResult trackDriver(org.openqa.selenium.WebDriver driver, String name)
+            throws IOException, InterruptedException {
+        return trackDriver(driver, name, TestRunOptions.builder().build());
     }
 
     protected boolean isStarted() {
@@ -149,6 +184,9 @@ public class VisualRegressionTracker {
                 .customTags(testRunOptions.getCustomTags())
                 .diffTollerancePercent(testRunOptions.getDiffTollerancePercent())
                 .ignoreAreas(testRunOptions.getIgnoreAreas())
+                .uiTree(UiTreeEncoder.encode(testRunOptions.getUiTree()))
+                .uiTreeFormat(testRunOptions.getUiTreeFormat())
+                .deviceDensity(testRunOptions.getDeviceDensity())
                 .build();
 
         HttpRequest.BodyPublisher body = HttpRequest.BodyPublishers.ofString(gson.toJson(newTestRun));

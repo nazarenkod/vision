@@ -34,6 +34,14 @@ public class VisualRegressionTrackerConfig {
     private String ciBuildId;
     private Boolean enableSoftAssert;
     private int httpTimeoutInSeconds;
+    /** Fail (or log, with soft asserts) when a screenshot brings new accessibility issues. */
+    private Boolean failOnNewA11yIssues = false;
+
+    /** Kept for code written before failOnNewA11yIssues existed. */
+    public VisualRegressionTrackerConfig(String apiUrl, String apiKey, String project, String branchName,
+                                         String ciBuildId, Boolean enableSoftAssert, int httpTimeoutInSeconds) {
+        this(apiUrl, apiKey, project, branchName, ciBuildId, enableSoftAssert, httpTimeoutInSeconds, false);
+    }
 
     public static VisualRegressionTrackerConfigBuilder builder() {
         return new VisualRegressionTrackerConfigBuilder();
@@ -48,6 +56,7 @@ public class VisualRegressionTrackerConfig {
         private String ciBuildId;
         private Boolean enableSoftAssert;
         private Integer httpTimeoutInSeconds;
+        private Boolean failOnNewA11yIssues;
 
         private File configFile;
 
@@ -90,6 +99,11 @@ public class VisualRegressionTrackerConfig {
             return this;
         }
 
+        public VisualRegressionTrackerConfigBuilder failOnNewA11yIssues(Boolean failOnNewA11yIssues) {
+            this.failOnNewA11yIssues = failOnNewA11yIssues;
+            return this;
+        }
+
         public VisualRegressionTrackerConfigBuilder configFile(File configFile) {
             this.configFile = configFile;
             return this;
@@ -114,6 +128,9 @@ public class VisualRegressionTrackerConfig {
 
             Integer actualHttpTimeoutInSeconds = resolve("httpTimeoutInSeconds", configFromFile);
             config.setHttpTimeoutInSeconds(actualHttpTimeoutInSeconds == null ? DEFAULT_HTTP_TIMEOUT_SECONDS : actualHttpTimeoutInSeconds);
+
+            Boolean actualFailOnNewA11yIssues = resolve("failOnNewA11yIssues", configFromFile);
+            config.setFailOnNewA11yIssues(actualFailOnNewA11yIssues != null && actualFailOnNewA11yIssues);
 
             return config;
         }

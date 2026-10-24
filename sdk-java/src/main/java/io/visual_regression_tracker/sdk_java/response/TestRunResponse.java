@@ -17,4 +17,6 @@ public class TestRunResponse {
     private final Boolean merge;
     private final String url;
     private final TestRunStatus status;
+    /** Present when the screenshot was sent with a UI tree. */
+    private final A11ySummary a11y;
 }

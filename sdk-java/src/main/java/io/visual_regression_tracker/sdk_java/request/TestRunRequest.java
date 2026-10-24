@@ -21,4 +21,8 @@ public class TestRunRequest {
     private final Float diffTollerancePercent;
     private final String branchName;
     private final List<IgnoreAreas> ignoreAreas;
+    // base64 of the gzip-compressed page source; left out of the JSON when null
+    private final String uiTree;
+    private final String uiTreeFormat;
+    private final Integer deviceDensity;
 }

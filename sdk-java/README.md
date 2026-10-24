@@ -175,6 +175,48 @@ visualRegressionTracker.track(
 ```
 
 
+### Mobile accessibility (Appium UI tree)
+
+Send the Appium page source together with the screenshot and the server also checks the screen's
+accessibility (missing labels, small touch targets, low contrast, unlabeled inputs, duplicate labels)
+and describes changes by element. `trackDriver` takes the screenshot, the page source, the platform and
+the screen density from the driver. Selenium is not a dependency of the SDK: the one your tests already
+use is picked up.
+
+Kotlin with Selenide + Appium:
+
+```kotlin
+import com.codeborne.selenide.WebDriverRunner
+
+vrt.trackDriver(WebDriverRunner.getWebDriver(), "Payment screen")
+
+// or with options; values set here win over what the driver reports
+vrt.trackDriver(
+    WebDriverRunner.getWebDriver(),
+    "Payment screen",
+    TestRunOptions.builder().device("Pixel 7").os("Android 15").build()
+)
+```
+
+Java with a plain Appium driver:
+
+```java
+visualRegressionTracker.trackDriver(driver, "Payment screen");
+
+// a page source saved earlier can be sent with track() as well
+visualRegressionTracker.track("Payment screen", screenshotBase64,
+        TestRunOptions.builder()
+                .uiTree(pageSourceXml)
+                .uiTreeFormat("appium-android") // detected from the XML when omitted
+                .deviceDensity(420)              // Android dpi; estimated when omitted
+                .build());
+```
+
+The result carries the accessibility counts (`getTestRunResponse().getA11y()`). To fail a test when a
+screenshot brings new accessibility issues, enable `failOnNewA11yIssues` (builder, `VRT_FAILONNEWA11YISSUES`
+environment variable or `vrt.json`); with `enableSoftAssert` it is only logged. Issues that were filed in
+Jira or marked as false positives in the UI do not count as new.
+
 ### Stop `VisualRegressionTracker`
 
 ```java

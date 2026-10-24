@@ -88,8 +88,11 @@ const ProfilePage = () => {
   const errorForTwoChar = "Enter at least two characters.";
 
   return (
-    <Box m={2}>
-      <Grid container spacing={1}>
+    <Box sx={{ px: 4, py: 3, maxWidth: 1280 }}>
+      <Typography variant="h4" component="h1" sx={{ mb: 2 }}>
+        Profile
+      </Typography>
+      <Grid container spacing={2}>
         <Grid item xs={6}>
           <Grid container spacing={1}>
             <Grid item xs={12}>

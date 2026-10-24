@@ -10,7 +10,7 @@ export const TestVariationDetails: React.FunctionComponent<IProps> = ({
   testVariation,
 }) => (
   <Grid container direction="column" spacing={1}>
-    <Typography>{testVariation.name}</Typography>
+    <Typography sx={{ fontWeight: 600 }}>{testVariation.name}</Typography>
     <Grid container spacing={2}>
       {testVariation.os && (
         <Grid item>

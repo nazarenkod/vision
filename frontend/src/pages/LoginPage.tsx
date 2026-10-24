@@ -1,8 +1,8 @@
 import React, { useEffect } from "react";
-import { Grid } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 import { useSnackbar } from "notistack";
 import LoginForm from "../components/LoginForm";
+import { AuthLayout } from "../components/AuthLayout";
 import { setHelpSteps, useHelpDispatch, useUserDispatch } from "../contexts";
 import { LOGIN_PAGE_STEPS, routes } from "../constants";
 import { usersService } from "../services";
@@ -46,18 +46,9 @@ const LoginPage = () => {
   }, [enqueueSnackbar, navigate, userDispatch]);
 
   return (
-    <Grid
-      container
-      spacing={0}
-      direction="column"
-      alignItems="center"
-      justifyContent="center"
-      style={{ minHeight: "60vh" }}
-    >
-      <Grid item>
-        <LoginForm />
-      </Grid>
-    </Grid>
+    <AuthLayout title="Sign in">
+      <LoginForm />
+    </AuthLayout>
   );
 };
 

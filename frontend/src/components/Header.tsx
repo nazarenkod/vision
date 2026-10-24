@@ -13,6 +13,8 @@ import { Link } from "react-router-dom";
 import { useUserDispatch, useUserState, logout } from "../contexts";
 import { routes } from "../constants";
 import GuidedTour from "./GuidedTour";
+import { BRAND } from "../constants/brand";
+import { BrandMark } from "./BrandMark";
 import {
   HEADER_HELP_MENU_ID,
   HEADER_AVATAR_MENU_ID,
@@ -53,10 +55,7 @@ const Header: FunctionComponent = () => {
 
   const closeMenuAndOpenLink = () => {
     handleMenuClose();
-    window.open(
-      "https://github.com/Visual-Regression-Tracker/Visual-Regression-Tracker/issues/new",
-      "_blank",
-    );
+    window.open(BRAND.supportUrl, "_blank", "noopener");
   };
 
   const getVRTVersion = (): string => {
@@ -82,12 +81,14 @@ const Header: FunctionComponent = () => {
       <MenuItem onClick={handleMenuClose}>
         <GuidedTour />
       </MenuItem>
-      <MenuItem onClick={closeMenuAndOpenLink} style={styleMenuItem}>
-        <IconButton size="small">
-          <GitHub />
-        </IconButton>
-        Open an issue in GitHub
-      </MenuItem>
+      {BRAND.supportUrl && (
+        <MenuItem onClick={closeMenuAndOpenLink} style={styleMenuItem}>
+          <IconButton size="small">
+            <GitHub />
+          </IconButton>
+          Report a problem
+        </MenuItem>
+      )}
       <hr />
       <MenuItem
         style={{
@@ -95,7 +96,7 @@ const Header: FunctionComponent = () => {
         }}
         disabled
       >
-        VRT Version : {getVRTVersion()}
+        {BRAND.name} {getVRTVersion()}
       </MenuItem>
     </Menu>
   );
@@ -172,7 +173,7 @@ const Header: FunctionComponent = () => {
         <Toolbar variant="dense" sx={{ minHeight: 56, gap: 1.5 }}>
           <Link
             to="/"
-            aria-label="Visual Tracker home"
+            aria-label={`${BRAND.name} home`}
             style={{
               display: "flex",
               alignItems: "center",
@@ -181,33 +182,9 @@ const Header: FunctionComponent = () => {
               color: "inherit",
             }}
           >
-            <Box
-              sx={{
-                width: 32,
-                height: 32,
-                borderRadius: "9px",
-                bgcolor: "primary.main",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-              }}
-            >
-              <svg
-                width="20"
-                height="20"
-                viewBox="0 0 20 20"
-                fill="none"
-                stroke="#FFFFFF"
-                strokeWidth="1.8"
-                aria-hidden="true"
-              >
-                <rect x="2.5" y="4" width="7" height="12" rx="1.5" />
-                <rect x="10.5" y="4" width="7" height="12" rx="1.5" />
-                <path d="M12.5 10h3" />
-              </svg>
-            </Box>
+            <BrandMark size={32} />
             <Typography component="span" sx={{ fontWeight: 700, fontSize: 16 }}>
-              Visual Tracker
+              {BRAND.name}
             </Typography>
           </Link>
           <Box sx={{ flex: 1 }} />

@@ -814,9 +814,7 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
                   onChange={(event) => setA11yOverlay(event.target.checked)}
                 />
               }
-              label={
-                <Typography variant="body2">Accessibility overlay</Typography>
-              }
+              label={<Typography variant="body2">Overlay</Typography>}
             />
           </Grid>
         )}

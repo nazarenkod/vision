@@ -27,8 +27,11 @@ const RESIZE_THRESHOLD_DP = 2;
 const MAX_CHANGES = 50;
 
 // Elements worth naming: they have an id, say something, or can be tapped.
+// Framework views (status bar background, content frame) are not the app's elements.
+const hasAppId = (node: UiNode) => !!node.resourceId && !node.resourceId.startsWith('android:id/');
+
 const isMeaningful = (node: UiNode) =>
-  node.visible && (!!node.resourceId || !!ownSpeakableText(node) || node.clickable);
+  node.visible && (hasAppId(node) || !!ownSpeakableText(node) || node.clickable);
 
 /**
  * Element-level differences between the baseline's UI tree and the current

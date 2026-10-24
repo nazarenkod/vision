@@ -38,7 +38,12 @@ export const BaseModal: React.FunctionComponent<IProps> = ({
         <Button onClick={onCancel} color="primary">
           Cancel
         </Button>
-        <Button type="submit" color="primary" data-testid="submitButton">
+        <Button
+          type="submit"
+          color="primary"
+          variant="contained"
+          data-testid="submitButton"
+        >
           {submitButtonText}
         </Button>
       </DialogActions>

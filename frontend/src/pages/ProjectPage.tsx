@@ -43,7 +43,6 @@ const ProjectPage = () => {
   const { selectedBuild } = useBuildState();
   const { testRuns } = useTestRunState();
   const [view, setView] = React.useState<BuildView>(readView);
-  const [groupCount, setGroupCount] = React.useState(0);
 
   useEffect(() => {
     setHelpSteps(helpDispatch, PROJECT_PAGE_STEPS);
@@ -109,7 +108,12 @@ const ProjectPage = () => {
                 label={
                   <Box sx={{ display: "flex", gap: 1, alignItems: "center" }}>
                     Changes{" "}
-                    <StatusPill tone="neutral" label={`${groupCount} groups`} />
+                    {!!selectedBuild?.unresolvedCount && (
+                      <StatusPill
+                        tone="changed"
+                        label={`${selectedBuild.unresolvedCount} to review`}
+                      />
+                    )}
                   </Box>
                 }
               />
@@ -127,12 +131,16 @@ const ProjectPage = () => {
               />
             </Tabs>
           )}
-          <Box sx={{ flex: 1, minHeight: 0, overflow: "auto" }}>
+          <Box
+            sx={{
+              flex: 1,
+              minHeight: 0,
+              overflow: "auto",
+              position: "relative",
+            }}
+          >
             {selectedBuild && view === "changes" && (
-              <ChangeGroups
-                buildId={selectedBuild.id}
-                onCountChange={setGroupCount}
-              />
+              <ChangeGroups buildId={selectedBuild.id} />
             )}
             {selectedBuild && view === "a11y" && (
               <A11ySummary buildId={selectedBuild.id} />
@@ -140,10 +148,21 @@ const ProjectPage = () => {
             {/* kept mounted: it loads the build's runs and the order the review steps through */}
             <Box
               id={LOCATOR_PROJECT_PAGE_TEST_RUN_LIST}
-              sx={{
-                height: "100%",
-                display: !selectedBuild || view === "all" ? "block" : "none",
-              }}
+              sx={
+                !selectedBuild || view === "all"
+                  ? { height: "100%" }
+                  : {
+                      // out of sight but sized: the data grid needs a height even while hidden
+                      position: "absolute",
+                      inset: 0,
+                      visibility: "hidden",
+                      // children that force visibility back on (grid icons, tooltips) stay unseen
+                      opacity: 0,
+                      zIndex: -1,
+                      pointerEvents: "none",
+                    }
+              }
+              aria-hidden={!!selectedBuild && view !== "all"}
             >
               <TestRunList />
             </Box>

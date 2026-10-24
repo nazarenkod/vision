@@ -1,13 +1,6 @@
 import React, { useState, useEffect, FormEvent } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import {
-  Button,
-  Grid,
-  Card,
-  CardContent,
-  CardActions,
-  Typography,
-} from "@mui/material";
+import { Button, Grid, Typography, Box, Link as MuiLink } from "@mui/material";
 import { useUserDispatch, login } from "../contexts";
 import { LOCATOR_LOGIN_FORM, routes } from "../constants";
 import { useSnackbar } from "notistack";
@@ -67,76 +60,72 @@ const LoginForm = () => {
 
   if (oidcEnabled) {
     return (
-      <Card variant="outlined">
-        <CardContent id={LOCATOR_LOGIN_FORM}>
-          <Button
-            color="primary"
-            variant="outlined"
-            data-testid="oidcLoginBtn"
-            onClick={() => usersService.startOidcLogin()}
-          >
-            Login with SSO
-          </Button>
-        </CardContent>
-      </Card>
+      <Box id={LOCATOR_LOGIN_FORM}>
+        <Button
+          color="primary"
+          variant="contained"
+          size="large"
+          fullWidth
+          data-testid="oidcLoginBtn"
+          onClick={() => usersService.startOidcLogin()}
+        >
+          Sign in with SSO
+        </Button>
+      </Box>
     );
   }
 
   return (
     <ValidatorForm onSubmit={handleSubmit} instantValidate>
-      <Card variant="outlined">
-        <CardContent id={LOCATOR_LOGIN_FORM}>
-          <Grid container direction="column" spacing={2}>
-            <Grid item>
-              <TextValidator
-                validators={["isEmail"]}
-                errorMessages={["Enter a valid email."]}
-                id="email"
-                name="email"
-                value={email}
-                label={"Email address"}
-                type="text"
-                variant="outlined"
-                required
-                fullWidth
-                inputProps={{
-                  onChange: (event: React.ChangeEvent<HTMLInputElement>) =>
-                    setEmail(event.target.value),
-                  "data-testid": "email",
-                }}
-              />
-            </Grid>
+      <Box id={LOCATOR_LOGIN_FORM}>
+        <Grid container direction="column" spacing={2}>
+          <Grid item>
+            <TextValidator
+              validators={["isEmail"]}
+              errorMessages={["Enter a valid email."]}
+              id="email"
+              name="email"
+              value={email}
+              label={"Email address"}
+              type="text"
+              variant="outlined"
+              required
+              fullWidth
+              inputProps={{
+                onChange: (event: React.ChangeEvent<HTMLInputElement>) =>
+                  setEmail(event.target.value),
+                "data-testid": "email",
+              }}
+            />
+          </Grid>
 
-            <Grid item>
-              <PasswordField password={password} setPassword={setPassword} />
-            </Grid>
+          <Grid item>
+            <PasswordField password={password} setPassword={setPassword} />
           </Grid>
-        </CardContent>
-        <CardActions>
-          <Grid
-            container
-            direction="column"
-            justifyContent="center"
-            spacing={3}
+        </Grid>
+        <Box sx={{ display: "flex", flexDirection: "column", gap: 2, mt: 3 }}>
+          <Button
+            type="submit"
+            color="primary"
+            variant="contained"
+            size="large"
+            fullWidth
+            data-testid="loginBtn"
           >
-            <Grid item>
-              <Button
-                type="submit"
-                color="primary"
-                variant="outlined"
-                data-testid="loginBtn"
-              >
-                Login
-              </Button>
-            </Grid>
-            <Grid item>
-              <Typography component={Link} to={routes.REGISTER}>
-                Create an account
-              </Typography>
-            </Grid>
-          </Grid>
-        </CardActions>
-      </Card>
+            Sign in
+          </Button>
+          <Typography
+            variant="body2"
+            color="textSecondary"
+            sx={{ textAlign: "center" }}
+          >
+            No account?{" "}
+            <MuiLink component={Link} to={routes.REGISTER}>
+              Create one
+            </MuiLink>
+          </Typography>
+        </Box>
+      </Box>
     </ValidatorForm>
   );
 };

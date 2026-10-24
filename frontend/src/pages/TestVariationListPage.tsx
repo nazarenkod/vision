@@ -3,7 +3,14 @@ import TestVariationList from "../components/TestVariationList";
 import { useNavigate, useParams } from "react-router-dom";
 import { TestVariation } from "../types";
 import { testVariationService } from "../services";
-import { Box, Grid, Pagination, TextField, MenuItem } from "@mui/material";
+import {
+  Box,
+  Grid,
+  Pagination,
+  TextField,
+  MenuItem,
+  Typography,
+} from "@mui/material";
 import ProjectSelect from "../components/ProjectSelect";
 import Filters from "../components/Filters";
 import { TestVariationMergeForm } from "../components/TestVariationMergeForm";
@@ -110,7 +117,10 @@ const TestVariationListPage: React.FunctionComponent = () => {
 
   return (
     <React.Fragment>
-      <Box m={2}>
+      <Box sx={{ px: 4, py: 3 }}>
+        <Typography variant="h4" component="h1" sx={{ mb: 1 }}>
+          Baselines
+        </Typography>
         <Grid container direction="column" spacing={2}>
           <Grid item id={LOCATOR_TEST_VARIATION_LIST_PAGE_SELECT_PROJECT}>
             <ProjectSelect

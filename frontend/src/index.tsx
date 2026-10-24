@@ -2,6 +2,9 @@ import React from "react";
 import { createRoot } from "react-dom/client";
 import { BrowserRouter } from "react-router-dom";
 import App from "./App";
+import { BRAND } from "./constants/brand";
+
+document.title = BRAND.name;
 
 // Global styles to override some defaults
 import "./index.css";

@@ -437,7 +437,11 @@ const BuildList: FunctionComponent = () => {
       </Box>
 
       {menuBuild && (
-        <Menu anchorEl={anchorEl} open={!!menuBuild} onClose={handleMenuClose}>
+        <Menu
+          anchorEl={anchorEl}
+          open={!!menuBuild && !!anchorEl}
+          onClose={handleMenuClose}
+        >
           {menuBuild.isRunning && (
             <MenuItem
               onClick={() => {
@@ -459,8 +463,23 @@ const BuildList: FunctionComponent = () => {
               Stop
             </MenuItem>
           )}
-          <MenuItem onClick={toggleEditDialogOpen}>Edit CI Build</MenuItem>
-          <MenuItem onClick={toggleDeleteDialogOpen}>Delete</MenuItem>
+          {/* the menu closes, the build stays selected for the dialog */}
+          <MenuItem
+            onClick={() => {
+              setAnchorEl(null);
+              toggleEditDialogOpen();
+            }}
+          >
+            Edit CI Build
+          </MenuItem>
+          <MenuItem
+            onClick={() => {
+              setAnchorEl(null);
+              toggleDeleteDialogOpen();
+            }}
+          >
+            Delete
+          </MenuItem>
         </Menu>
       )}
       {menuBuild && (

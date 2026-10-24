@@ -54,10 +54,13 @@ const TestVariationDetailsPage: React.FunctionComponent = () => {
 
   return (
     <Container>
-      <Box mt={2}>
+      <Box sx={{ py: 3 }}>
         {testVariation && (
           <Grid container direction="column" spacing={2}>
             <Grid item>
+              <Typography variant="h4" component="h1" sx={{ mb: 1 }}>
+                Baseline history
+              </Typography>
               <TestVariationDetails testVariation={testVariation} />
             </Grid>
             {testVariation.baselines.map((baseline: Baseline) => (

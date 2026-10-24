@@ -48,8 +48,12 @@ describe("ProjectListPage", () => {
   ])("lets %s create, edit and delete projects", (_, user) => {
     const page = renderAs(user);
 
-    expect(page.getByRole("link", { name: TEST_PROJECT.name })).toBeInTheDocument();
-    expect(page.getByRole("button", { name: "Add project" })).toBeInTheDocument();
+    expect(
+      page.getByRole("link", { name: TEST_PROJECT.name }),
+    ).toBeInTheDocument();
+    expect(
+      page.getByRole("button", { name: "Add project" }),
+    ).toBeInTheDocument();
     expect(page.getByTestId("EditIcon")).toBeInTheDocument();
     expect(page.getByTestId("delete")).toBeInTheDocument();
   });
@@ -60,9 +64,13 @@ describe("ProjectListPage", () => {
   ])("shows the projects read-only to %s", (_, user) => {
     const page = renderAs(user);
 
-    expect(page.getByRole("link", { name: TEST_PROJECT.name })).toBeInTheDocument();
+    expect(
+      page.getByRole("link", { name: TEST_PROJECT.name }),
+    ).toBeInTheDocument();
     expect(page.getByRole("link", { name: "Builds" })).toBeInTheDocument();
-    expect(page.queryByRole("button", { name: "Add project" })).not.toBeInTheDocument();
+    expect(
+      page.queryByRole("button", { name: "Add project" }),
+    ).not.toBeInTheDocument();
     expect(page.queryByTestId("EditIcon")).not.toBeInTheDocument();
     expect(page.queryByTestId("delete")).not.toBeInTheDocument();
   });

@@ -4,8 +4,8 @@ import { gunzipSync, gzipSync } from 'zlib';
 import { StaticService } from '../static/static.service';
 import { buildReport, findViolations } from '../a11y/a11y.rules';
 import { A11yReport, RgbaImage } from '../a11y/a11y.types';
-import { describeNode, parseUiTree } from './ui-tree.parser';
-import { Rect, UiTree, UiTreeFormat } from './ui-tree.types';
+import { describeNode, ownSpeakableText, parseUiTree } from './ui-tree.parser';
+import { Rect, UiNode, UiTree, UiTreeFormat } from './ui-tree.types';
 import { diffTrees, elementsUnderRegions, RegionElement, StructuralChange } from './structure-diff';
 import { findNoiseHints, NoiseHint } from './noise-hints';
 import {
@@ -83,7 +83,38 @@ export interface StructureInfo {
   systemBars: Rect[];
   // compensated moves, in dp
   moves: Array<{ key: string; element: string; dxDp: number; dyDp: number }>;
+  // elements a rule can be made for by clicking them on the screenshot
+  elements: PickableElement[];
   settings: UiTreeSettings;
+}
+
+export interface PickableElement {
+  selector: string;
+  element: string;
+  bounds: Rect;
+}
+
+// an element covering nearly the whole screen is a container, not something to pick
+const MAX_PICKABLE_SCREEN_SHARE = 0.9;
+
+/** How a rule finds this element: its own id, else its text or label. */
+export function selectorForNode(node: UiNode): string | null {
+  if (node.resourceId && !node.resourceId.startsWith('android:id/')) {
+    return `id:${node.resourceId.replace(/^.*:id\//, '')}`;
+  }
+  const text = ownSpeakableText(node);
+  // a text in slashes would read as a regular expression
+  return text && !/^\/.*\/$/.test(text) ? `text:${text}` : null;
+}
+
+/** Visible elements with a selector, for picking on the screenshot. */
+export function pickableElements(tree: UiTree): PickableElement[] {
+  const screen = tree.width * tree.height;
+  return tree.nodes.flatMap((node) => {
+    const area = node.bounds.width * node.bounds.height;
+    const selector = node.visible && area > 0 && area / screen <= MAX_PICKABLE_SCREEN_SHARE && selectorForNode(node);
+    return selector ? [{ selector, element: describeNode(node), bounds: node.bounds }] : [];
+  });
 }
 
 /** Width and height from a PNG's IHDR chunk, without decoding the image. */
@@ -242,25 +273,33 @@ export class UiTreeService {
     return { reportName, report, warnings, invisible, components };
   }
 
-  /** Changed components of a run, against its current diff regions. */
-  async components(testRun: TestRun): Promise<ComponentChange[]> {
-    const [tree, baselineTree, image, baselineImage] = await Promise.all([
+  /**
+   * What a re-comparison (new rule, ignore area) changes in the tree analysis:
+   * the changed components and the changes the pixels do not show, both
+   * against the run's new diff regions.
+   */
+  async recheck(testRun: TestRun): Promise<{ components: ComponentChange[]; invisible: StructuralChange[] }> {
+    const [tree, baselineTree, image, baselineImage, project] = await Promise.all([
       this.load(testRun.uiTreeName),
       this.load(testRun.baselineUiTreeName),
       this.decode(testRun.imageName),
       this.decode(testRun.baselineName),
+      testRun.projectId ? this.prismaService.project.findUnique({ where: { id: testRun.projectId } }) : null,
     ]);
-    if (!tree || !image) return [];
+    if (!tree) return { components: [], invisible: [] };
+    const settings = parseUiTreeSettings(project?.uiTreeSettings);
+    const regions = parseRegions(testRun.diffRegions);
     const ignored = (await this.comparisonInputs(testRun)).ignoreAreas;
     const changes = baselineTree ? outsideAreas(diffTrees(baselineTree, tree), ignored) : [];
-    return componentChanges({
-      tree,
-      baselineTree,
-      image,
-      baselineImage: baselineImage ?? null,
-      regions: parseRegions(testRun.diffRegions),
-      changes,
-    });
+    const clickable = new Set(
+      [...tree.nodes, ...(baselineTree?.nodes ?? [])].filter((node) => node.clickable).map((node) => node.key)
+    );
+    return {
+      components: image
+        ? componentChanges({ tree, baselineTree, image, baselineImage: baselineImage ?? null, regions, changes })
+        : [],
+      invisible: settings.detectSemanticChanges && baselineTree ? invisibleChanges(changes, regions, clickable) : [],
+    };
   }
 
   /** Warns when the tree looks like another screen than its baseline, or like a screen that already exists. */
@@ -373,6 +412,7 @@ export class UiTreeService {
           dyDp: Math.round((move.to.y - move.from.y) / ppd),
         };
       }),
+      elements: tree ? pickableElements(tree) : [],
       settings,
     };
   }

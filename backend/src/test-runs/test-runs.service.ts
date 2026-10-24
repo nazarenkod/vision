@@ -464,15 +464,23 @@ export class TestRunsService {
     previous.forEach((name) => this.staticService.deleteImage(name));
 
     // A re-comparison (new rule, ignore area) moves the changed areas, and with
-    // them which components hold the change. At ingest this comes later, with
-    // the rest of the UI tree analysis.
+    // them which components hold the change and which element changes the
+    // pixels do not show. A run that now passes on pixels but still has such a
+    // change stays in review. At ingest this comes later, with the rest of the
+    // UI tree analysis.
     if (saved?.uiTreeName && saved.a11yReportName) {
-      const components = await this.uiTreeService.components(saved).catch(() => null);
-      if (components) {
+      const recheck = await this.uiTreeService.recheck(saved).catch(() => null);
+      if (recheck) {
+        const hidden = recheck.invisible.length;
         saved = await this.prismaService.testRun.update({
           where: { id: saved.id },
-          data: { componentChanges: components.length ? JSON.stringify(components) : null },
+          data: {
+            componentChanges: recheck.components.length ? JSON.stringify(recheck.components) : null,
+            semanticChangeCount: hidden,
+            ...(hidden && saved.status === TestStatus.ok ? { status: TestStatus.unresolved } : {}),
+          },
         });
+        this.eventsGateway.testRunUpdated(saved);
       }
     }
     return saved;

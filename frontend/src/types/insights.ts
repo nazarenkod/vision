@@ -130,6 +130,8 @@ export interface StructureInfo {
   toleratedAreas: Array<Rect & { maxDiffPercent: number }>;
   systemBars: Rect[];
   moves: Array<{ key: string; element: string; dxDp: number; dyDp: number }>;
+  // elements a rule can be made for by clicking them on the screenshot
+  elements?: PickableElement[];
   settings: UiTreeSettings;
 }
 
@@ -190,4 +192,10 @@ export function parseUiTreeSettings(value?: string | null): UiTreeSettings {
   } catch {
     return { ...DEFAULT_UI_TREE_SETTINGS };
   }
+}
+
+export interface PickableElement {
+  selector: string;
+  element: string;
+  bounds: Rect;
 }

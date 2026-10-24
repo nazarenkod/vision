@@ -15,6 +15,7 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
+import { AdsClick } from "@mui/icons-material";
 import { useSnackbar } from "notistack";
 import { v4 as uuid } from "uuid";
 import { useProjectState, useUserState } from "../../contexts";
@@ -22,6 +23,7 @@ import { insightsService, testRunService } from "../../services";
 import {
   A11yReport,
   A11yViolation,
+  PickableElement,
   StructureInfo,
   TestRun,
   hasUiTree,
@@ -51,10 +53,17 @@ interface Props {
   // element-level changes, rules and warnings, loaded by the dialog for the overlay too
   structure: StructureInfo | null | undefined;
   onStructureChanged: () => void;
+  // picking an element on the screenshot, kept by the dialog that owns the image
+  pickMode: boolean;
+  onPickModeChange: (on: boolean) => void;
+  pickedElement?: PickableElement;
+  onPickedDone: () => void;
 }
 
 type RuleDraft = {
   selector: string;
+  // what the selector was picked from, when picked on the screenshot
+  element?: string;
   action: "ignore" | "tolerate";
   maxDiffPercent: number;
   scope: "screen" | "project";
@@ -76,6 +85,10 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
   aiEnabled,
   structure,
   onStructureChanged,
+  pickMode,
+  onPickModeChange,
+  pickedElement,
+  onPickedDone,
 }) => {
   const { enqueueSnackbar } = useSnackbar();
   const { user } = useUserState();
@@ -531,6 +544,23 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
       scope: "screen",
     });
 
+  // an element picked on the screenshot opens the rule dialog for it
+  React.useEffect(() => {
+    if (!pickedElement) return;
+    setTab("changes");
+    setRuleDraft({
+      selector: pickedElement.selector,
+      element: pickedElement.element,
+      action: "ignore",
+      maxDiffPercent: 5,
+      scope: "screen",
+    });
+  }, [pickedElement]);
+  const closeRule = () => {
+    setRuleDraft(null);
+    onPickedDone();
+  };
+
   const saveRule = async () => {
     if (!ruleDraft) return;
     const ok = await run(
@@ -548,7 +578,7 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
         : "Rule added; the screenshot is compared again",
     );
     if (ok) {
-      setRuleDraft(null);
+      closeRule();
       onStructureChanged();
     }
   };
@@ -597,6 +627,26 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
       !structure.warnings.length;
     return (
       <>
+        {canEdit && withUiTree && (
+          <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
+            <Button
+              size="small"
+              variant={pickMode ? "contained" : "outlined"}
+              startIcon={<AdsClick fontSize="small" />}
+              sx={{ alignSelf: "flex-start" }}
+              onClick={() => onPickModeChange(!pickMode)}
+              data-testid="pickElement"
+            >
+              {pickMode ? "Cancel picking" : "Pick element on screenshot"}
+            </Button>
+            {pickMode && (
+              <Typography variant="body2" color="textSecondary">
+                Point at an element on the right image and click it to ignore it
+                or allow small changes in it. Esc cancels.
+              </Typography>
+            )}
+          </Box>
+        )}
         {structure.warnings.map((warning) => (
           <Alert key={warning.kind} severity="warning" sx={{ py: 0 }}>
             {warning.message}
@@ -956,12 +1006,7 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
           </Button>
         </DialogActions>
       </Dialog>
-      <Dialog
-        open={!!ruleDraft}
-        onClose={() => setRuleDraft(null)}
-        fullWidth
-        maxWidth="xs"
-      >
+      <Dialog open={!!ruleDraft} onClose={closeRule} fullWidth maxWidth="xs">
         <DialogTitle>
           {ruleDraft?.action === "tolerate"
             ? "Allow small changes"
@@ -975,6 +1020,11 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
             pt: "8px !important",
           }}
         >
+          {ruleDraft?.element && (
+            <Typography variant="body2" color="textSecondary">
+              Picked: {ruleDraft.element}
+            </Typography>
+          )}
           <TextField
             id="rule-selector"
             label="Element"
@@ -1035,7 +1085,7 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
           </TextField>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setRuleDraft(null)}>Cancel</Button>
+          <Button onClick={closeRule}>Cancel</Button>
           <Button
             variant="contained"
             disabled={

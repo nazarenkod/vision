@@ -134,17 +134,20 @@ export function resolveRules(rules: ElementRule[], trees: Array<UiTree | null>):
   for (const rule of rules) {
     const selector = parseSelector(rule.selector);
     if (!selector) continue;
+    // the same element is usually in both trees, so the count is the larger of the two
     let count = 0;
     for (const tree of trees) {
+      let inTree = 0;
       for (const node of tree?.nodes ?? []) {
         if (!node.visible || !node.bounds.width || !node.bounds.height || !matchesSelector(node, selector)) continue;
-        count++;
+        inTree++;
         if (rule.action === 'ignore') {
           result.ignore.push(pad(node.bounds, RULE_PADDING_PX));
         } else {
           result.tolerate.push({ ...node.bounds, maxDiffPercent: rule.maxDiffPercent ?? 5 });
         }
       }
+      count = Math.max(count, inTree);
     }
     result.matches[rule.id] = count;
   }

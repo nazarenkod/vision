@@ -60,6 +60,7 @@ import { insightsService } from "../../services";
 import {
   A11yReport,
   A11yViolation,
+  PickableElement,
   StructureInfo,
   hasUiTree,
 } from "../../types";
@@ -207,6 +208,57 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
     // a re-comparison (new rule, ignore area) changes the diff and what it explains
   }, [loadStructure, testRun.diffName, testRun.diffPercent, testRun.status]);
   useEffect(() => setStructure(undefined), [testRun.id]);
+
+  // picking an element on the screenshot to make a rule for it
+  const [pickMode, setPickMode] = useState(false);
+  const [hoveredElement, setHoveredElement] = useState<PickableElement>();
+  const [pickedElement, setPickedElement] = useState<PickableElement>();
+  const elementAt = (point: { x: number; y: number } | null) =>
+    point
+      ? (structure?.elements ?? [])
+          .filter(
+            ({ bounds: b }) =>
+              point.x >= b.x &&
+              point.x < b.x + b.width &&
+              point.y >= b.y &&
+              point.y < b.y + b.height,
+          )
+          // the smallest element under the pointer is the one meant
+          .sort(
+            (a, b) =>
+              a.bounds.width * a.bounds.height -
+              b.bounds.width * b.bounds.height,
+          )[0]
+      : undefined;
+  useEffect(() => {
+    setPickMode(false);
+    setHoveredElement(undefined);
+    setPickedElement(undefined);
+  }, [testRun.id]);
+  useEffect(() => {
+    if (!pickMode) return;
+    // Esc leaves picking instead of closing the review
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      event.stopPropagation();
+      setPickMode(false);
+      setHoveredElement(undefined);
+    };
+    window.addEventListener("keydown", onKey, true);
+    return () => window.removeEventListener("keydown", onKey, true);
+  }, [pickMode]);
+  const pickRects: OverlayRect[] = [hoveredElement, pickedElement]
+    .filter((element): element is PickableElement => !!element)
+    .slice(0, 1)
+    .map((element) => ({
+      id: "picked",
+      ...element.bounds,
+      color: tokens.brand,
+      label:
+        element.element.length > 40
+          ? `${element.element.slice(0, 39)}…`
+          : element.element,
+    }));
 
   const ruleRects: OverlayRect[] = React.useMemo(
     () =>
@@ -762,8 +814,22 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
         stageInitPosState={[stageInitPos, setStageInitPos]}
         stageOffsetState={[stageOffset, setStageOffset]}
         drawModeState={[isDrawMode, setIsDrawMode]}
-        overlayRects={[...ruleRects, ...overlayRects]}
-        highlightedOverlayId={highlightedViolation}
+        overlayRects={[
+          ...ruleRects,
+          ...(pickMode || pickedElement ? pickRects : overlayRects),
+        ]}
+        highlightedOverlayId={
+          pickMode || pickedElement ? "picked" : highlightedViolation
+        }
+        pickMode={pickMode}
+        onPickHover={(point) => setHoveredElement(elementAt(point))}
+        onPick={(point) => {
+          const element = elementAt(point);
+          if (!element) return;
+          setPickMode(false);
+          setHoveredElement(undefined);
+          setPickedElement(element);
+        }}
       />
     </Grid>
   );
@@ -926,6 +992,13 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
           aiEnabled={!!aiStatus?.enabled}
           structure={structure}
           onStructureChanged={loadStructure}
+          pickMode={pickMode}
+          onPickModeChange={(on) => {
+            setPickMode(on);
+            setHoveredElement(undefined);
+          }}
+          pickedElement={pickedElement}
+          onPickedDone={() => setPickedElement(undefined)}
         />
       </Box>
       <Grid container className={classes.footer}>

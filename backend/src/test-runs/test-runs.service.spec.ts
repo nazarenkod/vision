@@ -109,6 +109,7 @@ const initService = async ({
             settings: null,
           }),
           deleteFiles: jest.fn().mockResolvedValue(undefined),
+          recheck: jest.fn().mockResolvedValue({ components: [], invisible: [] }),
         },
       },
       {
@@ -325,6 +326,29 @@ describe('TestRunsService', () => {
       },
     });
     expect(result).toBe(testRun);
+  });
+
+  it('calculateDiff keeps a run in review when the pixels match but an element change stays hidden', async () => {
+    const testRun = generateTestRun({ uiTreeName: 'tree.json.gz', a11yReportName: 'a11y.json' });
+    const passed = { ...testRun, status: TestStatus.ok };
+    const testRunUpdateMock = jest.fn().mockImplementation(({ data }) => Promise.resolve({ ...passed, ...data }));
+    service = await initService({
+      testRunUpdateMock,
+      compareGetDiffMock: jest.fn().mockResolvedValueOnce({ status: TestStatus.ok }),
+    });
+    service.saveDiffResult = jest.fn().mockResolvedValueOnce(passed);
+    service['uiTreeService'].recheck = jest.fn().mockResolvedValueOnce({
+      components: [],
+      invisible: [{ kind: 'state', key: 'id:btn_pay' }],
+    });
+
+    const result = await service.calculateDiff('projectId', testRun);
+
+    expect(testRunUpdateMock).toHaveBeenCalledWith({
+      where: { id: testRun.id },
+      data: { componentChanges: null, semanticChangeCount: 1, status: TestStatus.unresolved },
+    });
+    expect(result.status).toBe(TestStatus.unresolved);
   });
 
   it('calculateDiff', async () => {

@@ -30,8 +30,7 @@ const MAX_CHANGES = 50;
 // Framework views (status bar background, content frame) are not the app's elements.
 const hasAppId = (node: UiNode) => !!node.resourceId && !node.resourceId.startsWith('android:id/');
 
-const isMeaningful = (node: UiNode) =>
-  node.visible && (hasAppId(node) || !!ownSpeakableText(node) || node.clickable);
+const isMeaningful = (node: UiNode) => node.visible && (hasAppId(node) || !!ownSpeakableText(node) || node.clickable);
 
 /**
  * Element-level differences between the baseline's UI tree and the current

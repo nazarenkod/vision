@@ -60,7 +60,8 @@ describe('resolveRules', () => {
     ]);
     expect(resolved.tolerate).toHaveLength(8);
     expect(resolved.tolerate[0].maxDiffPercent).toBe(10);
-    expect(resolved.matches).toEqual({ r1: 2, r2: 8 });
+    // one element on the screen, though it covers two places
+    expect(resolved.matches).toEqual({ r1: 1, r2: 4 });
   });
 });
 

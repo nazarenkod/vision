@@ -69,6 +69,10 @@ interface IDrawArea {
   /** Boxes drawn over the image in image pixels (accessibility issues), not editable. */
   overlayRects?: OverlayRect[];
   highlightedOverlayId?: string;
+  /** Picking an element: the pointer reports where it is instead of panning or drawing. */
+  pickMode?: boolean;
+  onPickHover?: (point: { x: number; y: number } | null) => void;
+  onPick?: (point: { x: number; y: number }) => void;
 }
 
 export interface OverlayRect {
@@ -103,6 +107,9 @@ export const DrawArea: FunctionComponent<IDrawArea> = ({
   drawModeState,
   overlayRects,
   highlightedOverlayId,
+  pickMode,
+  onPickHover,
+  onPick,
 }) => {
   const classes = useStyles();
   const [stageInitPos, setStageInitPos] = stageInitPosState;
@@ -364,6 +371,7 @@ export const DrawArea: FunctionComponent<IDrawArea> = ({
             setStageInitPos(stagePos);
           }}
           onMouseDown={(event) => {
+            if (pickMode) return;
             setIsDrag(true);
             setStageInitPos({
               x: event.clientX - stageOffset.x,
@@ -380,11 +388,22 @@ export const DrawArea: FunctionComponent<IDrawArea> = ({
             // events fire after the shape under the pointer has had its turn,
             // as they did
             onMouseDown={(event) => {
+              if (pickMode) {
+                onPick?.({ x: event.evt.offsetX, y: event.evt.offsetY });
+                return;
+              }
               onStageClick(event);
               handleContentMousedown(event);
             }}
             onMouseUp={handleContentMouseup}
-            onMouseMove={handleContentMouseMove}
+            onMouseMove={(event) => {
+              if (pickMode) {
+                onPickHover?.({ x: event.evt.offsetX, y: event.evt.offsetY });
+                return;
+              }
+              handleContentMouseMove(event);
+            }}
+            onMouseLeave={() => pickMode && onPickHover?.(null)}
             style={{
               transform: `scale(${stageScale})`,
               transformOrigin: "top left",
@@ -409,15 +428,17 @@ export const DrawArea: FunctionComponent<IDrawArea> = ({
                   blendDifference ? "difference" : undefined
                 }
                 onMouseOver={() => {
-                  document.body.style.cursor = isDrawMode
-                    ? "crosshair"
-                    : "grab";
+                  document.body.style.cursor = pickMode
+                    ? "pointer"
+                    : isDrawMode
+                      ? "crosshair"
+                      : "grab";
                 }}
                 onMouseDown={() => {
-                  document.body.style.cursor = "grabbing";
+                  if (!pickMode) document.body.style.cursor = "grabbing";
                 }}
                 onMouseUp={() => {
-                  document.body.style.cursor = "grab";
+                  if (!pickMode) document.body.style.cursor = "grab";
                 }}
                 onMouseLeave={() => {
                   document.body.style.cursor = "default";

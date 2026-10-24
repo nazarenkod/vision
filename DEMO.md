@@ -6,7 +6,7 @@ ISee (“I see the problem”) is a fork of Visual Regression Tracker with a ref
 - **Jira bugs for accessibility issues.** File a bug from the review screen by naming the task to link it to; screen, device, element, rule and an outlined screenshot are filled in. Issues can be linked to existing bugs or marked as false positives, and both decisions hold for later builds. When a filed issue disappears, the review says the bug can be closed.
 - **Change groups.** A build's changes are grouped so one decision covers many screenshots: by identical element change across screens (from the UI tree), or by matching change signature across devices and browsers. Noise (status bar clock, times and amounts, anti-aliasing) is recognised and can be ignored in one click.
 - **Precise comparison of mobile screens (from the UI tree).**
-  - *Element rules*: ignore an element, or allow N% change inside it, by `id:`, `class:` or `text:` (regex allowed). On one screen or on every screen of the project. The area follows the element when the layout moves.
+  - *Element rules*: ignore an element, or allow N% change inside it, by `id:`, `class:` or `text:` (regex allowed). Pick the element on the screenshot (Changes tab, “Pick element on screenshot”) or use Ignore / Tolerance next to a changed element. On one screen or on every screen of the project. The area follows the element when the layout moves.
   - *System bars* are left out of the comparison (project setting, overridable per screenshot from the SDK).
   - *Moved elements* are compared at their new place (project setting): a banner pushing a list down no longer flags the whole list, while a change inside a moved element still shows.
   - *Hidden changes*: a new label, a disabled or unclickable control, an invisible button on top. The pixels match, but the screenshot goes to review and is never auto-approved.
@@ -82,7 +82,7 @@ Without a device, upload PNG + XML pairs exported from Appium Inspector:
 5. Mark another issue as a **False positive**. It stops counting in this and every later build.
 6. Upload a build where the issue is fixed. The review says the bug can be closed.
 7. A component group: “Component id/bottom_nav, changed the same way on 4 screens”. Screens that changed elsewhere too are listed apart.
-8. On a screen where a banner pushed the list down, only the banner is flagged; “Compared at their new place” lists the moved elements. Ignore the banner with one click and the screen joins the component group.
+8. On a screen where a banner pushed the list down, only the banner is flagged; “Compared at their new place” lists the moved elements. Click “Pick element on screenshot”, click the banner, Add rule: the screen joins the component group.
 9. A screenshot with a disabled Pay button and identical pixels is in review with “1 hidden”; one taken during loading shows “Loading”; one taken on the wrong screen says which screen it looks like.
 10. With AI on: each group gets a one-line explanation and a verdict, and unlabeled icons get a proposed label.
 

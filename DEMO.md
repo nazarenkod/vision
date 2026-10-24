@@ -1,6 +1,6 @@
-# Visual Tracker demo
+# ISee demo
 
-A fork of Visual Regression Tracker with a refreshed UI and three additions:
+ISee (“I see the problem”) is a fork of Visual Regression Tracker with a refreshed UI and these additions:
 
 - **Mobile accessibility.** The Appium page source sent with each screenshot is checked for missing labels, touch targets below 48 dp / 44 pt, low text contrast (measured on the screenshot), inputs without a label, duplicate labels and controls hidden from VoiceOver. Issues are compared with the baseline, so only issues a branch introduces count as new.
 - **Jira bugs for accessibility issues.** File a bug from the review screen by naming the task to link it to; screen, device, element, rule and an outlined screenshot are filled in. Issues can be linked to existing bugs or marked as false positives, and both decisions hold for later builds. When a filed issue disappears, the review says the bug can be closed.

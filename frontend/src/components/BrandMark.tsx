@@ -1,7 +1,7 @@
 import React from "react";
 import { Box } from "@mui/material";
 
-/** The product's mark: two screens side by side, the second one checked. */
+/** The product's mark: an eye. */
 export const BrandMark: React.FunctionComponent<{ size?: number }> = ({
   size = 32,
 }) => (
@@ -26,9 +26,9 @@ export const BrandMark: React.FunctionComponent<{ size?: number }> = ({
       strokeWidth="1.8"
       aria-hidden="true"
     >
-      <rect x="2.5" y="4" width="7" height="12" rx="1.5" />
-      <rect x="10.5" y="4" width="7" height="12" rx="1.5" />
-      <path d="M12.5 10h3" />
+      <path d="M1.5 10C3.8 5.8 6.7 4 10 4s6.2 1.8 8.5 6c-2.3 4.2-5.2 6-8.5 6s-6.2-1.8-8.5-6Z" />
+      <circle cx="10" cy="10" r="2.8" />
+      <circle cx="10" cy="10" r="0.9" fill="#FFFFFF" stroke="none" />
     </svg>
   </Box>
 );

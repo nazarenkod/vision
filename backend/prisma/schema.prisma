@@ -86,6 +86,18 @@ model TestRun {
   // the full-size file.
   imageThumbnailName    String?
   diffThumbnailName     String?
+  // Appium page source sent with the screenshot (gzipped XML file) and the one
+  // of the baseline it is compared with. Null when the client sent none.
+  uiTreeName            String?
+  baselineUiTreeName    String?
+  // Accessibility report (JSON file) computed from the UI tree; only the counts
+  // live on the row, since the socket gateway broadcasts whole rows.
+  a11yReportName        String?
+  a11yNewCount          Int?
+  a11yTotalCount        Int?
+  // Bounding boxes of the changed areas, as JSON [{x,y,width,height}], in
+  // screenshot pixels. Null on runs without a diff or ingested before this.
+  diffRegions           String?
   baseline              Baseline?
   build                 Build          @relation(fields: [buildId], references: [id])
   project               Project?       @relation(fields: [projectId], references: [id])
@@ -95,23 +107,24 @@ model TestRun {
 }
 
 model TestVariation {
-  id           String     @id @default(uuid())
-  name         String
-  branchName   String     @default("master")
-  browser      String     @default("")
-  device       String     @default("")
-  os           String     @default("")
-  viewport     String     @default("")
-  customTags   String     @default("")
-  baselineName String?
-  ignoreAreas  String     @default("[]")
-  projectId    String
-  comment      String?
-  updatedAt    DateTime   @updatedAt
-  createdAt    DateTime   @default(now())
-  baselines    Baseline[]
-  testRuns     TestRun[]
-  project      Project    @relation(fields: [projectId], references: [id])
+  id                 String     @id @default(uuid())
+  name               String
+  branchName         String     @default("master")
+  browser            String     @default("")
+  device             String     @default("")
+  os                 String     @default("")
+  viewport           String     @default("")
+  customTags         String     @default("")
+  baselineName       String?
+  baselineUiTreeName String?
+  ignoreAreas        String     @default("[]")
+  projectId          String
+  comment            String?
+  updatedAt          DateTime   @updatedAt
+  createdAt          DateTime   @default(now())
+  baselines          Baseline[]
+  testRuns           TestRun[]
+  project            Project    @relation(fields: [projectId], references: [id])
 
   @@unique([projectId, name, browser, device, os, viewport, customTags, branchName])
 }
@@ -121,6 +134,7 @@ model Baseline {
   baselineName    String
   testVariationId String
   testRunId       String?       @unique
+  uiTreeName      String?
   userId          String?
   updatedAt       DateTime      @updatedAt
   createdAt       DateTime      @default(now())
@@ -142,6 +156,15 @@ model User {
   createdAt DateTime   @default(now())
   baselines Baseline[]
   builds    Build[]
+}
+
+model AiResult {
+  id        String   @id @default(uuid())
+  kind      String
+  cacheKey  String   @unique
+  payload   String
+  model     String?
+  createdAt DateTime @default(now())
 }
 
 enum TestStatus {

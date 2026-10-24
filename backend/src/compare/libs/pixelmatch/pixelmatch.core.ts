@@ -4,6 +4,7 @@ import { IgnoreAreaDto } from '../../../test-runs/dto/ignore-area.dto';
 import { applyIgnoreAreas, scaleImageToSize } from '../../utils';
 import { signatureOfDecoded } from './signature.core';
 import { encodeThumbnail } from './thumbnail.core';
+import { DiffRegion, findDiffRegions } from './regions.core';
 
 /**
  * CPU-bound part of the pixelmatch comparison, extracted so it can run inside
@@ -35,6 +36,12 @@ export interface PixelmatchJobInput {
    * CSS shrink them is what made opening the variations dialog cost megabytes.
    */
   withThumbnails?: boolean;
+  /**
+   * Also return bounding boxes of the changed areas, for mapping a change to
+   * the UI element under it and for cropping it for AI. Read off the diff that
+   * is already in memory.
+   */
+  withRegions?: boolean;
 }
 
 export interface PixelmatchJobOutput {
@@ -50,6 +57,8 @@ export interface PixelmatchJobOutput {
   // nothing to show
   imageThumbnail?: Buffer | Uint8Array;
   diffThumbnail?: Buffer | Uint8Array;
+  // absent when not asked for or when the diff is not kept
+  regions?: DiffRegion[];
 }
 
 // postMessage turns Buffers into Uint8Array views over their own ArrayBuffer.
@@ -116,6 +125,8 @@ export function computePixelmatchDiff(input: PixelmatchJobInput): PixelmatchJobO
       ? { imageThumbnail: encodeThumbnail(imageIgnored), diffThumbnail: encodeThumbnail(diff) }
       : {};
 
+  const regions = input.withRegions && keepingTheDiff ? findDiffRegions(diff) : null;
+
   return {
     equal: false,
     isSameDimension,
@@ -124,5 +135,6 @@ export function computePixelmatchDiff(input: PixelmatchJobInput): PixelmatchJobO
     diffBuffer,
     ...(signature ? { signature } : {}),
     ...thumbnails,
+    ...(regions?.length ? { regions } : {}),
   };
 }

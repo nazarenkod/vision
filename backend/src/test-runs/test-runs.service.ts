@@ -387,6 +387,7 @@ export class TestRunsService {
           // recomputed comparison never leaves a picture of the old change.
           imageThumbnailName: diffResult?.imageThumbnailName ?? null,
           diffThumbnailName: diffResult?.diffThumbnailName ?? null,
+          diffRegions: diffResult?.diffRegions ? JSON.stringify(diffResult.diffRegions) : null,
         },
       })
       .then((testRun) => {

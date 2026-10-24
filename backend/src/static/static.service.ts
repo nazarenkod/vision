@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PNGWithMetadata } from 'pngjs';
 import { StaticFactoryService } from './static.factory';
-import { isPngBuffer } from './utils';
+import { FileKind, generateNewFileName, isPngBuffer } from './utils';
 import { Static } from './static.interface';
 
 @Injectable()
@@ -39,5 +39,25 @@ export class StaticService {
 
   async getImageUrl(imageName: string): Promise<string> {
     return this.staticService.getImageUrl(imageName);
+  }
+
+  async saveFile(kind: FileKind, buffer: Buffer, extension: string, contentType: string): Promise<string> {
+    const fileName = generateNewFileName(kind, extension);
+    await this.staticService.saveFile(fileName, buffer, contentType);
+    return fileName;
+  }
+
+  async copyFile(kind: FileKind, sourceName: string, extension: string): Promise<string> {
+    const fileName = generateNewFileName(kind, extension);
+    await this.staticService.copyFile(sourceName, fileName);
+    return fileName;
+  }
+
+  async getFileBuffer(fileName: string): Promise<Buffer | null> {
+    return this.staticService.getImageBuffer(fileName);
+  }
+
+  async deleteFile(fileName: string): Promise<boolean> {
+    return this.staticService.deleteImage(fileName);
   }
 }

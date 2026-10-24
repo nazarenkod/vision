@@ -197,6 +197,7 @@ describe('TestRunsService', () => {
       id: 'id',
       imageName: 'imageName',
       baselineName: 'baselineName',
+      baselineUiTreeName: null,
       diffTollerancePercent: 1,
       ignoreAreas: '[]',
       diffName: 'diffName',
@@ -216,6 +217,7 @@ describe('TestRunsService', () => {
       projectId: 'project Id',
       name: 'Test name',
       baselineName: 'baselineName',
+      baselineUiTreeName: null,
       os: 'OS',
       browser: 'browser',
       viewport: 'viewport',
@@ -354,6 +356,7 @@ describe('TestRunsService', () => {
           changeSignature: null,
           imageThumbnailName: null,
           diffThumbnailName: null,
+          diffRegions: null,
         },
       });
       expect(eventTestRunUpdatedMock).toHaveBeenCalledWith(testRun);
@@ -424,6 +427,7 @@ describe('TestRunsService', () => {
           changeSignature: null,
           imageThumbnailName: null,
           diffThumbnailName: null,
+          diffRegions: null,
         },
       });
       expect(eventTestRunUpdatedMock).toHaveBeenCalledWith(testRun);
@@ -579,6 +583,7 @@ describe('TestRunsService', () => {
       projectId: 'project Id',
       name: 'Test name',
       baselineName: 'baselineName',
+      baselineUiTreeName: null,
       os: 'OS',
       browser: 'browser',
       viewport: 'viewport',
@@ -855,6 +860,7 @@ describe('TestRunsService', () => {
         status: TestStatus.unresolved,
         name: 'Screen A',
         baselineName: `${id}.baseline.png`,
+        baselineUiTreeName: null,
         imageName: `${id}.screenshot.png`,
         customTags: id,
         diffPercent: 12,

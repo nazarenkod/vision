@@ -40,4 +40,9 @@ export interface DiffResult {
    */
   imageThumbnailName?: string;
   diffThumbnailName?: string;
+  /**
+   * Bounding boxes of the changed areas in screenshot pixels, largest first.
+   * Absent when no diff was kept or the comparison was not pixelmatch.
+   */
+  diffRegions?: Array<{ x: number; y: number; width: number; height: number }>;
 }

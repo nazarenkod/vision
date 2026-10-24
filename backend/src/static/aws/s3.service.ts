@@ -91,6 +91,30 @@ export class AWSS3Service implements Static {
     }
   }
 
+  async saveFile(fileName: string, buffer: Buffer, contentType: string): Promise<void> {
+    try {
+      await this.s3Client.send(
+        new PutObjectCommand({ Bucket: this.AWS_S3_BUCKET_NAME, Key: fileName, ContentType: contentType, Body: buffer })
+      );
+    } catch (ex) {
+      throw new Error('Could not save file at AWS S3 : ' + ex);
+    }
+  }
+
+  async copyFile(sourceName: string, targetName: string): Promise<void> {
+    try {
+      await this.s3Client.send(
+        new CopyObjectCommand({
+          Bucket: this.AWS_S3_BUCKET_NAME,
+          CopySource: `${this.AWS_S3_BUCKET_NAME}/${sourceName}`,
+          Key: targetName,
+        })
+      );
+    } catch (ex) {
+      throw new Error('Could not copy file at AWS S3 : ' + ex);
+    }
+  }
+
   /**
    * A pre-signed URL for the object, stable for the length of a window.
    *

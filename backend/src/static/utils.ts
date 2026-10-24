@@ -12,6 +12,12 @@ export function generateNewImageName(type: 'screenshot' | 'diff' | 'baseline'): 
   return `${uuidAPIKey.create({ noDashes: true }).apiKey}.${type}.png`;
 }
 
+export type FileKind = 'uitree' | 'a11y';
+
+export function generateNewFileName(kind: FileKind, extension: string): string {
+  return `${uuidAPIKey.create({ noDashes: true }).apiKey}.${kind}.${extension}`;
+}
+
 const PNG_SIGNATURE = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
 
 // Signature check instead of a full decode: parsing megapixel PNGs just to

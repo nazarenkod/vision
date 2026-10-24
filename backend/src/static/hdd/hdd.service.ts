@@ -76,6 +76,17 @@ export class HddService implements Static {
     return imageName;
   }
 
+  async saveFile(fileName: string, buffer: Buffer): Promise<void> {
+    await fs.writeFile(
+      this.getImagePath(fileName),
+      new Uint8Array(buffer.buffer, buffer.byteOffset, buffer.byteLength)
+    );
+  }
+
+  async copyFile(sourceName: string, targetName: string): Promise<void> {
+    await fs.copyFile(this.getImagePath(sourceName), this.getImagePath(targetName));
+  }
+
   async deleteImage(imageName: string): Promise<boolean> {
     if (!imageName) return;
     try {

@@ -56,6 +56,7 @@ export class PixelmatchService implements ImageComparator {
       // making thumbnails for those would burn the CPU and, worse, store two
       // objects per attempt that nothing ever references or deletes.
       withThumbnails: data.saveDiffAsFile,
+      withRegions: data.saveDiffAsFile,
     });
 
     if (output.equal) {
@@ -102,6 +103,9 @@ export class PixelmatchService implements ImageComparator {
           result.imageThumbnailName = imageThumbnailName;
           result.diffThumbnailName = diffThumbnailName;
         }
+      }
+      if (result.diffName && output.regions?.length) {
+        result.diffRegions = output.regions;
       }
       result.status = TestStatus.unresolved;
     } else {

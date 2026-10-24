@@ -7,4 +7,8 @@ export interface Static {
   copyImage(type: 'screenshot' | 'diff' | 'baseline', sourceImageName: string): Promise<string>;
   deleteImage(imageName: string): Promise<boolean>;
   getImageUrl(imageName: string): Promise<string>;
+  // Non-image files kept next to the screenshots (UI trees, reports). Reading
+  // and deleting them goes through getImageBuffer/deleteImage, which take any name.
+  saveFile(fileName: string, buffer: Buffer, contentType: string): Promise<void>;
+  copyFile(sourceName: string, targetName: string): Promise<void>;
 }

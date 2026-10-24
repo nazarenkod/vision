@@ -1,0 +1,81 @@
+# Demo instance of the fork, meant to run next to an existing VRT on the same host.
+# Everything is built from the folders of this repo and kept apart from the existing
+# instance: own compose project, own ports, own Postgres volume, own image folder.
+#
+#   cp .env.demo.example .env.demo   # then edit
+#   ./scripts/demo-clone-from-prod.sh # copy the production DB and images (optional)
+#   docker compose -f docker-compose.demo.yml --env-file .env.demo up -d --build
+name: vrt-demo
+
+services:
+  ui:
+    build: ./frontend
+    ports:
+      - "${DEMO_UI_PORT:-18080}:8080"
+    volumes:
+      - ./demo-data/imageUploads:/usr/share/nginx/html/static/imageUploads
+    environment:
+      REACT_APP_API_URL: ${DEMO_API_URL:-http://localhost:14200}
+      VRT_VERSION: demo
+      PORT: ${DEMO_UI_PORT:-18080}
+    restart: unless-stopped
+
+  api:
+    build: ./backend
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-vrt_demo}
+      JWT_SECRET: ${JWT_SECRET:?set JWT_SECRET in .env.demo}
+      JWT_LIFE_TIME: ${JWT_LIFE_TIME:-1d}
+      APP_FRONTEND_URL: ${DEMO_UI_URL:-http://localhost:18080}
+      BODY_PARSER_JSON_LIMIT: ${BODY_PARSER_JSON_LIMIT:-20mb}
+      # the copy keeps the branches it was taken with
+      TASKS_CLEANUP_ENABLED: "false"
+      # AI features: gemini | ollama | none
+      AI_PROVIDER: ${AI_PROVIDER:-none}
+      AI_MODEL: ${AI_MODEL:-}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-http://host.docker.internal:11434}
+      AI_DAILY_CALL_LIMIT: ${AI_DAILY_CALL_LIMIT:-500}
+      OIDC_ENABLED: ${OIDC_ENABLED:-false}
+      LDAP_ENABLED: ${LDAP_ENABLED:-false}
+    ports:
+      - "${DEMO_API_PORT:-14200}:3000"
+    extra_hosts:
+      - host.docker.internal:host-gateway
+    volumes:
+      - ./demo-data/imageUploads:/imageUploads
+    depends_on:
+      postgres:
+        condition: service_healthy
+      migration:
+        condition: service_completed_successfully
+    restart: unless-stopped
+
+  migration:
+    build: ./backend/prisma
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-vrt_demo}
+      DEFAULT_USER_EMAIL: ${DEFAULT_USER_EMAIL:-visual-regression-tracker@example.com}
+      DEFAULT_USER_PASSWORD: ${DEFAULT_USER_PASSWORD:-123456}
+      DEFAULT_USER_API_KEY: ${DEFAULT_USER_API_KEY:-DEFAULTUSERAPIKEYTOBECHANGED}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-vrt_demo}
+    ports:
+      - "127.0.0.1:${DEMO_POSTGRES_PORT:-15432}:5432"
+    volumes:
+      - ./demo-data/db:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -d $$POSTGRES_DB -U $$POSTGRES_USER"]
+      interval: 5s
+      timeout: 60s
+      retries: 20
+    restart: unless-stopped

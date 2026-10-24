@@ -3,3 +3,6 @@ db
 
 *.cert
 *.key
+# demo instance
+demo-data/
+.env.demo

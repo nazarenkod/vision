@@ -68,4 +68,20 @@ describe('cleanOldTestVariations', () => {
     });
     expect(testVariationsDeleteMock).toBeCalledWith(testVariation.id);
   });
+
+  it('skips cleanup when TASKS_CLEANUP_ENABLED=false', async () => {
+    const projectFindManyMock = jest.fn();
+    const testVariationsDeleteMock = jest.fn();
+    service = await initService({ projectFindManyMock, testVariationsDeleteMock });
+    process.env.TASKS_CLEANUP_ENABLED = 'false';
+
+    try {
+      await service.cleanOldTestVariations();
+    } finally {
+      delete process.env.TASKS_CLEANUP_ENABLED;
+    }
+
+    expect(projectFindManyMock).not.toHaveBeenCalled();
+    expect(testVariationsDeleteMock).not.toHaveBeenCalled();
+  });
 });

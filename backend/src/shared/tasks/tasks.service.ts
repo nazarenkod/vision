@@ -15,6 +15,12 @@ export class TasksService {
 
   @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
   async cleanOldTestVariations() {
+    // A demo instance running on a copy of a production database turns this off,
+    // so the copy keeps the same branches as the instance it was taken from.
+    if (process.env.TASKS_CLEANUP_ENABLED?.toLowerCase() === 'false') {
+      this.logger.debug('Skipping TestVariations cleanup: TASKS_CLEANUP_ENABLED=false');
+      return;
+    }
     const projects = await this.prismaService.project.findMany();
 
     for (const project of projects) {

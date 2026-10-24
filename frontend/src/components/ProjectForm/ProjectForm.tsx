@@ -26,6 +26,11 @@ import { OdiffConfigForm } from "./OdiffConfigForm";
 import { PixelmatchConfigForm } from "./PixelmatchConfigForm";
 import { VlmConfigForm } from "./VlmConfigForm";
 import { getDefaultConfig } from "./utils";
+import {
+  ElementRule,
+  UiTreeSettings,
+  parseUiTreeSettings,
+} from "../../types/insights";
 
 export const ProjectForm: React.FunctionComponent = () => {
   const { projectEditState: project } = useProjectState();
@@ -237,6 +242,7 @@ export const ProjectForm: React.FunctionComponent = () => {
         </Select>
       </FormControl>
       {config}
+      <MobileSettings />
       <JiraSettings />
     </React.Fragment>
   );
@@ -320,6 +326,186 @@ const JiraSettings: React.FunctionComponent = () => {
           value={project.jiraLinkType ?? ""}
           onChange={(event) => update({ jiraLinkType: event.target.value })}
         />
+      </Box>
+    </Box>
+  );
+};
+
+const TOGGLES: Array<[keyof UiTreeSettings, string, string]> = [
+  [
+    "excludeSystemBars",
+    "Leave out status and navigation bars",
+    "Clock, battery and signal change on every run.",
+  ],
+  [
+    "compensateMoves",
+    "Compare moved elements at their new place",
+    "An element that only moved (a banner pushed the list down) is not a difference; a change inside it still is.",
+  ],
+  [
+    "detectSemanticChanges",
+    "Send hidden changes to review",
+    "A new label, a disabled or unclickable control, an invisible button: changes the pixels do not show.",
+  ],
+  [
+    "detectLoading",
+    "Warn about loading states",
+    "Spinners, skeletons and toasts mean the screenshot was taken too early.",
+  ],
+  [
+    "detectScreenMismatch",
+    "Warn about wrong screens",
+    "The UI tree looks like another screen than the baseline.",
+  ],
+];
+
+/** UI tree comparison settings and rules for every screen of the project. */
+const MobileSettings: React.FunctionComponent = () => {
+  const { projectEditState: project } = useProjectState();
+  const projectDispatch = useProjectDispatch();
+  const settings = parseUiTreeSettings(project.uiTreeSettings);
+  const [selector, setSelector] = React.useState("");
+  const [action, setAction] = React.useState<ElementRule["action"]>("ignore");
+  const [percent, setPercent] = React.useState(5);
+
+  const save = (next: UiTreeSettings) =>
+    setProjectEditState(projectDispatch, {
+      ...project,
+      uiTreeSettings: JSON.stringify(next),
+    });
+
+  const addRule = () => {
+    const rule: ElementRule = {
+      id: crypto.randomUUID ? crypto.randomUUID() : String(Date.now()),
+      selector: selector.trim(),
+      action,
+      ...(action === "tolerate" ? { maxDiffPercent: percent } : {}),
+    };
+    save({ ...settings, elementRules: [...settings.elementRules, rule] });
+    setSelector("");
+  };
+
+  return (
+    <Box sx={{ mt: 3, display: "flex", flexDirection: "column", gap: 1 }}>
+      <Divider />
+      <Typography variant="subtitle1">Mobile screenshots (UI tree)</Typography>
+      <Typography variant="body2" color="textSecondary">
+        Applies to screenshots sent with an Appium page source.
+      </Typography>
+      {TOGGLES.map(([key, label, help]) => (
+        <FormControlLabel
+          key={key}
+          control={
+            <Switch
+              checked={!!settings[key]}
+              onChange={(_, checked) => save({ ...settings, [key]: checked })}
+              name={key}
+            />
+          }
+          label={
+            <Box>
+              <Typography variant="body2">{label}</Typography>
+              <Typography variant="caption" color="textSecondary">
+                {help}
+              </Typography>
+            </Box>
+          }
+          sx={{ alignItems: "flex-start", "& .MuiSwitch-root": { mt: -0.5 } }}
+        />
+      ))}
+      {settings.compensateMoves && (
+        <TextField
+          id="maxMoveDp"
+          size="small"
+          type="number"
+          label="Only moves up to, dp (empty for any)"
+          value={settings.maxMoveDp ?? ""}
+          onChange={(event) =>
+            save({
+              ...settings,
+              maxMoveDp:
+                event.target.value === "" ? null : Number(event.target.value),
+            })
+          }
+          sx={{ maxWidth: 280 }}
+        />
+      )}
+      <Typography variant="body2" sx={{ fontWeight: 600, mt: 1 }}>
+        Element rules for every screen
+      </Typography>
+      {settings.elementRules.map((rule) => (
+        <Box
+          key={rule.id}
+          sx={{ display: "flex", alignItems: "center", gap: 1 }}
+        >
+          <code style={{ fontSize: 12.5 }}>{rule.selector}</code>
+          <Typography variant="body2" color="textSecondary">
+            {rule.action === "ignore" ? "ignored" : `±${rule.maxDiffPercent}%`}
+          </Typography>
+          <Button
+            size="small"
+            sx={{ ml: "auto" }}
+            onClick={() =>
+              save({
+                ...settings,
+                elementRules: settings.elementRules.filter(
+                  (item) => item.id !== rule.id,
+                ),
+              })
+            }
+          >
+            Remove
+          </Button>
+        </Box>
+      ))}
+      <Box
+        sx={{
+          display: "flex",
+          gap: 1,
+          alignItems: "flex-start",
+          flexWrap: "wrap",
+        }}
+      >
+        <TextField
+          id="ruleSelector"
+          size="small"
+          label="Element"
+          placeholder="id:clock or class:MapView"
+          value={selector}
+          onChange={(event) => setSelector(event.target.value)}
+          sx={{ flex: "1 1 200px" }}
+        />
+        <TextField
+          id="ruleAction"
+          size="small"
+          select
+          value={action}
+          onChange={(event) =>
+            setAction(event.target.value as ElementRule["action"])
+          }
+          sx={{ width: 130 }}
+        >
+          <MenuItem value="ignore">Ignore</MenuItem>
+          <MenuItem value="tolerate">Tolerate</MenuItem>
+        </TextField>
+        {action === "tolerate" && (
+          <TextField
+            id="rulePercent"
+            size="small"
+            type="number"
+            label="%"
+            value={percent}
+            onChange={(event) => setPercent(Number(event.target.value))}
+            sx={{ width: 80 }}
+          />
+        )}
+        <Button
+          variant="outlined"
+          disabled={!/^(id|class|text):.+/.test(selector.trim())}
+          onClick={addRule}
+        >
+          Add
+        </Button>
       </Box>
     </Box>
   );

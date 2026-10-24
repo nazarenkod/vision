@@ -55,9 +55,14 @@ import {
 } from "./MatchingVariationsDialog";
 import { invertIgnoreArea } from "../../_helpers/ignoreArea.helper";
 import { InsightsPanel } from "./InsightsPanel";
-import { useAiStatus } from "../ChangeGroups";
+import { RunFlags, useAiStatus } from "../ChangeGroups";
 import { insightsService } from "../../services";
-import { A11yReport, A11yViolation, hasUiTree } from "../../types";
+import {
+  A11yReport,
+  A11yViolation,
+  StructureInfo,
+  hasUiTree,
+} from "../../types";
 import { OverlayRect } from "./DrawArea";
 import { tokens } from "../../theme";
 import { BaseModal } from "../BaseModal";
@@ -187,6 +192,51 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
     loadA11yReport();
     // counts change when someone files a bug or marks a false positive
   }, [loadA11yReport, testRun.a11yNewCount, testRun.a11yTotalCount]);
+  // element rules, system bars and changes, for the panel and the overlay
+  const [structure, setStructure] = useState<
+    StructureInfo | null | undefined
+  >();
+  const loadStructure = React.useCallback(() => {
+    insightsService
+      .getStructure(testRun.id)
+      .then(setStructure)
+      .catch(() => setStructure(null));
+  }, [testRun.id]);
+  useEffect(() => {
+    loadStructure();
+    // a re-comparison (new rule, ignore area) changes the diff and what it explains
+  }, [loadStructure, testRun.diffName, testRun.diffPercent, testRun.status]);
+  useEffect(() => setStructure(undefined), [testRun.id]);
+
+  const ruleRects: OverlayRect[] = React.useMemo(
+    () =>
+      a11yOverlay && structure
+        ? [
+            ...structure.systemBars.map((rect, i) => ({
+              id: `bar-${i}`,
+              ...rect,
+              color: "#98A2B3",
+              dashed: true,
+            })),
+            ...structure.ignoredAreas.map((rect, i) => ({
+              id: `ignored-${i}`,
+              ...rect,
+              color: "#667085",
+              dashed: true,
+              label: "ignored",
+            })),
+            ...structure.toleratedAreas.map((rect, i) => ({
+              id: `tolerated-${i}`,
+              ...rect,
+              color: "#175CD3",
+              dashed: true,
+              label: `±${rect.maxDiffPercent}%`,
+            })),
+          ]
+        : [],
+    [a11yOverlay, structure],
+  );
+
   const overlayRects: OverlayRect[] = React.useMemo(
     () =>
       a11yOverlay && a11yReport
@@ -712,7 +762,7 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
         stageInitPosState={[stageInitPos, setStageInitPos]}
         stageOffsetState={[stageOffset, setStageOffset]}
         drawModeState={[isDrawMode, setIsDrawMode]}
-        overlayRects={overlayRects}
+        overlayRects={[...ruleRects, ...overlayRects]}
         highlightedOverlayId={highlightedViolation}
       />
     </Grid>
@@ -750,6 +800,9 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
         </Grid>
         <Grid item>
           <TestStatusChip status={testRun.status} />
+        </Grid>
+        <Grid item>
+          <RunFlags run={testRun} />
         </Grid>
         {withUiTree && (
           <Grid item>
@@ -873,6 +926,8 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
           highlightedId={highlightedViolation}
           onHighlight={highlightViolation}
           aiEnabled={!!aiStatus?.enabled}
+          structure={structure}
+          onStructureChanged={loadStructure}
         />
       </Box>
       <Grid container className={classes.footer}>

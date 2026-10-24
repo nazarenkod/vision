@@ -21,6 +21,8 @@ export interface Project {
   jiraTokenSet?: boolean;
   jiraIssueType?: string | null;
   jiraLinkType?: string | null;
+  // JSON: UI tree comparison settings and project-wide element rules
+  uiTreeSettings?: string | null;
 }
 
 export type ProjectDto = Omit<

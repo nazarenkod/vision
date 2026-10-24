@@ -15,10 +15,12 @@ import { useTestRunState } from "../contexts";
 import { insightsService, staticService, testRunService } from "../services";
 import {
   AiStatus,
+  CaptureWarning,
   ChangeGroup,
   GroupSummary,
   StructuralChange,
   TestRun,
+  captureWarnings,
 } from "../types";
 import { buildTestRunLocation } from "../_helpers/route.helpers";
 import { BaseModal } from "./BaseModal";
@@ -57,6 +59,8 @@ export function describeChange(change: StructuralChange): string {
       return `${change.element} disappeared`;
     case "resized":
       return `${change.element} resized ${change.before} → ${change.after} dp`;
+    case "state":
+      return `${change.element}: ${change.before} → ${change.after}`;
     default:
       return `${change.element} moved`;
   }
@@ -117,8 +121,8 @@ const Thumb: React.FunctionComponent<{ run: TestRun; onOpen: () => void }> = ({
       sx={{
         width: 112,
         height: 160,
-        objectFit: "cover",
-        objectPosition: "top",
+        // whole screen: a change at the bottom (a menu) must show too
+        objectFit: "contain",
         borderRadius: 2,
         border: `1px solid ${tokens.border}`,
         bgcolor: tokens.surface,
@@ -141,8 +145,47 @@ const Thumb: React.FunctionComponent<{ run: TestRun; onOpen: () => void }> = ({
         </span>
       )}
     </Box>
+    <RunFlags run={run} />
   </ButtonBase>
 );
+
+const FLAG_LABEL: Record<CaptureWarning["kind"], string> = {
+  loading: "Loading",
+  "screen-mismatch": "Other screen?",
+  "duplicate-screen": "Duplicate?",
+};
+
+/** Small flags for what the UI tree noticed about a screenshot. */
+export const RunFlags: React.FunctionComponent<{ run: TestRun }> = ({
+  run,
+}) => {
+  const warnings = captureWarnings(run);
+  if (!warnings.length && !run.semanticChangeCount) return null;
+  return (
+    <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.5 }}>
+      {warnings.map((warning) => (
+        <Tooltip key={warning.kind} title={warning.message}>
+          <span>
+            <StatusPill
+              tone="failed"
+              label={FLAG_LABEL[warning.kind] ?? warning.kind}
+            />
+          </span>
+        </Tooltip>
+      ))}
+      {!!run.semanticChangeCount && (
+        <Tooltip title="Elements changed in ways the screenshot does not show: labels, states, invisible controls">
+          <span>
+            <StatusPill
+              tone="changed"
+              label={`${run.semanticChangeCount} hidden`}
+            />
+          </span>
+        </Tooltip>
+      )}
+    </Box>
+  );
+};
 
 interface Props {
   buildId: string;
@@ -351,11 +394,13 @@ export const ChangeGroups: React.FunctionComponent<Props> = ({
               <Typography variant="body2" color="textSecondary">
                 {group.kind === "new"
                   ? `${group.testRuns.length} without a baseline`
-                  : `${many ? `Same change in ${group.testRuns.length} screenshots` : "1 screenshot"}${
-                      group.screens.length > 1
-                        ? ` · ${group.screens.length} screens`
-                        : ""
-                    }`}
+                  : group.kind === "component"
+                    ? `Changed the same way on ${group.screens.length} screens`
+                    : `${many ? `Same change in ${group.testRuns.length} screenshots` : "1 screenshot"}${
+                        group.screens.length > 1
+                          ? ` · ${group.screens.length} screens`
+                          : ""
+                      }`}
               </Typography>
               <Box sx={{ flex: 1 }} />
               {noise?.ignoreArea && (
@@ -394,6 +439,30 @@ export const ChangeGroups: React.FunctionComponent<Props> = ({
             {noise && (
               <Typography variant="body2" color="textSecondary">
                 {noise.message}
+              </Typography>
+            )}
+
+            {!!group.alsoChangedElsewhere?.length && (
+              <Typography variant="body2" color="textSecondary">
+                The component changed the same way on{" "}
+                {group.alsoChangedElsewhere.map((run, index) => (
+                  <React.Fragment key={run.id}>
+                    {index > 0 && ", "}
+                    <ButtonBase
+                      onClick={() => open(run)}
+                      sx={{
+                        font: "inherit",
+                        color: tokens.brand,
+                        textDecoration: "underline",
+                        verticalAlign: "baseline",
+                      }}
+                    >
+                      {run.name}
+                    </ButtonBase>
+                  </React.Fragment>
+                ))}{" "}
+                too, but those changed elsewhere as well and are reviewed on
+                their own.
               </Typography>
             )}
 

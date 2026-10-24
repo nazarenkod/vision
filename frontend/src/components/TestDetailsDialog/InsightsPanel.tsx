@@ -8,6 +8,7 @@ import {
   DialogContent,
   DialogTitle,
   Link,
+  MenuItem,
   Skeleton,
   Tab,
   Tabs,
@@ -47,7 +48,20 @@ interface Props {
   highlightedId?: string;
   onHighlight: (violation: A11yViolation) => void;
   aiEnabled: boolean;
+  // element-level changes, rules and warnings, loaded by the dialog for the overlay too
+  structure: StructureInfo | null | undefined;
+  onStructureChanged: () => void;
 }
+
+type RuleDraft = {
+  selector: string;
+  action: "ignore" | "tolerate";
+  maxDiffPercent: number;
+  scope: "screen" | "project";
+};
+
+const selectorFor = (resourceId: string | null) =>
+  resourceId ? `id:${resourceId.replace(/^.*:id\//, "")}` : "";
 
 /**
  * Side panel of the review: accessibility issues of the screenshot with their
@@ -60,6 +74,8 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
   highlightedId,
   onHighlight,
   aiEnabled,
+  structure,
+  onStructureChanged,
 }) => {
   const { enqueueSnackbar } = useSnackbar();
   const { user } = useUserState();
@@ -72,9 +88,7 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
   const [tab, setTab] = React.useState<"a11y" | "changes">(
     withUiTree ? "a11y" : "changes",
   );
-  const [structure, setStructure] = React.useState<
-    StructureInfo | null | undefined
-  >();
+  const [ruleDraft, setRuleDraft] = React.useState<RuleDraft | null>(null);
   const [labels, setLabels] = React.useState<Record<string, string>>({});
   const [labelsLoading, setLabelsLoading] = React.useState(false);
   const [jiraDialog, setJiraDialog] = React.useState<JiraDialog>(null);
@@ -84,13 +98,8 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
   const [ignoreComment, setIgnoreComment] = React.useState("");
 
   React.useEffect(() => {
-    setStructure(undefined);
     setLabels({});
-    insightsService
-      .getStructure(testRun.id)
-      .then(setStructure)
-      .catch(() => setStructure(null));
-  }, [testRun.id, testRun.diffName]);
+  }, [testRun.id]);
 
   React.useEffect(() => {
     setTab(withUiTree ? "a11y" : "changes");
@@ -511,25 +520,98 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
     );
   };
 
+  const openRule = (
+    resourceId: string | null,
+    action: RuleDraft["action"] = "ignore",
+  ) =>
+    setRuleDraft({
+      selector: selectorFor(resourceId),
+      action,
+      maxDiffPercent: 5,
+      scope: "screen",
+    });
+
+  const saveRule = async () => {
+    if (!ruleDraft) return;
+    const ok = await run(
+      () =>
+        insightsService.addElementRule(testRun.id, {
+          scope: ruleDraft.scope,
+          selector: ruleDraft.selector,
+          action: ruleDraft.action,
+          ...(ruleDraft.action === "tolerate"
+            ? { maxDiffPercent: ruleDraft.maxDiffPercent }
+            : {}),
+        }),
+      ruleDraft.scope === "project"
+        ? "Rule added for every screen; the build is compared again"
+        : "Rule added; the screenshot is compared again",
+    );
+    if (ok) {
+      setRuleDraft(null);
+      onStructureChanged();
+    }
+  };
+
+  const elementActions = (resourceId: string | null) =>
+    canEdit && resourceId ? (
+      <Box
+        component="span"
+        sx={{ display: "inline-flex", gap: 0.5, ml: "auto", flexShrink: 0 }}
+      >
+        <Button
+          size="small"
+          sx={{ minWidth: 0, px: 0.75 }}
+          onClick={() => openRule(resourceId, "ignore")}
+        >
+          Ignore
+        </Button>
+        <Button
+          size="small"
+          sx={{ minWidth: 0, px: 0.75 }}
+          onClick={() => openRule(resourceId, "tolerate")}
+        >
+          Tolerance
+        </Button>
+      </Box>
+    ) : null;
+
   const changesTab = () => {
     if (structure === undefined)
       return <Skeleton variant="rounded" height={120} />;
-    if (
-      !structure ||
-      (!structure.changes.length &&
-        !structure.regions.length &&
-        !structure.hints.length)
-    ) {
+    if (!structure) {
       return (
         <Typography variant="body2" color="textSecondary">
-          {testRun.diffName
-            ? "No details about this change."
-            : "Nothing changed against the baseline."}
+          No details about this change.
         </Typography>
       );
     }
+    const visibleChanges = structure.changes.filter(
+      (change) => change.kind !== "moved",
+    );
+    const nothing =
+      !visibleChanges.length &&
+      !structure.regions.length &&
+      !structure.hints.length &&
+      !structure.invisible.length &&
+      !structure.warnings.length;
     return (
       <>
+        {structure.warnings.map((warning) => (
+          <Alert key={warning.kind} severity="warning" sx={{ py: 0 }}>
+            {warning.message}
+          </Alert>
+        ))}
+        {structure.invisible.length > 0 && (
+          <Alert severity="error" sx={{ py: 0 }}>
+            <b>Changes the screenshot does not show</b>
+            {structure.invisible.map((change) => (
+              <div key={`${change.kind}:${change.key}`}>
+                {describeChange(change)}
+              </div>
+            ))}
+          </Alert>
+        )}
         {structure.hints.map((hint) => (
           <Alert
             key={hint.kind}
@@ -549,31 +631,156 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
             {hint.message}
           </Alert>
         ))}
-        {structure.changes.length > 0 && (
-          <Box sx={{ display: "flex", flexDirection: "column", gap: 0.75 }}>
+        {nothing && (
+          <Typography variant="body2" color="textSecondary">
+            {testRun.diffName
+              ? "No details about this change."
+              : "Nothing changed against the baseline."}
+          </Typography>
+        )}
+        {structure.regions.length > 0 && (
+          <Box sx={{ display: "flex", flexDirection: "column", gap: 0.5 }}>
+            <Typography variant="subtitle2">Changed areas</Typography>
+            {structure.regions.map((area, index) => (
+              <Box
+                key={index}
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 1,
+                  fontSize: 14,
+                }}
+              >
+                <span
+                  style={{
+                    color: area.element ? tokens.text : tokens.textSecondary,
+                  }}
+                >
+                  {index + 1}.{" "}
+                  {area.element ??
+                    `${area.region.width} × ${area.region.height} px at ${area.region.x}, ${area.region.y}`}
+                </span>
+                {elementActions(area.resourceId)}
+              </Box>
+            ))}
+          </Box>
+        )}
+        {visibleChanges.length > 0 && (
+          <Box sx={{ display: "flex", flexDirection: "column", gap: 0.5 }}>
             <Typography variant="subtitle2">From the UI tree</Typography>
-            {structure.changes.map((change) => (
-              <Typography key={`${change.kind}:${change.key}`} variant="body2">
-                {describeChange(change)}
+            {visibleChanges.map((change) => (
+              <Box
+                key={`${change.kind}:${change.key}`}
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 1,
+                  fontSize: 14,
+                }}
+              >
+                <span>{describeChange(change)}</span>
+                {elementActions(change.resourceId || null)}
+              </Box>
+            ))}
+          </Box>
+        )}
+        {structure.moves.length > 0 && (
+          <Box sx={{ display: "flex", flexDirection: "column", gap: 0.5 }}>
+            <Typography variant="subtitle2">
+              Compared at their new place
+            </Typography>
+            <Typography variant="body2" color="textSecondary">
+              These moved without changing, so the move alone is not counted:
+            </Typography>
+            {structure.moves.slice(0, 8).map((move) => (
+              <Typography key={move.key} variant="body2">
+                {move.element}:{" "}
+                {move.dyDp
+                  ? `${move.dyDp > 0 ? "down" : "up"} ${Math.abs(move.dyDp)} dp`
+                  : ""}
+                {move.dxDp && move.dyDp ? ", " : ""}
+                {move.dxDp
+                  ? `${move.dxDp > 0 ? "right" : "left"} ${Math.abs(move.dxDp)} dp`
+                  : ""}
               </Typography>
             ))}
           </Box>
         )}
-        {structure.regions.length > 0 && (
-          <Box sx={{ display: "flex", flexDirection: "column", gap: 0.75 }}>
-            <Typography variant="subtitle2">Changed areas</Typography>
-            {structure.regions.map((area, index) => (
-              <Typography
-                key={index}
-                variant="body2"
-                color={area.element ? "textPrimary" : "textSecondary"}
-              >
-                {index + 1}.{" "}
-                {area.element ??
-                  `${area.region.width} × ${area.region.height} px at ${area.region.x}, ${area.region.y}`}
+        {(structure.rules.length > 0 || structure.systemBars.length > 0) && (
+          <Box
+            sx={{
+              display: "flex",
+              flexDirection: "column",
+              gap: 0.5,
+              borderTop: `1px solid ${tokens.border}`,
+              pt: 1.5,
+            }}
+          >
+            <Typography variant="subtitle2">Rules for this screen</Typography>
+            {structure.systemBars.length > 0 && (
+              <Typography variant="body2" color="textSecondary">
+                Status and navigation bars are left out (project setting).
               </Typography>
+            )}
+            {structure.rules.map((rule) => (
+              <Box
+                key={rule.id}
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 1,
+                  fontSize: 13.5,
+                }}
+              >
+                <StatusPill
+                  tone="neutral"
+                  label={
+                    rule.scope === "project" ? "All screens" : "This screen"
+                  }
+                />
+                <Box component="code" sx={{ font: `500 12px ${tokens.mono}` }}>
+                  {rule.selector}
+                </Box>
+                <span style={{ color: tokens.textSecondary }}>
+                  {rule.action === "ignore"
+                    ? "ignored"
+                    : `±${rule.maxDiffPercent}%`}{" "}
+                  · {rule.matches} found
+                </span>
+                {canEdit && (
+                  <Button
+                    size="small"
+                    sx={{ ml: "auto", minWidth: 0 }}
+                    onClick={async () => {
+                      if (
+                        await run(
+                          () =>
+                            insightsService.removeElementRule(
+                              testRun.id,
+                              rule.scope,
+                              rule.id,
+                            ),
+                          "Rule removed; compared again",
+                        )
+                      )
+                        onStructureChanged();
+                    }}
+                  >
+                    Remove
+                  </Button>
+                )}
+              </Box>
             ))}
           </Box>
+        )}
+        {canEdit && withUiTree && (
+          <Button
+            size="small"
+            sx={{ alignSelf: "flex-start" }}
+            onClick={() => openRule(null)}
+          >
+            Add element rule
+          </Button>
         )}
       </>
     );
@@ -611,7 +818,25 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
             </Box>
           }
         />
-        <Tab value="changes" label="Changes" />
+        <Tab
+          value="changes"
+          label={
+            <Box sx={{ display: "flex", gap: 1, alignItems: "center" }}>
+              Changes
+              {(structure?.warnings.length ?? 0) +
+                (structure?.invisible.length ?? 0) >
+                0 && (
+                <StatusPill
+                  tone="failed"
+                  label={
+                    (structure?.warnings.length ?? 0) +
+                    (structure?.invisible.length ?? 0)
+                  }
+                />
+              )}
+            </Box>
+          }
+        />
       </Tabs>
       <Box
         sx={{
@@ -728,6 +953,98 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
             }}
           >
             Mark as false positive
+          </Button>
+        </DialogActions>
+      </Dialog>
+      <Dialog
+        open={!!ruleDraft}
+        onClose={() => setRuleDraft(null)}
+        fullWidth
+        maxWidth="xs"
+      >
+        <DialogTitle>
+          {ruleDraft?.action === "tolerate"
+            ? "Allow small changes"
+            : "Ignore element"}
+        </DialogTitle>
+        <DialogContent
+          sx={{
+            display: "flex",
+            flexDirection: "column",
+            gap: 2,
+            pt: "8px !important",
+          }}
+        >
+          <TextField
+            id="rule-selector"
+            label="Element"
+            placeholder="id:balance"
+            value={ruleDraft?.selector ?? ""}
+            onChange={(e) =>
+              ruleDraft &&
+              setRuleDraft({ ...ruleDraft, selector: e.target.value })
+            }
+            helperText="id:…, class:… or text:… (text:/regex/ works too)"
+          />
+          <TextField
+            id="rule-action"
+            select
+            label="What to do"
+            value={ruleDraft?.action ?? "ignore"}
+            onChange={(e) =>
+              ruleDraft &&
+              setRuleDraft({
+                ...ruleDraft,
+                action: e.target.value as RuleDraft["action"],
+              })
+            }
+          >
+            <MenuItem value="ignore">Ignore it wherever it is</MenuItem>
+            <MenuItem value="tolerate">Allow small changes inside it</MenuItem>
+          </TextField>
+          {ruleDraft?.action === "tolerate" && (
+            <TextField
+              id="rule-percent"
+              type="number"
+              label="Share of the element that may change, %"
+              inputProps={{ min: 0, max: 100, step: 0.5 }}
+              value={ruleDraft.maxDiffPercent}
+              onChange={(e) =>
+                setRuleDraft({
+                  ...ruleDraft,
+                  maxDiffPercent: Number(e.target.value),
+                })
+              }
+            />
+          )}
+          <TextField
+            id="rule-scope"
+            select
+            label="Where"
+            value={ruleDraft?.scope ?? "screen"}
+            onChange={(e) =>
+              ruleDraft &&
+              setRuleDraft({
+                ...ruleDraft,
+                scope: e.target.value as RuleDraft["scope"],
+              })
+            }
+          >
+            <MenuItem value="screen">This screen ({testRun.name})</MenuItem>
+            <MenuItem value="project">Every screen of the project</MenuItem>
+          </TextField>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setRuleDraft(null)}>Cancel</Button>
+          <Button
+            variant="contained"
+            disabled={
+              submitting ||
+              !/^(id|class|text):.+/.test(ruleDraft?.selector.trim() ?? "")
+            }
+            onClick={saveRule}
+          >
+            Add rule
           </Button>
         </DialogActions>
       </Dialog>

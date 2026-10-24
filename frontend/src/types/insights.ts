@@ -61,7 +61,7 @@ export interface A11yReport {
 }
 
 export interface StructuralChange {
-  kind: "text" | "label" | "added" | "removed" | "resized" | "moved";
+  kind: "text" | "label" | "state" | "added" | "removed" | "resized" | "moved";
   key: string;
   element: string;
   resourceId: string;
@@ -76,6 +76,42 @@ export interface NoiseHint {
   ignoreArea?: Rect;
 }
 
+export interface CaptureWarning {
+  kind: "loading" | "screen-mismatch" | "duplicate-screen";
+  message: string;
+  elements?: string[];
+  similarity?: number;
+  looksLike?: string;
+}
+
+export interface ElementRule {
+  id: string;
+  selector: string;
+  action: "ignore" | "tolerate";
+  maxDiffPercent?: number;
+  note?: string;
+}
+
+export interface UiTreeSettings {
+  excludeSystemBars: boolean;
+  compensateMoves: boolean;
+  maxMoveDp: number | null;
+  detectSemanticChanges: boolean;
+  detectLoading: boolean;
+  detectScreenMismatch: boolean;
+  elementRules: ElementRule[];
+}
+
+export const DEFAULT_UI_TREE_SETTINGS: UiTreeSettings = {
+  excludeSystemBars: true,
+  compensateMoves: false,
+  maxMoveDp: null,
+  detectSemanticChanges: true,
+  detectLoading: true,
+  detectScreenMismatch: true,
+  elementRules: [],
+};
+
 export interface StructureInfo {
   hasUiTree: boolean;
   hasBaselineUiTree: boolean;
@@ -87,17 +123,27 @@ export interface StructureInfo {
     resourceId: string | null;
   }>;
   hints: NoiseHint[];
+  invisible: StructuralChange[];
+  warnings: CaptureWarning[];
+  rules: Array<ElementRule & { scope: "screen" | "project"; matches: number }>;
+  ignoredAreas: Rect[];
+  toleratedAreas: Array<Rect & { maxDiffPercent: number }>;
+  systemBars: Rect[];
+  moves: Array<{ key: string; element: string; dxDp: number; dyDp: number }>;
+  settings: UiTreeSettings;
 }
 
 export interface ChangeGroup {
   id: string;
-  kind: "structural" | "visual" | "new";
+  kind: "component" | "structural" | "visual" | "new";
   title: string;
   screens: string[];
   testRuns: import("./testRun").TestRun[];
   changes: StructuralChange[];
   noise: NoiseHint | null;
   fingerprint: string;
+  componentId?: string;
+  alsoChangedElsewhere?: import("./testRun").TestRun[];
 }
 
 export interface AiStatus {
@@ -115,4 +161,33 @@ export interface GroupSummary {
   source: "ai" | "rules";
   cached: boolean;
   model: string | null;
+}
+
+/** Capture warnings of a run, whichever shape it arrived in (JSON string from the API). */
+export function captureWarnings(run: {
+  captureWarnings?: string | null;
+}): CaptureWarning[] {
+  if (!run.captureWarnings) return [];
+  try {
+    const parsed = JSON.parse(run.captureWarnings);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+export function parseUiTreeSettings(value?: string | null): UiTreeSettings {
+  if (!value) return { ...DEFAULT_UI_TREE_SETTINGS };
+  try {
+    const parsed = JSON.parse(value) ?? {};
+    return {
+      ...DEFAULT_UI_TREE_SETTINGS,
+      ...parsed,
+      elementRules: Array.isArray(parsed.elementRules)
+        ? parsed.elementRules
+        : [],
+    };
+  } catch {
+    return { ...DEFAULT_UI_TREE_SETTINGS };
+  }
 }

@@ -37,6 +37,10 @@ export interface TestRun {
   // accessibility issues nobody has acted on yet / all counted issues
   a11yNewCount?: number | null;
   a11yTotalCount?: number | null;
+  // JSON list of capture warnings (taken while loading, looks like another screen)
+  captureWarnings?: string | null;
+  // element changes the screenshot does not show
+  semanticChangeCount?: number | null;
 }
 
 /** Whether the screenshot came with an Appium UI tree, whichever shape the run arrived in. */

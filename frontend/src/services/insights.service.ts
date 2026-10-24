@@ -44,6 +44,20 @@ export const insightsService = {
         parentKey,
       },
     ),
+  addElementRule: (
+    testRunId: string,
+    rule: {
+      scope: "screen" | "project";
+      selector: string;
+      action: "ignore" | "tolerate";
+      maxDiffPercent?: number;
+    },
+  ) => post(`/test-runs/${testRunId}/element-rules`, rule),
+  removeElementRule: (
+    testRunId: string,
+    scope: "screen" | "project",
+    ruleId: string,
+  ) => post(`/test-runs/${testRunId}/element-rules/remove`, { scope, ruleId }),
   aiStatus: () => get<AiStatus>(`/ai/status`),
   groupSummary: (buildId: string, groupId: string) =>
     post<GroupSummary>(`/ai/group-summary`, { buildId, groupId }),

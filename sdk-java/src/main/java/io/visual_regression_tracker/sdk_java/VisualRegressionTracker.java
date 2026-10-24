@@ -139,7 +139,7 @@ public class VisualRegressionTracker {
      */
     public TestRunResult trackDriver(org.openqa.selenium.WebDriver driver, String name, TestRunOptions testRunOptions)
             throws IOException, InterruptedException {
-        DriverCapture capture = DriverCapture.of(driver);
+        DriverCapture capture = DriverCapture.of(driver, configuration.getStableScreenTimeoutMillis());
         TestRunOptions options = testRunOptions == null ? TestRunOptions.builder().build() : testRunOptions;
         TestRunOptions withTree = TestRunOptions.builder()
                 .os(options.getOs())
@@ -152,7 +152,12 @@ public class VisualRegressionTracker {
                 .uiTree(options.getUiTree() != null ? options.getUiTree() : capture.getPageSource())
                 .uiTreeFormat(options.getUiTreeFormat() != null ? options.getUiTreeFormat() : capture.getUiTreeFormat())
                 .deviceDensity(options.getDeviceDensity() != null ? options.getDeviceDensity() : capture.getDeviceDensity())
+                .uiActivity(options.getUiActivity() != null ? options.getUiActivity() : capture.getActivity())
+                .excludeSystemBars(options.getExcludeSystemBars())
                 .build();
+        if (capture.isStillLoading()) {
+            log.warn("Screen <{}> still shows a loading indicator after waiting; tracking it anyway", name);
+        }
         return track(name, capture.getImageBase64(), withTree);
     }
 
@@ -187,6 +192,8 @@ public class VisualRegressionTracker {
                 .uiTree(UiTreeEncoder.encode(testRunOptions.getUiTree()))
                 .uiTreeFormat(testRunOptions.getUiTreeFormat())
                 .deviceDensity(testRunOptions.getDeviceDensity())
+                .uiActivity(testRunOptions.getUiActivity())
+                .excludeSystemBars(testRunOptions.getExcludeSystemBars())
                 .build();
 
         HttpRequest.BodyPublisher body = HttpRequest.BodyPublishers.ofString(gson.toJson(newTestRun));

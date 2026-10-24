@@ -217,6 +217,17 @@ screenshot brings new accessibility issues, enable `failOnNewA11yIssues` (builde
 environment variable or `vrt.json`); with `enableSoftAssert` it is only logged. Issues that were filed in
 Jira or marked as false positives in the UI do not count as new.
 
+`trackDriver` also:
+
+- waits up to `stableScreenTimeoutMillis` (default 5000, `0` to turn off) for spinners, skeletons and toasts
+  to disappear before taking the screenshot, and logs a warning if one is still there;
+- sends the Android activity (`AndroidDriver.currentActivity()`), which helps the server notice a screenshot
+  taken on the wrong screen.
+
+`TestRunOptions.excludeSystemBars(false)` keeps the status and navigation bars in the comparison for one
+screenshot, overriding the project setting. The server's capture warnings (taken while loading, looks like
+another screen) come back in `getTestRunResponse()`.
+
 ### Stop `VisualRegressionTracker`
 
 ```java

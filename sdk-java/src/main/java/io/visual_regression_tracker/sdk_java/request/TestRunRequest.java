@@ -25,4 +25,6 @@ public class TestRunRequest {
     private final String uiTree;
     private final String uiTreeFormat;
     private final Integer deviceDensity;
+    private final String uiActivity;
+    private final Boolean excludeSystemBars;
 }

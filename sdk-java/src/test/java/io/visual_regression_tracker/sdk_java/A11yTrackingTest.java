@@ -169,6 +169,49 @@ public class A11yTrackingTest {
         assertThat(result.getTestRunResponse().getStatus(), is(TestRunStatus.OK));
     }
 
+    abstract static class AndroidLikeDriver implements WebDriver, TakesScreenshot, HasCapabilities {
+        public abstract String currentActivity();
+    }
+
+    private static final String LOADING_XML = "<hierarchy><android.widget.ProgressBar class=\"android.widget.ProgressBar\" "
+            + "bounds=\"[490,1300][590,1400]\" displayed=\"true\"/></hierarchy>";
+
+    @Test
+    public void sendsActivityAndSystemBarsOverride() throws Exception {
+        AndroidLikeDriver driver = mock(AndroidLikeDriver.class);
+        when(driver.getScreenshotAs(OutputType.BASE64)).thenReturn("c2NyZWVu");
+        when(driver.getPageSource()).thenReturn(XML);
+        when(driver.getCapabilities()).thenReturn(mock(Capabilities.class));
+        when(driver.currentActivity()).thenReturn(".PaymentActivity");
+        respond(TestRunStatus.OK, null);
+
+        tracker(false, false).trackDriver(driver, "Payment", TestRunOptions.builder().excludeSystemBars(false).build());
+
+        JsonObject body = sentBody();
+        assertThat(body.get("uiActivity").getAsString(), is(".PaymentActivity"));
+        assertThat(body.get("excludeSystemBars").getAsBoolean(), is(false));
+    }
+
+    @Test
+    public void waitsForLoadingIndicatorsToGo() throws Exception {
+        WebDriver driver = mock(WebDriver.class, withSettings().extraInterfaces(TakesScreenshot.class));
+        when(((TakesScreenshot) driver).getScreenshotAs(OutputType.BASE64)).thenReturn("c2NyZWVu");
+        when(driver.getPageSource()).thenReturn(LOADING_XML, LOADING_XML, XML);
+        respond(TestRunStatus.OK, null);
+
+        tracker(false, false).trackDriver(driver, "Payment");
+
+        assertThat(gunzipBase64(sentBody().get("uiTree").getAsString()), is(XML));
+    }
+
+    @Test
+    public void detectsVisibleLoadingIndicatorsOnly() {
+        assertThat(DriverCapture.showsLoading(LOADING_XML), is(true));
+        assertThat(DriverCapture.showsLoading(LOADING_XML.replace("displayed=\"true\"", "displayed=\"false\"")), is(false));
+        assertThat(DriverCapture.showsLoading(XML), is(false));
+        assertThat(DriverCapture.showsLoading(null), is(false));
+    }
+
     @Test
     public void builderReadsTheFlag() {
         VisualRegressionTrackerConfig config = VisualRegressionTrackerConfig.builder()
@@ -176,6 +219,7 @@ public class A11yTrackingTest {
                 .failOnNewA11yIssues(true)
                 .build();
         assertThat(config.getFailOnNewA11yIssues(), is(true));
+        assertThat(config.getStableScreenTimeoutMillis(), is(5000));
         assertThat(UiTreeEncoder.encode(null), nullValue());
     }
 }

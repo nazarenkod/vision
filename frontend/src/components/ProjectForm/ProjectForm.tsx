@@ -1,4 +1,9 @@
 import {
+  Box,
+  Button,
+  Divider,
+  TextField,
+  Typography,
   FormControl,
   FormControlLabel,
   InputLabel,
@@ -232,6 +237,90 @@ export const ProjectForm: React.FunctionComponent = () => {
         </Select>
       </FormControl>
       {config}
+      <JiraSettings />
     </React.Fragment>
+  );
+};
+
+/** Jira connection used to file accessibility bugs from the review screen. */
+const JiraSettings: React.FunctionComponent = () => {
+  const { projectEditState: project } = useProjectState();
+  const projectDispatch = useProjectDispatch();
+  // the API never returns the token, only whether one is saved
+  const tokenSaved = !!(project as { jiraTokenSet?: boolean }).jiraTokenSet;
+  const update = (patch: Partial<typeof project>) =>
+    setProjectEditState(projectDispatch, { ...project, ...patch });
+
+  return (
+    <Box sx={{ mt: 3, display: "flex", flexDirection: "column", gap: 1.5 }}>
+      <Divider />
+      <Typography variant="subtitle1">Jira</Typography>
+      <Typography variant="body2" color="textSecondary">
+        Lets reviewers file accessibility bugs from the review screen. Server
+        and Data Center use a personal access token; Jira Cloud uses your
+        account email with an API token.
+      </Typography>
+      <TextField
+        id="jiraUrl"
+        label="Jira URL"
+        placeholder="https://jira.example.com"
+        size="small"
+        value={project.jiraUrl ?? ""}
+        onChange={(event) => update({ jiraUrl: event.target.value })}
+      />
+      <TextField
+        id="jiraToken"
+        label="Token"
+        type="password"
+        size="small"
+        autoComplete="new-password"
+        placeholder={tokenSaved ? "Saved. Leave empty to keep it" : ""}
+        value={project.jiraToken ?? ""}
+        onChange={(event) =>
+          update({ jiraToken: event.target.value || undefined })
+        }
+        helperText={
+          tokenSaved && project.jiraToken === ""
+            ? "The saved token will be removed"
+            : " "
+        }
+      />
+      {tokenSaved && project.jiraToken === undefined && (
+        <Button
+          size="small"
+          sx={{ alignSelf: "flex-start" }}
+          onClick={() => update({ jiraToken: "" })}
+        >
+          Remove saved token
+        </Button>
+      )}
+      <TextField
+        id="jiraEmail"
+        label="Account email (Jira Cloud only)"
+        size="small"
+        value={project.jiraEmail ?? ""}
+        onChange={(event) => update({ jiraEmail: event.target.value })}
+      />
+      <Box sx={{ display: "flex", gap: 1.5 }}>
+        <TextField
+          id="jiraIssueType"
+          label="Issue type"
+          placeholder="Bug"
+          size="small"
+          fullWidth
+          value={project.jiraIssueType ?? ""}
+          onChange={(event) => update({ jiraIssueType: event.target.value })}
+        />
+        <TextField
+          id="jiraLinkType"
+          label="Link type"
+          placeholder="Relates"
+          size="small"
+          fullWidth
+          value={project.jiraLinkType ?? ""}
+          onChange={(event) => update({ jiraLinkType: event.target.value })}
+        />
+      </Box>
+    </Box>
   );
 };

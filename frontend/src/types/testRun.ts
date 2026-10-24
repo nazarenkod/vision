@@ -32,7 +32,14 @@ export interface TestRun {
   vlmDescription?: string;
   // set when the screenshot came with an Appium UI tree
   hasUiTree?: boolean;
+  // present when the run comes straight from the database (details, socket events)
+  uiTreeName?: string | null;
   // accessibility issues nobody has acted on yet / all counted issues
   a11yNewCount?: number | null;
   a11yTotalCount?: number | null;
 }
+
+/** Whether the screenshot came with an Appium UI tree, whichever shape the run arrived in. */
+export const hasUiTree = (
+  testRun: Pick<TestRun, "hasUiTree" | "uiTreeName">,
+): boolean => testRun.hasUiTree ?? !!testRun.uiTreeName;

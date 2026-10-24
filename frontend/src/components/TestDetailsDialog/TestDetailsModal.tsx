@@ -54,6 +54,12 @@ import {
   MatchingVariationsMode,
 } from "./MatchingVariationsDialog";
 import { invertIgnoreArea } from "../../_helpers/ignoreArea.helper";
+import { InsightsPanel } from "./InsightsPanel";
+import { useAiStatus } from "../ChangeGroups";
+import { insightsService } from "../../services";
+import { A11yReport, A11yViolation, hasUiTree } from "../../types";
+import { OverlayRect } from "./DrawArea";
+import { tokens } from "../../theme";
 import { BaseModal } from "../BaseModal";
 import { Tooltip } from "../Tooltip";
 import ImageDetails, { ImageDetailsProps } from "./ImageDetails";
@@ -65,12 +71,13 @@ const useStyles = makeStyles(() => ({
   header: {
     position: "relative",
     textAlign: "left",
-    background: "#efefef",
+    background: tokens.surface,
     paddingLeft: 8,
     paddingBottom: 8,
   },
   footer: {
-    background: "#efefef",
+    background: tokens.surface,
+    borderTop: `1px solid ${tokens.border}`,
   },
   scaleActions: {
     display: "flex",
@@ -157,6 +164,46 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
     useState("Ignore Areas");
 
   const [isDiffShown, setIsDiffShown] = useState(false);
+
+  // accessibility report of this run, shared by the side panel and the overlay
+  const aiStatus = useAiStatus();
+  const [a11yReport, setA11yReport] = useState<A11yReport | null | undefined>();
+  const [a11yOverlay, setA11yOverlay] = useState(true);
+  const [highlightedViolation, setHighlightedViolation] = useState<string>();
+  const withUiTree = hasUiTree(testRun);
+  const loadA11yReport = React.useCallback(() => {
+    if (!withUiTree) {
+      setA11yReport(null);
+      return;
+    }
+    insightsService
+      .getA11y(testRun.id)
+      .then(setA11yReport)
+      .catch(() => setA11yReport(null));
+  }, [testRun.id, withUiTree]);
+  useEffect(() => {
+    setA11yReport(undefined);
+    setHighlightedViolation(undefined);
+    loadA11yReport();
+    // counts change when someone files a bug or marks a false positive
+  }, [loadA11yReport, testRun.a11yNewCount, testRun.a11yTotalCount]);
+  const overlayRects: OverlayRect[] = React.useMemo(
+    () =>
+      a11yOverlay && a11yReport
+        ? a11yReport.violations.map((violation, index) => {
+            const tracked =
+              violation.status === "existing" || !!violation.issue;
+            return {
+              id: violation.id,
+              ...violation.bounds,
+              color: tracked ? tokens.a11yExisting : tokens.a11y,
+              dashed: tracked,
+              label: String(index + 1),
+            };
+          })
+        : [],
+    [a11yOverlay, a11yReport],
+  );
   const [overlayOpacity, setOverlayOpacity] = useState(1);
   const [blendDifference, setBlendDifference] = useState(false);
   const [selectedRectId, setSelectedRectId] = React.useState<string>();
@@ -665,9 +712,21 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
         stageInitPosState={[stageInitPos, setStageInitPos]}
         stageOffsetState={[stageOffset, setStageOffset]}
         drawModeState={[isDrawMode, setIsDrawMode]}
+        overlayRects={overlayRects}
+        highlightedOverlayId={highlightedViolation}
       />
     </Grid>
   );
+
+  // brings an issue's box into view on the checkpoint pane
+  const highlightViolation = (violation: A11yViolation) => {
+    setHighlightedViolation(violation.id);
+    setA11yOverlay(true);
+    setStageScrollPos({
+      x: violation.bounds.x * stageScale - 48 + stagePos.x,
+      y: violation.bounds.y * stageScale - 48 + stagePos.y,
+    });
+  };
 
   const header = () => (
     <Box mt={1} ml={1}>
@@ -692,6 +751,22 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
         <Grid item>
           <TestStatusChip status={testRun.status} />
         </Grid>
+        {withUiTree && (
+          <Grid item>
+            <FormControlLabel
+              control={
+                <Switch
+                  size="small"
+                  checked={a11yOverlay}
+                  onChange={(event) => setA11yOverlay(event.target.checked)}
+                />
+              }
+              label={
+                <Typography variant="body2">Accessibility overlay</Typography>
+              }
+            />
+          </Grid>
+        )}
         <Grid item className={classes.closeIcon}>
           <IconButton color="inherit" onClick={handleClose} size="large">
             <Close />
@@ -762,32 +837,43 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
         overflow="hidden"
         position="relative"
         className={classes.drawAreaContainer}
+        display="flex"
       >
-        <Grid
-          container
-          justifyContent="center"
-          alignItems="stretch"
-          style={{
-            height: "100%",
-          }}
-        >
-          {baselinePanel()}
-          {isDiffShown
-            ? diffPanel(
-                "Diff",
-                testRun.branchName,
-                testRun.diffName,
-                diffImageStatus,
-                diffImage,
-              )
-            : diffPanel(
-                "Image",
-                testRun.branchName,
-                testRun.imageName,
-                currentImageStatus,
-                currentImage,
-              )}
-        </Grid>
+        <Box flex={1} minWidth={0} height="100%">
+          <Grid
+            container
+            justifyContent="center"
+            alignItems="stretch"
+            style={{
+              height: "100%",
+            }}
+          >
+            {baselinePanel()}
+            {isDiffShown
+              ? diffPanel(
+                  "Diff",
+                  testRun.branchName,
+                  testRun.diffName,
+                  diffImageStatus,
+                  diffImage,
+                )
+              : diffPanel(
+                  "Image",
+                  testRun.branchName,
+                  testRun.imageName,
+                  currentImageStatus,
+                  currentImage,
+                )}
+          </Grid>
+        </Box>
+        <InsightsPanel
+          testRun={testRun}
+          report={a11yReport}
+          onReportChanged={loadA11yReport}
+          highlightedId={highlightedViolation}
+          onHighlight={highlightViolation}
+          aiEnabled={!!aiStatus?.enabled}
+        />
       </Box>
       <Grid container className={classes.footer}>
         <Grid item xs={3} className={classes.scaleActions}>

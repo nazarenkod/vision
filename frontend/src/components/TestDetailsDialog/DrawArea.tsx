@@ -1,6 +1,6 @@
 /* eslint-disable jsx-a11y/no-static-element-interactions */
 import React, { FunctionComponent, useCallback } from "react";
-import { Stage, Layer, Image } from "react-konva";
+import { Stage, Layer, Image, Rect, Label, Tag, Text } from "react-konva";
 import Rectangle, { MIN_RECT_SIDE_PIXEL } from "../Rectangle";
 import { IgnoreArea } from "../../types/ignoreArea";
 import { Grid, CircularProgress, type Theme } from "@mui/material";
@@ -13,7 +13,7 @@ import { clampToImage } from "../../_helpers/ignoreArea.helper";
 const useStyles = makeStyles((theme: Theme) => ({
   canvasContainer: {
     overflow: "auto",
-    backgroundColor: "white",
+    backgroundColor: "#EEF0F3",
   },
   imageDetailsContainer: {
     position: "absolute",
@@ -66,6 +66,20 @@ interface IDrawArea {
   stageScrollPosState: StageStateArray;
   stageScaleState: [number, React.Dispatch<React.SetStateAction<number>>];
   drawModeState: [boolean, React.Dispatch<React.SetStateAction<boolean>>];
+  /** Boxes drawn over the image in image pixels (accessibility issues), not editable. */
+  overlayRects?: OverlayRect[];
+  highlightedOverlayId?: string;
+}
+
+export interface OverlayRect {
+  id: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  color: string;
+  label?: string;
+  dashed?: boolean;
 }
 
 export const DrawArea: FunctionComponent<IDrawArea> = ({
@@ -87,6 +101,8 @@ export const DrawArea: FunctionComponent<IDrawArea> = ({
   stagePosState,
   stageScrollPosState,
   drawModeState,
+  overlayRects,
+  highlightedOverlayId,
 }) => {
   const classes = useStyles();
   const [stageInitPos, setStageInitPos] = stageInitPosState;
@@ -458,6 +474,43 @@ export const DrawArea: FunctionComponent<IDrawArea> = ({
                 />
               ))}
             </Layer>
+            {!!overlayRects?.length && (
+              // never takes the pointer: panning and drawing ignore areas work through it
+              <Layer listening={false}>
+                {overlayRects.map((rect) => {
+                  const highlighted = rect.id === highlightedOverlayId;
+                  // the stage is scaled by CSS, so line widths are divided by the scale to stay crisp
+                  const px = (value: number) => value / stageScale;
+                  return (
+                    <React.Fragment key={rect.id}>
+                      <Rect
+                        x={rect.x}
+                        y={rect.y}
+                        width={rect.width}
+                        height={rect.height}
+                        stroke={rect.color}
+                        strokeWidth={px(highlighted ? 4 : 2)}
+                        dash={rect.dashed ? [px(6), px(4)] : undefined}
+                        fill={highlighted ? `${rect.color}22` : undefined}
+                        cornerRadius={px(3)}
+                      />
+                      {rect.label && (
+                        <Label x={rect.x} y={rect.y - px(20)}>
+                          <Tag fill={rect.color} cornerRadius={px(4)} />
+                          <Text
+                            text={rect.label}
+                            fontSize={px(12)}
+                            fontStyle="bold"
+                            padding={px(4)}
+                            fill="#FFFFFF"
+                          />
+                        </Label>
+                      )}
+                    </React.Fragment>
+                  );
+                })}
+              </Layer>
+            )}
           </Stage>
         </div>
       </div>

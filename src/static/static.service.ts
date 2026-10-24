@@ -1,0 +1,43 @@
+import { Injectable, Logger } from '@nestjs/common';
+import { PNGWithMetadata } from 'pngjs';
+import { StaticFactoryService } from './static.factory';
+import { isPngBuffer } from './utils';
+import { Static } from './static.interface';
+
+@Injectable()
+export class StaticService {
+  private readonly logger: Logger = new Logger(StaticService.name);
+  private readonly staticService: Static;
+
+  constructor(private staticFactoryService: StaticFactoryService) {
+    this.staticService = this.staticFactoryService.getStaticService();
+  }
+
+  async saveImage(type: 'screenshot' | 'diff' | 'baseline', imageBuffer: Buffer): Promise<string> {
+    // validate here so every storage backend rejects non-PNG uploads
+    if (!isPngBuffer(imageBuffer)) {
+      throw new Error('Cannot parse image as PNG file');
+    }
+    return this.staticService.saveImage(type, imageBuffer);
+  }
+
+  async getImage(imageName: string): Promise<PNGWithMetadata> {
+    return this.staticService.getImage(imageName);
+  }
+
+  async getImageBuffer(imageName: string): Promise<Buffer | null> {
+    return this.staticService.getImageBuffer(imageName);
+  }
+
+  async copyImage(type: 'screenshot' | 'diff' | 'baseline', sourceImageName: string): Promise<string> {
+    return this.staticService.copyImage(type, sourceImageName);
+  }
+
+  async deleteImage(imageName: string): Promise<boolean> {
+    return this.staticService.deleteImage(imageName);
+  }
+
+  async getImageUrl(imageName: string): Promise<string> {
+    return this.staticService.getImageUrl(imageName);
+  }
+}

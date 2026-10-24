@@ -1,0 +1,167 @@
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "debian-openssl-3.0.x", "linux-arm64-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Build {
+  id         String    @id @default(uuid())
+  ciBuildId  String?
+  number     Int?
+  branchName String?
+  status     String?
+  projectId  String
+  updatedAt  DateTime  @updatedAt
+  createdAt  DateTime  @default(now())
+  userId     String?
+  isRunning  Boolean?
+  project    Project   @relation(fields: [projectId], references: [id])
+  user       User?     @relation(fields: [userId], references: [id])
+  testRuns   TestRun[]
+
+  @@unique([projectId, ciBuildId])
+}
+
+model Project {
+  id                    String          @id @default(uuid())
+  name                  String          @unique
+  mainBranchName        String          @default("master")
+  buildsCounter         Int             @default(0)
+  maxBuildAllowed       Int             @default(100)
+  maxBranchLifetime     Int             @default(30)
+  updatedAt             DateTime        @updatedAt
+  createdAt             DateTime        @default(now())
+  autoApproveFeature    Boolean         @default(true)
+  imageComparison       ImageComparison @default(pixelmatch)
+  imageComparisonConfig String          @default("{ \"threshold\": 0.1, \"ignoreAntialiasing\": true, \"allowDiffDimensions\": false }")
+  bulkApproveVariations Boolean         @default(false)
+  bulkApproveGroupBy    String          @default("customTags")
+  builds                Build[]
+  TestRun               TestRun[]
+  testVariations        TestVariation[]
+}
+
+model TestRun {
+  id                    String         @id @default(uuid())
+  imageName             String
+  diffName              String?
+  diffPercent           Float?
+  diffTollerancePercent Float          @default(0)
+  pixelMisMatchCount    Int?
+  status                TestStatus
+  buildId               String
+  testVariationId       String?
+  projectId             String?
+  merge                 Boolean        @default(false)
+  updatedAt             DateTime       @updatedAt
+  createdAt             DateTime       @default(now())
+  name                  String         @default("")
+  browser               String?
+  device                String?
+  os                    String?
+  viewport              String?
+  customTags            String?        @default("")
+  baselineName          String?
+  comment               String?
+  branchName            String         @default("master")
+  baselineBranchName    String?
+  ignoreAreas           String         @default("[]")
+  tempIgnoreAreas       String         @default("[]")
+  vlmDescription        String?
+  // Position-independent colour signature of this run's change, as JSON, so the
+  // variations dialog can group a screen's locales without fetching and
+  // decoding every sibling's screenshots at review time. Written once, next to
+  // the diff that already decoded them. Null on runs that predate this, that
+  // have no diff, or that were compared by something other than pixelmatch —
+  // those fall back to computing it on demand.
+  changeSignature       String?
+  // Small copies of the checkpoint and of the diff, made at ingest from the
+  // pixels the comparison had already decoded. The card grids draw pictures a
+  // hundred-odd pixels wide, and pulling the full-size files for that cost
+  // megabytes per screen. Null on runs ingested before this, which fall back to
+  // the full-size file.
+  imageThumbnailName    String?
+  diffThumbnailName     String?
+  baseline              Baseline?
+  build                 Build          @relation(fields: [buildId], references: [id])
+  project               Project?       @relation(fields: [projectId], references: [id])
+  testVariation         TestVariation? @relation(fields: [testVariationId], references: [id])
+
+  @@index([buildId, branchName, name])
+}
+
+model TestVariation {
+  id           String     @id @default(uuid())
+  name         String
+  branchName   String     @default("master")
+  browser      String     @default("")
+  device       String     @default("")
+  os           String     @default("")
+  viewport     String     @default("")
+  customTags   String     @default("")
+  baselineName String?
+  ignoreAreas  String     @default("[]")
+  projectId    String
+  comment      String?
+  updatedAt    DateTime   @updatedAt
+  createdAt    DateTime   @default(now())
+  baselines    Baseline[]
+  testRuns     TestRun[]
+  project      Project    @relation(fields: [projectId], references: [id])
+
+  @@unique([projectId, name, browser, device, os, viewport, customTags, branchName])
+}
+
+model Baseline {
+  id              String        @id @default(uuid())
+  baselineName    String
+  testVariationId String
+  testRunId       String?       @unique
+  userId          String?
+  updatedAt       DateTime      @updatedAt
+  createdAt       DateTime      @default(now())
+  testRun         TestRun?      @relation(fields: [testRunId], references: [id])
+  testVariation   TestVariation @relation(fields: [testVariationId], references: [id])
+  user            User?         @relation(fields: [userId], references: [id])
+}
+
+model User {
+  id        String     @id @default(uuid())
+  email     String     @unique
+  password  String
+  firstName String?
+  lastName  String?
+  apiKey    String     @unique
+  isActive  Boolean    @default(true)
+  role      Role       @default(guest)
+  updatedAt DateTime   @updatedAt
+  createdAt DateTime   @default(now())
+  baselines Baseline[]
+  builds    Build[]
+}
+
+enum TestStatus {
+  failed
+  new
+  ok
+  unresolved
+  approved
+  autoApproved
+}
+
+enum ImageComparison {
+  pixelmatch
+  lookSame
+  odiff
+  vlm
+}
+
+enum Role {
+  admin
+  editor
+  guest
+}

@@ -1,0 +1,26 @@
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: "/"
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    groups:
+      # one PR for all minor/patch bumps
+      npm-minor-patch:
+        patterns:
+          - "*"
+        update-types:
+          - minor
+          - patch
+      # majors are batched separately since they usually need code changes
+      npm-major:
+        patterns:
+          - "*"
+        update-types:
+          - major
+      # security fixes (mostly transitive deps) in a single PR too
+      npm-security:
+        applies-to: security-updates
+        patterns:
+          - "*"

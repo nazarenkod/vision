@@ -2,7 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Ollama, ChatRequest, ChatResponse, ListResponse, ModelResponse } from 'ollama';
 import { zodToJsonSchema } from 'zod-to-json-schema';
-import { VlmProvider, VlmProviderResponse } from '../../vlm-provider.interface';
+import { VlmGenerateOptions, VlmProvider, VlmProviderResponse } from '../../vlm-provider.interface';
 import { VlmConfig, OllamaVlmConfig } from '../../vlm.types';
 import { VlmComparisonResultSchema } from '../../vlm.service';
 
@@ -21,7 +21,7 @@ export class OllamaService implements VlmProvider {
     return this.ollamaClient;
   }
 
-  async generate(config: VlmConfig, images: Uint8Array[]): Promise<VlmProviderResponse> {
+  async generate(config: VlmConfig, images: Uint8Array[], options?: VlmGenerateOptions): Promise<VlmProviderResponse> {
     // Type guard: ensure this is Ollama config
     if (config.provider && config.provider !== 'ollama') {
       throw new Error(`OllamaService requires OllamaVlmConfig, got ${config.provider}`);
@@ -31,7 +31,7 @@ export class OllamaService implements VlmProvider {
     const client = this.getOllamaClient();
 
     try {
-      const format = zodToJsonSchema(VlmComparisonResultSchema);
+      const format = options?.schema ?? zodToJsonSchema(VlmComparisonResultSchema);
 
       const chatRequest: ChatRequest = {
         model: ollamaConfig.model,

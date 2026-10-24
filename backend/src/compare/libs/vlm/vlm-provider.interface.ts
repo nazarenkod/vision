@@ -13,7 +13,15 @@ export interface VlmProvider {
    * @param images - Array of images as Uint8Array (provider implementations handle format conversion)
    * @returns Response containing content and optional thinking field
    */
-  generate(config: VlmConfig, images: Uint8Array[]): Promise<VlmProviderResponse>;
+  generate(config: VlmConfig, images: Uint8Array[], options?: VlmGenerateOptions): Promise<VlmProviderResponse>;
+}
+
+export interface VlmGenerateOptions {
+  /**
+   * JSON schema the answer must follow. Defaults to the image comparison
+   * result; other callers (AI summaries, label suggestions) pass their own.
+   */
+  schema?: object;
 }
 
 export interface VlmProviderResponse {

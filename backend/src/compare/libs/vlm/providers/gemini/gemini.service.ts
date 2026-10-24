@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { GoogleGenAI } from '@google/genai';
 import { zodToJsonSchema } from 'zod-to-json-schema';
-import { VlmProvider, VlmProviderResponse } from '../../vlm-provider.interface';
+import { VlmGenerateOptions, VlmProvider, VlmProviderResponse } from '../../vlm-provider.interface';
 import { VlmConfig, GeminiVlmConfig } from '../../vlm.types';
 import { VlmComparisonResultSchema } from '../../vlm.service';
 
@@ -21,7 +21,7 @@ export class GeminiService implements VlmProvider {
     return base64;
   }
 
-  async generate(config: VlmConfig, images: Uint8Array[]): Promise<VlmProviderResponse> {
+  async generate(config: VlmConfig, images: Uint8Array[], options?: VlmGenerateOptions): Promise<VlmProviderResponse> {
     // Type guard: ensure this is Gemini config
     if (config.provider !== 'gemini') {
       throw new Error(`GeminiService requires GeminiVlmConfig, got ${config.provider}`);
@@ -47,7 +47,7 @@ export class GeminiService implements VlmProvider {
         config: {
           temperature: geminiConfig.temperature,
           responseMimeType: 'application/json' as const,
-          responseJsonSchema: zodToJsonSchema(VlmComparisonResultSchema),
+          responseJsonSchema: options?.schema ?? zodToJsonSchema(VlmComparisonResultSchema),
         },
       });
 

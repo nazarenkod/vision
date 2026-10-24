@@ -20,6 +20,6 @@ import { A11yModule } from '../a11y/a11y.module';
   ],
   providers: [TestRunsService, ChangeGroupsService],
   controllers: [TestRunsController],
-  exports: [TestRunsService],
+  exports: [TestRunsService, ChangeGroupsService],
 })
 export class TestRunsModule {}

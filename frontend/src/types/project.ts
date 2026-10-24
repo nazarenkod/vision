@@ -15,6 +15,18 @@ export interface Project {
   maxBranchLifetime: number;
   bulkApproveVariations: boolean;
   bulkApproveGroupBy: string;
+  // Jira for filing accessibility bugs; the token itself never comes back from the API
+  jiraUrl?: string | null;
+  jiraEmail?: string | null;
+  jiraTokenSet?: boolean;
+  jiraIssueType?: string | null;
+  jiraLinkType?: string | null;
 }
 
-export type ProjectDto = Omit<Project, "updatedAt" | "createdAt" | "builds">;
+export type ProjectDto = Omit<
+  Project,
+  "updatedAt" | "createdAt" | "builds" | "jiraTokenSet"
+> & {
+  // write-only: undefined keeps the stored token, an empty string removes it
+  jiraToken?: string;
+};

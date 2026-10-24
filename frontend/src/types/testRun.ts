@@ -30,4 +30,9 @@ export interface TestRun {
   baselineBranchName: string;
   merge: boolean;
   vlmDescription?: string;
+  // set when the screenshot came with an Appium UI tree
+  hasUiTree?: boolean;
+  // accessibility issues nobody has acted on yet / all counted issues
+  a11yNewCount?: number | null;
+  a11yTotalCount?: number | null;
 }

@@ -1,27 +1,13 @@
 import React from "react";
-import { Chip } from "@mui/material";
 import { BuildStatus } from "../types/buildStatus";
+import { PillTone, StatusPill } from "./StatusPill";
+
+const TONE: Partial<Record<BuildStatus, PillTone>> = {
+  [BuildStatus.passed]: "passed",
+  [BuildStatus.unresolved]: "changed",
+  [BuildStatus.failed]: "failed",
+};
 
 export const BuildStatusChip: React.FunctionComponent<{
   status: BuildStatus;
-}> = ({ status }) => {
-  let color: "inherit" | "primary" | "secondary" | "default" | undefined;
-  let variant: "filled" | "outlined" | undefined;
-  switch (status) {
-    case BuildStatus.passed:
-      color = "primary";
-      variant = "outlined";
-      break;
-    case BuildStatus.unresolved:
-      color = "secondary";
-      break;
-    case BuildStatus.failed:
-      color = "secondary";
-      variant = "outlined";
-      break;
-    default:
-      color = undefined;
-      variant = undefined;
-  }
-  return <Chip variant={variant} color={color} label={status} size="small" />;
-};
+}> = ({ status }) => <StatusPill tone={TONE[status] ?? "neutral"} label={status} />;

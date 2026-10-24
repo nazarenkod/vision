@@ -1,5 +1,6 @@
 import React, { FunctionComponent } from "react";
 import { makeStyles, createStyles } from "@mui/styles";
+import { tokens } from "../../theme";
 import {
   List,
   ListItemButton,
@@ -52,6 +53,9 @@ const useStyles = makeStyles(() =>
     },
     listItem: {
       paddingRight: 48,
+      margin: "2px 8px",
+      borderRadius: 8,
+      alignItems: "flex-start",
       "&:hover $listItemSecondaryAction": {
         visibility: "inherit",
       },
@@ -349,50 +353,54 @@ const BuildList: FunctionComponent = () => {
                     />
                     <ListItemText
                       disableTypography
+                      sx={{ my: 0 }}
                       primary={
-                        <Typography
-                          variant="subtitle2"
-                          style={{
-                            wordWrap: "break-word",
+                        <Box
+                          sx={{
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "space-between",
+                            gap: 1,
                           }}
                         >
-                          {`#${build.number} ${build.ciBuildId || ""}`}
-                        </Typography>
+                          <Typography
+                            variant="subtitle2"
+                            style={{ wordWrap: "break-word" }}
+                          >
+                            {`#${build.number} ${build.ciBuildId || ""}`}
+                          </Typography>
+                          <BuildStatusChip status={build.status} />
+                        </Box>
                       }
                       secondary={
-                        <Grid container direction="column">
-                          <Grid item>
-                            <Typography variant="caption" color="textPrimary">
-                              {formatDateTime(build.createdAt)}
+                        <Box
+                          sx={{
+                            display: "flex",
+                            flexDirection: "column",
+                            gap: 0.25,
+                            mt: 0.5,
+                          }}
+                        >
+                          <Tooltip title={build.branchName}>
+                            <Typography
+                              noWrap
+                              sx={{
+                                fontFamily: tokens.mono,
+                                fontSize: 12.5,
+                                color: "text.primary",
+                              }}
+                            >
+                              {build.branchName}
                             </Typography>
-                          </Grid>
-                          {build.updatedAt && (
-                            <Grid item>
-                              <Typography
-                                variant="caption"
-                                color="textSecondary"
-                              >
-                                Last run: {formatDateTime(build.updatedAt)}
-                              </Typography>
-                            </Grid>
-                          )}
-                          <Grid item>
-                            <Grid container justifyContent="space-between">
-                              <Grid item>
-                                <Tooltip title={build.branchName}>
-                                  <Chip
-                                    size="small"
-                                    label={build.branchName}
-                                    style={{ maxWidth: 180 }}
-                                  />
-                                </Tooltip>
-                              </Grid>
-                              <Grid item>
-                                <BuildStatusChip status={build.status} />
-                              </Grid>
-                            </Grid>
-                          </Grid>
-                        </Grid>
+                          </Tooltip>
+                          <Typography variant="caption" color="textSecondary">
+                            {`${build.unresolvedCount} changed · ${build.passedCount} passed${
+                              build.failedCount
+                                ? ` · ${build.failedCount} failed`
+                                : ""
+                            } · ${formatDateTime(build.updatedAt ?? build.createdAt)}`}
+                          </Typography>
+                        </Box>
                       }
                     />
 

@@ -2,7 +2,8 @@ import React, { FunctionComponent } from "react";
 import {
   AppBar,
   Toolbar,
-  Grid,
+  Box,
+  Typography,
   IconButton,
   Avatar,
   Menu,
@@ -11,7 +12,6 @@ import {
 import { Link } from "react-router-dom";
 import { useUserDispatch, useUserState, logout } from "../contexts";
 import { routes } from "../constants";
-import logo from "../static/logo.png";
 import GuidedTour from "./GuidedTour";
 import {
   HEADER_HELP_MENU_ID,
@@ -168,47 +168,78 @@ const Header: FunctionComponent = () => {
 
   return (
     <React.Fragment>
-      <AppBar position="static" color="default">
-        <Toolbar>
-          <Grid container justifyContent="space-between" alignItems="center">
-            <Grid item>
-              <Link to="/">
-                <img src={logo} width="60" height="60" alt="logo" />
-              </Link>
-            </Grid>
-            <Grid item>
-              <Grid
-                container
-                justifyContent="space-between"
-                alignItems="center"
+      <AppBar position="static">
+        <Toolbar variant="dense" sx={{ minHeight: 56, gap: 1.5 }}>
+          <Link
+            to="/"
+            aria-label="Visual Tracker home"
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 12,
+              textDecoration: "none",
+              color: "inherit",
+            }}
+          >
+            <Box
+              sx={{
+                width: 32,
+                height: 32,
+                borderRadius: "9px",
+                bgcolor: "primary.main",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 20 20"
+                fill="none"
+                stroke="#FFFFFF"
+                strokeWidth="1.8"
+                aria-hidden="true"
               >
-                <IconButton
-                  onClick={(event: React.MouseEvent<HTMLElement>) =>
-                    setHelpMenuRef(event.currentTarget)
-                  }
-                  size="large"
-                  color="secondary"
-                  data-testid={HEADER_HELP_MENU_BUTTON_TEST_ID}
-                >
-                  <Avatar>
-                    <HelpOutline />
-                  </Avatar>
-                </IconButton>
-                {loggedIn && (
-                  <IconButton
-                    onClick={(event: React.MouseEvent<HTMLElement>) =>
-                      setAvatarMenuRef(event.currentTarget)
-                    }
-                    size="large"
-                    color="secondary"
-                    data-testid={HEADER_AVATAR_BUTTON_TEST_ID}
-                  >
-                    <Avatar>{`${user?.firstName[0]}${user?.lastName[0]}`}</Avatar>
-                  </IconButton>
-                )}
-              </Grid>
-            </Grid>
-          </Grid>
+                <rect x="2.5" y="4" width="7" height="12" rx="1.5" />
+                <rect x="10.5" y="4" width="7" height="12" rx="1.5" />
+                <path d="M12.5 10h3" />
+              </svg>
+            </Box>
+            <Typography component="span" sx={{ fontWeight: 700, fontSize: 16 }}>
+              Visual Tracker
+            </Typography>
+          </Link>
+          <Box sx={{ flex: 1 }} />
+          <IconButton
+            onClick={(event: React.MouseEvent<HTMLElement>) =>
+              setHelpMenuRef(event.currentTarget)
+            }
+            aria-label="Help"
+            data-testid={HEADER_HELP_MENU_BUTTON_TEST_ID}
+          >
+            <HelpOutline />
+          </IconButton>
+          {loggedIn && (
+            <IconButton
+              onClick={(event: React.MouseEvent<HTMLElement>) =>
+                setAvatarMenuRef(event.currentTarget)
+              }
+              aria-label="Account"
+              data-testid={HEADER_AVATAR_BUTTON_TEST_ID}
+            >
+              <Avatar
+                sx={{
+                  width: 32,
+                  height: 32,
+                  fontSize: 13,
+                  fontWeight: 600,
+                  bgcolor: "primary.light",
+                  color: "primary.main",
+                }}
+              >{`${user?.firstName?.[0] ?? ""}${user?.lastName?.[0] ?? ""}`}</Avatar>
+            </IconButton>
+          )}
         </Toolbar>
       </AppBar>
       {renderAvatarMenu}

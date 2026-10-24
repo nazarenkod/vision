@@ -1,96 +1,149 @@
 import React from "react";
-import { Typography, Chip, Grid, Box, LinearProgress } from "@mui/material";
+import { Typography, Box, LinearProgress } from "@mui/material";
 import { BuildStatusChip } from "./BuildStatusChip";
 import { formatDateTime } from "../_helpers/format.helper";
-import { useBuildState } from "../contexts";
+import { useBuildState, useTestRunState } from "../contexts";
 import { LOCATOR_BUILD_DETAILS } from "../constants/help";
 import { Tooltip } from "./Tooltip";
+import { tokens } from "../theme";
 
+/** Build header: identity, status and a bar of how the screenshots came out. */
 const BuildDetails: React.FunctionComponent = () => {
   const { selectedBuild } = useBuildState();
+  const { testRuns } = useTestRunState();
   const buildNumber = React.useMemo(
     () => `#${selectedBuild?.number} ${selectedBuild?.ciBuildId || ""}`,
     [selectedBuild?.number, selectedBuild?.ciBuildId],
+  );
+  const a11yNew = React.useMemo(
+    () => testRuns.reduce((sum, run) => sum + (run.a11yNewCount ?? 0), 0),
+    [testRuns],
   );
 
   if (!selectedBuild) {
     return null;
   }
 
-  const loadingAnimation = selectedBuild.isRunning && <LinearProgress />;
+  const total =
+    selectedBuild.unresolvedCount +
+    selectedBuild.failedCount +
+    selectedBuild.passedCount;
+  const share = (count: number) => (total ? `${(count * 100) / total}%` : "0%");
 
   return (
-    <Grid container direction="column" id={LOCATOR_BUILD_DETAILS}>
-      <Grid item>
-        <Box m={0.5}>
-          <Grid container spacing={1} alignItems="center">
-            <Grid item style={{ maxWidth: "20%", whiteSpace: "nowrap" }}>
-              <Tooltip title={buildNumber}>
-                <Typography
-                  variant="subtitle2"
-                  style={{ overflow: "hidden", textOverflow: "ellipsis" }}
-                >
-                  {buildNumber}
-                </Typography>
-              </Tooltip>
-            </Grid>
-            <Grid item style={{ maxWidth: "70%" }}>
-              <Tooltip title={selectedBuild.branchName}>
-                <Chip
-                  size="small"
-                  style={{ maxWidth: "100%" }}
-                  label={selectedBuild.branchName}
-                />
-              </Tooltip>
-            </Grid>
-            <Grid item>
-              <BuildStatusChip status={selectedBuild.status} />
-            </Grid>
-          </Grid>
+    <Box
+      id={LOCATOR_BUILD_DETAILS}
+      sx={{
+        px: 3,
+        pt: 2.5,
+        pb: 1.5,
+        display: "flex",
+        flexDirection: "column",
+        gap: 1.5,
+      }}
+    >
+      <Box
+        sx={{
+          display: "flex",
+          flexWrap: "wrap",
+          alignItems: "center",
+          gap: "8px 14px",
+        }}
+      >
+        <Tooltip title={buildNumber}>
+          <Typography variant="h5" component="h1" noWrap sx={{ maxWidth: 260 }}>
+            {buildNumber}
+          </Typography>
+        </Tooltip>
+        <Tooltip title={selectedBuild.branchName}>
+          <Typography
+            noWrap
+            sx={{
+              fontFamily: tokens.mono,
+              fontSize: 16,
+              color: tokens.textSecondary,
+              maxWidth: 420,
+            }}
+          >
+            {selectedBuild.branchName}
+          </Typography>
+        </Tooltip>
+        <BuildStatusChip status={selectedBuild.status} />
+        <Typography variant="body2" color="textSecondary">
+          {formatDateTime(selectedBuild.createdAt)}
+          {selectedBuild.updatedAt &&
+            ` · last run ${formatDateTime(selectedBuild.updatedAt)}`}
+        </Typography>
+      </Box>
+
+      <Box sx={{ display: "flex", flexDirection: "column", gap: 0.75 }}>
+        <Box
+          role="img"
+          aria-label={`${selectedBuild.unresolvedCount} unresolved, ${selectedBuild.failedCount} failed, ${selectedBuild.passedCount} passed`}
+          sx={{
+            display: "flex",
+            height: 8,
+            borderRadius: 999,
+            overflow: "hidden",
+            gap: "2px",
+            bgcolor: tokens.subtle,
+          }}
+        >
+          <Box
+            sx={{
+              width: share(selectedBuild.unresolvedCount),
+              bgcolor: tokens.status.changed.bar,
+            }}
+          />
+          <Box
+            sx={{
+              width: share(selectedBuild.failedCount),
+              bgcolor: tokens.status.failed.bar,
+            }}
+          />
+          <Box
+            sx={{
+              width: share(selectedBuild.passedCount),
+              bgcolor: tokens.status.passed.bar,
+            }}
+          />
         </Box>
-      </Grid>
-      <Grid item>
-        <Box m={0.5}>
-          <Grid container spacing={1}>
-            <Grid item>
-              <Typography variant="caption">
-                {formatDateTime(selectedBuild.createdAt)}
-              </Typography>
-            </Grid>
-            {selectedBuild.updatedAt && (
-              <Grid item>
-                <Typography variant="caption" color="textSecondary">
-                  Last run: {formatDateTime(selectedBuild.updatedAt)}
-                </Typography>
-              </Grid>
-            )}
-          </Grid>
+        <Box
+          sx={{
+            display: "flex",
+            flexWrap: "wrap",
+            gap: "4px 20px",
+            fontSize: 13,
+            color: tokens.textSecondary,
+          }}
+        >
+          <span>
+            <b style={{ color: tokens.text }}>{total}</b> total
+          </span>
+          <span>
+            <b style={{ color: tokens.text }}>
+              {selectedBuild.unresolvedCount}
+            </b>{" "}
+            unresolved
+          </span>
+          <span>
+            <b style={{ color: tokens.text }}>{selectedBuild.failedCount}</b>{" "}
+            failed
+          </span>
+          <span>
+            <b style={{ color: tokens.text }}>{selectedBuild.passedCount}</b>{" "}
+            passed
+          </span>
+          {a11yNew > 0 && (
+            <span>
+              <b style={{ color: tokens.status.changed.fg }}>{a11yNew}</b> new
+              accessibility issues
+            </span>
+          )}
         </Box>
-      </Grid>
-      <Grid item>
-        <Box m={0.5}>
-          <Grid container spacing={1}>
-            <Grid item>
-              <Typography variant="caption">{`${
-                selectedBuild.unresolvedCount +
-                selectedBuild.failedCount +
-                selectedBuild.passedCount
-              } total`}</Typography>
-            </Grid>
-            <Grid item>
-              <Typography variant="caption">{`${selectedBuild.unresolvedCount} unresolved`}</Typography>
-            </Grid>
-            <Grid item>
-              <Typography variant="caption">{`${selectedBuild.failedCount} failed`}</Typography>
-            </Grid>
-            <Grid item>
-              <Typography variant="caption">{`${selectedBuild.passedCount} passed`}</Typography>
-            </Grid>
-          </Grid>
-        </Box>
-      </Grid>
-      {loadingAnimation}
-    </Grid>
+      </Box>
+      {selectedBuild.isRunning && <LinearProgress />}
+    </Box>
   );
 };
 

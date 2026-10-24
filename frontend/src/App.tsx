@@ -2,13 +2,11 @@ import React from "react";
 import { SnackbarProvider, closeSnackbar } from "notistack";
 import { Box, IconButton } from "@mui/material";
 import { Close } from "@mui/icons-material";
-import {
-  ThemeProvider,
-  StyledEngineProvider,
-  createTheme,
-} from "@mui/material/styles";
-import { indigo, purple } from "@mui/material/colors";
+import { ThemeProvider, StyledEngineProvider } from "@mui/material/styles";
 import Header from "./components/Header";
+import NavRail from "./components/NavRail";
+import { theme } from "./theme";
+import { useUserState } from "./contexts";
 import {
   UserProvider,
   ProjectProvider,
@@ -19,13 +17,21 @@ import {
 } from "./contexts";
 import Router from "./Router";
 
-// https://mui.com/material-ui/customization/color/#2014-material-design-color-palettes
-const theme = createTheme({
-  palette: {
-    primary: indigo,
-    secondary: purple,
-  },
-});
+// Top bar, left rail for signed-in users, and the page filling the rest.
+const Shell: React.FunctionComponent = () => {
+  const { loggedIn } = useUserState();
+  return (
+    <Box sx={{ height: "100%", display: "flex", flexDirection: "column" }}>
+      <Header />
+      <Box sx={{ flex: 1, minHeight: 0, display: "flex" }}>
+        {loggedIn && <NavRail />}
+        <Box component="main" sx={{ flex: 1, minWidth: 0, overflow: "auto" }}>
+          <Router />
+        </Box>
+      </Box>
+    </Box>
+  );
+};
 
 function App() {
   return (
@@ -54,12 +60,7 @@ function App() {
                 <TestRunProvider>
                   <SocketProvider>
                     <HelpProvider>
-                      <Box sx={{ height: "10%" }}>
-                        <Header />
-                      </Box>
-                      <Box sx={{ height: "90%" }}>
-                        <Router />
-                      </Box>
+                      <Shell />
                     </HelpProvider>
                   </SocketProvider>
                 </TestRunProvider>

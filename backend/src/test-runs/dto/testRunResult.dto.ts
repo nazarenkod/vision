@@ -14,6 +14,9 @@ export class TestRunResultDto extends TestRunDto {
   // present when the screenshot came with a UI tree
   @ApiPropertyOptional()
   a11y?: { newCount: number; totalCount: number; url: string };
+  // parsed for SDKs: [{kind, message, ...}] when the screenshot looks wrong
+  @ApiPropertyOptional()
+  warnings?: Array<{ kind: string; message: string }>;
 
   constructor(testRun: TestRun, testVariation: TestVariation) {
     super(testRun);
@@ -21,6 +24,13 @@ export class TestRunResultDto extends TestRunDto {
     this.pixelMisMatchCount = testRun.pixelMisMatchCount;
     this.vlmDescription = testRun.vlmDescription;
     this.url = `${process.env.APP_FRONTEND_URL}/${testVariation.projectId}?buildId=${testRun.buildId}&testId=${testRun.id}`;
+    if (testRun.captureWarnings) {
+      try {
+        this.warnings = JSON.parse(testRun.captureWarnings);
+      } catch {
+        this.warnings = undefined;
+      }
+    }
     if (testRun.a11yReportName) {
       this.a11y = { newCount: testRun.a11yNewCount ?? 0, totalCount: testRun.a11yTotalCount ?? 0, url: this.url };
     }

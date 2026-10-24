@@ -8,6 +8,16 @@ import { parseUiTree } from './ui-tree.parser';
 import { Rect, UiTree, UiTreeFormat } from './ui-tree.types';
 import { diffTrees, elementsUnderRegions, RegionElement, StructuralChange } from './structure-diff';
 import { findNoiseHints, NoiseHint } from './noise-hints';
+import {
+  CaptureWarning,
+  ComponentChange,
+  componentChanges,
+  detectLoading,
+  invisibleChanges,
+  MISMATCH_BELOW,
+  SAME_SCREEN_ABOVE,
+  screenSimilarity,
+} from './screen-checks';
 import { PrismaService } from '../prisma/prisma.service';
 import {
   computeMoves,
@@ -22,6 +32,19 @@ import {
 } from './comparison-inputs';
 
 const GZIP_MAGIC = [0x1f, 0x8b];
+
+// Trees never change once stored, so recently read ones are kept.
+const TREE_CACHE_SIZE = 300;
+const MAX_SCREENS_TO_MATCH = 200;
+
+export interface TreeAnalysis {
+  reportName: string;
+  report: A11yReport;
+  warnings: CaptureWarning[];
+  // changes the screenshot does not show
+  invisible: StructuralChange[];
+  components: ComponentChange[];
+}
 
 export interface ComparisonInputs {
   ignoreAreas: Rect[];
@@ -90,7 +113,7 @@ export class UiTreeService {
    */
   async store(
     uiTreeBase64: string,
-    options: { format?: UiTreeFormat; densityDpi?: number },
+    options: { format?: UiTreeFormat; densityDpi?: number; activity?: string },
     imageBuffer: Buffer
   ): Promise<{ name: string; tree: UiTree } | null> {
     try {
@@ -102,6 +125,7 @@ export class UiTreeService {
       const tree = parseUiTree(bytes.toString('utf8'), {
         format: options.format,
         densityDpi: options.densityDpi,
+        activity: options.activity,
         imageWidth: width,
         imageHeight: height,
       });
@@ -118,11 +142,20 @@ export class UiTreeService {
     }
   }
 
+  private readonly treeCache = new Map<string, UiTree>();
+
   async load(name: string | null): Promise<UiTree | null> {
     if (!name) return null;
+    const cached = this.treeCache.get(name);
+    if (cached) return cached;
     try {
       const buffer = await this.staticService.getFileBuffer(name);
-      return buffer ? (JSON.parse(gunzipSync(buffer).toString('utf8')) as UiTree) : null;
+      const tree = buffer ? (JSON.parse(gunzipSync(buffer).toString('utf8')) as UiTree) : null;
+      if (tree) {
+        if (this.treeCache.size >= TREE_CACHE_SIZE) this.treeCache.delete(this.treeCache.keys().next().value);
+        this.treeCache.set(name, tree);
+      }
+      return tree;
     } catch (error) {
       this.logger.warn(`Cannot read UI tree ${name}: ${error}`);
       return null;
@@ -143,16 +176,22 @@ export class UiTreeService {
    * against the issues of the baseline's tree. Stored as a file; the caller
    * keeps the counts on the row.
    */
-  async analyze(
-    testRun: Pick<TestRun, 'imageName' | 'baselineName' | 'baselineUiTreeName'>,
-    tree: UiTree
-  ): Promise<{ reportName: string; report: A11yReport }> {
-    const [image, baselineTree] = await Promise.all([
+  /**
+   * Everything the UI tree tells about a fresh run, in one pass over its
+   * decoded images: the accessibility report (stored as a file), capture
+   * warnings, changes the pixels do not show, and changed components.
+   */
+  async analyze(testRun: TestRun, tree: UiTree): Promise<TreeAnalysis> {
+    const [image, baselineImage, baselineTree, project] = await Promise.all([
       this.decode(testRun.imageName),
+      this.decode(testRun.baselineName),
       this.load(testRun.baselineUiTreeName),
+      testRun.projectId ? this.prismaService.project.findUnique({ where: { id: testRun.projectId } }) : null,
     ]);
+    const settings = parseUiTreeSettings(project?.uiTreeSettings);
+
     const current = findViolations(tree, image);
-    const baseline = baselineTree ? findViolations(baselineTree, await this.decode(testRun.baselineName)) : null;
+    const baseline = baselineTree ? findViolations(baselineTree, baselineImage) : null;
     const report = buildReport(tree, current, baseline);
     const reportName = await this.staticService.saveFile(
       'a11y',
@@ -160,7 +199,75 @@ export class UiTreeService {
       'json',
       'application/json'
     );
-    return { reportName, report };
+
+    const regions = parseRegions(testRun.diffRegions);
+    const changes = baselineTree ? diffTrees(baselineTree, tree) : [];
+    const clickable = new Set(
+      [...tree.nodes, ...(baselineTree?.nodes ?? [])].filter((node) => node.clickable).map((node) => node.key)
+    );
+    const invisible =
+      settings.detectSemanticChanges && baselineTree ? invisibleChanges(changes, regions, clickable) : [];
+
+    const warnings: CaptureWarning[] = [];
+    const loading = settings.detectLoading ? detectLoading(tree) : null;
+    if (loading) warnings.push(loading);
+    if (settings.detectScreenMismatch) {
+      warnings.push(...(await this.screenWarnings(testRun, tree, baselineTree)));
+    }
+
+    const components = image
+      ? componentChanges({ tree, baselineTree, image, baselineImage: baselineImage ?? null, regions, changes })
+      : [];
+    return { reportName, report, warnings, invisible, components };
+  }
+
+  /** Warns when the tree looks like another screen than its baseline, or like a screen that already exists. */
+  private async screenWarnings(testRun: TestRun, tree: UiTree, baselineTree: UiTree | null): Promise<CaptureWarning[]> {
+    const similarity = baselineTree ? screenSimilarity(tree, baselineTree) : null;
+    if (similarity !== null && similarity >= MISMATCH_BELOW) return [];
+
+    // the best match among other screens' baselines, to say what this looks like
+    const others = testRun.projectId
+      ? await this.prismaService.testVariation.findMany({
+          where: { projectId: testRun.projectId, baselineUiTreeName: { not: null }, name: { not: testRun.name } },
+          orderBy: { updatedAt: 'desc' },
+          take: MAX_SCREENS_TO_MATCH,
+        })
+      : [];
+    let best: { name: string; similarity: number } | null = null;
+    for (const other of others) {
+      const otherTree = await this.load(other.baselineUiTreeName);
+      if (!otherTree) continue;
+      const score = screenSimilarity(tree, otherTree);
+      if (!best || score > best.similarity) best = { name: other.name, similarity: score };
+    }
+    const percent = (value: number) => `${Math.round(value * 100)}%`;
+
+    if (similarity !== null) {
+      const hint =
+        best && best.similarity >= SAME_SCREEN_ABOVE
+          ? ` It looks like "${best.name}" (${percent(best.similarity)}).`
+          : '';
+      return [
+        {
+          kind: 'screen-mismatch',
+          message: `This does not look like the screen of its baseline (${percent(similarity)} alike).${hint}`,
+          similarity,
+          ...(hint ? { looksLike: best.name } : {}),
+        },
+      ];
+    }
+    if (best && best.similarity >= SAME_SCREEN_ABOVE) {
+      return [
+        {
+          kind: 'duplicate-screen',
+          message: `New screen, but it looks like "${best.name}" (${percent(best.similarity)} alike). Renamed test?`,
+          similarity: best.similarity,
+          looksLike: best.name,
+        },
+      ];
+    }
+    return [];
   }
 
   async loadReport(name: string | null): Promise<A11yReport | null> {

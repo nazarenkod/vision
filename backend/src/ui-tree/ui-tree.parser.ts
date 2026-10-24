@@ -14,6 +14,7 @@ export interface ParseOptions {
   imageWidth: number;
   imageHeight: number;
   densityDpi?: number;
+  activity?: string;
 }
 
 const parser = new XMLParser({
@@ -83,6 +84,8 @@ interface RawNode {
   enabled: boolean;
   visible: boolean;
   accessible: boolean;
+  checked: boolean;
+  selected: boolean;
   rect: Rect;
 }
 
@@ -100,6 +103,8 @@ function readAndroid(attrs: Record<string, string>, tag: string): Omit<RawNode, 
     enabled: bool(attrs.enabled, true),
     visible: bool(attrs.displayed, true),
     accessible: true,
+    checked: bool(attrs.checked, false),
+    selected: bool(attrs.selected, false),
     rect,
   };
 }
@@ -135,6 +140,8 @@ function readIos(attrs: Record<string, string>, tag: string): Omit<RawNode, 'par
     enabled: bool(attrs.enabled, true),
     visible: bool(attrs.visible, true),
     accessible: bool(attrs.accessible, true),
+    checked: attrs.value === '1' && /Switch|CheckBox/.test(className),
+    selected: bool(attrs.selected, false),
     rect,
   };
 }
@@ -234,6 +241,8 @@ export function parseUiTree(xml: string, options: ParseOptions): UiTree {
       enabled: node.enabled,
       visible: node.visible,
       accessible: node.accessible,
+      checked: node.checked,
+      selected: node.selected,
       bounds: scaleRect(node.rect, scale),
     };
   });
@@ -245,6 +254,7 @@ export function parseUiTree(xml: string, options: ParseOptions): UiTree {
     height: options.imageHeight,
     pixelsPerDp,
     pixelsPerDpEstimated,
+    ...(options.activity ? { activity: options.activity } : {}),
     nodes,
   };
 }

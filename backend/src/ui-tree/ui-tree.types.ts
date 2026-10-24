@@ -32,6 +32,9 @@ export interface UiNode {
   visible: boolean;
   // false only when the platform says so explicitly (iOS accessible="false")
   accessible: boolean;
+  // absent on trees stored before these were read
+  checked?: boolean;
+  selected?: boolean;
   bounds: Rect;
 }
 
@@ -45,5 +48,7 @@ export interface UiTree {
   // screenshot pixels per dp (Android) or pt (iOS)
   pixelsPerDp: number;
   pixelsPerDpEstimated: boolean;
+  // Android activity the screen belongs to, when the client sent it
+  activity?: string;
   nodes: UiNode[];
 }

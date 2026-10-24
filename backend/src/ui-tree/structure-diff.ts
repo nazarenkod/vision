@@ -1,7 +1,7 @@
 import { describeNode, ownSpeakableText } from './ui-tree.parser';
 import { Rect, UiNode, UiTree } from './ui-tree.types';
 
-export type StructuralChangeKind = 'text' | 'label' | 'added' | 'removed' | 'resized' | 'moved';
+export type StructuralChangeKind = 'text' | 'label' | 'state' | 'added' | 'removed' | 'resized' | 'moved';
 
 export interface StructuralChange {
   kind: StructuralChangeKind;
@@ -58,6 +58,9 @@ export function diffTrees(baseline: UiTree, current: UiTree): StructuralChange[]
     const base = { key: node.key, element: describeNode(node), resourceId: node.resourceId, bounds: node.bounds };
     if (old.text !== node.text) changes.push({ ...base, kind: 'text', before: old.text, after: node.text });
     if (old.label !== node.label) changes.push({ ...base, kind: 'label', before: old.label, after: node.label });
+    const stateBefore = stateOf(old);
+    const stateAfter = stateOf(node);
+    if (stateBefore !== stateAfter) changes.push({ ...base, kind: 'state', before: stateBefore, after: stateAfter });
     if (!isMeaningful(node)) continue;
     const dw = Math.abs(toDp(node.bounds.width, current) - toDp(old.bounds.width, baseline));
     const dh = Math.abs(toDp(node.bounds.height, current) - toDp(old.bounds.height, baseline));
@@ -86,7 +89,15 @@ export function diffTrees(baseline: UiTree, current: UiTree): StructuralChange[]
     }
   }
 
-  const order: Record<StructuralChangeKind, number> = { text: 0, label: 0, added: 1, removed: 1, resized: 2, moved: 3 };
+  const order: Record<StructuralChangeKind, number> = {
+    text: 0,
+    label: 0,
+    state: 0,
+    added: 1,
+    removed: 1,
+    resized: 2,
+    moved: 3,
+  };
   return changes.sort((a, b) => order[a.kind] - order[b.kind]).slice(0, MAX_CHANGES);
 }
 
@@ -100,12 +111,35 @@ export function changeFingerprint(changes: StructuralChange[]): string {
   return changes
     .filter((change) => change.kind !== 'moved')
     .map((change) =>
-      change.kind === 'text' || change.kind === 'label'
+      change.kind === 'text' || change.kind === 'label' || change.kind === 'state'
         ? `${change.kind}:${change.key}:${change.before}→${change.after}`
         : `${change.kind}:${change.key}`
     )
     .sort()
     .join('\n');
+}
+
+// Properties a user feels but a screenshot may not show. Flags absent on
+// older stored trees read as false on both sides and never differ.
+const STATE_FLAGS: Array<[keyof UiNode, string]> = [
+  ['enabled', 'disabled'],
+  ['clickable', 'not clickable'],
+  ['checked', 'checked'],
+  ['selected', 'selected'],
+  ['accessible', 'hidden from screen readers'],
+];
+
+function stateOf(node: UiNode): string {
+  return (
+    STATE_FLAGS.map(([flag, word]) => {
+      const value = !!node[flag];
+      // 'enabled', 'clickable' and 'accessible' are described when they are off
+      const inverted = flag === 'enabled' || flag === 'clickable' || flag === 'accessible';
+      return (inverted ? !value : value) ? word : null;
+    })
+      .filter(Boolean)
+      .join(', ') || 'default'
+  );
 }
 
 const area = (rect: Rect) => Math.max(0, rect.width) * Math.max(0, rect.height);

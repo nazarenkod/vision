@@ -61,4 +61,14 @@ export class CreateTestRequestDto extends BaselineDataDto {
   @IsInt()
   @Min(1)
   deviceDensity?: number;
+
+  @ApiPropertyOptional({ description: 'Android activity of the screen, helps tell screens apart' })
+  @IsOptional()
+  @IsString()
+  uiActivity?: string;
+
+  @ApiPropertyOptional({ description: 'Overrides the project setting for this screenshot' })
+  @IsOptional()
+  @IsBoolean()
+  excludeSystemBars?: boolean;
 }

@@ -91,7 +91,11 @@ export class TestRunsService {
     const uiTree = createTestRequestDto.uiTree
       ? await this.uiTreeService.store(
           createTestRequestDto.uiTree,
-          { format: createTestRequestDto.uiTreeFormat, densityDpi: createTestRequestDto.deviceDensity },
+          {
+            format: createTestRequestDto.uiTreeFormat,
+            densityDpi: createTestRequestDto.deviceDensity,
+            activity: createTestRequestDto.uiActivity,
+          },
           imageBuffer
         )
       : null;
@@ -102,9 +106,9 @@ export class TestRunsService {
     // calculate diff
     let testRunWithResult = await this.calculateDiff(createTestRequestDto.projectId, testRun);
 
-    // accessibility, from the UI tree
+    // accessibility, capture warnings, invisible changes and components, from the UI tree
     if (uiTree) {
-      testRunWithResult = await this.analyzeAccessibility(testRunWithResult, uiTree.tree);
+      testRunWithResult = await this.analyzeUiTree(testRunWithResult, uiTree.tree);
     }
 
     // try auto approve
@@ -492,6 +496,10 @@ export class TestRunsService {
         baselineName: testVariation.baselineName,
         baselineUiTreeName: testVariation.baselineUiTreeName,
         uiTreeName,
+        uiTreeOptions:
+          createTestRequestDto.excludeSystemBars !== undefined
+            ? JSON.stringify({ excludeSystemBars: createTestRequestDto.excludeSystemBars })
+            : null,
         baselineBranchName: testVariation.branchName,
         ignoreAreas: testVariation.ignoreAreas,
         tempIgnoreAreas: JSON.stringify(createTestRequestDto.ignoreAreas),
@@ -507,15 +515,30 @@ export class TestRunsService {
     return testRun;
   }
 
-  /** Runs the accessibility checks on a fresh run and keeps the counts on the row. */
-  async analyzeAccessibility(testRun: TestRun, tree: UiTree): Promise<TestRun> {
+  /**
+   * Checks a fresh run against its UI tree and keeps the results on the row.
+   * A run whose pixels match but whose elements changed in ways the screenshot
+   * does not show (a label, a disabled control, an invisible button on top)
+   * goes to review instead of passing.
+   */
+  async analyzeUiTree(testRun: TestRun, tree: UiTree): Promise<TestRun> {
     try {
-      const { reportName, report } = await this.uiTreeService.analyze(testRun, tree);
+      const analysis = await this.uiTreeService.analyze(testRun, tree);
       // issues the team filed or dismissed earlier do not count as new
-      const { newCount, totalCount } = await this.a11yIssuesService.countsFor(testRun, report);
+      const { newCount, totalCount } = await this.a11yIssuesService.countsFor(testRun, analysis.report);
+      const hidden = analysis.invisible.length;
+      const passedOnPixels = testRun.status === TestStatus.ok;
       const updated = await this.prismaService.testRun.update({
         where: { id: testRun.id },
-        data: { a11yReportName: reportName, a11yNewCount: newCount, a11yTotalCount: totalCount },
+        data: {
+          a11yReportName: analysis.reportName,
+          a11yNewCount: newCount,
+          a11yTotalCount: totalCount,
+          captureWarnings: analysis.warnings.length ? JSON.stringify(analysis.warnings) : null,
+          semanticChangeCount: hidden,
+          componentChanges: analysis.components.length ? JSON.stringify(analysis.components) : null,
+          ...(hidden && passedOnPixels ? { status: TestStatus.unresolved } : {}),
+        },
       });
       this.eventsGateway.testRunUpdated(updated);
       return updated;
@@ -620,7 +643,12 @@ export class TestRunsService {
    * @param testRun
    */
   private async tryAutoApproveByPastBaselines({ testRun, testVariation }: AutoApproveProps): Promise<TestRun> {
-    if (testRun.status === TestStatus.ok || testRun.branchName === testRun.baselineBranchName) {
+    // matching pictures say nothing about a change the pictures do not show
+    if (
+      testRun.status === TestStatus.ok ||
+      testRun.branchName === testRun.baselineBranchName ||
+      testRun.semanticChangeCount
+    ) {
       return testRun;
     }
 
@@ -645,7 +673,7 @@ export class TestRunsService {
    * @param testRun
    */
   private async tryAutoApproveByNewBaselines({ testVariation, testRun }: AutoApproveProps): Promise<TestRun> {
-    if (testRun.status === TestStatus.ok) {
+    if (testRun.status === TestStatus.ok || testRun.semanticChangeCount) {
       return testRun;
     }
     this.logger.log(`Try AutoApproveByNewBaselines testRun: ${testRun.id}`);

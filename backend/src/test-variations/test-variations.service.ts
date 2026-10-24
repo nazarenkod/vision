@@ -61,7 +61,7 @@ export class TestVariationsService {
 
   async update(
     id: string,
-    data: TestVariationUpdateDto & { baselineUiTreeName?: string | null },
+    data: TestVariationUpdateDto & { baselineUiTreeName?: string | null; elementRules?: string | null },
     testRunId?: string
   ): Promise<TestVariation> {
     return this.prismaService.testVariation.update({
@@ -70,6 +70,7 @@ export class TestVariationsService {
         baselineName: data.baselineName,
         // left untouched unless the caller says, so older callers keep the tree
         ...(data.baselineUiTreeName !== undefined ? { baselineUiTreeName: data.baselineUiTreeName } : {}),
+        ...(data.elementRules !== undefined ? { elementRules: data.elementRules } : {}),
         ignoreAreas: data.ignoreAreas,
         comment: data.comment,
         testRuns: testRunId ? { connect: { id: testRunId } } : undefined,

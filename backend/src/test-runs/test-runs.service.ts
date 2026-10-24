@@ -1,4 +1,7 @@
-import { forwardRef, Inject, Injectable, Logger } from '@nestjs/common';
+import { BadRequestException, forwardRef, Inject, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { randomUUID } from 'crypto';
+import { AddElementRuleDto, RemoveElementRuleDto } from './dto/element-rule.dto';
+import { ElementRule, parseJsonArray, parseSelector, parseUiTreeSettings } from '../ui-tree/comparison-inputs';
 import { CreateTestRequestDto } from './dto/create-test-request.dto';
 import { IgnoreAreaDto } from './dto/ignore-area.dto';
 import { StaticService } from '../static/static.service';
@@ -163,6 +166,8 @@ export class TestRunsService {
         {
           baselineName: testRun.baselineName,
           baselineUiTreeName: testRun.baselineUiTreeName,
+          // the screen's element rules follow it to the feature branch, as ignore areas do
+          elementRules: testRun.testVariation?.elementRules,
           ignoreAreas: testRun.ignoreAreas,
           comment: testRun.comment,
         },
@@ -557,6 +562,81 @@ export class TestRunsService {
     return testRun ? this.uiTreeService.structure(testRun) : null;
   }
 
+  /**
+   * Adds an element rule to the run's screen or to the whole project, then
+   * compares the run again; other runs of the build it applies to are
+   * compared again in the background.
+   */
+  async addElementRule(id: string, dto: AddElementRuleDto): Promise<ElementRule> {
+    if (!parseSelector(dto.selector)) {
+      throw new BadRequestException('Selector must start with id:, class: or text:');
+    }
+    const testRun = await this.findOne(id);
+    if (!testRun) throw new NotFoundException('Test run not found');
+    const rule: ElementRule = {
+      id: randomUUID(),
+      selector: dto.selector.trim(),
+      action: dto.action,
+      ...(dto.action === 'tolerate' ? { maxDiffPercent: dto.maxDiffPercent ?? 5 } : {}),
+      ...(dto.note ? { note: dto.note } : {}),
+    };
+    await this.updateRules(testRun, dto.scope, (rules) => [...rules, rule]);
+    await this.recompareAfterRuleChange(testRun, dto.scope);
+    return rule;
+  }
+
+  async removeElementRule(id: string, dto: RemoveElementRuleDto): Promise<void> {
+    const testRun = await this.findOne(id);
+    if (!testRun) throw new NotFoundException('Test run not found');
+    await this.updateRules(testRun, dto.scope, (rules) => rules.filter((rule) => rule.id !== dto.ruleId));
+    await this.recompareAfterRuleChange(testRun, dto.scope);
+  }
+
+  private async updateRules(
+    testRun: TestRun,
+    scope: 'screen' | 'project',
+    change: (rules: ElementRule[]) => ElementRule[]
+  ): Promise<void> {
+    if (scope === 'screen') {
+      const variation = await this.prismaService.testVariation.findUnique({ where: { id: testRun.testVariationId } });
+      const rules = change(parseJsonArray<ElementRule>(variation?.elementRules));
+      await this.prismaService.testVariation.update({
+        where: { id: testRun.testVariationId },
+        data: { elementRules: JSON.stringify(rules) },
+      });
+    } else {
+      const project = await this.prismaService.project.findUnique({ where: { id: testRun.projectId } });
+      const settings = parseUiTreeSettings(project?.uiTreeSettings);
+      settings.elementRules = change(settings.elementRules);
+      await this.prismaService.project.update({
+        where: { id: testRun.projectId },
+        data: { uiTreeSettings: JSON.stringify(settings) },
+      });
+    }
+  }
+
+  private async recompareAfterRuleChange(testRun: TestRun, scope: 'screen' | 'project'): Promise<void> {
+    await this.calculateDiff(testRun.projectId, testRun);
+    const others = await this.prismaService.testRun.findMany({
+      where: {
+        buildId: testRun.buildId,
+        id: { not: testRun.id },
+        uiTreeName: { not: null },
+        status: TestStatus.unresolved,
+        ...(scope === 'screen' ? { testVariationId: testRun.testVariationId } : {}),
+      },
+      take: MAX_RECOMPARE_AFTER_RULE,
+    });
+    // one after another so a large build does not flood the diff workers
+    void (async () => {
+      for (const other of others) {
+        await this.calculateDiff(other.projectId, other).catch((error) =>
+          this.logger.warn(`Re-comparing ${other.id} after a rule change failed: ${error}`)
+        );
+      }
+    })();
+  }
+
   async delete(id: string): Promise<TestRun> {
     this.logger.debug(`Going to remove TestRun ${id}`);
     const testRun = await this.findOne(id);
@@ -755,6 +835,8 @@ export const SIGNATURE_CONCURRENCY = 8;
 // Signatures kept across requests, keyed by the image pair and diff settings.
 // Roughly one build's worth of screens, at 64 floats each.
 const SIGNATURE_CACHE_SIZE = 2000;
+// runs of the build compared again after an element rule changes
+const MAX_RECOMPARE_AFTER_RULE = 200;
 
 /**
  * Insertion-ordered cache with a hard size limit: reviewing build after build

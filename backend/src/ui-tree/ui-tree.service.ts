@@ -4,7 +4,7 @@ import { gunzipSync, gzipSync } from 'zlib';
 import { StaticService } from '../static/static.service';
 import { buildReport, findViolations } from '../a11y/a11y.rules';
 import { A11yReport, RgbaImage } from '../a11y/a11y.types';
-import { parseUiTree } from './ui-tree.parser';
+import { describeNode, parseUiTree } from './ui-tree.parser';
 import { Rect, UiTree, UiTreeFormat } from './ui-tree.types';
 import { diffTrees, elementsUnderRegions, RegionElement, StructuralChange } from './structure-diff';
 import { findNoiseHints, NoiseHint } from './noise-hints';
@@ -74,6 +74,16 @@ export interface StructureInfo {
   changes: StructuralChange[];
   regions: RegionElement[];
   hints: NoiseHint[];
+  // changes the screenshot does not show
+  invisible: StructuralChange[];
+  warnings: CaptureWarning[];
+  rules: Array<ElementRule & { scope: 'screen' | 'project'; matches: number }>;
+  ignoredAreas: Rect[];
+  toleratedAreas: Array<Rect & { maxDiffPercent: number }>;
+  systemBars: Rect[];
+  // compensated moves, in dp
+  moves: Array<{ key: string; element: string; dxDp: number; dyDp: number }>;
+  settings: UiTreeSettings;
 }
 
 /** Width and height from a PNG's IHDR chunk, without decoding the image. */
@@ -277,20 +287,31 @@ export class UiTreeService {
   }
 
   /** What changed in a run, by element, plus noise hints. Computed on demand. */
-  async structure(
-    testRun: Pick<TestRun, 'imageName' | 'uiTreeName' | 'baselineUiTreeName' | 'diffRegions' | 'diffPercent'>
-  ): Promise<StructureInfo> {
-    const [tree, baselineTree, imageBuffer] = await Promise.all([
+  async structure(testRun: TestRun): Promise<StructureInfo> {
+    const [tree, baselineTree, imageBuffer, inputs, project, variation] = await Promise.all([
       this.load(testRun.uiTreeName),
       this.load(testRun.baselineUiTreeName),
       this.staticService.getImageBuffer(testRun.imageName),
+      this.comparisonInputs(testRun),
+      testRun.projectId ? this.prismaService.project.findUnique({ where: { id: testRun.projectId } }) : null,
+      testRun.testVariationId
+        ? this.prismaService.testVariation.findUnique({ where: { id: testRun.testVariationId } })
+        : null,
     ]);
     const regions = parseRegions(testRun.diffRegions);
     const size = imageBuffer ? pngSize(imageBuffer) : { width: tree?.width ?? 0, height: tree?.height ?? 0 };
+    const changes = tree && baselineTree ? diffTrees(baselineTree, tree) : [];
+    const clickable = new Set(
+      [...(tree?.nodes ?? []), ...(baselineTree?.nodes ?? [])].filter((n) => n.clickable).map((n) => n.key)
+    );
+    const settings = parseUiTreeSettings(project?.uiTreeSettings);
+    const withScope = (rules: ElementRule[], scope: 'screen' | 'project') =>
+      rules.map((rule) => ({ ...rule, scope, matches: inputs.rules.matches[rule.id] ?? 0 }));
+    const nodesByKey = new Map((tree?.nodes ?? []).map((node) => [node.key, node]));
     return {
       hasUiTree: !!tree,
       hasBaselineUiTree: !!baselineTree,
-      changes: tree && baselineTree ? diffTrees(baselineTree, tree) : [],
+      changes,
       regions: tree
         ? elementsUnderRegions(tree, regions)
         : regions.map((region) => ({ region, key: null, element: null, resourceId: null })),
@@ -301,6 +322,26 @@ export class UiTreeService {
         imageHeight: size.height,
         tree,
       }),
+      invisible: tree && baselineTree ? invisibleChanges(changes, regions, clickable) : [],
+      warnings: parseJsonArray<CaptureWarning>(testRun.captureWarnings),
+      rules: [
+        ...withScope(parseJsonArray<ElementRule>(variation?.elementRules), 'screen'),
+        ...withScope(settings.elementRules, 'project'),
+      ],
+      ignoredAreas: inputs.rules.ignore,
+      toleratedAreas: inputs.rules.tolerate,
+      systemBars: inputs.systemBars,
+      moves: inputs.moves.map((move) => {
+        const node = nodesByKey.get(move.key);
+        const ppd = tree?.pixelsPerDp || 1;
+        return {
+          key: move.key,
+          element: node ? describeNode(node) : move.key,
+          dxDp: Math.round((move.to.x - move.from.x) / ppd),
+          dyDp: Math.round((move.to.y - move.from.y) / ppd),
+        };
+      }),
+      settings,
     };
   }
 

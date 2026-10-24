@@ -72,6 +72,37 @@ describe('ChangeGroupsService', () => {
     ]);
   });
 
+  it('groups one component changed the same way on several screens', async () => {
+    const nav = (covers: boolean) =>
+      JSON.stringify([
+        {
+          componentId: 'com.bank.app:id/bottom_nav',
+          key: 'k',
+          before: 'aaa',
+          after: 'bbb',
+          bounds: {},
+          coversAllChanges: covers,
+        },
+      ]);
+    const runs = [
+      run('a', { name: 'Home', componentChanges: nav(true) }),
+      run('b', { name: 'Payments', componentChanges: nav(true) }),
+      run('c', { name: 'Profile', componentChanges: nav(false) }),
+      run('d', { name: 'Cards' }),
+    ];
+    const service = setup(runs, {}, {});
+
+    const groups = await service.getGroups('build');
+
+    const component = groups.find((g) => g.kind === 'component');
+    expect(component.title).toBe('Component id/bottom_nav');
+    expect(component.testRuns.map((r) => r.id)).toEqual(['a', 'b']);
+    expect(component.screens).toEqual(['Home', 'Payments', 'Profile']);
+    expect(component.alsoChangedElsewhere.map((r) => r.id)).toEqual(['c']);
+    // the run with other changes is still reviewed on its own
+    expect(groups.some((g) => g.kind === 'visual' && g.testRuns.some((r) => r.id === 'c'))).toBe(true);
+  });
+
   it('groups runs of one screen with matching change signatures, and lists new screenshots last', async () => {
     const same = Array.from({ length: 64 }, (_, i) => (i === 3 ? 1 : 0));
     const different = Array.from({ length: 64 }, (_, i) => (i === 40 ? 1 : 0));

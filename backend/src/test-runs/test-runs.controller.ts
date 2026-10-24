@@ -42,6 +42,7 @@ import { RoleGuard } from '../auth/guards/role.guard';
 import { Roles } from '../shared/roles.decorator';
 import { A11yIssuesService } from '../a11y/a11y-issues.service';
 import { ChangeGroupsService } from './change-groups.service';
+import { AddElementRuleDto, RemoveElementRuleDto } from './dto/element-rule.dto';
 import { A11yIssueRefDto, FileA11yBugDto, IgnoreA11yIssueDto, LinkA11yIssueDto } from '../a11y/a11y-issue.dto';
 
 @ApiTags('test-runs')
@@ -129,6 +130,24 @@ export class TestRunsController {
   @Roles(Role.admin, Role.editor)
   fileA11yBug(@CurrentUser() user: User, @Param('id', new ParseUUIDPipe()) id: string, @Body() body: FileA11yBugDto) {
     return this.a11yIssuesService.fileBug(id, body.violationId, body.parentKey, user?.id);
+  }
+
+  @Post(':id/element-rules')
+  @ApiOkResponse({ description: 'Adds an element rule to the screen or the project and compares again' })
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RoleGuard)
+  @Roles(Role.admin, Role.editor)
+  addElementRule(@Param('id', new ParseUUIDPipe()) id: string, @Body() body: AddElementRuleDto) {
+    return this.testRunsService.addElementRule(id, body);
+  }
+
+  @Post(':id/element-rules/remove')
+  @ApiOkResponse({ description: 'Removes an element rule and compares again' })
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RoleGuard)
+  @Roles(Role.admin, Role.editor)
+  removeElementRule(@Param('id', new ParseUUIDPipe()) id: string, @Body() body: RemoveElementRuleDto) {
+    return this.testRunsService.removeElementRule(id, body);
   }
 
   @Get(':id/structure')

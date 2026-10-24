@@ -10,10 +10,12 @@ import { signaturesMatch } from '../compare/libs/pixelmatch/signature.core';
 import { UiTreeService, parseRegions, pngSize } from '../ui-tree/ui-tree.service';
 import { changeFingerprint, diffTrees, elementsUnderRegions, StructuralChange } from '../ui-tree/structure-diff';
 import { findNoiseHints, NoiseHint } from '../ui-tree/noise-hints';
+import { ComponentChange } from '../ui-tree/screen-checks';
+import { parseJsonArray } from '../ui-tree/comparison-inputs';
 import { TestRunDto } from './dto/testRun.dto';
 import { magnitudesSimilar, mapWithConcurrency, SIGNATURE_CONCURRENCY, TestRunsService } from './test-runs.service';
 
-export type ChangeGroupKind = 'structural' | 'visual' | 'new';
+export type ChangeGroupKind = 'component' | 'structural' | 'visual' | 'new';
 
 export interface ChangeGroup {
   // stable while the members stay the same
@@ -28,6 +30,10 @@ export interface ChangeGroup {
   noise: NoiseHint | null;
   // identity of the change itself, for caching AI answers about it
   fingerprint: string;
+  // component groups: the shared component, and screenshots where it changed
+  // the same way but that also changed elsewhere (reviewed on their own)
+  componentId?: string;
+  alsoChangedElsewhere?: TestRunDto[];
 }
 
 // Only regions this close to the top can be the status bar; the image is read
@@ -67,10 +73,12 @@ export class ChangeGroupsService {
     const changed = runs.filter((run) => run.status === TestStatus.unresolved && run.baselineName);
     const fresh = runs.filter((run) => !changed.includes(run));
 
-    const structural = await this.structuralGroups(changed);
-    const grouped = new Set(structural.flatMap((group) => group.testRuns.map((run) => run.id)));
+    const components = this.componentGroups(changed);
+    const grouped = new Set(components.flatMap((group) => group.testRuns.map((run) => run.id)));
+    const structural = await this.structuralGroups(changed.filter((run) => !grouped.has(run.id)));
+    structural.forEach((group) => group.testRuns.forEach((run) => grouped.add(run.id)));
     const visual = await this.visualGroups(changed.filter((run) => !grouped.has(run.id)));
-    const groups = [...structural, ...visual];
+    const groups = [...components, ...structural, ...visual];
 
     await mapWithConcurrency(groups, SIGNATURE_CONCURRENCY, async (group) => {
       group.noise = await this.commonNoise(runs.filter((run) => group.testRuns.some((member) => member.id === run.id)));
@@ -106,6 +114,43 @@ export class ChangeGroupsService {
       noise: null,
       fingerprint,
     };
+  }
+
+  /**
+   * One shared component (toolbar, bottom menu) changed the same way on
+   * several screens: the same id with the same pixels before and after. Only
+   * screenshots whose every change lies in that component join the group;
+   * the others are listed as also changed elsewhere and reviewed on their own.
+   */
+  private componentGroups(runs: TestRun[]): ChangeGroup[] {
+    const byChange = new Map<string, { componentId: string; covering: TestRun[]; partial: TestRun[] }>();
+    for (const run of runs) {
+      for (const change of parseJsonArray<ComponentChange>(run.componentChanges)) {
+        const key = `${change.componentId}|${change.before}|${change.after}`;
+        const entry = byChange.get(key) ?? { componentId: change.componentId, covering: [], partial: [] };
+        const list = change.coversAllChanges ? entry.covering : entry.partial;
+        if (!list.includes(run)) list.push(run);
+        byChange.set(key, entry);
+      }
+    }
+    const shared = [...byChange.entries()]
+      .filter(([, e]) => e.covering.length && new Set([...e.covering, ...e.partial].map((r) => r.name)).size >= 2)
+      .sort(([, a], [, b]) => b.covering.length + b.partial.length - (a.covering.length + a.partial.length));
+
+    const assigned = new Set<string>();
+    const groups: ChangeGroup[] = [];
+    for (const [key, entry] of shared) {
+      const members = entry.covering.filter((run) => !assigned.has(run.id));
+      if (!members.length) continue;
+      members.forEach((run) => assigned.add(run.id));
+      const shortId = entry.componentId.replace(/^.*:id\//, 'id/');
+      const group = this.group('component', `Component ${shortId}`, members, [], `component:${hash(key)}`);
+      group.componentId = entry.componentId;
+      group.screens = [...new Set([...members, ...entry.partial].map((run) => run.name))];
+      group.alsoChangedElsewhere = entry.partial.map((run) => new TestRunDto(run));
+      groups.push(group);
+    }
+    return groups;
   }
 
   private async structuralGroups(runs: TestRun[]): Promise<ChangeGroup[]> {

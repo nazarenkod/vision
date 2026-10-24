@@ -1,5 +1,6 @@
 import React from "react";
 import { render } from "@testing-library/react";
+import { MemoryRouter } from "react-router-dom";
 import { useProjectState, useUserState } from "../contexts";
 import {
   EDITOR_USER,
@@ -33,7 +34,11 @@ const renderAs = (user?: User) => {
     projectEditState: TEST_PROJECT,
   });
 
-  return render(<ProjectsListPage />);
+  return render(
+    <MemoryRouter>
+      <ProjectsListPage />
+    </MemoryRouter>,
+  );
 };
 
 describe("ProjectListPage", () => {
@@ -43,8 +48,8 @@ describe("ProjectListPage", () => {
   ])("lets %s create, edit and delete projects", (_, user) => {
     const page = renderAs(user);
 
-    expect(page.getByText(`Name: ${TEST_PROJECT.name}`)).toBeInTheDocument();
-    expect(page.getByRole("button", { name: "add" })).toBeInTheDocument();
+    expect(page.getByRole("link", { name: TEST_PROJECT.name })).toBeInTheDocument();
+    expect(page.getByRole("button", { name: "Add project" })).toBeInTheDocument();
     expect(page.getByTestId("EditIcon")).toBeInTheDocument();
     expect(page.getByTestId("delete")).toBeInTheDocument();
   });
@@ -55,9 +60,9 @@ describe("ProjectListPage", () => {
   ])("shows the projects read-only to %s", (_, user) => {
     const page = renderAs(user);
 
-    expect(page.getByText(`Name: ${TEST_PROJECT.name}`)).toBeInTheDocument();
+    expect(page.getByRole("link", { name: TEST_PROJECT.name })).toBeInTheDocument();
     expect(page.getByRole("link", { name: "Builds" })).toBeInTheDocument();
-    expect(page.queryByRole("button", { name: "add" })).not.toBeInTheDocument();
+    expect(page.queryByRole("button", { name: "Add project" })).not.toBeInTheDocument();
     expect(page.queryByTestId("EditIcon")).not.toBeInTheDocument();
     expect(page.queryByTestId("delete")).not.toBeInTheDocument();
   });

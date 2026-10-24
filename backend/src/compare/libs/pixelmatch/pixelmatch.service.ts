@@ -57,6 +57,8 @@ export class PixelmatchService implements ImageComparator {
       // objects per attempt that nothing ever references or deletes.
       withThumbnails: data.saveDiffAsFile,
       withRegions: data.saveDiffAsFile,
+      moves: data.moves,
+      toleranceAreas: data.toleranceAreas,
     });
 
     if (output.equal) {

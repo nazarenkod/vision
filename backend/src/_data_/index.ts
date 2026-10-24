@@ -20,6 +20,7 @@ export const TEST_PROJECT: Project = {
   jiraToken: null,
   jiraIssueType: null,
   jiraLinkType: null,
+  uiTreeSettings: null,
 };
 
 export const TEST_BUILD: Build = {
@@ -63,6 +64,7 @@ export const generateTestVariation = (
     name: 'Test name',
     baselineName: 'baselineName',
     baselineUiTreeName: null,
+    elementRules: null,
     os: 'OS',
     browser: 'browser',
     viewport: 'viewport',
@@ -115,6 +117,10 @@ export const generateTestRun = (testRun?: Partial<TestRun>): TestRun => {
     a11yNewCount: null,
     a11yTotalCount: null,
     diffRegions: null,
+    uiTreeOptions: null,
+    captureWarnings: null,
+    semanticChangeCount: null,
+    componentChanges: null,
     ...testRun,
   };
 };

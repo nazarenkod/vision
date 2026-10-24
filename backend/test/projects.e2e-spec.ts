@@ -27,6 +27,7 @@ const project: ProjectDto = {
   jiraToken: null,
   jiraIssueType: null,
   jiraLinkType: null,
+  uiTreeSettings: null,
 };
 
 const projectServiceMock = {

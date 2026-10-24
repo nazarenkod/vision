@@ -79,6 +79,11 @@ export class ProjectDto implements Project {
   @IsString()
   jiraIssueType: string | null;
 
+  @ApiPropertyOptional({ description: 'UI tree comparison settings and project-wide element rules, as JSON' })
+  @IsOptional()
+  @IsString()
+  uiTreeSettings: string | null;
+
   @ApiPropertyOptional({ example: 'Relates' })
   @IsOptional()
   @IsString()

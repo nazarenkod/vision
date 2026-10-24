@@ -46,6 +46,8 @@ model Project {
   jiraToken             String?
   jiraIssueType         String?
   jiraLinkType          String?
+  // UI tree comparison settings and project-wide element rules, as JSON (null = defaults)
+  uiTreeSettings        String?
   builds                Build[]
   TestRun               TestRun[]
   testVariations        TestVariation[]
@@ -104,6 +106,14 @@ model TestRun {
   // Bounding boxes of the changed areas, as JSON [{x,y,width,height}], in
   // screenshot pixels. Null on runs without a diff or ingested before this.
   diffRegions           String?
+  // per-run overrides sent by the client, as JSON ({"excludeSystemBars": false})
+  uiTreeOptions         String?
+  // [{kind, message}] — taken while loading, looks like another screen, …
+  captureWarnings       String?
+  // changes the pixels do not show: labels, states, invisible controls
+  semanticChangeCount   Int?
+  // [{componentId, before, after, bounds}] for grouping one component's change across screens
+  componentChanges      String?
   baseline              Baseline?
   build                 Build          @relation(fields: [buildId], references: [id])
   project               Project?       @relation(fields: [projectId], references: [id])
@@ -123,6 +133,8 @@ model TestVariation {
   customTags         String     @default("")
   baselineName       String?
   baselineUiTreeName String?
+  // element rules for this screen only, as JSON
+  elementRules       String?
   ignoreAreas        String     @default("[]")
   projectId          String
   comment            String?

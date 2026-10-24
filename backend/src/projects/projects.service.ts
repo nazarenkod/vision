@@ -18,7 +18,19 @@ function jiraFields(dto: Partial<CreateProjectDto>) {
     jiraToken: blankToNull(dto.jiraToken),
     jiraIssueType: blankToNull(dto.jiraIssueType),
     jiraLinkType: blankToNull(dto.jiraLinkType),
+    // stored only when it parses, so a bad value can never break comparisons
+    uiTreeSettings: dto.uiTreeSettings === undefined ? undefined : normalizeUiTreeSettings(dto.uiTreeSettings),
   };
+}
+
+function normalizeUiTreeSettings(value: string | null): string | null {
+  if (!value) return null;
+  try {
+    JSON.parse(value);
+    return value;
+  } catch {
+    throw new HttpException('uiTreeSettings must be JSON', HttpStatus.BAD_REQUEST);
+  }
 }
 
 /** A project as the API returns it: the Jira token never leaves the server. */

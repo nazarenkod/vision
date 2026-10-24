@@ -42,6 +42,24 @@ export interface PixelmatchJobInput {
    * is already in memory.
    */
   withRegions?: boolean;
+  /**
+   * Elements that moved without changing size, in baseline (from) and image
+   * (to) pixels. Each is copied to its new place in the baseline before the
+   * comparison, so a shift on its own is not a difference.
+   */
+  moves?: Array<{ from: AreaRect; to: AreaRect }>;
+  /**
+   * Areas where a change covering at most maxDiffPercent of the area's pixels
+   * is not counted (images, maps, charts that re-render slightly).
+   */
+  toleranceAreas?: Array<AreaRect & { maxDiffPercent: number }>;
+}
+
+export interface AreaRect {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
 }
 
 export interface PixelmatchJobOutput {
@@ -59,6 +77,66 @@ export interface PixelmatchJobOutput {
   diffThumbnail?: Buffer | Uint8Array;
   // absent when not asked for or when the diff is not kept
   regions?: DiffRegion[];
+  // changed pixels left out because they fell under an area's tolerance
+  toleratedPixels?: number;
+}
+
+function clonePng(source: PNG): PNG {
+  const copy = new PNG({ width: source.width, height: source.height });
+  source.data.copy(copy.data);
+  return copy;
+}
+
+/** The baseline with every moved element copied to where it is now. */
+export function shiftBaseline(baseline: PNG, moves: Array<{ from: AreaRect; to: AreaRect }>): PNG {
+  const shifted = clonePng(baseline);
+  for (const { from, to } of moves) {
+    // clamp the copy to both images, keeping source and target aligned
+    const left = Math.max(0, -from.x, -to.x);
+    const top = Math.max(0, -from.y, -to.y);
+    const width = Math.min(from.width, baseline.width - from.x, baseline.width - to.x) - left;
+    const height = Math.min(from.height, baseline.height - from.y, baseline.height - to.y) - top;
+    if (width <= 0 || height <= 0) continue;
+    PNG.bitblt(baseline, shifted, from.x + left, from.y + top, width, height, to.x + left, to.y + top);
+  }
+  return shifted;
+}
+
+const isDiffPixel = (data: Buffer | Uint8Array, i: number) => data[i] === 255 && data[i + 1] === 0 && data[i + 2] === 0;
+
+/**
+ * Clears changed pixels inside each area whose change stays within its
+ * tolerance. Returns how many pixels were cleared.
+ */
+export function applyTolerance(
+  diff: { width: number; height: number; data: Buffer | Uint8Array },
+  areas: Array<AreaRect & { maxDiffPercent: number }>
+): number {
+  let cleared = 0;
+  for (const area of areas) {
+    const x0 = Math.max(0, Math.floor(area.x));
+    const y0 = Math.max(0, Math.floor(area.y));
+    const x1 = Math.min(diff.width, Math.ceil(area.x + area.width));
+    const y1 = Math.min(diff.height, Math.ceil(area.y + area.height));
+    const size = (x1 - x0) * (y1 - y0);
+    if (size <= 0) continue;
+    let changed = 0;
+    for (let y = y0; y < y1; y++) {
+      for (let x = x0; x < x1; x++) if (isDiffPixel(diff.data, (y * diff.width + x) * 4)) changed++;
+    }
+    if (!changed || (changed * 100) / size > area.maxDiffPercent) continue;
+    for (let y = y0; y < y1; y++) {
+      for (let x = x0; x < x1; x++) {
+        const i = (y * diff.width + x) * 4;
+        if (isDiffPixel(diff.data, i)) {
+          // the faded grey pixelmatch draws for unchanged pixels
+          diff.data[i] = diff.data[i + 1] = diff.data[i + 2] = 230;
+          cleared++;
+        }
+      }
+    }
+  }
+  return cleared;
 }
 
 // postMessage turns Buffers into Uint8Array views over their own ArrayBuffer.
@@ -85,8 +163,9 @@ export function computePixelmatchDiff(input: PixelmatchJobInput): PixelmatchJobO
   const scaledBaseline = scaleImageToSize(baseline, maxWidth, maxHeight);
   const scaledImage = scaleImageToSize(image, maxWidth, maxHeight);
 
-  // apply ignore areas
-  const baselineIgnored = applyIgnoreAreas(scaledBaseline, input.ignoreAreas);
+  // move shifted elements to their new place, then apply ignore areas to both
+  const baselineShifted = input.moves?.length ? shiftBaseline(scaledBaseline, input.moves) : scaledBaseline;
+  const baselineIgnored = applyIgnoreAreas(baselineShifted, input.ignoreAreas);
   const imageIgnored = applyIgnoreAreas(scaledImage, input.ignoreAreas);
 
   // compare
@@ -94,10 +173,12 @@ export function computePixelmatchDiff(input: PixelmatchJobInput): PixelmatchJobO
     width: maxWidth,
     height: maxHeight,
   });
-  const pixelMisMatchCount = Pixelmatch(baselineIgnored.data, imageIgnored.data, diff.data, maxWidth, maxHeight, {
+  const rawMisMatchCount = Pixelmatch(baselineIgnored.data, imageIgnored.data, diff.data, maxWidth, maxHeight, {
     includeAA: input.includeAA,
     threshold: input.threshold,
   });
+  const toleratedPixels = input.toleranceAreas?.length ? applyTolerance(diff, input.toleranceAreas) : 0;
+  const pixelMisMatchCount = rawMisMatchCount - toleratedPixels;
   const diffPercent = (pixelMisMatchCount * 100) / (scaledImage.width * scaledImage.height);
 
   // A build is mostly runs that pass, so anything produced for a diff that is
@@ -136,5 +217,6 @@ export function computePixelmatchDiff(input: PixelmatchJobInput): PixelmatchJobO
     ...(signature ? { signature } : {}),
     ...thumbnails,
     ...(regions?.length ? { regions } : {}),
+    ...(toleratedPixels ? { toleratedPixels } : {}),
   };
 }

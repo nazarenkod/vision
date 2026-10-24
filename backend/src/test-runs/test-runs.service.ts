@@ -436,14 +436,18 @@ export class TestRunsService {
     // the cheaper of the two failures by a distance.
     const previous = [testRun.diffName, testRun.imageThumbnailName, testRun.diffThumbnailName];
 
+    // UI tree rules: system bars, ignored and tolerated elements, moved elements
+    const fromTree = await this.uiTreeService.comparisonInputs(testRun);
     const diffResult = await this.compareService.getDiff({
       projectId,
       data: {
         image: testRun.imageName,
         baseline: testRun.baselineName,
-        ignoreAreas: this.getAllIgnoteAreas(testRun),
+        ignoreAreas: [...this.getAllIgnoteAreas(testRun), ...fromTree.ignoreAreas],
         diffTollerancePercent: testRun.diffTollerancePercent,
         saveDiffAsFile: true,
+        moves: fromTree.moves,
+        toleranceAreas: fromTree.toleranceAreas,
       },
     });
     const saved = await this.saveDiffResult(testRun.id, diffResult);

@@ -100,6 +100,14 @@ const initService = async ({
         provide: UiTreeService,
         useValue: {
           store: jest.fn().mockResolvedValue(null),
+          comparisonInputs: jest.fn().mockResolvedValue({
+            ignoreAreas: [],
+            toleranceAreas: [],
+            moves: [],
+            systemBars: [],
+            rules: { ignore: [], tolerate: [], matches: {} },
+            settings: null,
+          }),
           deleteFiles: jest.fn().mockResolvedValue(undefined),
         },
       },
@@ -211,6 +219,7 @@ describe('TestRunsService', () => {
       imageName: 'imageName',
       baselineName: 'baselineName',
       baselineUiTreeName: null,
+      elementRules: null,
       diffTollerancePercent: 1,
       ignoreAreas: '[]',
       diffName: 'diffName',
@@ -231,6 +240,7 @@ describe('TestRunsService', () => {
       name: 'Test name',
       baselineName: 'baselineName',
       baselineUiTreeName: null,
+      elementRules: null,
       os: 'OS',
       browser: 'browser',
       viewport: 'viewport',
@@ -342,6 +352,8 @@ describe('TestRunsService', () => {
         ignoreAreas: service['getAllIgnoteAreas'](testRun),
         diffTollerancePercent: testRun.diffTollerancePercent,
         saveDiffAsFile: true,
+        moves: [],
+        toleranceAreas: [],
       },
     });
     expect(service.saveDiffResult).toHaveBeenCalledWith(testRun.id, diffResult);
@@ -599,6 +611,7 @@ describe('TestRunsService', () => {
       name: 'Test name',
       baselineName: 'baselineName',
       baselineUiTreeName: null,
+      elementRules: null,
       os: 'OS',
       browser: 'browser',
       viewport: 'viewport',

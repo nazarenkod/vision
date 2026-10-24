@@ -23,6 +23,7 @@ const mockDefaultProject = {
   jiraToken: null,
   jiraIssueType: null,
   jiraLinkType: null,
+  uiTreeSettings: null,
 } as const;
 
 const mockDefaultUser = {

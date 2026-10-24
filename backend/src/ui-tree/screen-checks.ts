@@ -143,11 +143,13 @@ export function areaHash(image: RgbaLike, rect: Rect): string {
 const MAX_COMPONENTS = 6;
 const MAX_COMPONENT_SCREEN_SHARE = 0.6;
 
+// Diff regions are snapped to an 8 px grid, so they can stick out of an element by that much.
+const REGION_SNAP_PX = 8;
 const contains = (outer: Rect, inner: Rect) =>
-  inner.x >= outer.x - 2 &&
-  inner.y >= outer.y - 2 &&
-  inner.x + inner.width <= outer.x + outer.width + 2 &&
-  inner.y + inner.height <= outer.y + outer.height + 2;
+  inner.x >= outer.x - REGION_SNAP_PX &&
+  inner.y >= outer.y - REGION_SNAP_PX &&
+  inner.x + inner.width <= outer.x + outer.width + REGION_SNAP_PX &&
+  inner.y + inner.height <= outer.y + outer.height + REGION_SNAP_PX;
 
 /**
  * Components (elements with an id, smaller than most of the screen) that

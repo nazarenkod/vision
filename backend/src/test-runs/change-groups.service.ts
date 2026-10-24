@@ -86,7 +86,10 @@ export class ChangeGroupsService {
 
     groups.sort(
       (a, b) =>
-        Number(!!a.noise) - Number(!!b.noise) || b.testRuns.length - a.testRuns.length || a.title.localeCompare(b.title)
+        Number(!!a.noise) - Number(!!b.noise) ||
+        Number(b.kind === 'component') - Number(a.kind === 'component') ||
+        b.testRuns.length - a.testRuns.length ||
+        a.title.localeCompare(b.title)
     );
     if (fresh.length) groups.push(this.group('new', 'New screenshots', fresh, [], 'new'));
     return groups;

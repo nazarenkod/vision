@@ -91,6 +91,16 @@ export function pngSize(buffer: Buffer): { width: number; height: number } {
   return { width: buffer.readUInt32BE(16), height: buffer.readUInt32BE(20) };
 }
 
+/** Element changes outside the ignored areas (element rules, system bars). */
+export function outsideAreas(changes: StructuralChange[], areas: Rect[]): StructuralChange[] {
+  const inside = (outer: Rect, inner: Rect) =>
+    inner.x >= outer.x &&
+    inner.y >= outer.y &&
+    inner.x + inner.width <= outer.x + outer.width &&
+    inner.y + inner.height <= outer.y + outer.height;
+  return changes.filter((change) => !areas.some((area) => inside(area, change.bounds)));
+}
+
 export function parseRegions(value: string | null): Rect[] {
   if (!value) return [];
   try {
@@ -211,7 +221,8 @@ export class UiTreeService {
     );
 
     const regions = parseRegions(testRun.diffRegions);
-    const changes = baselineTree ? diffTrees(baselineTree, tree) : [];
+    const ignored = (await this.comparisonInputs(testRun)).ignoreAreas;
+    const changes = baselineTree ? outsideAreas(diffTrees(baselineTree, tree), ignored) : [];
     const clickable = new Set(
       [...tree.nodes, ...(baselineTree?.nodes ?? [])].filter((node) => node.clickable).map((node) => node.key)
     );
@@ -229,6 +240,27 @@ export class UiTreeService {
       ? componentChanges({ tree, baselineTree, image, baselineImage: baselineImage ?? null, regions, changes })
       : [];
     return { reportName, report, warnings, invisible, components };
+  }
+
+  /** Changed components of a run, against its current diff regions. */
+  async components(testRun: TestRun): Promise<ComponentChange[]> {
+    const [tree, baselineTree, image, baselineImage] = await Promise.all([
+      this.load(testRun.uiTreeName),
+      this.load(testRun.baselineUiTreeName),
+      this.decode(testRun.imageName),
+      this.decode(testRun.baselineName),
+    ]);
+    if (!tree || !image) return [];
+    const ignored = (await this.comparisonInputs(testRun)).ignoreAreas;
+    const changes = baselineTree ? outsideAreas(diffTrees(baselineTree, tree), ignored) : [];
+    return componentChanges({
+      tree,
+      baselineTree,
+      image,
+      baselineImage: baselineImage ?? null,
+      regions: parseRegions(testRun.diffRegions),
+      changes,
+    });
   }
 
   /** Warns when the tree looks like another screen than its baseline, or like a screen that already exists. */
@@ -300,7 +332,7 @@ export class UiTreeService {
     ]);
     const regions = parseRegions(testRun.diffRegions);
     const size = imageBuffer ? pngSize(imageBuffer) : { width: tree?.width ?? 0, height: tree?.height ?? 0 };
-    const changes = tree && baselineTree ? diffTrees(baselineTree, tree) : [];
+    const changes = tree && baselineTree ? outsideAreas(diffTrees(baselineTree, tree), inputs.ignoreAreas) : [];
     const clickable = new Set(
       [...(tree?.nodes ?? []), ...(baselineTree?.nodes ?? [])].filter((n) => n.clickable).map((n) => n.key)
     );

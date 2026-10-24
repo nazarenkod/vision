@@ -459,9 +459,22 @@ export class TestRunsService {
         toleranceAreas: fromTree.toleranceAreas,
       },
     });
-    const saved = await this.saveDiffResult(testRun.id, diffResult);
+    let saved = await this.saveDiffResult(testRun.id, diffResult);
 
     previous.forEach((name) => this.staticService.deleteImage(name));
+
+    // A re-comparison (new rule, ignore area) moves the changed areas, and with
+    // them which components hold the change. At ingest this comes later, with
+    // the rest of the UI tree analysis.
+    if (saved?.uiTreeName && saved.a11yReportName) {
+      const components = await this.uiTreeService.components(saved).catch(() => null);
+      if (components) {
+        saved = await this.prismaService.testRun.update({
+          where: { id: saved.id },
+          data: { componentChanges: components.length ? JSON.stringify(components) : null },
+        });
+      }
+    }
     return saved;
   }
 

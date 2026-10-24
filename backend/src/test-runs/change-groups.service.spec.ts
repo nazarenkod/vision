@@ -50,6 +50,28 @@ describe('ChangeGroupsService', () => {
     expect(groups[0].changes[0]).toMatchObject({ kind: 'text', before: 'Pay', after: 'Send' });
   });
 
+  it('leaves a run out of a structural group when part of its change is invisible to the tree', async () => {
+    const base = tree(xml);
+    const payRenamed = tree(xml.replace('text="Pay"', 'text="Send"'));
+    const payArea = JSON.stringify([{ x: 40, y: 2200, width: 1000, height: 128 }]);
+    const payAndFee = JSON.stringify([
+      { x: 40, y: 2200, width: 1000, height: 128 },
+      { x: 48, y: 1008, width: 304, height: 32 },
+    ]);
+    const runs = [
+      run('a', { name: 'Payment', uiTreeName: 't', baselineUiTreeName: 'base', diffRegions: payAndFee }),
+      run('b', { name: 'Transfer', uiTreeName: 't', baselineUiTreeName: 'base', diffRegions: payArea }),
+    ];
+    const service = setup(runs, { base, t: payRenamed }, {});
+
+    const groups = await service.getGroups('build');
+
+    expect(groups.map((g) => [g.kind, g.testRuns.map((r) => r.id)])).toEqual([
+      ['structural', ['b']],
+      ['visual', ['a']],
+    ]);
+  });
+
   it('groups runs of one screen with matching change signatures, and lists new screenshots last', async () => {
     const same = Array.from({ length: 64 }, (_, i) => (i === 3 ? 1 : 0));
     const different = Array.from({ length: 64 }, (_, i) => (i === 40 ? 1 : 0));

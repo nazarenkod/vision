@@ -8,7 +8,7 @@ import { DEFAULT_CONFIG } from '../compare/libs/pixelmatch/pixelmatch.service';
 import { PixelmatchConfig } from '../compare/libs/pixelmatch/pixelmatch.types';
 import { signaturesMatch } from '../compare/libs/pixelmatch/signature.core';
 import { UiTreeService, parseRegions, pngSize } from '../ui-tree/ui-tree.service';
-import { changeFingerprint, diffTrees, StructuralChange } from '../ui-tree/structure-diff';
+import { changeFingerprint, diffTrees, elementsUnderRegions, StructuralChange } from '../ui-tree/structure-diff';
 import { findNoiseHints, NoiseHint } from '../ui-tree/noise-hints';
 import { TestRunDto } from './dto/testRun.dto';
 import { magnitudesSimilar, mapWithConcurrency, SIGNATURE_CONCURRENCY, TestRunsService } from './test-runs.service';
@@ -118,7 +118,15 @@ export class ChangeGroupsService {
       if (!tree || !baseline) return null;
       const changes = diffTrees(baseline, tree);
       const fingerprint = changeFingerprint(changes);
-      return fingerprint ? { run, changes, fingerprint } : null;
+      if (!fingerprint) return null;
+      // Every changed area has to sit on an element the tree says changed.
+      // A colour or image change is invisible to the tree; grouping such a run
+      // by its text change alone would let one approval wave the other through.
+      const changedKeys = new Set(changes.map((change) => change.key));
+      const unexplained = elementsUnderRegions(tree, parseRegions(run.diffRegions)).some(
+        (area) => !area.key || !changedKeys.has(area.key)
+      );
+      return unexplained ? null : { run, changes, fingerprint };
     });
 
     const byFingerprint = new Map<string, Array<{ run: TestRun; changes: StructuralChange[] }>>();

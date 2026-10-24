@@ -4,6 +4,7 @@ import { TestRunsService } from './test-runs.service';
 import { TestVariationsService } from '../test-variations/test-variations.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { A11yIssuesService } from '../a11y/a11y-issues.service';
+import { ChangeGroupsService } from './change-groups.service';
 
 describe('TestRuns Controller', () => {
   let controller: TestRunsController;
@@ -16,6 +17,7 @@ describe('TestRuns Controller', () => {
         { provide: TestVariationsService, useValue: {} },
         { provide: PrismaService, useValue: {} },
         { provide: A11yIssuesService, useValue: {} },
+        { provide: ChangeGroupsService, useValue: {} },
       ],
     }).compile();
 

@@ -1,5 +1,6 @@
 import { forwardRef, Module } from '@nestjs/common';
 import { TestRunsService } from './test-runs.service';
+import { ChangeGroupsService } from './change-groups.service';
 import { SharedModule } from '../shared/shared.module';
 import { TestRunsController } from './test-runs.controller';
 import { TestVariationsModule } from '../test-variations/test-variations.module';
@@ -17,7 +18,7 @@ import { A11yModule } from '../a11y/a11y.module';
     UiTreeModule,
     A11yModule,
   ],
-  providers: [TestRunsService],
+  providers: [TestRunsService, ChangeGroupsService],
   controllers: [TestRunsController],
   exports: [TestRunsService],
 })

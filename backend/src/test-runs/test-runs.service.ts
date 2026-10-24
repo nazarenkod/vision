@@ -330,7 +330,7 @@ export class TestRunsService {
    * undecoded, and the result is memoized so reopening the dialog on an old
    * build does not pay for the same decodes twice.
    */
-  private async getChangeSignature(testRun: TestRun, config: PixelmatchConfig): Promise<number[] | null> {
+  async getChangeSignature(testRun: TestRun, config: PixelmatchConfig): Promise<number[] | null> {
     const stored = parseStoredSignature(testRun.changeSignature, config, this.logger);
     if (stored) {
       return stored;
@@ -760,7 +760,7 @@ class BoundedCache<T> {
  * Runs `task` over every item with at most `limit` in flight, keeping the
  * results in the items' order.
  */
-async function mapWithConcurrency<T, R>(items: T[], limit: number, task: (item: T) => Promise<R>): Promise<R[]> {
+export async function mapWithConcurrency<T, R>(items: T[], limit: number, task: (item: T) => Promise<R>): Promise<R[]> {
   const results = new Array<R>(items.length);
   let next = 0;
   const worker = async (): Promise<void> => {
@@ -816,7 +816,7 @@ function parseStoredSignature(
 // reflow — which stays well under this ratio. Such variations go to manual review.
 const MATCH_MAGNITUDE_RATIO = 2;
 
-function magnitudesSimilar(a: number | null, b: number | null): boolean {
+export function magnitudesSimilar(a: number | null, b: number | null): boolean {
   const min = Math.min(a ?? 0, b ?? 0);
   const max = Math.max(a ?? 0, b ?? 0);
   if (min <= 0) {

@@ -41,6 +41,7 @@ import { CurrentUser } from '../shared/current-user.decorator';
 import { RoleGuard } from '../auth/guards/role.guard';
 import { Roles } from '../shared/roles.decorator';
 import { A11yIssuesService } from '../a11y/a11y-issues.service';
+import { ChangeGroupsService } from './change-groups.service';
 import { A11yIssueRefDto, FileA11yBugDto, IgnoreA11yIssueDto, LinkA11yIssueDto } from '../a11y/a11y-issue.dto';
 
 @ApiTags('test-runs')
@@ -50,7 +51,8 @@ export class TestRunsController {
 
   constructor(
     private testRunsService: TestRunsService,
-    private a11yIssuesService: A11yIssuesService
+    private a11yIssuesService: A11yIssuesService,
+    private changeGroupsService: ChangeGroupsService
   ) {}
 
   @Get()
@@ -59,6 +61,14 @@ export class TestRunsController {
   @UseGuards(JwtAuthGuard)
   get(@Query('buildId', new ParseUUIDPipe()) buildId: string): Promise<TestRunDto[]> {
     return this.testRunsService.findMany(buildId);
+  }
+
+  @Get('groups')
+  @ApiOkResponse({ description: 'Screenshots of the build that need a decision, grouped by the change they carry' })
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  getGroups(@Query('buildId', new ParseUUIDPipe()) buildId: string) {
+    return this.changeGroupsService.getGroups(buildId);
   }
 
   @Get(':id')

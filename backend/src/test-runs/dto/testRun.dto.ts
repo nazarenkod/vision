@@ -51,6 +51,12 @@ export class TestRunDto {
   merge: boolean;
   @ApiPropertyOptional()
   vlmDescription?: string;
+  @ApiPropertyOptional()
+  hasUiTree?: boolean;
+  @ApiPropertyOptional()
+  a11yNewCount?: number;
+  @ApiPropertyOptional()
+  a11yTotalCount?: number;
 
   constructor(testRun: TestRun) {
     this.id = testRun.id;
@@ -77,5 +83,8 @@ export class TestRunDto {
     this.baselineBranchName = testRun.baselineBranchName;
     this.merge = testRun.merge;
     this.vlmDescription = testRun.vlmDescription;
+    this.hasUiTree = !!testRun.uiTreeName;
+    this.a11yNewCount = testRun.a11yNewCount;
+    this.a11yTotalCount = testRun.a11yTotalCount;
   }
 }

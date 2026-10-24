@@ -36,6 +36,7 @@ export const generateBaseline = (baseline?: Partial<Baseline>): Baseline => {
     baselineName: 'baselineName',
     testVariationId: 'testVariationId',
     testRunId: 'testRunId',
+    uiTreeName: null,
     userId: 'userId',
     updatedAt: new Date(),
     createdAt: new Date(),
@@ -56,6 +57,7 @@ export const generateTestVariation = (
     projectId: 'project Id',
     name: 'Test name',
     baselineName: 'baselineName',
+    baselineUiTreeName: null,
     os: 'OS',
     browser: 'browser',
     viewport: 'viewport',
@@ -102,6 +104,12 @@ export const generateTestRun = (testRun?: Partial<TestRun>): TestRun => {
     changeSignature: null,
     imageThumbnailName: null,
     diffThumbnailName: null,
+    uiTreeName: null,
+    baselineUiTreeName: null,
+    a11yReportName: null,
+    a11yNewCount: null,
+    a11yTotalCount: null,
+    diffRegions: null,
     ...testRun,
   };
 };

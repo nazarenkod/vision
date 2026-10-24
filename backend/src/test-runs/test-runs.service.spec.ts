@@ -17,6 +17,7 @@ import { getTestVariationUniqueData } from '../utils';
 import { BaselineDataDto } from '../shared/dto/baseline-data.dto';
 import { CompareService } from '../compare/compare.service';
 import { UpdateTestRunDto } from './dto/update-test.dto';
+import { UiTreeService } from '../ui-tree/ui-tree.service';
 
 jest.mock('pixelmatch');
 jest.mock('./dto/testRunResult.dto');
@@ -92,6 +93,13 @@ const initService = async ({
           testRunDeleted: eventTestRunDeletedMock,
           buildUpdated: eventBuildUpdatedMock,
           buildCreated: eventBuildCreatedMock,
+        },
+      },
+      {
+        provide: UiTreeService,
+        useValue: {
+          store: jest.fn().mockResolvedValue(null),
+          deleteFiles: jest.fn().mockResolvedValue(undefined),
         },
       },
       {
@@ -288,6 +296,8 @@ describe('TestRunsService', () => {
         viewport: testVariation.viewport,
         customTags: testVariation.customTags,
         baselineName: testVariation.baselineName,
+        baselineUiTreeName: testVariation.baselineUiTreeName,
+        uiTreeName: undefined,
         ignoreAreas: testVariation.ignoreAreas,
         tempIgnoreAreas: JSON.stringify(createTestRequestDto.ignoreAreas),
         comment: testVariation.comment,

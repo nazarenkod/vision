@@ -1,6 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
-import { IsOptional, IsUUID, IsNumber, IsBoolean, IsString, IsArray, ValidateNested } from 'class-validator';
+import { IsOptional, IsUUID, IsNumber, IsBoolean, IsString, IsArray, ValidateNested, IsIn, IsInt, Min } from 'class-validator';
 import { BaselineDataDto } from '../../shared/dto/baseline-data.dto';
 import { IgnoreAreaDto } from './ignore-area.dto';
 
@@ -34,4 +34,20 @@ export class CreateTestRequestDto extends BaselineDataDto {
   @IsOptional()
   @IsString()
   comment?: string;
+
+  @ApiPropertyOptional({ description: 'Appium page source of the screen: base64 of the XML, optionally gzipped' })
+  @IsOptional()
+  @IsString()
+  uiTree?: string;
+
+  @ApiPropertyOptional({ enum: ['appium-android', 'appium-ios'], description: 'Detected from the XML when omitted' })
+  @IsOptional()
+  @IsIn(['appium-android', 'appium-ios'])
+  uiTreeFormat?: 'appium-android' | 'appium-ios';
+
+  @ApiPropertyOptional({ description: 'Android screen density in dpi, for dp-based checks' })
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  deviceDensity?: number;
 }

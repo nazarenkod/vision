@@ -59,11 +59,17 @@ export class TestVariationsService {
     });
   }
 
-  async update(id: string, data: TestVariationUpdateDto, testRunId?: string): Promise<TestVariation> {
+  async update(
+    id: string,
+    data: TestVariationUpdateDto & { baselineUiTreeName?: string | null },
+    testRunId?: string
+  ): Promise<TestVariation> {
     return this.prismaService.testVariation.update({
       where: { id },
       data: {
         baselineName: data.baselineName,
+        // left untouched unless the caller says, so older callers keep the tree
+        ...(data.baselineUiTreeName !== undefined ? { baselineUiTreeName: data.baselineUiTreeName } : {}),
         ignoreAreas: data.ignoreAreas,
         comment: data.comment,
         testRuns: testRunId ? { connect: { id: testRunId } } : undefined,
@@ -137,19 +143,24 @@ export class TestVariationsService {
     userId,
     testRunId,
     baselineName,
+    uiTreeName = null,
   }: {
     id: string;
     userId: string;
     testRunId: string;
     baselineName: string;
+    // UI tree of the approved screenshot; a baseline without one clears the old tree
+    uiTreeName?: string | null;
   }): Promise<TestVariation> {
     return this.prismaService.testVariation.update({
       where: { id },
       data: {
         baselineName,
+        baselineUiTreeName: uiTreeName,
         baselines: {
           create: {
             baselineName,
+            uiTreeName,
             testRun: {
               connect: {
                 id: testRunId,
@@ -243,6 +254,7 @@ export class TestVariationsService {
     this.logger.debug(`Going to remove Baseline ${baseline.id}`);
 
     this.staticService.deleteImage(baseline.baselineName);
+    if (baseline.uiTreeName) this.staticService.deleteFile(baseline.uiTreeName);
     return this.prismaService.baseline.delete({
       where: { id: baseline.id },
     });

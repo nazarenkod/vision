@@ -64,6 +64,22 @@ export class TestRunsController {
     return this.testRunsService.findOne(id);
   }
 
+  @Get(':id/a11y')
+  @ApiOkResponse({ description: 'Accessibility report built from the UI tree; null when none was sent' })
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  getAccessibility(@Param('id', new ParseUUIDPipe()) id: string) {
+    return this.testRunsService.getAccessibilityReport(id);
+  }
+
+  @Get(':id/structure')
+  @ApiOkResponse({ description: 'Element-level changes, elements under changed areas and noise hints' })
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  getStructure(@Param('id', new ParseUUIDPipe()) id: string) {
+    return this.testRunsService.getStructure(id);
+  }
+
   @Post('approve')
   @ApiQuery({ name: 'merge', required: false })
   @ApiOkResponse({ type: undefined })

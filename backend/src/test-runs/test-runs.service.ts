@@ -16,6 +16,9 @@ import { parseConfig } from '../compare/utils';
 import { DEFAULT_CONFIG } from '../compare/libs/pixelmatch/pixelmatch.service';
 import { PixelmatchConfig } from '../compare/libs/pixelmatch/pixelmatch.types';
 import { signaturesMatch, SIGNATURE_LENGTH } from '../compare/libs/pixelmatch/signature.core';
+import { StructureInfo, UiTreeService } from '../ui-tree/ui-tree.service';
+import { UiTree } from '../ui-tree/ui-tree.types';
+import { A11yReport } from '../a11y/a11y.types';
 
 @Injectable()
 export class TestRunsService {
@@ -28,7 +31,8 @@ export class TestRunsService {
     private prismaService: PrismaService,
     private staticService: StaticService,
     private compareService: CompareService,
-    private eventsGateway: EventsGateway
+    private eventsGateway: EventsGateway,
+    private uiTreeService: UiTreeService
   ) {}
 
   async findMany(buildId: string): Promise<TestRunDto[]> {
@@ -81,11 +85,25 @@ export class TestRunsService {
       await this.delete(previousTestRun.id);
     }
 
+    // keep the UI tree, if the client sent one
+    const uiTree = createTestRequestDto.uiTree
+      ? await this.uiTreeService.store(
+          createTestRequestDto.uiTree,
+          { format: createTestRequestDto.uiTreeFormat, densityDpi: createTestRequestDto.deviceDensity },
+          imageBuffer
+        )
+      : null;
+
     // create test run result
-    const testRun = await this.create({ testVariation, createTestRequestDto, imageBuffer });
+    const testRun = await this.create({ testVariation, createTestRequestDto, imageBuffer, uiTreeName: uiTree?.name });
 
     // calculate diff
     let testRunWithResult = await this.calculateDiff(createTestRequestDto.projectId, testRun);
+
+    // accessibility, from the UI tree
+    if (uiTree) {
+      testRunWithResult = await this.analyzeAccessibility(testRunWithResult, uiTree.tree);
+    }
 
     // try auto approve
     if (project.autoApproveFeature) {
@@ -109,6 +127,10 @@ export class TestRunsService {
     // save new baseline as a byte-for-byte copy — decoding and re-encoding the
     // PNG here blocked the event loop for every approved run
     const baselineName = await this.staticService.copyImage('baseline', testRun.imageName);
+    // the run's own files go when the run is deleted, so the baseline gets a copy
+    const baselineUiTreeName = testRun.uiTreeName
+      ? await this.staticService.copyFile('uitree', testRun.uiTreeName, 'json.gz')
+      : null;
 
     if (testRun.baselineBranchName !== testRun.branchName && !merge && !autoApprove) {
       // replace main branch with feature branch test variation
@@ -134,6 +156,7 @@ export class TestRunsService {
         testVariation.id,
         {
           baselineName: testRun.baselineName,
+          baselineUiTreeName: testRun.baselineUiTreeName,
           ignoreAreas: testRun.ignoreAreas,
           comment: testRun.comment,
         },
@@ -148,7 +171,10 @@ export class TestRunsService {
         userId,
         testRunId: testRun.id,
         baselineName,
+        uiTreeName: baselineUiTreeName,
       });
+    } else if (baselineUiTreeName) {
+      this.staticService.deleteFile(baselineUiTreeName);
     }
 
     // update status
@@ -428,10 +454,12 @@ export class TestRunsService {
     testVariation,
     createTestRequestDto,
     imageBuffer,
+    uiTreeName,
   }: {
     testVariation: TestVariation;
     createTestRequestDto: CreateTestRequestDto;
     imageBuffer: Buffer;
+    uiTreeName?: string;
   }): Promise<TestRun> {
     // save image
     const imageName = await this.staticService.saveImage('screenshot', imageBuffer);
@@ -456,6 +484,8 @@ export class TestRunsService {
         },
         ...getTestVariationUniqueData(testVariation),
         baselineName: testVariation.baselineName,
+        baselineUiTreeName: testVariation.baselineUiTreeName,
+        uiTreeName,
         baselineBranchName: testVariation.branchName,
         ignoreAreas: testVariation.ignoreAreas,
         tempIgnoreAreas: JSON.stringify(createTestRequestDto.ignoreAreas),
@@ -469,6 +499,32 @@ export class TestRunsService {
 
     this.eventsGateway.testRunCreated(testRun);
     return testRun;
+  }
+
+  /** Runs the accessibility checks on a fresh run and keeps the counts on the row. */
+  async analyzeAccessibility(testRun: TestRun, tree: UiTree): Promise<TestRun> {
+    try {
+      const { reportName, report } = await this.uiTreeService.analyze(testRun, tree);
+      const updated = await this.prismaService.testRun.update({
+        where: { id: testRun.id },
+        data: { a11yReportName: reportName, a11yNewCount: report.summary.new, a11yTotalCount: report.summary.total },
+      });
+      this.eventsGateway.testRunUpdated(updated);
+      return updated;
+    } catch (error) {
+      this.logger.error(`Accessibility check failed for ${testRun.id}: ${error}`);
+      return testRun;
+    }
+  }
+
+  async getAccessibilityReport(id: string): Promise<A11yReport | null> {
+    const testRun = await this.findOne(id);
+    return testRun ? this.uiTreeService.loadReport(testRun.a11yReportName) : null;
+  }
+
+  async getStructure(id: string): Promise<StructureInfo | null> {
+    const testRun = await this.findOne(id);
+    return testRun ? this.uiTreeService.structure(testRun) : null;
   }
 
   async delete(id: string): Promise<TestRun> {
@@ -487,6 +543,7 @@ export class TestRunsService {
       // nothing would ever collect them
       this.staticService.deleteImage(testRun.imageThumbnailName),
       this.staticService.deleteImage(testRun.diffThumbnailName),
+      this.uiTreeService.deleteFiles(testRun.uiTreeName, testRun.a11yReportName),
     ]);
 
     try {

@@ -18,7 +18,8 @@ import { PixelmatchConfig } from '../compare/libs/pixelmatch/pixelmatch.types';
 import { signaturesMatch, SIGNATURE_LENGTH } from '../compare/libs/pixelmatch/signature.core';
 import { StructureInfo, UiTreeService } from '../ui-tree/ui-tree.service';
 import { UiTree } from '../ui-tree/ui-tree.types';
-import { A11yReport } from '../a11y/a11y.types';
+import { A11yIssuesService } from '../a11y/a11y-issues.service';
+import { ReviewedA11yReport } from '../a11y/a11y-issues';
 
 @Injectable()
 export class TestRunsService {
@@ -32,7 +33,8 @@ export class TestRunsService {
     private staticService: StaticService,
     private compareService: CompareService,
     private eventsGateway: EventsGateway,
-    private uiTreeService: UiTreeService
+    private uiTreeService: UiTreeService,
+    private a11yIssuesService: A11yIssuesService
   ) {}
 
   async findMany(buildId: string): Promise<TestRunDto[]> {
@@ -505,9 +507,11 @@ export class TestRunsService {
   async analyzeAccessibility(testRun: TestRun, tree: UiTree): Promise<TestRun> {
     try {
       const { reportName, report } = await this.uiTreeService.analyze(testRun, tree);
+      // issues the team filed or dismissed earlier do not count as new
+      const { newCount, totalCount } = await this.a11yIssuesService.countsFor(testRun, report);
       const updated = await this.prismaService.testRun.update({
         where: { id: testRun.id },
-        data: { a11yReportName: reportName, a11yNewCount: report.summary.new, a11yTotalCount: report.summary.total },
+        data: { a11yReportName: reportName, a11yNewCount: newCount, a11yTotalCount: totalCount },
       });
       this.eventsGateway.testRunUpdated(updated);
       return updated;
@@ -517,9 +521,8 @@ export class TestRunsService {
     }
   }
 
-  async getAccessibilityReport(id: string): Promise<A11yReport | null> {
-    const testRun = await this.findOne(id);
-    return testRun ? this.uiTreeService.loadReport(testRun.a11yReportName) : null;
+  async getAccessibilityReport(id: string): Promise<ReviewedA11yReport | null> {
+    return this.a11yIssuesService.getReviewedReport(id);
   }
 
   async getStructure(id: string): Promise<StructureInfo | null> {

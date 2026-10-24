@@ -15,6 +15,11 @@ export const TEST_PROJECT: Project = {
   imageComparison: ImageComparison.pixelmatch,
   bulkApproveVariations: false,
   bulkApproveGroupBy: 'customTags',
+  jiraUrl: null,
+  jiraEmail: null,
+  jiraToken: null,
+  jiraIssueType: null,
+  jiraLinkType: null,
 };
 
 export const TEST_BUILD: Build = {

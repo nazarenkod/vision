@@ -7,6 +7,27 @@ import { Project } from '@prisma/client';
 import uuidAPIKey from 'uuid-apikey';
 import { UpdateProjectDto } from './dto/update-project.dto';
 
+const blankToNull = (value: string | null | undefined) =>
+  value === undefined ? undefined : value?.trim() ? value.trim() : null;
+
+/** Jira settings from a create/update payload: undefined keeps a value, empty clears it. */
+function jiraFields(dto: Partial<CreateProjectDto>) {
+  return {
+    jiraUrl: blankToNull(dto.jiraUrl),
+    jiraEmail: blankToNull(dto.jiraEmail),
+    jiraToken: blankToNull(dto.jiraToken),
+    jiraIssueType: blankToNull(dto.jiraIssueType),
+    jiraLinkType: blankToNull(dto.jiraLinkType),
+  };
+}
+
+/** A project as the API returns it: the Jira token never leaves the server. */
+export function toPublicProject(project: Project): Omit<Project, 'jiraToken'> & { jiraTokenSet: boolean } {
+  if (!project) return project as never;
+  const { jiraToken, ...rest } = project;
+  return { ...rest, jiraTokenSet: !!jiraToken };
+}
+
 @Injectable()
 export class ProjectsService {
   private readonly logger = new Logger(ProjectsService.name);
@@ -50,6 +71,7 @@ export class ProjectsService {
         maxBranchLifetime: projectDto.maxBranchLifetime,
         bulkApproveVariations: projectDto.bulkApproveVariations,
         bulkApproveGroupBy: projectDto.bulkApproveGroupBy,
+        ...jiraFields(projectDto),
       },
     });
   }
@@ -67,6 +89,7 @@ export class ProjectsService {
         imageComparisonConfig: projectDto.imageComparisonConfig,
         bulkApproveVariations: projectDto.bulkApproveVariations,
         bulkApproveGroupBy: projectDto.bulkApproveGroupBy,
+        ...jiraFields(projectDto),
       },
     });
   }
@@ -87,6 +110,7 @@ export class ProjectsService {
     for (const testVariation of project.testVariations) {
       await this.testVariationsService.delete(testVariation.id);
     }
+    await this.prismaService.a11yIssueState.deleteMany({ where: { projectId: id } });
 
     return this.prismaService.project.delete({
       where: { id },

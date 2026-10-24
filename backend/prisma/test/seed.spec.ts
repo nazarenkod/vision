@@ -18,6 +18,11 @@ const mockDefaultProject = {
   imageComparisonConfig: '{ "threshold": 0.1, "ignoreAntialiasing": true, "allowDiffDimensions": false }',
   bulkApproveVariations: false,
   bulkApproveGroupBy: 'customTags',
+  jiraUrl: null,
+  jiraEmail: null,
+  jiraToken: null,
+  jiraIssueType: null,
+  jiraLinkType: null,
 } as const;
 
 const mockDefaultUser = {

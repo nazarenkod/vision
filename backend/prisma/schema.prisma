@@ -40,6 +40,12 @@ model Project {
   imageComparisonConfig String          @default("{ \"threshold\": 0.1, \"ignoreAntialiasing\": true, \"allowDiffDimensions\": false }")
   bulkApproveVariations Boolean         @default(false)
   bulkApproveGroupBy    String          @default("customTags")
+  // Jira connection for filing accessibility bugs; the token is write-only in the API
+  jiraUrl               String?
+  jiraEmail             String?
+  jiraToken             String?
+  jiraIssueType         String?
+  jiraLinkType          String?
   builds                Build[]
   TestRun               TestRun[]
   testVariations        TestVariation[]
@@ -156,6 +162,23 @@ model User {
   createdAt DateTime   @default(now())
   baselines Baseline[]
   builds    Build[]
+}
+
+model A11yIssueState {
+  id          String   @id @default(uuid())
+  projectId   String
+  screenName  String
+  violationId String
+  // reported | ignored
+  status      String
+  jiraKey     String?
+  jiraUrl     String?
+  comment     String?
+  userId      String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([projectId, screenName, violationId])
 }
 
 model AiResult {

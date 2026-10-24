@@ -1,9 +1,9 @@
 import { Controller, Get, UseGuards, Body, Post, Param, ParseUUIDPipe, Delete, Put } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiOkResponse, ApiParam } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/guards/auth.guard';
-import { ProjectsService } from './projects.service';
+import { ProjectsService, toPublicProject } from './projects.service';
 import { CreateProjectDto } from './dto/create-project.dto';
-import { Project, Role } from '@prisma/client';
+import { Role } from '@prisma/client';
 import { ProjectDto } from './dto/project.dto';
 import { UpdateProjectDto } from './dto/update-project.dto';
 import { RoleGuard } from '../auth/guards/role.guard';
@@ -18,8 +18,8 @@ export class ProjectsController {
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
   @ApiOkResponse({ type: ProjectDto, isArray: true })
-  getAll(): Promise<Project[]> {
-    return this.projectsService.findAll();
+  async getAll() {
+    return (await this.projectsService.findAll()).map(toPublicProject);
   }
 
   @Post()
@@ -27,8 +27,8 @@ export class ProjectsController {
   @UseGuards(JwtAuthGuard, RoleGuard)
   @Roles(Role.admin, Role.editor)
   @ApiOkResponse({ type: ProjectDto })
-  create(@Body() createProjectDto: CreateProjectDto): Promise<Project> {
-    return this.projectsService.create(createProjectDto);
+  async create(@Body() createProjectDto: CreateProjectDto) {
+    return toPublicProject(await this.projectsService.create(createProjectDto));
   }
 
   @Put()
@@ -36,8 +36,8 @@ export class ProjectsController {
   @UseGuards(JwtAuthGuard, RoleGuard)
   @Roles(Role.admin, Role.editor)
   @ApiOkResponse({ type: ProjectDto })
-  update(@Body() projectDto: UpdateProjectDto): Promise<Project> {
-    return this.projectsService.update(projectDto);
+  async update(@Body() projectDto: UpdateProjectDto) {
+    return toPublicProject(await this.projectsService.update(projectDto));
   }
 
   @Delete(':id')
@@ -46,7 +46,7 @@ export class ProjectsController {
   @Roles(Role.admin, Role.editor)
   @ApiOkResponse({ type: ProjectDto })
   @ApiParam({ name: 'id', required: true })
-  remove(@Param('id', new ParseUUIDPipe()) id: string): Promise<Project> {
-    return this.projectsService.remove(id);
+  async remove(@Param('id', new ParseUUIDPipe()) id: string) {
+    return toPublicProject(await this.projectsService.remove(id));
   }
 }

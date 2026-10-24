@@ -18,6 +18,7 @@ import { BaselineDataDto } from '../shared/dto/baseline-data.dto';
 import { CompareService } from '../compare/compare.service';
 import { UpdateTestRunDto } from './dto/update-test.dto';
 import { UiTreeService } from '../ui-tree/ui-tree.service';
+import { A11yIssuesService } from '../a11y/a11y-issues.service';
 
 jest.mock('pixelmatch');
 jest.mock('./dto/testRunResult.dto');
@@ -101,6 +102,10 @@ const initService = async ({
           store: jest.fn().mockResolvedValue(null),
           deleteFiles: jest.fn().mockResolvedValue(undefined),
         },
+      },
+      {
+        provide: A11yIssuesService,
+        useValue: { countsFor: jest.fn(), getReviewedReport: jest.fn() },
       },
       {
         provide: TestVariationsService,

@@ -14,7 +14,8 @@ export interface NoiseHint {
 const STATUS_BAR = { android: 24, ios: 50 };
 const TYPICAL_PHONE_WIDTH_DP = 411;
 // Times, dates, money amounts, counters: text that changes on every run.
-const DYNAMIC_TEXT = /\b\d{1,2}[:.]\d{2}\b|\b\d{1,2}[./-]\d{1,2}([./-]\d{2,4})?\b|\d[\d\s.,]*\s?(₴|\$|€|uah|грн|usd|eur)|^\d+$/i;
+const DYNAMIC_TEXT =
+  /\b\d{1,2}[:.]\d{2}\b|\b\d{1,2}[./-]\d{1,2}([./-]\d{2,4})?\b|\d[\d\s.,]*\s?(₴|\$|€|uah|грн|usd|eur)|^\d+$/i;
 // A change this small and this tidy is rendering noise rather than a design change.
 const MAX_AA_PERCENT = 0.05;
 const MAX_AA_REGION_PX = 16;

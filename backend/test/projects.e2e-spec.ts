@@ -22,6 +22,11 @@ const project: ProjectDto = {
   imageComparisonConfig: '{}',
   bulkApproveVariations: false,
   bulkApproveGroupBy: 'customTags',
+  jiraUrl: null,
+  jiraEmail: null,
+  jiraToken: null,
+  jiraIssueType: null,
+  jiraLinkType: null,
 };
 
 const projectServiceMock = {

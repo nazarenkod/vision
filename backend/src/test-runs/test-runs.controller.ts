@@ -40,13 +40,18 @@ import { UpdateTestRunDto } from './dto/update-test.dto';
 import { CurrentUser } from '../shared/current-user.decorator';
 import { RoleGuard } from '../auth/guards/role.guard';
 import { Roles } from '../shared/roles.decorator';
+import { A11yIssuesService } from '../a11y/a11y-issues.service';
+import { A11yIssueRefDto, FileA11yBugDto, IgnoreA11yIssueDto, LinkA11yIssueDto } from '../a11y/a11y-issue.dto';
 
 @ApiTags('test-runs')
 @Controller('test-runs')
 export class TestRunsController {
   private readonly logger: Logger = new Logger(TestRunsController.name);
 
-  constructor(private testRunsService: TestRunsService) {}
+  constructor(
+    private testRunsService: TestRunsService,
+    private a11yIssuesService: A11yIssuesService
+  ) {}
 
   @Get()
   @ApiOkResponse({ type: TestRunDto, isArray: true })
@@ -70,6 +75,50 @@ export class TestRunsController {
   @UseGuards(JwtAuthGuard)
   getAccessibility(@Param('id', new ParseUUIDPipe()) id: string) {
     return this.testRunsService.getAccessibilityReport(id);
+  }
+
+  @Post(':id/a11y/ignore')
+  @ApiOkResponse({ description: 'Marks the issue as a false positive on this screen' })
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RoleGuard)
+  @Roles(Role.admin, Role.editor)
+  ignoreA11yIssue(
+    @CurrentUser() user: User,
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Body() body: IgnoreA11yIssueDto
+  ) {
+    return this.a11yIssuesService.ignore(id, body.violationId, body.comment, user?.id);
+  }
+
+  @Post(':id/a11y/reset')
+  @ApiOkResponse({ description: 'Forgets the decision on the issue' })
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RoleGuard)
+  @Roles(Role.admin, Role.editor)
+  resetA11yIssue(@Param('id', new ParseUUIDPipe()) id: string, @Body() body: A11yIssueRefDto) {
+    return this.a11yIssuesService.reset(id, body.violationId);
+  }
+
+  @Post(':id/a11y/link')
+  @ApiOkResponse({ description: 'Records an existing Jira issue for the problem' })
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RoleGuard)
+  @Roles(Role.admin, Role.editor)
+  linkA11yIssue(
+    @CurrentUser() user: User,
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Body() body: LinkA11yIssueDto
+  ) {
+    return this.a11yIssuesService.link(id, body.violationId, body.jiraKey, user?.id);
+  }
+
+  @Post(':id/a11y/jira')
+  @ApiOkResponse({ description: 'Files a Jira bug for the issue, linked to the given task' })
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RoleGuard)
+  @Roles(Role.admin, Role.editor)
+  fileA11yBug(@CurrentUser() user: User, @Param('id', new ParseUUIDPipe()) id: string, @Body() body: FileA11yBugDto) {
+    return this.a11yIssuesService.fileBug(id, body.violationId, body.parentKey, user?.id);
   }
 
   @Get(':id/structure')

@@ -45,7 +45,13 @@ export function diffTrees(baseline: UiTree, current: UiTree): StructuralChange[]
     const old = before.get(node.key);
     if (!old) {
       if (isMeaningful(node)) {
-        changes.push({ kind: 'added', key: node.key, element: describeNode(node), resourceId: node.resourceId, bounds: node.bounds });
+        changes.push({
+          kind: 'added',
+          key: node.key,
+          element: describeNode(node),
+          resourceId: node.resourceId,
+          bounds: node.bounds,
+        });
       }
       continue;
     }
@@ -70,7 +76,13 @@ export function diffTrees(baseline: UiTree, current: UiTree): StructuralChange[]
   }
   for (const node of baseline.nodes) {
     if (!after.has(node.key) && isMeaningful(node)) {
-      changes.push({ kind: 'removed', key: node.key, element: describeNode(node), resourceId: node.resourceId, bounds: node.bounds });
+      changes.push({
+        kind: 'removed',
+        key: node.key,
+        element: describeNode(node),
+        resourceId: node.resourceId,
+        bounds: node.bounds,
+      });
     }
   }
 

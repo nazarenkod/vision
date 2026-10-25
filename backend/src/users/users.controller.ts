@@ -7,6 +7,7 @@ import { CreateUserDto } from './dto/user-create.dto';
 import { JwtAuthGuard } from '../auth/guards/auth.guard';
 import { UserDto } from './dto/user.dto';
 import { UpdateUserDto } from './dto/user-update.dto';
+import { UserJiraDto } from './dto/user-jira.dto';
 import { UserLoginRequestDto } from './dto/user-login-request.dto';
 import { CurrentUser } from '../shared/current-user.decorator';
 import { Role, User } from '@prisma/client';
@@ -155,6 +156,19 @@ export class UsersController {
   @UseGuards(JwtAuthGuard)
   update(@CurrentUser() user: User, @Body() updateUserDto: UpdateUserDto): Promise<UserLoginResponseDto> {
     return this.usersService.update(user.id, updateUserDto);
+  }
+
+  @Put('jira')
+  @ApiOkResponse({ type: UserDto })
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  async setJira(@CurrentUser() user: User, @Body() dto: UserJiraDto): Promise<UserDto> {
+    const value = (text: string | undefined) => (text === undefined ? undefined : text.trim() || null);
+    const updated = await this.prismaService.user.update({
+      where: { id: user.id },
+      data: { jiraToken: value(dto.jiraToken), jiraEmail: value(dto.jiraEmail) },
+    });
+    return new UserDto(updated);
   }
 
   @Get('all')

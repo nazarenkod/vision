@@ -37,6 +37,12 @@ export interface UiTreeSettings {
   checkRules: Record<string, ElementRule[]>;
   // the device other devices are compared with, for information
   referenceDevice: DeviceProfile | null;
+  // where the screen's title is in the UI tree, first match wins (id:Appbar#Title)
+  screenTitle: string[];
+  // when two accessibility issues are the same problem, per rule (a11y-problems DuplicateMode)
+  a11yDuplicates: Record<string, string>;
+  // the project's problem classes (a11y-problems ProblemClass), first match wins
+  a11yClasses: Array<Record<string, unknown>>;
 }
 
 /** What a run was taken on; the parts of the old VRT key that are not the check's name. */
@@ -66,6 +72,9 @@ export const DEFAULT_UI_TREE_SETTINGS: UiTreeSettings = {
   elementRules: [],
   checkRules: {},
   referenceDevice: null,
+  screenTitle: ['id:Appbar#Title'],
+  a11yDuplicates: {},
+  a11yClasses: [],
 };
 
 export function parseJsonArray<T>(value: string | null | undefined): T[] {
@@ -90,6 +99,20 @@ export function parseUiTreeSettings(value: string | null | undefined): UiTreeSet
         parsed.checkRules && typeof parsed.checkRules === 'object' && !Array.isArray(parsed.checkRules)
           ? parsed.checkRules
           : {},
+      screenTitle:
+        Array.isArray(parsed.screenTitle) && parsed.screenTitle.length
+          ? parsed.screenTitle.filter((item: unknown) => typeof item === 'string' && item.trim())
+          : DEFAULT_UI_TREE_SETTINGS.screenTitle,
+      a11yDuplicates:
+        parsed.a11yDuplicates && typeof parsed.a11yDuplicates === 'object' && !Array.isArray(parsed.a11yDuplicates)
+          ? parsed.a11yDuplicates
+          : {},
+      a11yClasses: Array.isArray(parsed.a11yClasses)
+        ? parsed.a11yClasses.filter(
+            (item: unknown) =>
+              item && typeof item === 'object' && typeof (item as { match?: unknown }).match === 'string'
+          )
+        : [],
       referenceDevice:
         parsed.referenceDevice && typeof parsed.referenceDevice === 'object'
           ? {

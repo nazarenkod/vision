@@ -85,6 +85,31 @@ function update({
     });
 }
 
+/** Personal Jira token and email; undefined keeps a value, an empty string removes it. */
+function setJira(values: {
+  jiraToken?: string;
+  jiraEmail?: string;
+}): Promise<User> {
+  const requestOptions = {
+    method: "PUT",
+    headers: {
+      ...DEFAULT_HEADERS,
+      ...authHeader(),
+    },
+    body: JSON.stringify(values),
+  };
+
+  return fetch(`${API_URL}${ENDPOINT_URL}/jira`, requestOptions)
+    .then(handleResponse)
+    .then((updated: User) => {
+      // the answer carries no session token: keep the stored one
+      const stored = JSON.parse(localStorage.getItem("user") ?? "{}");
+      const user = { ...stored, ...updated };
+      setUserInLocalStorage(user);
+      return user;
+    });
+}
+
 function changePassword(password: string): Promise<boolean> {
   const requestOptions = {
     method: "PUT",
@@ -212,6 +237,7 @@ export const usersService = {
   logout,
   register,
   update,
+  setJira,
   changePassword,
   getAll,
   assignRole,

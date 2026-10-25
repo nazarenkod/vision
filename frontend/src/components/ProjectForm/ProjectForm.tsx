@@ -33,6 +33,7 @@ import {
   parseUiTreeSettings,
 } from "../../types/insights";
 import { insightsService } from "../../services";
+import { A11yProblemSettings } from "./A11yProblemSettings";
 
 const profileLabel = (profile: DeviceProfile) =>
   [profile.device, profile.os, profile.browser, profile.viewport]
@@ -257,6 +258,7 @@ export const ProjectForm: React.FunctionComponent = () => {
       </FormControl>
       {config}
       <MobileSettings />
+      <A11yProblemSettings />
       <JiraSettings />
     </React.Fragment>
   );
@@ -276,9 +278,10 @@ const JiraSettings: React.FunctionComponent = () => {
       <Divider />
       <Typography variant="subtitle1">Jira</Typography>
       <Typography variant="body2" color="textSecondary">
-        Lets reviewers file accessibility bugs from the review screen. Server
-        and Data Center use a personal access token; Jira Cloud uses your
-        account email with an API token.
+        Lets reviewers file accessibility bugs from the review screen. Each
+        person adds their own Jira token in their profile, so bugs are filed as
+        them. A shared token here is optional: it is used for people who have
+        not added one.
       </Typography>
       <TextField
         id="jiraUrl"
@@ -290,7 +293,7 @@ const JiraSettings: React.FunctionComponent = () => {
       />
       <TextField
         id="jiraToken"
-        label="Token"
+        label="Shared token (optional)"
         type="password"
         size="small"
         autoComplete="new-password"
@@ -316,7 +319,7 @@ const JiraSettings: React.FunctionComponent = () => {
       )}
       <TextField
         id="jiraEmail"
-        label="Account email (Jira Cloud only)"
+        label="Shared token's account email (Jira Cloud only)"
         size="small"
         value={project.jiraEmail ?? ""}
         onChange={(event) => update({ jiraEmail: event.target.value })}

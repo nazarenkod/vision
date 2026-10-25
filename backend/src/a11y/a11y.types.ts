@@ -40,6 +40,9 @@ export interface A11yReport {
   summary: { new: number; existing: number; fixed: number; total: number };
   violations: Array<A11yViolation & { status: A11yStatus }>;
   fixed: A11yViolation[];
+  // the screen's title from the tree, and the project's selectors it was found with
+  screenTitle?: string | null;
+  screenSelectors?: string[];
 }
 
 export interface RgbaImage {

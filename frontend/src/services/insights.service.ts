@@ -2,6 +2,7 @@ import { handleResponse, authHeader } from "../_helpers/service.helpers";
 import { API_URL } from "../_config/env.config";
 import {
   A11yReport,
+  JiraBugResult,
   AiStatus,
   ChangeGroup,
   CrossDeviceResult,
@@ -89,10 +90,10 @@ export const insightsService = {
       fieldValues?: Record<string, unknown>;
     },
   ) =>
-    post<{ jiraKey: string; jiraUrl: string; warnings: string[] }>(
-      `/test-runs/${testRunId}/a11y/jira`,
-      { ...issueRef(violationIds), ...options },
-    ),
+    post<JiraBugResult>(`/test-runs/${testRunId}/a11y/jira`, {
+      ...issueRef(violationIds),
+      ...options,
+    }),
   addElementRule: (
     testRunId: string,
     rule: {

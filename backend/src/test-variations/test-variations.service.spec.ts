@@ -99,7 +99,7 @@ describe('TestVariationsService', () => {
           baselines: {
             include: {
               testRun: true,
-              user: true,
+              user: { select: { id: true, firstName: true, lastName: true, email: true } },
             },
             orderBy: {
               createdAt: 'desc',

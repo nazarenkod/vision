@@ -14,6 +14,7 @@ import {
   Tab,
   Tabs,
   TextField,
+  Tooltip,
   Typography,
 } from "@mui/material";
 import { AdsClick } from "@mui/icons-material";
@@ -100,7 +101,9 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
   const { user } = useUserState();
   const { projectList, selectedProjectId } = useProjectState();
   const project = projectList.find((p) => p.id === selectedProjectId);
-  const jiraReady = !!project?.jiraUrl && !!project?.jiraTokenSet;
+  // a personal token, or the project's shared one
+  const jiraReady =
+    !!project?.jiraUrl && (!!user?.jiraTokenSet || !!project?.jiraTokenSet);
   const canEdit = user?.role === "admin" || user?.role === "editor";
   const withUiTree = hasUiTree(testRun);
 
@@ -115,7 +118,6 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
   // problems to file Jira bugs for: one, or every open one of the screenshot
   const [bugFor, setBugFor] = React.useState<{
     problems: A11yViolation[][];
-    alreadyFiled?: A11yViolation[][];
   } | null>(null);
   const [jiraKey, setJiraKey] = React.useState("");
   const [submitting, setSubmitting] = React.useState(false);
@@ -152,12 +154,9 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
     const violations = report?.violations ?? [];
     const byKey = new Map<string, A11yViolation[]>();
     for (const violation of violations) {
-      const state =
-        violation.issue?.status === "reported"
-          ? `bug:${violation.issue.jiraKey}`
-          : violation.knownBug
-            ? `known:${violation.knownBug.jiraKey}`
-            : "open";
+      const state = violation.issue
+        ? `${violation.issue.status}:${violation.issue.jiraKey ?? ""}`
+        : "open";
       const key = `${violation.group}|${state}`;
       byKey.set(key, [...(byKey.get(key) ?? []), violation]);
     }
@@ -166,24 +165,7 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
       numberOf: new Map(violations.map((v, index) => [v.id, index + 1])),
     };
   }, [report]);
-  const open = problems.filter((problem) => !problem[0].issue);
-  const toFile = open.filter((problem) => !problem[0].knownBug?.jiraKey);
-  const toLink = open.filter((problem) => !!problem[0].knownBug?.jiraKey);
-
-  const linkKnown = () =>
-    run(
-      () =>
-        Promise.all(
-          toLink.map((problem) =>
-            insightsService.linkA11y(
-              testRun.id,
-              problem.map((v) => v.id),
-              problem[0].knownBug?.jiraKey as string,
-            ),
-          ),
-        ),
-      `Linked ${toLink.length} problems`,
-    );
+  const toFile = problems.filter((problem) => !problem[0].issue);
 
   const submitJira = async () => {
     if (!jiraDialog) return;
@@ -281,10 +263,13 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
     const several = problem.length > 1;
     const highlighted = ids.includes(highlightedId ?? "");
     const reported = violation.issue?.status === "reported";
-    const known = !violation.issue ? violation.knownBug : undefined;
-    const isNew =
-      problem.some((v) => v.status === "new") && !reported && !known;
-    const component = violation.group.slice(violation.group.indexOf("|") + 1);
+    const filing = violation.issue?.status === "filing";
+    // decided on another screen: the problem is the component's, on every screen
+    const elsewhere = violation.issue?.screenName
+      ? violation.issue.screenTitle || violation.issue.screenName
+      : null;
+    const isNew = problem.some((v) => v.status === "new") && !violation.issue;
+    const component = /\|c:([^|]+)\|/.exec(violation.group)?.[1];
     const numbers = problem.map((v) => numberOf.get(v.id) ?? 0);
     const suggested = problem.filter((v) => labels[v.id]);
     return (
@@ -385,7 +370,7 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
             alignItems: "center",
           }}
         >
-          {!reported && !known && (
+          {!violation.issue && (
             <StatusPill
               tone={isNew ? "changed" : "neutral"}
               label={isNew ? "New" : "Existing"}
@@ -414,10 +399,34 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
               )}
             />
           )}
+          {filing && (
+            <StatusPill tone="changed" label="A bug is being filed…" />
+          )}
+          {violation.problemClass && (
+            <StatusPill tone="neutral" label={violation.problemClass} />
+          )}
+          <Tooltip title="Problem id: in the Jira bug's summary and labels. Click to copy.">
+            <Box
+              component="code"
+              data-testid="a11yProblemCode"
+              onClick={(e) => {
+                e.stopPropagation();
+                copy(violation.problemCode);
+              }}
+              sx={{
+                font: `500 11.5px ${tokens.mono}`,
+                color: tokens.textSecondary,
+                ml: "auto",
+                cursor: "copy",
+              }}
+            >
+              {violation.problemCode}
+            </Box>
+          </Tooltip>
         </Box>
-        {known && (
+        {elsewhere && (
           <Box
-            data-testid="a11yKnownBug"
+            data-testid="a11yElsewhere"
             sx={{
               fontSize: 13,
               bgcolor: tokens.subtle,
@@ -427,11 +436,13 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
               py: 0.5,
             }}
           >
-            Filed already as <b>{jiraLink(known.jiraKey, known.jiraUrl)}</b>{" "}
-            {known.screenName === testRun.name
-              ? "for another element of this screen"
-              : `on screen “${known.screenName}”`}
-            . Link it here instead of filing a duplicate.
+            {component ? `A problem of ${component}: ` : ""}
+            {violation.issue?.status === "ignored"
+              ? "marked as a false positive"
+              : violation.issue?.status === "filing"
+                ? "a bug is being filed"
+                : "filed"}{" "}
+            on screen “{elsewhere}”. It holds here too; nothing to file.
           </Box>
         )}
         {suggested.map((item) => (
@@ -484,7 +495,7 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
             sx={{ display: "flex", flexWrap: "wrap", gap: 0.75 }}
             onClick={(e) => e.stopPropagation()}
           >
-            {reported ? (
+            {filing ? null : reported ? (
               <Button
                 size="small"
                 onClick={() =>
@@ -494,37 +505,17 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
                   )
                 }
               >
-                Unlink bug
+                {elsewhere ? "Unlink on every screen" : "Unlink bug"}
               </Button>
             ) : (
               <>
-                {known?.jiraKey && (
-                  <Button
-                    size="small"
-                    variant="outlined"
-                    disabled={submitting}
-                    onClick={() =>
-                      run(
-                        () =>
-                          insightsService.linkA11y(
-                            testRun.id,
-                            ids,
-                            known.jiraKey as string,
-                          ),
-                        `Linked ${known.jiraKey}`,
-                      )
-                    }
-                  >
-                    Link to {known.jiraKey}
-                  </Button>
-                )}
                 {jiraReady && (
                   <Button
                     size="small"
-                    variant={known ? "text" : "outlined"}
+                    variant="outlined"
                     onClick={() => setBugFor({ problems: [problem] })}
                   >
-                    {known ? "Create a separate bug" : "Create Jira bug"}
+                    Create Jira bug
                   </Button>
                 )}
                 <Button
@@ -600,31 +591,20 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
         </Typography>
         {!jiraReady && canEdit && (
           <Alert severity="info" sx={{ py: 0 }}>
-            Add the Jira URL and token in project settings to file bugs from
-            here.
+            {project?.jiraUrl
+              ? "Add your Jira token in your profile to file bugs from here."
+              : "Add the Jira URL in project settings to file bugs from here."}
           </Alert>
         )}
-        {canEdit && toFile.length + toLink.length > 1 && (
+        {jiraReady && canEdit && toFile.length > 1 && (
           <Button
             size="small"
             variant="outlined"
             sx={{ alignSelf: "flex-start" }}
-            disabled={submitting || (!jiraReady && toFile.length > 0)}
-            onClick={() =>
-              toFile.length
-                ? setBugFor({ problems: toFile, alreadyFiled: toLink })
-                : linkKnown()
-            }
+            onClick={() => setBugFor({ problems: toFile })}
             data-testid="fileAllBugs"
           >
-            {toFile.length
-              ? toFile.length === 1
-                ? "Create a Jira bug for the open problem"
-                : `Create Jira bugs for all ${toFile.length} open problems`
-              : `Link ${toLink.length} problems to their bugs`}
-            {toFile.length > 0 && toLink.length > 0
-              ? `, link ${toLink.length} filed already`
-              : ""}
+            Create Jira bugs for all {toFile.length} open problems
           </Button>
         )}
         {report.resolved.map((item) => (
@@ -681,8 +661,11 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
                   {violation.issue?.comment
                     ? ` — ${violation.issue.comment}`
                     : ""}
+                  {violation.issue?.screenName
+                    ? ` (on screen “${violation.issue.screenTitle || violation.issue.screenName}”)`
+                    : ""}
                 </span>
-                {canEdit && (
+                {canEdit && !violation.issue?.byClass && (
                   <Button
                     size="small"
                     onClick={() =>
@@ -693,7 +676,9 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
                       )
                     }
                   >
-                    Restore
+                    {violation.issue?.screenName
+                      ? "Restore on every screen"
+                      : "Restore"}
                   </Button>
                 )}
               </Box>
@@ -1144,7 +1129,6 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
         <JiraBugDialog
           testRun={testRun}
           problems={bugFor.problems}
-          alreadyFiled={bugFor.alreadyFiled}
           onClose={() => setBugFor(null)}
           onDone={onReportChanged}
         />

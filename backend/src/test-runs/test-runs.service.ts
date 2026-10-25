@@ -591,8 +591,8 @@ export class TestRunsService {
     }
   }
 
-  async getAccessibilityReport(id: string): Promise<ReviewedA11yReport | null> {
-    return this.a11yIssuesService.getReviewedReport(id);
+  async getAccessibilityReport(id: string, userId?: string): Promise<ReviewedA11yReport | null> {
+    return this.a11yIssuesService.getReviewedReport(id, userId);
   }
 
   async getStructure(id: string): Promise<StructureInfo | null> {

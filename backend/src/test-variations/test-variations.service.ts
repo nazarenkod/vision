@@ -1,3 +1,4 @@
+import { BaselineUser } from '../shared/dto/baseline.dto';
 import { Injectable, Inject, forwardRef, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { TestVariation, Baseline, Build, TestRun, User } from '@prisma/client';
@@ -25,14 +26,15 @@ export class TestVariationsService {
 
   async getDetails(
     id: string
-  ): Promise<TestVariation & { baselines: (Baseline & { testRun: TestRun; user: User })[] }> {
+  ): Promise<TestVariation & { baselines: (Baseline & { testRun: TestRun; user: BaselineUser | null })[] }> {
     return this.prismaService.testVariation.findUnique({
       where: { id },
       include: {
         baselines: {
           include: {
             testRun: true,
-            user: true,
+            // never the whole row: it holds the password hash, API key and Jira token
+            user: { select: { id: true, firstName: true, lastName: true, email: true } },
           },
           orderBy: {
             createdAt: 'desc',

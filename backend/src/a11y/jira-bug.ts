@@ -1,6 +1,5 @@
 import { A11yRule, A11yViolation } from './a11y.types';
 import { JiraField, JiraIssueType, JiraParentIssue, JiraUser } from './jira.client';
-import { UiTree } from '../ui-tree/ui-tree.types';
 
 /** The functional block, or service, is what a check's name says before its first dot. */
 export function functionalBlock(testName: string): string {
@@ -12,23 +11,6 @@ export function functionalBlock(testName: string): string {
 function nameAfterBlock(testName: string): string {
   const index = testName.indexOf('.');
   return index > 0 ? testName.slice(index + 1).trim() : '';
-}
-
-const TITLE_TAG = /appbar#title/i;
-
-/**
- * The screen's own title from the UI tree: the element tagged Appbar#Title
- * (as a resource id or content description), or the text under it.
- */
-export function screenTitle(tree: UiTree | null): string | null {
-  if (!tree) return null;
-  const tagged = tree.nodes.find((node) => TITLE_TAG.test(node.resourceId) || TITLE_TAG.test(node.label));
-  if (!tagged) return null;
-  const own = [tagged.text, TITLE_TAG.test(tagged.label) ? '' : tagged.label].find((value) => value?.trim());
-  if (own) return own.trim();
-  // the tag can sit on a container whose child holds the text
-  const child = tree.nodes.find((node) => node.parent === tagged.index && (node.text || node.label));
-  return child ? (child.text || child.label).trim() : null;
 }
 
 const EXPECTED: Record<A11yRule, string> = {
@@ -44,6 +26,22 @@ const EXPECTED: Record<A11yRule, string> = {
 
 const escapeWiki = (value: string) => value.replace(/\|/g, '/').replace(/[{}]/g, '');
 
+/** A Jira label from free text: labels take no spaces. */
+const asLabel = (value: string) => value.replace(/[^\p{L}\p{N}_.-]+/gu, '_').slice(0, 100);
+
+/**
+ * Labels that make the bug easy to find: the problem's id (the same one Vision
+ * shows, and searches Jira for before filing), the rule and the component.
+ */
+export function bugLabels(problem: { code: string; rule: string; component: string | null }, base: string[]): string[] {
+  return [
+    ...base,
+    problem.code,
+    `a11y-${problem.rule}`,
+    ...(problem.component ? [asLabel(`a11y-component-${problem.component}`)] : []),
+  ];
+}
+
 /** Summary and description of the bug, following the team's bug template. */
 export function bugText(input: {
   // one problem: the same rule on one or more elements of a component
@@ -52,16 +50,22 @@ export function bugText(input: {
   title: string | null;
   device: string;
   url: string;
+  // the problem's id, and its component when the problem is a component's (same on every screen)
+  problem: { code: string; component: string | null; everyScreen: boolean };
 }): { summary: string; description: string; block: string; screen: string } {
-  const { violations, testName, title, device, url } = input;
+  const { violations, testName, title, device, url, problem } = input;
   const [first] = violations;
   const block = functionalBlock(testName);
   const screen = title || nameAfterBlock(testName) || testName;
   const names = violations.map((violation) => violation.label || violation.resourceId || violation.className);
   const elements = names.length > 2 ? `${names.slice(0, 2).join(', ')} +${names.length - 2}` : names.join(', ');
   const where = screen === block ? block : `${block}. ${screen}`;
-  const summary = `[A11y] ${where}: ${first.title} (${elements})`.slice(0, 250);
+  // the id goes last and whole, so a text search for it always finds the bug
+  const tail = ` [${problem.code}]`;
+  const summary = `[A11y] ${where}: ${first.title} (${elements})`.slice(0, 250 - tail.length) + tail;
   const rows: Array<[string, string]> = [
+    ['ID проблеми (Vision)', problem.code],
+    ...(problem.component ? ([['Компонент', problem.component]] as Array<[string, string]>) : []),
     ['Сервіс / функціональний блок', block],
     ['Екран', screen],
     ['Перевірка', testName],
@@ -93,6 +97,10 @@ export function bugText(input: {
     ...rows.map(([key, value]) => `||${key}|${escapeWiki(value)}|`),
     ...(details.length ? ['', '*Деталі*', ...details] : []),
     '',
+    ...(problem.everyScreen
+      ? [`Проблема компонента ${problem.component}: та сама на кожному екрані, де він є. Один баг на всі екрани.`, '']
+      : []),
+    `Знайти всі баги цієї проблеми: labels = ${problem.code} або текст "${problem.code}".`,
     violations.length === 1
       ? 'На скріншоті у вкладенні проблемний елемент обведено.'
       : 'На скріншоті у вкладенні проблемні елементи обведено.',

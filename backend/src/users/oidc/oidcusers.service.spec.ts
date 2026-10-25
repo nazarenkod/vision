@@ -30,6 +30,8 @@ const user: User = {
   apiKey: 'generatedApiKey',
   password: 'encryptedPassword',
   isActive: true,
+  jiraToken: null,
+  jiraEmail: null,
   role: Role.editor,
   updatedAt: new Date(),
   createdAt: new Date(),

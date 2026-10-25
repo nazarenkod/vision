@@ -3,6 +3,7 @@ import { TestRun, TestVariation } from '@prisma/client';
 import { gunzipSync, gzipSync } from 'zlib';
 import { StaticService } from '../static/static.service';
 import { buildReport, findViolations } from '../a11y/a11y.rules';
+import { screenTitle } from '../a11y/a11y-problems';
 import { A11yReport, RgbaImage } from '../a11y/a11y.types';
 import { describeNode, ownSpeakableText, parseUiTree } from './ui-tree.parser';
 import { Rect, UiNode, UiTree, UiTreeFormat } from './ui-tree.types';
@@ -272,7 +273,12 @@ export class UiTreeService {
 
     const current = findViolations(tree, image);
     const baseline = checkTree ? findViolations(checkTree, baselineTree ? baselineImage : otherImage) : null;
-    const report = buildReport(tree, current, baseline);
+    const report = {
+      ...buildReport(tree, current, baseline),
+      // problems that are not a component's are told apart by screen
+      screenTitle: screenTitle(tree, settings.screenTitle),
+      screenSelectors: settings.screenTitle,
+    };
     const reportName = await this.staticService.saveFile(
       'a11y',
       Buffer.from(JSON.stringify(report)),

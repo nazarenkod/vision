@@ -23,6 +23,8 @@ describe('Users Controller', () => {
     apiKey: 'api-key',
     password: 'encrypted',
     isActive: true,
+    jiraToken: null,
+    jiraEmail: null,
     role: Role.editor,
     updatedAt: new Date(),
     createdAt: new Date(),

@@ -15,10 +15,16 @@ export type A11yRule =
   | "not-accessible";
 
 export interface A11yIssueInfo {
-  status: "reported" | "ignored";
+  // filing: a bug for the problem is being created right now
+  status: "reported" | "ignored" | "filing";
   jiraKey?: string | null;
   jiraUrl?: string | null;
   comment?: string | null;
+  // set when it was decided on another check: a component's problem holds on every screen
+  screenName?: string;
+  screenTitle?: string | null;
+  // ignored by the project's problem class of this name, not by a decision
+  byClass?: string;
 }
 
 export interface A11yViolation {
@@ -35,14 +41,12 @@ export interface A11yViolation {
   details?: Record<string, number | string | boolean>;
   status: "new" | "existing";
   issue?: A11yIssueInfo;
-  // the problem it is: same rule on the same component (rule|component)
+  // the problem it is: rule + component + values, or rule + screen + element
   group: string;
-  // a bug filed for the same problem, on this or another screen
-  knownBug?: {
-    jiraKey: string | null;
-    jiraUrl: string | null;
-    screenName: string;
-  };
+  // the problem's id, as in the Jira bug's summary and labels (a11y-3f9c2a1b)
+  problemCode: string;
+  // the project's problem class that took it
+  problemClass?: string;
 }
 
 export interface A11yReport {
@@ -60,7 +64,7 @@ export interface A11yReport {
   };
   violations: A11yViolation[];
   ignored: A11yViolation[];
-  fixed: Omit<A11yViolation, "status" | "issue" | "group" | "knownBug">[];
+  fixed: Omit<A11yViolation, "status" | "issue" | "group" | "problemCode">[];
   resolved: Array<{
     violationId: string;
     jiraKey: string | null;
@@ -110,7 +114,40 @@ export interface UiTreeSettings {
   elementRules: ElementRule[];
   // the device other devices are compared with, for information
   referenceDevice?: DeviceProfile | null;
+  // where the screen's title is in the UI tree, first match wins
+  screenTitle?: string[];
+  // when two accessibility issues are the same problem, per rule
+  a11yDuplicates?: Partial<Record<A11yRule, DuplicateMode>>;
+  // the project's problem classes, first match wins
+  a11yClasses?: ProblemClass[];
 }
+
+/**
+ * Which issues are one problem and what is done with them: the rules it takes,
+ * a pattern on the element id (a glob with * and ?, or /regex/ whose group is
+ * the component id), how duplicates are told and whether bugs are filed.
+ */
+export interface ProblemClass {
+  id: string;
+  name: string;
+  rules?: A11yRule[];
+  match: string;
+  mode?: DuplicateMode;
+  action?: "report" | "ignore";
+}
+
+export type DuplicateMode = "component-value" | "component" | "screen";
+
+// as the server defaults them (a11y-problems.ts)
+export const DEFAULT_DUPLICATE_MODES: Record<A11yRule, DuplicateMode> = {
+  "touch-target": "component-value",
+  "low-contrast": "component-value",
+  "missing-label": "component",
+  "input-without-label": "component",
+  "redundant-role": "component",
+  "not-accessible": "component",
+  "duplicate-label": "screen",
+};
 
 export interface DeviceProfile {
   os: string;
@@ -329,6 +366,32 @@ export interface JiraBugPreparation {
   filled: Array<{ field: string; value: string; source: "task" | "vision" }>;
   inputs: JiraBugInput[];
   missing: string[];
+  problem: { code: string; component: string | null; everyScreen: boolean };
+  // decided in Vision already, maybe by a colleague a moment ago
+  existing: {
+    status: "reported" | "ignored" | "filing";
+    jiraKey: string | null;
+    jiraUrl: string | null;
+    screenName: string;
+    screenTitle: string | null;
+  } | null;
+  // bugs in the task's Jira project with the problem's id
+  inJira: Array<{
+    key: string;
+    url: string;
+    summary: string;
+    status: string;
+    done: boolean;
+  }>;
+}
+
+export interface JiraBugResult {
+  jiraKey: string;
+  jiraUrl: string | null;
+  code: string;
+  // nothing was filed: Vision or Jira had the problem's bug already, and it was linked
+  alreadyFiled: boolean;
+  warnings: string[];
 }
 
 /** A bug field to set in the dialog; values are in the form Jira's create call takes. */

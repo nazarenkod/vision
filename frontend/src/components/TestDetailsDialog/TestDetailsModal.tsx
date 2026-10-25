@@ -307,9 +307,7 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
       a11yOverlay && a11yReport
         ? a11yReport.violations.map((violation, index) => {
             const tracked =
-              violation.status === "existing" ||
-              !!violation.issue ||
-              !!violation.knownBug;
+              violation.status === "existing" || !!violation.issue;
             return {
               id: violation.id,
               ...violation.bounds,

@@ -29,6 +29,7 @@ import { TextValidator, ValidatorForm } from "react-material-ui-form-validator";
 import { Role } from "../types";
 import PasswordField from "../components/PasswordField";
 import { useOidcEnabled } from "../_helpers/useOidcEnabled";
+import { JiraTokenCard } from "../components/JiraTokenCard";
 
 const ProfilePage = () => {
   const { enqueueSnackbar } = useSnackbar();
@@ -240,6 +241,9 @@ const ProfilePage = () => {
         </Grid>
         <Grid item xs={6}>
           <Grid container spacing={1}>
+            <Grid item xs={12}>
+              <JiraTokenCard />
+            </Grid>
             <Grid item xs={12}>
               <Card variant="outlined">
                 <CardHeader title={"Api key"} />

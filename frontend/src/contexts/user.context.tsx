@@ -123,6 +123,18 @@ function update(dispatch: Dispatch, { firstName, lastName, email }) {
     });
 }
 
+function setJira(
+  dispatch: Dispatch,
+  values: { jiraToken?: string; jiraEmail?: string },
+) {
+  return usersService.setJira(values).then((user) => {
+    dispatch({
+      type: "success",
+      payload: user,
+    });
+  });
+}
+
 function logout(dispatch: Dispatch) {
   usersService.logout();
   usersService.markOidcLoggedOut();
@@ -131,4 +143,12 @@ function logout(dispatch: Dispatch) {
   });
 }
 
-export { UserProvider, useUserState, useUserDispatch, login, logout, update };
+export {
+  UserProvider,
+  useUserState,
+  useUserDispatch,
+  login,
+  logout,
+  update,
+  setJira,
+};

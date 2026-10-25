@@ -1,6 +1,7 @@
-import { A11yIssueState } from '@prisma/client';
+import { A11yIssueState, A11yProblem } from '@prisma/client';
 import { PNG } from 'pngjs';
-import { componentOf, problemOf, reviewReport } from './a11y-issues';
+import { reviewReport, ReviewContext } from './a11y-issues';
+import { problemCode } from './a11y-problems';
 import { A11yReport, A11yViolation } from './a11y.types';
 import { JiraClient, JiraError } from './jira.client';
 import { outlineElement } from './a11y-issues.service';
@@ -44,6 +45,14 @@ const state = (violationId: string, status: string, jiraKey: string = null): A11
   updatedAt: new Date(),
 });
 
+const ctx = (states: A11yIssueState[] = [], problems: A11yProblem[] = []): ReviewContext => ({
+  projectId: 'p',
+  screenName: 'Payment',
+  screen: 'Оплата',
+  states,
+  problems,
+});
+
 describe('reviewReport', () => {
   const stored = report([
     { ...violation('missing-label|a'), status: 'new' },
@@ -53,7 +62,7 @@ describe('reviewReport', () => {
   ]);
 
   it('counts everything nobody acted on when there are no decisions', () => {
-    expect(reviewReport(stored, []).summary).toEqual({
+    expect(reviewReport(stored, ctx()).summary).toEqual({
       new: 2,
       existing: 1,
       reported: 0,
@@ -64,10 +73,10 @@ describe('reviewReport', () => {
   });
 
   it('takes filed bugs out of the new count and false positives out of every count', () => {
-    const reviewed = reviewReport(stored, [
-      state('missing-label|a', 'reported', 'MOB-1'),
-      state('touch-target|b', 'ignored'),
-    ]);
+    const reviewed = reviewReport(
+      stored,
+      ctx([state('missing-label|a', 'reported', 'MOB-1'), state('touch-target|b', 'ignored')])
+    );
 
     expect(reviewed.summary).toEqual({ new: 0, existing: 1, reported: 1, ignored: 1, fixed: 2, total: 2 });
     expect(reviewed.violations.find((v) => v.id === 'missing-label|a').issue).toMatchObject({
@@ -78,10 +87,10 @@ describe('reviewReport', () => {
   });
 
   it('lists filed bugs whose issue is gone as resolved', () => {
-    const reviewed = reviewReport(stored, [
-      state('missing-label|gone', 'reported', 'MOB-7'),
-      state('x|ignored', 'ignored'),
-    ]);
+    const reviewed = reviewReport(
+      stored,
+      ctx([state('missing-label|gone', 'reported', 'MOB-7'), state('x|ignored', 'ignored')])
+    );
 
     expect(reviewed.resolved).toEqual([
       { violationId: 'missing-label|gone', jiraKey: 'MOB-7', jiraUrl: 'https://jira/browse/MOB-7' },
@@ -112,6 +121,46 @@ describe('JiraClient', () => {
     expect(issue.fields.customfield_1).toBe('x');
     expect(fetchMock.mock.calls[0][0]).toBe('https://jira.example.com/rest/api/2/issue/MOB-1200');
     expect(fetchMock.mock.calls[0][1].headers.Authorization).toBe('Bearer pat');
+  });
+
+  it('searches with the Jira Cloud search/jql endpoint, else the classic one, and tells open from done', async () => {
+    const issues = {
+      issues: [
+        { key: 'MOB-1', fields: { summary: 'x [a11y-1]', status: { name: 'Open', statusCategory: { key: 'new' } } } },
+        {
+          key: 'MOB-2',
+          fields: { summary: 'y', labels: ['a11y-1'], status: { name: 'Done', statusCategory: { key: 'done' } } },
+        },
+      ],
+    };
+    const cloud = jest.fn().mockResolvedValue(ok(issues));
+    const found = await client(cloud).search('labels = "a11y-1"', 5);
+    expect(cloud.mock.calls[0][0]).toContain('/rest/api/2/search/jql?jql=labels%20%3D%20%22a11y-1%22&maxResults=5');
+    expect(found).toEqual([
+      {
+        key: 'MOB-1',
+        url: 'https://jira.example.com/browse/MOB-1',
+        summary: 'x [a11y-1]',
+        status: 'Open',
+        done: false,
+        labels: [],
+      },
+      {
+        key: 'MOB-2',
+        url: 'https://jira.example.com/browse/MOB-2',
+        summary: 'y',
+        status: 'Done',
+        done: true,
+        labels: ['a11y-1'],
+      },
+    ]);
+
+    const dataCenter = jest
+      .fn()
+      .mockResolvedValueOnce(ok({ errorMessages: ['nope'] }, 404))
+      .mockResolvedValueOnce(ok(issues));
+    expect(await client(dataCenter).search('x')).toHaveLength(2);
+    expect(dataCenter.mock.calls[1][0]).toContain('/rest/api/2/search?jql=');
   });
 
   it('reads issue types and create fields from the Jira 9 endpoints', async () => {
@@ -271,68 +320,94 @@ describe('outlineElement', () => {
   });
 });
 
-describe('problemOf', () => {
-  it('sees one component in a Compose test tag, an indexed id or an element class', () => {
-    expect(componentOf('id:Надати дані про адресу проживання#PbButton')).toBe('PbButton');
-    expect(componentOf('id:Надати дані про адресу реєстрації#PbButton')).toBe('PbButton');
-    expect(componentOf('id:com.bank.app:id/tab_0')).toBe('tab');
-    expect(componentOf('id:com.bank.app:id/tab_1#2')).toBe('tab');
-    expect(componentOf('ImageButton:Help')).toBe('ImageButton');
-    expect(componentOf('path:FrameLayout/LinearLayout[2]/android.widget.ImageView[1]')).toBe('ImageView');
-    expect(problemOf('touch-target|id:a#PbButton')).toBe('touch-target|PbButton');
-    expect(problemOf('missing-label|id:a#PbButton')).not.toBe(problemOf('touch-target|id:a#PbButton'));
-  });
-});
-
-describe('reviewReport with bugs on other screens', () => {
-  const state = (fields: Record<string, unknown>) =>
+describe('reviewReport with problems decided on other screens', () => {
+  const touch = (id: string, width: number) =>
     ({
-      id: 's',
-      projectId: 'p',
+      ...violation(`touch-target|${id}`, {
+        rule: 'touch-target',
+        severity: 'warning',
+        details: { widthDp: width, heightDp: 38 },
+      }),
+      status: 'new',
+    }) as A11yReport['violations'][number];
+  const problem = (key: string, fields: Partial<A11yProblem> = {}): A11yProblem => ({
+    id: key,
+    projectId: 'p',
+    key,
+    code: problemCode('p', key),
+    status: 'reported',
+    jiraKey: 'P24MOB-20691',
+    jiraUrl: 'u',
+    comment: null,
+    screenName: 'Адреси проживання',
+    screenTitle: 'Адреси',
+    userId: null,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    ...fields,
+  });
+
+  it('covers the same component problem with the bug filed on another screen', () => {
+    const stored = report([
+      touch('id:Адреса реєстрації#PbButton', 38),
+      touch('id:Адреса роботи#PbButton', 38.2),
+      // the same component with another tap area is another problem
+      touch('id:Інше#PbButton', 40),
+    ]);
+    const reviewed = reviewReport(stored, ctx([], [problem('touch-target|c:PbButton|38x38')]));
+
+    expect(reviewed.violations.map((v) => v.group)).toEqual([
+      'touch-target|c:PbButton|38x38',
+      'touch-target|c:PbButton|38x38',
+      'touch-target|c:PbButton|40x38',
+    ]);
+    expect(reviewed.violations[0].issue).toEqual({
       status: 'reported',
       jiraKey: 'P24MOB-20691',
       jiraUrl: 'u',
       comment: null,
-      userId: null,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-      ...fields,
-    }) as never;
-  const report = {
-    format: 'appium-android',
-    pixelsPerDp: 2.6,
-    pixelsPerDpEstimated: false,
-    baselineChecked: true,
-    summary: { new: 2, existing: 0, fixed: 0, total: 2 },
-    violations: [
-      { id: 'touch-target|id:Адреса реєстрації#PbButton', rule: 'touch-target', severity: 'warning', status: 'new' },
-      { id: 'missing-label|id:com.bank:id/icon', rule: 'missing-label', severity: 'error', status: 'new' },
-    ],
-    fixed: [],
-  } as never;
-
-  it('marks the same problem filed on another screen as known, not new', () => {
-    const reviewed = reviewReport(
-      report,
-      [],
-      [state({ screenName: 'Адреси проживання', violationId: 'touch-target|id:Адреса проживання#PbButton' })]
-    );
-    expect(reviewed.violations[0]).toMatchObject({
-      group: 'touch-target|PbButton',
-      knownBug: { jiraKey: 'P24MOB-20691', screenName: 'Адреси проживання' },
+      screenName: 'Адреси проживання',
+      screenTitle: 'Адреси',
     });
-    expect(reviewed.violations[1].knownBug).toBeUndefined();
-    expect(reviewed.summary).toMatchObject({ new: 1, total: 2 });
+    expect(reviewed.violations[0].problemCode).toMatch(/^a11y-[0-9a-f]{8}$/);
+    expect(reviewed.violations[2].issue).toBeUndefined();
+    expect(reviewed.summary).toMatchObject({ new: 1, reported: 2, total: 3 });
   });
 
-  it('prefers the bug filed on this screen over an older one elsewhere', () => {
-    const elsewhere = state({ screenName: 'Платежі', violationId: 'touch-target|id:Pay#PbButton' });
-    const here = state({
-      screenName: 'Адреси',
-      jiraKey: 'P24MOB-30000',
-      violationId: 'touch-target|id:Інша адреса#PbButton',
+  it('applies a false positive on a component everywhere, and a claim in progress counts as tracked', () => {
+    const stored = report([touch('id:com.bank:id/tab', 38), touch('id:com.bank:id/pay', 38)]);
+    const reviewed = reviewReport(
+      stored,
+      ctx(
+        [],
+        [
+          problem('touch-target|c:tab|38x38', { status: 'ignored', jiraKey: null }),
+          problem('touch-target|c:pay|38x38', { status: 'filing', jiraKey: null }),
+        ]
+      )
+    );
+    expect(reviewed.ignored.map((v) => v.id)).toEqual(['touch-target|id:com.bank:id/tab']);
+    expect(reviewed.violations[0].issue.status).toBe('filing');
+    expect(reviewed.summary).toMatchObject({ new: 0, reported: 1, ignored: 1 });
+  });
+
+  it('lists what a project class ignores with the false positives, never counted', () => {
+    const stored = report([touch('id:com.bank:id/decor_1', 30)]);
+    const reviewed = reviewReport(stored, {
+      ...ctx(),
+      settings: { classes: [{ id: 'c', name: 'Decor', match: '*decor_*', action: 'ignore' }] },
     });
-    const reviewed = reviewReport(report, [here], [elsewhere, here]);
-    expect(reviewed.violations[0].knownBug).toMatchObject({ jiraKey: 'P24MOB-30000', screenName: 'Адреси' });
+    expect(reviewed.violations).toEqual([]);
+    expect(reviewed.ignored[0]).toMatchObject({
+      problemClass: 'Decor',
+      issue: { status: 'ignored', byClass: 'Decor' },
+    });
+    expect(reviewed.summary).toMatchObject({ new: 0, total: 0, ignored: 1 });
+  });
+
+  it('lists a problem filed from this screen that the screen no longer has as resolved', () => {
+    const gone = problem('missing-label|c:scan|', { screenName: 'Payment', jiraKey: 'MOB-9' });
+    const reviewed = reviewReport(report([]), ctx([], [gone]));
+    expect(reviewed.resolved).toEqual([{ violationId: gone.code, jiraKey: 'MOB-9', jiraUrl: 'u' }]);
   });
 });

@@ -82,11 +82,9 @@ export const JiraBugDialog: React.FunctionComponent<{
   testRun: TestRun;
   // each problem is the issues of one rule on one component
   problems: A11yViolation[][];
-  // problems with a bug filed on another screen: linked to it, not filed again
-  alreadyFiled?: A11yViolation[][];
   onClose: () => void;
   onDone: () => void;
-}> = ({ testRun, problems, alreadyFiled = [], onClose, onDone }) => {
+}> = ({ testRun, problems, onClose, onDone }) => {
   const { enqueueSnackbar } = useSnackbar();
   const { selectedProjectId } = useProjectState();
   const projectId = selectedProjectId ?? "";
@@ -225,16 +223,6 @@ export const JiraBugDialog: React.FunctionComponent<{
       countUse(usageKey(projectId, "linkType"), linkType);
 
     const linked: string[] = [];
-    for (const problem of alreadyFiled) {
-      const known = problem[0].knownBug?.jiraKey;
-      if (!known) continue;
-      try {
-        await insightsService.linkA11y(testRun.id, ids(problem), known);
-        linked.push(known);
-      } catch (e) {
-        enqueueSnackbar(`${problem[0].title}: ${e}`, { variant: "error" });
-      }
-    }
     const created: string[] = [];
     setProgress(0);
     for (const problem of problems) {
@@ -249,7 +237,8 @@ export const JiraBugDialog: React.FunctionComponent<{
             fieldValues,
           },
         );
-        created.push(result.jiraKey);
+        // filed meanwhile by a colleague, or found in Jira by the problem's id
+        (result.alreadyFiled ? linked : created).push(result.jiraKey);
         result.warnings.forEach((warning) =>
           enqueueSnackbar(`${result.jiraKey}: ${warning}`, {
             variant: "warning",
@@ -258,19 +247,20 @@ export const JiraBugDialog: React.FunctionComponent<{
       } catch (e) {
         enqueueSnackbar(`${problem[0].title}: ${e}`, { variant: "error" });
       }
-      setProgress(created.length);
+      setProgress(created.length + linked.length);
     }
     setProgress(null);
     if (created.length) {
       enqueueSnackbar(`Filed ${created.join(", ")}`, { variant: "success" });
     }
     if (linked.length) {
-      enqueueSnackbar(`Linked to ${[...new Set(linked)].join(", ")}`, {
-        variant: "success",
-      });
+      enqueueSnackbar(
+        `Filed already, linked: ${[...new Set(linked)].join(", ")}`,
+        { variant: "info" },
+      );
     }
     onDone();
-    if (created.length === problems.length) onClose();
+    if (created.length + linked.length === problems.length) onClose();
   };
 
   return (
@@ -394,23 +384,52 @@ export const JiraBugDialog: React.FunctionComponent<{
                 </Typography>
               ))}
               <Typography variant="body2" color="textSecondary">
+                Problem id {prep.problem.code}
+                {problems.length > 1 ? " and one per problem" : ""}: in the
+                summary, labels and description, to find the bug in Jira.
+                {prep.problem.everyScreen &&
+                  ` One bug for ${prep.problem.component} on every screen.`}
+              </Typography>
+              <Typography variant="body2" color="textSecondary">
                 Description: service, screen, actual and expected result,
                 device, element; screenshot with the problem outlined.
                 {problems.some((problem) => problem.length > 1) &&
                   " One bug per problem: the same issue on several elements of one component goes into one bug with all of them."}
               </Typography>
             </Box>
-            {alreadyFiled.length > 0 && (
-              <Alert severity="info" sx={{ py: 0 }}>
-                Filed already, will be linked instead:{" "}
-                {alreadyFiled
-                  .map(
-                    (problem) =>
-                      `${problem[0].title} → ${problem[0].knownBug?.jiraKey}`,
-                  )
-                  .join("; ")}
+            {problems.length === 1 && prep.existing && (
+              <Alert severity="warning" data-testid="jiraExisting">
+                {prep.existing.status === "reported"
+                  ? `Filed already as ${prep.existing.jiraKey}`
+                  : prep.existing.status === "filing"
+                    ? "A bug is being filed right now"
+                    : "Marked as a false positive"}{" "}
+                from screen “
+                {prep.existing.screenTitle || prep.existing.screenName}”.
+                Creating will not file another one.
               </Alert>
             )}
+            {problems.length === 1 &&
+              prep.inJira.some((issue) => !issue.done) && (
+                <Alert severity="warning" data-testid="jiraFound">
+                  Jira has{" "}
+                  {prep.inJira
+                    .filter((issue) => !issue.done)
+                    .map((issue) => `${issue.key} (${issue.status})`)
+                    .join(", ")}{" "}
+                  with {prep.problem.code}: it will be linked instead of filing
+                  a new bug.
+                </Alert>
+              )}
+            {problems.length === 1 &&
+              prep.inJira.length > 0 &&
+              prep.inJira.every((issue) => issue.done) && (
+                <Alert severity="info">
+                  {prep.problem.code} was filed before as{" "}
+                  {prep.inJira.map((issue) => issue.key).join(", ")} (done). The
+                  problem is back, so a new bug makes sense.
+                </Alert>
+              )}
             {cannotAsk.length > 0 && (
               <Alert severity="warning">
                 Jira requires fields Vision cannot ask for here:{" "}

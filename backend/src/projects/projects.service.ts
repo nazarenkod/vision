@@ -165,6 +165,7 @@ export class ProjectsService {
       await this.testVariationsService.delete(testVariation.id);
     }
     await this.prismaService.a11yIssueState.deleteMany({ where: { projectId: id } });
+    await this.prismaService.a11yProblem.deleteMany({ where: { projectId: id } });
 
     return this.prismaService.project.delete({
       where: { id },

@@ -92,8 +92,8 @@ export class TestRunsController {
   @ApiOkResponse({ description: 'Accessibility report built from the UI tree; null when none was sent' })
   @ApiBearerAuth()
   @UseGuards(MixedGuard)
-  getAccessibility(@Param('id', new ParseUUIDPipe()) id: string) {
-    return this.testRunsService.getAccessibilityReport(id);
+  getAccessibility(@CurrentUser() user: User, @Param('id', new ParseUUIDPipe()) id: string) {
+    return this.testRunsService.getAccessibilityReport(id, user?.id);
   }
 
   @Post(':id/a11y/ignore')
@@ -138,8 +138,19 @@ export class TestRunsController {
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard, RoleGuard)
   @Roles(Role.admin, Role.editor)
-  prepareA11yBug(@Param('id', new ParseUUIDPipe()) id: string, @Body() body: PrepareA11yBugDto) {
-    return this.a11yIssuesService.prepareBug(id, issueIds(body), body.parentKey, body.issueTypeId, body.fieldValues);
+  prepareA11yBug(
+    @CurrentUser() user: User,
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Body() body: PrepareA11yBugDto
+  ) {
+    return this.a11yIssuesService.prepareBug(
+      id,
+      issueIds(body),
+      body.parentKey,
+      body.issueTypeId,
+      body.fieldValues,
+      user?.id
+    );
   }
 
   @Get(':id/a11y/jira/users')
@@ -147,8 +158,8 @@ export class TestRunsController {
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard, RoleGuard)
   @Roles(Role.admin, Role.editor)
-  findJiraUsers(@Param('id', new ParseUUIDPipe()) id: string, @Query('query') query = '') {
-    return this.a11yIssuesService.findJiraUsers(id, query.slice(0, 100));
+  findJiraUsers(@CurrentUser() user: User, @Param('id', new ParseUUIDPipe()) id: string, @Query('query') query = '') {
+    return this.a11yIssuesService.findJiraUsers(id, query.slice(0, 100), user?.id);
   }
 
   @Post(':id/a11y/jira')

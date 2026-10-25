@@ -20,6 +20,13 @@ export class UserDto {
   @ApiProperty()
   readonly role: Role;
 
+  // the personal Jira token itself never leaves the server
+  @ApiProperty()
+  readonly jiraTokenSet: boolean;
+
+  @ApiProperty({ nullable: true })
+  readonly jiraEmail: string | null;
+
   constructor(user: User) {
     this.id = user.id;
     this.email = user.email;
@@ -27,5 +34,7 @@ export class UserDto {
     this.lastName = user.lastName;
     this.apiKey = user.apiKey;
     this.role = user.role;
+    this.jiraTokenSet = !!user.jiraToken;
+    this.jiraEmail = user.jiraEmail ?? null;
   }
 }

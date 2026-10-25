@@ -1,6 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { TestRunDto } from '../../test-runs/dto/testRun.dto';
-import { UserDto } from '../../users/dto/user.dto';
 
 export class BaselineDto {
   @ApiProperty()
@@ -21,6 +20,9 @@ export class BaselineDto {
   @ApiProperty()
   testRun: TestRunDto;
 
+  // who approved it: only what the history shows, never credentials
   @ApiProperty()
-  user: UserDto;
+  user: BaselineUser | null;
 }
+
+export type BaselineUser = { id: string; firstName: string | null; lastName: string | null; email: string };

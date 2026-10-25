@@ -20,38 +20,48 @@ const build = TEST_BUILD_FAILED;
 const run = { ...TEST_UNRESOLVED, hasUiTree: true };
 
 const bounds = { x: 0, y: 2200, width: 100, height: 100 };
-const tab = (index: number) => ({
-  id: `touch-target|id:com.bank:id/tab_${index}`,
+const button = (label: string) => ({
+  id: `touch-target|id:${label}#PbButton`,
   rule: "touch-target",
   severity: "warning",
   title: "Touch target too small",
-  message: `Tab ${index + 1} is 38 × 38 dp, minimum is 48 × 48 dp.`,
-  nodeKey: `id:com.bank:id/tab_${index}`,
-  resourceId: `com.bank:id/tab_${index}`,
-  className: "android.widget.ImageButton",
-  label: `Tab ${index + 1}`,
+  message: `Button "${label}" is 38 × 38 dp, minimum is 48 × 48 dp.`,
+  nodeKey: `id:${label}#PbButton`,
+  resourceId: `${label}#PbButton`,
+  className: "android.widget.Button",
+  label,
   bounds,
   status: "new",
-  group: "touch-target|tab",
+  group: "touch-target|c:PbButton|38x38",
+  problemCode: "a11y-3f9c2a1b",
 });
 const icon = {
-  ...tab(0),
+  ...button("icon"),
   id: "missing-label|id:com.bank:id/icon",
   rule: "missing-label",
   severity: "error",
-  title: "Missing label",
+  title: "Control has no label",
   message: "Clickable image has no label.",
+  nodeKey: "id:com.bank:id/icon",
   resourceId: "com.bank:id/icon",
-  group: "missing-label|icon",
-  knownBug: { jiraKey: "MOB-7", jiraUrl: null, screenName: "Payments" },
+  group: "missing-label|c:icon|",
+  problemCode: "a11y-0a1b2c3d",
+  // filed from another screen: the component's problem is covered here too
+  issue: {
+    status: "reported",
+    jiraKey: "MOB-7",
+    jiraUrl: null,
+    screenName: "Платежі. Головна",
+    screenTitle: "Платежі",
+  },
 };
 const report = {
   format: "appium-android",
   pixelsPerDp: 2.6,
   pixelsPerDpEstimated: false,
   baselineChecked: true,
-  summary: { new: 2, existing: 0, reported: 0, ignored: 0, fixed: 0, total: 3 },
-  violations: [tab(0), tab(1), icon],
+  summary: { new: 2, existing: 0, reported: 1, ignored: 0, fixed: 0, total: 3 },
+  violations: [button("Адреса реєстрації"), button("Адреса роботи"), icon],
   ignored: [],
   fixed: [],
   resolved: [],
@@ -73,8 +83,8 @@ test.beforeEach(async ({ page }) => {
 
 const posted = (request: Request) => JSON.parse(request.postData() ?? "{}");
 
-// Two tabs of one tab bar too small is one fix, so it is one card and one bug,
-// not two bugs a developer closes as duplicates of each other.
+// Two buttons of one component with the same tap area are one fix, so one
+// card and one bug, not two bugs a developer closes as duplicates.
 test("shows one problem for the same issue on elements of one component", async ({
   openProjectPage,
   page,
@@ -84,9 +94,11 @@ test("shows one problem for the same issue on elements of one component", async 
 
   await expect(problems).toHaveCount(2);
   await expect(problems.first()).toContainText(
-    "The same issue on 2 elements of tab",
+    "The same issue on 2 elements of PbButton",
   );
-  await expect(problems.first()).toContainText("Tab 2 is 38 × 38 dp");
+  await expect(problems.first().getByTestId("a11yProblemCode")).toHaveText(
+    "a11y-3f9c2a1b",
+  );
 
   const ignore = page.waitForRequest(
     `${API_URL}/test-runs/${run.id}/a11y/ignore`,
@@ -99,27 +111,28 @@ test("shows one problem for the same issue on elements of one component", async 
     .getByRole("dialog")
     .getByRole("button", { name: "Mark as false positive" })
     .click();
-  expect(posted(await ignore).violationIds).toEqual([tab(0).id, tab(1).id]);
+  expect(posted(await ignore).violationIds).toEqual([
+    button("Адреса реєстрації").id,
+    button("Адреса роботи").id,
+  ]);
 });
 
-// The same problem filed from another screen is linked, not filed again.
-test("offers the bug filed for the same problem on another screen", async ({
+// A component problem filed from another screen holds here: nothing to file.
+test("shows a problem filed on another screen as covered", async ({
   openProjectPage,
   page,
 }) => {
-  await page.route(`${API_URL}/test-runs/${run.id}/a11y/link`, (route) =>
-    route.fulfill({ status: 201, body: "{}" }),
-  );
   await openProjectPage(project.id, build.id, run.id);
-  const known = page.getByTestId("a11yProblem").nth(1);
+  const covered = page.getByTestId("a11yProblem").nth(1);
 
-  await expect(known).toContainText(
-    "Filed already as MOB-7 on screen “Payments”",
+  await expect(covered).toContainText("Bug MOB-7");
+  await expect(covered.getByTestId("a11yElsewhere")).toContainText(
+    "A problem of icon: filed on screen “Платежі”",
   );
-  const link = page.waitForRequest(`${API_URL}/test-runs/${run.id}/a11y/link`);
-  await known.getByRole("button", { name: "Link to MOB-7" }).click();
-  expect(posted(await link)).toMatchObject({
-    violationIds: [icon.id],
-    jiraKey: "MOB-7",
-  });
+  await expect(
+    covered.getByRole("button", { name: "Create Jira bug" }),
+  ).toHaveCount(0);
+  await expect(
+    covered.getByRole("button", { name: "Unlink on every screen" }),
+  ).toBeVisible();
 });

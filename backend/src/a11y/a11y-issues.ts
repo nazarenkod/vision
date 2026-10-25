@@ -1,55 +1,44 @@
-import { A11yIssueState } from '@prisma/client';
-import { A11yReport, A11yViolation } from './a11y.types';
+import { A11yIssueState, A11yProblem } from '@prisma/client';
+import { A11yReport } from './a11y.types';
+import { classOf, problemCode, problemKeyOf, ProblemSettings } from './a11y-problems';
 
 export type A11yIssueStatus = 'reported' | 'ignored';
+// a bug for the problem is being created right now
+export type A11yProblemStatus = A11yIssueStatus | 'filing';
 
 export interface A11yIssueInfo {
-  status: A11yIssueStatus;
+  status: A11yProblemStatus;
   jiraKey?: string | null;
   jiraUrl?: string | null;
   comment?: string | null;
-}
-
-/** A bug filed for the same problem (same rule, same component) on another screen. */
-export interface KnownBug {
-  jiraKey: string | null;
-  jiraUrl: string | null;
-  screenName: string;
+  // set when it was decided on another check: the problem of a component holds on every screen
+  screenName?: string;
+  screenTitle?: string | null;
+  // ignored by the project's problem class of this name, not by a decision
+  byClass?: string;
 }
 
 type ReportViolation = A11yReport['violations'][number] & {
   issue?: A11yIssueInfo;
-  // the problem it is: same rule on the same component, wherever it shows
+  // the problem it is (a11y-problems problemKeyOf), and its id as people see it
   group: string;
-  knownBug?: KnownBug;
+  problemCode: string;
+  // the project's problem class that took it
+  problemClass?: string;
 };
 
-/**
- * The component an element belongs to, from its key: the part of a Compose
- * test tag after "#" (…#PbButton), a resource id without its index (tab_0,
- * tab_1 → tab), else the element class. Elements of one component share the
- * fix, so their issues are one problem.
- */
-export function componentOf(elementKey: string): string {
-  const key = elementKey.replace(/#\d+$/, '');
-  const [kind, ...rest] = key.split(':');
-  const value = rest.join(':');
-  if (kind === 'id') {
-    const tag = value.includes('#') ? value.slice(value.lastIndexOf('#') + 1) : value.replace(/^.*:id\//, '');
-    return tag.replace(/[_-]?\d+$/, '') || tag;
-  }
-  if (kind === 'path') {
-    const last = value.split('/').pop() ?? value;
-    return last.replace(/\[\d+\]$/, '').replace(/^.*\./, '');
-  }
-  // Class:text — the class says what kind of element it is
-  return kind;
-}
-
-/** Identity of a problem: the rule and the component, from an issue id (rule|elementKey). */
-export function problemOf(violationId: string): string {
-  const index = violationId.indexOf('|');
-  return index < 0 ? violationId : `${violationId.slice(0, index)}|${componentOf(violationId.slice(index + 1))}`;
+/** Where a report is reviewed: the screen, the project's settings and decisions. */
+export interface ReviewContext {
+  projectId: string;
+  // the check's name, where decisions of old were kept
+  screenName: string;
+  // the screen's identity for problems that are not about a component: its title, else the check's name
+  screen: string;
+  settings?: ProblemSettings;
+  // decisions of old, per issue of this screen
+  states?: A11yIssueState[];
+  // decisions on problems: those of this report's problems, and those made on this screen
+  problems?: A11yProblem[];
 }
 
 /** A report with the team's decisions applied: filed bugs, false positives, bugs that can be closed. */
@@ -70,56 +59,70 @@ export interface ReviewedA11yReport extends Omit<A11yReport, 'violations' | 'sum
   };
 }
 
-const info = (state: A11yIssueState): A11yIssueInfo => ({
+const fromState = (state: A11yIssueState): A11yIssueInfo => ({
   status: state.status as A11yIssueStatus,
   jiraKey: state.jiraKey,
   jiraUrl: state.jiraUrl,
   comment: state.comment,
 });
 
+const fromProblem = (problem: A11yProblem, screenName: string): A11yIssueInfo => ({
+  status: problem.status as A11yProblemStatus,
+  jiraKey: problem.jiraKey,
+  jiraUrl: problem.jiraUrl,
+  comment: problem.comment,
+  ...(problem.screenName !== screenName ? { screenName: problem.screenName, screenTitle: problem.screenTitle } : {}),
+});
+
 /**
- * Applies the screen's issue states to a stored report. Bugs filed anywhere in
- * the project for the same problem mark the issue as known: it is not new,
- * and the review offers to link it instead of filing a duplicate.
+ * Applies the team's decisions to a stored report. Each issue is a problem by
+ * the project's duplicate settings; a problem filed or marked as a false
+ * positive anywhere covers it on every screen it shows on. Decisions of old,
+ * kept per issue, still apply on their screen.
  */
-export function reviewReport(
-  report: A11yReport,
-  states: A11yIssueState[],
-  projectReported: A11yIssueState[] = []
-): ReviewedA11yReport {
-  const byId = new Map(states.map((state) => [state.violationId, state]));
-  const bugByProblem = new Map<string, KnownBug>();
-  // a bug of this screen first, then the oldest one elsewhere
-  for (const state of [...states, ...projectReported]) {
-    if (state.status !== 'reported' || !state.jiraKey) continue;
-    const problem = problemOf(state.violationId);
-    if (!bugByProblem.has(problem)) {
-      bugByProblem.set(problem, { jiraKey: state.jiraKey, jiraUrl: state.jiraUrl, screenName: state.screenName });
-    }
-  }
+export function reviewReport(report: A11yReport, context: ReviewContext): ReviewedA11yReport {
+  const byId = new Map((context.states ?? []).map((state) => [state.violationId, state]));
+  const byKey = new Map((context.problems ?? []).map((problem) => [problem.key, problem]));
   const violations: ReportViolation[] = [];
   const ignored: ReportViolation[] = [];
+  const keys = new Set<string>();
   for (const violation of report.violations) {
-    const state = byId.get(violation.id);
-    const group = problemOf(violation.id);
-    const knownBug = state ? undefined : bugByProblem.get(group);
+    const key = problemKeyOf(violation, context.screen, context.settings);
+    keys.add(key);
+    const own = byId.get(violation.id);
+    const problem = byKey.get(key);
+    const taken = classOf(violation, context.settings?.classes);
+    const byClass: A11yIssueInfo | undefined =
+      taken?.problemClass.action === 'ignore'
+        ? { status: 'ignored', comment: `Class “${taken.problemClass.name}”`, byClass: taken.problemClass.name }
+        : undefined;
+    const issue = own ? fromState(own) : problem ? fromProblem(problem, context.screenName) : byClass;
     const item: ReportViolation = {
       ...violation,
-      group,
-      ...(state ? { issue: info(state) } : {}),
-      ...(knownBug ? { knownBug } : {}),
+      group: key,
+      problemCode: problemCode(context.projectId, key),
+      ...(taken ? { problemClass: taken.problemClass.name } : {}),
+      ...(issue ? { issue } : {}),
     };
-    (state?.status === 'ignored' ? ignored : violations).push(item);
+    (issue?.status === 'ignored' ? ignored : violations).push(item);
   }
   const present = new Set(report.violations.map((v) => v.id));
-  const resolved = states
-    .filter((state) => state.status === 'reported' && !present.has(state.violationId))
-    .map((state) => ({ violationId: state.violationId, jiraKey: state.jiraKey, jiraUrl: state.jiraUrl }));
+  const resolved = [
+    ...(context.states ?? [])
+      .filter((state) => state.status === 'reported' && !present.has(state.violationId))
+      .map((state) => ({ violationId: state.violationId, jiraKey: state.jiraKey, jiraUrl: state.jiraUrl })),
+    // a problem filed from this screen that the screen no longer has
+    ...(context.problems ?? [])
+      .filter(
+        (problem) =>
+          problem.status === 'reported' && problem.screenName === context.screenName && !keys.has(problem.key)
+      )
+      .map((problem) => ({ violationId: problem.code, jiraKey: problem.jiraKey, jiraUrl: problem.jiraUrl })),
+  ];
 
   // advice (severity info) is shown but never counted
   const counted = violations.filter((v) => v.severity !== 'info');
-  // a problem with a bug filed on another screen is tracked already
-  const untracked = counted.filter((v) => !v.issue && !v.knownBug);
+  const untracked = counted.filter((v) => !v.issue);
   return {
     ...report,
     violations,

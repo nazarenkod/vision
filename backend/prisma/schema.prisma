@@ -172,6 +172,9 @@ model User {
   apiKey    String     @unique
   isActive  Boolean    @default(true)
   role      Role       @default(guest)
+  // personal Jira credentials: bugs are filed as this person (email only for Jira Cloud)
+  jiraToken String?
+  jiraEmail String?
   updatedAt DateTime   @updatedAt
   createdAt DateTime   @default(now())
   baselines Baseline[]
@@ -193,6 +196,33 @@ model A11yIssueState {
   updatedAt   DateTime @updatedAt
 
   @@unique([projectId, screenName, violationId])
+}
+
+// An accessibility problem the team decided on, once for the project: the same
+// rule on the same component (and values) is one problem on every screen, by
+// the project's duplicate settings. The unique key is also the lock that keeps
+// two people from filing the same bug at once (status "filing").
+model A11yProblem {
+  id          String   @id @default(uuid())
+  projectId   String
+  // rule + component + values, or rule + screen + element (a11y-problems.ts)
+  key         String
+  // what people see and search Jira for: a11y-3f9c2a1b
+  code        String
+  // filing | reported | ignored
+  status      String
+  jiraKey     String?
+  jiraUrl     String?
+  comment     String?
+  // the check and the screen title it was decided on
+  screenName  String
+  screenTitle String?
+  userId      String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([projectId, key])
+  @@index([projectId, code])
 }
 
 // What the informational comparison with the reference device showed for a

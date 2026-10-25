@@ -5,7 +5,9 @@ export const Tooltip: React.FunctionComponent<TooltipProps> = ({
   title,
   children,
 }) => (
-  <MuiTooltip title={title} placement="bottom" arrow>
+  // never takes the pointer: an open tooltip used to cover the row or button
+  // below it, so the next click went to the tooltip
+  <MuiTooltip title={title} placement="bottom" arrow disableInteractive>
     {children}
   </MuiTooltip>
 );

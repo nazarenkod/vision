@@ -74,6 +74,13 @@ export const test = base.extend<Fixtures & Options>({
   },
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   openProjectPage: async ({ page, authUser }, use) => {
+    // The build opens on its change groups now; these tests are about the list
+    // of all runs, as the page opened before. A view picked in a test stays.
+    await page.addInitScript(() => {
+      if (!localStorage.getItem("vrt.buildView")) {
+        localStorage.setItem("vrt.buildView", "all");
+      }
+    });
     await use(async (id, buildId, testId) => {
       let url = `${id}`;
       if (buildId) {

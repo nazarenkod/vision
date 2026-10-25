@@ -34,8 +34,13 @@ fi
 echo "    $(du -h "$DUMP_FILE" | cut -f1) dump"
 
 echo "==> Restoring into demo database ($POSTGRES_DB)"
-"${COMPOSE[@]}" exec -T postgres pg_restore --clean --if-exists --no-owner --no-privileges \
-  -U "$POSTGRES_USER" -d "$POSTGRES_DB" < "$DUMP_FILE" || echo "    pg_restore reported warnings (usually harmless on a fresh database)"
+# Run again later, this replaces the demo data: the API stops, and the schema is emptied so
+# tables of the fork's own migrations go too and the migrations apply cleanly on the next start.
+"${COMPOSE[@]}" stop api ui >/dev/null 2>&1 || true
+"${COMPOSE[@]}" exec -T postgres psql -v ON_ERROR_STOP=1 -q -U "$POSTGRES_USER" -d "$POSTGRES_DB" \
+  -c 'DROP SCHEMA IF EXISTS public CASCADE; CREATE SCHEMA public;'
+"${COMPOSE[@]}" exec -T postgres pg_restore --no-owner --no-privileges \
+  -U "$POSTGRES_USER" -d "$POSTGRES_DB" < "$DUMP_FILE" || echo "    pg_restore reported warnings (see above); the checks below tell whether the copy is usable"
 
 # The fork's migrations continue from the squashed upstream baseline of July 2023.
 # A production instance older than that has a different history and needs an upgrade first.

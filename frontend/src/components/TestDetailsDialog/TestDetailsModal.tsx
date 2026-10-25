@@ -365,11 +365,16 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
     "Apply selected ignore area to all images in this build.";
 
   const fitImageToStage = (image: HTMLImageElement, container: HTMLElement) => {
+    // the pane's own padding is not room for the image: counted in, the image
+    // came out a pixel wider than its scroll area and its right edge was cut off
+    const style = window.getComputedStyle(container);
+    const padding = (side: "Left" | "Right" | "Top" | "Bottom") =>
+      parseFloat(style[`padding${side}`]) || 0;
     const scale = calculateScale(
       image.width + 20,
       image.height + 20,
-      container.offsetWidth,
-      container.offsetHeight - 48,
+      container.clientWidth - padding("Left") - padding("Right"),
+      container.clientHeight - padding("Top") - padding("Bottom") - 48,
     );
 
     if (scale < stageScale) {
@@ -745,61 +750,6 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
             </Tooltip>
           </Grid>
         )}
-        {/* one flexible item holding both: a plain flex row, not a nested Grid,
-            whose spacing would lift the controls off the row's line. The item
-            grows so the row can shrink on a narrow window, and the pair sits at
-            its start rather than being pushed to the pane's edge */}
-        {/* the fade and the blend read a checkpoint against its baseline, so
-            they go away once there is nothing left to see through — the same
-            reason the diff toggle above only shows while a diff exists */}
-        <Grid item xs minWidth={0}>
-          {canCompareToBaseline(testRun) && (
-            <Box display="flex" alignItems="center" gap={1}>
-              <MuiTooltip title="Fade the checkpoint out to see the baseline through it">
-                <Box display="flex" alignItems="center" gap={1} minWidth={0}>
-                  <Typography variant="caption" color="textSecondary" noWrap>
-                    Fade
-                  </Typography>
-                  <Box
-                    width={180}
-                    maxWidth="100%"
-                    display="flex"
-                    data-testid="overlayOpacity"
-                  >
-                    <Slider
-                      size="small"
-                      disabled={blendDifference}
-                      min={0}
-                      max={1}
-                      step={0.05}
-                      value={overlayOpacity}
-                      onChange={(event, value) => {
-                        setOverlayOpacity(value as number);
-                        setIsDiffShown(false);
-                      }}
-                      aria-label="Fade to the baseline"
-                    />
-                  </Box>
-                </Box>
-              </MuiTooltip>
-              <MuiTooltip title="Blend the two as a difference: what matches goes black, and a shift shows as an offset ghost">
-                <ToggleButton
-                  value="blend"
-                  size="small"
-                  selected={blendDifference}
-                  onChange={() => {
-                    setBlendDifference((blend) => !blend);
-                    setIsDiffShown(false);
-                  }}
-                  data-testid="differenceToggle"
-                  style={{ padding: 4, marginLeft: 8 }}
-                >
-                  <Compare fontSize="small" />
-                </ToggleButton>
-              </MuiTooltip>
-            </Box>
-          )}
-        </Grid>
       </Grid>
       <DrawArea
         imageName={imageName}
@@ -908,6 +858,55 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
     </Box>
   );
 
+  // Fade and blend read the checkpoint against its baseline. They sit in the
+  // top toolbar: next to the side panel the checkpoint's own header is too
+  // narrow, and the slider shrank to a dot there.
+  const compareControls = () => (
+    <>
+      {canCompareToBaseline(testRun) && (
+        <Box display="flex" alignItems="center" gap={1}>
+          <MuiTooltip title="Fade the checkpoint out to see the baseline through it">
+            <Box display="flex" alignItems="center" gap={1} minWidth={0}>
+              <Typography variant="caption" color="textSecondary" noWrap>
+                Fade
+              </Typography>
+              <Box width={80} display="flex" data-testid="overlayOpacity">
+                <Slider
+                  size="small"
+                  disabled={blendDifference}
+                  min={0}
+                  max={1}
+                  step={0.05}
+                  value={overlayOpacity}
+                  onChange={(event, value) => {
+                    setOverlayOpacity(value as number);
+                    setIsDiffShown(false);
+                  }}
+                  aria-label="Fade to the baseline"
+                />
+              </Box>
+            </Box>
+          </MuiTooltip>
+          <MuiTooltip title="Blend the two as a difference: what matches goes black, and a shift shows as an offset ghost">
+            <ToggleButton
+              value="blend"
+              size="small"
+              selected={blendDifference}
+              onChange={() => {
+                setBlendDifference((blend) => !blend);
+                setIsDiffShown(false);
+              }}
+              data-testid="differenceToggle"
+              style={{ padding: 4 }}
+            >
+              <Compare fontSize="small" />
+            </ToggleButton>
+          </MuiTooltip>
+        </Box>
+      )}
+    </>
+  );
+
   const testRunDetails = () => (
     <Box ml={1} mr={1} mt={0} mb={0}>
       <Grid
@@ -931,8 +930,9 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
           </Grid>
         )}
         <Grid item style={{ marginLeft: "auto" }}>
-          {ignoreAreasToolbar()}
+          {compareControls()}
         </Grid>
+        <Grid item>{ignoreAreasToolbar()}</Grid>
         <Grid item>
           <CommentsPopper
             text={testRun.comment}

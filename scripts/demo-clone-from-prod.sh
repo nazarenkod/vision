@@ -29,12 +29,14 @@ mkdir -p "$DATA_DIR" "$DEMO_IMAGES_DIR"
 
 # ---- what will be read, and how much space it needs --------------------------------
 
-# read-only SQL against production, as the production container's own user
+# Read-only SQL against production, as the production container's own user. The database
+# is PROD_DB_NAME when set, else the container's POSTGRES_DB (the VRT default).
 prod_sql() {
   if [ -n "${PROD_PG_CONTAINER:-}" ]; then
-    docker exec "$PROD_PG_CONTAINER" sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -tAc "$0"' "$1"
+    docker exec -e VISION_PROD_DB="${PROD_DB_NAME:-}" "$PROD_PG_CONTAINER" sh -c \
+      'psql -X -U "${POSTGRES_USER:-postgres}" -d "${VISION_PROD_DB:-${POSTGRES_DB:-postgres}}" -tAc "$0"' "$1"
   else
-    docker run --rm --network host postgres:16-alpine psql "$PROD_DATABASE_URL" -tAc "$1"
+    docker run --rm --network host postgres:16-alpine psql -X "$PROD_DATABASE_URL" -tAc "$1"
   fi
 }
 
@@ -46,6 +48,24 @@ elif [ -n "${PROD_DATABASE_URL:-}" ]; then
 else
   vision_die "Set PROD_PG_CONTAINER or PROD_DATABASE_URL in $VISION_ENV_FILE"
 fi
+
+PROD_DB="$(prod_sql 'select current_database()' | tr -d '[:space:]')" ||
+  vision_die "Could not connect to the production database (check PROD_PG_CONTAINER / PROD_DATABASE_URL / PROD_DB_NAME)."
+# the database must be VRT's: a wrong one (another app on the same server) is not copied
+if [ "$(prod_sql "select (to_regclass('public.\"Project\"') is not null and to_regclass('public.\"TestRun\"') is not null and to_regclass('public.\"_prisma_migrations\"') is not null)::int" | tr -d '[:space:]')" != "1" ]; then
+  echo "!!  Database \"$PROD_DB\" has no VRT tables. Databases on that server:" >&2
+  prod_sql "select datname from pg_database where not datistemplate order by 1" | sed 's/^/!!    /' >&2
+  vision_die "Set PROD_DB_NAME in $VISION_ENV_FILE to VRT's database (the one in production API's DATABASE_URL)."
+fi
+PROJECTS_SQL="$(cat <<'SQL'
+select p.name || '  (' || (select count(*) from "Build" b where b."projectId" = p.id) || ' builds, '
+       || (select count(*) from "TestVariation" v where v."projectId" = p.id) || ' baselines)'
+from "Project" p order by p.name
+SQL
+)"
+PROD_PROJECTS="$(prod_sql "$PROJECTS_SQL")"
+PROD_PROJECT_COUNT="$(prod_sql 'select count(*) from "Project"' | tr -d '[:space:]')"
+PROD_USER_COUNT="$(prod_sql 'select count(*) from "User"' | tr -d '[:space:]')"
 
 DB_BYTES="$(prod_sql 'select pg_database_size(current_database())' | tr -d '[:space:]')"
 [[ "$DB_BYTES" =~ ^[0-9]+$ ]] || vision_die "Could not read the size of the production database ($DB_BYTES)."
@@ -77,7 +97,9 @@ if [ -n "${PROD_IMAGES_DIR:-}" ]; then
 fi
 
 echo "Copy production VRT into Vision"
-echo "  read from production:  database ($SOURCE, $(vision_human "$DB_KB")), read-only"
+echo "  read from production:  database \"$PROD_DB\" ($SOURCE, $(vision_human "$DB_KB")), read-only, all of it:"
+echo "                         $PROD_PROJECT_COUNT projects, $PROD_USER_COUNT users"
+echo "$PROD_PROJECTS" | sed 's/^/                           - /'
 [ -n "${PROD_IMAGES_DIR:-}" ] &&
   echo "                         images  ($PROD_IMAGES_DIR, $IMAGES_MODE$( [ "$IMAGES_MODE" = copy ] && echo ", $(vision_human "$IMAGES_KB")"))"
 echo "  replaced in Vision:    its database and ./demo-data/imageUploads (Vision's API stops meanwhile)"
@@ -100,8 +122,8 @@ DEMO_PG="$(vision_container postgres)"
 echo "==> Dumping production database (read-only)"
 if [ -n "${PROD_PG_CONTAINER:-}" ]; then
   # credentials come from the production container's own environment
-  docker exec "$PROD_PG_CONTAINER" sh -c \
-    'if command -v nice >/dev/null; then exec nice -n 19 pg_dump -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Fc; else exec pg_dump -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Fc; fi' \
+  docker exec -e VISION_PROD_DB="$PROD_DB" "$PROD_PG_CONTAINER" sh -c \
+    'set -- pg_dump -U "${POSTGRES_USER:-postgres}" -d "$VISION_PROD_DB" -Fc; if command -v nice >/dev/null; then exec nice -n 19 "$@"; else exec "$@"; fi' \
     > "$DUMP_FILE.part"
 else
   docker run --rm --network host postgres:16-alpine nice -n 19 pg_dump "$PROD_DATABASE_URL" -Fc > "$DUMP_FILE.part"
@@ -136,6 +158,11 @@ if [ -n "$UNKNOWN" ]; then
   vision_die "Pull the newer upstream into the fork first (git subtree pull), then run this again."
 fi
 echo "    production schema: $(demo_sql "select max(migration_name) from _prisma_migrations where finished_at is not null")"
+COPIED_PROJECTS="$(demo_sql 'select count(*) from "Project"' | tr -d '[:space:]')"
+COPIED_USERS="$(demo_sql 'select count(*) from "User"' | tr -d '[:space:]')"
+[ "$COPIED_PROJECTS" = "$PROD_PROJECT_COUNT" ] && [ "$COPIED_USERS" = "$PROD_USER_COUNT" ] ||
+  vision_die "The copy has $COPIED_PROJECTS projects and $COPIED_USERS users, production $PROD_PROJECT_COUNT and $PROD_USER_COUNT. See the pg_restore messages above."
+echo "    copied: $COPIED_PROJECTS projects, $COPIED_USERS users"
 
 echo "==> Images"
 if [ -n "${PROD_IMAGES_DIR:-}" ]; then

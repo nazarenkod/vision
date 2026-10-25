@@ -12,7 +12,7 @@ Vision ставится на ту же машину, что и рабочий VR
 4. [Копия данных прода](#4-копия-данных-прода)
 5. [Запуск и проверка](#5-запуск-и-проверка)
 6. [Настройки в Vision](#6-настройки-в-vision)
-7. [SDK: сборка и pom.xml](#7-sdk-сборка-и-pomxml)
+7. [SDK: jar и pom.xml](#7-sdk-jar-и-pomxml)
 8. [Подключение автотестов](#8-подключение-автотестов)
 9. [Ручные проверки](#9-ручные-проверки)
 10. [AI](#10-ai-необязательно)
@@ -27,7 +27,7 @@ Vision ставится на ту же машину, что и рабочий VR
 | Что | Как | Почему безопасно |
 |---|---|---|
 | База прода | `pg_dump` внутри контейнера прода (или по строке подключения) | pg_dump работает в транзакции только для чтения; запускается с наименьшим приоритетом CPU (`nice 19`) |
-| Размер базы | один `SELECT pg_database_size(...)` | только чтение |
+| Проверки перед копированием | несколько `SELECT`: имя и размер базы, есть ли таблицы VRT, список проектов, число пользователей | только чтение |
 | Картинки прода | копирование (по умолчанию) или жёсткие ссылки (`PROD_IMAGES_MODE=link`) | файлы прода не открываются на запись. Vision пишет только новые файлы со случайными именами и никогда в существующие; удаление в Vision убирает только его копию или ссылку |
 
 Что защищает от ошибок:
@@ -103,6 +103,7 @@ cp .env.demo.example .env.demo
 | `DEMO_API_URL` | адрес API так, как его видит браузер и автотесты, например `http://vision-host:14200` |
 | `PROD_PG_CONTAINER` | имя контейнера Postgres прода, **или** |
 | `PROD_DATABASE_URL` | строка подключения к базе прода |
+| `PROD_DB_NAME` | имя базы VRT в этом контейнере, если это не его `POSTGRES_DB`. Смотрите `DATABASE_URL` API прода: имя базы — после последнего `/`. Пусто — `POSTGRES_DB` |
 | `PROD_IMAGES_DIR` | папка картинок прода |
 | `PROD_IMAGES_MODE` | `copy` (по умолчанию) или `link` (без лишнего места, тот же диск) |
 
@@ -111,6 +112,23 @@ cp .env.demo.example .env.demo
 ```bash
 ./scripts/demo-clone-from-prod.sh
 ```
+
+Копируется **вся база VRT**: все проекты (iOS, Android и остальные), сборки, эталоны,
+история, пользователи с паролями, API-ключи, настройки проектов. Перед подтверждением скрипт
+показывает список проектов прода с числом сборок и эталонов, например:
+
+```
+  read from production:  database "vrt" (container vrt-postgres-1, 2.1 GB), read-only, all of it:
+                         3 projects, 12 users
+                           - Android app  (412 builds, 960 baselines)
+                           - iOS app  (388 builds, 870 baselines)
+                           - Web  (95 builds, 120 baselines)
+```
+
+Если выбранная база не содержит таблиц VRT (например, в том же Postgres живут другие
+приложения, а `POSTGRES_DB` указывает не на VRT), скрипт остановится и покажет список баз на
+сервере. Тогда укажите нужную в `PROD_DB_NAME`. После копирования скрипт сверяет число
+проектов и пользователей в копии и в проде.
 
 Скрипт покажет план и спросит `yes`. Дальше:
 1. проверит место на диске и чужие контейнеры;
@@ -155,48 +173,25 @@ Projects → карандаш у проекта:
 - **Jira**: URL и токен (для Jira Cloud ещё email). Тогда из ревью можно заводить баги по
   доступности.
 
-## 7. SDK: сборка и pom.xml
+## 7. SDK: jar и pom.xml
 
 **Пока ничего менять не нужно.** Vision понимает текущий SDK как есть: скриншоты, статусы, группы
 изменений работают. Новый SDK нужен только для отправки XML-дерева экрана: доступность,
 изменения по элементам, правила по элементам.
 
-Новый SDK — это upstream 4.3.1 плюс одно необязательное поле `uiTree`. Остальной API тот же,
-поэтому замена делается правкой одной строки `<version>`, если вы на SDK 4.x.
+Новый SDK — это upstream 4.3.1 плюс одно необязательное поле `uiTree`. Пакет и классы те же,
+работает на Java 11+. Готовый jar лежит в репозитории: `dist/sdk-java/sdk-java-4.3.1-vision.1.jar`
+(рядом его pom). Пересобрать: `./scripts/build-sdk-jar.sh` (JDK 11–17, Gradle 7).
 
-### 7.1. Собрать и опубликовать
+### Вариант А: установить в локальный Maven (рекомендую)
 
-Для сборки нужны JDK 11–17 и Gradle 7.x (системный `gradle`: обёртка `gradlew` в проекте
-старая, 6.1). Собранный jar работает на Java 11 и новее.
-
-В корпоративный Maven-репозиторий (Nexus, Artifactory), чтобы его брали все и CI:
+Один раз на каждой машине, где собираются тесты (ноутбук, агенты CI):
 
 ```bash
-cd sdk-java && gradle publish -PrepoUrl=https://nexus.company/repository/maven-releases/ -PrepoUser=USER -PrepoPassword=PASSWORD
+mvn install:install-file -Dfile=dist/sdk-java/sdk-java-4.3.1-vision.1.jar -DpomFile=dist/sdk-java/sdk-java-4.3.1-vision.1.pom
 ```
 
-Или только себе на машину (в `~/.m2`), чтобы попробовать:
-
-```bash
-cd sdk-java && gradle publishToMavenLocal
-```
-
-Координаты по умолчанию: `com.github.Visual-Regression-Tracker:sdk-java:4.3.1-vision.1`.
-Другие задаются через `-PpublishGroup=...` и `-PpublishVersion=...`.
-
-### 7.2. pom.xml
-
-Было, например:
-
-```xml
-<dependency>
-    <groupId>com.github.Visual-Regression-Tracker</groupId>
-    <artifactId>sdk-java</artifactId>
-    <version>4.3.1</version>
-</dependency>
-```
-
-Стало:
+В pom.xml меняется только версия:
 
 ```xml
 <dependency>
@@ -206,9 +201,38 @@ cd sdk-java && gradle publishToMavenLocal
 </dependency>
 ```
 
-Если публиковали в Nexus, его репозиторий должен быть в `<repositories>` (или в
-`settings.xml`); после `publishToMavenLocal` ничего добавлять не нужно. Репозиторий
-`jitpack.io` можно оставить.
+Зависимости SDK (gson, slf4j) подтянутся сами из pom, который установился вместе с jar.
+
+### Вариант Б: jar внутри проекта тестов
+
+Положить jar в `libs/` проекта тестов и закоммитить. Тогда ничего устанавливать не нужно:
+
+```xml
+<dependency>
+    <groupId>com.github.Visual-Regression-Tracker</groupId>
+    <artifactId>sdk-java</artifactId>
+    <version>4.3.1-vision.1</version>
+    <scope>system</scope>
+    <systemPath>${project.basedir}/libs/sdk-java-4.3.1-vision.1.jar</systemPath>
+</dependency>
+<!-- jar из файла не приносит своих зависимостей; если они уже есть в проекте, эти две не нужны -->
+<dependency>
+    <groupId>com.google.code.gson</groupId>
+    <artifactId>gson</artifactId>
+    <version>2.9.0</version>
+</dependency>
+<dependency>
+    <groupId>org.slf4j</groupId>
+    <artifactId>slf4j-api</artifactId>
+    <version>1.7.25</version>
+</dependency>
+```
+
+Maven предупредит о `system` scope, это нормально.
+
+Оба варианта проверены Maven-проектом: собирается и отправляет экраны с XML в Vision.
+Публикация в Nexus тоже настроена (`gradle publish -PrepoUrl=...`, см. `sdk-java/README.md`),
+пригодится, когда захотите убрать ручной шаг.
 
 ## 8. Подключение автотестов
 

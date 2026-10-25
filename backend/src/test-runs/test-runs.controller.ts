@@ -44,7 +44,13 @@ import { Roles } from '../shared/roles.decorator';
 import { A11yIssuesService } from '../a11y/a11y-issues.service';
 import { ChangeGroupsService } from './change-groups.service';
 import { AddElementRuleDto, RemoveElementRuleDto } from './dto/element-rule.dto';
-import { A11yIssueRefDto, FileA11yBugDto, IgnoreA11yIssueDto, LinkA11yIssueDto } from '../a11y/a11y-issue.dto';
+import {
+  A11yIssueRefDto,
+  FileA11yBugDto,
+  PrepareA11yBugDto,
+  IgnoreA11yIssueDto,
+  LinkA11yIssueDto,
+} from '../a11y/a11y-issue.dto';
 
 @ApiTags('test-runs')
 @Controller('test-runs')
@@ -124,13 +130,29 @@ export class TestRunsController {
     return this.a11yIssuesService.link(id, body.violationId, body.jiraKey, user?.id);
   }
 
+  @Post(':id/a11y/jira/prepare')
+  @ApiOkResponse({
+    description: "Issue and link types of the task's Jira project, and the fields a bug under the task would get",
+  })
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RoleGuard)
+  @Roles(Role.admin, Role.editor)
+  prepareA11yBug(@Param('id', new ParseUUIDPipe()) id: string, @Body() body: PrepareA11yBugDto) {
+    return this.a11yIssuesService.prepareBug(id, body.violationId, body.parentKey, body.issueTypeId);
+  }
+
   @Post(':id/a11y/jira')
-  @ApiOkResponse({ description: 'Files a Jira bug for the issue, linked to the given task' })
+  @ApiOkResponse({ description: 'Files a Jira bug for the issue under the given task' })
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard, RoleGuard)
   @Roles(Role.admin, Role.editor)
   fileA11yBug(@CurrentUser() user: User, @Param('id', new ParseUUIDPipe()) id: string, @Body() body: FileA11yBugDto) {
-    return this.a11yIssuesService.fileBug(id, body.violationId, body.parentKey, user?.id);
+    return this.a11yIssuesService.fileBug(
+      id,
+      body.violationId,
+      { parentKey: body.parentKey, issueTypeId: body.issueTypeId, linkType: body.linkType },
+      user?.id
+    );
   }
 
   @Post(':id/element-rules')

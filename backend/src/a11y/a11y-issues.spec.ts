@@ -1,6 +1,6 @@
 import { A11yIssueState } from '@prisma/client';
 import { PNG } from 'pngjs';
-import { jiraDescription, reviewReport } from './a11y-issues';
+import { reviewReport } from './a11y-issues';
 import { A11yReport, A11yViolation } from './a11y.types';
 import { JiraClient, JiraError } from './jira.client';
 import { outlineElement } from './a11y-issues.service';
@@ -89,86 +89,124 @@ describe('reviewReport', () => {
   });
 });
 
-describe('jiraDescription', () => {
-  it('describes the screen, device, element and rule in wiki markup', () => {
-    const text = jiraDescription({
-      violation: violation('missing-label|a', { details: { widthDp: 34 } }),
-      screenName: 'Payment',
-      device: 'Pixel 7 · Android 15',
-      url: 'https://vrt/p?buildId=b&testId=t',
-    });
-
-    expect(text).toContain('||Screen|Payment|');
-    expect(text).toContain('||Device|Pixel 7 · Android 15|');
-    expect(text).toContain('||Resource id|com.bank.app:id/btn_scan_qr|');
-    expect(text).toContain('||Announced as|nothing|');
-    expect(text).toContain('* widthDp: 34');
-    expect(text).toContain('[Open in Visual Regression Tracker|https://vrt/p?buildId=b&testId=t]');
-  });
-});
-
 describe('JiraClient', () => {
   const ok = (body: unknown, status = 200) =>
     ({ ok: status < 300, status, text: async () => (body === undefined ? '' : JSON.stringify(body)) }) as Response;
+  const client = (fetchMock: jest.Mock, email?: string) =>
+    new JiraClient({ url: 'https://jira.example.com/', token: 'pat', email }, fetchMock);
 
-  it('files a bug in the task’s project, links it and attaches the screenshot', async () => {
+  it('reads a task with its project, assignee and every field', async () => {
+    const fetchMock = jest.fn().mockResolvedValue(
+      ok({
+        key: 'MOB-1200',
+        fields: {
+          project: { key: 'MOB' },
+          summary: 'Payments',
+          assignee: { name: 'den', displayName: 'Den' },
+          customfield_1: 'x',
+        },
+      })
+    );
+    const issue = await client(fetchMock).getIssue('MOB-1200');
+    expect(issue).toMatchObject({ key: 'MOB-1200', projectKey: 'MOB', summary: 'Payments', assignee: { name: 'den' } });
+    expect(issue.fields.customfield_1).toBe('x');
+    expect(fetchMock.mock.calls[0][0]).toBe('https://jira.example.com/rest/api/2/issue/MOB-1200');
+    expect(fetchMock.mock.calls[0][1].headers.Authorization).toBe('Bearer pat');
+  });
+
+  it('reads issue types and create fields from the Jira 9 endpoints', async () => {
     const fetchMock = jest
       .fn()
-      .mockResolvedValueOnce(ok({ key: 'MOB-1200', fields: { project: { key: 'MOB' }, summary: 'Payments' } }))
+      .mockResolvedValueOnce(
+        ok({
+          values: [
+            { id: '10', name: 'Помилка', subtask: true },
+            { id: '1', name: 'Task' },
+          ],
+        })
+      )
+      .mockResolvedValueOnce(
+        ok({ values: [{ fieldId: 'summary', name: 'Summary', required: true, schema: { type: 'string' } }] })
+      );
+    const jira = client(fetchMock);
+    expect(await jira.issueTypes('MOB')).toEqual([
+      { id: '10', name: 'Помилка', subtask: true },
+      { id: '1', name: 'Task', subtask: false },
+    ]);
+    expect((await jira.createFields('MOB', '10'))[0]).toMatchObject({ id: 'summary', required: true });
+    expect(fetchMock.mock.calls[1][0]).toContain('/rest/api/2/issue/createmeta/MOB/issuetypes/10');
+  });
+
+  it('falls back to the old createmeta call on Jira 8', async () => {
+    const fetchMock = jest
+      .fn()
+      .mockResolvedValueOnce(ok({ errorMessages: ['Not found'] }, 404))
+      .mockResolvedValueOnce(ok({ projects: [{ issuetypes: [{ id: '5', name: 'Bug', subtask: false }] }] }))
+      .mockResolvedValueOnce(ok({ errorMessages: ['Not found'] }, 404))
+      .mockResolvedValueOnce(
+        ok({
+          projects: [
+            {
+              issuetypes: [
+                { fields: { customfield_7: { name: 'Severity', required: true, schema: { type: 'option' } } } },
+              ],
+            },
+          ],
+        })
+      );
+    const jira = client(fetchMock);
+    expect(await jira.issueTypes('MOB')).toEqual([{ id: '5', name: 'Bug', subtask: false }]);
+    expect(await jira.createFields('MOB', '5')).toEqual([
+      { id: 'customfield_7', name: 'Severity', required: true, schema: { type: 'option' } },
+    ]);
+    expect(fetchMock.mock.calls[3][0]).toContain('expand=projects.issuetypes.fields');
+  });
+
+  it('creates, links, assigns and attaches with the calls Jira expects', async () => {
+    const fetchMock = jest
+      .fn()
       .mockResolvedValueOnce(ok({ key: 'MOB-1301' }, 201))
       .mockResolvedValueOnce(ok(undefined, 201))
+      .mockResolvedValueOnce(ok(undefined, 204))
       .mockResolvedValueOnce(ok([{ id: '1' }]));
-    const client = new JiraClient({ url: 'https://jira.example.com/', token: 'pat' }, fetchMock);
-
-    const result = await client.createLinkedIssue('MOB-1200', {
-      summary: 'S',
-      description: 'D',
-      labels: ['accessibility'],
-      attachment: { fileName: 'a.png', content: Buffer.from([1, 2]), contentType: 'image/png' },
+    const jira = client(fetchMock);
+    expect(await jira.createIssue({ summary: 'S' })).toEqual({
+      key: 'MOB-1301',
+      url: 'https://jira.example.com/browse/MOB-1301',
     });
+    await jira.link('Relates', 'MOB-1301', 'MOB-1200');
+    await jira.assign('MOB-1301', { name: 'den' });
+    await jira.attach('MOB-1301', { fileName: 'a.png', content: Buffer.from([1, 2]), contentType: 'image/png' });
 
-    expect(result).toEqual({ key: 'MOB-1301', url: 'https://jira.example.com/browse/MOB-1301', warnings: [] });
-    const [getUrl, getInit] = fetchMock.mock.calls[0];
-    expect(getUrl).toBe('https://jira.example.com/rest/api/2/issue/MOB-1200?fields=project,summary');
-    expect(getInit.headers.Authorization).toBe('Bearer pat');
-    const created = JSON.parse(fetchMock.mock.calls[1][1].body);
-    expect(created.fields).toMatchObject({ project: { key: 'MOB' }, issuetype: { name: 'Bug' }, summary: 'S' });
-    expect(JSON.parse(fetchMock.mock.calls[2][1].body)).toEqual({
+    expect(JSON.parse(fetchMock.mock.calls[0][1].body)).toEqual({ fields: { summary: 'S' } });
+    expect(JSON.parse(fetchMock.mock.calls[1][1].body)).toEqual({
       type: { name: 'Relates' },
       inwardIssue: { key: 'MOB-1301' },
       outwardIssue: { key: 'MOB-1200' },
     });
-    expect(fetchMock.mock.calls[3][0]).toBe('https://jira.example.com/rest/api/2/issue/MOB-1301/attachments');
+    expect(fetchMock.mock.calls[2][0]).toBe('https://jira.example.com/rest/api/2/issue/MOB-1301/assignee');
+    expect(JSON.parse(fetchMock.mock.calls[2][1].body)).toEqual({ name: 'den' });
     expect(fetchMock.mock.calls[3][1].headers['X-Atlassian-Token']).toBe('no-check');
   });
 
   it('uses basic auth when an email is set (Jira Cloud)', async () => {
     const fetchMock = jest.fn().mockResolvedValue(ok({ key: 'A-1', fields: { project: { key: 'A' }, summary: '' } }));
-    await new JiraClient({ url: 'https://x.atlassian.net', token: 't', email: 'me@x.com' }, fetchMock).getIssue('A-1');
+    await client(fetchMock, 'me@x.com').getIssue('A-1');
     expect(fetchMock.mock.calls[0][1].headers.Authorization).toBe(
-      `Basic ${Buffer.from('me@x.com:t').toString('base64')}`
+      `Basic ${Buffer.from('me@x.com:pat').toString('base64')}`
     );
   });
 
-  it('keeps the bug when linking fails and reports a warning', async () => {
+  it('turns Jira error bodies into readable errors', async () => {
     const fetchMock = jest
       .fn()
-      .mockResolvedValueOnce(ok({ key: 'MOB-1', fields: { project: { key: 'MOB' }, summary: '' } }))
-      .mockResolvedValueOnce(ok({ key: 'MOB-2' }, 201))
-      .mockResolvedValueOnce(ok({ errorMessages: ['No link type named Relates'] }, 404));
-    const result = await new JiraClient({ url: 'https://j', token: 't' }, fetchMock).createLinkedIssue('MOB-1', {
-      summary: 'S',
-      description: 'D',
-      labels: [],
-    });
-    expect(result.key).toBe('MOB-2');
-    expect(result.warnings[0]).toContain('No link type named Relates');
-  });
-
-  it('turns Jira error bodies into readable errors', async () => {
-    const fetchMock = jest.fn().mockResolvedValue(ok({ errorMessages: ['Issue does not exist'] }, 404));
-    await expect(new JiraClient({ url: 'https://j', token: 't' }, fetchMock).getIssue('NOPE-1')).rejects.toThrow(
-      new JiraError('Jira GET /rest/api/2/issue/NOPE-1?fields=project,summary failed (404): Issue does not exist')
+      .mockResolvedValue(
+        ok({ errors: { parent: 'Issue type is a sub-task but parent issue key or id not specified.' } }, 400)
+      );
+    await expect(client(fetchMock).createIssue({})).rejects.toThrow(
+      new JiraError(
+        'Jira POST /rest/api/2/issue failed (400): Issue type is a sub-task but parent issue key or id not specified.'
+      )
     );
   });
 });

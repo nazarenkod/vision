@@ -7,6 +7,7 @@ import {
   CrossDeviceResult,
   DeviceProfile,
   GroupSummary,
+  JiraBugPreparation,
   ProjectInsights,
   StructureInfo,
 } from "../types/insights";
@@ -47,13 +48,25 @@ export const insightsService = {
     post(`/test-runs/${testRunId}/a11y/reset`, { violationId }),
   linkA11y: (testRunId: string, violationId: string, jiraKey: string) =>
     post(`/test-runs/${testRunId}/a11y/link`, { violationId, jiraKey }),
-  fileA11yBug: (testRunId: string, violationId: string, parentKey: string) =>
+  prepareA11yBug: (
+    testRunId: string,
+    violationId: string,
+    parentKey: string,
+    issueTypeId?: string,
+  ) =>
+    post<JiraBugPreparation>(`/test-runs/${testRunId}/a11y/jira/prepare`, {
+      violationId,
+      parentKey,
+      ...(issueTypeId ? { issueTypeId } : {}),
+    }),
+  fileA11yBug: (
+    testRunId: string,
+    violationId: string,
+    options: { parentKey: string; issueTypeId?: string; linkType?: string },
+  ) =>
     post<{ jiraKey: string; jiraUrl: string; warnings: string[] }>(
       `/test-runs/${testRunId}/a11y/jira`,
-      {
-        violationId,
-        parentKey,
-      },
+      { violationId, ...options },
     ),
   addElementRule: (
     testRunId: string,

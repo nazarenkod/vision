@@ -1,6 +1,7 @@
 import React from "react";
 import {
   Alert,
+  Autocomplete,
   Box,
   Button,
   Dialog,
@@ -31,9 +32,10 @@ import {
 import { StatusPill } from "../StatusPill";
 import { describeChange } from "../ChangeGroups";
 import { CrossDevicePanel } from "./CrossDevicePanel";
+import { JiraBugDialog } from "./JiraBugDialog";
 import { tokens } from "../../theme";
 
-type JiraDialog = { mode: "file" | "link"; violation: A11yViolation } | null;
+type JiraDialog = { mode: "link"; violation: A11yViolation } | null;
 
 const JIRA_KEY = /^[A-Za-z][A-Za-z0-9_]*-\d+$/;
 const shortId = (resourceId: string) => resourceId.replace(/^.*:id\//, "id/");
@@ -59,6 +61,8 @@ interface Props {
   onPickModeChange: (on: boolean) => void;
   pickedElement?: PickableElement;
   onPickedDone: () => void;
+  // outlines an element chosen in the rule dialog on the screenshot
+  onPreviewElement?: (element: PickableElement | undefined) => void;
 }
 
 type RuleDraft = {
@@ -90,6 +94,7 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
   onPickModeChange,
   pickedElement,
   onPickedDone,
+  onPreviewElement,
 }) => {
   const { enqueueSnackbar } = useSnackbar();
   const { user } = useUserState();
@@ -103,9 +108,12 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
     withUiTree ? "a11y" : "changes",
   );
   const [ruleDraft, setRuleDraft] = React.useState<RuleDraft | null>(null);
+  const [advancedSelector, setAdvancedSelector] = React.useState(false);
   const [labels, setLabels] = React.useState<Record<string, string>>({});
   const [labelsLoading, setLabelsLoading] = React.useState(false);
   const [jiraDialog, setJiraDialog] = React.useState<JiraDialog>(null);
+  // issues to file Jira bugs for: one, or every open one of the screenshot
+  const [bugFor, setBugFor] = React.useState<A11yViolation[] | null>(null);
   const [jiraKey, setJiraKey] = React.useState("");
   const [submitting, setSubmitting] = React.useState(false);
   const [ignoreFor, setIgnoreFor] = React.useState<A11yViolation | null>(null);
@@ -138,26 +146,7 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
   const submitJira = async () => {
     if (!jiraDialog) return;
     const key = jiraKey.trim();
-    if (jiraDialog.mode === "file") {
-      setSubmitting(true);
-      try {
-        const result = await insightsService.fileA11yBug(
-          testRun.id,
-          jiraDialog.violation.id,
-          key,
-        );
-        enqueueSnackbar(`Filed ${result.jiraKey}`, { variant: "success" });
-        result.warnings.forEach((warning) =>
-          enqueueSnackbar(warning, { variant: "warning" }),
-        );
-        onReportChanged();
-        setJiraDialog(null);
-      } catch (error) {
-        enqueueSnackbar(`${error}`, { variant: "error" });
-      } finally {
-        setSubmitting(false);
-      }
-    } else if (
+    if (
       await run(
         () =>
           insightsService.linkA11y(testRun.id, jiraDialog.violation.id, key),
@@ -374,10 +363,7 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
                   <Button
                     size="small"
                     variant="outlined"
-                    onClick={() => {
-                      setJiraKey("");
-                      setJiraDialog({ mode: "file", violation });
-                    }}
+                    onClick={() => setBugFor([violation])}
                   >
                     Create Jira bug
                   </Button>
@@ -459,6 +445,22 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
             here.
           </Alert>
         )}
+        {jiraReady &&
+          canEdit &&
+          report.violations.filter((v) => !v.issue).length > 1 && (
+            <Button
+              size="small"
+              variant="outlined"
+              sx={{ alignSelf: "flex-start" }}
+              onClick={() =>
+                setBugFor(report.violations.filter((v) => !v.issue))
+              }
+              data-testid="fileAllBugs"
+            >
+              Create Jira bugs for all{" "}
+              {report.violations.filter((v) => !v.issue).length} open issues
+            </Button>
+          )}
         {report.resolved.map((item) => (
           <Alert key={item.violationId} severity="success" sx={{ py: 0 }}>
             {item.jiraUrl ? (
@@ -561,8 +563,27 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
   }, [pickedElement]);
   const closeRule = () => {
     setRuleDraft(null);
+    setAdvancedSelector(false);
+    onPreviewElement?.(undefined);
     onPickedDone();
   };
+  // elements of this screen a rule can name, once each
+  const elementOptions = React.useMemo(() => {
+    const seen = new Set<string>();
+    return (structure?.elements ?? []).filter((item) => {
+      if (seen.has(item.selector)) return false;
+      seen.add(item.selector);
+      return true;
+    });
+  }, [structure]);
+  const chosenElement =
+    elementOptions.find((item) => item.selector === ruleDraft?.selector) ??
+    null;
+  // the element the dialog was opened for (Ignore next to a change) is outlined too
+  const ruleOpen = !!ruleDraft;
+  React.useEffect(() => {
+    if (ruleOpen && chosenElement) onPreviewElement?.(chosenElement);
+  }, [ruleOpen, chosenElement, onPreviewElement]);
 
   const saveRule = async () => {
     if (!ruleDraft) return;
@@ -917,26 +938,16 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
         fullWidth
         maxWidth="xs"
       >
-        <DialogTitle>
-          {jiraDialog?.mode === "file"
-            ? "Create Jira bug"
-            : "Link an existing Jira issue"}
-        </DialogTitle>
+        <DialogTitle>Link an existing Jira issue</DialogTitle>
         <DialogContent
           sx={{ display: "flex", flexDirection: "column", gap: 2 }}
         >
           <Typography variant="body2" color="textSecondary">
-            {jiraDialog?.mode === "file"
-              ? "The bug goes into the project of this task and is linked to it. Screen, device, element and the screenshot with the element outlined are filled in."
-              : "The issue will be shown on this problem on every later build."}
+            The issue will be shown on this problem on every later build.
           </Typography>
           <TextField
             id="jira-key"
-            label={
-              jiraDialog?.mode === "file"
-                ? "Task to link the bug to"
-                : "Jira issue"
-            }
+            label="Jira issue"
             placeholder="MOB-1234"
             value={jiraKey}
             onChange={(e) => setJiraKey(e.target.value)}
@@ -959,14 +970,18 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
             disabled={submitting || !JIRA_KEY.test(jiraKey.trim())}
             onClick={submitJira}
           >
-            {jiraDialog?.mode === "file"
-              ? submitting
-                ? "Creating…"
-                : "Create bug"
-              : "Link"}
+            Link
           </Button>
         </DialogActions>
       </Dialog>
+      {bugFor && (
+        <JiraBugDialog
+          testRun={testRun}
+          violations={bugFor}
+          onClose={() => setBugFor(null)}
+          onDone={onReportChanged}
+        />
+      )}
 
       <Dialog
         open={!!ignoreFor}
@@ -1029,22 +1044,83 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
             pt: "8px !important",
           }}
         >
-          {ruleDraft?.element && (
-            <Typography variant="body2" color="textSecondary">
-              Picked: {ruleDraft.element}
-            </Typography>
-          )}
-          <TextField
-            id="rule-selector"
-            label="Element"
-            placeholder="id:balance"
-            value={ruleDraft?.selector ?? ""}
-            onChange={(e) =>
-              ruleDraft &&
-              setRuleDraft({ ...ruleDraft, selector: e.target.value })
-            }
-            helperText="id:…, class:… or text:… (text:/regex/ works too)"
+          <Autocomplete
+            id="rule-element"
+            options={elementOptions}
+            value={chosenElement}
+            getOptionLabel={(item) => item.element}
+            isOptionEqualToValue={(a, b) => a.selector === b.selector}
+            onChange={(_, item) => {
+              if (!ruleDraft) return;
+              setRuleDraft({
+                ...ruleDraft,
+                selector: item?.selector ?? "",
+                element: item?.element,
+              });
+              onPreviewElement?.(item ?? undefined);
+            }}
+            renderOption={(props, item) => (
+              <li {...props} key={item.selector}>
+                <Box>
+                  <Typography variant="body2">{item.element}</Typography>
+                  <Typography variant="caption" color="textSecondary">
+                    {item.selector}
+                  </Typography>
+                </Box>
+              </li>
+            )}
+            renderInput={(params) => (
+              <TextField
+                {...params}
+                label="Element"
+                placeholder="Type to search: Pay, balance, toolbar…"
+                helperText={
+                  chosenElement
+                    ? `Found by ${chosenElement.selector.replace(/:.*/, "")}, outlined on the screenshot`
+                    : !elementOptions.length
+                      ? "This screenshot has no elements to choose from"
+                      : " "
+                }
+              />
+            )}
           />
+          <Box sx={{ display: "flex", gap: 1, mt: -1.5 }}>
+            <Button
+              size="small"
+              startIcon={<AdsClick fontSize="small" />}
+              onClick={() => {
+                const draft = ruleDraft;
+                closeRule();
+                if (draft) onPickModeChange(true);
+              }}
+            >
+              Pick on the screenshot
+            </Button>
+            <Button
+              size="small"
+              sx={{ color: tokens.textSecondary, ml: "auto" }}
+              onClick={() => setAdvancedSelector((value) => !value)}
+            >
+              {advancedSelector ? "Hide selector" : "Match differently"}
+            </Button>
+          </Box>
+          {(advancedSelector || (!!ruleDraft?.selector && !chosenElement)) && (
+            <TextField
+              id="rule-selector"
+              size="small"
+              label="Selector"
+              value={ruleDraft?.selector ?? ""}
+              onChange={(e) =>
+                ruleDraft &&
+                setRuleDraft({
+                  ...ruleDraft,
+                  selector: e.target.value,
+                  element: undefined,
+                })
+              }
+              helperText="For a whole kind of element or a pattern: class:ImageButton, text:/\d+:\d+/ (any time), id:banner"
+            />
+          )}
           <TextField
             id="rule-action"
             select

@@ -6,9 +6,14 @@ import { StaticService } from '../static/static.service';
 import { EventsGateway } from '../shared/events/events.gateway';
 import { UiTreeService } from '../ui-tree/ui-tree.service';
 import { A11yReport, A11yViolation } from './a11y.types';
-import { A11yIssueStatus, jiraDescription, reviewReport, ReviewedA11yReport } from './a11y-issues';
-import { JiraClient, JiraError } from './jira.client';
+import { A11yIssueStatus, reviewReport, ReviewedA11yReport } from './a11y-issues';
+import { JiraAttachment, JiraClient, JiraError } from './jira.client';
+import { bugText, buildBugFields, defaultIssueType, screenTitle } from './jira-bug';
 import { Rect } from '../ui-tree/ui-tree.types';
+
+// Severity of every accessibility bug for now (the team's scale is S1–S5, SC)
+const BUG_SEVERITY = 'S4';
+const BUG_LABELS = ['accessibility', 'vision'];
 
 const OUTLINE = [255, 0, 128];
 const OUTLINE_WIDTH = 6;
@@ -138,18 +143,18 @@ export class A11yIssuesService {
     await this.refreshCounts(testRun);
   }
 
-  private async jiraFor(projectId: string): Promise<JiraClient> {
+  private async jiraFor(
+    projectId: string
+  ): Promise<{ jira: JiraClient; issueType: string | null; linkType: string | null }> {
     const project = await this.prismaService.project.findUnique({ where: { id: projectId } });
     if (!project?.jiraUrl || !project?.jiraToken) {
       throw new BadRequestException('Jira is not set up for this project: add its URL and token in project settings');
     }
-    return new JiraClient({
-      url: project.jiraUrl,
-      token: project.jiraToken,
-      email: project.jiraEmail,
+    return {
+      jira: new JiraClient({ url: project.jiraUrl, token: project.jiraToken, email: project.jiraEmail }),
       issueType: project.jiraIssueType,
       linkType: project.jiraLinkType,
-    });
+    };
   }
 
   /** Records a Jira issue that already exists for this problem. */
@@ -159,7 +164,7 @@ export class A11yIssuesService {
     const key = jiraKey.trim().toUpperCase();
     let url: string | null = null;
     try {
-      const jira = await this.jiraFor(testRun.projectId);
+      const { jira } = await this.jiraFor(testRun.projectId);
       url = jira.browseUrl((await jira.getIssue(key)).key);
     } catch (error) {
       if (error instanceof JiraError) throw new BadRequestException(error.message);
@@ -168,24 +173,99 @@ export class A11yIssuesService {
     return this.saveState(testRun, violationId, 'reported', { jiraKey: key, jiraUrl: url, comment: null }, userId);
   }
 
-  /**
-   * Files a bug for the issue in Jira, linked to the given task, with the
-   * screen, device, element and rule filled in and the screenshot attached
-   * with the element outlined.
-   */
-  async fileBug(testRunId: string, violationId: string, parentKey: string, userId?: string) {
-    const testRun = await this.loadRun(testRunId);
-    const violation = await this.findViolation(testRun, violationId);
-    const jira = await this.jiraFor(testRun.projectId);
-
+  private async bugContext(testRun: TestRun, violation: A11yViolation) {
     const device = [testRun.device, testRun.os, testRun.viewport, testRun.browser].filter(Boolean).join(' · ');
     const url = `${process.env.APP_FRONTEND_URL}/${testRun.projectId}?buildId=${testRun.buildId}&testId=${testRun.id}`;
-    let attachment: { fileName: string; content: Buffer; contentType: string } | undefined;
+    const tree = await this.uiTreeService.load(testRun.uiTreeName).catch(() => null);
+    return bugText({ violation, testName: testRun.name, title: screenTitle(tree), device, url });
+  }
+
+  private async jiraCall<T>(call: () => Promise<T>): Promise<T> {
+    try {
+      return await call();
+    } catch (error) {
+      if (error instanceof JiraError) throw new BadRequestException(error.message);
+      throw error;
+    }
+  }
+
+  /**
+   * What filing a bug under this task would do: the issue types and link
+   * types to choose from (read from Jira for the task's project), which one
+   * is offered first, and the fields Vision fills in or cannot fill.
+   */
+  async prepareBug(testRunId: string, violationId: string, parentKey: string, issueTypeId?: string) {
+    const testRun = await this.loadRun(testRunId);
+    const violation = await this.findViolation(testRun, violationId);
+    const { jira, issueType: configuredType, linkType: configuredLink } = await this.jiraFor(testRun.projectId);
+    return this.jiraCall(async () => {
+      const parent = await jira.getIssue(parentKey.trim().toUpperCase());
+      const [issueTypes, linkTypes] = await Promise.all([
+        jira.issueTypes(parent.projectKey),
+        jira.linkTypes().catch(() => []),
+      ]);
+      const chosen =
+        (issueTypeId && issueTypes.find((type) => type.id === issueTypeId)) ||
+        defaultIssueType(issueTypes, configuredType);
+      if (!chosen) throw new BadRequestException(`Project ${parent.projectKey} offers no issue type to create`);
+      const text = await this.bugContext(testRun, violation);
+      const meta = await jira.createFields(parent.projectKey, chosen.id);
+      const bug = buildBugFields({
+        meta,
+        parent,
+        issueType: chosen,
+        summary: text.summary,
+        description: text.description,
+        labels: BUG_LABELS,
+        severity: BUG_SEVERITY,
+      });
+      const defaultLink =
+        linkTypes.find((type) => configuredLink && type.name.toLowerCase() === configuredLink.toLowerCase()) ??
+        linkTypes.find((type) => /relat|связ|пов.яз/i.test(type.name)) ??
+        linkTypes[0];
+      return {
+        parent: {
+          key: parent.key,
+          summary: parent.summary,
+          projectKey: parent.projectKey,
+          assignee: parent.assignee?.displayName ?? null,
+        },
+        issueTypes,
+        issueTypeId: chosen.id,
+        linkTypes: linkTypes.map((type) => type.name),
+        linkType: defaultLink?.name ?? null,
+        summary: text.summary,
+        block: text.block,
+        screen: text.screen,
+        filled: bug.filled,
+        missing: bug.missing,
+      };
+    });
+  }
+
+  /**
+   * Files a bug for the issue in Jira under the given task: as its sub-task
+   * when the issue type is one, else linked to it. Screen, service, actual
+   * and expected result, device and element are filled in, the task's
+   * assignee takes it, and the screenshot is attached with the element
+   * outlined.
+   */
+  async fileBug(
+    testRunId: string,
+    violationId: string,
+    options: { parentKey: string; issueTypeId?: string; linkType?: string },
+    userId?: string
+  ) {
+    const testRun = await this.loadRun(testRunId);
+    const violation = await this.findViolation(testRun, violationId);
+    const { jira, issueType: configuredType, linkType: configuredLink } = await this.jiraFor(testRun.projectId);
+
+    let attachment: JiraAttachment | undefined;
     try {
       const image = await this.staticService.getImage(testRun.imageName);
       if (image) {
         attachment = {
-          fileName: `${testRun.name.replace(/[^\w.-]+/g, '_')}-a11y.png`,
+          fileName: `${testRun.name.replace(/[^\p{L}\p{N}.-]+/gu, '_').slice(0, 80)}-a11y.png`,
           content: outlineElement(image, violation.bounds),
           contentType: 'image/png',
         };
@@ -194,22 +274,48 @@ export class A11yIssuesService {
       this.logger.warn(`Cannot attach screenshot for ${testRun.id}: ${error}`);
     }
 
-    let created: { key: string; url: string; warnings: string[] };
-    try {
-      created = await jira.createLinkedIssue(parentKey.trim().toUpperCase(), {
-        summary:
-          `[A11y] ${violation.title}: ${violation.label || violation.resourceId || violation.className} on "${testRun.name}"`.slice(
-            0,
-            250
-          ),
-        description: jiraDescription({ violation, screenName: testRun.name, device, url }),
-        labels: ['accessibility', 'vrt'],
-        attachment,
+    const created = await this.jiraCall(async () => {
+      const parent = await jira.getIssue(options.parentKey.trim().toUpperCase());
+      const issueTypes = await jira.issueTypes(parent.projectKey);
+      const issueType =
+        (options.issueTypeId && issueTypes.find((type) => type.id === options.issueTypeId)) ||
+        defaultIssueType(issueTypes, configuredType);
+      if (!issueType) throw new BadRequestException(`Project ${parent.projectKey} offers no issue type to create`);
+      const text = await this.bugContext(testRun, violation);
+      const bug = buildBugFields({
+        meta: await jira.createFields(parent.projectKey, issueType.id),
+        parent,
+        issueType,
+        summary: text.summary,
+        description: text.description,
+        labels: BUG_LABELS,
+        severity: BUG_SEVERITY,
       });
-    } catch (error) {
-      if (error instanceof JiraError) throw new BadRequestException(error.message);
-      throw error;
-    }
+      if (bug.missing.length) {
+        throw new BadRequestException(
+          `Jira requires fields Vision cannot fill for "${issueType.name}": ${bug.missing.join(', ')}. Fill them on the task ${parent.key} or pick another issue type.`
+        );
+      }
+      const issue = await jira.createIssue(bug.fields);
+      const warnings: string[] = [];
+      if (!issueType.subtask) {
+        const linkType = options.linkType || configuredLink || 'Relates';
+        await jira.link(linkType, issue.key, parent.key).catch((error) => {
+          warnings.push(`Not linked to ${parent.key}: ${error.message}`);
+        });
+      }
+      if (bug.assignAfter) {
+        await jira.assign(issue.key, bug.assignAfter).catch((error) => {
+          warnings.push(`Not assigned: ${error.message}`);
+        });
+      }
+      if (attachment) {
+        await jira.attach(issue.key, attachment).catch((error) => {
+          warnings.push(`Screenshot not attached: ${error.message}`);
+        });
+      }
+      return { ...issue, warnings };
+    });
 
     const state = await this.saveState(
       testRun,

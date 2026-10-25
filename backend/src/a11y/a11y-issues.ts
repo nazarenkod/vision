@@ -70,37 +70,3 @@ export function reviewReport(report: A11yReport, states: A11yIssueState[]): Revi
     },
   };
 }
-
-/** Wiki-markup description of an issue for Jira. */
-export function jiraDescription(input: {
-  violation: A11yViolation;
-  screenName: string;
-  device: string;
-  url: string;
-}): string {
-  const { violation, screenName, device, url } = input;
-  const rows: Array<[string, string]> = [
-    ['Screen', screenName],
-    ['Device', device || '—'],
-    ['Element', violation.className],
-    ['Resource id', violation.resourceId || '—'],
-    ['Announced as', violation.label ? `"${violation.label}"` : 'nothing'],
-    ['Rule', `${violation.title} (${violation.rule}, ${violation.severity})`],
-    [
-      'Bounds',
-      `x ${violation.bounds.x}, y ${violation.bounds.y}, ${violation.bounds.width} × ${violation.bounds.height} px`,
-    ],
-  ];
-  const details = Object.entries(violation.details ?? {}).map(([key, value]) => `* ${key}: ${value}`);
-  return [
-    'h3. Accessibility issue',
-    violation.message,
-    '',
-    ...rows.map(([key, value]) => `||${key}|${value.replace(/\|/g, '/')}|`),
-    ...(details.length ? ['', '*Details*', ...details] : []),
-    '',
-    `[Open in Visual Regression Tracker|${url}]`,
-    '',
-    '_Filed from Visual Regression Tracker. The element is outlined on the attached screenshot._',
-  ].join('\n');
-}

@@ -24,8 +24,22 @@ export class LinkA11yIssueDto extends A11yIssueRefDto {
   jiraKey: string;
 }
 
-export class FileA11yBugDto extends A11yIssueRefDto {
-  @ApiProperty({ example: 'MOB-1200', description: 'Task the new bug is linked to; the bug goes into its project' })
+export class PrepareA11yBugDto extends A11yIssueRefDto {
+  @ApiProperty({ example: 'MOB-1200', description: 'Task the bug goes under; the bug goes into its project' })
   @Matches(JIRA_KEY, { message: 'parentKey must look like ABC-123' })
   parentKey: string;
+
+  @ApiPropertyOptional({ description: 'Jira issue type id; the project default or a bug sub-task when absent' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(50)
+  issueTypeId?: string;
+}
+
+export class FileA11yBugDto extends PrepareA11yBugDto {
+  @ApiPropertyOptional({ description: 'Jira link type name, for issue types that are not sub-tasks' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  linkType?: string;
 }

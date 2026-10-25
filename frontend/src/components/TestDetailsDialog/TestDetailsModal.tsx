@@ -219,6 +219,8 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
   const [pickMode, setPickMode] = useState(false);
   const [hoveredElement, setHoveredElement] = useState<PickableElement>();
   const [pickedElement, setPickedElement] = useState<PickableElement>();
+  // chosen in the rule dialog's list, outlined while the dialog is open
+  const [previewElement, setPreviewElement] = useState<PickableElement>();
   const elementAt = (point: { x: number; y: number } | null) =>
     point
       ? (structure?.elements ?? [])
@@ -240,6 +242,7 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
     setPickMode(false);
     setHoveredElement(undefined);
     setPickedElement(undefined);
+    setPreviewElement(undefined);
   }, [testRun.id]);
   useEffect(() => {
     if (!pickMode) return;
@@ -253,7 +256,11 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
     window.addEventListener("keydown", onKey, true);
     return () => window.removeEventListener("keydown", onKey, true);
   }, [pickMode]);
-  const pickRects: OverlayRect[] = [hoveredElement, pickedElement]
+  const pickRects: OverlayRect[] = [
+    hoveredElement,
+    previewElement,
+    pickedElement,
+  ]
     .filter((element): element is PickableElement => !!element)
     .slice(0, 1)
     .map((element) => ({
@@ -772,10 +779,14 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
         drawModeState={[isDrawMode, setIsDrawMode]}
         overlayRects={[
           ...ruleRects,
-          ...(pickMode || pickedElement ? pickRects : overlayRects),
+          ...(pickMode || pickedElement || previewElement
+            ? pickRects
+            : overlayRects),
         ]}
         highlightedOverlayId={
-          pickMode || pickedElement ? "picked" : highlightedViolation
+          pickMode || pickedElement || previewElement
+            ? "picked"
+            : highlightedViolation
         }
         pickMode={pickMode}
         onPickHover={(point) => setHoveredElement(elementAt(point))}
@@ -1014,6 +1025,7 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
           }}
           pickedElement={pickedElement}
           onPickedDone={() => setPickedElement(undefined)}
+          onPreviewElement={setPreviewElement}
         />
       </Box>
       <Grid container className={classes.footer}>

@@ -3,15 +3,6 @@ export interface JiraConfig {
   token: string;
   // Jira Cloud authenticates with email + API token; Server/Data Center with a personal access token
   email?: string | null;
-  issueType?: string | null;
-  linkType?: string | null;
-}
-
-export interface JiraIssueDraft {
-  summary: string;
-  description: string;
-  labels: string[];
-  attachment?: { fileName: string; content: Buffer; contentType: string };
 }
 
 export class JiraError extends Error {
@@ -23,13 +14,62 @@ export class JiraError extends Error {
   }
 }
 
-const DEFAULT_ISSUE_TYPE = 'Bug';
-const DEFAULT_LINK_TYPE = 'Relates';
+export interface JiraIssueType {
+  id: string;
+  name: string;
+  subtask: boolean;
+}
+
+export interface JiraLinkType {
+  name: string;
+  inward: string;
+  outward: string;
+}
+
+export interface JiraAllowedValue {
+  id: string;
+  value?: string;
+  name?: string;
+}
+
+/** A field of the create screen of one issue type. */
+export interface JiraField {
+  id: string;
+  name: string;
+  required: boolean;
+  schema: { type: string; items?: string; system?: string; custom?: string };
+  allowedValues?: JiraAllowedValue[];
+  // Jira fills a required field with a default value by itself
+  hasDefaultValue?: boolean;
+}
+
+export interface JiraUser {
+  name?: string;
+  key?: string;
+  accountId?: string;
+  displayName?: string;
+}
+
+export interface JiraParentIssue {
+  key: string;
+  summary: string;
+  projectKey: string;
+  assignee: JiraUser | null;
+  // every field of the task, to copy what the bug needs from it
+  fields: Record<string, unknown>;
+}
+
+export interface JiraAttachment {
+  fileName: string;
+  content: Buffer;
+  contentType: string;
+}
 
 /**
- * The few Jira REST v2 calls needed to file a bug next to an existing task.
- * v2 takes wiki markup in descriptions and is served by Cloud, Server and Data
- * Center alike.
+ * The Jira REST v2 calls needed to file a bug for a task. v2 takes wiki markup
+ * in descriptions and is served by Cloud, Server and Data Center alike. Create
+ * screens are read through the createmeta endpoints of Jira 8.4+ and 9, with
+ * the older single createmeta call as a fallback.
  */
 export class JiraClient {
   private readonly base: string;
@@ -69,74 +109,105 @@ export class JiraClient {
     return (text ? JSON.parse(text) : undefined) as T;
   }
 
+  private json(method: string, body: unknown): RequestInit {
+    return { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) };
+  }
+
   browseUrl(key: string): string {
     return `${this.base}/browse/${key}`;
   }
 
-  async getIssue(key: string): Promise<{ key: string; projectKey: string; summary: string }> {
-    const issue = await this.request<{ key: string; fields: { project: { key: string }; summary: string } }>(
-      `/rest/api/2/issue/${encodeURIComponent(key)}?fields=project,summary`
+  async getIssue(key: string): Promise<JiraParentIssue> {
+    const issue = await this.request<{ key: string; fields: Record<string, unknown> }>(
+      `/rest/api/2/issue/${encodeURIComponent(key)}`
     );
-    return { key: issue.key, projectKey: issue.fields.project.key, summary: issue.fields.summary };
+    const fields = issue.fields ?? {};
+    return {
+      key: issue.key,
+      summary: String(fields.summary ?? ''),
+      projectKey: (fields.project as { key: string })?.key,
+      assignee: (fields.assignee as JiraUser) ?? null,
+      fields,
+    };
   }
 
-  /**
-   * Files a bug in the project of `parentKey` and links it to that task. The
-   * link and the attachment are best effort: a bug without them is still
-   * better than no bug, so their failures come back as warnings.
-   */
-  async createLinkedIssue(
-    parentKey: string,
-    draft: JiraIssueDraft
-  ): Promise<{ key: string; url: string; warnings: string[] }> {
-    const parent = await this.getIssue(parentKey);
-    const created = await this.request<{ key: string }>('/rest/api/2/issue', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        fields: {
-          project: { key: parent.projectKey },
-          issuetype: { name: this.config.issueType || DEFAULT_ISSUE_TYPE },
-          summary: draft.summary,
-          description: draft.description,
-          labels: draft.labels,
-        },
-      }),
-    });
-
-    const warnings: string[] = [];
+  /** Issue types a project can create, sub-tasks included. */
+  async issueTypes(projectKey: string): Promise<JiraIssueType[]> {
+    const pick = (types: Array<{ id: string; name: string; subtask?: boolean }>) =>
+      types.map((type) => ({ id: String(type.id), name: type.name, subtask: !!type.subtask }));
     try {
-      await this.request('/rest/api/2/issueLink', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          type: { name: this.config.linkType || DEFAULT_LINK_TYPE },
-          inwardIssue: { key: created.key },
-          outwardIssue: { key: parent.key },
-        }),
-      });
+      const page = await this.request<{ values: Array<{ id: string; name: string; subtask?: boolean }> }>(
+        `/rest/api/2/issue/createmeta/${encodeURIComponent(projectKey)}/issuetypes?maxResults=200`
+      );
+      return pick(page.values ?? []);
     } catch (error) {
-      warnings.push(`Not linked to ${parent.key}: ${error.message}`);
+      if (!(error instanceof JiraError) || error.status !== 404) throw error;
+      const meta = await this.request<{
+        projects: Array<{ issuetypes: Array<{ id: string; name: string; subtask?: boolean }> }>;
+      }>(`/rest/api/2/issue/createmeta?projectKeys=${encodeURIComponent(projectKey)}`);
+      return pick(meta.projects?.[0]?.issuetypes ?? []);
     }
+  }
 
-    if (draft.attachment) {
-      try {
-        const form = new FormData();
-        form.append(
-          'file',
-          new Blob([new Uint8Array(draft.attachment.content)], { type: draft.attachment.contentType }),
-          draft.attachment.fileName
-        );
-        await this.request(`/rest/api/2/issue/${created.key}/attachments`, {
-          method: 'POST',
-          headers: { 'X-Atlassian-Token': 'no-check' },
-          body: form,
-        });
-      } catch (error) {
-        warnings.push(`Screenshot not attached: ${error.message}`);
-      }
+  /** Fields on the create screen of an issue type, with which of them are required. */
+  async createFields(projectKey: string, issueTypeId: string): Promise<JiraField[]> {
+    type RawField = Omit<JiraField, 'id'> & { fieldId?: string; key?: string };
+    try {
+      const page = await this.request<{ values: RawField[] }>(
+        `/rest/api/2/issue/createmeta/${encodeURIComponent(projectKey)}/issuetypes/${encodeURIComponent(issueTypeId)}?maxResults=500`
+      );
+      return (page.values ?? []).map((field) => ({ ...field, id: field.fieldId ?? field.key }));
+    } catch (error) {
+      if (!(error instanceof JiraError) || error.status !== 404) throw error;
+      const meta = await this.request<{
+        projects: Array<{ issuetypes: Array<{ fields: Record<string, RawField> }> }>;
+      }>(
+        `/rest/api/2/issue/createmeta?projectKeys=${encodeURIComponent(projectKey)}&issuetypeIds=${encodeURIComponent(issueTypeId)}&expand=projects.issuetypes.fields`
+      );
+      const fields = meta.projects?.[0]?.issuetypes?.[0]?.fields ?? {};
+      return Object.entries(fields).map(([id, field]) => ({ ...field, id }));
     }
+  }
 
-    return { key: created.key, url: this.browseUrl(created.key), warnings };
+  async linkTypes(): Promise<JiraLinkType[]> {
+    const body = await this.request<{ issueLinkTypes: JiraLinkType[] }>('/rest/api/2/issueLinkType');
+    return body.issueLinkTypes ?? [];
+  }
+
+  async createIssue(fields: Record<string, unknown>): Promise<{ key: string; url: string }> {
+    const created = await this.request<{ key: string }>('/rest/api/2/issue', this.json('POST', { fields }));
+    return { key: created.key, url: this.browseUrl(created.key) };
+  }
+
+  async link(typeName: string, inwardKey: string, outwardKey: string): Promise<void> {
+    await this.request(
+      '/rest/api/2/issueLink',
+      this.json('POST', {
+        type: { name: typeName },
+        inwardIssue: { key: inwardKey },
+        outwardIssue: { key: outwardKey },
+      })
+    );
+  }
+
+  async assign(key: string, user: JiraUser): Promise<void> {
+    await this.request(
+      `/rest/api/2/issue/${encodeURIComponent(key)}/assignee`,
+      this.json('PUT', user.accountId ? { accountId: user.accountId } : { name: user.name })
+    );
+  }
+
+  async attach(key: string, attachment: JiraAttachment): Promise<void> {
+    const form = new FormData();
+    form.append(
+      'file',
+      new Blob([new Uint8Array(attachment.content)], { type: attachment.contentType }),
+      attachment.fileName
+    );
+    await this.request(`/rest/api/2/issue/${encodeURIComponent(key)}/attachments`, {
+      method: 'POST',
+      headers: { 'X-Atlassian-Token': 'no-check' },
+      body: form,
+    });
   }
 }

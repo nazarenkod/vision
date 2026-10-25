@@ -303,3 +303,21 @@ export interface ProjectInsights {
     missing: Array<{ name: string; customTags: string }>;
   }>;
 }
+
+export interface JiraBugPreparation {
+  parent: {
+    key: string;
+    summary: string;
+    projectKey: string;
+    assignee: string | null;
+  };
+  issueTypes: Array<{ id: string; name: string; subtask: boolean }>;
+  issueTypeId: string;
+  linkTypes: string[];
+  linkType: string | null;
+  summary: string;
+  block: string;
+  screen: string;
+  filled: Array<{ field: string; value: string; source: "task" | "vision" }>;
+  missing: string[];
+}

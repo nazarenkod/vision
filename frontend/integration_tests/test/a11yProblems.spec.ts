@@ -53,6 +53,8 @@ const icon = {
     jiraUrl: null,
     screenName: "Платежі. Головна",
     screenTitle: "Платежі",
+    // settings now see two filed problems as one: both bugs show
+    related: [{ code: "a11y-99999999", jiraKey: "MOB-8", jiraUrl: null }],
   },
 };
 const report = {
@@ -128,6 +130,9 @@ test("shows a problem filed on another screen as covered", async ({
   await expect(covered).toContainText("Bug MOB-7");
   await expect(covered.getByTestId("a11yElsewhere")).toContainText(
     "A problem of icon: filed on screen “Платежі”",
+  );
+  await expect(covered.getByTestId("a11yRelated")).toContainText(
+    "Also filed for it: MOB-8 (a11y-99999999)",
   );
   await expect(
     covered.getByRole("button", { name: "Create Jira bug" }),

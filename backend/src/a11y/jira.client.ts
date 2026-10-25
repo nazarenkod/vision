@@ -277,12 +277,14 @@ export class JiraClient {
     );
   }
 
-  /** Adds labels by editing the issue: for create screens without the Labels field. */
-  async addLabels(key: string, labels: string[]): Promise<void> {
-    await this.request(
-      `/rest/api/2/issue/${encodeURIComponent(key)}`,
-      this.json('PUT', { update: { labels: labels.map((label) => ({ add: label })) } })
-    );
+  /** Adds and removes labels by editing the issue: for create screens without labels, and for markers. */
+  async editLabels(key: string, change: { add?: string[]; remove?: string[] }): Promise<void> {
+    const labels = [
+      ...(change.add ?? []).map((label) => ({ add: label })),
+      ...(change.remove ?? []).map((label) => ({ remove: label })),
+    ];
+    if (!labels.length) return;
+    await this.request(`/rest/api/2/issue/${encodeURIComponent(key)}`, this.json('PUT', { update: { labels } }));
   }
 
   async attach(key: string, attachment: JiraAttachment): Promise<void> {

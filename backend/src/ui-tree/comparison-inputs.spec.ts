@@ -197,3 +197,19 @@ describe('parseUiTreeSettings', () => {
     expect(parseUiTreeSettings('nope').compensateMoves).toBe(false);
   });
 });
+
+describe('parseUiTreeSettings: problem classes', () => {
+  it('keeps classes with conditions and classes with one element pattern, drops anything else', () => {
+    const settings = parseUiTreeSettings(
+      JSON.stringify({
+        a11yClasses: [
+          { id: 'a', name: 'A', when: { element: ['*#PbButton'], screen: ['Онбординг*'] } },
+          { id: 'b', name: 'B', match: '*decor_*' },
+          { id: 'c', name: 'C' },
+          null,
+        ],
+      })
+    );
+    expect(settings.a11yClasses.map((item) => item.id)).toEqual(['a', 'b']);
+  });
+});

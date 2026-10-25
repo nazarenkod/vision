@@ -205,10 +205,14 @@ model A11yIssueState {
 model A11yProblem {
   id          String   @id @default(uuid())
   projectId   String
-  // rule + component + values, or rule + screen + element (a11y-problems.ts)
+  // what the problem was under the settings it was created with; also the lock against filing twice
   key         String
-  // what people see and search Jira for: a11y-3f9c2a1b
+  // what people see and search Jira for: a11y-3f9c2a1b; given once, never recomputed
   code        String
+  rule        String?
+  // the facts of the occurrences it was decided for (a11y-problems ProblemFacets[]):
+  // what is one problem is worked out from them under the current settings
+  facets      Json?
   // filing | reported | ignored
   status      String
   jiraKey     String?
@@ -222,6 +226,26 @@ model A11yProblem {
   updatedAt   DateTime @updatedAt
 
   @@unique([projectId, key])
+  @@index([projectId, code])
+}
+
+// Every decision on an accessibility problem, for the record: who filed,
+// linked, unlinked, found in Jira, ignored or restored what, and when. A bug
+// unlinked here is never linked again by the Jira lookup.
+model A11yDecision {
+  id          String   @id @default(uuid())
+  projectId   String
+  problemId   String?
+  code        String
+  // filed | linked | found | unlinked | ignored | restored
+  action      String
+  jiraKey     String?
+  screenName  String
+  comment     String?
+  userId      String?
+  createdAt   DateTime @default(now())
+
+  @@index([projectId, jiraKey])
   @@index([projectId, code])
 }
 

@@ -1,6 +1,6 @@
 import { A11yViolation } from './a11y.types';
 import { JiraField, JiraIssueType, JiraParentIssue } from './jira.client';
-import { bugLabels, bugText, buildBugFields, copyValue, defaultIssueType, functionalBlock } from './jira-bug';
+import { bugText, buildBugFields, copyValue, defaultIssueType, functionalBlock } from './jira-bug';
 
 const violation: A11yViolation = {
   id: 'touch-target|id:btn',
@@ -115,7 +115,7 @@ describe('bugText for one problem on several elements', () => {
 });
 
 describe('problem id in the bug', () => {
-  it('goes into the summary, the description and the labels, with the component', () => {
+  it('goes into the summary and the description, with the component', () => {
     const text = bugText({
       violations: [violation],
       testName: 'Адреси. Екран',
@@ -129,9 +129,6 @@ describe('problem id in the bug', () => {
     expect(text.description).toContain('||Компонент|PbButton|');
     expect(text.description).toContain('Проблема компонента PbButton');
     expect(text.description).toContain('labels = a11y-3f9c2a1b');
-    expect(
-      bugLabels({ code: 'a11y-3f9c2a1b', rule: 'touch-target', component: 'Pb Button' }, ['accessibility'])
-    ).toEqual(['accessibility', 'a11y-3f9c2a1b', 'a11y-touch-target', 'a11y-component-Pb_Button']);
   });
 
   it('keeps the id whole in a long summary', () => {

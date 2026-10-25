@@ -25,6 +25,12 @@ export interface A11yIssueInfo {
   screenTitle?: string | null;
   // ignored by the project's problem class of this name, not by a decision
   byClass?: string;
+  // other bugs of the same problem, when the settings now see several problems as one
+  related?: Array<{
+    code: string;
+    jiraKey: string | null;
+    jiraUrl: string | null;
+  }>;
 }
 
 export interface A11yViolation {
@@ -122,18 +128,37 @@ export interface UiTreeSettings {
   a11yClasses?: ProblemClass[];
 }
 
+export type GroupBy = DuplicateMode | "class";
+
 /**
- * Which issues are one problem and what is done with them: the rules it takes,
- * a pattern on the element id (a glob with * and ?, or /regex/ whose group is
- * the component id), how duplicates are told and whether bugs are filed.
+ * Conditions of a class on the facts of an issue: every field given must
+ * match (and), any pattern of a field may (or). Globs with * and ?, or
+ * /regex/; a group in an element pattern is the component id.
  */
+export interface ClassConditions {
+  element?: string[];
+  screen?: string[];
+  className?: string[];
+  label?: string[];
+}
+
+/** Which issues are one problem and what is done with them. */
 export interface ProblemClass {
   id: string;
   name: string;
   rules?: A11yRule[];
-  match: string;
+  when?: ClassConditions;
+  // as classes were first written: one element pattern, and the grouping
+  match?: string;
   mode?: DuplicateMode;
+  groupBy?: GroupBy;
   action?: "report" | "ignore";
+}
+
+/** What a decision answers: the problems it touched, and what did not work out in Jira. */
+export interface A11yDecisionResult {
+  problems?: string[];
+  warnings?: string[];
 }
 
 export type DuplicateMode = "component-value" | "component" | "screen";
@@ -367,6 +392,8 @@ export interface JiraBugPreparation {
   inputs: JiraBugInput[];
   missing: string[];
   problem: { code: string; component: string | null; everyScreen: boolean };
+  // the labels the bug gets: its id and the markers of its facts
+  markers?: string[];
   // decided in Vision already, maybe by a colleague a moment ago
   existing: {
     status: "reported" | "ignored" | "filing";

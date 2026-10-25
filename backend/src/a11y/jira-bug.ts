@@ -26,22 +26,6 @@ const EXPECTED: Record<A11yRule, string> = {
 
 const escapeWiki = (value: string) => value.replace(/\|/g, '/').replace(/[{}]/g, '');
 
-/** A Jira label from free text: labels take no spaces. */
-const asLabel = (value: string) => value.replace(/[^\p{L}\p{N}_.-]+/gu, '_').slice(0, 100);
-
-/**
- * Labels that make the bug easy to find: the problem's id (the same one Vision
- * shows, and searches Jira for before filing), the rule and the component.
- */
-export function bugLabels(problem: { code: string; rule: string; component: string | null }, base: string[]): string[] {
-  return [
-    ...base,
-    problem.code,
-    `a11y-${problem.rule}`,
-    ...(problem.component ? [asLabel(`a11y-component-${problem.component}`)] : []),
-  ];
-}
-
 /** Summary and description of the bug, following the team's bug template. */
 export function bugText(input: {
   // one problem: the same rule on one or more elements of a component

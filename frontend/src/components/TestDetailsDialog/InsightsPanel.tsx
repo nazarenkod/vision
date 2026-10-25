@@ -136,8 +136,12 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
   const run = async (action: () => Promise<unknown>, done: string) => {
     setSubmitting(true);
     try {
-      await action();
+      const result = (await action()) as { warnings?: string[] } | undefined;
       enqueueSnackbar(done, { variant: "success" });
+      // what did not work out in Jira (labels) does not undo the decision
+      result?.warnings?.forEach((warning) =>
+        enqueueSnackbar(warning, { variant: "warning" }),
+      );
       onReportChanged();
       return true;
     } catch (error) {
@@ -444,6 +448,20 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
                 : "filed"}{" "}
             on screen “{elsewhere}”. It holds here too; nothing to file.
           </Box>
+        )}
+        {!!violation.issue?.related?.length && (
+          <Typography
+            sx={{ fontSize: 12.5, color: tokens.textSecondary }}
+            data-testid="a11yRelated"
+          >
+            Also filed for it:{" "}
+            {violation.issue.related.map((item, index) => (
+              <React.Fragment key={item.code}>
+                {index ? ", " : ""}
+                {jiraLink(item.jiraKey, item.jiraUrl)} ({item.code})
+              </React.Fragment>
+            ))}
+          </Typography>
         )}
         {suggested.map((item) => (
           <Box

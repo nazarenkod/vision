@@ -1,7 +1,7 @@
 import { A11yIssueState, A11yProblem } from '@prisma/client';
 import { PNG } from 'pngjs';
 import { reviewReport, ReviewContext } from './a11y-issues';
-import { problemCode } from './a11y-problems';
+import { facetsOf, problemCode } from './a11y-problems';
 import { A11yReport, A11yViolation } from './a11y.types';
 import { JiraClient, JiraError } from './jira.client';
 import { outlineElement } from './a11y-issues.service';
@@ -335,6 +335,8 @@ describe('reviewReport with problems decided on other screens', () => {
     projectId: 'p',
     key,
     code: problemCode('p', key),
+    rule: null,
+    facets: null,
     status: 'reported',
     jiraKey: 'P24MOB-20691',
     jiraUrl: 'u',
@@ -391,11 +393,46 @@ describe('reviewReport with problems decided on other screens', () => {
     expect(reviewed.summary).toMatchObject({ new: 0, reported: 1, ignored: 1 });
   });
 
+  it('keeps ids and bugs when the settings change what is one problem', () => {
+    // two bugs filed under the default settings, one per tab
+    const facts = (index: number) => [facetsOf(touch(`id:com.bank:id/tab_${index}`, 38), 'Оплата')];
+    const tab0 = problem('touch-target|c:tab_0|38x38', {
+      id: 'p0',
+      code: 'a11y-00000000',
+      jiraKey: 'MOB-1',
+      facets: facts(0) as never,
+    });
+    const tab1 = problem('touch-target|c:tab_1|38x38', {
+      id: 'p1',
+      code: 'a11y-11111111',
+      jiraKey: 'MOB-2',
+      facets: facts(1) as never,
+      createdAt: new Date(Date.now() + 1000),
+    });
+    const stored = report([touch('id:com.bank:id/tab_0', 38), touch('id:com.bank:id/tab_1', 38)]);
+
+    const before = reviewReport(stored, { ...ctx([], [tab0, tab1]) });
+    expect(before.violations.map((v) => v.problemCode)).toEqual(['a11y-00000000', 'a11y-11111111']);
+
+    // a class now sees the whole tab bar as one problem: the ids stay, both bugs are shown
+    const tabs = {
+      id: 't',
+      name: 'Tab bar',
+      when: { element: ['/^.*:id\\/(tab)_\\d+$/'] },
+      groupBy: 'component' as const,
+    };
+    const after = reviewReport(stored, { ...ctx([], [tab0, tab1]), settings: { classes: [tabs] } });
+    expect(after.violations.map((v) => v.group)).toEqual(['touch-target|c:tab|', 'touch-target|c:tab|']);
+    expect(after.violations[0]).toMatchObject({ problemCode: 'a11y-00000000', issue: { jiraKey: 'MOB-1' } });
+    expect(after.violations[0].issue.related).toEqual([{ code: 'a11y-11111111', jiraKey: 'MOB-2', jiraUrl: 'u' }]);
+    expect(after.summary).toMatchObject({ new: 0, reported: 2 });
+  });
+
   it('lists what a project class ignores with the false positives, never counted', () => {
     const stored = report([touch('id:com.bank:id/decor_1', 30)]);
     const reviewed = reviewReport(stored, {
       ...ctx(),
-      settings: { classes: [{ id: 'c', name: 'Decor', match: '*decor_*', action: 'ignore' }] },
+      settings: { classes: [{ id: 'c', name: 'Decor', match: '*decor_*', action: 'ignore' as const }] },
     });
     expect(reviewed.violations).toEqual([]);
     expect(reviewed.ignored[0]).toMatchObject({

@@ -1,6 +1,7 @@
 import { handleResponse, authHeader } from "../_helpers/service.helpers";
 import { API_URL } from "../_config/env.config";
 import {
+  A11yDecisionResult,
   A11yReport,
   JiraBugResult,
   AiStatus,
@@ -52,14 +53,17 @@ export const insightsService = {
     ),
   // each takes every issue of one problem (same rule, same component)
   ignoreA11y: (testRunId: string, violationIds: string[], comment?: string) =>
-    post(`/test-runs/${testRunId}/a11y/ignore`, {
+    post<A11yDecisionResult>(`/test-runs/${testRunId}/a11y/ignore`, {
       ...issueRef(violationIds),
       comment,
     }),
   resetA11y: (testRunId: string, violationIds: string[]) =>
-    post(`/test-runs/${testRunId}/a11y/reset`, issueRef(violationIds)),
+    post<A11yDecisionResult>(
+      `/test-runs/${testRunId}/a11y/reset`,
+      issueRef(violationIds),
+    ),
   linkA11y: (testRunId: string, violationIds: string[], jiraKey: string) =>
-    post(`/test-runs/${testRunId}/a11y/link`, {
+    post<A11yDecisionResult>(`/test-runs/${testRunId}/a11y/link`, {
       ...issueRef(violationIds),
       jiraKey,
     }),

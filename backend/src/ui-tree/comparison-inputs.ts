@@ -108,10 +108,15 @@ export function parseUiTreeSettings(value: string | null | undefined): UiTreeSet
           ? parsed.a11yDuplicates
           : {},
       a11yClasses: Array.isArray(parsed.a11yClasses)
-        ? parsed.a11yClasses.filter(
-            (item: unknown) =>
-              item && typeof item === 'object' && typeof (item as { match?: unknown }).match === 'string'
-          )
+        ? parsed.a11yClasses.filter((item: unknown) => {
+            const value = item as { match?: unknown; when?: unknown } | null;
+            // classes take issues by conditions (when), or by one element pattern as first written (match)
+            return (
+              !!value &&
+              typeof value === 'object' &&
+              (typeof value.match === 'string' || (!!value.when && typeof value.when === 'object'))
+            );
+          })
         : [],
       referenceDevice:
         parsed.referenceDevice && typeof parsed.referenceDevice === 'object'

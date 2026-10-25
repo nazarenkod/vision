@@ -114,8 +114,12 @@ export class TestRunsController {
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard, RoleGuard)
   @Roles(Role.admin, Role.editor)
-  resetA11yIssue(@Param('id', new ParseUUIDPipe()) id: string, @Body() body: A11yIssueRefDto) {
-    return this.a11yIssuesService.reset(id, issueIds(body));
+  resetA11yIssue(
+    @CurrentUser() user: User,
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Body() body: A11yIssueRefDto
+  ) {
+    return this.a11yIssuesService.reset(id, issueIds(body), user?.id);
   }
 
   @Post(':id/a11y/link')

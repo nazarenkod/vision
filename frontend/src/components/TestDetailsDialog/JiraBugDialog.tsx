@@ -388,8 +388,16 @@ export const JiraBugDialog: React.FunctionComponent<{
                 {problems.length > 1 ? " and one per problem" : ""}: in the
                 summary, labels and description, to find the bug in Jira.
                 {prep.problem.everyScreen &&
-                  ` One bug for ${prep.problem.component} on every screen.`}
+                  ` One bug for ${prep.problem.component ?? "the class"} on every screen.`}
               </Typography>
+              {!!prep.markers?.length && (
+                <Typography variant="body2" color="textSecondary">
+                  Labels:{" "}
+                  <span style={{ fontFamily: tokens.mono, fontSize: 12 }}>
+                    {prep.markers.join(" ")}
+                  </span>
+                </Typography>
+              )}
               <Typography variant="body2" color="textSecondary">
                 Description: service, screen, actual and expected result,
                 device, element; screenshot with the problem outlined.

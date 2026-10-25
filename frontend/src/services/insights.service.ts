@@ -8,6 +8,7 @@ import {
   DeviceProfile,
   GroupSummary,
   JiraBugPreparation,
+  JiraUser,
   ProjectInsights,
   StructureInfo,
 } from "../types/insights";
@@ -53,16 +54,27 @@ export const insightsService = {
     violationId: string,
     parentKey: string,
     issueTypeId?: string,
+    fieldValues?: Record<string, unknown>,
   ) =>
     post<JiraBugPreparation>(`/test-runs/${testRunId}/a11y/jira/prepare`, {
       violationId,
       parentKey,
       ...(issueTypeId ? { issueTypeId } : {}),
+      ...(fieldValues ? { fieldValues } : {}),
     }),
+  findJiraUsers: (testRunId: string, query: string) =>
+    get<JiraUser[]>(
+      `/test-runs/${testRunId}/a11y/jira/users?query=${encodeURIComponent(query)}`,
+    ),
   fileA11yBug: (
     testRunId: string,
     violationId: string,
-    options: { parentKey: string; issueTypeId?: string; linkType?: string },
+    options: {
+      parentKey: string;
+      issueTypeId?: string;
+      linkType?: string;
+      fieldValues?: Record<string, unknown>;
+    },
   ) =>
     post<{ jiraKey: string; jiraUrl: string; warnings: string[] }>(
       `/test-runs/${testRunId}/a11y/jira`,

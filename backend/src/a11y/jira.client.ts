@@ -131,20 +131,47 @@ export class JiraClient {
     };
   }
 
+  /**
+   * Every item of a paged createmeta list. Jira Cloud names the list
+   * issueTypes or fields and pages by total; Data Center 9 names it values
+   * and says isLast. At most 200 a page on both.
+   */
+  private async allPages<T>(path: string): Promise<T[]> {
+    const items: T[] = [];
+    for (let startAt = 0; startAt < 10_000;) {
+      const separator = path.includes('?') ? '&' : '?';
+      const page = await this.request<Record<string, unknown>>(`${path}${separator}startAt=${startAt}&maxResults=200`);
+      const list = (page.values ?? page.issueTypes ?? page.fields ?? page.results ?? []) as T[];
+      items.push(...list);
+      const total = typeof page.total === 'number' ? page.total : undefined;
+      if (
+        !list.length ||
+        page.isLast === true ||
+        (total !== undefined && items.length >= total) ||
+        (total === undefined && page.isLast === undefined)
+      ) {
+        break;
+      }
+      startAt += list.length;
+    }
+    return items;
+  }
+
   /** Issue types a project can create, sub-tasks included. */
   async issueTypes(projectKey: string): Promise<JiraIssueType[]> {
-    const pick = (types: Array<{ id: string; name: string; subtask?: boolean }>) =>
+    type RawType = { id: string; name: string; subtask?: boolean };
+    const pick = (types: RawType[]) =>
       types.map((type) => ({ id: String(type.id), name: type.name, subtask: !!type.subtask }));
     try {
-      const page = await this.request<{ values: Array<{ id: string; name: string; subtask?: boolean }> }>(
-        `/rest/api/2/issue/createmeta/${encodeURIComponent(projectKey)}/issuetypes?maxResults=200`
+      return pick(
+        await this.allPages<RawType>(`/rest/api/2/issue/createmeta/${encodeURIComponent(projectKey)}/issuetypes`)
       );
-      return pick(page.values ?? []);
     } catch (error) {
       if (!(error instanceof JiraError) || error.status !== 404) throw error;
-      const meta = await this.request<{
-        projects: Array<{ issuetypes: Array<{ id: string; name: string; subtask?: boolean }> }>;
-      }>(`/rest/api/2/issue/createmeta?projectKeys=${encodeURIComponent(projectKey)}`);
+      // Jira 8 before 8.4
+      const meta = await this.request<{ projects: Array<{ issuetypes: RawType[] }> }>(
+        `/rest/api/2/issue/createmeta?projectKeys=${encodeURIComponent(projectKey)}`
+      );
       return pick(meta.projects?.[0]?.issuetypes ?? []);
     }
   }
@@ -153,10 +180,10 @@ export class JiraClient {
   async createFields(projectKey: string, issueTypeId: string): Promise<JiraField[]> {
     type RawField = Omit<JiraField, 'id'> & { fieldId?: string; key?: string };
     try {
-      const page = await this.request<{ values: RawField[] }>(
-        `/rest/api/2/issue/createmeta/${encodeURIComponent(projectKey)}/issuetypes/${encodeURIComponent(issueTypeId)}?maxResults=500`
+      const fields = await this.allPages<RawField>(
+        `/rest/api/2/issue/createmeta/${encodeURIComponent(projectKey)}/issuetypes/${encodeURIComponent(issueTypeId)}`
       );
-      return (page.values ?? []).map((field) => ({ ...field, id: field.fieldId ?? field.key }));
+      return fields.map((field) => ({ ...field, id: field.fieldId ?? field.key }));
     } catch (error) {
       if (!(error instanceof JiraError) || error.status !== 404) throw error;
       const meta = await this.request<{
@@ -167,6 +194,19 @@ export class JiraClient {
       const fields = meta.projects?.[0]?.issuetypes?.[0]?.fields ?? {};
       return Object.entries(fields).map(([id, field]) => ({ ...field, id }));
     }
+  }
+
+  /** People matching a name, for user fields: accountId on Cloud, name on Server and Data Center. */
+  async findUsers(query: string): Promise<JiraUser[]> {
+    const body = await this.request<{ users?: JiraUser[] }>(
+      `/rest/api/2/user/picker?query=${encodeURIComponent(query)}&maxResults=20`
+    );
+    return (body.users ?? []).map((user) => ({
+      accountId: user.accountId,
+      name: user.name,
+      key: user.key,
+      displayName: user.displayName,
+    }));
   }
 
   async linkTypes(): Promise<JiraLinkType[]> {

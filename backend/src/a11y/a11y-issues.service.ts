@@ -189,12 +189,25 @@ export class A11yIssuesService {
     }
   }
 
+  /** People in the project's Jira matching a name, for user fields of a bug. */
+  async findJiraUsers(testRunId: string, query: string) {
+    const testRun = await this.loadRun(testRunId);
+    const { jira } = await this.jiraFor(testRun.projectId);
+    return this.jiraCall(() => jira.findUsers(query));
+  }
+
   /**
    * What filing a bug under this task would do: the issue types and link
    * types to choose from (read from Jira for the task's project), which one
    * is offered first, and the fields Vision fills in or cannot fill.
    */
-  async prepareBug(testRunId: string, violationId: string, parentKey: string, issueTypeId?: string) {
+  async prepareBug(
+    testRunId: string,
+    violationId: string,
+    parentKey: string,
+    issueTypeId?: string,
+    fieldValues?: Record<string, unknown>
+  ) {
     const testRun = await this.loadRun(testRunId);
     const violation = await this.findViolation(testRun, violationId);
     const { jira, issueType: configuredType, linkType: configuredLink } = await this.jiraFor(testRun.projectId);
@@ -218,6 +231,7 @@ export class A11yIssuesService {
         description: text.description,
         labels: BUG_LABELS,
         severity: BUG_SEVERITY,
+        overrides: fieldValues,
       });
       const defaultLink =
         linkTypes.find((type) => configuredLink && type.name.toLowerCase() === configuredLink.toLowerCase()) ??
@@ -238,6 +252,7 @@ export class A11yIssuesService {
         block: text.block,
         screen: text.screen,
         filled: bug.filled,
+        inputs: bug.inputs,
         missing: bug.missing,
       };
     });
@@ -253,7 +268,7 @@ export class A11yIssuesService {
   async fileBug(
     testRunId: string,
     violationId: string,
-    options: { parentKey: string; issueTypeId?: string; linkType?: string },
+    options: { parentKey: string; issueTypeId?: string; linkType?: string; fieldValues?: Record<string, unknown> },
     userId?: string
   ) {
     const testRun = await this.loadRun(testRunId);
@@ -290,10 +305,11 @@ export class A11yIssuesService {
         description: text.description,
         labels: BUG_LABELS,
         severity: BUG_SEVERITY,
+        overrides: options.fieldValues,
       });
       if (bug.missing.length) {
         throw new BadRequestException(
-          `Jira requires fields Vision cannot fill for "${issueType.name}": ${bug.missing.join(', ')}. Fill them on the task ${parent.key} or pick another issue type.`
+          `Jira requires fields that are still empty for "${issueType.name}": ${bug.missing.join(', ')}.`
         );
       }
       const issue = await jira.createIssue(bug.fields);

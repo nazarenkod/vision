@@ -15,7 +15,13 @@ import {
 import { useSnackbar } from "notistack";
 import { insightsService } from "../../services";
 import { useProjectState } from "../../contexts";
-import { A11yViolation, JiraBugPreparation, TestRun } from "../../types";
+import {
+  A11yViolation,
+  JiraBugInput,
+  JiraBugPreparation,
+  TestRun,
+} from "../../types";
+import { ChosenValue, JiraFieldInput } from "./JiraFieldInput";
 import { tokens } from "../../theme";
 
 const JIRA_KEY = /^[A-Za-z][A-Za-z0-9_]*-\d+$/;
@@ -27,6 +33,8 @@ const parentKeyFor = (projectId: string, screen: string) =>
 const lastParentKey = (projectId: string) => `vision.jira.parent.${projectId}`;
 const usageKey = (projectId: string, kind: "issueType" | "linkType") =>
   `vision.jira.${kind}.${projectId}`;
+// field values chosen last time (customer, severity…), by Jira field id
+const fieldsKey = (projectId: string) => `vision.jira.fields.${projectId}`;
 
 const read = (key: string): string | null => {
   try {
@@ -90,6 +98,15 @@ export const JiraBugDialog: React.FunctionComponent<{
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const [progress, setProgress] = React.useState<number | null>(null);
+  const [chosen, setChosen] = React.useState<Record<string, ChosenValue>>(
+    () => {
+      try {
+        return JSON.parse(read(fieldsKey(projectId)) ?? "{}") ?? {};
+      } catch {
+        return {};
+      }
+    },
+  );
   const keyValid = JIRA_KEY.test(parentKey.trim());
   const first = violations[0];
 
@@ -98,6 +115,7 @@ export const JiraBugDialog: React.FunctionComponent<{
   React.useEffect(() => {
     if (!keyValid || !first) {
       setPrep(null);
+      setError(null);
       preparedFor.current = "";
       return;
     }
@@ -160,8 +178,24 @@ export const JiraBugDialog: React.FunctionComponent<{
   }, [keyValid, parentKey, issueTypeId, first, testRun.id, projectId]);
 
   const issueType = prep?.issueTypes.find((type) => type.id === issueTypeId);
+  const inputs = prep?.inputs ?? [];
+  const valueOf = (input: JiraBugInput) =>
+    chosen[input.id]?.value ?? input.value;
+  const emptyRequired = inputs.filter(
+    (input) =>
+      input.required &&
+      (valueOf(input) === undefined || valueOf(input) === null),
+  );
+  // required fields of a kind the dialog cannot ask for
+  const cannotAsk = (prep?.missing ?? []).filter(
+    (name) => !inputs.some((input) => input.name === name),
+  );
   const canCreate =
-    !!prep && !!issueType && !prep.missing.length && progress === null;
+    !!prep &&
+    !!issueType &&
+    !emptyRequired.length &&
+    !cannotAsk.length &&
+    progress === null;
 
   const create = async () => {
     if (!prep || !issueType) return;
@@ -169,6 +203,19 @@ export const JiraBugDialog: React.FunctionComponent<{
     write(parentKeyFor(projectId, testRun.name), key);
     write(lastParentKey(projectId), key);
     countUse(usageKey(projectId, "issueType"), issueType.id);
+    const remembered = Object.fromEntries(
+      inputs
+        .filter((input) => chosen[input.id])
+        .map((input) => [input.id, chosen[input.id]]),
+    );
+    write(fieldsKey(projectId), JSON.stringify({ ...chosen, ...remembered }));
+    const fieldValues = Object.fromEntries(
+      inputs
+        .filter(
+          (input) => valueOf(input) !== undefined && valueOf(input) !== null,
+        )
+        .map((input) => [input.id, valueOf(input)]),
+    );
     if (!issueType.subtask && linkType)
       countUse(usageKey(projectId, "linkType"), linkType);
 
@@ -183,6 +230,7 @@ export const JiraBugDialog: React.FunctionComponent<{
             parentKey: key,
             issueTypeId: issueType.id,
             ...(issueType.subtask || !linkType ? {} : { linkType }),
+            fieldValues,
           },
         );
         created.push(result.jiraKey);
@@ -281,6 +329,22 @@ export const JiraBugDialog: React.FunctionComponent<{
                 Created as a sub-task of {prep.parent.key}.
               </Typography>
             )}
+            {inputs.map((input) => (
+              <JiraFieldInput
+                key={`${issueTypeId}-${input.id}`}
+                testRunId={testRun.id}
+                input={input}
+                chosen={chosen[input.id]}
+                onChange={(value) =>
+                  setChosen((current) => {
+                    const next = { ...current };
+                    if (value) next[input.id] = value;
+                    else delete next[input.id];
+                    return next;
+                  })
+                }
+              />
+            ))}
             <Box
               sx={{
                 bgcolor: tokens.subtle,
@@ -313,11 +377,11 @@ export const JiraBugDialog: React.FunctionComponent<{
                 device, element; screenshot with the problem outlined.
               </Typography>
             </Box>
-            {prep.missing.length > 0 && (
+            {cannotAsk.length > 0 && (
               <Alert severity="warning">
-                Jira requires fields Vision cannot fill for this issue type:{" "}
-                {prep.missing.join(", ")}. Fill them on {prep.parent.key} or
-                pick another issue type.
+                Jira requires fields Vision cannot ask for here:{" "}
+                {cannotAsk.join(", ")}. Fill them on {prep.parent.key} or pick
+                another issue type.
               </Alert>
             )}
           </>

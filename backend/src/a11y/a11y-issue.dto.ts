@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsNotEmpty, IsOptional, IsString, Matches, MaxLength } from 'class-validator';
+import { IsNotEmpty, IsObject, IsOptional, IsString, Matches, MaxLength } from 'class-validator';
 
 const JIRA_KEY = /^[A-Za-z][A-Za-z0-9_]*-\d+$/;
 
@@ -34,6 +34,13 @@ export class PrepareA11yBugDto extends A11yIssueRefDto {
   @IsString()
   @MaxLength(50)
   issueTypeId?: string;
+
+  @ApiPropertyOptional({
+    description: 'Field values chosen in the dialog, by Jira field id, in the form the create call takes',
+  })
+  @IsOptional()
+  @IsObject()
+  fieldValues?: Record<string, unknown>;
 }
 
 export class FileA11yBugDto extends PrepareA11yBugDto {

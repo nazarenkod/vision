@@ -137,6 +137,54 @@ describe('JiraClient', () => {
     expect(fetchMock.mock.calls[1][0]).toContain('/rest/api/2/issue/createmeta/MOB/issuetypes/10');
   });
 
+  it('reads Jira Cloud pages: issueTypes and fields lists, paged by total', async () => {
+    const fetchMock = jest
+      .fn()
+      .mockResolvedValueOnce(
+        ok({ issueTypes: [{ id: '10', name: 'Помилка', subtask: true }], startAt: 0, maxResults: 1, total: 2 })
+      )
+      .mockResolvedValueOnce(
+        ok({ issueTypes: [{ id: '1', name: 'Task', subtask: false }], startAt: 1, maxResults: 1, total: 2 })
+      )
+      .mockResolvedValueOnce(
+        ok({
+          fields: [
+            {
+              fieldId: 'customfield_9',
+              key: 'customfield_9',
+              name: 'Замовник',
+              required: true,
+              schema: { type: 'user' },
+            },
+          ],
+          startAt: 0,
+          maxResults: 200,
+          total: 1,
+        })
+      );
+    const jira = client(fetchMock);
+    expect((await jira.issueTypes('P24MOB')).map((type) => type.name)).toEqual(['Помилка', 'Task']);
+    expect(fetchMock.mock.calls[0][0]).toContain('/issuetypes?startAt=0&maxResults=200');
+    expect(fetchMock.mock.calls[1][0]).toContain('/issuetypes?startAt=1&maxResults=200');
+    expect(await jira.createFields('P24MOB', '10')).toEqual([
+      expect.objectContaining({ id: 'customfield_9', name: 'Замовник', required: true }),
+    ]);
+  });
+
+  it('finds people for user fields with the user picker', async () => {
+    const fetchMock = jest
+      .fn()
+      .mockResolvedValue(
+        ok({ users: [{ accountId: 'abc', displayName: 'Андрєєв Костянтин', html: '<b>А</b>' }], total: 1 })
+      );
+    expect(await client(fetchMock).findUsers('андр')).toEqual([
+      { accountId: 'abc', displayName: 'Андрєєв Костянтин', name: undefined, key: undefined },
+    ]);
+    expect(fetchMock.mock.calls[0][0]).toBe(
+      'https://jira.example.com/rest/api/2/user/picker?query=%D0%B0%D0%BD%D0%B4%D1%80&maxResults=20'
+    );
+  });
+
   it('falls back to the old createmeta call on Jira 8', async () => {
     const fetchMock = jest
       .fn()

@@ -319,5 +319,24 @@ export interface JiraBugPreparation {
   block: string;
   screen: string;
   filled: Array<{ field: string; value: string; source: "task" | "vision" }>;
+  inputs: JiraBugInput[];
   missing: string[];
+}
+
+/** A bug field to set in the dialog; values are in the form Jira's create call takes. */
+export interface JiraBugInput {
+  id: string;
+  name: string;
+  required: boolean;
+  type: "user" | "option" | "options" | "text" | "number";
+  options?: Array<{ id: string; label: string }>;
+  value?: unknown;
+  display?: string;
+}
+
+export interface JiraUser {
+  accountId?: string;
+  name?: string;
+  key?: string;
+  displayName?: string;
 }

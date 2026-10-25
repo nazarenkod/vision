@@ -142,8 +142,32 @@ export function copyValue(field: JiraField, value: unknown): unknown {
   return ref(value);
 }
 
+/** A field of the bug the person filing it can set: who, which option, what text. */
+export interface BugInput {
+  id: string;
+  name: string;
+  required: boolean;
+  type: 'user' | 'option' | 'options' | 'text' | 'number';
+  options?: Array<{ id: string; label: string }>;
+  // current value in the form the create call takes, and how to show it
+  value?: unknown;
+  display?: string;
+}
+
+function inputType(field: JiraField): BugInput['type'] | null {
+  const { type, items } = field.schema;
+  if (type === 'user') return 'user';
+  if (type === 'array' && field.allowedValues?.length && items !== 'user') return 'options';
+  if (field.allowedValues?.length) return 'option';
+  if (type === 'string') return 'text';
+  if (type === 'number') return 'number';
+  return null;
+}
+
 export interface BugFields {
   fields: Record<string, unknown>;
+  // severity, customer and required fields nobody filled: the dialog lets them be set
+  inputs: BugInput[];
   // what Vision filled in, to show before creating
   filled: Array<{ field: string; value: string; source: 'task' | 'vision' }>;
   // required fields Vision could not fill
@@ -166,6 +190,8 @@ export function buildBugFields(input: {
   description: string;
   labels: string[];
   severity: string;
+  // values the person chose in the dialog, by field id, in create form
+  overrides?: Record<string, unknown>;
 }): BugFields {
   const { meta, parent, issueType } = input;
   const onScreen = new Map(meta.map((field) => [field.id, field]));
@@ -221,10 +247,48 @@ export function buildBugFields(input: {
     }
   }
 
+  // what the person chose wins over what Vision worked out
+  const chosen = new Set<string>();
+  for (const [id, value] of Object.entries(input.overrides ?? {})) {
+    const empty = value === null || value === undefined || value === '' || (Array.isArray(value) && !value.length);
+    if (!onScreen.has(id) || HANDLED.has(id) || empty) continue;
+    fields[id] = value;
+    chosen.add(id);
+  }
+
   const missing = meta
     .filter((field) => field.required && !HANDLED.has(field.id) && fields[field.id] === undefined)
     // Jira fills a required field that has a default value by itself
-    .filter((field) => !field.hasDefaultValue)
-    .map((field) => field.name);
-  return { fields, filled, missing, assignAfter };
+    .filter((field) => !field.hasDefaultValue);
+
+  const shownAsInput = (field: JiraField) =>
+    SEVERITY_FIELD.test(field.name) || CUSTOMER_FIELD.test(field.name) || missing.includes(field);
+  const inputs: BugInput[] = meta
+    .filter((field) => !HANDLED.has(field.id) && shownAsInput(field))
+    .map((field) => ({ field, type: inputType(field) }))
+    .filter((entry): entry is { field: JiraField; type: BugInput['type'] } => entry.type !== null)
+    .map(({ field, type }) => {
+      const automatic = filled.find((item) => item.field === field.name);
+      return {
+        id: field.id,
+        name: field.name,
+        required: field.required && !field.hasDefaultValue,
+        type,
+        ...(field.allowedValues?.length
+          ? { options: field.allowedValues.map((item) => ({ id: String(item.id), label: display(item) })) }
+          : {}),
+        ...(fields[field.id] !== undefined ? { value: fields[field.id] } : {}),
+        ...(automatic && !chosen.has(field.id) ? { display: automatic.value } : {}),
+      };
+    });
+  const inputIds = new Set(inputs.map((item) => item.id));
+
+  return {
+    fields,
+    inputs,
+    // fields shown as inputs are not listed twice
+    filled: filled.filter((item) => !meta.some((field) => inputIds.has(field.id) && field.name === item.field)),
+    missing: missing.map((field) => field.name),
+    assignAfter,
+  };
 }

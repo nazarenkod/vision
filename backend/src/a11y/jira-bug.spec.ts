@@ -164,12 +164,57 @@ describe('buildBugFields', () => {
     expect(bug.fields.priority).toBeUndefined();
     // Team is required, the task has no value for it, and Jira has no default
     expect(bug.missing).toEqual(['Team']);
-    expect(bug.filled).toEqual(
+    // severity and customer are shown as inputs, filled in already
+    expect(bug.inputs).toEqual(
       expect.arrayContaining([
-        { field: 'Серйозність помилки', value: 'S4', source: 'vision' },
-        { field: 'Замовник', value: 'Масюк Альона', source: 'task' },
+        expect.objectContaining({ name: 'Серйозність помилки', type: 'option', value: { id: '103' }, display: 'S4' }),
+        expect.objectContaining({ name: 'Замовник', type: 'user', value: { name: 'masiuk' }, display: 'Масюк Альона' }),
       ])
     );
+    expect(bug.filled.map((item) => item.field)).toEqual(['Parent', 'Labels', 'Components']);
+  });
+
+  it('offers severity, customer and empty required fields as inputs, and takes what is chosen', () => {
+    const meta = [
+      field('customfield_1', 'Серйозність помилки', {
+        required: true,
+        schema: { type: 'option' },
+        allowedValues: ['S1', 'S4'].map((value, i) => ({ id: String(i), value })),
+      }),
+      field('customfield_2', 'Замовник', { required: true, schema: { type: 'user' } }),
+      field('customfield_3', 'Середовище', { required: true, schema: { type: 'string' } }),
+      field('customfield_4', 'Epic', { required: true, schema: { type: 'any' } }),
+    ];
+    const before = buildBugFields({ ...base, meta, parent: parent(), issueType: subtask });
+    expect(before.inputs.map((item) => [item.name, item.type, item.value ?? null])).toEqual([
+      ['Серйозність помилки', 'option', { id: '1' }],
+      ['Замовник', 'user', null],
+      ['Середовище', 'text', null],
+    ]);
+    // a field of a kind the dialog cannot ask for stays listed as missing
+    expect(before.missing).toEqual(['Замовник', 'Середовище', 'Epic']);
+
+    const after = buildBugFields({
+      ...base,
+      meta,
+      parent: parent(),
+      issueType: subtask,
+      overrides: {
+        customfield_1: { id: '0' },
+        customfield_2: { accountId: 'abc' },
+        customfield_3: 'prod',
+        summary: 'ignored: Vision fills it',
+        customfield_99: 'ignored: not on the screen',
+      },
+    });
+    expect(after.fields).toMatchObject({
+      customfield_1: { id: '0' },
+      customfield_2: { accountId: 'abc' },
+      customfield_3: 'prod',
+      summary: 'S',
+    });
+    expect(after.fields.customfield_99).toBeUndefined();
+    expect(after.missing).toEqual(['Epic']);
   });
 
   it('sends only fields on the create screen', () => {

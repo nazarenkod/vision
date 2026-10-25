@@ -138,7 +138,16 @@ export class TestRunsController {
   @UseGuards(JwtAuthGuard, RoleGuard)
   @Roles(Role.admin, Role.editor)
   prepareA11yBug(@Param('id', new ParseUUIDPipe()) id: string, @Body() body: PrepareA11yBugDto) {
-    return this.a11yIssuesService.prepareBug(id, body.violationId, body.parentKey, body.issueTypeId);
+    return this.a11yIssuesService.prepareBug(id, body.violationId, body.parentKey, body.issueTypeId, body.fieldValues);
+  }
+
+  @Get(':id/a11y/jira/users')
+  @ApiOkResponse({ description: "People in the project's Jira matching a name, for user fields of a bug" })
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RoleGuard)
+  @Roles(Role.admin, Role.editor)
+  findJiraUsers(@Param('id', new ParseUUIDPipe()) id: string, @Query('query') query = '') {
+    return this.a11yIssuesService.findJiraUsers(id, query.slice(0, 100));
   }
 
   @Post(':id/a11y/jira')
@@ -150,7 +159,12 @@ export class TestRunsController {
     return this.a11yIssuesService.fileBug(
       id,
       body.violationId,
-      { parentKey: body.parentKey, issueTypeId: body.issueTypeId, linkType: body.linkType },
+      {
+        parentKey: body.parentKey,
+        issueTypeId: body.issueTypeId,
+        linkType: body.linkType,
+        fieldValues: body.fieldValues,
+      },
       user?.id
     );
   }

@@ -27,10 +27,24 @@ import { PixelmatchConfigForm } from "./PixelmatchConfigForm";
 import { VlmConfigForm } from "./VlmConfigForm";
 import { getDefaultConfig } from "./utils";
 import {
+  DeviceProfile,
   ElementRule,
   UiTreeSettings,
   parseUiTreeSettings,
 } from "../../types/insights";
+import { insightsService } from "../../services";
+
+const profileLabel = (profile: DeviceProfile) =>
+  [profile.device, profile.os, profile.browser, profile.viewport]
+    .filter(Boolean)
+    .join(" · ") || "No device";
+const profileKey = (profile: DeviceProfile) =>
+  JSON.stringify([
+    profile.os,
+    profile.device,
+    profile.browser,
+    profile.viewport,
+  ]);
 
 export const ProjectForm: React.FunctionComponent = () => {
   const { projectEditState: project } = useProjectState();
@@ -367,6 +381,21 @@ const MobileSettings: React.FunctionComponent = () => {
   const [selector, setSelector] = React.useState("");
   const [action, setAction] = React.useState<ElementRule["action"]>("ignore");
   const [percent, setPercent] = React.useState(5);
+  const [devices, setDevices] = React.useState<
+    Array<DeviceProfile & { checks: number }>
+  >([]);
+  React.useEffect(() => {
+    if (!project.id) return;
+    insightsService
+      .getProjectDevices(project.id)
+      .then(setDevices)
+      .catch(() => setDevices([]));
+  }, [project.id]);
+  const reference = settings.referenceDevice ?? null;
+  const deviceOptions =
+    reference && !devices.some((d) => profileKey(d) === profileKey(reference))
+      ? [...devices, { ...reference, checks: 0 }]
+      : devices;
 
   const save = (next: UiTreeSettings) =>
     setProjectEditState(projectDispatch, {
@@ -413,6 +442,39 @@ const MobileSettings: React.FunctionComponent = () => {
           sx={{ alignItems: "flex-start", "& .MuiSwitch-root": { mt: -0.5 } }}
         />
       ))}
+      <TextField
+        id="referenceDevice"
+        select
+        size="small"
+        label="Reference device"
+        value={reference ? profileKey(reference) : ""}
+        onChange={(event) => {
+          const picked = deviceOptions.find(
+            (d) => profileKey(d) === event.target.value,
+          );
+          save({
+            ...settings,
+            referenceDevice: picked
+              ? {
+                  os: picked.os,
+                  device: picked.device,
+                  browser: picked.browser,
+                  viewport: picked.viewport,
+                }
+              : null,
+          });
+        }}
+        helperText="Other devices of a check are compared with it element by element, for information; it never changes a status."
+        sx={{ maxWidth: 520, mt: 1 }}
+      >
+        <MenuItem value="">None</MenuItem>
+        {deviceOptions.map((device) => (
+          <MenuItem key={profileKey(device)} value={profileKey(device)}>
+            {profileLabel(device)}
+            {device.checks ? ` (${device.checks} checks)` : ""}
+          </MenuItem>
+        ))}
+      </TextField>
       {settings.compensateMoves && (
         <TextField
           id="maxMoveDp"

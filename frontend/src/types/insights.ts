@@ -100,7 +100,44 @@ export interface UiTreeSettings {
   detectLoading: boolean;
   detectScreenMismatch: boolean;
   elementRules: ElementRule[];
+  // the device other devices are compared with, for information
+  referenceDevice?: DeviceProfile | null;
 }
+
+export interface DeviceProfile {
+  os: string;
+  device: string;
+  browser: string;
+  viewport: string;
+}
+
+export interface CrossDeviceReport {
+  compared: number;
+  differences: Array<{
+    key: string;
+    element: string;
+    field: "text" | "label" | "state";
+    reference: string;
+    here: string;
+  }>;
+  notFound: Array<{ key: string; element: string }>;
+  onlyHere: number;
+  truncated?: { differences: number; notFound: number };
+}
+
+export type CrossDeviceResult =
+  | { status: "no-tree" | "no-reference" }
+  | {
+      status: "is-reference" | "no-reference-tree" | "other-platform";
+      referenceDevice: string;
+    }
+  | {
+      status: "compared";
+      referenceDevice: string;
+      referenceSource: "run" | "baseline";
+      referenceTestRunId: string | null;
+      report: CrossDeviceReport;
+    };
 
 export const DEFAULT_UI_TREE_SETTINGS: UiTreeSettings = {
   excludeSystemBars: true,

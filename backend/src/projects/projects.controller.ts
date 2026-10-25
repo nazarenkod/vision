@@ -40,6 +40,15 @@ export class ProjectsController {
     return toPublicProject(await this.projectsService.update(projectDto));
   }
 
+  @Get(':id/devices')
+  @ApiParam({ name: 'id', required: true })
+  @ApiOkResponse({ description: 'Devices (os, device, browser, viewport) the project has checks on' })
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  async devices(@Param('id', new ParseUUIDPipe()) id: string) {
+    return this.projectsService.devices(id);
+  }
+
   @Delete(':id')
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard, RoleGuard)

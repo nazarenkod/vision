@@ -8,7 +8,6 @@ import {
   ListItemSecondaryAction,
   IconButton,
   Checkbox,
-  Chip,
   Typography,
   Grid,
   Pagination,

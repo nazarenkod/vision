@@ -15,6 +15,7 @@ import { routes } from "../constants";
 import GuidedTour from "./GuidedTour";
 import { BRAND } from "../constants/brand";
 import { BrandMark } from "./BrandMark";
+import { ManualChecksDialog } from "./ManualChecksDialog";
 import {
   HEADER_HELP_MENU_ID,
   HEADER_AVATAR_MENU_ID,
@@ -25,6 +26,7 @@ import {
 import {
   AllInbox,
   Face,
+  PhoneAndroid,
   GitHub,
   HelpOutline,
   People,
@@ -41,6 +43,7 @@ const Header: FunctionComponent = () => {
   );
 
   const { loggedIn, user } = useUserState();
+  const [manualChecksOpen, setManualChecksOpen] = React.useState(false);
   const authDispatch = useUserDispatch();
 
   const styleMenuItem = {
@@ -80,6 +83,18 @@ const Header: FunctionComponent = () => {
     >
       <MenuItem onClick={handleMenuClose}>
         <GuidedTour />
+      </MenuItem>
+      <MenuItem
+        onClick={() => {
+          handleMenuClose();
+          setManualChecksOpen(true);
+        }}
+        style={styleMenuItem}
+      >
+        <IconButton size="small">
+          <PhoneAndroid />
+        </IconButton>
+        Manual checks (CLI)
       </MenuItem>
       {BRAND.supportUrl && (
         <MenuItem onClick={closeMenuAndOpenLink} style={styleMenuItem}>
@@ -221,6 +236,10 @@ const Header: FunctionComponent = () => {
       </AppBar>
       {renderAvatarMenu}
       {renderHelpMenu}
+      <ManualChecksDialog
+        open={manualChecksOpen}
+        onClose={() => setManualChecksOpen(false)}
+      />
     </React.Fragment>
   );
 };

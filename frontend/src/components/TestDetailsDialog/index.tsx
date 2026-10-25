@@ -5,6 +5,7 @@ import { useBuildState, useTestRunState } from "../../contexts";
 import { buildTestRunLocation } from "../../_helpers/route.helpers";
 import { BaseModal } from "../BaseModal";
 import TestDetailsModal from "./TestDetailsModal";
+import { runsOfCheck } from "./DeviceStrip";
 import { TestRun } from "../../types";
 import { makeStyles } from "@mui/styles";
 import {
@@ -85,6 +86,12 @@ export const TestDetailsDialog: React.FunctionComponent = () => {
     [testRuns, navigateById],
   );
 
+  // the same check on the other devices of the build, whatever the list filter
+  const deviceRuns = React.useMemo(
+    () => (selectedTestRun ? runsOfCheck(allTestRuns, selectedTestRun) : []),
+    [allTestRuns, selectedTestRun],
+  );
+
   if (!selectedTestRun) {
     return null;
   }
@@ -99,6 +106,8 @@ export const TestDetailsDialog: React.FunctionComponent = () => {
         handleClose={() => navigateById()}
         handlePrevious={() => navigateByIndex(selectedTestRunIndex - 1)}
         handleNext={() => navigateByIndex(selectedTestRunIndex + 1)}
+        deviceRuns={deviceRuns}
+        handleSelectRun={navigateById}
       />
       <BaseModal
         open={notSavedChangesModal}

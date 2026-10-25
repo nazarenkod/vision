@@ -34,29 +34,6 @@ public class VisualRegressionTrackerConfig {
     private String ciBuildId;
     private Boolean enableSoftAssert;
     private int httpTimeoutInSeconds;
-    /** Fail (or log, with soft asserts) when a screenshot brings new accessibility issues. */
-    private Boolean failOnNewA11yIssues = false;
-    /**
-     * trackDriver waits up to this long for spinners, skeletons and toasts to go before the screenshot;
-     * 0 takes it right away.
-     */
-    private Integer stableScreenTimeoutMillis = DEFAULT_STABLE_SCREEN_TIMEOUT_MILLIS;
-
-    static final int DEFAULT_STABLE_SCREEN_TIMEOUT_MILLIS = 5000;
-
-    /** Kept for code written before failOnNewA11yIssues existed. */
-    public VisualRegressionTrackerConfig(String apiUrl, String apiKey, String project, String branchName,
-                                         String ciBuildId, Boolean enableSoftAssert, int httpTimeoutInSeconds) {
-        this(apiUrl, apiKey, project, branchName, ciBuildId, enableSoftAssert, httpTimeoutInSeconds, false);
-    }
-
-    /** Kept for code written before stableScreenTimeoutMillis existed. */
-    public VisualRegressionTrackerConfig(String apiUrl, String apiKey, String project, String branchName,
-                                         String ciBuildId, Boolean enableSoftAssert, int httpTimeoutInSeconds,
-                                         Boolean failOnNewA11yIssues) {
-        this(apiUrl, apiKey, project, branchName, ciBuildId, enableSoftAssert, httpTimeoutInSeconds,
-                failOnNewA11yIssues, DEFAULT_STABLE_SCREEN_TIMEOUT_MILLIS);
-    }
 
     public static VisualRegressionTrackerConfigBuilder builder() {
         return new VisualRegressionTrackerConfigBuilder();
@@ -71,8 +48,6 @@ public class VisualRegressionTrackerConfig {
         private String ciBuildId;
         private Boolean enableSoftAssert;
         private Integer httpTimeoutInSeconds;
-        private Boolean failOnNewA11yIssues;
-        private Integer stableScreenTimeoutMillis;
 
         private File configFile;
 
@@ -115,16 +90,6 @@ public class VisualRegressionTrackerConfig {
             return this;
         }
 
-        public VisualRegressionTrackerConfigBuilder failOnNewA11yIssues(Boolean failOnNewA11yIssues) {
-            this.failOnNewA11yIssues = failOnNewA11yIssues;
-            return this;
-        }
-
-        public VisualRegressionTrackerConfigBuilder stableScreenTimeoutMillis(Integer stableScreenTimeoutMillis) {
-            this.stableScreenTimeoutMillis = stableScreenTimeoutMillis;
-            return this;
-        }
-
         public VisualRegressionTrackerConfigBuilder configFile(File configFile) {
             this.configFile = configFile;
             return this;
@@ -149,14 +114,6 @@ public class VisualRegressionTrackerConfig {
 
             Integer actualHttpTimeoutInSeconds = resolve("httpTimeoutInSeconds", configFromFile);
             config.setHttpTimeoutInSeconds(actualHttpTimeoutInSeconds == null ? DEFAULT_HTTP_TIMEOUT_SECONDS : actualHttpTimeoutInSeconds);
-
-            Boolean actualFailOnNewA11yIssues = resolve("failOnNewA11yIssues", configFromFile);
-            config.setFailOnNewA11yIssues(actualFailOnNewA11yIssues != null && actualFailOnNewA11yIssues);
-
-            Object actualStableScreenTimeout = resolve("stableScreenTimeoutMillis", configFromFile);
-            config.setStableScreenTimeoutMillis(actualStableScreenTimeout == null
-                    ? DEFAULT_STABLE_SCREEN_TIMEOUT_MILLIS
-                    : ((Number) actualStableScreenTimeout).intValue());
 
             return config;
         }

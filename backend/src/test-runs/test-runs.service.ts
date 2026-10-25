@@ -1,7 +1,13 @@
 import { BadRequestException, forwardRef, Inject, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { randomUUID } from 'crypto';
 import { AddElementRuleDto, RemoveElementRuleDto } from './dto/element-rule.dto';
-import { ElementRule, parseJsonArray, parseSelector, parseUiTreeSettings } from '../ui-tree/comparison-inputs';
+import {
+  checkKey,
+  ElementRule,
+  parseJsonArray,
+  parseSelector,
+  parseUiTreeSettings,
+} from '../ui-tree/comparison-inputs';
 import { CreateTestRequestDto } from './dto/create-test-request.dto';
 import { IgnoreAreaDto } from './dto/ignore-area.dto';
 import { StaticService } from '../static/static.service';
@@ -19,7 +25,7 @@ import { parseConfig } from '../compare/utils';
 import { DEFAULT_CONFIG } from '../compare/libs/pixelmatch/pixelmatch.service';
 import { PixelmatchConfig } from '../compare/libs/pixelmatch/pixelmatch.types';
 import { signaturesMatch, SIGNATURE_LENGTH } from '../compare/libs/pixelmatch/signature.core';
-import { StructureInfo, UiTreeService } from '../ui-tree/ui-tree.service';
+import { CrossDeviceResult, StructureInfo, UiTreeService } from '../ui-tree/ui-tree.service';
 import { UiTree } from '../ui-tree/ui-tree.types';
 import { A11yIssuesService } from '../a11y/a11y-issues.service';
 import { ReviewedA11yReport } from '../a11y/a11y-issues';
@@ -400,7 +406,18 @@ export class TestRunsService {
     });
 
     this.eventsGateway.testRunUpdated(testRun);
+    // a reviewer's decision, kept next to what the reference device comparison showed
+    if (testRun?.uiTreeName && (status === TestStatus.approved || status === TestStatus.failed)) {
+      this.uiTreeService
+        .recordCrossDevice(testRun, status === TestStatus.approved ? 'approved' : 'rejected')
+        .catch((error) => this.logger.warn(`Reference device comparison for ${id} failed: ${error}`));
+    }
     return this.findOne(id);
+  }
+
+  async getCrossDevice(id: string): Promise<CrossDeviceResult | null> {
+    const testRun = await this.findOne(id);
+    return testRun ? this.uiTreeService.recordCrossDevice(testRun) : null;
   }
 
   // Nullable because it genuinely is: a comparison that produced nothing at all
@@ -618,22 +635,32 @@ export class TestRunsService {
     scope: 'screen' | 'project',
     change: (rules: ElementRule[]) => ElementRule[]
   ): Promise<void> {
+    const project = await this.prismaService.project.findUnique({ where: { id: testRun.projectId } });
+    const settings = parseUiTreeSettings(project?.uiTreeSettings);
     if (scope === 'screen') {
-      const variation = await this.prismaService.testVariation.findUnique({ where: { id: testRun.testVariationId } });
-      const rules = change(parseJsonArray<ElementRule>(variation?.elementRules));
-      await this.prismaService.testVariation.update({
-        where: { id: testRun.testVariationId },
-        data: { elementRules: JSON.stringify(rules) },
+      // kept by check (name and custom tags), so every device and branch of the check gets it
+      const key = checkKey(testRun);
+      const current = await this.uiTreeService.checkRules(testRun, settings);
+      const next = change(current);
+      if (next.length) settings.checkRules[key] = next;
+      else delete settings.checkRules[key];
+      // an earlier version kept these rules on single device variations; they move to the check
+      await this.prismaService.testVariation.updateMany({
+        where: {
+          projectId: testRun.projectId,
+          name: testRun.name,
+          customTags: testRun.customTags ?? '',
+          elementRules: { not: null },
+        },
+        data: { elementRules: null },
       });
     } else {
-      const project = await this.prismaService.project.findUnique({ where: { id: testRun.projectId } });
-      const settings = parseUiTreeSettings(project?.uiTreeSettings);
       settings.elementRules = change(settings.elementRules);
-      await this.prismaService.project.update({
-        where: { id: testRun.projectId },
-        data: { uiTreeSettings: JSON.stringify(settings) },
-      });
     }
+    await this.prismaService.project.update({
+      where: { id: testRun.projectId },
+      data: { uiTreeSettings: JSON.stringify(settings) },
+    });
   }
 
   private async recompareAfterRuleChange(testRun: TestRun, scope: 'screen' | 'project'): Promise<void> {
@@ -644,7 +671,8 @@ export class TestRunsService {
         id: { not: testRun.id },
         uiTreeName: { not: null },
         status: TestStatus.unresolved,
-        ...(scope === 'screen' ? { testVariationId: testRun.testVariationId } : {}),
+        // every device of the check
+        ...(scope === 'screen' ? { name: testRun.name, customTags: testRun.customTags ?? '' } : {}),
       },
       take: MAX_RECOMPARE_AFTER_RULE,
     });

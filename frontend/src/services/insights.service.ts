@@ -4,6 +4,8 @@ import {
   A11yReport,
   AiStatus,
   ChangeGroup,
+  CrossDeviceResult,
+  DeviceProfile,
   GroupSummary,
   StructureInfo,
 } from "../types/insights";
@@ -30,6 +32,12 @@ export const insightsService = {
     get<A11yReport | null>(`/test-runs/${testRunId}/a11y`),
   getStructure: (testRunId: string) =>
     get<StructureInfo | null>(`/test-runs/${testRunId}/structure`),
+  getCrossDevice: (testRunId: string) =>
+    get<CrossDeviceResult | null>(`/test-runs/${testRunId}/cross-device`),
+  getProjectDevices: (projectId: string) =>
+    get<Array<DeviceProfile & { checks: number }>>(
+      `/projects/${projectId}/devices`,
+    ),
   ignoreA11y: (testRunId: string, violationId: string, comment?: string) =>
     post(`/test-runs/${testRunId}/a11y/ignore`, { violationId, comment }),
   resetA11y: (testRunId: string, violationId: string) =>

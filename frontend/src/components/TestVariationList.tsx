@@ -1,43 +1,124 @@
 import React from "react";
 import { TestVariation } from "../types";
 import {
+  Box,
   Card,
   Grid,
   CardMedia,
   CardContent,
-  CardActions,
   Button,
+  ButtonBase,
+  Chip,
   IconButton,
   Typography,
 } from "@mui/material";
 import { staticService } from "../services";
 import { Link } from "react-router-dom";
 import { routes } from "../constants";
-import { TestVariationDetails } from "./TestVariationDetails";
 import { Delete } from "@mui/icons-material";
 import { BaseModal } from "./BaseModal";
-import { makeStyles } from "@mui/styles";
+import { tokens } from "../theme";
 
-const useStyles = makeStyles({
-  card: {
-    maxWidth: 345,
-  },
-  media: {
-    height: 140,
-    objectFit: "contain",
-  },
-});
+const deviceLabel = (variation: TestVariation) =>
+  [variation.device, variation.os, variation.browser, variation.viewport]
+    .filter(Boolean)
+    .join(" · ") || "No device";
+
+/**
+ * Baselines grouped by check (its name and custom tags, per branch): one card
+ * per check, a baseline per device inside it.
+ */
+export function groupByCheck(items: TestVariation[]): TestVariation[][] {
+  const groups = new Map<string, TestVariation[]>();
+  items.forEach((item) => {
+    const key = JSON.stringify([
+      item.branchName,
+      item.name,
+      item.customTags ?? "",
+    ]);
+    groups.set(key, [...(groups.get(key) ?? []), item]);
+  });
+  return [...groups.values()].map((group) =>
+    group.sort((a, b) => deviceLabel(a).localeCompare(deviceLabel(b))),
+  );
+}
+
+const CheckCard: React.FunctionComponent<{
+  devices: TestVariation[];
+  onDelete: (variation: TestVariation) => void;
+}> = ({ devices, onDelete }) => {
+  // a device approved nothing yet has no picture to show
+  const [shownId, setShownId] = React.useState(
+    (devices.find((d) => d.baselineName) ?? devices[0]).id,
+  );
+  const shown = devices.find((d) => d.id === shownId) ?? devices[0];
+  const check = devices[0];
+  return (
+    <Card sx={{ maxWidth: 345 }}>
+      <CardMedia
+        component="img"
+        sx={{ height: 140, objectFit: "contain" }}
+        image={staticService.getImage(shown.baselineName)}
+        title={check.name}
+      />
+      <CardContent sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
+        <Typography sx={{ fontWeight: 600 }}>{check.name}</Typography>
+        <Box sx={{ display: "flex", gap: 0.5, flexWrap: "wrap" }}>
+          <Chip size="small" label={check.branchName} />
+          {check.customTags && (
+            <Chip size="small" variant="outlined" label={check.customTags} />
+          )}
+        </Box>
+        {devices.map((device) => (
+          <Box
+            key={device.id}
+            sx={{ display: "flex", alignItems: "center", gap: 0.5 }}
+          >
+            <ButtonBase
+              onClick={() => setShownId(device.id)}
+              sx={{
+                fontSize: 13.5,
+                textAlign: "left",
+                justifyContent: "flex-start",
+                flex: 1,
+                py: 0.25,
+                fontWeight: device.id === shown.id ? 600 : 400,
+                color:
+                  device.id === shown.id ? tokens.text : tokens.textSecondary,
+              }}
+            >
+              {deviceLabel(device)}
+            </ButtonBase>
+            <Button
+              size="small"
+              component={Link}
+              to={`${routes.VARIATION_DETAILS_PAGE}/${device.id}`}
+            >
+              History
+            </Button>
+            <IconButton
+              onClick={() => onDelete(device)}
+              size="small"
+              aria-label={`Delete ${deviceLabel(device)}`}
+            >
+              <Delete fontSize="small" />
+            </IconButton>
+          </Box>
+        ))}
+      </CardContent>
+    </Card>
+  );
+};
 
 interface IProps {
-  items: TestVariation[];
+  groups: TestVariation[][];
   onDeleteClick: (id: string) => void;
 }
 
 const TestVariationList: React.FunctionComponent<IProps> = ({
-  items,
+  groups,
   onDeleteClick,
 }) => {
-  const classes = useStyles();
   const [selectedItem, setSelectedItem] = React.useState<TestVariation | null>(
     null,
   );
@@ -48,35 +129,15 @@ const TestVariationList: React.FunctionComponent<IProps> = ({
 
   return (
     <>
-      <Grid container>
-        {items.length === 0 && (
-          <Typography variant="h5">No variations</Typography>
+      <Grid container spacing={2}>
+        {groups.length === 0 && (
+          <Grid item>
+            <Typography variant="h5">No variations</Typography>
+          </Grid>
         )}
-        {items.map((t) => (
-          <Grid item key={t.id} xs={4}>
-            <Card className={classes.card}>
-              <CardMedia
-                component="img"
-                className={classes.media}
-                image={staticService.getImage(t.baselineName)}
-                title={t.name}
-              />
-              <CardContent>
-                <TestVariationDetails testVariation={t} />
-              </CardContent>
-              <CardActions>
-                <Button
-                  color="primary"
-                  component={Link}
-                  to={`${routes.VARIATION_DETAILS_PAGE}/${t.id}`}
-                >
-                  History
-                </Button>
-                <IconButton onClick={() => setSelectedItem(t)} size="large">
-                  <Delete />
-                </IconButton>
-              </CardActions>
-            </Card>
+        {groups.map((devices) => (
+          <Grid item key={devices[0].id} xs={12} sm={6} md={4}>
+            <CheckCard devices={devices} onDelete={setSelectedItem} />
           </Grid>
         ))}
       </Grid>
@@ -84,11 +145,17 @@ const TestVariationList: React.FunctionComponent<IProps> = ({
       {selectedItem && (
         <BaseModal
           open={!!selectedItem}
-          title={"Delete TestVariation"}
+          title={"Delete baseline"}
           submitButtonText={"Delete"}
           onCancel={handleClose}
           content={
-            <Typography>{`Are you sure you want to delete: ${selectedItem.name}?`}</Typography>
+            <>
+              <Typography>{`Are you sure you want to delete: ${selectedItem.name}?`}</Typography>
+              <Typography variant="body2" color="textSecondary">
+                Only the baseline for {deviceLabel(selectedItem)} on{" "}
+                {selectedItem.branchName}.
+              </Typography>
+            </>
           }
           onSubmit={() => {
             onDeleteClick(selectedItem.id);

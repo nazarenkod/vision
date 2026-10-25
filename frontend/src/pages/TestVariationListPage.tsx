@@ -1,5 +1,7 @@
 import React from "react";
-import TestVariationList from "../components/TestVariationList";
+import TestVariationList, {
+  groupByCheck,
+} from "../components/TestVariationList";
 import { useNavigate, useParams } from "react-router-dom";
 import { TestVariation } from "../types";
 import { testVariationService } from "../services";
@@ -108,9 +110,14 @@ const TestVariationListPage: React.FunctionComponent = () => {
       );
   };
 
-  const pageCount = Math.max(1, Math.ceil(filteredItems.length / pageSize));
+  // one card per check, its devices inside
+  const groups = React.useMemo(
+    () => groupByCheck(filteredItems),
+    [filteredItems],
+  );
+  const pageCount = Math.max(1, Math.ceil(groups.length / pageSize));
   const currentPage = Math.min(page, pageCount);
-  const paginatedItems = filteredItems.slice(
+  const paginatedGroups = groups.slice(
     (currentPage - 1) * pageSize,
     currentPage * pageSize,
   );
@@ -152,11 +159,11 @@ const TestVariationListPage: React.FunctionComponent = () => {
           </Grid>
           <Grid item>
             <TestVariationList
-              items={paginatedItems}
+              groups={paginatedGroups}
               onDeleteClick={handleDelete}
             />
           </Grid>
-          {filteredItems.length > Math.min(...PAGE_SIZE_OPTIONS) && (
+          {groups.length > Math.min(...PAGE_SIZE_OPTIONS) && (
             <Grid item>
               <Grid
                 container

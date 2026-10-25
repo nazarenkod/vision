@@ -145,6 +145,8 @@ model TestVariation {
   project            Project    @relation(fields: [projectId], references: [id])
 
   @@unique([projectId, name, browser, device, os, viewport, customTags, branchName])
+  // devices and branches of one check
+  @@index([projectId, name])
 }
 
 model Baseline {
@@ -191,6 +193,28 @@ model A11yIssueState {
   updatedAt   DateTime @updatedAt
 
   @@unique([projectId, screenName, violationId])
+}
+
+// What the informational comparison with the reference device showed for a
+// run, and what the reviewer then decided, to judge later whether it is worth
+// trusting. Never affects a run's status.
+model CrossDeviceCheck {
+  id                 String    @id @default(uuid())
+  testRunId          String    @unique
+  // the reference device's run in the same build, or its baseline
+  referenceSource    String
+  referenceTestRunId String?
+  referenceDevice    String
+  comparedCount      Int
+  differenceCount    Int
+  notFoundCount      Int
+  onlyHereCount      Int
+  report             String
+  // approved | rejected, when the reviewer decided
+  decision           String?
+  decidedAt          DateTime?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
 }
 
 model AiResult {

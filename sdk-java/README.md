@@ -174,59 +174,25 @@ visualRegressionTracker.track(
 );
 ```
 
-
-### Mobile accessibility (Appium UI tree)
-
-Send the Appium page source together with the screenshot and the server also checks the screen's
-accessibility (missing labels, small touch targets, low contrast, unlabeled inputs, duplicate labels)
-and describes changes by element. `trackDriver` takes the screenshot, the page source, the platform and
-the screen density from the driver. Selenium is not a dependency of the SDK: the one your tests already
-use is picked up.
-
-Kotlin with Selenide + Appium:
-
-```kotlin
-import com.codeborne.selenide.WebDriverRunner
-
-vrt.trackDriver(WebDriverRunner.getWebDriver(), "Payment screen")
-
-// or with options; values set here win over what the driver reports
-vrt.trackDriver(
-    WebDriverRunner.getWebDriver(),
-    "Payment screen",
-    TestRunOptions.builder().device("Pixel 7").os("Android 15").build()
-)
-```
-
-Java with a plain Appium driver:
+With the screen's UI tree (Appium page source; optional, Vision only)
 
 ```java
-visualRegressionTracker.trackDriver(driver, "Payment screen");
-
-// a page source saved earlier can be sent with track() as well
-visualRegressionTracker.track("Payment screen", screenshotBase64,
+visualRegressionTracker.track(
+        "Payment",
+        screenshotBase64,
         TestRunOptions.builder()
-                .uiTree(pageSourceXml)
-                .uiTreeFormat("appium-android") // detected from the XML when omitted
-                .deviceDensity(420)              // Android dpi; estimated when omitted
-                .build());
+            .device("Pixel 7")
+            .os("Android 15")
+            .uiTree(driver.getPageSource())
+            .build()
+);
 ```
 
-The result carries the accessibility counts (`getTestRunResponse().getA11y()`). To fail a test when a
-screenshot brings new accessibility issues, enable `failOnNewA11yIssues` (builder, `VRT_FAILONNEWA11YISSUES`
-environment variable or `vrt.json`); with `enableSoftAssert` it is only logged. Issues that were filed in
-Jira or marked as false positives in the UI do not count as new.
+Vision then checks accessibility (labels, touch targets, contrast), tells
+which element changed, and can ignore or tolerate changes by element. The
+format (Android or iOS) is recognised from the XML. Servers without UI tree
+support ignore the field.
 
-`trackDriver` also:
-
-- waits up to `stableScreenTimeoutMillis` (default 5000, `0` to turn off) for spinners, skeletons and toasts
-  to disappear before taking the screenshot, and logs a warning if one is still there;
-- sends the Android activity (`AndroidDriver.currentActivity()`), which helps the server notice a screenshot
-  taken on the wrong screen.
-
-`TestRunOptions.excludeSystemBars(false)` keeps the status and navigation bars in the comparison for one
-screenshot, overriding the project setting. The server's capture warnings (taken while loading, looks like
-another screen) come back in `getTestRunResponse()`.
 
 ### Stop `VisualRegressionTracker`
 

@@ -5,7 +5,7 @@ import { TestVariationsService } from '../test-variations/test-variations.servic
 import { BuildsService } from '../builds/builds.service';
 import { HttpException, HttpStatus } from '@nestjs/common';
 
-const initService = async ({ projectFindUniqueMock = jest.fn() }) => {
+const initService = async ({ projectFindUniqueMock = jest.fn(), projectUpdateMock = jest.fn() }) => {
   const module: TestingModule = await Test.createTestingModule({
     providers: [
       ProjectsService,
@@ -14,6 +14,7 @@ const initService = async ({ projectFindUniqueMock = jest.fn() }) => {
         useValue: {
           project: {
             findUnique: projectFindUniqueMock,
+            update: projectUpdateMock,
           },
         },
       },
@@ -49,6 +50,36 @@ describe('ProjectsService', () => {
       await expect(service.findOne('foo')).rejects.toThrowError(
         new HttpException('Project not found', HttpStatus.NOT_FOUND)
       );
+    });
+  });
+
+  describe('update', () => {
+    it('keeps the rules of single checks that the settings form does not know about', async () => {
+      const stored = { checkRules: { '["Payment",""]': [{ id: 'r1', selector: 'id:banner', action: 'ignore' }] } };
+      const projectFindUniqueMock = jest.fn().mockResolvedValue({ uiTreeSettings: JSON.stringify(stored) });
+      const projectUpdateMock = jest.fn().mockResolvedValue({});
+      service = await initService({ projectFindUniqueMock, projectUpdateMock });
+
+      await service.update({
+        id: 'p1',
+        name: 'Mobile',
+        uiTreeSettings: JSON.stringify({ excludeSystemBars: false, checkRules: {} }),
+      } as never);
+
+      const saved = JSON.parse(projectUpdateMock.mock.calls[0][0].data.uiTreeSettings);
+      expect(saved.excludeSystemBars).toBe(false);
+      expect(saved.checkRules).toEqual(stored.checkRules);
+    });
+
+    it('leaves the settings alone when the form does not send them', async () => {
+      const projectFindUniqueMock = jest.fn();
+      const projectUpdateMock = jest.fn().mockResolvedValue({});
+      service = await initService({ projectFindUniqueMock, projectUpdateMock });
+
+      await service.update({ id: 'p1', name: 'Mobile' } as never);
+
+      expect(projectFindUniqueMock).not.toHaveBeenCalled();
+      expect(projectUpdateMock.mock.calls[0][0].data.uiTreeSettings).toBeUndefined();
     });
   });
 });

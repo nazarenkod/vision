@@ -5,6 +5,8 @@ import { TestVariationsService } from '../test-variations/test-variations.servic
 import { PrismaService } from '../prisma/prisma.service';
 import { A11yIssuesService } from '../a11y/a11y-issues.service';
 import { ChangeGroupsService } from './change-groups.service';
+import { ApiGuard } from '../auth/guards/api.guard';
+import { JwtAuthGuard } from '../auth/guards/auth.guard';
 
 describe('TestRuns Controller', () => {
   let controller: TestRunsController;
@@ -18,6 +20,8 @@ describe('TestRuns Controller', () => {
         { provide: PrismaService, useValue: {} },
         { provide: A11yIssuesService, useValue: {} },
         { provide: ChangeGroupsService, useValue: {} },
+        { provide: ApiGuard, useValue: {} },
+        { provide: JwtAuthGuard, useValue: {} },
       ],
     }).compile();
 

@@ -89,6 +89,10 @@ export class ProjectsService {
   }
 
   async update(projectDto: UpdateProjectDto): Promise<Project> {
+    const fields = jiraFields(projectDto);
+    if (fields.uiTreeSettings) {
+      fields.uiTreeSettings = await this.keepCheckRules(projectDto.id, fields.uiTreeSettings);
+    }
     return this.prismaService.project.update({
       where: { id: projectDto.id },
       data: {
@@ -101,9 +105,47 @@ export class ProjectsService {
         imageComparisonConfig: projectDto.imageComparisonConfig,
         bulkApproveVariations: projectDto.bulkApproveVariations,
         bulkApproveGroupBy: projectDto.bulkApproveGroupBy,
-        ...jiraFields(projectDto),
+        ...fields,
       },
     });
+  }
+
+  /**
+   * Rules for single checks are added from the review, not the settings form,
+   * so a form opened earlier must not wipe the ones added since.
+   */
+  private async keepCheckRules(projectId: string, incoming: string): Promise<string> {
+    const stored = await this.prismaService.project.findUnique({ where: { id: projectId } });
+    let checkRules: unknown;
+    try {
+      checkRules = stored?.uiTreeSettings ? JSON.parse(stored.uiTreeSettings).checkRules : undefined;
+    } catch {
+      checkRules = undefined;
+    }
+    const next = JSON.parse(incoming) ?? {};
+    if (checkRules) next.checkRules = checkRules;
+    else delete next.checkRules;
+    return JSON.stringify(next);
+  }
+
+  /** Devices the project has checks on, the most used first: candidates for the reference device. */
+  async devices(
+    projectId: string
+  ): Promise<Array<{ os: string; device: string; browser: string; viewport: string; checks: number }>> {
+    const groups = await this.prismaService.testVariation.groupBy({
+      by: ['os', 'device', 'browser', 'viewport'],
+      where: { projectId },
+      _count: { _all: true },
+    });
+    return groups
+      .map((group) => ({
+        os: group.os ?? '',
+        device: group.device ?? '',
+        browser: group.browser ?? '',
+        viewport: group.viewport ?? '',
+        checks: group._count._all,
+      }))
+      .sort((a, b) => b.checks - a.checks);
   }
 
   async remove(id: string): Promise<Project> {

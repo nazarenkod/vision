@@ -1,11 +1,11 @@
-# Demo instance of the fork, meant to run next to an existing VRT on the same host.
+# Vision (the company fork of VRT), meant to run next to an existing VRT on the same host.
 # Everything is built from the folders of this repo and kept apart from the existing
 # instance: own compose project, own ports, own Postgres volume, own image folder.
 #
 #   cp .env.demo.example .env.demo   # then edit
 #   ./scripts/demo-clone-from-prod.sh # copy the production DB and images (optional)
 #   docker compose -f docker-compose.demo.yml --env-file .env.demo up -d --build
-name: vrt-demo
+name: vision
 
 services:
   ui:

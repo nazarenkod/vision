@@ -1,5 +1,10 @@
 package io.visual_regression_tracker.sdk_java;
 
+import com.google.gson.JsonObject;
+import java.io.ByteArrayInputStream;
+import java.nio.charset.StandardCharsets;
+import java.util.Base64;
+import java.util.zip.GZIPInputStream;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.spi.ILoggingEvent;
@@ -138,6 +143,38 @@ public class VisualRegressionTrackerTest {
         assertThat(actualBuildResponse.getStatus(), containsString("unresolved"));
         assertThat(actualBuildResponse.getPassedCount(), is(1));
         assertThat(actualBuildResponse.getUnresolvedCount(), is(2));
+    }
+
+    @Test
+    public void shouldSendTheUiTreeGzippedWhenGiven() throws IOException, InterruptedException {
+        String xml = "<hierarchy><android.widget.Button text=\"Pay\"/></hierarchy>";
+        mockWebServer.enqueue(new MockResponse().setBody(gson.toJson(TestRunResponse.builder()
+                .status(TestRunStatus.OK)
+                .build())));
+        vrt.buildId = BUILD_ID;
+        vrt.projectId = PROJECT_ID;
+
+        vrt.submitTestRun(NAME, IMAGE_BASE_64, TestRunOptions.builder().uiTree(xml).build());
+
+        JsonObject body = gson.fromJson(mockWebServer.takeRequest().getBody().readUtf8(), JsonObject.class);
+        byte[] gzipped = Base64.getDecoder().decode(body.get("uiTree").getAsString());
+        try (GZIPInputStream in = new GZIPInputStream(new ByteArrayInputStream(gzipped))) {
+            assertThat(new String(in.readAllBytes(), StandardCharsets.UTF_8), is(xml));
+        }
+    }
+
+    @Test
+    public void shouldLeaveTheUiTreeOutWhenNotGiven() throws IOException, InterruptedException {
+        mockWebServer.enqueue(new MockResponse().setBody(gson.toJson(TestRunResponse.builder()
+                .status(TestRunStatus.OK)
+                .build())));
+        vrt.buildId = BUILD_ID;
+        vrt.projectId = PROJECT_ID;
+
+        vrt.submitTestRun(NAME, IMAGE_BASE_64, TestRunOptions.builder().build());
+
+        JsonObject body = gson.fromJson(mockWebServer.takeRequest().getBody().readUtf8(), JsonObject.class);
+        assertThat(body.has("uiTree"), is(false));
     }
 
     @Test(expectedExceptions = TestRunException.class,

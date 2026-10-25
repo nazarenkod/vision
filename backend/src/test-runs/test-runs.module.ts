@@ -8,6 +8,7 @@ import { CompareModule } from '../compare/compare.module';
 import { StaticModule } from '../static/static.module';
 import { UiTreeModule } from '../ui-tree/ui-tree.module';
 import { A11yModule } from '../a11y/a11y.module';
+import { AuthModule } from '../auth/auth.module';
 
 @Module({
   imports: [
@@ -17,6 +18,8 @@ import { A11yModule } from '../a11y/a11y.module';
     StaticModule,
     UiTreeModule,
     A11yModule,
+    // the mixed guard lets SDK and CLI users read reports with their API key
+    AuthModule,
   ],
   providers: [TestRunsService, ChangeGroupsService],
   controllers: [TestRunsController],

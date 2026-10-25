@@ -90,3 +90,21 @@ describe('parseUiTree', () => {
     expect(describeNode(pay)).toBe('Button "Pay" (id/btn_pay)');
   });
 });
+
+describe('parseUiTree with a plain uiautomator dump (adb, no Appium)', () => {
+  const dump = `<?xml version='1.0' encoding='UTF-8' standalone='yes' ?><hierarchy rotation="0"><node index="0" text="" resource-id="" class="android.widget.FrameLayout" package="com.bank.app" content-desc="" checkable="false" checked="false" clickable="false" enabled="true" focusable="false" focused="false" scrollable="false" long-clickable="false" password="false" selected="false" bounds="[0,0][1080,2400]"><node index="0" text="Pay" resource-id="com.bank.app:id/btn_pay" class="android.widget.Button" package="com.bank.app" content-desc="" checkable="false" checked="false" clickable="true" enabled="false" focusable="true" focused="false" scrollable="false" long-clickable="false" password="false" selected="false" bounds="[42,2200][1038,2326]" /></node></hierarchy>`;
+
+  it('reads nodes by their class attribute and treats them as visible', () => {
+    const tree = parseUiTree(dump, { imageWidth: 1080, imageHeight: 2400, densityDpi: 420 });
+    expect(tree.format).toBe('appium-android');
+    const pay = tree.nodes.find((node) => node.resourceId === 'com.bank.app:id/btn_pay');
+    expect(pay).toMatchObject({
+      className: 'android.widget.Button',
+      text: 'Pay',
+      clickable: true,
+      enabled: false,
+      visible: true,
+      bounds: { x: 42, y: 2200, width: 996, height: 126 },
+    });
+  });
+});

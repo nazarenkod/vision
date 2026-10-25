@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { TestRun } from '@prisma/client';
+import { TestRun, TestVariation } from '@prisma/client';
 import { gunzipSync, gzipSync } from 'zlib';
 import { StaticService } from '../static/static.service';
 import { buildReport, findViolations } from '../a11y/a11y.rules';
@@ -8,6 +8,7 @@ import { describeNode, ownSpeakableText, parseUiTree } from './ui-tree.parser';
 import { Rect, UiNode, UiTree, UiTreeFormat } from './ui-tree.types';
 import { diffTrees, elementsUnderRegions, RegionElement, StructuralChange } from './structure-diff';
 import { findNoiseHints, NoiseHint } from './noise-hints';
+import { compareAcrossDevices, CrossDeviceReport } from './cross-device';
 import {
   CaptureWarning,
   ComponentChange,
@@ -20,7 +21,10 @@ import {
 } from './screen-checks';
 import { PrismaService } from '../prisma/prisma.service';
 import {
+  checkKey,
   computeMoves,
+  DeviceProfile,
+  sameDevice,
   ElementMove,
   ElementRule,
   findSystemBars,
@@ -35,6 +39,7 @@ const GZIP_MAGIC = [0x1f, 0x8b];
 
 // Trees never change once stored, so recently read ones are kept.
 const TREE_CACHE_SIZE = 300;
+// how many other checks' baselines a wrong screen is matched against
 const MAX_SCREENS_TO_MATCH = 200;
 
 export interface TreeAnalysis {
@@ -86,6 +91,22 @@ export interface StructureInfo {
   // elements a rule can be made for by clicking them on the screenshot
   elements: PickableElement[];
   settings: UiTreeSettings;
+}
+
+export type CrossDeviceResult =
+  | { status: 'no-tree' | 'no-reference' }
+  | { status: 'is-reference' | 'no-reference-tree' | 'other-platform'; referenceDevice: string }
+  | {
+      status: 'compared';
+      referenceDevice: string;
+      referenceSource: 'run' | 'baseline';
+      referenceTestRunId: string | null;
+      report: CrossDeviceReport;
+    };
+
+/** "Pixel 7 · Android 15", from whichever parts are set. */
+export function describeDevice(profile: Partial<DeviceProfile>): string {
+  return [profile.device, profile.os, profile.browser, profile.viewport].filter(Boolean).join(' · ') || 'no device';
 }
 
 export interface PickableElement {
@@ -240,9 +261,17 @@ export class UiTreeService {
       testRun.projectId ? this.prismaService.project.findUnique({ where: { id: testRun.projectId } }) : null,
     ]);
     const settings = parseUiTreeSettings(project?.uiTreeSettings);
+    // A device without its own baseline yet is still a run of a known check:
+    // accessibility issues and "is this the right screen" are judged against
+    // the check's baseline on another device. Pixel and element diffs are not.
+    const other = baselineTree ? null : await this.otherDeviceBaseline(testRun, project, settings);
+    const [otherTree, otherImage] = other
+      ? await Promise.all([this.load(other.baselineUiTreeName), this.decode(other.baselineName)])
+      : [null, undefined];
+    const checkTree = baselineTree ?? otherTree;
 
     const current = findViolations(tree, image);
-    const baseline = baselineTree ? findViolations(baselineTree, baselineImage) : null;
+    const baseline = checkTree ? findViolations(checkTree, baselineTree ? baselineImage : otherImage) : null;
     const report = buildReport(tree, current, baseline);
     const reportName = await this.staticService.saveFile(
       'a11y',
@@ -264,7 +293,14 @@ export class UiTreeService {
     const loading = settings.detectLoading ? detectLoading(tree) : null;
     if (loading) warnings.push(loading);
     if (settings.detectScreenMismatch) {
-      warnings.push(...(await this.screenWarnings(testRun, tree, baselineTree)));
+      warnings.push(
+        ...(await this.screenWarnings(
+          testRun,
+          tree,
+          checkTree,
+          baselineTree ? null : other ? describeDevice(other) : null
+        ))
+      );
     }
 
     const components = image
@@ -302,12 +338,24 @@ export class UiTreeService {
     };
   }
 
-  /** Warns when the tree looks like another screen than its baseline, or like a screen that already exists. */
-  private async screenWarnings(testRun: TestRun, tree: UiTree, baselineTree: UiTree | null): Promise<CaptureWarning[]> {
-    const similarity = baselineTree ? screenSimilarity(tree, baselineTree) : null;
-    if (similarity !== null && similarity >= MISMATCH_BELOW) return [];
+  /**
+   * Warns when the tree does not look like the check's baseline: the test
+   * opened another screen. A run without any baseline gets no warning — a new
+   * check is often a state of an existing screen (a bottom sheet over it), so
+   * "looks like another screen" would be noise.
+   */
+  private async screenWarnings(
+    testRun: TestRun,
+    tree: UiTree,
+    baselineTree: UiTree | null,
+    otherDevice: string | null
+  ): Promise<CaptureWarning[]> {
+    if (!baselineTree) return [];
+    const similarity = screenSimilarity(tree, baselineTree);
+    if (similarity >= MISMATCH_BELOW) return [];
+    const percent = (value: number) => `${Math.round(value * 100)}%`;
 
-    // the best match among other screens' baselines, to say what this looks like
+    // which known check it looks like instead, to say where the test ended up
     const others = testRun.projectId
       ? await this.prismaService.testVariation.findMany({
           where: { projectId: testRun.projectId, baselineUiTreeName: { not: null }, name: { not: testRun.name } },
@@ -322,33 +370,47 @@ export class UiTreeService {
       const score = screenSimilarity(tree, otherTree);
       if (!best || score > best.similarity) best = { name: other.name, similarity: score };
     }
-    const percent = (value: number) => `${Math.round(value * 100)}%`;
+    const looksLike = best && best.similarity >= SAME_SCREEN_ABOVE ? best : null;
+    const hint = looksLike ? ` It looks like "${looksLike.name}" (${percent(looksLike.similarity)}).` : '';
+    return [
+      {
+        kind: 'screen-mismatch',
+        message:
+          (otherDevice
+            ? `This does not look like this check on ${otherDevice} (${percent(similarity)} alike).`
+            : `This does not look like the screen of its baseline (${percent(similarity)} alike).`) + hint,
+        similarity,
+        ...(looksLike ? { looksLike: looksLike.name } : {}),
+      },
+    ];
+  }
 
-    if (similarity !== null) {
-      const hint =
-        best && best.similarity >= SAME_SCREEN_ABOVE
-          ? ` It looks like "${best.name}" (${percent(best.similarity)}).`
-          : '';
-      return [
-        {
-          kind: 'screen-mismatch',
-          message: `This does not look like the screen of its baseline (${percent(similarity)} alike).${hint}`,
-          similarity,
-          ...(hint ? { looksLike: best.name } : {}),
-        },
-      ];
-    }
-    if (best && best.similarity >= SAME_SCREEN_ABOVE) {
-      return [
-        {
-          kind: 'duplicate-screen',
-          message: `New screen, but it looks like "${best.name}" (${percent(best.similarity)} alike). Renamed test?`,
-          similarity: best.similarity,
-          looksLike: best.name,
-        },
-      ];
-    }
-    return [];
+  /**
+   * The check's baseline on another device, for a device that has none yet:
+   * the reference device first, then the most recently updated one, on the
+   * run's branch before the main branch.
+   */
+  private async otherDeviceBaseline(
+    testRun: TestRun,
+    project: { mainBranchName: string } | null,
+    settings: UiTreeSettings
+  ): Promise<TestVariation | null> {
+    if (!testRun.projectId) return null;
+    const candidates = await this.prismaService.testVariation.findMany({
+      where: {
+        projectId: testRun.projectId,
+        name: testRun.name,
+        customTags: testRun.customTags ?? '',
+        branchName: { in: [testRun.branchName, project?.mainBranchName].filter(Boolean) },
+        baselineUiTreeName: { not: null },
+        id: { not: testRun.testVariationId ?? undefined },
+      },
+      orderBy: { updatedAt: 'desc' },
+    });
+    const rank = (variation: TestVariation) =>
+      (settings.referenceDevice && sameDevice(variation, settings.referenceDevice) ? 0 : 2) +
+      (variation.branchName === testRun.branchName ? 0 : 1);
+    return candidates.sort((a, b) => rank(a) - rank(b))[0] ?? null;
   }
 
   async loadReport(name: string | null): Promise<A11yReport | null> {
@@ -359,15 +421,12 @@ export class UiTreeService {
 
   /** What changed in a run, by element, plus noise hints. Computed on demand. */
   async structure(testRun: TestRun): Promise<StructureInfo> {
-    const [tree, baselineTree, imageBuffer, inputs, project, variation] = await Promise.all([
+    const [tree, baselineTree, imageBuffer, inputs, project] = await Promise.all([
       this.load(testRun.uiTreeName),
       this.load(testRun.baselineUiTreeName),
       this.staticService.getImageBuffer(testRun.imageName),
       this.comparisonInputs(testRun),
       testRun.projectId ? this.prismaService.project.findUnique({ where: { id: testRun.projectId } }) : null,
-      testRun.testVariationId
-        ? this.prismaService.testVariation.findUnique({ where: { id: testRun.testVariationId } })
-        : null,
     ]);
     const regions = parseRegions(testRun.diffRegions);
     const size = imageBuffer ? pngSize(imageBuffer) : { width: tree?.width ?? 0, height: tree?.height ?? 0 };
@@ -376,6 +435,7 @@ export class UiTreeService {
       [...(tree?.nodes ?? []), ...(baselineTree?.nodes ?? [])].filter((n) => n.clickable).map((n) => n.key)
     );
     const settings = parseUiTreeSettings(project?.uiTreeSettings);
+    const checkRules = await this.checkRules(testRun, settings);
     const withScope = (rules: ElementRule[], scope: 'screen' | 'project') =>
       rules.map((rule) => ({ ...rule, scope, matches: inputs.rules.matches[rule.id] ?? 0 }));
     const nodesByKey = new Map((tree?.nodes ?? []).map((node) => [node.key, node]));
@@ -395,10 +455,7 @@ export class UiTreeService {
       }),
       invisible: tree && baselineTree ? invisibleChanges(changes, regions, clickable) : [],
       warnings: parseJsonArray<CaptureWarning>(testRun.captureWarnings),
-      rules: [
-        ...withScope(parseJsonArray<ElementRule>(variation?.elementRules), 'screen'),
-        ...withScope(settings.elementRules, 'project'),
-      ],
+      rules: [...withScope(checkRules, 'screen'), ...withScope(settings.elementRules, 'project')],
       ignoredAreas: inputs.rules.ignore,
       toleratedAreas: inputs.rules.tolerate,
       systemBars: inputs.systemBars,
@@ -418,12 +475,41 @@ export class UiTreeService {
   }
 
   /**
+   * Rules for one check, on every device and branch: the ones kept by check
+   * name, plus rules an earlier version stored on single device variations.
+   */
+  async checkRules(
+    check: { projectId: string; name: string; customTags?: string | null },
+    settings: UiTreeSettings
+  ): Promise<ElementRule[]> {
+    const legacy = check.projectId
+      ? await this.prismaService.testVariation.findMany({
+          where: {
+            projectId: check.projectId,
+            name: check.name,
+            customTags: check.customTags ?? '',
+            elementRules: { not: null },
+          },
+          select: { elementRules: true },
+        })
+      : [];
+    const all = [
+      ...(settings.checkRules[checkKey(check)] ?? []),
+      ...legacy.flatMap((variation) => parseJsonArray<ElementRule>(variation.elementRules)),
+    ];
+    return all.filter((rule, index) => all.findIndex((other) => other.id === rule.id) === index);
+  }
+
+  /**
    * What the UI trees add to a comparison: ignore areas from element rules and
    * system bars, tolerance areas, and the moves to compensate. Empty when the
    * run has no UI tree.
    */
   async comparisonInputs(
-    testRun: Pick<TestRun, 'projectId' | 'testVariationId' | 'uiTreeName' | 'baselineUiTreeName' | 'uiTreeOptions'>
+    testRun: Pick<
+      TestRun,
+      'projectId' | 'testVariationId' | 'uiTreeName' | 'baselineUiTreeName' | 'uiTreeOptions' | 'name' | 'customTags'
+    >
   ): Promise<ComparisonInputs> {
     const empty: ComparisonInputs = {
       ignoreAreas: [],
@@ -434,20 +520,17 @@ export class UiTreeService {
       settings: null,
     };
     if (!testRun.uiTreeName) return empty;
-    const [tree, baselineTree, project, variation] = await Promise.all([
+    const [tree, baselineTree, project] = await Promise.all([
       this.load(testRun.uiTreeName),
       this.load(testRun.baselineUiTreeName),
       testRun.projectId ? this.prismaService.project.findUnique({ where: { id: testRun.projectId } }) : null,
-      testRun.testVariationId
-        ? this.prismaService.testVariation.findUnique({ where: { id: testRun.testVariationId } })
-        : null,
     ]);
     if (!tree) return empty;
 
     const settings = parseUiTreeSettings(project?.uiTreeSettings);
     const options = parseUiTreeOptions(testRun.uiTreeOptions);
     const excludeSystemBars = options.excludeSystemBars ?? settings.excludeSystemBars;
-    const rules = [...settings.elementRules, ...parseJsonArray<ElementRule>(variation?.elementRules)];
+    const rules = [...settings.elementRules, ...(await this.checkRules(testRun, settings))];
     const resolved = resolveRules(rules, [tree, baselineTree]);
     const systemBars = excludeSystemBars ? findSystemBars(tree) : [];
     const clamp = (rect: Rect): Rect => {
@@ -468,6 +551,89 @@ export class UiTreeService {
       rules: resolved,
       settings,
     };
+  }
+
+  /**
+   * The same check on the project's reference device, compared element by
+   * element, for information: it never changes a run's status. The reference
+   * is that device's run in the same build when there is one (same app
+   * build), else its baseline.
+   */
+  async crossDevice(testRun: TestRun): Promise<CrossDeviceResult> {
+    if (!testRun.uiTreeName) return { status: 'no-tree' };
+    const project = testRun.projectId
+      ? await this.prismaService.project.findUnique({ where: { id: testRun.projectId } })
+      : null;
+    const reference = parseUiTreeSettings(project?.uiTreeSettings).referenceDevice;
+    if (!reference) return { status: 'no-reference' };
+    const referenceDevice = describeDevice(reference);
+    if (sameDevice(testRun, reference)) return { status: 'is-reference', referenceDevice };
+
+    const sameCheck = {
+      projectId: testRun.projectId,
+      name: testRun.name,
+      customTags: testRun.customTags ?? '',
+      os: reference.os,
+      device: reference.device,
+      browser: reference.browser,
+      viewport: reference.viewport,
+    };
+    const referenceRun = await this.prismaService.testRun.findFirst({
+      where: { ...sameCheck, buildId: testRun.buildId, uiTreeName: { not: null } },
+      orderBy: { createdAt: 'desc' },
+    });
+    let referenceTreeName = referenceRun?.uiTreeName ?? null;
+    let referenceSource: 'run' | 'baseline' = 'run';
+    if (!referenceTreeName) {
+      const variations = await this.prismaService.testVariation.findMany({
+        where: {
+          ...sameCheck,
+          branchName: { in: [testRun.branchName, project?.mainBranchName].filter(Boolean) },
+          baselineUiTreeName: { not: null },
+        },
+      });
+      const variation =
+        variations.find((item) => item.branchName === testRun.branchName) ??
+        variations.find((item) => item.branchName === project?.mainBranchName);
+      referenceTreeName = variation?.baselineUiTreeName ?? null;
+      referenceSource = 'baseline';
+    }
+    const [tree, referenceTree] = await Promise.all([this.load(testRun.uiTreeName), this.load(referenceTreeName)]);
+    if (!tree || !referenceTree) return { status: 'no-reference-tree', referenceDevice };
+    if (tree.format !== referenceTree.format) return { status: 'other-platform', referenceDevice };
+    return {
+      status: 'compared',
+      referenceDevice,
+      referenceSource,
+      referenceTestRunId: referenceSource === 'run' ? referenceRun.id : null,
+      report: compareAcrossDevices(referenceTree, tree),
+    };
+  }
+
+  /**
+   * Keeps what the reference comparison showed, and the reviewer's decision
+   * when there is one, so it can be judged later how far it can be trusted.
+   */
+  async recordCrossDevice(testRun: TestRun, decision?: 'approved' | 'rejected'): Promise<CrossDeviceResult> {
+    const result = await this.crossDevice(testRun);
+    if (result.status !== 'compared') return result;
+    const data = {
+      referenceSource: result.referenceSource,
+      referenceTestRunId: result.referenceTestRunId,
+      referenceDevice: result.referenceDevice,
+      comparedCount: result.report.compared,
+      differenceCount: result.report.truncated?.differences ?? result.report.differences.length,
+      notFoundCount: result.report.truncated?.notFound ?? result.report.notFound.length,
+      onlyHereCount: result.report.onlyHere,
+      report: JSON.stringify(result.report),
+      ...(decision ? { decision, decidedAt: new Date() } : {}),
+    };
+    await this.prismaService.crossDeviceCheck.upsert({
+      where: { testRunId: testRun.id },
+      create: { testRunId: testRun.id, ...data },
+      update: data,
+    });
+    return result;
   }
 
   async deleteFiles(...names: Array<string | null | undefined>): Promise<void> {

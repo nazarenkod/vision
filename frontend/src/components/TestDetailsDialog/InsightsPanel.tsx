@@ -30,6 +30,7 @@ import {
 } from "../../types";
 import { StatusPill } from "../StatusPill";
 import { describeChange } from "../ChangeGroups";
+import { CrossDevicePanel } from "./CrossDevicePanel";
 import { tokens } from "../../theme";
 
 type JiraDialog = { mode: "file" | "link"; violation: A11yViolation } | null;
@@ -98,7 +99,7 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
   const canEdit = user?.role === "admin" || user?.role === "editor";
   const withUiTree = hasUiTree(testRun);
 
-  const [tab, setTab] = React.useState<"a11y" | "changes">(
+  const [tab, setTab] = React.useState<"a11y" | "changes" | "devices">(
     withUiTree ? "a11y" : "changes",
   );
   const [ruleDraft, setRuleDraft] = React.useState<RuleDraft | null>(null);
@@ -114,8 +115,9 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
     setLabels({});
   }, [testRun.id]);
 
+  // the tab stays when moving between devices of a check; without a UI tree only Changes has content
   React.useEffect(() => {
-    setTab(withUiTree ? "a11y" : "changes");
+    if (!withUiTree) setTab("changes");
   }, [withUiTree, testRun.id]);
 
   const run = async (action: () => Promise<unknown>, done: string) => {
@@ -412,8 +414,9 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
       return (
         <Typography variant="body2" color="textSecondary">
           No UI tree came with this screenshot. Send the Appium page source with
-          it (for example <code>vrt.trackDriver(driver, name)</code> in the Java
-          SDK) to check accessibility.
+          it (in the Java SDK:{" "}
+          <code>TestRunOptions.builder().uiTree(driver.getPageSource())</code>),
+          or check the screen with the Vision CLI, to check accessibility.
         </Typography>
       );
     }
@@ -887,6 +890,7 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
             </Box>
           }
         />
+        {withUiTree && <Tab value="devices" label="Devices" />}
       </Tabs>
       <Box
         sx={{
@@ -898,7 +902,13 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
           gap: 1.5,
         }}
       >
-        {tab === "a11y" ? a11yTab() : changesTab()}
+        {tab === "a11y" ? (
+          a11yTab()
+        ) : tab === "devices" ? (
+          <CrossDevicePanel testRun={testRun} />
+        ) : (
+          changesTab()
+        )}
       </Box>
 
       <Dialog
@@ -922,7 +932,6 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
           </Typography>
           <TextField
             id="jira-key"
-            autoFocus
             label={
               jiraDialog?.mode === "file"
                 ? "Task to link the bug to"

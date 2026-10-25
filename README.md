@@ -4,7 +4,7 @@
   <img src="./public/logo.png"/ width='200px' alt="Visual Regression Tracker logo">
 </p>
 
-> **Company fork (ISee):** see [DEMO.md](DEMO.md) for the demo build (accessibility from Appium UI trees, Jira bugs, change groups, cheap AI) and how to run it next to the existing VRT.
+> **Company fork (Vision):** see [DEMO.md](DEMO.md) for the demo build (accessibility from Appium UI trees, Jira bugs, change groups, cheap AI) and how to run it next to the existing VRT.
 
 <h1 align="center"> Visual Regression Tracker </h1>
 <h3 align="center"> Open source, self hosted solution for visual testing and managing results of visual testing. </h3>

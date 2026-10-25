@@ -83,8 +83,9 @@ export const A11ySummary: React.FunctionComponent<{ buildId: string }> = ({
         </Typography>
         <Typography color="textSecondary">
           Accessibility is checked when a screenshot comes with its Appium page
-          source. In Java or Kotlin use{" "}
-          <code>vrt.trackDriver(driver, "Screen name")</code> from the SDK.
+          source. In Java or Kotlin add{" "}
+          <code>.uiTree(driver.getPageSource())</code> to the TestRunOptions;
+          for manual testing use the CLI (help menu, Manual checks).
         </Typography>
       </Box>
     );

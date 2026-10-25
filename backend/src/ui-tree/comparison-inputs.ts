@@ -31,7 +31,29 @@ export interface UiTreeSettings {
   detectLoading: boolean;
   // warn when the UI tree looks like another screen than the baseline
   detectScreenMismatch: boolean;
+  // rules for every screen of the project
   elementRules: ElementRule[];
+  // rules for one check (its name and custom tags), on every device and branch
+  checkRules: Record<string, ElementRule[]>;
+  // the device other devices are compared with, for information
+  referenceDevice: DeviceProfile | null;
+}
+
+/** What a run was taken on; the parts of the old VRT key that are not the check's name. */
+export interface DeviceProfile {
+  os: string;
+  device: string;
+  browser: string;
+  viewport: string;
+}
+
+/** A check is what the test named: its name plus custom tags. Devices are runs of it. */
+export function checkKey(check: { name: string; customTags?: string | null }): string {
+  return JSON.stringify([check.name, check.customTags ?? '']);
+}
+
+export function sameDevice(a: Partial<DeviceProfile>, b: Partial<DeviceProfile>): boolean {
+  return (['os', 'device', 'browser', 'viewport'] as const).every((field) => (a[field] ?? '') === (b[field] ?? ''));
 }
 
 export const DEFAULT_UI_TREE_SETTINGS: UiTreeSettings = {
@@ -42,6 +64,8 @@ export const DEFAULT_UI_TREE_SETTINGS: UiTreeSettings = {
   detectLoading: true,
   detectScreenMismatch: true,
   elementRules: [],
+  checkRules: {},
+  referenceDevice: null,
 };
 
 export function parseJsonArray<T>(value: string | null | undefined): T[] {
@@ -62,6 +86,19 @@ export function parseUiTreeSettings(value: string | null | undefined): UiTreeSet
       ...DEFAULT_UI_TREE_SETTINGS,
       ...parsed,
       elementRules: Array.isArray(parsed.elementRules) ? parsed.elementRules : [],
+      checkRules:
+        parsed.checkRules && typeof parsed.checkRules === 'object' && !Array.isArray(parsed.checkRules)
+          ? parsed.checkRules
+          : {},
+      referenceDevice:
+        parsed.referenceDevice && typeof parsed.referenceDevice === 'object'
+          ? {
+              os: parsed.referenceDevice.os ?? '',
+              device: parsed.referenceDevice.device ?? '',
+              browser: parsed.referenceDevice.browser ?? '',
+              viewport: parsed.referenceDevice.viewport ?? '',
+            }
+          : null,
     };
   } catch {
     return { ...DEFAULT_UI_TREE_SETTINGS };

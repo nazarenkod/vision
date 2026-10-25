@@ -55,6 +55,7 @@ import {
 } from "./MatchingVariationsDialog";
 import { invertIgnoreArea } from "../../_helpers/ignoreArea.helper";
 import { InsightsPanel } from "./InsightsPanel";
+import { DeviceStrip } from "./DeviceStrip";
 import { RunFlags, useAiStatus } from "../ChangeGroups";
 import { insightsService } from "../../services";
 import {
@@ -138,6 +139,9 @@ interface TestDetailsModalProps {
   handleClose: () => void;
   handlePrevious: () => void;
   handleNext: () => void;
+  // the same check on every device of the build
+  deviceRuns?: TestRun[];
+  handleSelectRun?: (id: string) => void;
 }
 
 const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
@@ -148,6 +152,8 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
   handlePrevious,
   handleNext,
   handleClose,
+  deviceRuns = [],
+  handleSelectRun,
 }) => {
   const classes = useStyles();
   const { enqueueSnackbar } = useDialogSnackbar();
@@ -881,6 +887,15 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
                 />
               }
               label={<Typography variant="body2">Overlay</Typography>}
+            />
+          </Grid>
+        )}
+        {deviceRuns.length > 1 && handleSelectRun && (
+          <Grid item>
+            <DeviceStrip
+              runs={deviceRuns}
+              currentId={testRun.id}
+              onSelect={handleSelectRun}
             />
           </Grid>
         )}

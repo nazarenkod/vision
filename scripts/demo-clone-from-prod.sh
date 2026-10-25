@@ -46,6 +46,21 @@ if ! "${COMPOSE[@]}" exec -T postgres psql -U "$POSTGRES_USER" -d "$POSTGRES_DB"
   exit 1
 fi
 
+# A production instance newer than the fork has migrations the fork does not know; the
+# fork's API would then run against a schema it was not built for.
+KNOWN="$(ls "$ROOT/backend/prisma/migrations" | grep -v migration_lock)"
+UNKNOWN="$("${COMPOSE[@]}" exec -T postgres psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -tAc \
+  "select migration_name from _prisma_migrations where finished_at is not null order by 1" \
+  | tr -d '\r' | grep -v '^$' | grep -vxF "$KNOWN" || true)"
+if [ -n "$UNKNOWN" ]; then
+  echo "!!  Production has migrations this fork does not know (production VRT is newer):" >&2
+  echo "$UNKNOWN" | sed 's/^/!!    /' >&2
+  echo "!!  Pull the newer upstream into the fork first (git subtree pull), then run this again." >&2
+  exit 1
+fi
+echo "    production schema: $("${COMPOSE[@]}" exec -T postgres psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -tAc \
+  "select max(migration_name) from _prisma_migrations where finished_at is not null" | tr -d '\r')"
+
 echo "==> Copying images"
 if [ -n "${PROD_IMAGES_DIR:-}" ]; then
   # Hard links cost no space and are safe: VRT writes new files and never edits existing ones,

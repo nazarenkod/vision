@@ -30,6 +30,7 @@ import { Role, TestRun, TestStatus, User } from '@prisma/client';
 import { TestRunsService } from './test-runs.service';
 import { TestRunResultDto } from './dto/testRunResult.dto';
 import { ApiGuard } from '../auth/guards/api.guard';
+import { MixedGuard } from '../auth/guards/mixed.guard';
 import { TestRunDto } from './dto/testRun.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { CreateTestRequestBase64Dto } from './dto/create-test-request-base64.dto';
@@ -83,7 +84,7 @@ export class TestRunsController {
   @Get(':id/a11y')
   @ApiOkResponse({ description: 'Accessibility report built from the UI tree; null when none was sent' })
   @ApiBearerAuth()
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(MixedGuard)
   getAccessibility(@Param('id', new ParseUUIDPipe()) id: string) {
     return this.testRunsService.getAccessibilityReport(id);
   }
@@ -150,10 +151,20 @@ export class TestRunsController {
     return this.testRunsService.removeElementRule(id, body);
   }
 
+  @Get(':id/cross-device')
+  @ApiOkResponse({
+    description: 'The same check on the reference device, compared element by element; for information only',
+  })
+  @ApiBearerAuth()
+  @UseGuards(MixedGuard)
+  getCrossDevice(@Param('id', new ParseUUIDPipe()) id: string) {
+    return this.testRunsService.getCrossDevice(id);
+  }
+
   @Get(':id/structure')
   @ApiOkResponse({ description: 'Element-level changes, elements under changed areas and noise hints' })
   @ApiBearerAuth()
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(MixedGuard)
   getStructure(@Param('id', new ParseUUIDPipe()) id: string) {
     return this.testRunsService.getStructure(id);
   }

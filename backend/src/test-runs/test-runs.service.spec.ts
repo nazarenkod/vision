@@ -384,6 +384,43 @@ describe('TestRunsService', () => {
     expect(service.saveDiffResult).toHaveBeenCalledWith(testRun.id, diffResult);
   });
 
+  describe('element rules', () => {
+    it('keeps a rule for this screen by check, so every device and branch gets it', async () => {
+      const testRun = generateTestRun({ name: 'Payment', customTags: '', uiTreeName: 'tree.json.gz' });
+      const projectUpdateMock = jest.fn().mockResolvedValue({});
+      const updateManyMock = jest.fn().mockResolvedValue({ count: 1 });
+      const testRunFindManyMock = jest.fn().mockResolvedValue([]);
+      service = await initService({
+        testRunFindManyMock,
+        projectFindUniqueMock: jest.fn().mockResolvedValue({ uiTreeSettings: null }),
+      });
+      service.findOne = jest.fn().mockResolvedValue(testRun);
+      service.calculateDiff = jest.fn().mockResolvedValue(testRun);
+      service['prismaService'].project['update'] = projectUpdateMock;
+      service['prismaService'].testVariation['updateMany'] = updateManyMock;
+      service['uiTreeService'].checkRules = jest
+        .fn()
+        .mockResolvedValue([{ id: 'old', selector: 'id:clock', action: 'ignore' }]);
+
+      const rule = await service.addElementRule(testRun.id, {
+        scope: 'screen',
+        selector: 'id:banner',
+        action: 'ignore',
+      } as never);
+
+      const settings = JSON.parse(projectUpdateMock.mock.calls[0][0].data.uiTreeSettings);
+      expect(settings.checkRules['["Payment",""]'].map((r) => r.id)).toEqual(['old', rule.id]);
+      // rules an earlier version kept on device variations moved to the check
+      expect(updateManyMock.mock.calls[0][0]).toMatchObject({
+        where: { projectId: testRun.projectId, name: 'Payment', customTags: '' },
+        data: { elementRules: null },
+      });
+      // the other devices of the check in the build are compared again
+      expect(testRunFindManyMock.mock.calls[0][0].where).toMatchObject({ name: 'Payment', customTags: '' });
+      expect(testRunFindManyMock.mock.calls[0][0].where.testVariationId).toBeUndefined();
+    });
+  });
+
   describe('saveDiffResult', () => {
     const testRun: TestRun = generateTestRun();
     it('no results', async () => {

@@ -37,7 +37,7 @@ const isMeaningful = (node: UiNode) => node.visible && (hasAppId(node) || !!ownS
  * one. Elements are matched by key (resource id, else class + text, else path).
  * Order: content changes, then added/removed, then size, then position.
  */
-export function diffTrees(baseline: UiTree, current: UiTree): StructuralChange[] {
+export function diffTrees(baseline: UiTree, current: UiTree, limit = MAX_CHANGES): StructuralChange[] {
   const before = new Map(baseline.nodes.map((node) => [node.key, node]));
   const after = new Map(current.nodes.map((node) => [node.key, node]));
   const changes: StructuralChange[] = [];
@@ -100,7 +100,7 @@ export function diffTrees(baseline: UiTree, current: UiTree): StructuralChange[]
     resized: 2,
     moved: 3,
   };
-  return changes.sort((a, b) => order[a.kind] - order[b.kind]).slice(0, MAX_CHANGES);
+  return changes.sort((a, b) => order[a.kind] - order[b.kind]).slice(0, limit);
 }
 
 /**

@@ -33,8 +33,10 @@ In `.env.demo`, set `JWT_SECRET`, the demo URLs, and where production lives: `PR
 ```
 
 ```bash
-docker compose -f docker-compose.demo.yml --env-file .env.demo up -d --build
+./scripts/vision.sh up -d --build
 ```
+
+Always use `./scripts/vision.sh` instead of plain `docker compose`: it pins the project name and refuses to act on containers that are not Vision's (see DEPLOY.md, section 0).
 
 The UI is on `DEMO_UI_PORT` (18080 by default), the API on `DEMO_API_PORT` (14200). Production users and API keys work in the copy. The nightly branch cleanup is off in the demo.
 

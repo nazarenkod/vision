@@ -2,9 +2,14 @@
 # Everything is built from the folders of this repo and kept apart from the existing
 # instance: own compose project, own ports, own Postgres volume, own image folder.
 #
-#   cp .env.demo.example .env.demo   # then edit
-#   ./scripts/demo-clone-from-prod.sh # copy the production DB and images (optional)
-#   docker compose -f docker-compose.demo.yml --env-file .env.demo up -d --build
+# Run it only through ./scripts/vision.sh (see DEPLOY.md): the script pins the project
+# name and refuses to touch containers that are not Vision's.
+#
+#   cp .env.demo.example .env.demo      # then edit
+#   ./scripts/demo-clone-from-prod.sh   # copy the production DB and images (optional)
+#   ./scripts/vision.sh up -d --build
+#
+# CPU and memory are capped so Vision cannot starve production on a shared host.
 name: vision
 
 services:
@@ -18,6 +23,8 @@ services:
       REACT_APP_API_URL: ${DEMO_API_URL:-http://localhost:14200}
       VRT_VERSION: demo
       PORT: ${DEMO_UI_PORT:-18080}
+    cpus: ${DEMO_UI_CPUS:-0.5}
+    mem_limit: ${DEMO_UI_MEMORY:-256m}
     restart: unless-stopped
 
   api:
@@ -36,8 +43,12 @@ services:
       GEMINI_API_KEY: ${GEMINI_API_KEY:-}
       OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-http://host.docker.internal:11434}
       AI_DAILY_CALL_LIMIT: ${AI_DAILY_CALL_LIMIT:-500}
+      # image comparisons run in this many worker threads
+      DIFF_WORKERS_COUNT: ${DEMO_DIFF_WORKERS:-2}
       OIDC_ENABLED: ${OIDC_ENABLED:-false}
       LDAP_ENABLED: ${LDAP_ENABLED:-false}
+    cpus: ${DEMO_API_CPUS:-2}
+    mem_limit: ${DEMO_API_MEMORY:-3g}
     ports:
       - "${DEMO_API_PORT:-14200}:3000"
     extra_hosts:
@@ -69,6 +80,8 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
       POSTGRES_DB: ${POSTGRES_DB:-vrt_demo}
+    cpus: ${DEMO_POSTGRES_CPUS:-1}
+    mem_limit: ${DEMO_POSTGRES_MEMORY:-1g}
     ports:
       - "127.0.0.1:${DEMO_POSTGRES_PORT:-15432}:5432"
     volumes:

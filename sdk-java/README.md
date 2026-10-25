@@ -35,6 +35,21 @@ dependencies {
 ```
 [Available versions](https://github.com/Visual-Regression-Tracker/sdk-java/releases)
 
+### Vision build
+
+This copy adds one optional field, `TestRunOptions.uiTree`. Publish it and change only the
+version in your build (default `4.3.1-vision.1`; JDK 11–17 and Gradle 7 to build, runs on Java 11+):
+
+```bash
+gradle publishToMavenLocal
+```
+
+```bash
+gradle publish -PrepoUrl=https://nexus.company/repository/maven-releases/ -PrepoUser=USER -PrepoPassword=PASSWORD
+```
+
+`-PpublishGroup=...` and `-PpublishVersion=...` change the coordinates.
+
 More info about https://jitpack.io/
 
 ## Usage

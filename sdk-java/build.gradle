@@ -2,6 +2,7 @@ group 'io.visual-regression-tracker.sdk-java'
 version '4.3.1'
 
 apply plugin: 'java'
+apply plugin: 'maven-publish'
 apply plugin: 'jacoco'
 apply plugin: "io.freefair.lombok"
 apply plugin: "com.github.johnrengelman.shadow"
@@ -9,6 +10,10 @@ apply plugin: "com.github.johnrengelman.shadow"
 repositories {
     mavenCentral()
 }
+
+// the SDK runs on Java 11 and later, whatever JDK builds it
+sourceCompatibility = 11
+targetCompatibility = 11
 
 buildscript {
     repositories {
@@ -47,3 +52,32 @@ jacocoTestReport {
 }
 
 check.dependsOn jacocoTestReport
+
+// Vision: publish this build to a Maven repository so tests can use it.
+//   gradle publishToMavenLocal                     -> ~/.m2, for one machine
+//   gradle publish -PrepoUrl=https://nexus/... -PrepoUser=... -PrepoPassword=...
+// Coordinates match upstream's JitPack artifact, so only the version changes in a pom.
+publishing {
+    publications {
+        sdk(MavenPublication) {
+            groupId = findProperty('publishGroup') ?: 'com.github.Visual-Regression-Tracker'
+            artifactId = 'sdk-java'
+            version = findProperty('publishVersion') ?: "${project.version}-vision.1"
+            from components.java
+        }
+    }
+    repositories {
+        if (findProperty('repoUrl')) {
+            maven {
+                name = 'company'
+                url = findProperty('repoUrl')
+                if (findProperty('repoUser')) {
+                    credentials {
+                        username = findProperty('repoUser')
+                        password = findProperty('repoPassword')
+                    }
+                }
+            }
+        }
+    }
+}

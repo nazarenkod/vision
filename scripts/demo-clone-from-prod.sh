@@ -1,84 +1,164 @@
 #!/usr/bin/env bash
-# Copies the database and images of a running production VRT into the demo instance.
-# Production is only read: pg_dump and a file copy. Nothing is written back.
+# Copies the database and images of the running production VRT into Vision.
 #
-# Usage: ./scripts/demo-clone-from-prod.sh [path/to/.env.demo]
+# Production is only read:
+#   - the database by pg_dump, which runs in a read-only transaction, at the
+#     lowest CPU priority (nice 19) when the production container allows it;
+#   - images by reading files (copy, or hard links when PROD_IMAGES_MODE=link).
+# Every write goes to Vision's own Postgres container and ./demo-data, and only
+# after checking that the container is Vision's and the disk keeps a reserve
+# for production (10 GB or 5 % of the disk, whichever is more; VISION_DISK_RESERVE_GB).
+#
+# Usage: ./scripts/demo-clone-from-prod.sh [--yes]
 set -euo pipefail
+. "$(cd "$(dirname "$0")" && pwd)/lib/vision-safety.sh"
 
-ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-ENV_FILE="${1:-$ROOT/.env.demo}"
-COMPOSE=(docker compose -f "$ROOT/docker-compose.demo.yml" --env-file "$ENV_FILE")
+ASSUME_YES=false
+[ "${1:-}" = "--yes" ] && ASSUME_YES=true
 
-[ -f "$ENV_FILE" ] || { echo "No $ENV_FILE. Copy .env.demo.example to .env.demo first." >&2; exit 1; }
-set -a; . "$ENV_FILE"; set +a
+vision_load_env
+vision_guard
 
 POSTGRES_USER="${POSTGRES_USER:-postgres}"
 POSTGRES_DB="${POSTGRES_DB:-vrt_demo}"
-DEMO_IMAGES_DIR="$ROOT/demo-data/imageUploads"
-DUMP_FILE="$ROOT/demo-data/prod.dump"
-mkdir -p "$ROOT/demo-data" "$DEMO_IMAGES_DIR"
+DATA_DIR="$VISION_ROOT/demo-data"
+DEMO_IMAGES_DIR="$DATA_DIR/imageUploads"
+DUMP_FILE="$DATA_DIR/prod.dump"
+IMAGES_MODE="${PROD_IMAGES_MODE:-copy}"
+mkdir -p "$DATA_DIR" "$DEMO_IMAGES_DIR"
 
-echo "==> Starting demo Postgres"
-"${COMPOSE[@]}" up -d postgres
-until "${COMPOSE[@]}" exec -T postgres pg_isready -U "$POSTGRES_USER" -d "$POSTGRES_DB" >/dev/null 2>&1; do sleep 2; done
+# ---- what will be read, and how much space it needs --------------------------------
 
-echo "==> Dumping production database"
+# read-only SQL against production, as the production container's own user
+prod_sql() {
+  if [ -n "${PROD_PG_CONTAINER:-}" ]; then
+    docker exec "$PROD_PG_CONTAINER" sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -tAc "$0"' "$1"
+  else
+    docker run --rm --network host postgres:16-alpine psql "$PROD_DATABASE_URL" -tAc "$1"
+  fi
+}
+
+if [ -n "${PROD_PG_CONTAINER:-}" ]; then
+  docker inspect "$PROD_PG_CONTAINER" >/dev/null 2>&1 || vision_die "No container named $PROD_PG_CONTAINER (see docker ps)."
+  SOURCE="container $PROD_PG_CONTAINER"
+elif [ -n "${PROD_DATABASE_URL:-}" ]; then
+  SOURCE="$(echo "$PROD_DATABASE_URL" | sed -E 's#(://[^:/@]+):[^@]*@#\1:***@#')"
+else
+  vision_die "Set PROD_PG_CONTAINER or PROD_DATABASE_URL in $VISION_ENV_FILE"
+fi
+
+DB_BYTES="$(prod_sql 'select pg_database_size(current_database())' | tr -d '[:space:]')"
+[[ "$DB_BYTES" =~ ^[0-9]+$ ]] || vision_die "Could not read the size of the production database ($DB_BYTES)."
+DB_KB=$(( DB_BYTES / 1024 ))
+# the dump file plus the restored copy in Vision's Postgres, both under demo-data
+vision_require_space "$DATA_DIR" $(( DB_KB * 2 )) "the database copy"
+
+IMAGES_KB=0
+if [ -n "${PROD_IMAGES_DIR:-}" ]; then
+  [ -d "$PROD_IMAGES_DIR" ] || vision_die "PROD_IMAGES_DIR $PROD_IMAGES_DIR is not a folder."
+  PROD_IMAGES_DIR="$(cd "$PROD_IMAGES_DIR" && pwd -P)"
+  [ "$PROD_IMAGES_DIR" != "$(cd "$DEMO_IMAGES_DIR" && pwd -P)" ] ||
+    vision_die "PROD_IMAGES_DIR points at Vision's own image folder. Check .env.demo."
+  case "$IMAGES_MODE" in
+    copy)
+      IMAGES_KB="$(du -sk "$PROD_IMAGES_DIR" | awk '{print $1}')"
+      ALREADY_KB="$(du -sk "$DEMO_IMAGES_DIR" | awk '{print $1}')"
+      NEED_KB=$(( IMAGES_KB > ALREADY_KB ? IMAGES_KB - ALREADY_KB : 0 ))
+      if [ $(( $(vision_free_kb "$DATA_DIR") - NEED_KB - DB_KB * 2 )) -lt "$(vision_reserve_kb "$DATA_DIR")" ]; then
+        vision_die "Copying the images needs $(vision_human "$NEED_KB") and would leave too little disk for production. Free space, or set PROD_IMAGES_MODE=link in .env.demo (hard links: no extra space, see DEPLOY.md)."
+      fi
+      ;;
+    link)
+      [ "$(vision_fs_id "$PROD_IMAGES_DIR")" = "$(vision_fs_id "$DEMO_IMAGES_DIR")" ] ||
+        vision_die "PROD_IMAGES_MODE=link needs ./demo-data on the same disk as $PROD_IMAGES_DIR. Use copy, or move the repo."
+      ;;
+    *) vision_die "PROD_IMAGES_MODE must be copy or link" ;;
+  esac
+fi
+
+echo "Copy production VRT into Vision"
+echo "  read from production:  database ($SOURCE, $(vision_human "$DB_KB")), read-only"
+[ -n "${PROD_IMAGES_DIR:-}" ] &&
+  echo "                         images  ($PROD_IMAGES_DIR, $IMAGES_MODE$( [ "$IMAGES_MODE" = copy ] && echo ", $(vision_human "$IMAGES_KB")"))"
+echo "  replaced in Vision:    its database and ./demo-data/imageUploads (Vision's API stops meanwhile)"
+echo "  production is not written to and keeps running."
+if ! $ASSUME_YES; then
+  read -r -p "Type yes to continue: " answer
+  [ "$answer" = "yes" ] || { echo "Nothing done."; exit 0; }
+fi
+
+# ---- copy ----------------------------------------------------------------------------
+
+echo "==> Starting Vision's Postgres"
+vision_compose up -d postgres
+until vision_compose exec -T postgres pg_isready -U "$POSTGRES_USER" -d "$POSTGRES_DB" >/dev/null 2>&1; do sleep 2; done
+DEMO_PG="$(vision_container postgres)"
+[ -n "$DEMO_PG" ] || vision_die "Vision's Postgres did not start."
+[ "$DEMO_PG" != "$(docker inspect -f '{{.Id}}' "${PROD_PG_CONTAINER:-none}" 2>/dev/null || true)" ] ||
+  vision_die "Vision's Postgres and production's are the same container. Nothing was done."
+
+echo "==> Dumping production database (read-only)"
 if [ -n "${PROD_PG_CONTAINER:-}" ]; then
   # credentials come from the production container's own environment
-  docker exec "$PROD_PG_CONTAINER" sh -c 'pg_dump -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Fc' > "$DUMP_FILE"
-elif [ -n "${PROD_DATABASE_URL:-}" ]; then
-  docker run --rm --network host postgres:16-alpine pg_dump "$PROD_DATABASE_URL" -Fc > "$DUMP_FILE"
+  docker exec "$PROD_PG_CONTAINER" sh -c \
+    'if command -v nice >/dev/null; then exec nice -n 19 pg_dump -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Fc; else exec pg_dump -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Fc; fi' \
+    > "$DUMP_FILE.part"
 else
-  echo "Set PROD_PG_CONTAINER or PROD_DATABASE_URL in $ENV_FILE" >&2; exit 1
+  docker run --rm --network host postgres:16-alpine nice -n 19 pg_dump "$PROD_DATABASE_URL" -Fc > "$DUMP_FILE.part"
 fi
+mv "$DUMP_FILE.part" "$DUMP_FILE"
 echo "    $(du -h "$DUMP_FILE" | cut -f1) dump"
 
-echo "==> Restoring into demo database ($POSTGRES_DB)"
-# Run again later, this replaces the demo data: the API stops, and the schema is emptied so
-# tables of the fork's own migrations go too and the migrations apply cleanly on the next start.
-"${COMPOSE[@]}" stop api ui >/dev/null 2>&1 || true
-"${COMPOSE[@]}" exec -T postgres psql -v ON_ERROR_STOP=1 -q -U "$POSTGRES_USER" -d "$POSTGRES_DB" \
+echo "==> Restoring into Vision's database ($POSTGRES_DB)"
+# Run again later, this replaces Vision's data: the API stops, and the schema is emptied
+# so tables of the fork's own migrations go too and apply cleanly on the next start.
+vision_compose stop api ui >/dev/null 2>&1 || true
+docker exec -i "$DEMO_PG" psql -v ON_ERROR_STOP=1 -q -U "$POSTGRES_USER" -d "$POSTGRES_DB" \
   -c 'DROP SCHEMA IF EXISTS public CASCADE; CREATE SCHEMA public;'
-"${COMPOSE[@]}" exec -T postgres pg_restore --no-owner --no-privileges \
-  -U "$POSTGRES_USER" -d "$POSTGRES_DB" < "$DUMP_FILE" || echo "    pg_restore reported warnings (see above); the checks below tell whether the copy is usable"
+docker exec -i "$DEMO_PG" pg_restore --no-owner --no-privileges -U "$POSTGRES_USER" -d "$POSTGRES_DB" < "$DUMP_FILE" ||
+  echo "    pg_restore reported warnings (see above); the checks below tell whether the copy is usable"
+
+demo_sql() {
+  docker exec -i "$DEMO_PG" psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -tAc "$1" | tr -d '\r'
+}
 
 # The fork's migrations continue from the squashed upstream baseline of July 2023.
-# A production instance older than that has a different history and needs an upgrade first.
-if ! "${COMPOSE[@]}" exec -T postgres psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -tAc \
-  "select 1 from _prisma_migrations where migration_name = '20230730154101_init'" | grep -q 1; then
-  echo "!!  The copy has no 20230730154101_init migration: production VRT is older than 5.x." >&2
-  echo "!!  Upgrade production first, or start the demo on an empty database." >&2
-  exit 1
+if ! demo_sql "select 1 from _prisma_migrations where migration_name = '20230730154101_init'" | grep -q 1; then
+  vision_die "The copy has no 20230730154101_init migration: production VRT is older than 5.x. Upgrade production first, or start Vision on an empty database."
 fi
-
-# A production instance newer than the fork has migrations the fork does not know; the
-# fork's API would then run against a schema it was not built for.
-KNOWN="$(ls "$ROOT/backend/prisma/migrations" | grep -v migration_lock)"
-UNKNOWN="$("${COMPOSE[@]}" exec -T postgres psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -tAc \
-  "select migration_name from _prisma_migrations where finished_at is not null order by 1" \
-  | tr -d '\r' | grep -v '^$' | grep -vxF "$KNOWN" || true)"
+# A production newer than the fork has migrations the fork does not know.
+KNOWN="$(ls "$VISION_ROOT/backend/prisma/migrations" | grep -v migration_lock)"
+UNKNOWN="$(demo_sql "select migration_name from _prisma_migrations where finished_at is not null order by 1" |
+  grep -v '^$' | grep -vxF "$KNOWN" || true)"
 if [ -n "$UNKNOWN" ]; then
   echo "!!  Production has migrations this fork does not know (production VRT is newer):" >&2
   echo "$UNKNOWN" | sed 's/^/!!    /' >&2
-  echo "!!  Pull the newer upstream into the fork first (git subtree pull), then run this again." >&2
-  exit 1
+  vision_die "Pull the newer upstream into the fork first (git subtree pull), then run this again."
 fi
-echo "    production schema: $("${COMPOSE[@]}" exec -T postgres psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -tAc \
-  "select max(migration_name) from _prisma_migrations where finished_at is not null" | tr -d '\r')"
+echo "    production schema: $(demo_sql "select max(migration_name) from _prisma_migrations where finished_at is not null")"
 
-echo "==> Copying images"
+echo "==> Images"
 if [ -n "${PROD_IMAGES_DIR:-}" ]; then
-  # Hard links cost no space and are safe: VRT writes new files and never edits existing ones,
-  # and deleting a link in the demo leaves the production file in place.
-  if cp -al "$PROD_IMAGES_DIR/." "$DEMO_IMAGES_DIR/" 2>/dev/null; then
+  if [ "$IMAGES_MODE" = link ]; then
+    # Hard links cost no space and are safe: Vision writes new files only, never into an
+    # existing one, and deleting a link in Vision leaves the production file in place.
+    if command -v rsync >/dev/null; then
+      rsync -a --link-dest="$PROD_IMAGES_DIR/" "$PROD_IMAGES_DIR/" "$DEMO_IMAGES_DIR/"
+    else
+      cp -aln "$PROD_IMAGES_DIR/." "$DEMO_IMAGES_DIR/"
+    fi
     echo "    linked (no extra space)"
   else
-    rsync -a "$PROD_IMAGES_DIR/" "$DEMO_IMAGES_DIR/"
+    if command -v rsync >/dev/null; then
+      rsync -a "$PROD_IMAGES_DIR/" "$DEMO_IMAGES_DIR/"
+    else
+      cp -a "$PROD_IMAGES_DIR/." "$DEMO_IMAGES_DIR/"
+    fi
     echo "    copied"
   fi
 else
   echo "    PROD_IMAGES_DIR not set, skipping (screenshots of old runs will show as missing)"
 fi
 
-echo "==> Done. Start the demo with:"
-echo "    docker compose -f docker-compose.demo.yml --env-file $(basename "$ENV_FILE") up -d --build"
+echo "==> Done. Start Vision with:"
+echo "    ./scripts/vision.sh up -d --build"

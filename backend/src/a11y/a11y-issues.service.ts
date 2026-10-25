@@ -19,10 +19,15 @@ const OUTLINE = [255, 0, 128];
 const OUTLINE_WIDTH = 6;
 const OUTLINE_PADDING = 6;
 
-/** The screenshot with the element outlined, for the Jira attachment. */
-export function outlineElement(image: PNG, rect: Rect): Buffer {
+/** The screenshot with the elements outlined, for the Jira attachment. */
+export function outlineElement(image: PNG, rects: Rect | Rect[]): Buffer {
   const out = new PNG({ width: image.width, height: image.height });
   image.data.copy(out.data);
+  for (const rect of Array.isArray(rects) ? rects : [rects]) drawOutline(image, out, rect);
+  return PNG.sync.write(out);
+}
+
+function drawOutline(image: PNG, out: PNG, rect: Rect): void {
   const x0 = Math.max(0, rect.x - OUTLINE_PADDING);
   const y0 = Math.max(0, rect.y - OUTLINE_PADDING);
   const x1 = Math.min(image.width - 1, rect.x + rect.width + OUTLINE_PADDING);
@@ -34,7 +39,6 @@ export function outlineElement(image: PNG, rect: Rect): Buffer {
       if (onEdge) out.data.set([...OUTLINE, 255], (y * image.width + x) * 4);
     }
   }
-  return PNG.sync.write(out);
 }
 
 /**
@@ -58,9 +62,25 @@ export class A11yIssuesService {
     return this.prismaService.a11yIssueState.findMany({ where: { projectId, screenName } });
   }
 
+  /** Bugs filed anywhere in the project, to recognise the same problem on other screens. */
+  private async projectReported(projectId: string): Promise<A11yIssueState[]> {
+    return this.prismaService.a11yIssueState.findMany({
+      where: { projectId, status: 'reported', jiraKey: { not: null } },
+      orderBy: { createdAt: 'asc' },
+    });
+  }
+
+  private async review(testRun: Pick<TestRun, 'projectId' | 'name'>, report: A11yReport) {
+    const [states, reported] = await Promise.all([
+      this.statesFor(testRun.projectId, testRun.name),
+      this.projectReported(testRun.projectId),
+    ]);
+    return reviewReport(report, states, reported);
+  }
+
   /** Counts to keep on the row: new issues nobody has acted on, and all counted issues. */
   async countsFor(testRun: Pick<TestRun, 'projectId' | 'name'>, report: A11yReport) {
-    const reviewed = reviewReport(report, await this.statesFor(testRun.projectId, testRun.name));
+    const reviewed = await this.review(testRun, report);
     return { newCount: reviewed.summary.new, totalCount: reviewed.summary.total };
   }
 
@@ -73,26 +93,25 @@ export class A11yIssuesService {
   async getReviewedReport(testRunId: string): Promise<ReviewedA11yReport | null> {
     const testRun = await this.loadRun(testRunId);
     const report = await this.uiTreeService.loadReport(testRun.a11yReportName);
-    return report ? reviewReport(report, await this.statesFor(testRun.projectId, testRun.name)) : null;
+    return report ? this.review(testRun, report) : null;
   }
 
-  private async findViolation(testRun: TestRun, violationId: string): Promise<A11yViolation> {
-    const report = await this.uiTreeService.loadReport(testRun.a11yReportName);
-    const violation = report?.violations.find((v) => v.id === violationId);
-    if (!violation) throw new BadRequestException('This accessibility issue is not on this test run');
-    return violation;
-  }
-
-  /** Refreshes the counts of every run of this screen in the build after a decision changed. */
+  /**
+   * Refreshes the counts of the build's runs after a decision changed. A bug
+   * filed on one screen also covers the same problem on the others, so every
+   * screen of the build is looked at.
+   */
   private async refreshCounts(testRun: TestRun): Promise<void> {
     const runs = await this.prismaService.testRun.findMany({
-      where: { buildId: testRun.buildId, name: testRun.name, a11yReportName: { not: null } },
+      where: { buildId: testRun.buildId, a11yReportName: { not: null } },
     });
-    const states = await this.statesFor(testRun.projectId, testRun.name);
+    const reported = await this.projectReported(testRun.projectId);
+    const statesByScreen = new Map<string, A11yIssueState[]>();
     for (const run of runs) {
       const report = await this.uiTreeService.loadReport(run.a11yReportName);
       if (!report) continue;
-      const { summary } = reviewReport(report, states);
+      if (!statesByScreen.has(run.name)) statesByScreen.set(run.name, await this.statesFor(run.projectId, run.name));
+      const { summary } = reviewReport(report, statesByScreen.get(run.name), reported);
       if (summary.new === run.a11yNewCount && summary.total === run.a11yTotalCount) continue;
       const updated = await this.prismaService.testRun.update({
         where: { id: run.id },
@@ -104,41 +123,52 @@ export class A11yIssuesService {
 
   private async saveState(
     testRun: TestRun,
-    violationId: string,
+    violationIds: string[],
     status: A11yIssueStatus,
     data: { jiraKey?: string | null; jiraUrl?: string | null; comment?: string | null },
     userId?: string
   ): Promise<A11yIssueState> {
-    const where = {
-      projectId_screenName_violationId: { projectId: testRun.projectId, screenName: testRun.name, violationId },
-    };
-    const state = await this.prismaService.a11yIssueState.upsert({
-      where,
-      create: { projectId: testRun.projectId, screenName: testRun.name, violationId, status, userId, ...data },
-      update: { status, userId, ...data },
-    });
+    let last: A11yIssueState;
+    for (const violationId of violationIds) {
+      last = await this.prismaService.a11yIssueState.upsert({
+        where: {
+          projectId_screenName_violationId: { projectId: testRun.projectId, screenName: testRun.name, violationId },
+        },
+        create: { projectId: testRun.projectId, screenName: testRun.name, violationId, status, userId, ...data },
+        update: { status, userId, ...data },
+      });
+    }
     await this.refreshCounts(testRun);
-    return state;
+    return last;
+  }
+
+  private async findViolations(testRun: TestRun, violationIds: string[]): Promise<A11yViolation[]> {
+    const ids = [...new Set(violationIds)];
+    if (!ids.length) throw new BadRequestException('No accessibility issue given');
+    const report = await this.uiTreeService.loadReport(testRun.a11yReportName);
+    const found = ids.map((id) => report?.violations.find((v) => v.id === id));
+    if (found.some((v) => !v)) throw new BadRequestException('This accessibility issue is not on this test run');
+    return found;
   }
 
   /** Marks an issue as a false positive: it stays listed but stops counting and failing builds. */
-  async ignore(testRunId: string, violationId: string, comment: string | undefined, userId?: string) {
+  async ignore(testRunId: string, violationIds: string[], comment: string | undefined, userId?: string) {
     const testRun = await this.loadRun(testRunId);
-    await this.findViolation(testRun, violationId);
+    await this.findViolations(testRun, violationIds);
     return this.saveState(
       testRun,
-      violationId,
+      violationIds,
       'ignored',
       { comment: comment ?? null, jiraKey: null, jiraUrl: null },
       userId
     );
   }
 
-  /** Forgets the decision on an issue (undo of ignore or of a link). */
-  async reset(testRunId: string, violationId: string): Promise<void> {
+  /** Forgets the decision on issues (undo of ignore or of a link). */
+  async reset(testRunId: string, violationIds: string[]): Promise<void> {
     const testRun = await this.loadRun(testRunId);
     await this.prismaService.a11yIssueState.deleteMany({
-      where: { projectId: testRun.projectId, screenName: testRun.name, violationId },
+      where: { projectId: testRun.projectId, screenName: testRun.name, violationId: { in: violationIds } },
     });
     await this.refreshCounts(testRun);
   }
@@ -158,9 +188,9 @@ export class A11yIssuesService {
   }
 
   /** Records a Jira issue that already exists for this problem. */
-  async link(testRunId: string, violationId: string, jiraKey: string, userId?: string) {
+  async link(testRunId: string, violationIds: string[], jiraKey: string, userId?: string) {
     const testRun = await this.loadRun(testRunId);
-    await this.findViolation(testRun, violationId);
+    await this.findViolations(testRun, violationIds);
     const key = jiraKey.trim().toUpperCase();
     let url: string | null = null;
     try {
@@ -170,14 +200,14 @@ export class A11yIssuesService {
       if (error instanceof JiraError) throw new BadRequestException(error.message);
       // no Jira set up: keep the key as typed
     }
-    return this.saveState(testRun, violationId, 'reported', { jiraKey: key, jiraUrl: url, comment: null }, userId);
+    return this.saveState(testRun, violationIds, 'reported', { jiraKey: key, jiraUrl: url, comment: null }, userId);
   }
 
-  private async bugContext(testRun: TestRun, violation: A11yViolation) {
+  private async bugContext(testRun: TestRun, violations: A11yViolation[]) {
     const device = [testRun.device, testRun.os, testRun.viewport, testRun.browser].filter(Boolean).join(' · ');
     const url = `${process.env.APP_FRONTEND_URL}/${testRun.projectId}?buildId=${testRun.buildId}&testId=${testRun.id}`;
     const tree = await this.uiTreeService.load(testRun.uiTreeName).catch(() => null);
-    return bugText({ violation, testName: testRun.name, title: screenTitle(tree), device, url });
+    return bugText({ violations, testName: testRun.name, title: screenTitle(tree), device, url });
   }
 
   private async jiraCall<T>(call: () => Promise<T>): Promise<T> {
@@ -203,13 +233,13 @@ export class A11yIssuesService {
    */
   async prepareBug(
     testRunId: string,
-    violationId: string,
+    violationIds: string[],
     parentKey: string,
     issueTypeId?: string,
     fieldValues?: Record<string, unknown>
   ) {
     const testRun = await this.loadRun(testRunId);
-    const violation = await this.findViolation(testRun, violationId);
+    const violations = await this.findViolations(testRun, violationIds);
     const { jira, issueType: configuredType, linkType: configuredLink } = await this.jiraFor(testRun.projectId);
     return this.jiraCall(async () => {
       const parent = await jira.getIssue(parentKey.trim().toUpperCase());
@@ -221,7 +251,7 @@ export class A11yIssuesService {
         (issueTypeId && issueTypes.find((type) => type.id === issueTypeId)) ||
         defaultIssueType(issueTypes, configuredType);
       if (!chosen) throw new BadRequestException(`Project ${parent.projectKey} offers no issue type to create`);
-      const text = await this.bugContext(testRun, violation);
+      const text = await this.bugContext(testRun, violations);
       const meta = await jira.createFields(parent.projectKey, chosen.id);
       const bug = buildBugFields({
         meta,
@@ -267,12 +297,12 @@ export class A11yIssuesService {
    */
   async fileBug(
     testRunId: string,
-    violationId: string,
+    violationIds: string[],
     options: { parentKey: string; issueTypeId?: string; linkType?: string; fieldValues?: Record<string, unknown> },
     userId?: string
   ) {
     const testRun = await this.loadRun(testRunId);
-    const violation = await this.findViolation(testRun, violationId);
+    const violations = await this.findViolations(testRun, violationIds);
     const { jira, issueType: configuredType, linkType: configuredLink } = await this.jiraFor(testRun.projectId);
 
     let attachment: JiraAttachment | undefined;
@@ -281,7 +311,10 @@ export class A11yIssuesService {
       if (image) {
         attachment = {
           fileName: `${testRun.name.replace(/[^\p{L}\p{N}.-]+/gu, '_').slice(0, 80)}-a11y.png`,
-          content: outlineElement(image, violation.bounds),
+          content: outlineElement(
+            image,
+            violations.map((violation) => violation.bounds)
+          ),
           contentType: 'image/png',
         };
       }
@@ -296,7 +329,7 @@ export class A11yIssuesService {
         (options.issueTypeId && issueTypes.find((type) => type.id === options.issueTypeId)) ||
         defaultIssueType(issueTypes, configuredType);
       if (!issueType) throw new BadRequestException(`Project ${parent.projectKey} offers no issue type to create`);
-      const text = await this.bugContext(testRun, violation);
+      const text = await this.bugContext(testRun, violations);
       const bug = buildBugFields({
         meta: await jira.createFields(parent.projectKey, issueType.id),
         parent,
@@ -335,7 +368,7 @@ export class A11yIssuesService {
 
     const state = await this.saveState(
       testRun,
-      violationId,
+      violationIds,
       'reported',
       { jiraKey: created.key, jiraUrl: created.url, comment: null },
       userId

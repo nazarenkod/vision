@@ -35,7 +35,7 @@ import { CrossDevicePanel } from "./CrossDevicePanel";
 import { JiraBugDialog } from "./JiraBugDialog";
 import { tokens } from "../../theme";
 
-type JiraDialog = { mode: "link"; violation: A11yViolation } | null;
+type JiraDialog = { mode: "link"; violationIds: string[] } | null;
 
 const JIRA_KEY = /^[A-Za-z][A-Za-z0-9_]*-\d+$/;
 const shortId = (resourceId: string) => resourceId.replace(/^.*:id\//, "id/");
@@ -112,11 +112,14 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
   const [labels, setLabels] = React.useState<Record<string, string>>({});
   const [labelsLoading, setLabelsLoading] = React.useState(false);
   const [jiraDialog, setJiraDialog] = React.useState<JiraDialog>(null);
-  // issues to file Jira bugs for: one, or every open one of the screenshot
-  const [bugFor, setBugFor] = React.useState<A11yViolation[] | null>(null);
+  // problems to file Jira bugs for: one, or every open one of the screenshot
+  const [bugFor, setBugFor] = React.useState<{
+    problems: A11yViolation[][];
+    alreadyFiled?: A11yViolation[][];
+  } | null>(null);
   const [jiraKey, setJiraKey] = React.useState("");
   const [submitting, setSubmitting] = React.useState(false);
-  const [ignoreFor, setIgnoreFor] = React.useState<A11yViolation | null>(null);
+  const [ignoreFor, setIgnoreFor] = React.useState<string[] | null>(null);
   const [ignoreComment, setIgnoreComment] = React.useState("");
 
   React.useEffect(() => {
@@ -143,13 +146,52 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
     }
   };
 
+  // one card per problem: the same rule on one component, in the same state;
+  // the numbers are the ones drawn on the screenshot
+  const { problems, numberOf } = React.useMemo(() => {
+    const violations = report?.violations ?? [];
+    const byKey = new Map<string, A11yViolation[]>();
+    for (const violation of violations) {
+      const state =
+        violation.issue?.status === "reported"
+          ? `bug:${violation.issue.jiraKey}`
+          : violation.knownBug
+            ? `known:${violation.knownBug.jiraKey}`
+            : "open";
+      const key = `${violation.group}|${state}`;
+      byKey.set(key, [...(byKey.get(key) ?? []), violation]);
+    }
+    return {
+      problems: [...byKey.values()],
+      numberOf: new Map(violations.map((v, index) => [v.id, index + 1])),
+    };
+  }, [report]);
+  const open = problems.filter((problem) => !problem[0].issue);
+  const toFile = open.filter((problem) => !problem[0].knownBug?.jiraKey);
+  const toLink = open.filter((problem) => !!problem[0].knownBug?.jiraKey);
+
+  const linkKnown = () =>
+    run(
+      () =>
+        Promise.all(
+          toLink.map((problem) =>
+            insightsService.linkA11y(
+              testRun.id,
+              problem.map((v) => v.id),
+              problem[0].knownBug?.jiraKey as string,
+            ),
+          ),
+        ),
+      `Linked ${toLink.length} problems`,
+    );
+
   const submitJira = async () => {
     if (!jiraDialog) return;
     const key = jiraKey.trim();
     if (
       await run(
         () =>
-          insightsService.linkA11y(testRun.id, jiraDialog.violation.id, key),
+          insightsService.linkA11y(testRun.id, jiraDialog.violationIds, key),
         `Linked ${key.toUpperCase()}`,
       )
     ) {
@@ -195,14 +237,61 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
       "Ignore area added; the screenshot is compared again",
     );
 
-  const violationCard = (violation: A11yViolation, index: number) => {
-    const highlighted = violation.id === highlightedId;
+  const numberBadge = (number: number, isNew: boolean) => (
+    <Box
+      key={number}
+      sx={{
+        width: 20,
+        height: 20,
+        borderRadius: "50%",
+        flexShrink: 0,
+        bgcolor: isNew ? tokens.a11y : tokens.a11yExisting,
+        color: "#fff",
+        font: "600 11px/20px Inter, sans-serif",
+        textAlign: "center",
+      }}
+    >
+      {number}
+    </Box>
+  );
+
+  const jiraLink = (
+    key: string | null | undefined,
+    url: string | null | undefined,
+    prefix = "",
+  ) =>
+    url ? (
+      <Link
+        href={url}
+        target="_blank"
+        rel="noreferrer"
+        onClick={(e) => e.stopPropagation()}
+        color="inherit"
+      >
+        {prefix}
+        {key}
+      </Link>
+    ) : (
+      `${prefix}${key}`
+    );
+
+  const problemCard = (problem: A11yViolation[]) => {
+    const [violation] = problem;
+    const ids = problem.map((v) => v.id);
+    const several = problem.length > 1;
+    const highlighted = ids.includes(highlightedId ?? "");
     const reported = violation.issue?.status === "reported";
-    const isNew = violation.status === "new" && !reported;
+    const known = !violation.issue ? violation.knownBug : undefined;
+    const isNew =
+      problem.some((v) => v.status === "new") && !reported && !known;
+    const component = violation.group.slice(violation.group.indexOf("|") + 1);
+    const numbers = problem.map((v) => numberOf.get(v.id) ?? 0);
+    const suggested = problem.filter((v) => labels[v.id]);
     return (
       <Box
-        key={violation.id}
+        key={ids.join(",")}
         component="article"
+        data-testid="a11yProblem"
         onClick={() => onHighlight(violation)}
         sx={{
           cursor: "pointer",
@@ -217,19 +306,16 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
         }}
       >
         <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-          <Box
-            sx={{
-              width: 20,
-              height: 20,
-              borderRadius: "50%",
-              flexShrink: 0,
-              bgcolor: isNew ? tokens.a11y : tokens.a11yExisting,
-              color: "#fff",
-              font: "600 11px/20px Inter, sans-serif",
-              textAlign: "center",
-            }}
-          >
-            {index + 1}
+          <Box sx={{ display: "flex", gap: 0.25, flexShrink: 0 }}>
+            {numbers.slice(0, 3).map((number) => numberBadge(number, isNew))}
+            {numbers.length > 3 && (
+              <Typography
+                component="span"
+                sx={{ fontSize: 11, color: tokens.textSecondary, ml: 0.25 }}
+              >
+                +{numbers.length - 3}
+              </Typography>
+            )}
           </Box>
           <Typography
             sx={{ fontWeight: 600, fontSize: 14, flex: 1, minWidth: 0 }}
@@ -246,9 +332,51 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
             {violation.severity.toUpperCase()}
           </Typography>
         </Box>
-        <Typography sx={{ fontSize: 13, color: tokens.textSecondary }}>
-          {violation.message}
-        </Typography>
+        {several ? (
+          <>
+            <Typography sx={{ fontSize: 13, color: tokens.textSecondary }}>
+              The same issue on {problem.length} elements of{" "}
+              <Box component="code" sx={{ font: `500 12px ${tokens.mono}` }}>
+                {component}
+              </Box>
+              : one problem, one bug.
+            </Typography>
+            <Box
+              component="ol"
+              sx={{ m: 0, pl: 0, listStyle: "none", display: "grid", gap: 0.5 }}
+            >
+              {problem.map((item) => (
+                <Box
+                  component="li"
+                  key={item.id}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onHighlight(item);
+                  }}
+                  sx={{
+                    display: "flex",
+                    gap: 0.75,
+                    alignItems: "baseline",
+                    fontSize: 12.5,
+                    color: tokens.textSecondary,
+                    borderRadius: 1,
+                    px: 0.5,
+                    bgcolor:
+                      item.id === highlightedId ? tokens.subtle : "transparent",
+                    "&:hover": { bgcolor: tokens.subtle },
+                  }}
+                >
+                  <b style={{ color: tokens.text }}>{numberOf.get(item.id)}</b>
+                  <span>{item.message}</span>
+                </Box>
+              ))}
+            </Box>
+          </>
+        ) : (
+          <Typography sx={{ fontSize: 13, color: tokens.textSecondary }}>
+            {violation.message}
+          </Typography>
+        )}
         <Box
           sx={{
             display: "flex",
@@ -257,13 +385,13 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
             alignItems: "center",
           }}
         >
-          {!reported && (
+          {!reported && !known && (
             <StatusPill
               tone={isNew ? "changed" : "neutral"}
-              label={violation.status === "new" ? "New" : "Existing"}
+              label={isNew ? "New" : "Existing"}
             />
           )}
-          {violation.resourceId && (
+          {!several && violation.resourceId && (
             <Box
               component="code"
               sx={{
@@ -279,26 +407,36 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
           {reported && (
             <StatusPill
               tone="passed"
-              label={
-                violation.issue?.jiraUrl ? (
-                  <Link
-                    href={violation.issue.jiraUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    onClick={(e) => e.stopPropagation()}
-                    color="inherit"
-                  >
-                    Bug {violation.issue.jiraKey}
-                  </Link>
-                ) : (
-                  `Bug ${violation.issue?.jiraKey}`
-                )
-              }
+              label={jiraLink(
+                violation.issue?.jiraKey,
+                violation.issue?.jiraUrl,
+                "Bug ",
+              )}
             />
           )}
         </Box>
-        {labels[violation.id] && (
+        {known && (
           <Box
+            data-testid="a11yKnownBug"
+            sx={{
+              fontSize: 13,
+              bgcolor: tokens.subtle,
+              border: `1px solid ${tokens.border}`,
+              borderRadius: 2,
+              px: 1,
+              py: 0.5,
+            }}
+          >
+            Filed already as <b>{jiraLink(known.jiraKey, known.jiraUrl)}</b>{" "}
+            {known.screenName === testRun.name
+              ? "for another element of this screen"
+              : `on screen “${known.screenName}”`}
+            . Link it here instead of filing a duplicate.
+          </Box>
+        )}
+        {suggested.map((item) => (
+          <Box
+            key={item.id}
             sx={{
               display: "flex",
               gap: 1,
@@ -325,21 +463,22 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
               AI
             </Box>
             <span>
+              {several && <b>{numberOf.get(item.id)}: </b>}
               Suggested{" "}
               {report?.format === "appium-ios"
                 ? "accessibilityLabel"
                 : "contentDescription"}
-              : <b>“{labels[violation.id]}”</b>
+              : <b>“{labels[item.id]}”</b>
             </span>
             <Button
               size="small"
               sx={{ ml: "auto" }}
-              onClick={() => copy(labels[violation.id])}
+              onClick={() => copy(labels[item.id])}
             >
               Copy
             </Button>
           </Box>
-        )}
+        ))}
         {canEdit && (
           <Box
             sx={{ display: "flex", flexWrap: "wrap", gap: 0.75 }}
@@ -350,7 +489,7 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
                 size="small"
                 onClick={() =>
                   run(
-                    () => insightsService.resetA11y(testRun.id, violation.id),
+                    () => insightsService.resetA11y(testRun.id, ids),
                     "Unlinked",
                   )
                 }
@@ -359,20 +498,40 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
               </Button>
             ) : (
               <>
-                {jiraReady && (
+                {known?.jiraKey && (
                   <Button
                     size="small"
                     variant="outlined"
-                    onClick={() => setBugFor([violation])}
+                    disabled={submitting}
+                    onClick={() =>
+                      run(
+                        () =>
+                          insightsService.linkA11y(
+                            testRun.id,
+                            ids,
+                            known.jiraKey as string,
+                          ),
+                        `Linked ${known.jiraKey}`,
+                      )
+                    }
                   >
-                    Create Jira bug
+                    Link to {known.jiraKey}
+                  </Button>
+                )}
+                {jiraReady && (
+                  <Button
+                    size="small"
+                    variant={known ? "text" : "outlined"}
+                    onClick={() => setBugFor({ problems: [problem] })}
+                  >
+                    {known ? "Create a separate bug" : "Create Jira bug"}
                   </Button>
                 )}
                 <Button
                   size="small"
                   onClick={() => {
                     setJiraKey("");
-                    setJiraDialog({ mode: "link", violation });
+                    setJiraDialog({ mode: "link", violationIds: ids });
                   }}
                 >
                   Link existing
@@ -382,7 +541,7 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
                   sx={{ color: tokens.textSecondary }}
                   onClick={() => {
                     setIgnoreComment("");
-                    setIgnoreFor(violation);
+                    setIgnoreFor(ids);
                   }}
                 >
                   False positive
@@ -445,22 +604,29 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
             here.
           </Alert>
         )}
-        {jiraReady &&
-          canEdit &&
-          report.violations.filter((v) => !v.issue).length > 1 && (
-            <Button
-              size="small"
-              variant="outlined"
-              sx={{ alignSelf: "flex-start" }}
-              onClick={() =>
-                setBugFor(report.violations.filter((v) => !v.issue))
-              }
-              data-testid="fileAllBugs"
-            >
-              Create Jira bugs for all{" "}
-              {report.violations.filter((v) => !v.issue).length} open issues
-            </Button>
-          )}
+        {canEdit && toFile.length + toLink.length > 1 && (
+          <Button
+            size="small"
+            variant="outlined"
+            sx={{ alignSelf: "flex-start" }}
+            disabled={submitting || (!jiraReady && toFile.length > 0)}
+            onClick={() =>
+              toFile.length
+                ? setBugFor({ problems: toFile, alreadyFiled: toLink })
+                : linkKnown()
+            }
+            data-testid="fileAllBugs"
+          >
+            {toFile.length
+              ? toFile.length === 1
+                ? "Create a Jira bug for the open problem"
+                : `Create Jira bugs for all ${toFile.length} open problems`
+              : `Link ${toLink.length} problems to their bugs`}
+            {toFile.length > 0 && toLink.length > 0
+              ? `, link ${toLink.length} filed already`
+              : ""}
+          </Button>
+        )}
         {report.resolved.map((item) => (
           <Alert key={item.violationId} severity="success" sx={{ py: 0 }}>
             {item.jiraUrl ? (
@@ -489,7 +655,7 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
             No accessibility issues found on this screen.
           </Typography>
         )}
-        {report.violations.map(violationCard)}
+        {problems.map(problemCard)}
         {report.ignored.length > 0 && (
           <Box
             component="details"
@@ -522,7 +688,7 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
                     onClick={() =>
                       run(
                         () =>
-                          insightsService.resetA11y(testRun.id, violation.id),
+                          insightsService.resetA11y(testRun.id, [violation.id]),
                         "Restored",
                       )
                     }
@@ -977,7 +1143,8 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
       {bugFor && (
         <JiraBugDialog
           testRun={testRun}
-          violations={bugFor}
+          problems={bugFor.problems}
+          alreadyFiled={bugFor.alreadyFiled}
           onClose={() => setBugFor(null)}
           onDone={onReportChanged}
         />
@@ -1016,7 +1183,7 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
                   () =>
                     insightsService.ignoreA11y(
                       testRun.id,
-                      ignoreFor.id,
+                      ignoreFor,
                       ignoreComment || undefined,
                     ),
                   "Marked as false positive",

@@ -72,17 +72,21 @@ const mostUsed = (key: string, options: string[]): string | null => {
 };
 
 /**
- * Files Jira bugs for one accessibility issue or for every open one of the
- * screenshot, under a task: as its sub-task, or linked to it. Issue and link
- * types come from the task's Jira project, the most used ones first; the task
- * is remembered for the screen.
+ * Files Jira bugs for one problem or for every open one of the screenshot, one
+ * bug per problem (an issue on every element of one component), under a task:
+ * as its sub-task, or linked to it. Problems filed already elsewhere get linked
+ * to that bug instead. Issue and link types come from the task's Jira project,
+ * the most used ones first; the task is remembered for the screen.
  */
 export const JiraBugDialog: React.FunctionComponent<{
   testRun: TestRun;
-  violations: A11yViolation[];
+  // each problem is the issues of one rule on one component
+  problems: A11yViolation[][];
+  // problems with a bug filed on another screen: linked to it, not filed again
+  alreadyFiled?: A11yViolation[][];
   onClose: () => void;
   onDone: () => void;
-}> = ({ testRun, violations, onClose, onDone }) => {
+}> = ({ testRun, problems, alreadyFiled = [], onClose, onDone }) => {
   const { enqueueSnackbar } = useSnackbar();
   const { selectedProjectId } = useProjectState();
   const projectId = selectedProjectId ?? "";
@@ -108,7 +112,8 @@ export const JiraBugDialog: React.FunctionComponent<{
     },
   );
   const keyValid = JIRA_KEY.test(parentKey.trim());
-  const first = violations[0];
+  const first = problems[0];
+  const ids = (problem: A11yViolation[]) => problem.map((v) => v.id);
 
   // Jira is asked once the key looks complete, and again when the type changes
   const preparedFor = React.useRef("");
@@ -128,7 +133,7 @@ export const JiraBugDialog: React.FunctionComponent<{
       try {
         const result = await insightsService.prepareA11yBug(
           testRun.id,
-          first.id,
+          ids(first),
           key,
           issueTypeId,
         );
@@ -219,13 +224,24 @@ export const JiraBugDialog: React.FunctionComponent<{
     if (!issueType.subtask && linkType)
       countUse(usageKey(projectId, "linkType"), linkType);
 
+    const linked: string[] = [];
+    for (const problem of alreadyFiled) {
+      const known = problem[0].knownBug?.jiraKey;
+      if (!known) continue;
+      try {
+        await insightsService.linkA11y(testRun.id, ids(problem), known);
+        linked.push(known);
+      } catch (e) {
+        enqueueSnackbar(`${problem[0].title}: ${e}`, { variant: "error" });
+      }
+    }
     const created: string[] = [];
     setProgress(0);
-    for (const violation of violations) {
+    for (const problem of problems) {
       try {
         const result = await insightsService.fileA11yBug(
           testRun.id,
-          violation.id,
+          ids(problem),
           {
             parentKey: key,
             issueTypeId: issueType.id,
@@ -240,7 +256,7 @@ export const JiraBugDialog: React.FunctionComponent<{
           }),
         );
       } catch (e) {
-        enqueueSnackbar(`${violation.title}: ${e}`, { variant: "error" });
+        enqueueSnackbar(`${problem[0].title}: ${e}`, { variant: "error" });
       }
       setProgress(created.length);
     }
@@ -248,8 +264,13 @@ export const JiraBugDialog: React.FunctionComponent<{
     if (created.length) {
       enqueueSnackbar(`Filed ${created.join(", ")}`, { variant: "success" });
     }
+    if (linked.length) {
+      enqueueSnackbar(`Linked to ${[...new Set(linked)].join(", ")}`, {
+        variant: "success",
+      });
+    }
     onDone();
-    if (created.length === violations.length) onClose();
+    if (created.length === problems.length) onClose();
   };
 
   return (
@@ -260,8 +281,8 @@ export const JiraBugDialog: React.FunctionComponent<{
       maxWidth="sm"
     >
       <DialogTitle>
-        {violations.length > 1
-          ? `Create Jira bugs for ${violations.length} issues`
+        {problems.length > 1
+          ? `Create Jira bugs for ${problems.length} problems`
           : "Create Jira bug"}
       </DialogTitle>
       <DialogContent
@@ -357,8 +378,8 @@ export const JiraBugDialog: React.FunctionComponent<{
               }}
             >
               <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                {violations.length > 1
-                  ? `${prep.summary} and ${violations.length - 1} more`
+                {problems.length > 1
+                  ? `${prep.summary} and ${problems.length - 1} more`
                   : prep.summary}
               </Typography>
               {prep.filled.map((item) => (
@@ -375,8 +396,21 @@ export const JiraBugDialog: React.FunctionComponent<{
               <Typography variant="body2" color="textSecondary">
                 Description: service, screen, actual and expected result,
                 device, element; screenshot with the problem outlined.
+                {problems.some((problem) => problem.length > 1) &&
+                  " One bug per problem: the same issue on several elements of one component goes into one bug with all of them."}
               </Typography>
             </Box>
+            {alreadyFiled.length > 0 && (
+              <Alert severity="info" sx={{ py: 0 }}>
+                Filed already, will be linked instead:{" "}
+                {alreadyFiled
+                  .map(
+                    (problem) =>
+                      `${problem[0].title} → ${problem[0].knownBug?.jiraKey}`,
+                  )
+                  .join("; ")}
+              </Alert>
+            )}
             {cannotAsk.length > 0 && (
               <Alert severity="warning">
                 Jira requires fields Vision cannot ask for here:{" "}
@@ -390,10 +424,10 @@ export const JiraBugDialog: React.FunctionComponent<{
           <Box>
             <LinearProgress
               variant="determinate"
-              value={(progress / violations.length) * 100}
+              value={(progress / problems.length) * 100}
             />
             <Typography variant="caption" color="textSecondary">
-              {progress} of {violations.length}
+              {progress} of {problems.length}
             </Typography>
           </Box>
         )}
@@ -403,8 +437,8 @@ export const JiraBugDialog: React.FunctionComponent<{
           Cancel
         </Button>
         <Button variant="contained" disabled={!canCreate} onClick={create}>
-          {violations.length > 1
-            ? `Create ${violations.length} bugs`
+          {problems.length > 1
+            ? `Create ${problems.length} bugs`
             : "Create bug"}
         </Button>
       </DialogActions>

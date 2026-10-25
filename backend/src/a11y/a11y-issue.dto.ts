@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsNotEmpty, IsObject, IsOptional, IsString, Matches, MaxLength } from 'class-validator';
+import { ArrayMaxSize, IsArray, IsNotEmpty, IsObject, IsOptional, IsString, Matches, MaxLength } from 'class-validator';
 
 const JIRA_KEY = /^[A-Za-z][A-Za-z0-9_]*-\d+$/;
 
@@ -8,7 +8,20 @@ export class A11yIssueRefDto {
   @IsString()
   @IsNotEmpty()
   violationId: string;
+
+  @ApiPropertyOptional({
+    description: 'Every issue of one problem (same rule, same component); acted on together, one bug for all',
+  })
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(100)
+  @IsString({ each: true })
+  violationIds?: string[];
 }
+
+/** The issues a request acts on: the whole problem when given, else the one issue. */
+export const issueIds = (body: A11yIssueRefDto): string[] =>
+  body.violationIds?.length ? body.violationIds : [body.violationId];
 
 export class IgnoreA11yIssueDto extends A11yIssueRefDto {
   @ApiPropertyOptional()

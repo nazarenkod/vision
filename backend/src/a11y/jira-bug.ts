@@ -46,39 +46,56 @@ const escapeWiki = (value: string) => value.replace(/\|/g, '/').replace(/[{}]/g,
 
 /** Summary and description of the bug, following the team's bug template. */
 export function bugText(input: {
-  violation: A11yViolation;
+  // one problem: the same rule on one or more elements of a component
+  violations: A11yViolation[];
   testName: string;
   title: string | null;
   device: string;
   url: string;
 }): { summary: string; description: string; block: string; screen: string } {
-  const { violation, testName, title, device, url } = input;
+  const { violations, testName, title, device, url } = input;
+  const [first] = violations;
   const block = functionalBlock(testName);
   const screen = title || nameAfterBlock(testName) || testName;
-  const element = violation.label || violation.resourceId || violation.className;
+  const names = violations.map((violation) => violation.label || violation.resourceId || violation.className);
+  const elements = names.length > 2 ? `${names.slice(0, 2).join(', ')} +${names.length - 2}` : names.join(', ');
   const where = screen === block ? block : `${block}. ${screen}`;
-  const summary = `[A11y] ${where}: ${violation.title} (${element})`.slice(0, 250);
+  const summary = `[A11y] ${where}: ${first.title} (${elements})`.slice(0, 250);
   const rows: Array<[string, string]> = [
     ['Сервіс / функціональний блок', block],
     ['Екран', screen],
     ['Перевірка', testName],
     ['Пристрій', device || '—'],
-    ['Елемент', `${violation.className}${violation.resourceId ? ` (${violation.resourceId})` : ''}`],
-    ['Озвучується як', violation.label ? `"${violation.label}"` : 'нічого'],
-    ['Правило', `${violation.title} (${violation.rule})`],
+    ['Правило', `${first.title} (${first.rule})`],
+    ...(violations.length === 1
+      ? ([
+          ['Елемент', `${first.className}${first.resourceId ? ` (${first.resourceId})` : ''}`],
+          ['Озвучується як', first.label ? `"${first.label}"` : 'нічого'],
+        ] as Array<[string, string]>)
+      : []),
   ];
-  const details = Object.entries(violation.details ?? {}).map(([key, value]) => `* ${key}: ${value}`);
+  const actual =
+    violations.length === 1
+      ? [first.message]
+      : [
+          `Та сама проблема на ${violations.length} елементах одного компонента:`,
+          ...violations.map((v) => `# ${v.message}`),
+        ];
+  const details =
+    violations.length === 1 ? Object.entries(first.details ?? {}).map(([key, value]) => `* ${key}: ${value}`) : [];
   const description = [
     'h3. Фактичний результат',
-    violation.message,
+    ...actual,
     '',
     'h3. Очікуваний результат',
-    EXPECTED[violation.rule] ?? 'Елемент відповідає вимогам доступності.',
+    EXPECTED[first.rule] ?? 'Елемент відповідає вимогам доступності.',
     '',
     ...rows.map(([key, value]) => `||${key}|${escapeWiki(value)}|`),
     ...(details.length ? ['', '*Деталі*', ...details] : []),
     '',
-    'На скріншоті у вкладенні проблемний елемент обведено.',
+    violations.length === 1
+      ? 'На скріншоті у вкладенні проблемний елемент обведено.'
+      : 'На скріншоті у вкладенні проблемні елементи обведено.',
     `[Відкрити у Vision|${url}]`,
   ].join('\n');
   return { summary, description, block, screen };

@@ -60,7 +60,7 @@ describe('functionalBlock and screenTitle', () => {
 describe('bugText', () => {
   it('fills the template: service, screen, actual and expected result', () => {
     const text = bugText({
-      violation,
+      violations: [violation],
       testName: 'Кредитна сила - Кредит готівкою. Деталі договору',
       title: 'Адреса проживання',
       device: 'PIXEL_4_XL · 15',
@@ -76,11 +76,45 @@ describe('bugText', () => {
   });
 
   it('falls back to the check name for the screen when the tree has no title', () => {
-    const text = bugText({ violation, testName: 'Конверти. Текст суми', title: null, device: '', url: 'u' });
+    const text = bugText({
+      violations: [violation],
+      testName: 'Конверти. Текст суми',
+      title: null,
+      device: '',
+      url: 'u',
+    });
     expect(text.screen).toBe('Текст суми');
-    expect(bugText({ violation, testName: 'Payments', title: null, device: '', url: 'u' }).summary).toBe(
+    expect(bugText({ violations: [violation], testName: 'Payments', title: null, device: '', url: 'u' }).summary).toBe(
       '[A11y] Payments: Touch target too small (Надати дані)'
     );
+  });
+});
+
+describe('bugText for one problem on several elements', () => {
+  it('names them all once and lists every element as the actual result', () => {
+    const second = {
+      ...violation,
+      id: 'touch-target|id:b2',
+      label: 'Надати дані 2',
+      message: 'Button 2 is 347 × 40 dp.',
+    };
+    const third = {
+      ...violation,
+      id: 'touch-target|id:b3',
+      label: 'Надати дані 3',
+      message: 'Button 3 is 347 × 40 dp.',
+    };
+    const text = bugText({
+      violations: [violation, second, third],
+      testName: 'Адреси. Екран',
+      title: null,
+      device: '',
+      url: 'u',
+    });
+    expect(text.summary).toBe('[A11y] Адреси. Екран: Touch target too small (Надати дані, Надати дані 2 +1)');
+    expect(text.description).toContain('Та сама проблема на 3 елементах одного компонента:');
+    expect(text.description).toContain('# Button 3 is 347 × 40 dp.');
+    expect(text.description).toContain('проблемні елементи обведено');
   });
 });
 

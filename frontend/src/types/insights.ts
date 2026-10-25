@@ -35,6 +35,14 @@ export interface A11yViolation {
   details?: Record<string, number | string | boolean>;
   status: "new" | "existing";
   issue?: A11yIssueInfo;
+  // the problem it is: same rule on the same component (rule|component)
+  group: string;
+  // a bug filed for the same problem, on this or another screen
+  knownBug?: {
+    jiraKey: string | null;
+    jiraUrl: string | null;
+    screenName: string;
+  };
 }
 
 export interface A11yReport {
@@ -52,7 +60,7 @@ export interface A11yReport {
   };
   violations: A11yViolation[];
   ignored: A11yViolation[];
-  fixed: Omit<A11yViolation, "status" | "issue">[];
+  fixed: Omit<A11yViolation, "status" | "issue" | "group" | "knownBug">[];
   resolved: Array<{
     violationId: string;
     jiraKey: string | null;

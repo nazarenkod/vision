@@ -93,7 +93,7 @@ Without a device, upload PNG + XML pairs exported from Appium Inspector:
 1. **Projects** shows the same layout as the other internal tools.
 2. Open a build. **Changes** shows, for example, “Button "Pay" → "Send"” on 2 screens as one card. Approve all with one click. The status-bar-only card offers “Ignore status bar”.
 3. Open a screenshot. Accessibility issues are numbered on the screen. Click one to zoom to it.
-4. **Create Jira bug**: type the parent task and the bug is filed with screen, element and an outlined screenshot. The issue now shows “Bug MOB-…” and no longer counts as new.
+4. **Create Jira bug**: type the parent task and the bug is filed with screen, element and an outlined screenshot. The issue now shows “Bug MOB-…” and no longer counts as new. The same issue on several elements of one component (tab_0…tab_3, or every `…#PbButton`) is one card and one bug; on another screen with the same tab bar the card says “Filed already as MOB-… on screen “Home”” and offers to link it instead of a duplicate.
 5. Mark another issue as a **False positive**. It stops counting in this and every later build.
 6. Upload a build where the issue is fixed. The review says the bug can be closed.
 7. A component group: “Component id/bottom_nav, changed the same way on 4 screens”. Screens that changed elsewhere too are listed apart.

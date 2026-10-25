@@ -1,6 +1,6 @@
 import { A11yIssueState } from '@prisma/client';
 import { PNG } from 'pngjs';
-import { reviewReport } from './a11y-issues';
+import { componentOf, problemOf, reviewReport } from './a11y-issues';
 import { A11yReport, A11yViolation } from './a11y.types';
 import { JiraClient, JiraError } from './jira.client';
 import { outlineElement } from './a11y-issues.service';
@@ -268,5 +268,71 @@ describe('outlineElement', () => {
     expect(at(34, 50)).toEqual([255, 0, 128]);
     expect(at(50, 50)).toEqual([255, 255, 255]);
     expect(at(5, 5)).toEqual([255, 255, 255]);
+  });
+});
+
+describe('problemOf', () => {
+  it('sees one component in a Compose test tag, an indexed id or an element class', () => {
+    expect(componentOf('id:Надати дані про адресу проживання#PbButton')).toBe('PbButton');
+    expect(componentOf('id:Надати дані про адресу реєстрації#PbButton')).toBe('PbButton');
+    expect(componentOf('id:com.bank.app:id/tab_0')).toBe('tab');
+    expect(componentOf('id:com.bank.app:id/tab_1#2')).toBe('tab');
+    expect(componentOf('ImageButton:Help')).toBe('ImageButton');
+    expect(componentOf('path:FrameLayout/LinearLayout[2]/android.widget.ImageView[1]')).toBe('ImageView');
+    expect(problemOf('touch-target|id:a#PbButton')).toBe('touch-target|PbButton');
+    expect(problemOf('missing-label|id:a#PbButton')).not.toBe(problemOf('touch-target|id:a#PbButton'));
+  });
+});
+
+describe('reviewReport with bugs on other screens', () => {
+  const state = (fields: Record<string, unknown>) =>
+    ({
+      id: 's',
+      projectId: 'p',
+      status: 'reported',
+      jiraKey: 'P24MOB-20691',
+      jiraUrl: 'u',
+      comment: null,
+      userId: null,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      ...fields,
+    }) as never;
+  const report = {
+    format: 'appium-android',
+    pixelsPerDp: 2.6,
+    pixelsPerDpEstimated: false,
+    baselineChecked: true,
+    summary: { new: 2, existing: 0, fixed: 0, total: 2 },
+    violations: [
+      { id: 'touch-target|id:Адреса реєстрації#PbButton', rule: 'touch-target', severity: 'warning', status: 'new' },
+      { id: 'missing-label|id:com.bank:id/icon', rule: 'missing-label', severity: 'error', status: 'new' },
+    ],
+    fixed: [],
+  } as never;
+
+  it('marks the same problem filed on another screen as known, not new', () => {
+    const reviewed = reviewReport(
+      report,
+      [],
+      [state({ screenName: 'Адреси проживання', violationId: 'touch-target|id:Адреса проживання#PbButton' })]
+    );
+    expect(reviewed.violations[0]).toMatchObject({
+      group: 'touch-target|PbButton',
+      knownBug: { jiraKey: 'P24MOB-20691', screenName: 'Адреси проживання' },
+    });
+    expect(reviewed.violations[1].knownBug).toBeUndefined();
+    expect(reviewed.summary).toMatchObject({ new: 1, total: 2 });
+  });
+
+  it('prefers the bug filed on this screen over an older one elsewhere', () => {
+    const elsewhere = state({ screenName: 'Платежі', violationId: 'touch-target|id:Pay#PbButton' });
+    const here = state({
+      screenName: 'Адреси',
+      jiraKey: 'P24MOB-30000',
+      violationId: 'touch-target|id:Інша адреса#PbButton',
+    });
+    const reviewed = reviewReport(report, [here], [elsewhere, here]);
+    expect(reviewed.violations[0].knownBug).toMatchObject({ jiraKey: 'P24MOB-30000', screenName: 'Адреси' });
   });
 });

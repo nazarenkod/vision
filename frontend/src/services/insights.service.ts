@@ -28,6 +28,12 @@ const post = <T>(path: string, body: unknown): Promise<T> =>
   }).then(handleResponse);
 
 /** Change groups, accessibility, element-level diff, Jira and AI. */
+// the first id keeps older servers working; the list is the whole problem
+const issueRef = (violationIds: string[]) => ({
+  violationId: violationIds[0],
+  violationIds,
+});
+
 export const insightsService = {
   getGroups: (buildId: string) =>
     get<ChangeGroup[]>(`/test-runs/groups?buildId=${buildId}`),
@@ -43,21 +49,28 @@ export const insightsService = {
     get<Array<DeviceProfile & { checks: number }>>(
       `/projects/${projectId}/devices`,
     ),
-  ignoreA11y: (testRunId: string, violationId: string, comment?: string) =>
-    post(`/test-runs/${testRunId}/a11y/ignore`, { violationId, comment }),
-  resetA11y: (testRunId: string, violationId: string) =>
-    post(`/test-runs/${testRunId}/a11y/reset`, { violationId }),
-  linkA11y: (testRunId: string, violationId: string, jiraKey: string) =>
-    post(`/test-runs/${testRunId}/a11y/link`, { violationId, jiraKey }),
+  // each takes every issue of one problem (same rule, same component)
+  ignoreA11y: (testRunId: string, violationIds: string[], comment?: string) =>
+    post(`/test-runs/${testRunId}/a11y/ignore`, {
+      ...issueRef(violationIds),
+      comment,
+    }),
+  resetA11y: (testRunId: string, violationIds: string[]) =>
+    post(`/test-runs/${testRunId}/a11y/reset`, issueRef(violationIds)),
+  linkA11y: (testRunId: string, violationIds: string[], jiraKey: string) =>
+    post(`/test-runs/${testRunId}/a11y/link`, {
+      ...issueRef(violationIds),
+      jiraKey,
+    }),
   prepareA11yBug: (
     testRunId: string,
-    violationId: string,
+    violationIds: string[],
     parentKey: string,
     issueTypeId?: string,
     fieldValues?: Record<string, unknown>,
   ) =>
     post<JiraBugPreparation>(`/test-runs/${testRunId}/a11y/jira/prepare`, {
-      violationId,
+      ...issueRef(violationIds),
       parentKey,
       ...(issueTypeId ? { issueTypeId } : {}),
       ...(fieldValues ? { fieldValues } : {}),
@@ -68,7 +81,7 @@ export const insightsService = {
     ),
   fileA11yBug: (
     testRunId: string,
-    violationId: string,
+    violationIds: string[],
     options: {
       parentKey: string;
       issueTypeId?: string;
@@ -78,7 +91,7 @@ export const insightsService = {
   ) =>
     post<{ jiraKey: string; jiraUrl: string; warnings: string[] }>(
       `/test-runs/${testRunId}/a11y/jira`,
-      { violationId, ...options },
+      { ...issueRef(violationIds), ...options },
     ),
   addElementRule: (
     testRunId: string,

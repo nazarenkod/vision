@@ -50,6 +50,7 @@ import {
   PrepareA11yBugDto,
   IgnoreA11yIssueDto,
   LinkA11yIssueDto,
+  issueIds,
 } from '../a11y/a11y-issue.dto';
 
 @ApiTags('test-runs')
@@ -105,7 +106,7 @@ export class TestRunsController {
     @Param('id', new ParseUUIDPipe()) id: string,
     @Body() body: IgnoreA11yIssueDto
   ) {
-    return this.a11yIssuesService.ignore(id, body.violationId, body.comment, user?.id);
+    return this.a11yIssuesService.ignore(id, issueIds(body), body.comment, user?.id);
   }
 
   @Post(':id/a11y/reset')
@@ -114,7 +115,7 @@ export class TestRunsController {
   @UseGuards(JwtAuthGuard, RoleGuard)
   @Roles(Role.admin, Role.editor)
   resetA11yIssue(@Param('id', new ParseUUIDPipe()) id: string, @Body() body: A11yIssueRefDto) {
-    return this.a11yIssuesService.reset(id, body.violationId);
+    return this.a11yIssuesService.reset(id, issueIds(body));
   }
 
   @Post(':id/a11y/link')
@@ -127,7 +128,7 @@ export class TestRunsController {
     @Param('id', new ParseUUIDPipe()) id: string,
     @Body() body: LinkA11yIssueDto
   ) {
-    return this.a11yIssuesService.link(id, body.violationId, body.jiraKey, user?.id);
+    return this.a11yIssuesService.link(id, issueIds(body), body.jiraKey, user?.id);
   }
 
   @Post(':id/a11y/jira/prepare')
@@ -138,7 +139,7 @@ export class TestRunsController {
   @UseGuards(JwtAuthGuard, RoleGuard)
   @Roles(Role.admin, Role.editor)
   prepareA11yBug(@Param('id', new ParseUUIDPipe()) id: string, @Body() body: PrepareA11yBugDto) {
-    return this.a11yIssuesService.prepareBug(id, body.violationId, body.parentKey, body.issueTypeId, body.fieldValues);
+    return this.a11yIssuesService.prepareBug(id, issueIds(body), body.parentKey, body.issueTypeId, body.fieldValues);
   }
 
   @Get(':id/a11y/jira/users')
@@ -158,7 +159,7 @@ export class TestRunsController {
   fileA11yBug(@CurrentUser() user: User, @Param('id', new ParseUUIDPipe()) id: string, @Body() body: FileA11yBugDto) {
     return this.a11yIssuesService.fileBug(
       id,
-      body.violationId,
+      issueIds(body),
       {
         parentKey: body.parentKey,
         issueTypeId: body.issueTypeId,

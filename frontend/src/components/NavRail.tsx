@@ -5,6 +5,7 @@ import {
   FolderOutlined,
   ViewAgendaOutlined,
   GridViewOutlined,
+  InsightsOutlined,
   PeopleOutline,
   PersonOutline,
 } from "@mui/icons-material";
@@ -47,6 +48,12 @@ const NavRail: React.FunctionComponent = () => {
             icon: <GridViewOutlined />,
             active: (path: string) =>
               path.startsWith(routes.VARIATION_LIST_PAGE),
+          },
+          {
+            label: "Insights",
+            to: `${routes.INSIGHTS_PAGE}/${selectedProjectId}`,
+            icon: <InsightsOutlined />,
+            active: (path: string) => path.startsWith(routes.INSIGHTS_PAGE),
           },
         ]
       : []),

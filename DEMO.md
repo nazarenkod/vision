@@ -16,6 +16,16 @@ Vision is a fork of Visual Regression Tracker with a refreshed UI and these addi
 - **Checks keyed by name, a baseline per device.** A check is what the test names (plus custom tags). Each device, OS, browser or viewport it runs on keeps its own baseline, so pixel comparison is as exact as before. The review shows the check's devices side by side and approves them at once; rules and accessibility decisions belong to the check, not to one device. A device without its own baseline yet is still "new", but its accessibility issues are compared with the check's baseline on another device, and a wrong screen is still caught. Existing data is grouped by name as it is, without a migration.
 - **Reference device (for information).** Pick one in the project settings (e.g. the emulator). Every other device's run is compared with the same check on it, element by element: texts, labels and states of elements found on both, and elements not found (missing or only off screen). Shown in the review's Devices tab; never changes a status. What it showed and the reviewer's decision are kept in the `CrossDeviceCheck` table to judge later whether it can be trusted (query below).
 - **Manual checks: CLI and MCP.** `vision.py` (served by the UI at `/cli/vision.py`, help menu → Manual checks shows the commands with your key) takes the screen of a connected Android device (adb), an Appium session (Android or iOS), the iOS simulator (screenshot only) or files, sends it as a check and prints the result: status, changed elements, hidden changes, accessibility issues, review link. `vision.py mcp` serves the same to AI assistants over MCP.
+- **Insights (left rail, per project).** For the last 30–365 days:
+  - baselines nothing was compared with (renamed or removed screens, gone devices), with bulk delete;
+  - unstable screens, ranked by flips: differed, then matched the same baseline again, so the screen moved, not the app;
+  - screens with the most accessibility issues and the most frequent issues across the app;
+  - tiny changes that keep being approved (worth a tolerance or element rule);
+  - screenshots taken while loading or with hidden changes;
+  - checks a device is missing;
+  - reviews waiting and the median time to a decision.
+
+  When the project's build limit removed older history, the page says so and judges only what is left.
 - **Cheap AI (optional).** One call per change group, never per screenshot: text only when the UI tree explains the change, two small crops otherwise, rules first for noise, every answer cached and paid calls capped per day. Also proposes labels for unlabeled icons in the screen's language.
 
 ## Run it next to the production VRT

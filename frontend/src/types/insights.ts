@@ -236,3 +236,70 @@ export interface PickableElement {
   element: string;
   bounds: Rect;
 }
+
+export interface ProjectInsights {
+  days: number;
+  windowStart: string;
+  historyStart: string;
+  partialHistory: boolean;
+  summary: {
+    baselines: number;
+    unused: number;
+    checks: number;
+    runs: number;
+    changedPercent: number;
+    flips: number;
+    a11yIssues: number;
+    waiting: number;
+    medianDecisionHours: number | null;
+  };
+  unused: Array<{
+    id: string;
+    name: string;
+    customTags: string;
+    branchName: string;
+    device: string;
+    hasBaseline: boolean;
+    lastUsedAt: string;
+    idleDays: number;
+  }>;
+  unstable: Array<{
+    name: string;
+    customTags: string;
+    devices: string[];
+    runs: number;
+    changedPercent: number;
+    rejected: number;
+    flips: number;
+    baselineChanges: number;
+    lastChangeAt: string | null;
+  }>;
+  a11yScreens: Array<{
+    name: string;
+    customTags: string;
+    issues: number;
+    newIssues: number;
+    reported: number;
+    ignored: number;
+  }>;
+  a11yRules: Array<{ rule: string; count: number }>;
+  noise: Array<{
+    name: string;
+    customTags: string;
+    tinyApproved: number;
+    runs: number;
+  }>;
+  captureIssues: Array<{
+    name: string;
+    customTags: string;
+    loading: number;
+    hidden: number;
+    runs: number;
+  }>;
+  coverage: Array<{
+    device: string;
+    checks: number;
+    missingCount: number;
+    missing: Array<{ name: string; customTags: string }>;
+  }>;
+}

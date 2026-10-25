@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { AnalyticsModule } from './analytics/analytics.module';
 import { AppService } from './app.service';
 import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
@@ -30,6 +31,7 @@ import { AiModule } from './ai/ai.module';
     TerminusModule,
     CompareModule,
     AiModule,
+    AnalyticsModule,
   ],
   providers: [
     AppService,

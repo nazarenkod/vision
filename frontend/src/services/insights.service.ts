@@ -7,6 +7,7 @@ import {
   CrossDeviceResult,
   DeviceProfile,
   GroupSummary,
+  ProjectInsights,
   StructureInfo,
 } from "../types/insights";
 
@@ -32,6 +33,8 @@ export const insightsService = {
     get<A11yReport | null>(`/test-runs/${testRunId}/a11y`),
   getStructure: (testRunId: string) =>
     get<StructureInfo | null>(`/test-runs/${testRunId}/structure`),
+  getProjectInsights: (projectId: string, days: number) =>
+    get<ProjectInsights>(`/analytics/${projectId}?days=${days}`),
   getCrossDevice: (testRunId: string) =>
     get<CrossDeviceResult | null>(`/test-runs/${testRunId}/cross-device`),
   getProjectDevices: (projectId: string) =>

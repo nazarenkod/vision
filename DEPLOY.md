@@ -81,11 +81,11 @@ Vision ставится на ту же машину, что и рабочий VR
 ## 2. Код
 
 ```bash
-git clone <адрес репозитория с форком> vision
+git clone https://github.com/nazarenkod/vision.git
 ```
 
 ```bash
-cd vision && git checkout mvp/demo
+cd vision
 ```
 
 ## 3. Настройка

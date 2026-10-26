@@ -4,7 +4,7 @@
   <img src="./public/logo.png"/ width='200px' alt="Visual Regression Tracker logo">
 </p>
 
-> **Company fork (Vision):** [DEMO.md](DEMO.md) lists what the fork adds (accessibility and element-level comparison from Appium UI trees, Jira bugs, change groups, checks keyed by name with a baseline per device, a CLI and MCP server for manual checks, cheap AI). [DEPLOY.md](DEPLOY.md) (in Russian) is the step-by-step guide to run it next to the existing VRT on a copy of its data.
+> **Company fork (Vision):** [DEMO.md](DEMO.md) lists what the fork adds (accessibility and element-level comparison from Appium UI trees, Jira bugs, change groups, checks keyed by name with a baseline per device, a CLI and MCP server for manual checks, cheap AI). [DEPLOY.md](DEPLOY.md) (in Russian) is the step-by-step guide to run it next to the existing VRT on a copy of its data. Engineering docs (in Ukrainian): [AGENTS.md](AGENTS.md) for the rules and commands, [docs/](docs/README.md) for specs, decisions and architecture.
 
 <h1 align="center"> Visual Regression Tracker </h1>
 <h3 align="center"> Open source, self hosted solution for visual testing and managing results of visual testing. </h3>

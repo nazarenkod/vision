@@ -137,4 +137,4 @@ If runs with differences are mostly rejected and runs without them mostly approv
 
 ## Changes against upstream
 
-All schema changes are additive (nullable columns, new tables `A11yIssueState`, `AiResult` and `CrossDeviceCheck`, one index), so the fork can later run on a live database too. The Java SDK differs from upstream by one optional field, `TestRunOptions.uiTree`; servers without UI tree support ignore it. Code is in `backend/`, `frontend/` and `sdk-java/`, imported with `git subtree` from the upstream repositories.
+All schema changes are additive (nullable columns, new tables `A11yIssueState`, `A11yProblem`, `A11yDecision`, `AiResult` and `CrossDeviceCheck`, personal Jira fields on `User`, indexes), so the fork can later run on a live database too. Specs, decisions and the data model are in [docs/](docs/README.md). The Java SDK differs from upstream by one optional field, `TestRunOptions.uiTree`; servers without UI tree support ignore it. Code is in `backend/`, `frontend/` and `sdk-java/`, imported with `git subtree` from the upstream repositories.

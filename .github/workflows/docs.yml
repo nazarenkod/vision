@@ -1,0 +1,22 @@
+name: Docs and agent guard
+
+on:
+  push:
+    branches: [main, mvp/demo]
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Documentation is consistent with itself and the code
+        run: python3 -I scripts/check-docs.py
+      - name: Tests of the docs check, the agent guard and the CLI
+        run: |
+          python3 -I scripts/tests/test_check_docs.py
+          python3 -I scripts/tests/test_agent_guard.py
+          python3 -I scripts/tests/test_vision_cli.py

@@ -29,7 +29,7 @@
 | Метод і шлях | Призначення |
 |---|---|
 | `POST /test-runs/:id/a11y/ignore` | false positive (`comment`) для проблеми на всіх екранах |
-| `POST /test-runs/:id/a11y/reset` | забути рішення: Unlink або Restore. Знімає маркери з бага й ставить `a11y-unlinked-<id>` |
+| `POST /test-runs/:id/a11y/reset` | забути рішення: Unlink або Restore. Знімає маркери Vision з бага й ставить `a11y-unlinked-<8 hex>`; якщо налаштування бачать лише частину проблеми — забуває лише цю частину |
 | `POST /test-runs/:id/a11y/link` | прив'язати наявну задачу (`jiraKey`), поставити на неї маркери |
 | `POST /test-runs/:id/a11y/jira/prepare` | що буде заведено під таскою (`parentKey`, `issueTypeId?`, `fieldValues?`): типи, поля, підсумок, маркери, `existing` (рішення у Vision), `inJira` (знайдені баги) |
 | `GET /test-runs/:id/a11y/jira/users?query=` | пошук людей у Jira для полів-користувачів |
@@ -43,7 +43,7 @@
 | Метод і шлях | Призначення |
 |---|---|
 | `GET /projects/:id/devices` | профілі пристроїв проєкту (для вибору еталонного) |
-| `GET /analytics/:projectId?days=` | Insights за 30–365 днів |
+| `GET /analytics/:projectId?days=` | Insights за 7–730 днів (типово 90; UI пропонує 30, 90, 180, 365) |
 | `GET /ai/status`, `POST /ai/group-summary`, `POST /ai/a11y-labels` | AI на вимогу |
 | `PUT /users/jira` | особистий токен і email Jira (`""` видаляє). Відповідь — `UserDto` з `jiraTokenSet`, без токена |
 | `GET /users/me` | тепер з `jiraTokenSet` і `jiraEmail` |

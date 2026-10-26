@@ -1,83 +1,71 @@
 # Vision — інструкції для агентів
 
 Vision — внутрішній форк [Visual Regression Tracker](https://github.com/Visual-Regression-Tracker/Visual-Regression-Tracker)
-для QA мобільних застосунків (Android «AOS» та iOS, Appium + Selenide). Він додає до піксельного
-порівняння аналіз UI-дерева, перевірки доступності, баги в Jira, групи змін, Insights і CLI/MCP
-для ручних перевірок.
+для QA мобільних застосунків (Android «AOS» та iOS, Appium + Selenide). До піксельного порівняння
+він додає аналіз UI-дерева, перевірки доступності, баги в Jira, групи змін, Insights і CLI/MCP.
 
-Цей файл — рівень 0: правила, що діють завжди, і куди йти далі. Деталі читай лише тоді, коли
-вони потрібні для задачі (див. «Куди далі»).
+Це рівень 0: правила, що діють завжди, і куди йти далі. Деталі — за посиланнями, коли вони
+потрібні задачі.
 
 ## Непорушні правила
 
-1. **Робочий VRT і його база не повинні постраждати за жодних умов.** Vision стоїть поруч із
-   продом і працює на копії даних. Будь-яка команда compose — лише через `./scripts/vision.sh`.
-   Нові скрипти — за тими ж запобіжниками (`scripts/lib/vision-safety.sh`). Деталі:
-   [ADR-0002](docs/decisions/0002-production-is-read-only.md).
-2. **Міграції бази — лише додавальні:** нові таблиці або nullable-колонки, без змін enum, без
-   видалень і перейменувань. [ADR-0003](docs/decisions/0003-additive-schema-only.md).
-3. **SDK = upstream + один необов'язковий параметр** `TestRunOptions.uiTree`. Нічого більше.
-   [ADR-0004](docs/decisions/0004-sdk-upstream-plus-ui-tree.md).
-4. **Пуш лише в `vision`** (`github.com/nazarenkod/vision`, гілка `mvp/demo` → `main`):
-   `git -c http.postBuffer=1048576000 push vision mvp/demo:main`. Remote `origin` — це upstream VRT,
-   туди не пушимо ніколи.
-5. **Інтерфейс англійською.** Документація для команди — українською, ідентифікатори в коді —
-   англійською.
-6. **Спершу детермінований аналіз, LLM — лише на вимогу** і ніколи на шляху прийому знімків.
-   [ADR-0007](docs/decisions/0007-deterministic-first-ai-on-demand.md).
-7. **Секрети не виходять із сервера:** токени Jira лише записуються, API відповідає
-   `jiraTokenSet`. Рядок користувача ніколи не віддається цілком.
+Порушення правил 1–4 не виправити, тому `.claude/hooks/guard.py` блокує їх для агентів.
 
-## Як ми працюємо: спершу специфікація
+1. **Робочий VRT і його база не повинні постраждати за жодних умов.** Vision стоїть на тій самій
+   машині й працює на копії даних. docker compose — лише через `./scripts/vision.sh`; нові
+   скрипти — за запобіжниками `scripts/lib/vision-safety.sh` ([ADR-0002](docs/decisions/0002-production-is-read-only.md)).
+2. **Пуш лише в remote `vision`:** `git -c http.postBuffer=1048576000 push vision mvp/demo:main`.
+   `origin` — upstream VRT ([ADR-0001](docs/decisions/0001-fork-as-subtree-monorepo.md)).
+3. **Міграції лише додавальні:** нова таблиця, nullable-колонка, індекс; без змін enum, видалень,
+   перейменувань ([ADR-0003](docs/decisions/0003-additive-schema-only.md)).
+4. **Жодних скидань і видалень бази** (`prisma migrate reset`, `DROP DATABASE`, `dropdb`).
+5. **SDK = upstream + один необов'язковий параметр** `TestRunOptions.uiTree` ([ADR-0004](docs/decisions/0004-sdk-upstream-plus-ui-tree.md)).
+6. **LLM — лише на вимогу,** ніколи при прийомі знімків ([ADR-0007](docs/decisions/0007-deterministic-first-ai-on-demand.md)).
+7. **Секрети не виходять із сервера:** токени Jira лише записуються (`jiraTokenSet`); рядок
+   `User` ніколи не віддається цілком.
+8. **Дії назовні — лише з явного дозволу людини:** пуш, зміни в реальній Jira, повідомлення,
+   видалення даних.
 
-Нова фіча або зміна поведінки проходить цикл **Specify → Plan → Tasks → Implement → Verify →
-Document**. Специфікація в `docs/specs/NNN-назва/spec.md` фіксує, *що* і *навіщо*, з
-пронумерованими вимогами. Реалізацію починаємо, коли специфікація у статусі `Approved`. Кожна
-вимога посилається на тест, який її перевіряє. Повністю цикл описано в
-[docs/guides/agentic-workflow.md](docs/guides/agentic-workflow.md).
+## Як ми працюємо: специфікація → дизайн → задачі
 
-Дрібні виправлення (опечатка, очевидний баг без зміни поведінки) специфікації не потребують,
-але тест — так.
+Нова фіча чи зміна поведінки: `/spec` → затвердження людиною → `/design` (дизайн і задачі) →
+реалізація з тестами → `/verify`. Специфікація — у `docs/specs/NNN-…/spec.md`, кожна вимога має
+тест у `design.md`. Цикл повністю — у [agentic-workflow](docs/guides/agentic-workflow.md).
+Виправлення бага без зміни поведінки специфікації не потребує, але тест — так.
 
-## Структура
+## Структура і команди
 
-| Шлях | Що там | Інструкції |
+| Шлях | Що там | Команди й правила |
 |---|---|---|
-| `backend/` | NestJS 11 + Prisma 6 + Postgres: API, порівняння, UI-дерево, доступність, Jira, AI | [backend/AGENTS.md](backend/AGENTS.md) |
-| `frontend/` | React 18 + MUI 5 + Vite, Playwright | [frontend/AGENTS.md](frontend/AGENTS.md) |
+| `backend/` | NestJS 11 + Prisma 6 + Postgres: API, UI-дерево, доступність, Jira, AI | [backend/AGENTS.md](backend/AGENTS.md) |
+| `frontend/` | React 18 + MUI 5 + Vite, Playwright; CLI `public/cli/vision.py` | [frontend/AGENTS.md](frontend/AGENTS.md) |
 | `sdk-java/` | Java SDK (upstream + `uiTree`) | [sdk-java/AGENTS.md](sdk-java/AGENTS.md) |
-| `scripts/` | `vision.sh`, копія даних із проду, збірка jar, тести CLI | [scripts/AGENTS.md](scripts/AGENTS.md) |
-| `frontend/public/cli/vision.py` | CLI і MCP-сервер для ручних перевірок | [spec 009](docs/specs/009-manual-checks-cli-mcp/spec.md) |
-| `dist/sdk-java/` | зібраний jar для автотестів | [DEPLOY.md §7](DEPLOY.md) |
+| `scripts/` | `vision.sh`, копія даних проду, jar SDK, перевірка документації | [scripts/AGENTS.md](scripts/AGENTS.md) |
 | `docs/` | специфікації, рішення, архітектура, гайди | [docs/README.md](docs/README.md) |
-| `DEPLOY.md`, `DEMO.md` | розгортання поруч із продом (рос.), демо | — |
+| `DEPLOY.md`, `DEMO.md` | розгортання поруч із продом (рос.), демо (англ.) | — |
 
-## Команди
+Повна перевірка перед «готово» — `/verify`. Перелік команд для кожного пакета — у ньому й у
+[testing](docs/guides/testing.md).
 
-| Що | Команда |
-|---|---|
-| Unit-тести бекенду | `cd backend && npm test` (лише `src/`; `npx jest` без `--projects` запускає e2e, яким потрібна база) |
-| Типи й лінт бекенду | `cd backend && npx tsc --noEmit -p tsconfig.json && npx eslint src` |
-| Unit-тести фронтенду | `cd frontend && CI=true npx jest` |
-| Типи фронтенду | `cd frontend && npx tsc --noEmit -p .` (базова лінія — 25 відомих помилок апстріму; нових бути не повинно) |
-| Playwright | `cd frontend && npx playwright test` (скриншот-тести локально на macOS завжди падають; еталони — лише в Docker, див. [testing](docs/guides/testing.md)) |
-| SDK | `cd sdk-java && gradle test` (JDK 11–17, Gradle 7.x); jar — `./scripts/build-sdk-jar.sh` |
-| CLI | `python3 -I scripts/tests/test_vision_cli.py` (фейковий API і adb, пристрій не потрібен) |
-| Розгортання | лише `./scripts/vision.sh …` ([DEPLOY.md](DEPLOY.md)) |
+## Стиль коду
 
-## Перш ніж сказати «готово»
+- TypeScript скрізь, крім SDK (Java) і CLI (Python, лише стандартна бібліотека).
+- Логіку пишемо чистими функціями, а сервіси Nest лише завантажують дані й викликають їх.
+- Коментарі пояснюють *чому*, а не *що*. Назва тесту — поведінка: «links instead of filing when
+  someone filed the problem already».
+- `prettier` і `eslint` — лише по змінених файлах; чужий код не переформатовуємо.
+- Інтерфейс англійською. Документація для команди українською, ідентифікатори англійською.
 
-- Тести, що покривають зміну, зелені; нові вимоги мають тести.
-- Типи й лінт без нових помилок; `prettier` — лише по змінених файлах, не по всьому `src`.
-- Якщо змінився UI на скриншот-тестах — еталони перегенеровано в Docker.
-- Специфікація, ADR і DEPLOY.md/DEMO.md відповідають тому, що зроблено (див.
-  [documentation](docs/guides/documentation.md)).
-- Коміт закінчується рядком `Co-Authored-By`, який задає середовище.
+## Коміти
+
+- Тема — що змінилось з погляду користувача, до ~70 символів, англійською; тіло — чому і що
+  важливо знати.
+- Зміна поведінки, її специфікація й тести — в одному коміті.
+- Останній рядок — `Co-Authored-By: …`, якщо його вимагає середовище агента.
 
 ## Куди далі
 
-- Що це і для кого: [docs/product/overview.md](docs/product/overview.md), терміни: [glossary](docs/product/glossary.md)
-- Як влаштовано: [docs/architecture/overview.md](docs/architecture/overview.md)
-- Конкретна фіча: [docs/specs/](docs/specs/README.md)
-- Чому зроблено саме так: [docs/decisions/](docs/decisions/README.md)
-- Локальне середовище і тести: [docs/guides/development.md](docs/guides/development.md), [testing](docs/guides/testing.md)
+- Що це й для кого: [огляд](docs/product/overview.md), [словник](docs/product/glossary.md)
+- Як влаштовано: [архітектура](docs/architecture/overview.md), [дані](docs/architecture/data-model.md), [API](docs/architecture/api.md)
+- Фіча: [docs/specs/](docs/specs/README.md); чому так: [docs/decisions/](docs/decisions/README.md)
+- Локальний запуск і тести: [development](docs/guides/development.md), [testing](docs/guides/testing.md)

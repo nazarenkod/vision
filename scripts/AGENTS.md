@@ -10,7 +10,12 @@
 | `demo-clone-from-prod.sh` | лише **читає** прод: `pg_dump` бази й копія або жорсткі посилання на картинки → у Vision |
 | `build-sdk-jar.sh` | збирає jar SDK у `dist/sdk-java/` |
 | `upload-uitree-samples.py` | надсилає пари PNG + XML з папки як перевірки (для демо без пристрою) |
-| `tests/test_vision_cli.py` | тести CLI `frontend/public/cli/vision.py`: `python3 -I scripts/tests/test_vision_cli.py` |
+| `check-docs.py` | перевірка документації: посилання, статуси, вимоги ↔ тести, шляхи, ADR — `python3 -I scripts/check-docs.py` |
+| `tests/test_vision_cli.py` | тести CLI `frontend/public/cli/vision.py` (фейкові API й adb) |
+| `tests/test_agent_guard.py` | тести hook'а `.claude/hooks/guard.py` |
+| `tests/test_check_docs.py` | тести `check-docs.py` |
+
+Тести запускаються як `python3 -I scripts/tests/<файл>.py`.
 
 ## Правила для нових скриптів
 

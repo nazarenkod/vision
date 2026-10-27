@@ -15,6 +15,7 @@ import { useTestRunState } from "../contexts";
 import { buildTestRunLocation } from "../_helpers/route.helpers";
 import { StatusPill } from "./StatusPill";
 import { tokens } from "../theme";
+import { deviceLabel } from "../_helpers/device.helper";
 
 const Stat: React.FunctionComponent<{
   label: string;
@@ -156,9 +157,7 @@ export const A11ySummary: React.FunctionComponent<{ buildId: string }> = ({
                     color: tokens.textSecondary,
                   }}
                 >
-                  {[run.device, run.os, run.viewport, run.browser]
-                    .filter(Boolean)
-                    .join(" · ") || "—"}
+                  {deviceLabel(run, "—")}
                 </TableCell>
                 <TableCell>
                   {run.a11yNewCount ? (

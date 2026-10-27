@@ -7,13 +7,9 @@ import { testRunService } from "../../services";
 import { useUserState } from "../../contexts";
 import { tokens } from "../../theme";
 import { BaseModal } from "../BaseModal";
+import { deviceLabel } from "../../_helpers/device.helper";
 
-/** "Pixel 7 · Android 15", from whichever parts of the run are set. */
-export const deviceLabel = (
-  run: Pick<TestRun, "device" | "os" | "browser" | "viewport">,
-) =>
-  [run.device, run.os, run.browser, run.viewport].filter(Boolean).join(" · ") ||
-  "No device";
+export { deviceLabel };
 
 /** Runs of the same check (name and custom tags) in a list, one per device. */
 export const runsOfCheck = (runs: TestRun[], run: TestRun) =>
@@ -129,7 +125,7 @@ export const DeviceStrip: React.FunctionComponent<{
         content={
           <Typography variant="body2">
             Each becomes the baseline for its device:{" "}
-            {pending.map(deviceLabel).join(", ")}.
+            {pending.map((run) => deviceLabel(run)).join(", ")}.
           </Typography>
         }
       />

@@ -34,11 +34,9 @@ import {
 } from "../../types/insights";
 import { insightsService } from "../../services";
 import { A11yProblemSettings } from "./A11yProblemSettings";
+import { deviceLabel } from "../../_helpers/device.helper";
 
-const profileLabel = (profile: DeviceProfile) =>
-  [profile.device, profile.os, profile.browser, profile.viewport]
-    .filter(Boolean)
-    .join(" · ") || "No device";
+const profileLabel = (profile: DeviceProfile) => deviceLabel(profile);
 const profileKey = (profile: DeviceProfile) =>
   JSON.stringify([
     profile.os,

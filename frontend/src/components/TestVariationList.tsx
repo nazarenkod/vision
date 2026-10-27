@@ -18,11 +18,7 @@ import { routes } from "../constants";
 import { Delete } from "@mui/icons-material";
 import { BaseModal } from "./BaseModal";
 import { tokens } from "../theme";
-
-const deviceLabel = (variation: TestVariation) =>
-  [variation.device, variation.os, variation.browser, variation.viewport]
-    .filter(Boolean)
-    .join(" · ") || "No device";
+import { deviceLabel } from "../_helpers/device.helper";
 
 /**
  * Baselines grouped by check (its name and custom tags, per branch): one card

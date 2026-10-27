@@ -15,5 +15,5 @@
 - [x] **T5** Документація: DEPLOY.md (OAuth-клієнт «TVs and Limited Input devices», Internal;
   сторінка Backups; cron), `api.md`, `data-model.md`, AGENTS пакетів, ADR-0013, статус → `Implemented`.
 - [ ] **T6** manual: на сервері — підключити Drive кодом, Back up now, бекап у списку; нічний бекап
-  за розкладом.
+  за розкладом. Підключення кодом на сервері працює (2026-10-27); бекап і розклад — у процесі.
 - [ ] **T7** `/verify`.

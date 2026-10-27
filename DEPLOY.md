@@ -467,7 +467,8 @@ Drive рабочего аккаунта администратора ([013](docs
 
 ### Настроить один раз
 
-1. **OAuth-клиент** в [Google Cloud Console](https://console.cloud.google.com), в проекте банка:
+1. **OAuth-клиент** в [Google Cloud Console](https://console.cloud.google.com), в проекте банка
+   (подробно, с ошибками и почему так — [google-drive-access](docs/guides/google-drive-access.md)):
    - «APIs & Services» → «Library» → **Google Drive API** → «Enable»;
    - «OAuth consent screen» (или «Google Auth Platform») → тип **Internal**, название `Vision
      backups`. Если Internal недоступен, проект создан вне организации банка: создайте его в ней.

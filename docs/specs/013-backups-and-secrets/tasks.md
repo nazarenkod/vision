@@ -24,6 +24,6 @@
 - [x] **T8** Документація: DEPLOY.md (налаштування `rclone` для Google Drive, cron, відновлення,
   майстер-логін), `.env.demo.example`, `scripts/AGENTS.md`, ADR-0012 → `Accepted` після згоди,
   статус spec → `Implemented`.
-- [ ] **T9** manual: на стенді — бекап у справжній спільний диск Google Drive (сервісний акаунт), відновлення на чистій машині за
+- [ ] **T9** manual: на стенді — бекап у справжній Google Drive (вхід кодом, [google-drive-access](../../guides/google-drive-access.md)), відновлення на чистій машині за
   ≤ 4 год, вхід майстром, автотест з колишнім `VRT_APIKEY` проходить.
 - [ ] **T10** `/verify`.

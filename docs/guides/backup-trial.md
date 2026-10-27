@@ -99,7 +99,7 @@ git pull
 ## Крок 2. OAuth-клієнт Google (робить людина)
 
 Агент цього не робить: потрібен браузер і права в Google Cloud проєкті банку. Попроси людину
-(якщо ще не зроблено, деталі в [DEPLOY.md](../../DEPLOY.md), §12):
+(якщо ще не зроблено) пройти [google-drive-access](google-drive-access.md), кроки 1–3, коротко:
 
 1. Google Cloud Console → проєкт банку → «APIs & Services» → «Library» → **Google Drive API** → Enable.
 2. «OAuth consent screen» → тип **Internal**. Якщо Internal недоступний — зупинись: проєкт поза

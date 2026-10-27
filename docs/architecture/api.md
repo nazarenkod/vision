@@ -47,3 +47,5 @@
 | `GET /ai/status`, `POST /ai/group-summary`, `POST /ai/a11y-labels` | AI на вимогу |
 | `PUT /users/jira` | особистий токен і email Jira (`""` видаляє). Відповідь — `UserDto` з `jiraTokenSet`, без токена |
 | `GET /users/me` | тепер з `jiraTokenSet` і `jiraEmail` |
+| `PUT /users/:id/password` | лише `admin`: задати пароль користувачу (`password`), зокрема після відновлення з бекапу ([013](../specs/013-backups-and-secrets/spec.md)) |
+| `GET /backups/status` | лише `admin`: `{ configured, lastSuccessAt, warning }`; `warning` — коли останньому бекапу понад 26 год |

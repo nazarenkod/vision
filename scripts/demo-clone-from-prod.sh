@@ -21,7 +21,7 @@ vision_guard
 
 POSTGRES_USER="${POSTGRES_USER:-postgres}"
 POSTGRES_DB="${POSTGRES_DB:-vrt_demo}"
-DATA_DIR="$VISION_ROOT/demo-data"
+DATA_DIR="${VISION_DATA_DIR:-$VISION_ROOT/demo-data}"
 DEMO_IMAGES_DIR="$DATA_DIR/imageUploads"
 DUMP_FILE="$DATA_DIR/prod.dump"
 IMAGES_MODE="${PROD_IMAGES_MODE:-copy}"
@@ -103,6 +103,7 @@ echo "$PROD_PROJECTS" | sed 's/^/                           - /'
 [ -n "${PROD_IMAGES_DIR:-}" ] &&
   echo "                         images  ($PROD_IMAGES_DIR, $IMAGES_MODE$( [ "$IMAGES_MODE" = copy ] && echo ", $(vision_human "$IMAGES_KB")"))"
 echo "  replaced in Vision:    its database and ./demo-data/imageUploads (Vision's API stops meanwhile)"
+echo "  backed up first:       Vision's current data, when it has any (scripts/vision-backup.sh)"
 echo "  production is not written to and keeps running."
 if ! $ASSUME_YES; then
   read -r -p "Type yes to continue: " answer
@@ -118,6 +119,21 @@ DEMO_PG="$(vision_container postgres)"
 [ -n "$DEMO_PG" ] || vision_die "Vision's Postgres did not start."
 [ "$DEMO_PG" != "$(docker inspect -f '{{.Id}}' "${PROD_PG_CONTAINER:-none}" 2>/dev/null || true)" ] ||
   vision_die "Vision's Postgres and production's are the same container. Nothing was done."
+
+demo_sql() {
+  docker exec -i "$DEMO_PG" psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -tAc "$1" | tr -d '\r'
+}
+
+# Copying again replaces whatever was done in Vision, so that is backed up first (REQ-013-12).
+if [ "$(demo_sql "select (to_regclass('public.\"Project\"') is not null)::int")" = "1" ] &&
+  [ "$(demo_sql 'select count(*) from "Project"')" != "0" ]; then
+  echo "==> Backing up Vision's current data"
+  backup_code=0
+  "$VISION_ROOT/scripts/vision-backup.sh" || backup_code=$?
+  # 3: backed up locally, upload retried on the next run; enough to undo this copy
+  [ "$backup_code" -eq 0 ] || [ "$backup_code" -eq 3 ] ||
+    vision_die "The backup of Vision's current data failed, so nothing was replaced."
+fi
 
 echo "==> Dumping production database (read-only)"
 if [ -n "${PROD_PG_CONTAINER:-}" ]; then
@@ -139,10 +155,6 @@ docker exec -i "$DEMO_PG" psql -v ON_ERROR_STOP=1 -q -U "$POSTGRES_USER" -d "$PO
   -c 'DROP SCHEMA IF EXISTS public CASCADE; CREATE SCHEMA public;'
 docker exec -i "$DEMO_PG" pg_restore --no-owner --no-privileges -U "$POSTGRES_USER" -d "$POSTGRES_DB" < "$DUMP_FILE" ||
   echo "    pg_restore reported warnings (see above); the checks below tell whether the copy is usable"
-
-demo_sql() {
-  docker exec -i "$DEMO_PG" psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -tAc "$1" | tr -d '\r'
-}
 
 # The fork's migrations continue from the squashed upstream baseline of July 2023.
 if ! demo_sql "select 1 from _prisma_migrations where migration_name = '20230730154101_init'" | grep -q 1; then

@@ -1,6 +1,6 @@
 import React from "react";
 import { IconButton } from "@mui/material";
-import { Delete } from "@mui/icons-material";
+import { Delete, Key } from "@mui/icons-material";
 import {
   GridRowId,
   useGridApiContext,
@@ -10,6 +10,8 @@ import { usersService } from "../../services";
 import { useSnackbar } from "notistack";
 import { useUserDispatch, useUserState } from "../../contexts";
 import { Tooltip } from "../Tooltip";
+import { BaseModal } from "../BaseModal";
+import PasswordField from "../PasswordField";
 
 export const ActionButtons: React.FunctionComponent = () => {
   const apiRef = useGridApiContext();
@@ -24,9 +26,55 @@ export const ActionButtons: React.FunctionComponent = () => {
     () => Object.values(selection),
     [selection],
   );
+  const [passwordFor, setPasswordFor] = React.useState<string | null>(null);
+  const [password, setPassword] = React.useState("");
+  const passwordUser = userList.find((item) => item.id === passwordFor);
+
+  const closePasswordDialog = () => {
+    setPasswordFor(null);
+    setPassword("");
+  };
 
   return (
     <React.Fragment>
+      <Tooltip
+        title="Set a password for the selected user (after a restore, people have none)."
+        aria-label="set password"
+      >
+        <span>
+          <IconButton
+            disabled={ids.length !== 1}
+            onClick={() => setPasswordFor(String(ids[0]))}
+            size="large"
+            data-testid="setPassword"
+          >
+            <Key />
+          </IconButton>
+        </span>
+      </Tooltip>
+      <BaseModal
+        open={!!passwordFor}
+        title={`Set password${passwordUser ? ` for ${passwordUser.email}` : ""}`}
+        submitButtonText="Set password"
+        onCancel={closePasswordDialog}
+        onSubmit={() =>
+          passwordFor &&
+          usersService
+            .setPassword(passwordFor, password)
+            .then(() => {
+              enqueueSnackbar("Password set", { variant: "success" });
+              closePasswordDialog();
+            })
+            .catch((err) => enqueueSnackbar(err, { variant: "error" }))
+        }
+        content={
+          <PasswordField
+            password={password}
+            setPassword={setPassword}
+            label="New password"
+          />
+        }
+      />
       <Tooltip title="Delete selected rows." aria-label="delete">
         <span>
           <IconButton

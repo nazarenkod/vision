@@ -1,4 +1,17 @@
-import { Controller, Post, Body, Get, UseGuards, Put, Delete, Patch, Req, Res, HttpStatus } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Body,
+  Get,
+  UseGuards,
+  Put,
+  Delete,
+  Patch,
+  Req,
+  Res,
+  HttpStatus,
+  Param,
+} from '@nestjs/common';
 import { Request, Response } from 'express';
 import { UsersService } from './users.service';
 import { ApiOkResponse, ApiBearerAuth, ApiTags } from '@nestjs/swagger';
@@ -148,6 +161,15 @@ export class UsersController {
   @UseGuards(JwtAuthGuard)
   changePassword(@CurrentUser() user: User, @Body('password') password: string): Promise<boolean> {
     return this.usersService.changePassword(user, password);
+  }
+
+  @Put(':id/password')
+  @ApiOkResponse({ type: Boolean })
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RoleGuard)
+  @Roles(Role.admin)
+  setPassword(@Param('id') id: string, @Body('password') password: string): Promise<boolean> {
+    return this.usersService.setPassword(id, password);
   }
 
   @Put()

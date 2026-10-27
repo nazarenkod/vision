@@ -127,6 +127,25 @@ function changePassword(password: string): Promise<boolean> {
   );
 }
 
+// An admin sets someone's password, e.g. after a restore, when backups bring none back.
+function setPassword(id: string, password: string): Promise<boolean> {
+  const requestOptions = {
+    method: "PUT",
+    headers: {
+      ...DEFAULT_HEADERS,
+      ...authHeader(),
+    },
+    body: JSON.stringify({
+      password,
+    }),
+  };
+
+  return fetch(
+    `${API_URL}${ENDPOINT_URL}/${encodeURIComponent(id)}/password`,
+    requestOptions,
+  ).then(handleResponse);
+}
+
 function logout() {
   localStorage.removeItem("user");
 }
@@ -239,6 +258,7 @@ export const usersService = {
   update,
   setJira,
   changePassword,
+  setPassword,
   getAll,
   assignRole,
   remove,

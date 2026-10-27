@@ -38,6 +38,20 @@ export class UsersService {
     return this.usersService.changePassword(user, newPassword);
   }
 
+  // After a restore nobody but the master user has a password (backups carry none), so an
+  // admin hands them out; it works the same for any local account.
+  async setPassword(id: string, password: string): Promise<boolean> {
+    if (typeof password !== 'string' || !password.trim()) {
+      throw new HttpException('Password is required', HttpStatus.BAD_REQUEST);
+    }
+    await this.prismaService.user.update({
+      where: { id },
+      data: { password: await this.authService.encryptPassword(password) },
+      select: { id: true },
+    });
+    return true;
+  }
+
   async login(userLoginRequestDto: UserLoginRequestDto) {
     return this.usersService.login(userLoginRequestDto);
   }

@@ -8,12 +8,16 @@
 | `vision.sh` | обгортка над `docker compose` лише для проєкту `vision` (`docker-compose.demo.yml`) |
 | `lib/vision-safety.sh` | спільні запобіжники: закріплене ім'я проєкту, перевірка чужих контейнерів, запас диска, підтвердження |
 | `demo-clone-from-prod.sh` | лише **читає** прод: `pg_dump` бази й копія або жорсткі посилання на картинки → у Vision |
+| `vision-backup.sh` | бекап бази Vision без секретів і картинок у Google Drive (`rclone`), `--install-cron` ([013](../docs/specs/013-backups-and-secrets/spec.md)) |
+| `vision-restore.sh` | відновлення з бекапу, майстер-адміністратор |
+| `lib/vision-backup.sh` | спільне для бекапу: секретні колонки, дамп в одному знімку бази |
 | `build-sdk-jar.sh` | збирає jar SDK у `dist/sdk-java/` |
 | `upload-uitree-samples.py` | надсилає пари PNG + XML з папки як перевірки (для демо без пристрою) |
 | `check-docs.py` | перевірка документації: посилання, статуси, вимоги ↔ тести, шляхи, ADR — `python3 -I scripts/check-docs.py` |
 | `tests/test_vision_cli.py` | тести CLI `frontend/public/cli/vision.py` (фейкові API й adb) |
 | `tests/test_agent_guard.py` | тести hook'а `.claude/hooks/guard.py` |
 | `tests/test_check_docs.py` | тести `check-docs.py` |
+| `tests/test_vision_backup.py` | бекап, відновлення й бекап перед копією проду на локальному Postgres (замінники `docker`, `rclone`) |
 
 Тести запускаються як `python3 -I scripts/tests/<файл>.py`.
 

@@ -73,7 +73,7 @@ docs/specs/NNN-коротка-назва/
 | [010](010-ai-assist/spec.md) | AI на вимогу | Implemented |
 | [011](011-deployment-safety/spec.md) | Розгортання поруч із продом | Implemented |
 | [012](012-java-sdk/spec.md) | Java SDK з UI-деревом | Implemented |
-| [013](013-backups-and-secrets/spec.md) | Бекапи в Google Drive | Draft |
+| [013](013-backups-and-secrets/spec.md) | Бекапи в Google Drive | Implemented |
 | [014](014-element-order-changes/spec.md) | Зміна порядку елементів: повідомлення й ручне рев'ю | Draft |
 | [015](015-compare-selected-elements/spec.md) | Порівняння лише обраних елементів | Draft |
 | [016](016-production-and-cutover/spec.md) | Робоча конфігурація й переїзд з VRT | Draft |

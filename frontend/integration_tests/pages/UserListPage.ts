@@ -17,4 +17,11 @@ export class UserListPage extends BasePage {
 
     return this.page.keyboard.press("Enter");
   }
+
+  async setPassword(userId: string, password: string) {
+    await this.table.checkRow(userId);
+    await this.page.getByTestId("setPassword").click();
+    await this.page.locator("#password").fill(password);
+    return this.page.getByTestId("submitButton").click();
+  }
 }

@@ -38,3 +38,16 @@ for (const [user, role] of assignRoleCases) {
     });
   });
 }
+
+test("lets an admin set a user's password", async ({ userListPage, page }) => {
+  await page.route(`**/users/${GUEST_USER.id}/password`, (route) =>
+    route.fulfill({ body: "true" }),
+  );
+  const [request] = await Promise.all([
+    page.waitForRequest(`**/users/${GUEST_USER.id}/password`),
+    userListPage.setPassword(GUEST_USER.id, "fresh-password-1"),
+  ]);
+
+  expect(request.method()).toBe("PUT");
+  expect(request.postDataJSON()).toEqual({ password: "fresh-password-1" });
+});

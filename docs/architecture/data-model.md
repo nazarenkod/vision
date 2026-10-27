@@ -36,6 +36,13 @@ upstream VRT, а згодом зможе працювати й на живій.
 | `<id>.uitree.json.gz` | розібрані UI-дерева знімків і еталонів: нормалізовані вузли, межі в пікселях скриншота |
 | `<id>.a11y.json` | звіт доступності знімка: порушення зі статусом нове / наявне, виправлені, заголовок екрана й селектори, якими його знайшли |
 
+## Файли бекапу (на хості, [013](../specs/013-backups-and-secrets/spec.md))
+
+| Файл | Що |
+|---|---|
+| `demo-data/backups/vision-<UTC>.tar` | бекап: `db.dump` (без рядків `User` і `Project`), `user.csv`, `project.csv` (без паролів і токенів Jira), `manifest.txt` (схема й кількість рядків); `.uploaded` поруч — уже в Google Drive |
+| `demo-data/backup-status/status.json` | стан останнього бекапу; API читає його як `BACKUP_STATUS_FILE` |
+
 ## Міграції
 
 `backend/prisma/migrations/`, пишуться руками. Міграції Vision:

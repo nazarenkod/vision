@@ -74,6 +74,18 @@ describe('UsersService with DbUserService implementation', () => {
     expect(service).toBeDefined();
   });
 
+  it("lets an admin set a user's password", async () => {
+    const update = jest.spyOn(prismaService.user, 'update').mockResolvedValueOnce(user);
+
+    expect(await service.setPassword('2', 'new-password')).toBe(true);
+    expect(update).toHaveBeenCalledWith({
+      where: { id: '2' },
+      data: { password: 'encryptedPassword' },
+      select: { id: true },
+    });
+    await expect(service.setPassword('2', '  ')).rejects.toThrow('Password is required');
+  });
+
   it('should generate new api key', async () => {
     // Arrange
     const prismaUserUpdateMock = jest.spyOn(prismaService.user, 'update');

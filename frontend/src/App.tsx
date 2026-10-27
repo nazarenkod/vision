@@ -5,6 +5,7 @@ import { Close } from "@mui/icons-material";
 import { ThemeProvider, StyledEngineProvider } from "@mui/material/styles";
 import Header from "./components/Header";
 import NavRail from "./components/NavRail";
+import { BackupWarning } from "./components/BackupWarning";
 import { theme } from "./theme";
 import { useUserState } from "./contexts";
 import {
@@ -23,6 +24,7 @@ const Shell: React.FunctionComponent = () => {
   return (
     <Box sx={{ height: "100%", display: "flex", flexDirection: "column" }}>
       <Header />
+      <BackupWarning />
       <Box sx={{ flex: 1, minHeight: 0, display: "flex" }}>
         {loggedIn && <NavRail />}
         <Box component="main" sx={{ flex: 1, minWidth: 0, overflow: "auto" }}>

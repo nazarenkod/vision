@@ -47,6 +47,8 @@ services:
       DIFF_WORKERS_COUNT: ${DEMO_DIFF_WORKERS:-2}
       OIDC_ENABLED: ${OIDC_ENABLED:-false}
       LDAP_ENABLED: ${LDAP_ENABLED:-false}
+      # written by scripts/vision-backup.sh; admins are warned only when backups are set up
+      BACKUP_STATUS_FILE: ${BACKUP_REMOTE:+/backup-status/status.json}
     cpus: ${DEMO_API_CPUS:-2}
     mem_limit: ${DEMO_API_MEMORY:-3g}
     ports:
@@ -55,6 +57,7 @@ services:
       - host.docker.internal:host-gateway
     volumes:
       - ./demo-data/imageUploads:/imageUploads
+      - ./demo-data/backup-status:/backup-status:ro
     depends_on:
       postgres:
         condition: service_healthy

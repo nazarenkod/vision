@@ -16,6 +16,7 @@ import { ScheduleModule } from '@nestjs/schedule';
 import { TerminusModule } from '@nestjs/terminus';
 import { HealthController } from './health/health.controller';
 import { AiModule } from './ai/ai.module';
+import { BackupsModule } from './backups/backups.module';
 
 @Module({
   imports: [
@@ -32,6 +33,7 @@ import { AiModule } from './ai/ai.module';
     CompareModule,
     AiModule,
     AnalyticsModule,
+    BackupsModule,
   ],
   providers: [
     AppService,

@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { PrismaService } from '../prisma/prisma.service';
 import { ProjectsController } from './projects.controller';
 import { ProjectsService } from './projects.service';
+import { UiTreeService } from '../ui-tree/ui-tree.service';
 
 describe('Projects Controller', () => {
   let controller: ProjectsController;
@@ -12,6 +13,7 @@ describe('Projects Controller', () => {
       providers: [
         { provide: ProjectsService, useValue: {} },
         { provide: PrismaService, useValue: {} },
+        { provide: UiTreeService, useValue: {} },
       ],
     }).compile();
 

@@ -1,7 +1,7 @@
 import { expect } from "@playwright/test";
 import { test } from "fixtures";
 import { TEST_PROJECT } from "~client/_test/test.data.helper";
-import { ODIFF_DEFAULT_CONFIG } from "~client/constants/project";
+import { PIXELMATCH_DEFAULT_CONFIG } from "~client/constants/project";
 import { ImageComparison } from "~client/types/imageComparison";
 import {
   API_URL,
@@ -50,27 +50,15 @@ test("can dismiss a notification without waiting it out", async ({
   });
 });
 
-// TEST_PROJECT leaves bulkApproveVariations off, and the axis it names drives
-// the grid's grouping either way, so it has to stay visible and changeable
-test("offers the group by axis with bulk approve off", async ({
+test("creates a project and opens its settings", async ({
   projectListPage,
   page,
 }) => {
-  await projectListPage.editBtn.click();
-
-  await expect(page.getByLabel("Group variations by")).toBeVisible();
-});
-
-test("creates a project", async ({ projectListPage, page }) => {
   await mockSaveProject(page);
 
   await projectListPage.addBtn.click();
   await projectListPage.name.fill("New project");
   await projectListPage.mainBranch.fill("main");
-  await projectListPage.buildCount.fill("10");
-  await projectListPage.maxBranchLifetime.fill("7");
-  await projectListPage.autoApprove.uncheck();
-  await projectListPage.selectImageComparison(ImageComparison.odiff);
 
   const [request] = await Promise.all([
     page.waitForRequest(
@@ -80,21 +68,23 @@ test("creates a project", async ({ projectListPage, page }) => {
     projectListPage.modal.confirmBtn.click(),
   ]);
 
+  // everything but the name and the branch starts at the defaults
   expect(request.postDataJSON()).toMatchObject({
     name: "New project",
     mainBranchName: "main",
-    maxBuildAllowed: 10,
-    maxBranchLifetime: 7,
-    autoApproveFeature: false,
-    imageComparison: ImageComparison.odiff,
-    // switching the library swaps in that library's defaults
-    imageComparisonConfig: ODIFF_DEFAULT_CONFIG,
+    maxBuildAllowed: 100,
+    maxBranchLifetime: 30,
+    autoApproveFeature: true,
+    imageComparison: ImageComparison.pixelmatch,
+    imageComparisonConfig: PIXELMATCH_DEFAULT_CONFIG,
   });
   await expect(projectListPage.notification.message).toHaveText(
     "New project created",
   );
-  await expect(projectListPage.modal.dialog).toBeHidden();
-  await expect(projectListPage.project("New project")).toBeVisible();
+  await expect(page).toHaveURL("/projects/createdProjectId/settings");
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText(
+    "Project settings",
+  );
 });
 
 test("does not create a project with too short a name", async ({
@@ -121,34 +111,4 @@ test("does not create a project with too short a name", async ({
   ).toBeVisible();
   await expect(projectListPage.modal.dialog).toBeVisible();
   expect(creates).toEqual([]);
-});
-
-test("edits a project", async ({ projectListPage, page }) => {
-  await mockSaveProject(page);
-
-  await projectListPage.editBtn.click();
-  // the form opens on the project as it is
-  await expect(projectListPage.name).toHaveValue(project.name);
-  await expect(projectListPage.mainBranch).toHaveValue(project.mainBranchName);
-  await projectListPage.name.fill("Renamed project");
-
-  const [request] = await Promise.all([
-    page.waitForRequest(
-      (request) =>
-        request.url() === `${API_URL}/projects` && request.method() === "PUT",
-    ),
-    projectListPage.modal.confirmBtn.click(),
-  ]);
-
-  expect(request.postDataJSON()).toMatchObject({
-    id: project.id,
-    name: "Renamed project",
-    mainBranchName: project.mainBranchName,
-    maxBuildAllowed: project.maxBuildAllowed,
-  });
-  await expect(projectListPage.notification.message).toHaveText(
-    "Renamed project updated",
-  );
-  await expect(projectListPage.project("Renamed project")).toBeVisible();
-  await expect(projectListPage.project(project.name)).toHaveCount(0);
 });

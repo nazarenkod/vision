@@ -15,3 +15,7 @@ export const routes = {
   USER_LIST_PAGE: "/users",
   BACKUPS_PAGE: "/backups",
 };
+
+/** The settings page of a project, on one of its tabs. */
+export const projectSettingsPath = (projectId: string, tab?: string) =>
+  `${routes.PROJECT_LIST_PAGE}/${projectId}/settings${tab ? `/${tab}` : ""}`;

@@ -195,3 +195,25 @@ describe('UiTreeService, a device without its own baseline', () => {
     ]);
   });
 });
+
+describe('UiTreeService.vocabulary', () => {
+  it("reads the latest tree of each check from the last 30 days, naming screens by the project's title selectors", async () => {
+    const findMany = jest.fn().mockResolvedValue([{ name: 'Payment check', uiTreeName: 'here.json.gz' }]);
+    const findUnique = jest
+      .fn()
+      .mockResolvedValue({ uiTreeSettings: JSON.stringify({ screenTitle: ['id:toolbar_title'] }) });
+    const vocabulary = await service(
+      { testRun: { findMany }, project: { findUnique } },
+      { 'here.json.gz': tree }
+    ).vocabulary('p1');
+
+    expect(vocabulary.screens).toEqual(['Payment']);
+    const query = findMany.mock.calls[0][0];
+    expect(query).toMatchObject({
+      where: { projectId: 'p1', uiTreeName: { not: null } },
+      distinct: ['testVariationId'],
+    });
+    const days = (Date.now() - query.where.createdAt.gte.getTime()) / (24 * 60 * 60 * 1000);
+    expect(Math.round(days)).toBe(30);
+  });
+});

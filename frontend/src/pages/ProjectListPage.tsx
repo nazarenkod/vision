@@ -14,7 +14,7 @@ import {
   TableHead,
   TableRow,
 } from "@mui/material";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { StatusPill } from "../components/StatusPill";
 import { tokens } from "../theme";
 import {
@@ -22,7 +22,6 @@ import {
   useProjectDispatch,
   deleteProject,
   createProject,
-  updateProject,
   setProjectEditState,
   useHelpDispatch,
   setHelpSteps,
@@ -31,11 +30,12 @@ import {
 import { Delete, Add, Edit, Search } from "@mui/icons-material";
 import {
   routes,
+  projectSettingsPath,
   LOCATOR_PROJECT_LIST_PAGE_PROJECT_LIST,
   PROJECT_LIST_PAGE_STEPS,
 } from "../constants";
-import { formatDateTime } from "../_helpers/format.helper";
-import { ProjectForm } from "../components/ProjectForm";
+import { CreateProjectForm } from "../components/CreateProjectForm";
+import { useT } from "../i18n";
 import { useSnackbar } from "notistack";
 import { BaseModal } from "../components/BaseModal";
 import { User } from "../types";
@@ -49,10 +49,11 @@ const ProjectsListPage = () => {
   const projectDispatch = useProjectDispatch();
   const helpDispatch = useHelpDispatch();
   const { user } = useUserState();
+  const { t, formatDate } = useT();
+  const navigate = useNavigate();
   const canEditProjects = !!user && PROJECT_EDITOR_ROLES.has(user.role);
 
   const [createDialogOpen, setCreateDialogOpen] = React.useState(false);
-  const [updateDialogOpen, setUpdateDialogOpen] = React.useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false);
   const [search, setSearch] = React.useState("");
 
@@ -62,10 +63,6 @@ const ProjectsListPage = () => {
 
   const toggleCreateDialogOpen = () => {
     setCreateDialogOpen(!createDialogOpen);
-  };
-
-  const toggleUpdateDialogOpen = () => {
-    setUpdateDialogOpen(!updateDialogOpen);
   };
 
   const toggleDeleteDialogOpen = () => {
@@ -88,7 +85,7 @@ const ProjectsListPage = () => {
       }}
     >
       <Typography variant="h4" component="h1">
-        Projects
+        {t("projectList.title")}
       </Typography>
       <Box
         sx={{
@@ -101,8 +98,8 @@ const ProjectsListPage = () => {
         <TextField
           id="projectSearch"
           size="small"
-          label="Search"
-          placeholder="Project name"
+          label={t("projectList.search")}
+          placeholder={t("projectList.searchPlaceholder")}
           value={search}
           onChange={(event) => setSearch(event.target.value)}
           sx={{ width: 320, bgcolor: tokens.surface }}
@@ -124,7 +121,7 @@ const ProjectsListPage = () => {
               setProjectEditState(projectDispatch);
             }}
           >
-            Add project
+            {t("projectList.add")}
           </Button>
         )}
       </Box>
@@ -139,12 +136,12 @@ const ProjectsListPage = () => {
         <Table>
           <TableHead>
             <TableRow>
-              <TableCell>Project</TableCell>
-              <TableCell>Main branch</TableCell>
-              <TableCell>Comparison</TableCell>
+              <TableCell>{t("projectList.project")}</TableCell>
+              <TableCell>{t("projectList.mainBranch")}</TableCell>
+              <TableCell>{t("projectList.comparison")}</TableCell>
               <TableCell>Jira</TableCell>
-              <TableCell>Created</TableCell>
-              <TableCell align="right">Actions</TableCell>
+              <TableCell>{t("projectList.created")}</TableCell>
+              <TableCell align="right">{t("projectList.actions")}</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
@@ -173,40 +170,49 @@ const ProjectsListPage = () => {
                 <TableCell>{project.imageComparison}</TableCell>
                 <TableCell>
                   {project.jiraUrl && project.jiraTokenSet ? (
-                    <StatusPill tone="passed" label="Connected" />
+                    <StatusPill
+                      tone="passed"
+                      label={t("projectList.jiraConnected")}
+                    />
                   ) : (
-                    <StatusPill tone="neutral" label="Not set" />
+                    <StatusPill
+                      tone="neutral"
+                      label={t("projectList.jiraNotSet")}
+                    />
                   )}
                 </TableCell>
-                <TableCell>{formatDateTime(project.createdAt)}</TableCell>
+                <TableCell>{formatDate(project.createdAt)}</TableCell>
                 <TableCell align="right" sx={{ whiteSpace: "nowrap" }}>
                   <Button
                     size="small"
                     component={Link}
                     to={`${routes.HOME}${project.id}`}
                   >
-                    Builds
+                    {t("projectList.builds")}
                   </Button>
                   <Button
                     size="small"
                     component={Link}
                     to={`${routes.VARIATION_LIST_PAGE}/${project.id}`}
                   >
-                    Baselines
+                    {t("projectList.baselines")}
                   </Button>
                   {canEditProjects && (
                     <>
                       <IconButton
-                        aria-label={`Edit ${project.name}`}
-                        onClick={() => {
-                          toggleUpdateDialogOpen();
-                          setProjectEditState(projectDispatch, project);
-                        }}
+                        component={Link}
+                        to={projectSettingsPath(project.id)}
+                        aria-label={t("projectList.settingsOf", {
+                          name: project.name,
+                        })}
+                        title={t("projectList.settings")}
                       >
                         <Edit fontSize="small" />
                       </IconButton>
                       <IconButton
-                        aria-label={`Delete ${project.name}`}
+                        aria-label={t("projectList.deleteOf", {
+                          name: project.name,
+                        })}
                         onClick={() => {
                           toggleDeleteDialogOpen();
                           setProjectEditState(projectDispatch, project);
@@ -230,7 +236,9 @@ const ProjectsListPage = () => {
                     py: 4,
                   }}
                 >
-                  {search ? `No projects match "${search}"` : "No projects yet"}
+                  {search
+                    ? t("projectList.noMatch", { search })
+                    : t("projectList.empty")}
                 </TableCell>
               </TableRow>
             )}
@@ -241,39 +249,20 @@ const ProjectsListPage = () => {
         <>
           <BaseModal
             open={createDialogOpen}
-            title={"Create Project"}
-            submitButtonText={"Create"}
+            title={t("projectList.createTitle")}
+            submitButtonText={t("projectList.create")}
             onCancel={toggleCreateDialogOpen}
-            content={<ProjectForm />}
+            content={<CreateProjectForm />}
             onSubmit={() =>
               createProject(projectDispatch, projectState.projectEditState)
                 .then((project) => {
                   toggleCreateDialogOpen();
-                  enqueueSnackbar(`${project.name} created`, {
-                    variant: "success",
-                  });
-                })
-                .catch((err) =>
-                  enqueueSnackbar(err, {
-                    variant: "error",
-                  }),
-                )
-            }
-          />
-
-          <BaseModal
-            open={updateDialogOpen}
-            title={"Update Project"}
-            submitButtonText={"Update"}
-            onCancel={toggleUpdateDialogOpen}
-            content={<ProjectForm />}
-            onSubmit={() =>
-              updateProject(projectDispatch, projectState.projectEditState)
-                .then((project) => {
-                  toggleUpdateDialogOpen();
-                  enqueueSnackbar(`${project.name} updated`, {
-                    variant: "success",
-                  });
+                  enqueueSnackbar(
+                    t("projectList.createdToast", { name: project.name }),
+                    { variant: "success" },
+                  );
+                  // everything but the name and branch starts at its default; tune it there
+                  navigate(projectSettingsPath(project.id));
                 })
                 .catch((err) =>
                   enqueueSnackbar(err, {
@@ -285,19 +274,24 @@ const ProjectsListPage = () => {
 
           <BaseModal
             open={deleteDialogOpen}
-            title={"Delete Project"}
-            submitButtonText={"Delete"}
+            title={t("projectList.deleteTitle")}
+            submitButtonText={t("common.delete")}
             onCancel={toggleDeleteDialogOpen}
             content={
-              <Typography>{`Are you sure you want to delete: ${projectState.projectEditState.name}?`}</Typography>
+              <Typography>
+                {t("projectList.deleteConfirm", {
+                  name: projectState.projectEditState.name,
+                })}
+              </Typography>
             }
             onSubmit={() =>
               deleteProject(projectDispatch, projectState.projectEditState.id)
                 .then((project) => {
                   toggleDeleteDialogOpen();
-                  enqueueSnackbar(`${project.name} deleted`, {
-                    variant: "success",
-                  });
+                  enqueueSnackbar(
+                    t("projectList.deletedToast", { name: project.name }),
+                    { variant: "success" },
+                  );
                 })
                 .catch((err) =>
                   enqueueSnackbar(err, {

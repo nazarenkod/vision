@@ -8,11 +8,15 @@ import { ProjectDto } from './dto/project.dto';
 import { UpdateProjectDto } from './dto/update-project.dto';
 import { RoleGuard } from '../auth/guards/role.guard';
 import { Roles } from '../shared/roles.decorator';
+import { UiTreeService } from '../ui-tree/ui-tree.service';
 
 @Controller('projects')
 @ApiTags('projects')
 export class ProjectsController {
-  constructor(private projectsService: ProjectsService) {}
+  constructor(
+    private projectsService: ProjectsService,
+    private uiTreeService: UiTreeService
+  ) {}
 
   @Get()
   @ApiBearerAuth()
@@ -47,6 +51,15 @@ export class ProjectsController {
   @UseGuards(JwtAuthGuard)
   async devices(@Param('id', new ParseUUIDPipe()) id: string) {
     return this.projectsService.devices(id);
+  }
+
+  @Get(':id/vocabulary')
+  @ApiParam({ name: 'id', required: true })
+  @ApiOkResponse({ description: "Elements, classes, screens and title selectors from the project's recent UI trees" })
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  async vocabulary(@Param('id', new ParseUUIDPipe()) id: string) {
+    return this.uiTreeService.vocabulary(id);
   }
 
   @Delete(':id')

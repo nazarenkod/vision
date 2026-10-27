@@ -43,6 +43,7 @@
 | Метод і шлях | Призначення |
 |---|---|
 | `GET /projects/:id/devices` | профілі пристроїв проєкту (для вибору еталонного) |
+| `GET /projects/:id/vocabulary` | елементи, класи, екрани й кандидати на заголовок екрана з UI-дерев проєкту за 30 днів — підказки сторінки налаштувань ([019](../specs/019-project-settings-page/spec.md)) |
 | `GET /analytics/:projectId?days=` | Insights за 7–730 днів (типово 90; UI пропонує 30, 90, 180, 365) |
 | `GET /ai/status`, `POST /ai/group-summary`, `POST /ai/a11y-labels` | AI на вимогу |
 | `PUT /users/jira` | особистий токен і email Jira (`""` видаляє). Відповідь — `UserDto` з `jiraTokenSet`, без токена |

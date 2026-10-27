@@ -15,6 +15,7 @@ import { routes } from "../constants";
 import GuidedTour from "./GuidedTour";
 import { BRAND } from "../constants/brand";
 import { BrandMark } from "./BrandMark";
+import { LanguageSwitch, useT } from "../i18n";
 import { ManualChecksDialog } from "./ManualChecksDialog";
 import {
   HEADER_HELP_MENU_ID,
@@ -44,6 +45,7 @@ const Header: FunctionComponent = () => {
   );
 
   const { loggedIn, user } = useUserState();
+  const { t } = useT();
   const [manualChecksOpen, setManualChecksOpen] = React.useState(false);
   const authDispatch = useUserDispatch();
 
@@ -95,14 +97,14 @@ const Header: FunctionComponent = () => {
         <IconButton size="small">
           <PhoneAndroid />
         </IconButton>
-        Manual checks (CLI)
+        {t("header.manualChecks")}
       </MenuItem>
       {BRAND.supportUrl && (
         <MenuItem onClick={closeMenuAndOpenLink} style={styleMenuItem}>
           <IconButton size="small">
             <GitHub />
           </IconButton>
-          Report a problem
+          {t("header.reportProblem")}
         </MenuItem>
       )}
       <hr />
@@ -143,7 +145,7 @@ const Header: FunctionComponent = () => {
           <IconButton size="small">
             <People />
           </IconButton>
-          Users
+          {t("header.users")}
         </MenuItem>
       )}
       {user?.role === "admin" && (
@@ -157,7 +159,7 @@ const Header: FunctionComponent = () => {
           <IconButton size="small">
             <Backup />
           </IconButton>
-          Backups
+          {t("header.backups")}
         </MenuItem>
       )}
       <MenuItem
@@ -169,7 +171,7 @@ const Header: FunctionComponent = () => {
         <IconButton size="small">
           <AllInbox />
         </IconButton>
-        Projects
+        {t("header.projects")}
       </MenuItem>
       <MenuItem
         component={Link}
@@ -180,7 +182,7 @@ const Header: FunctionComponent = () => {
         <IconButton size="small">
           <Face />
         </IconButton>
-        Profile
+        {t("header.profile")}
       </MenuItem>
       <MenuItem
         onClick={() => {
@@ -192,7 +194,7 @@ const Header: FunctionComponent = () => {
         <IconButton size="small">
           <SettingsPower />
         </IconButton>
-        Logout
+        {t("header.logout")}
       </MenuItem>
     </Menu>
   );
@@ -203,7 +205,7 @@ const Header: FunctionComponent = () => {
         <Toolbar variant="dense" sx={{ minHeight: 56, gap: 1.5 }}>
           <Link
             to="/"
-            aria-label={`${BRAND.name} home`}
+            aria-label={t("header.home", { brand: BRAND.name })}
             style={{
               display: "flex",
               alignItems: "center",
@@ -218,11 +220,12 @@ const Header: FunctionComponent = () => {
             </Typography>
           </Link>
           <Box sx={{ flex: 1 }} />
+          <LanguageSwitch />
           <IconButton
             onClick={(event: React.MouseEvent<HTMLElement>) =>
               setHelpMenuRef(event.currentTarget)
             }
-            aria-label="Help"
+            aria-label={t("header.help")}
             data-testid={HEADER_HELP_MENU_BUTTON_TEST_ID}
           >
             <HelpOutline />
@@ -232,7 +235,7 @@ const Header: FunctionComponent = () => {
               onClick={(event: React.MouseEvent<HTMLElement>) =>
                 setAvatarMenuRef(event.currentTarget)
               }
-              aria-label="Account"
+              aria-label={t("header.account")}
               data-testid={HEADER_AVATAR_BUTTON_TEST_ID}
             >
               <Avatar

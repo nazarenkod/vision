@@ -174,6 +174,31 @@ export const DEFAULT_DUPLICATE_MODES: Record<A11yRule, DuplicateMode> = {
   "duplicate-label": "screen",
 };
 
+/** What the project's recent UI trees contain, for suggestions in its settings. */
+export interface ProjectVocabulary {
+  trees: number;
+  screens: string[];
+  elements: Array<{
+    // what an element rule finds it by; null when only a class pattern can
+    selector: string | null;
+    // the element id a problem class's element pattern is matched against
+    element: string;
+    className: string;
+    text: string;
+    label: string;
+    // indexes into screens
+    screens: number[];
+  }>;
+  classes: Array<{ name: string; screens: number }>;
+  titleCandidates: Array<{
+    selector: string;
+    screens: number;
+    examples: string[];
+  }>;
+}
+
+export type VocabularyElement = ProjectVocabulary["elements"][number];
+
 export interface DeviceProfile {
   os: string;
   device: string;

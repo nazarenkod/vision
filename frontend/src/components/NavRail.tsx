@@ -8,9 +8,11 @@ import {
   InsightsOutlined,
   PeopleOutline,
   PersonOutline,
+  SettingsOutlined,
 } from "@mui/icons-material";
 import { useProjectState, useUserState } from "../contexts";
-import { routes } from "../constants";
+import { projectSettingsPath, routes } from "../constants";
+import { useT } from "../i18n";
 import { tokens } from "../theme";
 
 interface RailItem {
@@ -25,42 +27,57 @@ const NavRail: React.FunctionComponent = () => {
   const { pathname } = useLocation();
   const { selectedProjectId } = useProjectState();
   const { user } = useUserState();
+  const { t } = useT();
+  const canEditProjects = user?.role === "admin" || user?.role === "editor";
 
   const items: RailItem[] = [
     {
-      label: "Projects",
+      label: t("nav.projects"),
       to: routes.PROJECT_LIST_PAGE,
       icon: <FolderOutlined />,
-      active: (path) => path.startsWith(routes.PROJECT_LIST_PAGE),
+      active: (path) =>
+        path.startsWith(routes.PROJECT_LIST_PAGE) &&
+        !path.includes("/settings"),
     },
     ...(selectedProjectId
       ? [
           {
-            label: "Builds",
+            label: t("nav.builds"),
             to: `${routes.HOME}${selectedProjectId}`,
             icon: <ViewAgendaOutlined />,
             active: (path: string) =>
               path === `${routes.HOME}${selectedProjectId}`,
           },
           {
-            label: "Baselines",
+            label: t("nav.baselines"),
             to: `${routes.VARIATION_LIST_PAGE}/${selectedProjectId}`,
             icon: <GridViewOutlined />,
             active: (path: string) =>
               path.startsWith(routes.VARIATION_LIST_PAGE),
           },
           {
-            label: "Insights",
+            label: t("nav.insights"),
             to: `${routes.INSIGHTS_PAGE}/${selectedProjectId}`,
             icon: <InsightsOutlined />,
             active: (path: string) => path.startsWith(routes.INSIGHTS_PAGE),
           },
+          ...(canEditProjects
+            ? [
+                {
+                  label: t("nav.settings"),
+                  to: projectSettingsPath(selectedProjectId),
+                  icon: <SettingsOutlined />,
+                  active: (path: string) =>
+                    path.startsWith(projectSettingsPath(selectedProjectId)),
+                },
+              ]
+            : []),
         ]
       : []),
     ...(user?.role === "admin"
       ? [
           {
-            label: "Users",
+            label: t("nav.users"),
             to: routes.USER_LIST_PAGE,
             icon: <PeopleOutline />,
             active: (path: string) => path.startsWith(routes.USER_LIST_PAGE),
@@ -68,7 +85,7 @@ const NavRail: React.FunctionComponent = () => {
         ]
       : []),
     {
-      label: "Profile",
+      label: t("nav.profile"),
       to: routes.PROFILE_PAGE,
       icon: <PersonOutline />,
       active: (path) => path.startsWith(routes.PROFILE_PAGE),
@@ -78,7 +95,7 @@ const NavRail: React.FunctionComponent = () => {
   return (
     <Box
       component="nav"
-      aria-label="Main"
+      aria-label={t("nav.main")}
       sx={{
         width: 64,
         flexShrink: 0,

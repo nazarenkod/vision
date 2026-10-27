@@ -36,7 +36,12 @@ import {
   UiTreeSettings,
 } from './comparison-inputs';
 
+import { projectVocabulary, ProjectVocabulary } from './project-vocabulary';
+
 const GZIP_MAGIC = [0x1f, 0x8b];
+// the vocabulary reads the latest tree of each check from this many days
+export const VOCABULARY_DAYS = 30;
+const VOCABULARY_MAX_TREES = 300;
 
 // Trees never change once stored, so recently read ones are kept.
 const TREE_CACHE_SIZE = 300;
@@ -640,6 +645,31 @@ export class UiTreeService {
       update: data,
     });
     return result;
+  }
+
+  /** What the project's recent UI trees contain, for suggestions in its settings; reads only. */
+  async vocabulary(projectId: string): Promise<ProjectVocabulary> {
+    const [project, runs] = await Promise.all([
+      this.prismaService.project.findUnique({ where: { id: projectId }, select: { uiTreeSettings: true } }),
+      this.prismaService.testRun.findMany({
+        where: {
+          projectId,
+          uiTreeName: { not: null },
+          createdAt: { gte: new Date(Date.now() - VOCABULARY_DAYS * 24 * 60 * 60 * 1000) },
+        },
+        distinct: ['testVariationId'],
+        orderBy: { createdAt: 'desc' },
+        take: VOCABULARY_MAX_TREES,
+        select: { name: true, uiTreeName: true },
+      }),
+    ]);
+    const settings = parseUiTreeSettings(project?.uiTreeSettings);
+    const entries = [];
+    for (const run of runs) {
+      const tree = await this.load(run.uiTreeName);
+      if (tree) entries.push({ tree, checkName: run.name });
+    }
+    return projectVocabulary(entries, settings.screenTitle);
   }
 
   async deleteFiles(...names: Array<string | null | undefined>): Promise<void> {

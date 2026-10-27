@@ -9,25 +9,14 @@ export class ProjectListPage extends BasePage {
   deleteBtn = this.page.getByTestId("delete");
   editBtn = this.page.getByTestId("EditIcon");
 
-  // ProjectForm, inside the create or update dialog
+  // the create dialog asks only for these; the rest is on the settings page
   dialog = this.modal.dialog;
   name = this.dialog.locator("#name");
   mainBranch = this.dialog.locator("#branchName");
-  buildCount = this.dialog.locator("#buildCount");
-  maxBranchLifetime = this.dialog.locator("#maxBranchLifetime");
-  autoApprove = this.dialog.getByLabel("Auto approve feature");
-  imageComparison = this.dialog.getByRole("combobox", {
-    name: "Image comparison library",
-  });
 
   project(name: string) {
     return this.projects.filter({
       has: this.page.getByRole("link", { name, exact: true }),
     });
-  }
-
-  async selectImageComparison(value: string) {
-    await this.imageComparison.click();
-    await this.page.getByRole("option", { name: value, exact: true }).click();
   }
 }

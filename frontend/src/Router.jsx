@@ -11,6 +11,7 @@ import TestVariationListPage from "./pages/TestVariationListPage";
 import InsightsPage from "./pages/InsightsPage";
 import UserListPage from "./pages/UserListPage";
 import BackupsPage from "./pages/BackupsPage";
+import ProjectSettingsPage from "./pages/ProjectSettingsPage";
 import TestVariationDetailsPage from "./pages/TestVariationDetailsPage";
 import { useOidcEnabled } from "./_helpers/useOidcEnabled";
 
@@ -35,6 +36,10 @@ function Router() {
       <Route
         path={routes.PROJECT_LIST_PAGE}
         element={<PrivateRoute component={ProjectsListPage} />}
+      />
+      <Route
+        path={`${routes.PROJECT_LIST_PAGE}/:projectId/settings/:tab?`}
+        element={<PrivateRoute component={ProjectSettingsPage} />}
       />
       <Route
         path={routes.USER_LIST_PAGE}

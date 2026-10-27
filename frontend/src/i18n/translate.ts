@@ -1,0 +1,117 @@
+export type Language = "en" | "uk";
+
+export const LANGUAGES: Language[] = ["en", "uk"];
+
+// Intl.PluralRules categories; English needs one/other, Ukrainian one/few/many
+export type Plural = {
+  one: string;
+  few?: string;
+  many?: string;
+  other: string;
+};
+
+export type Message = string | Plural;
+
+export type Params = Record<string, string | number>;
+
+// English keeps the browser's own formats, as the interface had before Ukrainian
+const LOCALES: Record<Language, string | undefined> = {
+  en: undefined,
+  uk: "uk-UA",
+};
+
+export const localeOf = (language: Language) => LOCALES[language];
+
+const pluralRules = new Map<Language, Intl.PluralRules>();
+const pluralOf = (language: Language, count: number) => {
+  let rules = pluralRules.get(language);
+  if (!rules) {
+    rules = new Intl.PluralRules(localeOf(language));
+    pluralRules.set(language, rules);
+  }
+  return rules.select(count) as keyof Plural;
+};
+
+const interpolate = (text: string, params: Params, language: Language) =>
+  text.replace(/\{(\w+)\}/g, (whole, name: string) => {
+    const value = params[name];
+    if (value === undefined) return whole;
+    return typeof value === "number" ? formatNumber(value, language) : value;
+  });
+
+/**
+ * The text of a key in a language: a plural picks its form by params.count,
+ * {name} takes params.name. A key the language lacks reads in English, and a
+ * key neither has reads as itself, so a missing text is never blank.
+ */
+export function translate(
+  dictionaries: Record<Language, Record<string, Message>>,
+  language: Language,
+  key: string,
+  params: Params = {},
+): string {
+  const message = dictionaries[language][key] ?? dictionaries.en[key];
+  if (message === undefined) return key;
+  const text =
+    typeof message === "string"
+      ? message
+      : (message[pluralOf(language, Number(params.count ?? 0))] ??
+        message.other);
+  return interpolate(text, params, language);
+}
+
+/** The placeholders a text uses, for checking translations keep them all. */
+export function placeholdersOf(message: Message): string[] {
+  const texts =
+    typeof message === "string" ? [message] : Object.values(message);
+  return [
+    ...new Set(
+      texts.flatMap((text) =>
+        [...(text ?? "").matchAll(/\{(\w+)\}/g)].map((match) => match[1]),
+      ),
+    ),
+  ].sort();
+}
+
+export const STORAGE_KEY = "vision.language";
+
+/** The language picked earlier in this browser, else Ukrainian only for a browser that puts it first. */
+export function initialLanguage(
+  stored: string | null | undefined,
+  browserLanguages: readonly string[] = [],
+): Language {
+  if (stored === "en" || stored === "uk") return stored;
+  return browserLanguages[0]?.toLowerCase().startsWith("uk") ? "uk" : "en";
+}
+
+export function formatNumber(value: number, language: Language): string {
+  return new Intl.NumberFormat(localeOf(language), {
+    maximumFractionDigits: 3,
+  }).format(value);
+}
+
+export function formatDate(
+  value: string | number | Date,
+  language: Language,
+  // the parts Date.toLocaleString shows
+  options: Intl.DateTimeFormatOptions = {
+    year: "numeric",
+    month: "numeric",
+    day: "numeric",
+    hour: "numeric",
+    minute: "numeric",
+    second: "numeric",
+  },
+): string {
+  return new Intl.DateTimeFormat(localeOf(language), options).format(
+    new Date(value),
+  );
+}
+
+/** A number typed either way: "0,1" and "0.1" are both a tenth. NaN for anything else. */
+export function parseLocaleNumber(text: string): number {
+  const normalized = text.trim().replace(/\s/g, "").replace(",", ".");
+  return normalized === "" || !/^-?\d*\.?\d+$/.test(normalized)
+    ? NaN
+    : Number(normalized);
+}

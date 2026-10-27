@@ -9,7 +9,8 @@
 | `src/theme.ts` | токени кольорів і теми; кольори беремо звідси, не літералами |
 | `src/constants/brand.ts` | назва продукту (Vision) і слоган — лише тут |
 | `src/components/TestDetailsDialog/` | ревю скриншота: `InsightsPanel` (доступність, зміни, пристрої), `JiraBugDialog`, `DeviceStrip`, `CrossDevicePanel` |
-| `src/components/ProjectForm/` | налаштування проєкту, зокрема `A11yProblemSettings` (класи проблем) |
+| `src/i18n/` | мови інтерфейсу: словники `en.ts`/`uk.ts`, `useT()`, перемикач EN/UK |
+| `src/pages/ProjectSettingsPage.tsx`, `src/components/ProjectSettings/` | сторінка налаштувань проєкту: вкладки, підказки зі словника проєкту, класи проблем доступності |
 | `src/pages/InsightsPage.tsx` | Insights |
 | `src/services/*.service.ts` | виклики API: `fetch` + `authHeader()` + `handleResponse` |
 | `src/types/` | типи; `insights.ts` дзеркалить відповіді бекенду для Vision-фіч |
@@ -29,7 +30,9 @@ npx playwright test <spec>             # функціональні тести, 
 
 ## Правила
 
-- Інтерфейс англійською, тексти короткі й конкретні.
+- Тексти інтерфейсу — лише через `useT()` і ключі в `src/i18n/en.ts` + `uk.ts` (ADR-0014): пропущений
+  переклад — помилка `tsc`. Тексти короткі й конкретні; дані (назви, id, повідомлення сервера) не
+  перекладаємо.
 - Нові елементи, які шукають тести, отримують `data-testid`.
 - Скриншот-тести (`toHaveScreenshot`) на macOS не збігаються ніколи. Еталони генеруємо лише в
   Docker і лише тоді, коли змінився знятий екран. Перед заміною еталона переглядаємо отриманий

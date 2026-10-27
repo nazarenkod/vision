@@ -12,6 +12,7 @@ import {
   JiraBugPreparation,
   JiraUser,
   ProjectInsights,
+  ProjectVocabulary,
   StructureInfo,
 } from "../types/insights";
 
@@ -47,6 +48,8 @@ export const insightsService = {
     get<ProjectInsights>(`/analytics/${projectId}?days=${days}`),
   getCrossDevice: (testRunId: string) =>
     get<CrossDeviceResult | null>(`/test-runs/${testRunId}/cross-device`),
+  getProjectVocabulary: (projectId: string) =>
+    get<ProjectVocabulary>(`/projects/${projectId}/vocabulary`),
   getProjectDevices: (projectId: string) =>
     get<Array<DeviceProfile & { checks: number }>>(
       `/projects/${projectId}/devices`,

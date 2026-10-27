@@ -46,19 +46,19 @@ fi
 
 REQUEST_FILE="$VB_CONFIG_DIR/backup-requested"
 LAST_SCHEDULED_FILE="$VB_STATUS_DIR/last-scheduled"
+# once a day, in the server's time zone: due from the daily time until a backup runs after it
+TIME="$(vb_setting time)"
+[[ "$TIME" =~ ^([0-9]{1,2}):([0-9]{2})$ ]] || TIME="03:17"
+DUE_MIN=$((10#${TIME%%:*} * 60 + 10#${TIME##*:}))
+NOW_MIN=$((10#$(date +%H) * 60 + 10#$(date +%M)))
+PAST_DAILY_TIME=false
+[ "$NOW_MIN" -ge "$DUE_MIN" ] && PAST_DAILY_TIME=true
 if [ "$MODE" = scheduled ]; then
   REASON=""
   if [ -f "$REQUEST_FILE" ]; then
     REASON="asked for on the Backups page"
-  else
-    TIME="$(vb_setting time)"
-    [[ "$TIME" =~ ^([0-9]{1,2}):([0-9]{2})$ ]] || TIME="03:17"
-    DUE_MIN=$((10#${TIME%%:*} * 60 + 10#${TIME##*:}))
-    NOW_MIN=$((10#$(date +%H) * 60 + 10#$(date +%M)))
-    # once a day, in the server's time zone, at the first run after the time
-    if [ "$NOW_MIN" -ge "$DUE_MIN" ] && [ "$(cat "$LAST_SCHEDULED_FILE" 2>/dev/null || true)" != "$(date +%F)" ]; then
-      REASON="daily at $TIME"
-    fi
+  elif $PAST_DAILY_TIME && [ "$(cat "$LAST_SCHEDULED_FILE" 2>/dev/null || true)" != "$(date +%F)" ]; then
+    REASON="daily at $TIME"
   fi
   [ -n "$REASON" ] || exit 0
 fi
@@ -78,11 +78,12 @@ echo $$ >"$LOCK/pid"
 
 if [ "$MODE" = scheduled ]; then
   echo "==> $(date '+%F %T'): backup $REASON"
-  # taken before the run, so a request made meanwhile is the next run and a failure is not
-  # retried every 5 minutes
+  # taken before the run, so a request made meanwhile is the next run
   rm -f "$REQUEST_FILE"
-  [[ "$REASON" == daily* ]] && date +%F >"$LAST_SCHEDULED_FILE"
 fi
+# Any backup after the daily time is today's daily one: "Back up now" in the afternoon does not
+# trigger another at the next cron tick, and a failure is not retried every 5 minutes.
+$PAST_DAILY_TIME && date +%F >"$LAST_SCHEDULED_FILE"
 
 STATUS_FILE="$VB_STATUS_DIR/status.json"
 NOW="$(date -u +%Y-%m-%dT%H:%M:%SZ)"

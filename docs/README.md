@@ -18,6 +18,7 @@
 | Jira | [005](specs/005-jira-bugs/spec.md), [ADR-0010](decisions/0010-personal-jira-tokens.md) |
 | Порівняння мобільних екранів | [002](specs/002-ui-tree-analysis/spec.md), [001](specs/001-check-identity/spec.md) |
 | Розгортання й оновлення сервера | [DEPLOY.md](../DEPLOY.md), [011](specs/011-deployment-safety/spec.md), [ADR-0002](decisions/0002-production-is-read-only.md) |
+| Бекапи: налаштувати й перевірити на сервері | [backup-trial](guides/backup-trial.md), [DEPLOY.md §12](../DEPLOY.md), [013](specs/013-backups-and-secrets/spec.md), [017](specs/017-backup-settings-ui/spec.md) |
 | Підключення автотестів, SDK | [DEPLOY.md §7–8](../DEPLOY.md), [012](specs/012-java-sdk/spec.md) |
 | Ручні перевірки | [009](specs/009-manual-checks-cli-mcp/spec.md) |
 | Локальний запуск | [development](guides/development.md) |

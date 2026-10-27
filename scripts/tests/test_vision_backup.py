@@ -371,6 +371,15 @@ class VisionBackupTest(unittest.TestCase):
         self.assertEqual(self.backup("--scheduled").stdout, "")
         self.assertEqual(len(self.remote_dumps()), 1)
 
+    def test_counts_any_backup_after_the_daily_time_as_the_daily_one(self):
+        (self.config() / "settings.json").write_text('{"time":"00:00","keep":7}\n')
+        request = self.config() / "backup-requested"
+        request.write_text("now\n")
+        self.assertIn("asked for on the Backups page", self.backup("--scheduled").stdout)
+        done = self.backup("--scheduled")
+        self.assertEqual((done.returncode, done.stdout), (0, ""))
+        self.assertEqual(len(self.remote_dumps()), 1)
+
     def test_does_not_run_two_backups_at_once(self):
         lock = self.data / "backups" / ".lock"
         lock.mkdir(parents=True)

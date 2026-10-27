@@ -25,7 +25,8 @@ API цей файл переписує лише при підключенні.
 
 **Розклад.** `--install-cron` ставить один рядок кожні 5 хвилин: `vision-backup.sh --scheduled`.
 Скрипт виходить мовчки, якщо немає ні запиту, ні настання часу з `settings.json` (у часовому поясі
-сервера, раз на добу), і тримає замок, щоб два бекапи не йшли одночасно.
+сервера, раз на добу; будь-який бекап після цього часу зараховується як денний), і тримає замок,
+щоб два бекапи не йшли одночасно.
 
 **Власник файлів.** API в контейнері працює від root, а cron — від користувача хоста. `vision.sh`
 передає compose свої `uid:gid`, і API віддає їм файли (`chown`), лишаючи права `600` на секретах.
@@ -102,5 +103,5 @@ sequenceDiagram
 | REQ-017-10 | `backend/src/backups/backups.service.spec.ts › lists the backups in Drive with the status` |
 | REQ-017-11 | `backend/src/backups/backups.service.spec.ts › requests a backup for the host script`; `scripts/tests/test_vision_backup.py › test_runs_a_requested_backup_once`; `scripts/tests/test_vision_backup.py › test_does_not_run_two_backups_at_once` |
 | REQ-017-12 | `backend/src/backups/backups.controller.spec.ts › lets only admins manage backups` |
-| REQ-017-20 | `backend/src/backups/drive-auth.spec.ts › accepts a daily time and a number of copies`; `scripts/tests/test_vision_backup.py › test_runs_the_daily_backup_once_after_its_time`; `scripts/tests/test_vision_backup.py › test_installs_a_cron_line_every_5_minutes_once` |
+| REQ-017-20 | `backend/src/backups/drive-auth.spec.ts › accepts a daily time and a number of copies`; `scripts/tests/test_vision_backup.py › test_runs_the_daily_backup_once_after_its_time`; `scripts/tests/test_vision_backup.py › test_counts_any_backup_after_the_daily_time_as_the_daily_one`; `scripts/tests/test_vision_backup.py › test_installs_a_cron_line_every_5_minutes_once` |
 | REQ-017-21 | `scripts/tests/test_vision_backup.py › test_uses_the_drive_connected_in_the_ui` |

@@ -6,6 +6,8 @@ export interface BackupStatus {
   lastError: string | null;
   // local backups still waiting for upload
   pendingUploads: number;
+  // set while a backup is running
+  runningSince: string | null;
 }
 
 // A nightly backup a couple of hours late is fine; a missed night is not (RPO 24 h).
@@ -23,6 +25,7 @@ export function parseBackupStatus(raw: string | null | undefined): BackupStatus 
       lastSuccessAt: text(parsed.lastSuccessAt),
       lastError: text(parsed.lastError),
       pendingUploads: Number.isFinite(parsed.pendingUploads) ? parsed.pendingUploads : 0,
+      runningSince: text(parsed.runningSince),
     };
   } catch {
     return null;

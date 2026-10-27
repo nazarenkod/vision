@@ -8,7 +8,7 @@
 | `vision.sh` | обгортка над `docker compose` лише для проєкту `vision` (`docker-compose.demo.yml`) |
 | `lib/vision-safety.sh` | спільні запобіжники: закріплене ім'я проєкту, перевірка чужих контейнерів, запас диска, підтвердження |
 | `demo-clone-from-prod.sh` | лише **читає** прод: `pg_dump` бази й копія або жорсткі посилання на картинки → у Vision |
-| `vision-backup.sh` | бекап бази Vision без секретів і картинок у Google Drive (`rclone`), `--install-cron` ([013](../docs/specs/013-backups-and-secrets/spec.md)) |
+| `vision-backup.sh` | бекап бази Vision без секретів і картинок у Google Drive (`rclone`); `--scheduled` з cron кожні 5 хв бере час і запити зі сторінки Backups ([013](../docs/specs/013-backups-and-secrets/spec.md), [017](../docs/specs/017-backup-settings-ui/spec.md)) |
 | `vision-restore.sh` | відновлення з бекапу, майстер-адміністратор |
 | `lib/vision-backup.sh` | спільне для бекапу: секретні колонки, дамп в одному знімку бази |
 | `build-sdk-jar.sh` | збирає jar SDK у `dist/sdk-java/` |

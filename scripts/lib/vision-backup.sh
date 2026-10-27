@@ -18,11 +18,34 @@ vb_init() {
   VB_BACKUP_DIR="$VISION_DATA_DIR/backups"
   VB_STATUS_DIR="$VISION_DATA_DIR/backup-status"
   VB_IMAGES_DIR="$VISION_DATA_DIR/imageUploads"
+  # written by the API from the Backups page (ADR-0013)
+  VB_CONFIG_DIR="$VISION_DATA_DIR/backup-config"
   VB_PG_USER="${POSTGRES_USER:-postgres}"
   VB_PG_DB="${POSTGRES_DB:-vrt_demo}"
   BACKUP_REMOTE="${BACKUP_REMOTE:-}"
   BACKUP_KEEP="${BACKUP_KEEP:-7}"
-  mkdir -p "$VB_BACKUP_DIR" "$VB_STATUS_DIR" "$VB_IMAGES_DIR"
+  mkdir -p "$VB_BACKUP_DIR" "$VB_STATUS_DIR" "$VB_IMAGES_DIR" "$VB_CONFIG_DIR"
+}
+
+# A value from the Backups page settings (backup-config/settings.json, written by the API).
+vb_setting() {
+  sed -n "s/.*\"$1\": *\"\{0,1\}\([^\",}]*\)\"\{0,1\}.*/\1/p" "$VB_CONFIG_DIR/settings.json" 2>/dev/null | head -1 || true
+}
+
+# Google Drive connected on the Backups page wins over BACKUP_REMOTE and BACKUP_KEEP (REQ-017-21).
+vb_use_ui_remote() {
+  local keep
+  grep -qx '\[vision-drive\]' "$VB_CONFIG_DIR/rclone.conf" 2>/dev/null || return 0
+  RCLONE_CONFIG_DIR="$VB_CONFIG_DIR"
+  BACKUP_REMOTE="vision-drive:"
+  keep="$(vb_setting keep)"
+  [[ "$keep" =~ ^[0-9]+$ ]] && [ "$keep" -gt 0 ] && BACKUP_KEEP="$keep"
+  return 0
+}
+
+# A path on the remote: "vision-drive:" is the backup folder itself, "gdrive:folder" a folder in it.
+vb_remote_path() {
+  if [[ "$BACKUP_REMOTE" == *: ]]; then echo "$BACKUP_REMOTE$1"; else echo "$BACKUP_REMOTE/$1"; fi
 }
 
 # Vision's own Postgres container, checked by vision_container; empty when it is not running.
@@ -122,7 +145,7 @@ vb_manifest_value() {
 VB_RCLONE_IMAGE="rclone/rclone:1.68.2"
 vb_rclone() {
   if command -v rclone >/dev/null; then
-    rclone "$@"
+    if [ -n "${RCLONE_CONFIG_DIR:-}" ]; then RCLONE_CONFIG="$RCLONE_CONFIG_DIR/rclone.conf" rclone "$@"; else rclone "$@"; fi
     return
   fi
   local config="${RCLONE_CONFIG_DIR:-$HOME/.config/rclone}"
@@ -135,5 +158,5 @@ vb_rclone() {
 
 # Backup names on the remote, oldest first; none when it is empty or unreachable.
 vb_remote_dumps() {
-  { vb_rclone lsf "$BACKUP_REMOTE/db" --files-only 2>/dev/null || true; } | grep -E '^vision-[0-9TZ]+\.tar$' | sort || true
+  { vb_rclone lsf "$(vb_remote_path db)" --files-only 2>/dev/null || true; } | grep -E '^vision-[0-9TZ]+\.tar$' | sort || true
 }

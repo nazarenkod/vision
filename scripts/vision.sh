@@ -24,8 +24,9 @@ if printf '%s\n' "$@" | grep -qxE 'build|--build'; then
   fi
 fi
 
-# Mounted into the API; created here so it belongs to whoever runs the backups, not to
-# root, as Docker would make it
-mkdir -p "$VISION_ROOT/demo-data/backup-status"
+# Mounted into the API; created here so they belong to whoever runs the backups, not to
+# root, as Docker would make them. The API hands the files it writes there to this user.
+mkdir -p "$VISION_ROOT/demo-data/backup-status" "$VISION_ROOT/demo-data/backup-config"
+export VISION_UID="$(id -u)" VISION_GID="$(id -g)"
 
 vision_compose "$@"

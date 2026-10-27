@@ -49,3 +49,7 @@
 | `GET /users/me` | тепер з `jiraTokenSet` і `jiraEmail` |
 | `PUT /users/:id/password` | лише `admin`: задати пароль користувачу (`password`), зокрема після відновлення з бекапу ([013](../specs/013-backups-and-secrets/spec.md)) |
 | `GET /backups/status` | лише `admin`: `{ configured, lastSuccessAt, warning }`; `warning` — коли останньому бекапу понад 26 год |
+| `GET /backups` | лише `admin`: стан, підключення Drive без секретів (`connected`, `email`, `folderName`), розклад, бекапи в Drive ([017](../specs/017-backup-settings-ui/spec.md)) |
+| `POST /backups/drive/connect`, `POST /backups/drive/poll` | лише `admin`: вхід у Google кодом (`clientId`, `clientSecret` → `userCode`, `verificationUrl`; далі `pending` / `connected` / `failed`) |
+| `POST /backups/drive/test`, `DELETE /backups/drive` | лише `admin`: перевірити папку бекапів; забути підключення |
+| `PUT /backups/settings`, `POST /backups/run` | лише `admin`: час і кількість копій; запит на бекап для `vision-backup.sh --scheduled` |

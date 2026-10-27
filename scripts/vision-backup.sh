@@ -1,14 +1,16 @@
 #!/usr/bin/env bash
-# Backs up Vision: its database without secrets (ADR-0012) and its images, to
-# BACKUP_REMOTE, a Google Drive folder reached through rclone (DEPLOY.md).
+# Backs up Vision: its database without secrets (ADR-0012) and its images, to Google Drive
+# through rclone: the Drive connected on the Backups page, else BACKUP_REMOTE (DEPLOY.md).
 #
-#   ./scripts/vision-backup.sh                 back up now (what cron runs)
+#   ./scripts/vision-backup.sh                 back up now
 #   ./scripts/vision-backup.sh --local-only    make the local backup only; it is uploaded next time
-#   ./scripts/vision-backup.sh --install-cron  back up every night at 03:17
+#   ./scripts/vision-backup.sh --scheduled     what cron runs every 5 minutes: back up when the
+#                                              Backups page asked for it or the daily time came
+#   ./scripts/vision-backup.sh --install-cron  put that into crontab
 #
 # Only Vision's own Postgres container and ./demo-data are touched; production never is.
-# Exit codes: 0 done; 3 the local backup is done but the upload failed (it is retried
-# on the next run); anything else: no backup was made.
+# Exit codes: 0 done (or nothing due); 3 the local backup is done but the upload failed (it is
+# retried on the next run); anything else: no backup was made.
 set -euo pipefail
 . "$(cd "$(dirname "$0")" && pwd)/lib/vision-safety.sh"
 . "$VISION_ROOT/scripts/lib/vision-backup.sh"
@@ -19,34 +21,78 @@ LOCAL_ONLY=false
 case "${1:-}" in
   "") ;;
   --local-only) LOCAL_ONLY=true ;;
+  --scheduled) MODE=scheduled ;;
   --install-cron) MODE=cron ;;
-  *) vision_die "Usage: $0 [--local-only | --install-cron]" ;;
+  *) vision_die "Usage: $0 [--local-only | --scheduled | --install-cron]" ;;
 esac
 
 vision_load_env
 vision_guard
 vb_init
+vb_use_ui_remote
 
 if [ "$MODE" = cron ]; then
-  LINE="17 3 * * * $VISION_ROOT/scripts/vision-backup.sh >>$VB_BACKUP_DIR/cron.log 2>&1 # vision-backup"
+  LINE="*/5 * * * * $VISION_ROOT/scripts/vision-backup.sh --scheduled >>$VB_BACKUP_DIR/cron.log 2>&1 # vision-backup"
   CURRENT="$(crontab -l 2>/dev/null || true)"
-  if printf '%s\n' "$CURRENT" | grep -q '# vision-backup$'; then
-    echo "The nightly backup is already in crontab."
+  if printf '%s\n' "$CURRENT" | grep -qxF "$LINE"; then
+    echo "Backups are already in crontab."
     exit 0
   fi
-  printf '%s\n%s\n' "$CURRENT" "$LINE" | sed '/^$/d' | crontab -
+  # an older vision-backup line (the nightly one) is replaced
+  printf '%s\n%s\n' "$(printf '%s\n' "$CURRENT" | grep -v '# vision-backup$' || true)" "$LINE" | sed '/^$/d' | crontab -
   echo "Installed: $LINE"
   exit 0
+fi
+
+REQUEST_FILE="$VB_CONFIG_DIR/backup-requested"
+LAST_SCHEDULED_FILE="$VB_STATUS_DIR/last-scheduled"
+if [ "$MODE" = scheduled ]; then
+  REASON=""
+  if [ -f "$REQUEST_FILE" ]; then
+    REASON="asked for on the Backups page"
+  else
+    TIME="$(vb_setting time)"
+    [[ "$TIME" =~ ^([0-9]{1,2}):([0-9]{2})$ ]] || TIME="03:17"
+    DUE_MIN=$((10#${TIME%%:*} * 60 + 10#${TIME##*:}))
+    NOW_MIN=$((10#$(date +%H) * 60 + 10#$(date +%M)))
+    # once a day, in the server's time zone, at the first run after the time
+    if [ "$NOW_MIN" -ge "$DUE_MIN" ] && [ "$(cat "$LAST_SCHEDULED_FILE" 2>/dev/null || true)" != "$(date +%F)" ]; then
+      REASON="daily at $TIME"
+    fi
+  fi
+  [ -n "$REASON" ] || exit 0
+fi
+
+# one backup at a time: cron, the Backups page and a production copy can all start one
+LOCK="$VB_BACKUP_DIR/.lock"
+if ! mkdir "$LOCK" 2>/dev/null; then
+  HOLDER="$(cat "$LOCK/pid" 2>/dev/null || true)"
+  if [ -n "$HOLDER" ] && kill -0 "$HOLDER" 2>/dev/null; then
+    [ "$MODE" = scheduled ] && exit 0
+    vision_die "A backup is already running (pid $HOLDER)."
+  fi
+  rm -rf "$LOCK"
+  mkdir "$LOCK"
+fi
+echo $$ >"$LOCK/pid"
+
+if [ "$MODE" = scheduled ]; then
+  echo "==> $(date '+%F %T'): backup $REASON"
+  # taken before the run, so a request made meanwhile is the next run and a failure is not
+  # retried every 5 minutes
+  rm -f "$REQUEST_FILE"
+  [[ "$REASON" == daily* ]] && date +%F >"$LAST_SCHEDULED_FILE"
 fi
 
 STATUS_FILE="$VB_STATUS_DIR/status.json"
 NOW="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 LAST_SUCCESS="$(sed -n 's/.*"lastSuccessAt": *"\([^"]*\)".*/\1/p' "$STATUS_FILE" 2>/dev/null || true)"
 STATUS_WRITTEN=false
+RUNNING_SINCE=""
 
-# The API reads this file to warn admins when the last upload is too old (REQ-013-09).
+# The API reads this file for the Backups page and to warn admins (REQ-013-09).
 write_status() {
-  local succeeded="$1" error="$2" pending=0 tar success_json error_json
+  local succeeded="$1" error="$2" pending=0 tar success_json error_json running_json
   for tar in "$VB_BACKUP_DIR"/vision-*.tar; do
     [ -e "$tar.uploaded" ] || pending=$((pending + 1))
   done
@@ -55,14 +101,19 @@ write_status() {
   [ -n "$LAST_SUCCESS" ] && success_json="\"$LAST_SUCCESS\""
   error_json=null
   [ -n "$error" ] && error_json="\"$(printf '%s' "$error" | tr -d '"\\' | tr '\n' ' ')\""
-  printf '{"lastAttemptAt": "%s", "lastSuccessAt": %s, "lastError": %s, "pendingUploads": %s}\n' \
-    "$NOW" "$success_json" "$error_json" "$pending" >"$STATUS_FILE.part"
+  running_json=null
+  [ -n "$RUNNING_SINCE" ] && running_json="\"$RUNNING_SINCE\""
+  printf '{"lastAttemptAt": "%s", "lastSuccessAt": %s, "lastError": %s, "pendingUploads": %s, "runningSince": %s}\n' \
+    "$NOW" "$success_json" "$error_json" "$pending" "$running_json" >"$STATUS_FILE.part"
   mv "$STATUS_FILE.part" "$STATUS_FILE"
   STATUS_WRITTEN=true
 }
 WORK=""
-trap 'code=$?; [ -n "$WORK" ] && rm -rf "$WORK"; if [ "$code" -ne 0 ] && ! $STATUS_WRITTEN; then write_status false "backup failed (exit $code), see the log"; fi' EXIT
+trap 'code=$?; RUNNING_SINCE=""; [ -n "$WORK" ] && rm -rf "$WORK"; if [ "$code" -ne 0 ] && ! $STATUS_WRITTEN; then write_status false "backup failed (exit $code), see the log"; fi; rm -rf "$LOCK"' EXIT
 
+RUNNING_SINCE="$NOW"
+write_status false ""
+STATUS_WRITTEN=false
 vb_use_vision_pg
 [ -n "$VB_PG" ] || vision_die "Vision's Postgres is not running. Start Vision first: ./scripts/vision.sh up -d"
 
@@ -93,7 +144,7 @@ if [ -n "$BACKUP_REMOTE" ] && ! $LOCAL_ONLY; then
   # older backups that could not be uploaded before go first
   for tar in "$VB_BACKUP_DIR"/vision-*.tar; do
     [ -e "$tar.uploaded" ] && continue
-    if vb_rclone copyto "$tar" "$BACKUP_REMOTE/db/$(basename "$tar")"; then
+    if vb_rclone copyto "$tar" "$(vb_remote_path "db/$(basename "$tar")")"; then
       touch "$tar.uploaded"
     else
       UPLOAD_ERROR="could not upload $(basename "$tar") to $BACKUP_REMOTE"
@@ -102,12 +153,12 @@ if [ -n "$BACKUP_REMOTE" ] && ! $LOCAL_ONLY; then
   done
   if [ -z "$UPLOAD_ERROR" ]; then
     # images never change once written, so only new ones go; none are deleted on the remote
-    vb_rclone copy "$VB_IMAGES_DIR" "$BACKUP_REMOTE/images" --ignore-existing ||
+    vb_rclone copy "$VB_IMAGES_DIR" "$(vb_remote_path images)" --ignore-existing ||
       UPLOAD_ERROR="could not upload the images to $BACKUP_REMOTE"
   fi
   if [ -z "$UPLOAD_ERROR" ]; then
     for old in $(vb_remote_dumps | awk -v keep="$BACKUP_KEEP" '{ a[NR] = $0 } END { for (i = 1; i <= NR - keep; i++) print a[i] }'); do
-      vb_rclone deletefile "$BACKUP_REMOTE/db/$old" || echo "    could not delete the old $old on the remote"
+      vb_rclone deletefile "$(vb_remote_path "db/$old")" || echo "    could not delete the old $old on the remote"
     done
   fi
 fi
@@ -121,6 +172,7 @@ for tar in "$VB_BACKUP_DIR"/vision-*.tar; do
 done | awk -v keep="$KEEP_LOCAL" 'NF { a[++n] = $0 } END { for (i = 1; i <= n - keep; i++) print a[i] }' |
   while read -r tar; do rm -f "$tar" "$tar.uploaded"; done
 
+RUNNING_SINCE=""
 if [ -n "$UPLOAD_ERROR" ]; then
   write_status false "$UPLOAD_ERROR"
   echo "!!  $UPLOAD_ERROR. The backup stays in $VB_BACKUP_DIR and is uploaded on the next run." >&2

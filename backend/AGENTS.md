@@ -14,7 +14,7 @@
 | `src/analytics/` | Insights | [008](../docs/specs/008-insights/spec.md) |
 | `src/ai/` | AI на вимогу, кеш, ліміт | [010](../docs/specs/010-ai-assist/spec.md) |
 | `src/compare/` | піксельне порівняння (upstream + області змін, пул воркерів) | — |
-| `src/backups/` | стан бекапу для адміністраторів (файл, який пише `scripts/vision-backup.sh`) | [013](../docs/specs/013-backups-and-secrets/spec.md) |
+| `src/backups/` | сторінка Backups: стан бекапу, вхід у Google Drive кодом, розклад і запит на бекап у файлах для `scripts/vision-backup.sh` (ADR-0013) | [013](../docs/specs/013-backups-and-secrets/spec.md), [017](../docs/specs/017-backup-settings-ui/spec.md) |
 
 ## Команди
 

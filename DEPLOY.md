@@ -455,75 +455,60 @@ git pull
 
 ## 12. Бэкапы
 
-Каждую ночь база Vision и новые картинки уходят в общий диск Google Drive
-([013](docs/specs/013-backups-and-secrets/spec.md)). Бэкап не шифруется, поэтому в нём **нет
+Каждую ночь база Vision и новые картинки уходят в папку `vision-backups` на «Моём диске» Google
+Drive рабочего аккаунта администратора ([013](docs/specs/013-backups-and-secrets/spec.md),
+[017](docs/specs/017-backup-settings-ui/spec.md)). Бэкап не шифруется, поэтому в нём **нет
 паролей и токенов Jira**; API-ключи есть, чтобы автотесты после восстановления работали без
-изменений. Папка на Drive должна быть доступна только владельцу.
+изменений. Vision видит на этом Drive только файлы, которые создал сам.
+
+Нужен доступ сервера к `oauth2.googleapis.com`, `www.googleapis.com` и Docker Hub. rclone
+ставить не нужно: скрипты запускают Docker-образ `rclone/rclone:1.68.2`, если rclone нет на
+сервере.
 
 ### Настроить один раз
 
-Нужен доступ сервера к `www.googleapis.com` и `oauth2.googleapis.com`. Проверка:
-`curl -sI https://www.googleapis.com/drive/v3/about | head -1` — ответ `HTTP/2 401` значит, что
-Google доступен (401 — просто нет авторизации).
-
-rclone ставить не нужно: если его нет на сервере, скрипты запускают Docker-образ
-`rclone/rclone:1.68.2` (нужен доступ к Docker Hub). Если rclone установлен (`apt install rclone`),
-используется он.
-
-1. **Сервисный аккаунт** (рабочий Google Workspace, [Google Cloud Console](https://console.cloud.google.com)):
-   проект → «APIs & Services» → включить **Google Drive API** → «IAM & Admin» → «Service
-   Accounts» → создать `vision-backup` → «Keys» → «Add key» → JSON. Скачается файл ключа. Если
-   создание ключей запрещено политикой организации, попросите администратора Workspace.
-2. **Общий диск** в Google Drive: «Общие диски» → создать «Vision backups» → «Управление
-   участниками» → добавить email сервисного аккаунта (`vision-backup@<проект>.iam.gserviceaccount.com`)
-   с ролью «Менеджер контента». ID диска — последняя часть адреса
-   `drive.google.com/drive/folders/<ID>`. Сервисный аккаунт может писать только в общий диск: своего
-   места на «Моём диске» у него нет.
-3. **На сервере** положить ключ и создать remote `gdrive`:
+1. **OAuth-клиент** в [Google Cloud Console](https://console.cloud.google.com), в проекте банка:
+   - «APIs & Services» → «Library» → **Google Drive API** → «Enable»;
+   - «OAuth consent screen» (или «Google Auth Platform») → тип **Internal**, название `Vision
+     backups`. Если Internal недоступен, проект создан вне организации банка: создайте его в ней.
+     У типа External в режиме Testing доступ пропадает через 7 дней;
+   - «Credentials» → «Create credentials» → «OAuth client ID» → тип **TVs and Limited Input
+     devices** → «Create». Сохраните Client ID и Client secret.
+2. **`.env.demo`** — мастер-логин для входа после восстановления:
 
    ```bash
-   mkdir -p ~/.config/rclone && cp vision-backup-key.json ~/.config/rclone/vision-sa.json && chmod 600 ~/.config/rclone/vision-sa.json
-   ```
-
-   ```bash
-   docker run --rm --user "$(id -u):$(id -g)" -v ~/.config/rclone:/config/rclone rclone/rclone:1.68.2 config create gdrive drive scope=drive service_account_file=/config/rclone/vision-sa.json team_drive=ID_ОБЩЕГО_ДИСКА
-   ```
-
-   Проверка (пустой ответ без ошибок — всё в порядке):
-
-   ```bash
-   docker run --rm --user "$(id -u):$(id -g)" -v ~/.config/rclone:/config/rclone rclone/rclone:1.68.2 lsd gdrive:
-   ```
-
-   Ключ даёт доступ только к этому общему диску; держите его лишь на сервере.
-4. В `.env.demo`:
-
-   ```bash
-   BACKUP_REMOTE=gdrive:vision-backups
    VISION_MASTER_EMAIL=ваш_email
    VISION_MASTER_PASSWORD=не_короче_12_символов
    ```
 
-   Мастер-логин и пароль нужны для входа после восстановления. Сохраните их копию **вне** сервера:
-   на новой машине их придётся ввести снова. Папка конфигурации rclone — `RCLONE_CONFIG_DIR`
-   (по умолчанию `~/.config/rclone`).
-5. Проверить и включить расписание:
+   Сохраните их копию **вне** сервера: на новой машине их придётся ввести снова.
+3. **Обновить Vision и поставить расписание:**
 
    ```bash
-   ./scripts/vision-backup.sh
+   ./scripts/vision.sh up -d --build
    ```
 
    ```bash
    ./scripts/vision-backup.sh --install-cron
    ```
 
-   Бэкап запускается в 03:17, журнал — `demo-data/backups/cron.log`.
+   cron раз в 5 минут проверяет, не пора ли делать бэкап и не просили ли его на странице Backups.
+   Журнал — `demo-data/backups/cron.log`. Пользователю, который ставит cron, нужен доступ к `docker`.
+4. **В Vision** под администратором: меню аккаунта → **Backups** → «Google Drive» → вставить
+   Client ID и Client secret → «Connect» → открыть показанную ссылку (google.com/device) на любом
+   устройстве, войти рабочим аккаунтом, ввести код и разрешить доступ. Страница покажет
+   «Connected as …».
+5. На той же странице: «Test connection», при желании время и число копий в «Schedule», затем
+   **«Back up now»**. В течение 5 минут бэкап появится в списке «In Google Drive».
 
-На Drive хранятся 7 последних дампов базы (`BACKUP_KEEP`) и все картинки (только добавляются).
-Если Drive недоступен, бэкап остаётся в `demo-data/backups` и уходит при следующем запуске. Если
-последнему успешному бэкапу больше 26 часов, администраторы видят предупреждение в Vision.
+На Drive хранятся последние дампы базы (7, меняется в «Schedule») и все картинки (только
+добавляются). Если Drive недоступен, бэкап остаётся в `demo-data/backups` и уходит при следующем
+запуске. Если последнему успешному бэкапу больше 26 часов, администраторы видят предупреждение
+со ссылкой на страницу Backups. `demo-clone-from-prod.sh` сам делает бэкап перед тем, как
+заменить непустую базу Vision.
 
-`demo-clone-from-prod.sh` сам делает бэкап перед тем, как заменить непустую базу Vision.
+Без интерфейса можно и по-старому: `BACKUP_REMOTE=имя_remote:папка` в `.env.demo` и конфиг rclone в
+`RCLONE_CONFIG_DIR` (по умолчанию `~/.config/rclone`). Подключение на странице Backups важнее.
 
 ### Восстановить
 
@@ -532,8 +517,12 @@ rclone ставить не нужно: если его нет на сервер�
 ```
 
 Берёт последний бэкап (или указанный: `./scripts/vision-restore.sh vision-20261027T031700Z.tar`),
-показывает план и ждёт `yes`. На чистой машине: сначала §2–3 (код и `.env.demo`), затем rclone и
-настройки выше, затем restore.
+показывает план и ждёт `yes`. На чистой машине: §2–3 (код и `.env.demo`), шаги 1–3 выше, войти
+пользователем по умолчанию пустого Vision (`DEFAULT_USER_EMAIL` / `DEFAULT_USER_PASSWORD` из
+`.env.demo`; если не заданы — `visual-regression-tracker@example.com` / `123456`), подключить Drive
+на странице Backups тем же рабочим аккаунтом и тем же OAuth-клиентом (Vision видит только файлы
+своего клиента), затем restore:
+подключение лежит в `demo-data/backup-config` и восстановлением базы не затирается.
 
 После восстановления:
 - входите мастер-логином; он становится администратором;

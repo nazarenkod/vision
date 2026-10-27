@@ -1,5 +1,7 @@
 import React from "react";
-import { Alert } from "@mui/material";
+import { Alert, Link } from "@mui/material";
+import { Link as RouterLink } from "react-router-dom";
+import { routes } from "../constants";
 import { useUserState } from "../contexts";
 import { backupsService } from "../services";
 
@@ -31,8 +33,10 @@ export const BackupWarning: React.FunctionComponent = () => {
       data-testid="backupWarning"
       sx={{ borderRadius: 0 }}
     >
-      {warning} Check scripts/vision-backup.sh on the server (DEPLOY.md,
-      backups).
+      {warning}{" "}
+      <Link component={RouterLink} to={routes.BACKUPS_PAGE}>
+        Open Backups
+      </Link>
     </Alert>
   );
 };

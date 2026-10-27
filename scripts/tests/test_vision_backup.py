@@ -90,12 +90,16 @@ import os, pathlib, shutil, sys
 args = [a for a in sys.argv[1:] if not a.startswith("--")]
 flags = [a for a in sys.argv[1:] if a.startswith("--")]
 with open(os.environ["FAKE_LOG"], "a") as f:
-    f.write("rclone " + " ".join(sys.argv[1:]) + "\n")
+    f.write("rclone " + " ".join(sys.argv[1:]) + " config=" + os.environ.get("RCLONE_CONFIG", "") + "\n")
 if os.environ.get("FAKE_RCLONE_FAIL"):
     sys.exit("rclone: simulated network failure")
 root = pathlib.Path(os.environ["FAKE_DRIVE"])
 def place(p):
-    return root / p.split(":", 1)[1] if p.startswith("fake:") else pathlib.Path(p)
+    # "fake:x" is the Drive root; any other remote, like "vision-drive:x", a folder named after it
+    name, sep, rest = p.partition(":")
+    if not sep or "/" in name:
+        return pathlib.Path(p)
+    return root / rest if name == "fake" else root / name / rest
 command = args[0]
 if command == "lsf":
     folder = place(args[1])
@@ -318,13 +322,89 @@ class VisionBackupTest(unittest.TestCase):
         self.assertIn(f"-v {config}:/config/rclone", calls)
         self.assertIn("rclone/rclone:1.68.2 copyto", calls)
 
-    def test_installs_a_daily_cron_line_once(self):
+    def test_installs_a_cron_line_every_5_minutes_once(self):
+        # the nightly line of the first version is replaced, other lines are kept
+        (self.tmp / "crontab").write_text(
+            "0 1 * * * /usr/bin/something\n17 3 * * * /srv/vision/scripts/vision-backup.sh >>x 2>&1 # vision-backup\n")
         for _ in range(2):
             self.assertEqual(self.backup("--install-cron").returncode, 0)
         lines = (self.tmp / "crontab").read_text().splitlines()
-        self.assertEqual(len(lines), 1)
-        self.assertTrue(lines[0].startswith("17 3 * * * "))
-        self.assertIn("vision-backup.sh", lines[0])
+        self.assertEqual(len(lines), 2)
+        self.assertEqual(lines[0], "0 1 * * * /usr/bin/something")
+        self.assertTrue(lines[1].startswith("*/5 * * * * "))
+        self.assertIn("vision-backup.sh --scheduled", lines[1])
+
+    # ---- the Backups page (017) ----------------------------------------------------------
+
+    def config(self):
+        folder = self.data / "backup-config"
+        folder.mkdir(exist_ok=True)
+        return folder
+
+    def local_tars(self):
+        return sorted((self.data / "backups").glob("vision-*.tar"))
+
+    def test_runs_a_requested_backup_once(self):
+        import datetime
+        (self.data / "backup-status").mkdir(exist_ok=True)
+        (self.data / "backup-status" / "last-scheduled").write_text(datetime.date.today().isoformat() + "\n")
+        request = self.config() / "backup-requested"
+        request.write_text("2026-10-27T12:00:00Z\n")
+        done = self.backup("--scheduled")
+        self.assertEqual(done.returncode, 0, done.stderr)
+        self.assertIn("asked for on the Backups page", done.stdout)
+        self.assertFalse(request.exists())
+        self.assertEqual(len(self.remote_dumps()), 1)
+        status = (self.data / "backup-status" / "status.json").read_text()
+        self.assertIn('"runningSince": null', status)
+        # nothing asked and the daily one done: a quiet no-op
+        done = self.backup("--scheduled")
+        self.assertEqual((done.returncode, done.stdout), (0, ""))
+        self.assertEqual(len(self.remote_dumps()), 1)
+
+    def test_runs_the_daily_backup_once_after_its_time(self):
+        (self.config() / "settings.json").write_text('{"time":"00:00","keep":7}\n')
+        done = self.backup("--scheduled")
+        self.assertEqual(done.returncode, 0, done.stderr)
+        self.assertIn("daily at 00:00", done.stdout)
+        self.assertEqual(len(self.remote_dumps()), 1)
+        self.assertEqual(self.backup("--scheduled").stdout, "")
+        self.assertEqual(len(self.remote_dumps()), 1)
+
+    def test_does_not_run_two_backups_at_once(self):
+        lock = self.data / "backups" / ".lock"
+        lock.mkdir(parents=True)
+        (lock / "pid").write_text(str(os.getpid()))
+        done = self.backup()
+        self.assertNotEqual(done.returncode, 0)
+        self.assertIn("already running", done.stderr)
+        request = self.config() / "backup-requested"
+        request.write_text("now\n")
+        done = self.backup("--scheduled")
+        self.assertEqual(done.returncode, 0)
+        self.assertTrue(request.exists(), "the request waits for the running backup")
+        self.assertEqual(self.local_tars(), [])
+        # a lock left by a process that is gone does not block
+        (lock / "pid").write_text("999999")
+        self.assertEqual(self.backup().returncode, 0)
+        self.assertFalse(lock.exists())
+
+    def test_uses_the_drive_connected_in_the_ui(self):
+        config = self.config()
+        (config / "rclone.conf").write_text("[vision-drive]\ntype = drive\nscope = drive.file\n")
+        (config / "settings.json").write_text('{"time":"03:17","keep":2}\n')
+        folder = self.drive / "vision-drive" / "db"
+        folder.mkdir(parents=True)
+        for day in range(1, 5):
+            (folder / f"vision-202610{day:02d}T031700Z.tar").write_bytes(b"old")
+        done = self.backup()
+        self.assertEqual(done.returncode, 0, done.stderr)
+        dumps = sorted(p.name for p in folder.iterdir())
+        self.assertEqual(len(dumps), 2)
+        self.assertNotIn("vision-20261003T031700Z.tar", dumps)
+        self.assertTrue((self.drive / "vision-drive" / "images" / "base.png").exists())
+        self.assertEqual(self.remote_dumps(), [], "BACKUP_REMOTE from .env.demo is not used")
+        self.assertIn(f"config={config}/rclone.conf", self.log.read_text())
 
     # ---- restore -----------------------------------------------------------------------
 

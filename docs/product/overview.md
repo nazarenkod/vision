@@ -38,7 +38,7 @@ Vision додає до знімка **UI-дерево** (Appium page source) і 
 | Дешевий AI | підсумок групи, підписи для іконок; кеш і денний ліміт | [010](../specs/010-ai-assist/spec.md) |
 | Безпечне розгортання | поруч із продом на копії даних, лише через `vision.sh` | [011](../specs/011-deployment-safety/spec.md) |
 | Java SDK | upstream + `uiTree` | [012](../specs/012-java-sdk/spec.md) |
-| Бекапи | щоночі в Google Drive без паролів і токенів; відновлення з майстер-логіном | [013](../specs/013-backups-and-secrets/spec.md) |
+| Бекапи | щоночі в Google Drive без паролів і токенів; сторінка Backups: вхід у Drive кодом, розклад, «Back up now»; відновлення з майстер-логіном | [013](../specs/013-backups-and-secrets/spec.md), [017](../specs/017-backup-settings-ui/spec.md) |
 
 У роботі (Draft): [014](../specs/014-element-order-changes/spec.md), [015](../specs/015-compare-selected-elements/spec.md), [016 — робоча конфігурація й переїзд з VRT](../specs/016-production-and-cutover/spec.md).
 

@@ -26,6 +26,7 @@ done
 vision_load_env
 vision_guard
 vb_init
+vb_use_ui_remote
 
 # ---- master sign-in, checked before anything else -------------------------------------
 
@@ -52,13 +53,13 @@ else
       [ -n "$BACKUP_REMOTE" ] && vb_remote_dumps
       for tar in "$VB_BACKUP_DIR"/vision-*.tar; do basename "$tar"; done
     } | sort | tail -1)"
-    [ -n "$NAME" ] || vision_die "No backups found${BACKUP_REMOTE:+ on $BACKUP_REMOTE/db} or in $VB_BACKUP_DIR."
+    [ -n "$NAME" ] || vision_die "No backups found${BACKUP_REMOTE:+ on $(vb_remote_path db)} or in $VB_BACKUP_DIR."
   fi
   TAR="$VB_BACKUP_DIR/$NAME"
   if [ ! -f "$TAR" ]; then
     [ -n "$BACKUP_REMOTE" ] || vision_die "No backup $TAR."
     echo "==> Downloading $NAME from $BACKUP_REMOTE"
-    vb_rclone copyto "$BACKUP_REMOTE/db/$NAME" "$TAR.part" || vision_die "Could not download $NAME from $BACKUP_REMOTE/db."
+    vb_rclone copyto "$(vb_remote_path "db/$NAME")" "$TAR.part" || vision_die "Could not download $NAME from $(vb_remote_path db)."
     mv "$TAR.part" "$TAR"
   fi
 fi
@@ -88,7 +89,7 @@ echo "Restore Vision from $(basename "$TAR") (made $(vb_manifest_value "$MANIFES
 echo "  backup:          $(counts); schema $(vb_manifest_value "$MANIFEST" migration)"
 echo "  replaced:        Vision's database (its API and UI stop meanwhile)"
 if [ -n "$BACKUP_REMOTE" ]; then
-  echo "  images:          missing ones are downloaded from $BACKUP_REMOTE/images"
+  echo "  images:          missing ones are downloaded from $(vb_remote_path images)"
 else
   echo "  images:          kept as they are in $VB_IMAGES_DIR (BACKUP_REMOTE is not set)"
 fi
@@ -104,8 +105,8 @@ fi
 
 if [ -n "$BACKUP_REMOTE" ]; then
   echo "==> Downloading missing images"
-  vb_rclone copy "$BACKUP_REMOTE/images" "$VB_IMAGES_DIR" --ignore-existing ||
-    vision_die "Could not download the images from $BACKUP_REMOTE/images. The database was not touched."
+  vb_rclone copy "$(vb_remote_path images)" "$VB_IMAGES_DIR" --ignore-existing ||
+    vision_die "Could not download the images from $(vb_remote_path images). The database was not touched."
 fi
 
 # ---- database ----------------------------------------------------------------------------

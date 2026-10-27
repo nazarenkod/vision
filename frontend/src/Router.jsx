@@ -10,6 +10,7 @@ import ProfilePage from "./pages/ProfilePage";
 import TestVariationListPage from "./pages/TestVariationListPage";
 import InsightsPage from "./pages/InsightsPage";
 import UserListPage from "./pages/UserListPage";
+import BackupsPage from "./pages/BackupsPage";
 import TestVariationDetailsPage from "./pages/TestVariationDetailsPage";
 import { useOidcEnabled } from "./_helpers/useOidcEnabled";
 
@@ -38,6 +39,10 @@ function Router() {
       <Route
         path={routes.USER_LIST_PAGE}
         element={<PrivateRoute component={UserListPage} roles={["admin"]} />}
+      />
+      <Route
+        path={routes.BACKUPS_PAGE}
+        element={<PrivateRoute component={BackupsPage} roles={["admin"]} />}
       />
       <Route
         path={`${routes.HOME}:projectId`}

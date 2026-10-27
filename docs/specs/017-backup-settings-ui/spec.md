@@ -2,10 +2,10 @@
 
 | | |
 |---|---|
-| Статус | Draft |
+| Статус | Implemented |
 | Власник | Дмитро Назаренко |
 | Оновлено | 2026-10-27 |
-| Дизайн | — (з'являється після `Approved`) |
+| Дизайн | [design.md](design.md), [tasks.md](tasks.md) |
 | Пов'язане | [013](../013-backups-and-secrets/spec.md) (бекапи), [ADR-0012](../../decisions/0012-backups-without-secrets.md) |
 
 ## Контекст і проблема

@@ -99,7 +99,7 @@ flowchart LR
 
 | Вимога | Перевірка |
 |---|---|
-| REQ-013-01 | `scripts/tests/test_vision_backup.py › test_installs_a_daily_cron_line_once`; `scripts/tests/test_vision_backup.py › test_uploads_the_dump_and_new_images_to_the_remote` |
+| REQ-013-01 | `scripts/tests/test_vision_backup.py › test_installs_a_cron_line_every_5_minutes_once`; `scripts/tests/test_vision_backup.py › test_uploads_the_dump_and_new_images_to_the_remote` |
 | REQ-013-03 | `scripts/tests/test_vision_backup.py › test_keeps_the_last_7_dumps_on_the_remote`; `scripts/tests/test_vision_backup.py › test_uploads_the_dump_and_new_images_to_the_remote` |
 | REQ-013-05 | `scripts/tests/test_vision_backup.py › test_refuses_when_the_database_container_is_not_visions` |
 | REQ-013-09 | `backend/src/backups/backup-status.spec.ts › warns when the last successful backup is older than 26 hours`; `backend/src/backups/backup-status.spec.ts › stays quiet when backups are not configured`; manual: адміністратор бачить жовту смугу під шапкою, коли бекапу понад 26 год; інші ролі — ні |

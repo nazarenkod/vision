@@ -30,6 +30,7 @@ import {
   GitHub,
   HelpOutline,
   People,
+  Backup,
   SettingsPower,
 } from "@mui/icons-material";
 
@@ -143,6 +144,20 @@ const Header: FunctionComponent = () => {
             <People />
           </IconButton>
           Users
+        </MenuItem>
+      )}
+      {user?.role === "admin" && (
+        <MenuItem
+          component={Link}
+          to={routes.BACKUPS_PAGE}
+          onClick={handleMenuClose}
+          style={styleMenuItem}
+          data-testid="backupsMenuItem"
+        >
+          <IconButton size="small">
+            <Backup />
+          </IconButton>
+          Backups
         </MenuItem>
       )}
       <MenuItem

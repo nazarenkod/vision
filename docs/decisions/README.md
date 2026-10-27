@@ -28,3 +28,4 @@ Architecture Decision Record фіксує важливе рішення: кон�
 | [ADR-0010](0010-personal-jira-tokens.md) | Особисті токени Jira | Accepted | 2026-10-26 |
 | [ADR-0011](0011-screenshot-baselines-in-docker.md) | Скриншот-еталони Playwright — лише з Docker | Accepted | 2026-10-24 |
 | [ADR-0012](0012-backups-without-secrets.md) | Бекапи без секретів замість шифрування | Accepted | 2026-10-27 |
+| [ADR-0013](0013-ui-drives-host-scripts-through-files.md) | Інтерфейс керує скриптами хоста через файли | Accepted | 2026-10-27 |

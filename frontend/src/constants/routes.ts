@@ -13,4 +13,5 @@ export const routes = {
 
   // admin
   USER_LIST_PAGE: "/users",
+  BACKUPS_PAGE: "/backups",
 };

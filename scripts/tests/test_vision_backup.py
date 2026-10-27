@@ -87,7 +87,10 @@ sys.exit("fake docker: unknown command " + " ".join(args))
 
 FAKE_RCLONE = r'''#!/usr/bin/env python3
 import os, pathlib, shutil, sys
-args = [a for a in sys.argv[1:] if not a.startswith("--")]
+files_from = None
+if "--files-from" in sys.argv:
+    files_from = sys.argv[sys.argv.index("--files-from") + 1]
+args = [a for a in sys.argv[1:] if not a.startswith("--") and a != files_from]
 flags = [a for a in sys.argv[1:] if a.startswith("--")]
 with open(os.environ["FAKE_LOG"], "a") as f:
     f.write("rclone " + " ".join(sys.argv[1:]) + " config=" + os.environ.get("RCLONE_CONFIG", "") + "\n")
@@ -103,9 +106,17 @@ def place(p):
 command = args[0]
 if command == "lsf":
     folder = place(args[1])
-    for item in sorted(folder.iterdir()) if folder.exists() else []:
+    items = (folder.rglob("*") if "-R" in sys.argv else folder.iterdir()) if folder.exists() else []
+    for item in sorted(items):
         if item.is_file():
-            print(item.name)
+            print(item.relative_to(folder))
+elif command == "cat":
+    sys.stdout.write(place(args[1]).read_text())
+elif command == "delete":
+    folder = place(args[1])
+    for line in pathlib.Path(files_from).read_text().splitlines():
+        if line:
+            (folder / line).unlink()
 elif command == "copyto":
     target = place(args[2])
     target.parent.mkdir(parents=True, exist_ok=True)
@@ -232,7 +243,7 @@ class VisionBackupTest(unittest.TestCase):
 
     def remote_dumps(self):
         folder = self.drive / "vision-backups" / "db"
-        return sorted(p.name for p in folder.iterdir()) if folder.exists() else []
+        return sorted(p.name for p in folder.glob("*.tar")) if folder.exists() else []
 
     def unpack(self, tar):
         out = self.tmp / ("unpacked-" + tar.name)
@@ -380,6 +391,42 @@ class VisionBackupTest(unittest.TestCase):
         self.assertEqual((done.returncode, done.stdout), (0, ""))
         self.assertEqual(len(self.remote_dumps()), 1)
 
+    def images_on_drive(self):
+        folder = self.drive / "vision-backups" / "images"
+        return sorted(str(p.relative_to(folder)) for p in folder.rglob("*") if p.is_file())
+
+    def test_deletes_images_no_kept_backup_needs(self):
+        images = self.data / "imageUploads"
+        (images / "gone.png").write_bytes(b"deleted baseline")
+        env = dict(self.env, BACKUP_KEEP="2")
+        self.assertEqual(self.backup(env=env).returncode, 0)
+        self.assertIn("gone.png", self.images_on_drive())
+        # the baseline is deleted in Vision; while a kept backup lists it, Drive keeps it
+        (images / "gone.png").unlink()
+        (images / "new.png").write_bytes(b"new baseline")
+        self.assertEqual(self.backup(env=env).returncode, 0)
+        self.assertIn("gone.png", self.images_on_drive())
+        # the backup that listed it is no longer kept: the image goes too
+        done = self.backup(env=env)
+        self.assertEqual(done.returncode, 0, done.stderr)
+        self.assertIn("Deleting 1 images", done.stdout)
+        self.assertEqual(self.images_on_drive(), ["base.png", "new.png"])
+        self.assertEqual(len(self.remote_dumps()), 2)
+        lists = sorted(p.name for p in (self.drive / "vision-backups" / "db").glob("*.images.txt"))
+        self.assertEqual(len(lists), 2)
+        self.assertEqual((images / "base.png").read_bytes(), b"png-1", "local images are never touched")
+
+    def test_keeps_old_images_while_a_kept_backup_has_no_list(self):
+        old = self.drive / "vision-backups" / "db" / "vision-20261001T031700Z.tar"
+        old.parent.mkdir(parents=True)
+        old.write_bytes(b"made before lists")
+        (self.drive / "vision-backups" / "images").mkdir(parents=True)
+        (self.drive / "vision-backups" / "images" / "old.png").write_bytes(b"old")
+        done = self.backup()
+        self.assertEqual(done.returncode, 0, done.stderr)
+        self.assertIn("has no list of images", done.stdout)
+        self.assertIn("old.png", self.images_on_drive())
+
     def test_does_not_run_two_backups_at_once(self):
         lock = self.data / "backups" / ".lock"
         lock.mkdir(parents=True)
@@ -408,7 +455,7 @@ class VisionBackupTest(unittest.TestCase):
             (folder / f"vision-202610{day:02d}T031700Z.tar").write_bytes(b"old")
         done = self.backup()
         self.assertEqual(done.returncode, 0, done.stderr)
-        dumps = sorted(p.name for p in folder.iterdir())
+        dumps = sorted(p.name for p in folder.glob("*.tar"))
         self.assertEqual(len(dumps), 2)
         self.assertNotIn("vision-20261003T031700Z.tar", dumps)
         self.assertTrue((self.drive / "vision-drive" / "images" / "base.png").exists())

@@ -155,7 +155,7 @@ ls -l demo-data/backups/
 ```
 
 Очікується: `"lastError": null`, `"lastSuccessAt"` — щойно, `"pendingUploads": 0`; у
-`demo-data/backups/` — файл `vision-<час>.tar` і `vision-<час>.tar.uploaded`.
+`demo-data/backups/` — файли `vision-<час>.tar`, `vision-<час>.tar.uploaded` і `vision-<час>.images.txt`.
 
 Попроси людину оновити сторінку Backups: у «In Google Drive» з'явився бекап, жовтої смуги
 немає, а на «Моєму диску» — папка `vision-backups` з `db` і `images`.

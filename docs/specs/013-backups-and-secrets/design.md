@@ -64,7 +64,10 @@ API-ключем. Далі `vision.sh up -d`: міграції Vision доган
   ще не передані — у них немає позначки `.uploaded`), `demo-data/backup-status/status.json`
   (`lastSuccessAt`, `lastAttemptAt`, `lastError`, `pendingUploads`).
 - На Drive: `<BACKUP_REMOTE>/db/vision-*.tar` (7 останніх, `BACKUP_KEEP`) і
-  `<BACKUP_REMOTE>/images/` (лише докопіювання, `rclone copy --ignore-existing`, без видалень).
+  `<BACKUP_REMOTE>/images/` (нові докопіюються `rclone copy --ignore-existing`). Поруч із кожним
+  дампом — `db/vision-*.images.txt`, перелік картинок на момент бекапу. Після передачі з `images/`
+  видаляється все, чого немає в жодному переліку збережених дампів (`vb_prune_remote_images`);
+  нема переліку в будь-якого збереженого дампу — не видаляється нічого. Локальні картинки не чіпаються.
 - Налаштування в `.env.demo`: `BACKUP_REMOTE` (наприклад, `gdrive:vision-backups`; порожньо —
   лише локальні бекапи), `BACKUP_KEEP`, `RCLONE_CONFIG_DIR` (типово `~/.config/rclone`),
   `VISION_MASTER_EMAIL`, `VISION_MASTER_PASSWORD`.
@@ -112,6 +115,8 @@ flowchart LR
 | REQ-013-17 | `scripts/tests/test_vision_backup.py › test_other_users_cannot_log_in_with_a_password_after_a_restore`; `backend/src/auth/auth.service.spec.ts › never accepts a password against a restored placeholder` |
 | REQ-013-18 | `backend/src/users/users.service.spec.ts › lets an admin set a user's password`; `frontend/integration_tests/test/userList.spec.ts › lets an admin set a user's password` |
 | REQ-013-19 | `scripts/tests/test_vision_backup.py › test_restores_api_keys_unchanged` |
+| REQ-013-21 | `scripts/tests/test_vision_backup.py › test_deletes_images_no_kept_backup_needs` |
+| REQ-013-22 | `scripts/tests/test_vision_backup.py › test_keeps_old_images_while_a_kept_backup_has_no_list` |
 | REQ-013-20 | `scripts/tests/test_vision_backup.py › test_refuses_a_master_password_shorter_than_12_characters` |
 
 Тести скриптів ганяють справжній дамп і відновлення на локальному Postgres 16 через замінник

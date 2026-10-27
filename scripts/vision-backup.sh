@@ -138,6 +138,9 @@ tar -C "$WORK" -cf "$VB_BACKUP_DIR/$NAME.part" db.dump user.csv project.csv mani
 mv "$VB_BACKUP_DIR/$NAME.part" "$VB_BACKUP_DIR/$NAME"
 rm -rf "$WORK"
 echo "    $NAME ($(du -h "$VB_BACKUP_DIR/$NAME" | cut -f1))"
+# the images this database may refer to, next to it (and on the remote: db/vision-<time>.images.txt)
+LIST="$VB_BACKUP_DIR/${NAME%.tar}.images.txt"
+vb_image_list >"$LIST"
 
 UPLOAD_ERROR=""
 if [ -n "$BACKUP_REMOTE" ] && ! $LOCAL_ONLY; then
@@ -145,6 +148,13 @@ if [ -n "$BACKUP_REMOTE" ] && ! $LOCAL_ONLY; then
   # older backups that could not be uploaded before go first
   for tar in "$VB_BACKUP_DIR"/vision-*.tar; do
     [ -e "$tar.uploaded" ] && continue
+    list="${tar%.tar}.images.txt"
+    # this run's list goes after the images, once it also holds what arrived meanwhile
+    if [ "$tar" != "$VB_BACKUP_DIR/$NAME" ] && [ -f "$list" ] &&
+      ! vb_rclone copyto "$list" "$(vb_remote_path "db/$(basename "$list")")"; then
+      UPLOAD_ERROR="could not upload $(basename "$list") to $BACKUP_REMOTE"
+      break
+    fi
     if vb_rclone copyto "$tar" "$(vb_remote_path "db/$(basename "$tar")")"; then
       touch "$tar.uploaded"
     else
@@ -158,9 +168,17 @@ if [ -n "$BACKUP_REMOTE" ] && ! $LOCAL_ONLY; then
       UPLOAD_ERROR="could not upload the images to $BACKUP_REMOTE"
   fi
   if [ -z "$UPLOAD_ERROR" ]; then
+    # images added while uploading are kept too, so they are not deleted and sent again
+    { cat "$LIST"; vb_image_list; } | LC_ALL=C sort -u >"$LIST.part" && mv "$LIST.part" "$LIST"
+    vb_rclone copyto "$LIST" "$(vb_remote_path "db/$(basename "$LIST")")" ||
+      UPLOAD_ERROR="could not upload $(basename "$LIST") to $BACKUP_REMOTE"
+  fi
+  if [ -z "$UPLOAD_ERROR" ]; then
     for old in $(vb_remote_dumps | awk -v keep="$BACKUP_KEEP" '{ a[NR] = $0 } END { for (i = 1; i <= NR - keep; i++) print a[i] }'); do
       vb_rclone deletefile "$(vb_remote_path "db/$old")" || echo "    could not delete the old $old on the remote"
+      vb_rclone deletefile "$(vb_remote_path "db/${old%.tar}.images.txt")" 2>/dev/null || true
     done
+    vb_prune_remote_images
   fi
 fi
 
@@ -171,7 +189,7 @@ KEEP_LOCAL=2
 for tar in "$VB_BACKUP_DIR"/vision-*.tar; do
   if [ -z "$BACKUP_REMOTE" ] || [ -e "$tar.uploaded" ]; then echo "$tar"; fi
 done | awk -v keep="$KEEP_LOCAL" 'NF { a[++n] = $0 } END { for (i = 1; i <= n - keep; i++) print a[i] }' |
-  while read -r tar; do rm -f "$tar" "$tar.uploaded"; done
+  while read -r tar; do rm -f "$tar" "$tar.uploaded" "${tar%.tar}.images.txt"; done
 
 RUNNING_SINCE=""
 if [ -n "$UPLOAD_ERROR" ]; then

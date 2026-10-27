@@ -156,6 +156,45 @@ vb_rclone() {
     "$VB_RCLONE_IMAGE" "$@"
 }
 
+# Image files under imageUploads, relative and sorted: what a backup of the database may need.
+vb_image_list() {
+  (cd "$VB_IMAGES_DIR" && find . -type f ! -name '.*' | sed 's#^\./##') | LC_ALL=C sort
+}
+
+# Deletes images on the remote that no kept database backup lists (REQ-013-21). Each backup
+# keeps the list of images there were when it was made (db/vision-<time>.images.txt), so any
+# kept backup restores with all its images; until every kept backup has a list (backups made
+# before lists existed), nothing is deleted.
+vb_prune_remote_images() {
+  local work="$VB_BACKUP_DIR/.prune-$$" name dumps count
+  dumps="$(vb_remote_dumps)"
+  [ -n "$dumps" ] || return 0
+  rm -rf "$work"
+  mkdir -p "$work"
+  for name in $dumps; do
+    if ! vb_rclone cat "$(vb_remote_path "db/${name%.tar}.images.txt")" >"$work/$name.txt" 2>/dev/null; then
+      echo "    $name has no list of images; no images are deleted until it is gone"
+      rm -rf "$work"
+      return 0
+    fi
+  done
+  cat "$work"/*.txt | LC_ALL=C sort -u >"$work/keep"
+  # an empty list would mean deleting every image: never
+  if [ ! -s "$work/keep" ] || ! vb_rclone lsf "$(vb_remote_path images)" --files-only -R >"$work/remote.raw" 2>/dev/null; then
+    rm -rf "$work"
+    return 0
+  fi
+  LC_ALL=C sort "$work/remote.raw" >"$work/remote"
+  LC_ALL=C comm -23 "$work/remote" "$work/keep" >"$work/delete"
+  count="$(wc -l <"$work/delete" | tr -d ' ')"
+  if [ "$count" -gt 0 ]; then
+    echo "==> Deleting $count images no kept backup needs"
+    vb_rclone delete "$(vb_remote_path images)" --files-from "$work/delete" ||
+      echo "    could not delete them; next time"
+  fi
+  rm -rf "$work"
+}
+
 # Backup names on the remote, oldest first; none when it is empty or unreachable.
 vb_remote_dumps() {
   { vb_rclone lsf "$(vb_remote_path db)" --files-only 2>/dev/null || true; } | grep -E '^vision-[0-9TZ]+\.tar$' | sort || true

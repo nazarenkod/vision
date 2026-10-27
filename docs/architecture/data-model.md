@@ -40,7 +40,7 @@ upstream VRT, а згодом зможе працювати й на живій.
 
 | Файл | Що |
 |---|---|
-| `demo-data/backups/vision-<UTC>.tar` | бекап: `db.dump` (без рядків `User` і `Project`), `user.csv`, `project.csv` (без паролів і токенів Jira), `manifest.txt` (схема й кількість рядків); `.uploaded` поруч — уже в Google Drive |
+| `demo-data/backups/vision-<UTC>.tar` | бекап: `db.dump` (без рядків `User` і `Project`), `user.csv`, `project.csv` (без паролів і токенів Jira), `manifest.txt` (схема й кількість рядків); `.uploaded` поруч — уже в Google Drive; `vision-<UTC>.images.txt` — перелік картинок на момент бекапу (за ним чистяться картинки в Drive) |
 | `demo-data/backup-status/status.json` | стан останнього бекапу (і `runningSince`, поки йде); API читає його як `BACKUP_STATUS_FILE` |
 | `demo-data/backup-config/` | пише API зі сторінки Backups ([017](../specs/017-backup-settings-ui/spec.md)): `drive.json` і `rclone.conf` (600, секрети підключення), `settings.json`, `backup-requested` |
 

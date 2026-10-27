@@ -39,7 +39,7 @@ Vision додає до знімка **UI-дерево** (Appium page source) і 
 | Безпечне розгортання | поруч із продом на копії даних, лише через `vision.sh` | [011](../specs/011-deployment-safety/spec.md) |
 | Java SDK | upstream + `uiTree` | [012](../specs/012-java-sdk/spec.md) |
 
-У роботі: [013 — бекапи й шифрування секретів](../specs/013-backups-and-secrets/spec.md) (Draft).
+У роботі: [013 — бекапи](../specs/013-backups-and-secrets/spec.md), [016 — робоча конфігурація й переїзд з VRT](../specs/016-production-and-cutover/spec.md) (Draft).
 
 ## Чого Vision свідомо не робить
 

@@ -6,19 +6,15 @@ interface DeviceParts {
 }
 
 /**
- * Tests often send the OS as a bare version ("15"), which next to a device name
- * reads as a count; such a version is labelled, "Android 15" or "iOS 17" stays.
+ * "OS: 15 · Device: PIXEL_4_XL": each value named and in the order upstream VRT
+ * shows them, since a bare value ("15") says nothing about what it is.
  */
-export const osLabel = (os: string): string =>
-  /^\d+(\.\d+)*$/.test(os.trim()) ? `OS ${os.trim()}` : os;
-
-/** "Pixel 7 · OS 15", from whichever parts are set. */
 export const deviceLabel = (parts: DeviceParts, empty = "No device"): string =>
   [
-    parts.device,
-    parts.os ? osLabel(parts.os) : null,
-    parts.browser,
-    parts.viewport,
+    parts.os && `OS: ${parts.os}`,
+    parts.device && `Device: ${parts.device}`,
+    parts.browser && `Browser: ${parts.browser}`,
+    parts.viewport && `Viewport: ${parts.viewport}`,
   ]
     .filter(Boolean)
     .join(" · ") || empty;

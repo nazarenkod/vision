@@ -29,10 +29,10 @@ describe("runsOfCheck", () => {
 
   it("names a device from whatever is set", () => {
     expect(deviceLabel(run({ device: "Pixel 7", os: "Android 15" }))).toBe(
-      "Pixel 7 · Android 15",
+      "OS: Android 15 · Device: Pixel 7",
     );
     expect(deviceLabel(run({ browser: "chrome", viewport: "1280x720" }))).toBe(
-      "chrome · 1280x720",
+      "Browser: chrome · Viewport: 1280x720",
     );
     expect(deviceLabel(run({}))).toBe("No device");
   });

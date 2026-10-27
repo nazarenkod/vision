@@ -66,6 +66,9 @@ if args[0] == "exec":
         else:
             rest = rest[1:]
     run_as_postgres(rest[0], env_pairs, rest[1:])
+if args[0] == "run" and any(a.startswith("rclone/rclone:") for a in args):
+    image = next(i for i, a in enumerate(args) if a.startswith("rclone/rclone:"))
+    sys.exit(subprocess.call([os.environ["FAKE_RCLONE_BIN"]] + args[image + 1:]))
 if args[0] == "compose":
     rest = args[1:]
     while rest[0] in ("-p", "-f", "--env-file"):
@@ -296,6 +299,24 @@ class VisionBackupTest(unittest.TestCase):
         self.assertIn("not Vision's own container", done.stderr)
         self.assertEqual(self.remote_dumps(), [])
         self.assertNotIn("pg_dump", self.log.read_text())
+
+    def test_runs_rclone_from_its_docker_image_when_it_is_not_installed(self):
+        image_only = self.tmp / "image-only"
+        image_only.mkdir()
+        (image_only / "docker").symlink_to(self.tmp / "bin" / "docker")
+        (image_only / "crontab").symlink_to(self.tmp / "bin" / "crontab")
+        config = self.tmp / "rclone-config"
+        config.mkdir()
+        (config / "rclone.conf").write_text("[fake]\ntype = drive\n")
+        path = ":".join(p for p in os.environ["PATH"].split(":") if not (pathlib.Path(p) / "rclone").exists())
+        env = dict(self.env, PATH=f"{image_only}:{path}", RCLONE_CONFIG_DIR=str(config),
+                   FAKE_RCLONE_BIN=str(self.tmp / "bin" / "rclone"))
+        done = self.backup(env=env)
+        self.assertEqual(done.returncode, 0, done.stderr)
+        self.assertEqual(len(self.remote_dumps()), 1)
+        calls = self.log.read_text()
+        self.assertIn(f"-v {config}:/config/rclone", calls)
+        self.assertIn("rclone/rclone:1.68.2 copyto", calls)
 
     def test_installs_a_daily_cron_line_once(self):
         for _ in range(2):

@@ -455,18 +455,48 @@ git pull
 
 ## 12. Бэкапы
 
-Каждую ночь база Vision и новые картинки уходят в папку Google Drive
+Каждую ночь база Vision и новые картинки уходят в общий диск Google Drive
 ([013](docs/specs/013-backups-and-secrets/spec.md)). Бэкап не шифруется, поэтому в нём **нет
 паролей и токенов Jira**; API-ключи есть, чтобы автотесты после восстановления работали без
 изменений. Папка на Drive должна быть доступна только владельцу.
 
 ### Настроить один раз
 
-1. Установить rclone на сервер: `curl https://rclone.org/install.sh | sudo bash`.
-2. Подключить Google Drive: `rclone config` → `n` → имя `gdrive` → тип `drive`. На сервере без
-   браузера на шаге авторизации ответить `n` и выполнить показанную команду `rclone authorize "drive"`
-   на компьютере с браузером, ответ вставить обратно.
-3. В `.env.demo`:
+Нужен доступ сервера к `www.googleapis.com` и `oauth2.googleapis.com`. Проверка:
+`curl -sI https://www.googleapis.com/drive/v3/about | head -1` — ответ `HTTP/2 401` значит, что
+Google доступен (401 — просто нет авторизации).
+
+rclone ставить не нужно: если его нет на сервере, скрипты запускают Docker-образ
+`rclone/rclone:1.68.2` (нужен доступ к Docker Hub). Если rclone установлен (`apt install rclone`),
+используется он.
+
+1. **Сервисный аккаунт** (рабочий Google Workspace, [Google Cloud Console](https://console.cloud.google.com)):
+   проект → «APIs & Services» → включить **Google Drive API** → «IAM & Admin» → «Service
+   Accounts» → создать `vision-backup` → «Keys» → «Add key» → JSON. Скачается файл ключа. Если
+   создание ключей запрещено политикой организации, попросите администратора Workspace.
+2. **Общий диск** в Google Drive: «Общие диски» → создать «Vision backups» → «Управление
+   участниками» → добавить email сервисного аккаунта (`vision-backup@<проект>.iam.gserviceaccount.com`)
+   с ролью «Менеджер контента». ID диска — последняя часть адреса
+   `drive.google.com/drive/folders/<ID>`. Сервисный аккаунт может писать только в общий диск: своего
+   места на «Моём диске» у него нет.
+3. **На сервере** положить ключ и создать remote `gdrive`:
+
+   ```bash
+   mkdir -p ~/.config/rclone && cp vision-backup-key.json ~/.config/rclone/vision-sa.json && chmod 600 ~/.config/rclone/vision-sa.json
+   ```
+
+   ```bash
+   docker run --rm --user "$(id -u):$(id -g)" -v ~/.config/rclone:/config/rclone rclone/rclone:1.68.2 config create gdrive drive scope=drive service_account_file=/config/rclone/vision-sa.json team_drive=ID_ОБЩЕГО_ДИСКА
+   ```
+
+   Проверка (пустой ответ без ошибок — всё в порядке):
+
+   ```bash
+   docker run --rm --user "$(id -u):$(id -g)" -v ~/.config/rclone:/config/rclone rclone/rclone:1.68.2 lsd gdrive:
+   ```
+
+   Ключ даёт доступ только к этому общему диску; держите его лишь на сервере.
+4. В `.env.demo`:
 
    ```bash
    BACKUP_REMOTE=gdrive:vision-backups
@@ -475,8 +505,9 @@ git pull
    ```
 
    Мастер-логин и пароль нужны для входа после восстановления. Сохраните их копию **вне** сервера:
-   на новой машине их придётся ввести снова.
-4. Проверить и включить расписание:
+   на новой машине их придётся ввести снова. Папка конфигурации rclone — `RCLONE_CONFIG_DIR`
+   (по умолчанию `~/.config/rclone`).
+5. Проверить и включить расписание:
 
    ```bash
    ./scripts/vision-backup.sh

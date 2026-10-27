@@ -115,10 +115,22 @@ vb_manifest_value() {
   sed -n "s/^$2=//p" "$1" | head -1
 }
 
-# rclone is installed on the host (DEPLOY.md); the remote is BACKUP_REMOTE, e.g. gdrive:vision-backups.
+# The remote is BACKUP_REMOTE, e.g. gdrive:vision-backups. rclone runs from the host when it
+# is installed there, else from its Docker image, so nothing has to be installed on a server
+# that cannot reach rclone.org. Its config (and a service account key) live in RCLONE_CONFIG_DIR;
+# Vision's data folder is mounted at the same path, so local paths mean the same inside.
+VB_RCLONE_IMAGE="rclone/rclone:1.68.2"
 vb_rclone() {
-  command -v rclone >/dev/null || vision_die "rclone is not installed (see DEPLOY.md, backups)."
-  rclone "$@"
+  if command -v rclone >/dev/null; then
+    rclone "$@"
+    return
+  fi
+  local config="${RCLONE_CONFIG_DIR:-$HOME/.config/rclone}"
+  [ -f "$config/rclone.conf" ] || vision_die "No rclone config in $config (see DEPLOY.md, backups)."
+  docker run --rm --user "$(id -u):$(id -g)" \
+    -e HTTPS_PROXY -e HTTP_PROXY -e NO_PROXY -e https_proxy -e http_proxy -e no_proxy \
+    -v "$config:/config/rclone" -v "$VISION_DATA_DIR:$VISION_DATA_DIR" \
+    "$VB_RCLONE_IMAGE" "$@"
 }
 
 # Backup names on the remote, oldest first; none when it is empty or unreachable.

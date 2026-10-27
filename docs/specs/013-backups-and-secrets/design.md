@@ -49,7 +49,7 @@ API-ключем. Далі `vision.sh up -d`: міграції Vision доган
 |---|---|---|
 | Бекап | `scripts/vision-backup.sh` | без аргументів — бекап зараз, `--local-only`, `--install-cron`; дамп, tar, передача, зберігання, статус |
 | Відновлення | `scripts/vision-restore.sh` | `latest` або ім'я/шлях бекапу; майстер-логін, план, `yes`, відновлення, звірка |
-| Спільне | `scripts/lib/vision-backup.sh` | секретні колонки, дамп у знімку, manifest, виклик `rclone` (встановлений на хості) |
+| Спільне | `scripts/lib/vision-backup.sh` | секретні колонки, дамп у знімку, manifest, виклик `rclone`: з хоста, якщо встановлений, інакше з образу `rclone/rclone` |
 | Копія проду | `scripts/demo-clone-from-prod.sh` | перед заміною непорожньої бази викликає бекап (REQ-013-12) |
 | Стан бекапу | `backend/src/backups/backup-status.ts` | чиста `backupWarning(status, now)` |
 | API стану | `backend/src/backups/backups.controller.ts` | `GET /backups/status`, лише `admin` |
@@ -92,7 +92,8 @@ flowchart LR
 | Дамп і передача забирають CPU, диск і канал | `nice`/`ionice`, запас диска з `vision-safety.sh` перед дампом, нічний запуск |
 | Відновлення поверх живих даних | план, `yes`, лише контейнер, перевірений `vision_container` |
 | Google Drive недоступний | бекап лишається локально, передається наступним запуском, попередження після 26 год |
-| `rclone` потребує OAuth у браузері | `rclone authorize` на машині з браузером, інструкція в DEPLOY.md |
+| rclone.org недоступний із сервера | rclone з Docker-образу, нічого не ставимо на хост |
+| Вхід у Google без браузера | сервісний акаунт Workspace + спільний диск (у сервісного акаунта немає місця на «Моєму диску»); ключ у `RCLONE_CONFIG_DIR` |
 
 ## Перевірка вимог
 
@@ -105,7 +106,7 @@ flowchart LR
 | REQ-013-10 | `scripts/tests/test_vision_backup.py › test_restores_a_backup_into_an_empty_database` |
 | REQ-013-11 | `scripts/tests/test_vision_backup.py › test_keeps_the_backup_locally_and_uploads_it_on_the_next_run` |
 | REQ-013-12 | `scripts/tests/test_vision_backup.py › test_backs_up_before_a_production_copy_replaces_visions_data`; `scripts/tests/test_vision_backup.py › test_replaces_nothing_when_the_backup_before_a_production_copy_fails` |
-| REQ-013-13 | `scripts/tests/test_vision_backup.py › test_uploads_the_dump_and_new_images_to_the_remote` |
+| REQ-013-13 | `scripts/tests/test_vision_backup.py › test_uploads_the_dump_and_new_images_to_the_remote`; `scripts/tests/test_vision_backup.py › test_runs_rclone_from_its_docker_image_when_it_is_not_installed` |
 | REQ-013-14 | `scripts/tests/test_vision_backup.py › test_leaves_passwords_and_jira_tokens_out_of_the_backup` |
 | REQ-013-15 | `scripts/tests/test_vision_backup.py › test_makes_the_master_user_an_admin_existing_or_new` |
 | REQ-013-17 | `scripts/tests/test_vision_backup.py › test_other_users_cannot_log_in_with_a_password_after_a_restore`; `backend/src/auth/auth.service.spec.ts › never accepts a password against a restored placeholder` |

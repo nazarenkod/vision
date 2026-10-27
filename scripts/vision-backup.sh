@@ -71,6 +71,12 @@ DB_BYTES="$(vb_sql -c 'select pg_database_size(current_database())')"
 vision_require_space "$VB_BACKUP_DIR" $((DB_BYTES / 1024)) "the backup"
 
 NAME="vision-$(date -u +%Y%m%dT%H%M%SZ).tar"
+# two runs within a second (the nightly one and one before a production copy) must not
+# overwrite each other, least of all a backup still waiting for upload
+while [ -e "$VB_BACKUP_DIR/$NAME" ]; do
+  sleep 1
+  NAME="vision-$(date -u +%Y%m%dT%H%M%SZ).tar"
+done
 WORK="$VB_BACKUP_DIR/.work-$$"
 rm -rf "$WORK"
 mkdir -p "$WORK"

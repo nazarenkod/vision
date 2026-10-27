@@ -78,6 +78,8 @@ docs/specs/NNN-коротка-назва/
 | [015](015-compare-selected-elements/spec.md) | Порівняння лише обраних елементів | Draft |
 | [016](016-production-and-cutover/spec.md) | Робоча конфігурація й переїзд з VRT | Draft |
 | [017](017-backup-settings-ui/spec.md) | Налаштування бекапів в інтерфейсі | Implemented |
+| [018](018-ukrainian-ui/spec.md) | Українська мова інтерфейсу | Draft |
+| [019](019-project-settings-page/spec.md) | Сторінка налаштувань проєкту | Draft |
 
 Статусу `Verified` поки немає в жодної: інтеграцію з реальною Jira Cloud і прогони на сервері
 команда ще не підтвердила.

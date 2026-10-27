@@ -74,6 +74,8 @@ docs/specs/NNN-коротка-назва/
 | [011](011-deployment-safety/spec.md) | Розгортання поруч із продом | Implemented |
 | [012](012-java-sdk/spec.md) | Java SDK з UI-деревом | Implemented |
 | [013](013-backups-and-secrets/spec.md) | Бекапи й шифрування секретів | Draft |
+| [014](014-element-order-changes/spec.md) | Зміна порядку елементів: повідомлення й ручне рев'ю | Draft |
+| [015](015-compare-selected-elements/spec.md) | Порівняння лише обраних елементів | Draft |
 
 Статусу `Verified` поки немає в жодної: інтеграцію з реальною Jira Cloud і прогони на сервері
 команда ще не підтвердила.

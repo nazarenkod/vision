@@ -855,6 +855,9 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
 
     if (!isRectClicked) {
       setSelectedRectId(undefined);
+      // a press on the bare screenshot puts the Areas menu away, never while
+      // drawing: that press starts an area (REQ-024-35)
+      if (areasOpen && !isDrawMode) leaveAreasThen(() => undefined);
     }
   };
 
@@ -1039,6 +1042,7 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
       <AreasMenu
         open={areasOpen}
         onToggle={toggleAreas}
+        onClickAway={() => !isDrawMode && leaveAreasThen(() => undefined)}
         canEdit={canEdit}
         kind={areaKind}
         onKind={setAreaKind}

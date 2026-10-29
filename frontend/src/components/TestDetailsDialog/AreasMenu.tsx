@@ -3,6 +3,7 @@ import {
   Box,
   Button,
   ButtonBase,
+  ClickAwayListener,
   Paper,
   Popper,
   Tooltip,
@@ -19,6 +20,8 @@ export type AreaKind = "ignore" | "compare";
 interface AreasMenuProps {
   open: boolean;
   onToggle: () => void;
+  // a press outside the menu that is not on the screenshot puts it away
+  onClickAway: () => void;
   // editing needs the editor role; the count and the list do not
   canEdit: boolean;
   kind: AreaKind;
@@ -66,6 +69,7 @@ const DashedSquare = () => (
 export const AreasMenu: React.FunctionComponent<AreasMenuProps> = ({
   open,
   onToggle,
+  onClickAway,
   canEdit,
   kind,
   onKind,
@@ -236,102 +240,126 @@ export const AreasMenu: React.FunctionComponent<AreasMenuProps> = ({
         placement="bottom-end"
         sx={{ zIndex: 1300 }}
       >
-        <Paper
-          role="dialog"
-          aria-label={t("areas.title")}
-          data-testid="areasMenu"
-          sx={{
-            mt: 1,
-            width: 340,
-            borderRadius: "14px",
-            boxShadow: tokens.shadowPop,
+        <ClickAwayListener
+          mouseEvent="onMouseDown"
+          touchEvent="onTouchStart"
+          onClickAway={(event) => {
+            const target = event.target as Element | null;
+            if (!target?.closest || anchor.current?.contains(target)) return;
+            // a dialog over the review (save the areas? apply to the build?)
+            // belongs to the menu; the review itself is a dialog too, so only
+            // ones without the Areas button count
+            const modal = target.closest(".MuiModal-root");
+            if (modal && anchor.current && !modal.contains(anchor.current))
+              return;
+            // the screenshots decide for themselves (an area is picked there),
+            // and rows of the summary choose an area
+            if (
+              target.closest(
+                ".konvajs-content, [data-testid='comparedArea'], [data-testid='comparedTestArea']",
+              )
+            )
+              return;
+            onClickAway();
           }}
         >
-          <Box
-            sx={{ p: 2, display: "flex", flexDirection: "column", gap: 1.5 }}
+          <Paper
+            role="dialog"
+            aria-label={t("areas.title")}
+            data-testid="areasMenu"
+            sx={{
+              mt: 1,
+              width: 340,
+              borderRadius: "14px",
+              boxShadow: tokens.shadowPop,
+            }}
           >
-            <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-              <Typography sx={{ fontSize: 15, fontWeight: 600, flexGrow: 1 }}>
-                {t("areas.title")}
-              </Typography>
+            <Box
+              sx={{ p: 2, display: "flex", flexDirection: "column", gap: 1.5 }}
+            >
+              <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                <Typography sx={{ fontSize: 15, fontWeight: 600, flexGrow: 1 }}>
+                  {t("areas.title")}
+                </Typography>
+                <Box
+                  sx={{
+                    display: "flex",
+                    bgcolor: tokens.subtle,
+                    borderRadius: "8px",
+                    p: "2px",
+                  }}
+                >
+                  {kindButton("ignore", t("areas.ignore"))}
+                  {kindButton("compare", t("areas.compare"))}
+                </Box>
+              </Box>
+              <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.75 }}>
+                {tool(t("areas.draw"), onDraw, false, "areaDraw", drawing)}
+                {tool(t("areas.delete"), onDelete, !selectedId, "areaDelete")}
+                {tool(t("areas.clear"), onClear, !areas.length, "areaClear")}
+                {tool(
+                  t("areas.toBuild"),
+                  onApplyToBuild,
+                  !selectedId,
+                  "areaToBuild",
+                )}
+              </Box>
+              {count > 0 && (
+                <Box sx={{ display: "flex", flexDirection: "column" }}>
+                  {areas.map((area, index) => row(area, false, index))}
+                  {testAreas.length > 0 && (
+                    // one heading for the group, nothing more
+                    <Box
+                      data-testid="testAreasTitle"
+                      sx={{
+                        mt: areas.length ? 1.25 : 0,
+                        mb: 0.25,
+                        display: "flex",
+                        flexWrap: "wrap",
+                        columnGap: 0.75,
+                        fontSize: 12,
+                        lineHeight: 1.5,
+                      }}
+                    >
+                      <Box
+                        component="span"
+                        sx={{ fontWeight: 600, color: tokens.textSecondary }}
+                      >
+                        {t("areas.fromTest")}
+                      </Box>
+                    </Box>
+                  )}
+                  {testAreas.map((area, index) => row(area, true, index))}
+                </Box>
+              )}
+            </Box>
+            {canEdit && (
               <Box
                 sx={{
                   display: "flex",
-                  bgcolor: tokens.subtle,
-                  borderRadius: "8px",
-                  p: "2px",
+                  justifyContent: "flex-end",
+                  gap: 1,
+                  px: 2,
+                  py: 1.25,
+                  borderTop: `1px solid ${tokens.border}`,
                 }}
               >
-                {kindButton("ignore", t("areas.ignore"))}
-                {kindButton("compare", t("areas.compare"))}
-              </Box>
-            </Box>
-            <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.75 }}>
-              {tool(t("areas.draw"), onDraw, false, "areaDraw", drawing)}
-              {tool(t("areas.delete"), onDelete, !selectedId, "areaDelete")}
-              {tool(t("areas.clear"), onClear, !areas.length, "areaClear")}
-              {tool(
-                t("areas.toBuild"),
-                onApplyToBuild,
-                !selectedId,
-                "areaToBuild",
-              )}
-            </Box>
-            {count > 0 && (
-              <Box sx={{ display: "flex", flexDirection: "column" }}>
-                {areas.map((area, index) => row(area, false, index))}
-                {testAreas.length > 0 && (
-                  // one heading for the group, nothing more
-                  <Box
-                    data-testid="testAreasTitle"
-                    sx={{
-                      mt: areas.length ? 1.25 : 0,
-                      mb: 0.25,
-                      display: "flex",
-                      flexWrap: "wrap",
-                      columnGap: 0.75,
-                      fontSize: 12,
-                      lineHeight: 1.5,
-                    }}
-                  >
-                    <Box
-                      component="span"
-                      sx={{ fontWeight: 600, color: tokens.textSecondary }}
-                    >
-                      {t("areas.fromTest")}
-                    </Box>
-                  </Box>
-                )}
-                {testAreas.map((area, index) => row(area, true, index))}
+                <Button size="small" disabled={!dirty} onClick={onDiscard}>
+                  {t("areas.discard")}
+                </Button>
+                <Button
+                  size="small"
+                  variant="contained"
+                  disabled={!dirty}
+                  onClick={onSave}
+                  data-testid="areasSave"
+                >
+                  {t("areas.save")}
+                </Button>
               </Box>
             )}
-          </Box>
-          {canEdit && (
-            <Box
-              sx={{
-                display: "flex",
-                justifyContent: "flex-end",
-                gap: 1,
-                px: 2,
-                py: 1.25,
-                borderTop: `1px solid ${tokens.border}`,
-              }}
-            >
-              <Button size="small" disabled={!dirty} onClick={onDiscard}>
-                {t("areas.discard")}
-              </Button>
-              <Button
-                size="small"
-                variant="contained"
-                disabled={!dirty}
-                onClick={onSave}
-                data-testid="areasSave"
-              >
-                {t("areas.save")}
-              </Button>
-            </Box>
-          )}
-        </Paper>
+          </Paper>
+        </ClickAwayListener>
       </Popper>
     </>
   );

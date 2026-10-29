@@ -266,3 +266,41 @@ test("asks about unsaved areas when leaving them", async ({
   await expect(page.getByTestId("areasMenu")).toBeHidden();
   await expect(page.getByTestId("areasCount")).toHaveCount(0);
 });
+
+test("puts the Areas menu away on a press beside it, not while drawing", async ({
+  openProjectPage,
+  page,
+}) => {
+  const toPage = await openRunWith(page, openProjectPage, [
+    { id: "own", x: 40, y: 40, width: 200, height: 100 },
+  ]);
+  const menu = page.getByTestId("areasMenu");
+
+  // a press on an area picks it and keeps the menu, ready to delete it
+  await page.getByTestId("areasButton").click();
+  const onArea = toPage(140, 90);
+  await page.mouse.click(onArea.x, onArea.y);
+  await expect(menu).toBeVisible();
+  await expect(page.getByTestId("areaDelete")).toBeEnabled();
+
+  // a press on the bare screenshot puts it away
+  const bare = toPage(900, 600);
+  await page.mouse.click(bare.x, bare.y);
+  await expect(menu).toBeHidden();
+
+  // so does a press elsewhere on the screen
+  await page.getByTestId("areasButton").click();
+  const panel = await page.locator("aside").last().boundingBox();
+  if (!panel) throw new Error("no side panel");
+  await page.mouse.click(
+    panel.x + panel.width / 2,
+    panel.y + panel.height - 40,
+  );
+  await expect(menu).toBeHidden();
+
+  // while drawing, a press on the screenshot starts an area instead
+  await page.getByTestId("areasButton").click();
+  await page.getByTestId("areaDraw").click();
+  await drag(page, toPage(500, 300), toPage(700, 450));
+  await expect(menu).toBeVisible();
+});

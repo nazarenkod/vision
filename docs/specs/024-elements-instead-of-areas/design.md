@@ -151,6 +151,7 @@ sequenceDiagram
 | REQ-024-32 | `frontend/integration_tests/test/ignoreAreas.spec.ts › counts areas on the Areas button` |
 | REQ-024-33 | `frontend/integration_tests/test/elementSelection.spec.ts › offers an area when the screenshot has no UI tree` |
 | REQ-024-34 | `frontend/integration_tests/test/ignoreAreas.spec.ts › asks about unsaved areas when leaving them` |
+| REQ-024-35 | `frontend/integration_tests/test/ignoreAreas.spec.ts › puts the Areas menu away on a press beside it, not while drawing` |
 | REQ-024-40 | `backend/src/ui-tree/area-elements.spec.ts › finds the element a noisy area covers`; `backend/src/ui-tree/ui-tree.service.spec.ts › offers to ignore the element under a noise hint` |
 | REQ-024-41 | `frontend/integration_tests/test/elementSelection.spec.ts › offers element actions on a changed area` |
 | REQ-024-50 | `backend/src/ui-tree/area-elements.spec.ts › suggests an element only when it and the area overlap by 90 %` |

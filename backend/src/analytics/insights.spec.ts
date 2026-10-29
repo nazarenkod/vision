@@ -35,7 +35,6 @@ const run = (fields: Partial<RunRow>): RunRow => ({
   updatedAt: daysAgo(10),
   a11yNewCount: null,
   a11yTotalCount: null,
-  captureWarnings: null,
   semanticChangeCount: null,
   ...fields,
 });
@@ -167,22 +166,26 @@ describe('computeInsights', () => {
     ]);
   });
 
-  it('points at noise, early screenshots and hidden changes', () => {
+  it('points at noise and hidden changes', () => {
     const runs = [
       ...[9, 8, 7].map((days) => run({ status: 'approved', diffPercent: 0.05, createdAt: daysAgo(days) })),
       ...[6, 5].map((days) =>
+        run({ testVariationId: 'c', name: 'Cards', semanticChangeCount: 1, createdAt: daysAgo(days) })
+      ),
+      run({ testVariationId: 'c', name: 'Cards', createdAt: daysAgo(4) }),
+      // early screenshots are no longer told apart (spec 020), whatever an old row kept
+      ...[3, 2].map((days) =>
         run({
-          testVariationId: 'c',
-          name: 'Cards',
+          testVariationId: 'f',
+          name: 'Feed',
           captureWarnings: '[{"kind":"loading","message":"…"}]',
           createdAt: daysAgo(days),
-        })
+        } as never)
       ),
-      run({ testVariationId: 'c', name: 'Cards', semanticChangeCount: 1, createdAt: daysAgo(4) }),
     ];
     const result = computeInsights(input({ runs }));
     expect(result.noise).toEqual([{ name: 'Payment', customTags: '', tinyApproved: 3, runs: 3 }]);
-    expect(result.captureIssues).toEqual([{ name: 'Cards', customTags: '', loading: 2, hidden: 1, runs: 3 }]);
+    expect(result.captureIssues).toEqual([{ name: 'Cards', customTags: '', hidden: 2, runs: 3 }]);
   });
 
   it('lists the checks each device is missing on the main branch', () => {

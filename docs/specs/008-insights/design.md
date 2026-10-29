@@ -24,7 +24,7 @@
 | REQ-008-09 | `frontend/integration_tests/test/insights.spec.ts › deletes the selected unused baselines after confirming` |
 | REQ-008-03 | `backend/src/analytics/insights.spec.ts › ranks unstable screens: flips first, then how often they change` |
 | REQ-008-10 | `backend/src/analytics/insights.spec.ts › does not call a change a flip when the baseline changed in between` |
-| REQ-008-05 | `backend/src/analytics/insights.spec.ts › points at noise, early screenshots and hidden changes` |
+| REQ-008-05 | `backend/src/analytics/insights.spec.ts › points at noise and hidden changes` |
 | REQ-008-04 | `backend/src/analytics/insights.spec.ts › ranks screens by their newest accessibility issues, with the decisions taken on them` |
 | REQ-008-06 | `backend/src/analytics/insights.spec.ts › lists the checks each device is missing on the main branch` |
 | REQ-008-07 | `backend/src/analytics/insights.spec.ts › counts reviews waiting for a decision by the newest run of each baseline` |

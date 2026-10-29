@@ -40,7 +40,7 @@
 | REQ-002-15 | `backend/src/ui-tree/comparison-inputs.spec.ts › covers an element where it was and where it is now` |
 | REQ-002-13 | manual: Changes → «Pick element on screenshot» → клік → правило з елемента |
 | REQ-002-20 | `backend/src/ui-tree/screen-checks.spec.ts › reports a control that became disabled when the pixels did not change`; `backend/src/ui-tree/screen-checks.spec.ts › reports an invisible control added on top of the screen`; `backend/src/test-runs/test-runs.service.spec.ts › calculateDiff keeps a run in review when the pixels match but an element change stays hidden` |
-| REQ-002-21 | `backend/src/ui-tree/screen-checks.spec.ts › finds a visible spinner`; `backend/src/ui-tree/screen-checks.spec.ts › finds a shimmer placeholder and a "Loading…" text`; `backend/src/ui-tree/screen-checks.spec.ts › ignores hidden spinners and settled screens` |
-| REQ-002-22 | `backend/src/ui-tree/screen-checks.spec.ts › is high for the same screen and low for another one`; `backend/src/ui-tree/ui-tree.service.spec.ts › warns about a wrong screen against another device` |
-| REQ-002-24 | `backend/src/ui-tree/ui-tree.service.spec.ts › warns about a wrong screen against another device, and never for a check with no baseline at all` |
+| REQ-002-21 | manual: знято 020 |
+| REQ-002-22 | manual: знято 020 |
+| REQ-002-24 | manual: знято 020 |
 | REQ-002-23 | `backend/src/ui-tree/structure-diff.spec.ts › reports text changes, added and removed elements and resizes`; `backend/src/ui-tree/structure-diff.spec.ts › names the element that best wraps each changed area` |

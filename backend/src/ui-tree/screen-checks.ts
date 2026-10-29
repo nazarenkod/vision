@@ -1,48 +1,6 @@
 import { createHash } from 'crypto';
-import { describeNode, ownSpeakableText } from './ui-tree.parser';
 import { Rect, UiNode, UiTree } from './ui-tree.types';
 import { elementsUnderRegions, StructuralChange } from './structure-diff';
-
-export type CaptureWarningKind = 'loading' | 'screen-mismatch' | 'duplicate-screen';
-
-export interface CaptureWarning {
-  kind: CaptureWarningKind;
-  message: string;
-  // keys of the elements behind the warning (loading indicators)
-  elements?: string[];
-  // 0..1 for screen comparisons
-  similarity?: number;
-  // name of the screen this one looks like
-  looksLike?: string;
-}
-
-const LOADING_CLASS =
-  /ProgressBar|ProgressIndicator|CircularProgress|LinearProgress|Shimmer|Skeleton|SwipeRefresh.*Refreshing|XCUIElementType(ActivityIndicator|ProgressIndicator)$/i;
-const TRANSIENT_CLASS = /android\.widget\.Toast$|Snackbar/;
-const LOADING_TEXT = /^(loading|please wait|завантаження|загрузка|зачекайте|подождите)\W*$/i;
-
-const isShown = (node: UiNode) => node.visible && node.bounds.width > 0 && node.bounds.height > 0;
-
-/**
- * Signs that the screenshot was taken before the screen settled: a spinner,
- * a skeleton or shimmer placeholder, a toast or snackbar, a "Loading…" text.
- */
-export function detectLoading(tree: UiTree): CaptureWarning | null {
-  const found = tree.nodes.filter(
-    (node) =>
-      isShown(node) &&
-      (LOADING_CLASS.test(node.className) ||
-        TRANSIENT_CLASS.test(node.className) ||
-        LOADING_TEXT.test((node.text || node.label).trim()))
-  );
-  if (!found.length) return null;
-  const names = found.slice(0, 3).map(describeNode).join(', ');
-  return {
-    kind: 'loading',
-    message: `Taken before the screen settled: ${names}${found.length > 3 ? ` and ${found.length - 3} more` : ''} visible.`,
-    elements: found.map((node) => node.key),
-  };
-}
 
 const intersects = (a: Rect, b: Rect) =>
   a.x < b.x + b.width && b.x < a.x + a.width && a.y < b.y + b.height && b.y < a.y + a.height;
@@ -68,34 +26,8 @@ export function invisibleChanges(
   });
 }
 
-// Framework ids and shared chrome say nothing about which screen this is.
-const GENERIC_ID =
-  /^android:id\/|:id\/(content|action_bar_root|decor_content_parent|toolbar|statusBarBackground|navigationBarBackground)$/;
 // Framework containers are not components; shared chrome like a toolbar is.
 const NOT_A_COMPONENT = /^android:id\/|:id\/(content|action_bar_root|decor_content_parent)$/;
-
-/** What identifies a screen: its resource ids, else its texts. */
-export function screenFingerprint(tree: UiTree): Set<string> {
-  const ids = tree.nodes
-    .filter((node) => node.resourceId && !GENERIC_ID.test(node.resourceId))
-    .map((n) => n.resourceId);
-  if (new Set(ids).size >= 3) return new Set(ids);
-  return new Set(tree.nodes.map(ownSpeakableText).filter((text) => text.length > 1));
-}
-
-/** Jaccard similarity of two screens' fingerprints, 0..1. */
-export function screenSimilarity(a: UiTree, b: UiTree): number {
-  if (a.activity && b.activity && a.activity !== b.activity) return 0;
-  const left = screenFingerprint(a);
-  const right = screenFingerprint(b);
-  if (!left.size && !right.size) return 1;
-  let common = 0;
-  left.forEach((item) => right.has(item) && common++);
-  return common / (left.size + right.size - common);
-}
-
-export const MISMATCH_BELOW = 0.35;
-export const SAME_SCREEN_ABOVE = 0.85;
 
 export interface ComponentChange {
   // resource id of the component, e.g. com.bank.app:id/bottom_nav

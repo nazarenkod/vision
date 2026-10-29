@@ -11,18 +11,15 @@ Vision is a fork of Visual Regression Tracker with a refreshed UI and these addi
   - *System bars* are left out of the comparison (project setting).
   - *Moved elements* are compared at their new place (project setting): a banner pushing a list down no longer flags the whole list, while a change inside a moved element still shows.
   - *Hidden changes*: a new label, a disabled or unclickable control, an invisible button on top. The pixels match, but the screenshot goes to review and is never auto-approved.
-  - *Taken too early*: a visible spinner, skeleton, shimmer or toast is flagged.
-  - *Wrong screen*: a screenshot that looks unlike its baseline is flagged, with the known screen it resembles.
   - *Component groups*: the same component (toolbar, bottom menu) changed the same way on several screens is one card.
-- **Checks keyed by name, a baseline per device.** A check is what the test names (plus custom tags). Each device, OS, browser or viewport it runs on keeps its own baseline, so pixel comparison is as exact as before. The review shows the check's devices side by side and approves them at once; rules and accessibility decisions belong to the check, not to one device. A device without its own baseline yet is still "new", but its accessibility issues are compared with the check's baseline on another device, and a wrong screen is still caught. Existing data is grouped by name as it is, without a migration.
-- **Reference device (for information).** Pick one in the project settings (e.g. the emulator). Every other device's run is compared with the same check on it, element by element: texts, labels and states of elements found on both, and elements not found (missing or only off screen). Shown in the review's Devices tab; never changes a status. What it showed and the reviewer's decision are kept in the `CrossDeviceCheck` table to judge later whether it can be trusted (query below).
+- **Checks keyed by name, a baseline per device.** A check is what the test names (plus custom tags). Each device, OS, browser or viewport it runs on keeps its own baseline, so pixel comparison is as exact as before. The review shows the check's devices side by side and approves them at once; rules and accessibility decisions belong to the check, not to one device. A device without its own baseline yet is still "new", but its accessibility issues are compared with the check's baseline on another device (the newest one, on its branch first). Existing data is grouped by name as it is, without a migration.
 - **Manual checks: CLI and MCP.** `vision.py` (served by the UI at `/cli/vision.py`, help menu → Manual checks shows the commands with your key) takes the screen of a connected Android device (adb), an Appium session (Android or iOS), the iOS simulator (screenshot only) or files, sends it as a check and prints the result: status, changed elements, hidden changes, accessibility issues, review link. `vision.py mcp` serves the same to AI assistants over MCP.
 - **Insights (left rail, per project).** For the last 30–365 days:
   - baselines nothing was compared with (renamed or removed screens, gone devices), with bulk delete;
   - unstable screens, ranked by flips: differed, then matched the same baseline again, so the screen moved, not the app;
   - screens with the most accessibility issues and the most frequent issues across the app;
   - tiny changes that keep being approved (worth a tolerance or element rule);
-  - screenshots taken while loading or with hidden changes;
+  - screenshots with hidden changes, run after run;
   - checks a device is missing;
   - reviews waiting and the median time to a decision.
 
@@ -99,8 +96,8 @@ Without a device, upload PNG + XML pairs exported from Appium Inspector:
 6. Upload a build where the issue is fixed. The review says the bug can be closed.
 7. A component group: “Component id/bottom_nav, changed the same way on 4 screens”. Screens that changed elsewhere too are listed apart.
 8. On a screen where a banner pushed the list down, only the banner is flagged; “Compared at their new place” lists the moved elements. Click “Pick element on screenshot”, click the banner, Add rule: the screen joins the component group.
-9. A screenshot with a disabled Pay button and identical pixels is in review with “1 hidden”; one taken during loading shows “Loading”; one taken on the wrong screen says which screen it looks like.
-10. A check run on two devices: the review shows both at the top, “Approve all 2” takes both. The Devices tab compares the second device with the reference one (“Button "Pay": disabled → default”), for information.
+9. A screenshot with a disabled Pay button and identical pixels is in review with “1 hidden”.
+10. A check run on two devices: the review shows both at the top, “Approve all 2” takes both.
 11. Help menu → **Manual checks**: copy the three commands, then `python3 vision.py check "Payment"` with an emulator open prints the result and the review link.
 12. With AI on: each group gets a one-line explanation and a verdict, and unlabeled icons get a proposed label.
 
@@ -121,20 +118,6 @@ python3 vision.py check "Payment"
 Sources: the only adb device (default), `--serial`, `--appium http://127.0.0.1:4723` (Android or iOS), `--simulator` (iOS, screenshot only), `--png f.png --xml f.xml`. `start` / `finish` put several checks into one build. Checks go to the branch `manual` and are compared with the main branch; `config --device … --os …` names the device as the autotests do, so their baselines are used pixel by pixel. Sending needs the editor role. Python 3.8+, no packages.
 
 MCP: `claude mcp add vision -- python3 /path/to/vision.py mcp` (any MCP client can run `python3 vision.py mcp` over stdio). Tools: `vision_check`, `vision_devices`, `vision_session`.
-
-## Is the reference device comparison worth trusting?
-
-After some weeks of reviews:
-
-```sql
-select decision,
-       count(*) as runs,
-       count(*) filter (where "differenceCount" > 0) as with_differences,
-       count(*) filter (where "notFoundCount" > 0) as with_not_found
-from "CrossDeviceCheck" where decision is not null group by decision;
-```
-
-If runs with differences are mostly rejected and runs without them mostly approved, the comparison can be allowed to send runs to review.
 
 ## Changes against upstream
 

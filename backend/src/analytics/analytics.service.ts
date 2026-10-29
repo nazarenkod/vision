@@ -58,7 +58,6 @@ export class AnalyticsService {
           updatedAt: true,
           a11yNewCount: true,
           a11yTotalCount: true,
-          captureWarnings: true,
           semanticChangeCount: true,
         },
         orderBy: { createdAt: 'asc' },

@@ -17,7 +17,6 @@
 | `GET /test-runs/groups?buildId=` | групи змін збірки |
 | `GET /test-runs/:id/structure` | зміни елементів, правила, шум |
 | `POST /test-runs/:id/element-rules`, `…/element-rules/remove` | правило елемента для перевірки або проєкту |
-| `GET /test-runs/:id/cross-device` | довідкове порівняння з еталонним пристроєм |
 | `GET /test-runs/:id/a11y` | звіт доступності з рішеннями; заодно шукає в Jira незаведені проблеми (від імені того, хто дивиться) |
 | `POST /test-runs/approve`, `POST /test-runs/reject` | як в upstream, але відповідь тепер `{ decisionId }`: запис журналу для Undo ([018](../specs/018-ui-redesign/spec.md)) |
 | `POST /test-runs/undo/:decisionId` | скасувати рішення, прийняте не раніше ніж 30 s тому, лише тим, хто його прийняв: статуси й еталони — як до рішення, все або нічого. `409` — рішення вже скасоване, застаре або після нього хтось змінив знімок чи еталон (причина в `message`); `403` — рішення чуже |
@@ -44,7 +43,6 @@
 
 | Метод і шлях | Призначення |
 |---|---|
-| `GET /projects/:id/devices` | профілі пристроїв проєкту (для вибору еталонного) |
 | `GET /projects` | у налаштуваннях порівняння немає `apiKey` Gemini, є `geminiApiKeySet` (як `jiraTokenSet`) |
 | `PUT /projects` | необов'язкові `loadedSettings` (налаштування, як їх завантажила сторінка) і `force`. З `loadedSettings` збереження поверх чужих змін — `409` з `fields`; `force: true` зберігає попри це. `apiKey` Gemini: відсутній — лишити збережений, `""` — видалити |
 | `GET /analytics/:projectId?days=` | Insights за 7–730 днів (типово 90; UI пропонує 30, 90, 180, 365) |

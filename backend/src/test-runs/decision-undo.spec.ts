@@ -130,7 +130,7 @@ function setup() {
     deleteFile: jest.fn(async () => true),
   };
   const eventsGateway: any = { testRunUpdated: jest.fn() };
-  const uiTreeService: any = { recordCrossDevice: jest.fn(async () => undefined) };
+  const uiTreeService: any = {};
   const variations = new TestVariationsService(db, staticService, undefined as any, undefined as any);
   const runs = new TestRunsService(
     variations,

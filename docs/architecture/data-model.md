@@ -8,15 +8,16 @@ upstream VRT, а згодом зможе працювати й на живій.
 
 | Таблиця | Що додано | Навіщо |
 |---|---|---|
-| `TestRun` | `uiTreeName`, `baselineUiTreeName`, `uiTreeOptions`, `a11yReportName`, `a11yNewCount`, `a11yTotalCount`, `diffRegions`, `changeSignature`, `imageThumbnailName`, `diffThumbnailName`, `captureWarnings`, `semanticChangeCount`, `componentChanges` | результати аналізу дерева: файли й лічильники |
+| `TestRun` | `uiTreeName`, `baselineUiTreeName`, `uiTreeOptions`, `a11yReportName`, `a11yNewCount`, `a11yTotalCount`, `diffRegions`, `changeSignature`, `imageThumbnailName`, `diffThumbnailName`, `captureWarnings`, `semanticChangeCount`, `componentChanges` | результати аналізу дерева: файли й лічильники; `captureWarnings` з [020](../specs/020-remove-reference-device/spec.md) не пишеться й не читається |
 | `TestVariation`, `Baseline` | `baselineUiTreeName` / `uiTreeName` | дерево еталона йде разом із картинкою |
 | `Project` | `jiraUrl`, `jiraToken` (спільний, необов'язковий), `jiraEmail`, `jiraIssueType`, `jiraLinkType`, `uiTreeSettings` (JSON) | Jira і налаштування мобільного порівняння, класи проблем |
 | `User` | `jiraToken`, `jiraEmail`, `lastSignInAt` | особистий токен Jira ([ADR-0010](../decisions/0010-personal-jira-tokens.md)); останній вхід в інтерфейс паролем чи SSO, для сторінки Users ([018](../specs/018-ui-redesign/spec.md)) |
 
 `uiTreeSettings` — JSON, який читає `parseUiTreeSettings` (`ui-tree/comparison-inputs.ts`):
-системні бари, зсуви, приховані зміни, «знято зарано», «не той екран», правила елементів,
-еталонний пристрій, `screenTitle` (селектори заголовка), `a11yDuplicates` (режим дублів за
-правилом), `a11yClasses` (класи проблем). Невідомі або биті записи парсер відкидає.
+системні бари, зсуви, приховані зміни, правила елементів, `screenTitle` (селектори заголовка),
+`a11yDuplicates` (режим дублів за правилом), `a11yClasses` (класи проблем). Биті записи парсер
+відкидає. Ключі `detectLoading`, `detectScreenMismatch` і `referenceDevice` зі старих проєктів
+лишаються в JSON, але з [020](../specs/020-remove-reference-device/spec.md) нічого не вмикають.
 
 ## Нові таблиці
 
@@ -25,7 +26,7 @@ upstream VRT, а згодом зможе працювати й на живій.
 | `A11yProblem` | проблема доступності на проєкт: `code` (ID, не змінюється), `key` (ключ на момент створення, він же «замок»; унікальний з `projectId`), `facets` (факти місць, для яких її вирішили), `status` (`filing` / `reported` / `ignored`), Jira-ключ і посилання, де вирішили ([004](../specs/004-a11y-problems/spec.md)) |
 | `A11yDecision` | журнал рішень: `filed`, `linked`, `found`, `unlinked`, `ignored`, `restored` — хто, коли, по якій проблемі та якому багу |
 | `A11yIssueState` | рішення старого формату (по елементу на екрані). При старті API переносяться в `A11yProblem`; ті, чиє порушення вже не знайдено, діють як раніше на своєму екрані |
-| `CrossDeviceCheck` | що показало довідкове порівняння пристроїв і що вирішив рев'юер ([007](../specs/007-cross-device-reference/spec.md)) |
+| `CrossDeviceCheck` | що показало довідкове порівняння пристроїв і що вирішив рев'юер ([007](../specs/007-cross-device-reference/spec.md)); з [020](../specs/020-remove-reference-device/spec.md) нових записів немає, наявні лишаються |
 | `AiResult` | кеш відповідей AI за хешем вмісту ([010](../specs/010-ai-assist/spec.md)) |
 | `ReviewDecision` | журнал Approve і Reject для Undo: хто, що (`kind`), стан кожного прогону до й після (`items`, JSON), коли скасовано (`undoneAt`). Без зовнішніх ключів; записи старші за 7 днів видаляються при наступному записі ([ADR-0014](../decisions/0014-undo-through-decision-journal.md)) |
 

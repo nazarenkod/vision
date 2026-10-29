@@ -460,3 +460,57 @@ test.describe("with Go to the next on", () => {
     await expect(page.getByText("Step 2/3:")).toBeVisible();
   });
 });
+
+test("has no Devices tab and no capture warnings", async ({
+  openProjectPage,
+  page,
+}) => {
+  // as an older version kept them on the run and in the structure (spec 020)
+  const saved = [
+    { kind: "loading", message: "Taken before the screen settled" },
+    { kind: "screen-mismatch", message: "This does not look like its screen" },
+  ];
+  const run = {
+    ...TEST_UNRESOLVED,
+    hasUiTree: true,
+    captureWarnings: JSON.stringify(saved),
+  } as TestRun;
+  await mockGetTestRuns(page, build.id, [run]);
+  await mockTestRun(page, run);
+  await page.route(`${API_URL}/test-runs/${run.id}/a11y`, (route) =>
+    route.fulfill({ body: "null" }),
+  );
+  await page.route(`${API_URL}/test-runs/${run.id}/structure`, (route) =>
+    route.fulfill({
+      body: JSON.stringify({
+        hasUiTree: true,
+        hasBaselineUiTree: true,
+        changes: [],
+        regions: [],
+        hints: [],
+        invisible: [],
+        warnings: saved,
+        rules: [],
+        ignoredAreas: [],
+        toleratedAreas: [],
+        systemBars: [],
+        moves: [],
+        elements: [],
+        settings: null,
+      }),
+    }),
+  );
+
+  await openProjectPage(project.id, build.id, run.id);
+  await expect(page.getByRole("tab", { name: "Changes" })).toBeVisible();
+  await expect(page.getByRole("tab", { name: "Devices" })).toHaveCount(0);
+  await page.getByRole("tab", { name: "Changes" }).click();
+  for (const text of [
+    "Taken before the screen settled",
+    "This does not look like its screen",
+    "Loading",
+    "Other screen?",
+  ]) {
+    await expect(page.getByText(text, { exact: true })).toHaveCount(0);
+  }
+});

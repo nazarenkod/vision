@@ -376,9 +376,6 @@ def describe(report):
     diff = result.get("diffPercent")
     lines.append(f"Status: {STATUS_TEXT.get(status, status)}" + (f" (diff {diff:.2f}%)" if diff else ""))
 
-    for warning in result.get("warnings") or []:
-        lines.append(f"Warning: {warning.get('message')}")
-
     structure = report.get("structure") or {}
     for change in structure.get("invisible") or []:
         lines.append(f"Hidden change: {change.get('element')}: {change.get('before')} → {change.get('after')}")

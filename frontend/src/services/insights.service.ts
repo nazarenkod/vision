@@ -6,8 +6,6 @@ import {
   JiraBugResult,
   AiStatus,
   ChangeGroup,
-  CrossDeviceResult,
-  DeviceProfile,
   GroupSummary,
   JiraBugPreparation,
   JiraUser,
@@ -45,12 +43,6 @@ export const insightsService = {
     get<StructureInfo | null>(`/test-runs/${testRunId}/structure`),
   getProjectInsights: (projectId: string, days: number) =>
     get<ProjectInsights>(`/analytics/${projectId}?days=${days}`),
-  getCrossDevice: (testRunId: string) =>
-    get<CrossDeviceResult | null>(`/test-runs/${testRunId}/cross-device`),
-  getProjectDevices: (projectId: string) =>
-    get<Array<DeviceProfile & { checks: number }>>(
-      `/projects/${projectId}/devices`,
-    ),
   // each takes every issue of one problem (same rule, same component)
   ignoreA11y: (testRunId: string, violationIds: string[], comment?: string) =>
     post<A11yDecisionResult>(`/test-runs/${testRunId}/a11y/ignore`, {

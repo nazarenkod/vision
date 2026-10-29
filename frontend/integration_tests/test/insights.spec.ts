@@ -67,9 +67,7 @@ const INSIGHTS: ProjectInsights = {
   ],
   a11yRules: [{ rule: "Touch target too small", count: 20 }],
   noise: [{ name: "Login", customTags: "", tinyApproved: 4, runs: 11 }],
-  captureIssues: [
-    { name: "Cards", customTags: "", loading: 4, hidden: 0, runs: 8 },
-  ],
+  captureIssues: [{ name: "Cards", customTags: "", hidden: 4, runs: 8 }],
   coverage: [
     {
       device: "Galaxy S23 · Android 14",
@@ -117,7 +115,8 @@ test("shows what the project history says", async ({
   await expect(
     page.getByText("4 tiny changes approved in 11 runs"),
   ).toBeVisible();
-  await expect(page.getByText("4 taken while loading of 8 runs")).toBeVisible();
+  await expect(page.getByText("4 with hidden changes of 8 runs")).toBeVisible();
+  await expect(page.getByText(/taken while loading/)).toHaveCount(0);
   await expect(
     page.getByText("Galaxy S23 · Android 14: 1 missing of 4"),
   ).toBeVisible();

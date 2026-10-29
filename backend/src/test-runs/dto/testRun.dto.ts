@@ -57,9 +57,6 @@ export class TestRunDto {
   a11yNewCount?: number;
   @ApiPropertyOptional()
   a11yTotalCount?: number;
-  // JSON [{kind, message, looksLike?, similarity?}], the same string the socket events carry
-  @ApiPropertyOptional({ description: 'Taken while loading, looks like another screen, … (JSON)' })
-  captureWarnings?: string;
   @ApiPropertyOptional({ description: 'Element changes the screenshot does not show' })
   semanticChangeCount?: number;
 
@@ -91,7 +88,6 @@ export class TestRunDto {
     this.hasUiTree = !!testRun.uiTreeName;
     this.a11yNewCount = testRun.a11yNewCount;
     this.a11yTotalCount = testRun.a11yTotalCount;
-    this.captureWarnings = testRun.captureWarnings;
     this.semanticChangeCount = testRun.semanticChangeCount;
   }
 }

@@ -17,12 +17,10 @@ import { useTestRunState } from "../contexts";
 import { insightsService, staticService, testRunService } from "../services";
 import {
   AiStatus,
-  CaptureWarning,
   ChangeGroup,
   GroupSummary,
   StructuralChange,
   TestRun,
-  captureWarnings,
 } from "../types";
 import { buildTestRunLocation } from "../_helpers/route.helpers";
 import { BaseModal } from "./BaseModal";
@@ -182,45 +180,26 @@ const Thumb: React.FunctionComponent<{ run: TestRun; onOpen: () => void }> = ({
   );
 };
 
-const FLAG_LABEL: Record<CaptureWarning["kind"], MessageKey> = {
-  loading: "groups.flag.loading",
-  "screen-mismatch": "groups.flag.screenMismatch",
-  "duplicate-screen": "groups.flag.duplicateScreen",
-};
-
-/** Small flags for what the UI tree noticed about a screenshot. */
+/**
+ * A flag for what the UI tree noticed about a screenshot: element changes the
+ * pixels do not show. Warnings older runs kept (loading, another screen) are
+ * not shown since spec 020.
+ */
 export const RunFlags: React.FunctionComponent<{ run: TestRun }> = ({
   run,
 }) => {
   const { t } = useT();
-  const warnings = captureWarnings(run);
-  if (!warnings.length && !run.semanticChangeCount) return null;
+  if (!run.semanticChangeCount) return null;
   return (
     <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.5 }}>
-      {warnings.map((warning) => (
-        <Tooltip key={warning.kind} title={warning.message}>
-          <span>
-            <StatusPill
-              tone="failed"
-              label={
-                FLAG_LABEL[warning.kind]
-                  ? t(FLAG_LABEL[warning.kind])
-                  : warning.kind
-              }
-            />
-          </span>
-        </Tooltip>
-      ))}
-      {!!run.semanticChangeCount && (
-        <Tooltip title={t("groups.hiddenHelp")}>
-          <span>
-            <StatusPill
-              tone="changed"
-              label={t("groups.hidden", { count: run.semanticChangeCount })}
-            />
-          </span>
-        </Tooltip>
-      )}
+      <Tooltip title={t("groups.hiddenHelp")}>
+        <span>
+          <StatusPill
+            tone="changed"
+            label={t("groups.hidden", { count: run.semanticChangeCount })}
+          />
+        </span>
+      </Tooltip>
     </Box>
   );
 };

@@ -637,16 +637,7 @@ const InsightsPage: React.FunctionComponent = () => {
                 data.captureIssues.map((item) => (
                   <Typography key={checkName(item)} variant="body2">
                     <b>{checkName(item)}</b>:{" "}
-                    {[
-                      item.loading
-                        ? t("insights.whileLoading", { count: item.loading })
-                        : "",
-                      item.hidden
-                        ? t("insights.withHidden", { count: item.hidden })
-                        : "",
-                    ]
-                      .filter(Boolean)
-                      .join(", ")}{" "}
+                    {t("insights.withHidden", { count: item.hidden })}{" "}
                     {t("insights.ofRuns", { count: item.runs })}
                   </Typography>
                 ))

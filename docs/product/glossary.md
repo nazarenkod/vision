@@ -20,7 +20,7 @@
 |---|---|
 | Перевірка (check) | те, що назвав тест: назва + `customTags`. Пристрої — прогони однієї перевірки ([001](../specs/001-check-identity/spec.md)) |
 | Профіль пристрою (device profile) | OS + пристрій + браузер + viewport прогону |
-| Еталонний пристрій (reference device) | пристрій, з яким довідково порівнюються інші ([007](../specs/007-cross-device-reference/spec.md)) |
+| Еталонний пристрій (reference device) | колишнє налаштування: пристрій, з яким довідково порівнювались інші ([007](../specs/007-cross-device-reference/spec.md)); прибрано в [020](../specs/020-remove-reference-device/spec.md) |
 | UI-дерево (`uiTree`) | Appium page source (XML), надісланий разом зі скриншотом |
 | Елемент, ключ елемента (`nodeKey`) | `id:<resource-id або Compose tag>`, інакше `Class:текст` або `path:…`; повтори того ж id — `#1`, `#2` |
 | Компонент (component) | частина Compose tag після `#` (`Адреса#PbButton` → `PbButton`), інакше resource id без пакета |

@@ -94,14 +94,6 @@ export interface NoiseHint {
   ignoreArea?: Rect;
 }
 
-export interface CaptureWarning {
-  kind: "loading" | "screen-mismatch" | "duplicate-screen";
-  message: string;
-  elements?: string[];
-  similarity?: number;
-  looksLike?: string;
-}
-
 export interface ElementRule {
   id: string;
   selector: string;
@@ -115,11 +107,7 @@ export interface UiTreeSettings {
   compensateMoves: boolean;
   maxMoveDp: number | null;
   detectSemanticChanges: boolean;
-  detectLoading: boolean;
-  detectScreenMismatch: boolean;
   elementRules: ElementRule[];
-  // the device other devices are compared with, for information
-  referenceDevice?: DeviceProfile | null;
   // where the screen's title is in the UI tree, first match wins
   screenTitle?: string[];
   // when two accessibility issues are the same problem, per rule
@@ -174,48 +162,11 @@ export const DEFAULT_DUPLICATE_MODES: Record<A11yRule, DuplicateMode> = {
   "duplicate-label": "screen",
 };
 
-export interface DeviceProfile {
-  os: string;
-  device: string;
-  browser: string;
-  viewport: string;
-}
-
-export interface CrossDeviceReport {
-  compared: number;
-  differences: Array<{
-    key: string;
-    element: string;
-    field: "text" | "label" | "state";
-    reference: string;
-    here: string;
-  }>;
-  notFound: Array<{ key: string; element: string }>;
-  onlyHere: number;
-  truncated?: { differences: number; notFound: number };
-}
-
-export type CrossDeviceResult =
-  | { status: "no-tree" | "no-reference" }
-  | {
-      status: "is-reference" | "no-reference-tree" | "other-platform";
-      referenceDevice: string;
-    }
-  | {
-      status: "compared";
-      referenceDevice: string;
-      referenceSource: "run" | "baseline";
-      referenceTestRunId: string | null;
-      report: CrossDeviceReport;
-    };
-
 export const DEFAULT_UI_TREE_SETTINGS: UiTreeSettings = {
   excludeSystemBars: true,
   compensateMoves: false,
   maxMoveDp: null,
   detectSemanticChanges: true,
-  detectLoading: true,
-  detectScreenMismatch: true,
   elementRules: [],
 };
 
@@ -231,7 +182,6 @@ export interface StructureInfo {
   }>;
   hints: NoiseHint[];
   invisible: StructuralChange[];
-  warnings: CaptureWarning[];
   rules: Array<ElementRule & { scope: "screen" | "project"; matches: number }>;
   ignoredAreas: Rect[];
   toleratedAreas: Array<Rect & { maxDiffPercent: number }>;
@@ -270,19 +220,6 @@ export interface GroupSummary {
   source: "ai" | "rules";
   cached: boolean;
   model: string | null;
-}
-
-/** Capture warnings of a run, whichever shape it arrived in (JSON string from the API). */
-export function captureWarnings(run: {
-  captureWarnings?: string | null;
-}): CaptureWarning[] {
-  if (!run.captureWarnings) return [];
-  try {
-    const parsed = JSON.parse(run.captureWarnings);
-    return Array.isArray(parsed) ? parsed : [];
-  } catch {
-    return [];
-  }
 }
 
 export function parseUiTreeSettings(value?: string | null): UiTreeSettings {
@@ -362,7 +299,6 @@ export interface ProjectInsights {
   captureIssues: Array<{
     name: string;
     customTags: string;
-    loading: number;
     hidden: number;
     runs: number;
   }>;

@@ -27,7 +27,6 @@ const structure: StructureInfo = {
   regions: [],
   hints: [],
   invisible: [],
-  warnings: [],
   rules: [
     {
       id: "balance",

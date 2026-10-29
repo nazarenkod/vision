@@ -27,26 +27,10 @@ import { OdiffConfigForm } from "./OdiffConfigForm";
 import { PixelmatchConfigForm } from "./PixelmatchConfigForm";
 import { VlmConfigForm } from "./VlmConfigForm";
 import { getDefaultConfig } from "./utils";
-import {
-  DeviceProfile,
-  UiTreeSettings,
-  parseUiTreeSettings,
-} from "../../types/insights";
-import { insightsService } from "../../services";
+import { UiTreeSettings, parseUiTreeSettings } from "../../types/insights";
 import { A11yProblemSettings } from "./A11yProblemSettings";
-import { deviceLabel } from "../../_helpers/device.helper";
 import { SecretField } from "./SecretField";
-import { MessageKey, Text, useT } from "../../i18n";
-
-const profileLabel = (profile: DeviceProfile, text: Text) =>
-  deviceLabel(profile, undefined, text);
-const profileKey = (profile: DeviceProfile) =>
-  JSON.stringify([
-    profile.os,
-    profile.device,
-    profile.browser,
-    profile.viewport,
-  ]);
+import { MessageKey, useT } from "../../i18n";
 
 // what each engine is for, in one sentence (REQ-018-44)
 const ENGINES: Array<[ImageComparison, MessageKey]> = [
@@ -527,8 +511,6 @@ const TOGGLES: Array<[keyof UiTreeSettings, MessageKey, MessageKey]> = [
   ["excludeSystemBars", "mobile.systemBars", "mobile.systemBarsHelp"],
   ["compensateMoves", "mobile.moves", "mobile.movesHelp"],
   ["detectSemanticChanges", "mobile.hidden", "mobile.hiddenHelp"],
-  ["detectLoading", "mobile.loading", "mobile.loadingHelp"],
-  ["detectScreenMismatch", "mobile.wrongScreen", "mobile.wrongScreenHelp"],
 ];
 
 /**
@@ -543,22 +525,6 @@ export const MobileSettings: React.FunctionComponent<{
   const projectDispatch = useProjectDispatch();
   const { t } = useT();
   const settings = parseUiTreeSettings(project.uiTreeSettings);
-  const [devices, setDevices] = React.useState<
-    Array<DeviceProfile & { checks: number }>
-  >([]);
-  React.useEffect(() => {
-    if (!project.id) return;
-    insightsService
-      .getProjectDevices(project.id)
-      .then(setDevices)
-      .catch(() => setDevices([]));
-  }, [project.id]);
-  const reference = settings.referenceDevice ?? null;
-  const deviceOptions =
-    reference && !devices.some((d) => profileKey(d) === profileKey(reference))
-      ? [...devices, { ...reference, checks: 0 }]
-      : devices;
-
   const save = (next: UiTreeSettings) =>
     setProjectEditState(projectDispatch, {
       ...project,
@@ -607,41 +573,6 @@ export const MobileSettings: React.FunctionComponent<{
           }}
         />
       ))}
-      <TextField
-        id="referenceDevice"
-        select
-        size="small"
-        label={t("mobile.reference")}
-        value={reference ? profileKey(reference) : ""}
-        onChange={(event) => {
-          const picked = deviceOptions.find(
-            (d) => profileKey(d) === event.target.value,
-          );
-          save({
-            ...settings,
-            referenceDevice: picked
-              ? {
-                  os: picked.os,
-                  device: picked.device,
-                  browser: picked.browser,
-                  viewport: picked.viewport,
-                }
-              : null,
-          });
-        }}
-        helperText={t("mobile.referenceHelp")}
-        sx={{ maxWidth: 520, mt: 1 }}
-      >
-        <MenuItem value="">{t("mobile.noReference")}</MenuItem>
-        {deviceOptions.map((device) => (
-          <MenuItem key={profileKey(device)} value={profileKey(device)}>
-            {profileLabel(device, t)}
-            {device.checks
-              ? ` ${t("mobile.checks", { count: device.checks })}`
-              : ""}
-          </MenuItem>
-        ))}
-      </TextField>
       {settings.compensateMoves && (
         <TextField
           id="maxMoveDp"

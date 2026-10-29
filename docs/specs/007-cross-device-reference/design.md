@@ -11,10 +11,10 @@
 
 | Компонент | Шлях | Роль |
 |---|---|---|
-| Порівняння | `backend/src/ui-tree/cross-device.ts` | `compareAcrossDevices` |
+| Порівняння | `ui-tree/cross-device.ts` (видалено в 020) | `compareAcrossDevices` |
 | Вибір еталона й запис | `backend/src/ui-tree/ui-tree.service.ts` | `crossDevice`, `recordCrossDevice` |
 | API | `backend/src/test-runs/test-runs.controller.ts` | `GET /test-runs/:id/cross-device` |
-| UI | `frontend/src/components/TestDetailsDialog/CrossDevicePanel.tsx` | вкладка Devices |
+| UI | `CrossDevicePanel.tsx` (видалено в 020) | вкладка Devices |
 
 ## Дані
 
@@ -25,10 +25,10 @@
 
 | Вимога | Перевірка |
 |---|---|
-| REQ-007-01 | `backend/src/ui-tree/ui-tree.service.spec.ts › compares with the reference device run of the same build first`; `backend/src/ui-tree/ui-tree.service.spec.ts › falls back to the reference device baseline, on the run branch before the main one` |
-| REQ-007-06 | `backend/src/ui-tree/ui-tree.service.spec.ts › asks for a reference device when the project has none`; `backend/src/ui-tree/ui-tree.service.spec.ts › says so for a run on the reference device itself` |
-| REQ-007-02 | `backend/src/ui-tree/cross-device.spec.ts › reports a found element whose state or label differs`; `backend/src/ui-tree/cross-device.spec.ts › finds nothing to report for the same screen laid out for another size` |
-| REQ-007-07 | `backend/src/ui-tree/cross-device.spec.ts › lists elements it cannot find without calling them missing` |
-| REQ-007-03 | manual: знімок з розбіжностями лишає свій піксельний статус |
-| REQ-007-04 | `backend/src/ui-tree/ui-tree.service.spec.ts › does not compare an iOS tree with an Android one` |
-| REQ-007-05 | `backend/src/ui-tree/ui-tree.service.spec.ts › keeps the result with the reviewer decision` |
+| REQ-007-01 | manual: знято 020 |
+| REQ-007-06 | manual: знято 020 |
+| REQ-007-02 | manual: знято 020 |
+| REQ-007-07 | manual: знято 020 |
+| REQ-007-03 | manual: знято 020 |
+| REQ-007-04 | manual: знято 020 |
+| REQ-007-05 | manual: знято 020 |

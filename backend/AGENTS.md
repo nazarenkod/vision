@@ -6,7 +6,7 @@
 
 | Модуль | Відповідає за | Специфікація |
 |---|---|---|
-| `src/ui-tree/` | розбір Appium page source, налаштування порівняння, правила елементів, приховані зміни, «знято зарано», «не той екран», групи компонентів, довідкове порівняння пристроїв | [002](../docs/specs/002-ui-tree-analysis/spec.md), [007](../docs/specs/007-cross-device-reference/spec.md) |
+| `src/ui-tree/` | розбір Appium page source, налаштування порівняння, правила елементів, приховані зміни, групи компонентів | [002](../docs/specs/002-ui-tree-analysis/spec.md), [020](../docs/specs/020-remove-reference-device/spec.md) |
 | `src/a11y/a11y.rules.ts` | правила доступності | [003](../docs/specs/003-accessibility-checks/spec.md) |
 | `src/a11y/a11y-problems.ts`, `a11y-issues*.ts` | проблеми, їхні ID і факти, класи, маркери, рішення, пошук у Jira | [004](../docs/specs/004-a11y-problems/spec.md) |
 | `src/a11y/jira*.ts` | клієнт Jira, поля й текст бага | [005](../docs/specs/005-jira-bugs/spec.md) |

@@ -21,7 +21,7 @@ Architecture Decision Record фіксує важливе рішення: кон�
 | [ADR-0003](0003-additive-schema-only.md) | Лише додавальні зміни схеми | Accepted | 2026-10-24 |
 | [ADR-0004](0004-sdk-upstream-plus-ui-tree.md) | SDK — upstream плюс одне поле | Accepted | 2026-10-25 |
 | [ADR-0005](0005-check-by-name-baseline-per-device.md) | Перевірка за назвою, еталон на кожен пристрій | Accepted | 2026-10-25 |
-| [ADR-0006](0006-cross-device-is-informational.md) | Порівняння між пристроями — лише довідка | Accepted | 2026-10-25 |
+| [ADR-0006](0006-cross-device-is-informational.md) | Порівняння між пристроями — лише довідка | Superseded by ADR-0016 | 2026-10-25 |
 | [ADR-0007](0007-deterministic-first-ai-on-demand.md) | Спершу детермінований аналіз, AI — на вимогу | Accepted | 2026-10-24 |
 | [ADR-0008](0008-stable-problem-ids-from-facts.md) | Стабільні ID проблем; ідентичність — з фактів | Accepted | 2026-10-26 |
 | [ADR-0009](0009-jira-mirrors-local-decisions.md) | База Vision — джерело правди, Jira — дзеркало | Accepted | 2026-10-26 |
@@ -31,4 +31,5 @@ Architecture Decision Record фіксує важливе рішення: кон�
 | [ADR-0013](0013-ui-drives-host-scripts-through-files.md) | Інтерфейс керує скриптами хоста через файли | Accepted | 2026-10-27 |
 | [ADR-0014](0014-undo-through-decision-journal.md) | Undo рішень — через журнал на сервері | Accepted | 2026-10-29 |
 | [ADR-0015](0015-theme-tokens-as-css-variables.md) | Кольори — CSS-змінні, рух — токени теми | Accepted | 2026-10-29 |
+| [ADR-0016](0016-no-cross-device-comparison.md) | Порівняння між пристроями прибрано | Accepted | 2026-10-29 |
 | [ADR-0017](0017-interface-in-two-languages.md) | Інтерфейс двома мовами через власний словник | Accepted | 2026-10-29 |

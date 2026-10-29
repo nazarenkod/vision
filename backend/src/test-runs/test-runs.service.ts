@@ -25,7 +25,7 @@ import { parseConfig } from '../compare/utils';
 import { DEFAULT_CONFIG } from '../compare/libs/pixelmatch/pixelmatch.service';
 import { PixelmatchConfig } from '../compare/libs/pixelmatch/pixelmatch.types';
 import { signaturesMatch, SIGNATURE_LENGTH } from '../compare/libs/pixelmatch/signature.core';
-import { CrossDeviceResult, StructureInfo, UiTreeService } from '../ui-tree/ui-tree.service';
+import { StructureInfo, UiTreeService } from '../ui-tree/ui-tree.service';
 import { UiTree } from '../ui-tree/ui-tree.types';
 import { A11yIssuesService } from '../a11y/a11y-issues.service';
 import { ReviewedA11yReport } from '../a11y/a11y-issues';
@@ -115,7 +115,7 @@ export class TestRunsService {
     // calculate diff
     let testRunWithResult = await this.calculateDiff(createTestRequestDto.projectId, testRun);
 
-    // accessibility, capture warnings, invisible changes and components, from the UI tree
+    // accessibility, invisible changes and components, from the UI tree
     if (uiTree) {
       testRunWithResult = await this.analyzeUiTree(testRunWithResult, uiTree.tree);
     }
@@ -406,18 +406,7 @@ export class TestRunsService {
     });
 
     this.eventsGateway.testRunUpdated(testRun);
-    // a reviewer's decision, kept next to what the reference device comparison showed
-    if (testRun?.uiTreeName && (status === TestStatus.approved || status === TestStatus.failed)) {
-      this.uiTreeService
-        .recordCrossDevice(testRun, status === TestStatus.approved ? 'approved' : 'rejected')
-        .catch((error) => this.logger.warn(`Reference device comparison for ${id} failed: ${error}`));
-    }
     return this.findOne(id);
-  }
-
-  async getCrossDevice(id: string): Promise<CrossDeviceResult | null> {
-    const testRun = await this.findOne(id);
-    return testRun ? this.uiTreeService.recordCrossDevice(testRun) : null;
   }
 
   // Nullable because it genuinely is: a comparison that produced nothing at all
@@ -577,7 +566,6 @@ export class TestRunsService {
           a11yReportName: analysis.reportName,
           a11yNewCount: newCount,
           a11yTotalCount: totalCount,
-          captureWarnings: analysis.warnings.length ? JSON.stringify(analysis.warnings) : null,
           semanticChangeCount: hidden,
           componentChanges: analysis.components.length ? JSON.stringify(analysis.components) : null,
           ...(hidden && passedOnPixels ? { status: TestStatus.unresolved } : {}),

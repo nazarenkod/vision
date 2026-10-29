@@ -136,11 +136,13 @@ test("lists the sections and highlights the one in view", async ({
   await expect(page.getByTestId("section-jira")).toBeInViewport();
 
   // search keeps the matching section and marks the setting
-  await page.getByTestId("settingsSearch").fill("loading");
+  await page.getByTestId("settingsSearch").fill("navigation");
   await expect(page.getByTestId("section-mobile")).toBeVisible();
   await expect(page.getByTestId("section-general")).toBeHidden();
   await expect(
-    page.locator(".v-hit").filter({ hasText: "Warn about loading states" }),
+    page
+      .locator(".v-hit")
+      .filter({ hasText: "Leave out status and navigation bars" }),
   ).toHaveCount(1);
   await page.getByTestId("settingsSearch").fill("no such setting");
   await expect(page.getByText("Nothing matches")).toBeVisible();
@@ -160,7 +162,7 @@ test("saves every field the old dialog had", async ({
   await page.getByLabel("Auto approve feature").uncheck();
   await page.getByLabel("Bulk approve/reject variations").check();
   await page.getByTestId(`engine-${ImageComparison.odiff}`).click();
-  await page.getByLabel("Warn about loading states").uncheck();
+  await page.getByLabel("Send hidden changes to review").uncheck();
   await page.locator("#jiraIssueType").fill("Defect");
 
   // the save bar names what changed
@@ -187,7 +189,7 @@ test("saves every field the old dialog had", async ({
   });
   expect(JSON.parse(body.uiTreeSettings)).toMatchObject({
     excludeSystemBars: true,
-    detectLoading: false,
+    detectSemanticChanges: false,
   });
   // the saved token stays as it is: not sent at all
   expect(body).not.toHaveProperty("jiraToken");
@@ -254,15 +256,77 @@ test("keeps the project's element rules when saving", async ({
 }) => {
   await mockSaveProject(page);
   await open(page);
-  await page.getByLabel("Warn about loading states").uncheck();
+  await page.getByLabel("Send hidden changes to review").uncheck();
   const [request] = await Promise.all([
     putRequest(page),
     page.getByTestId("saveSettings").click(),
   ]);
   expect(JSON.parse(request.postDataJSON().uiTreeSettings)).toMatchObject({
-    detectLoading: false,
+    detectSemanticChanges: false,
     elementRules: [{ id: "clock", selector: "id:clock", action: "ignore" }],
   });
+});
+
+test("has no reference device and no warning switches", async ({
+  page,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  authUser,
+}) => {
+  await open(page);
+  // spec 020: they changed nothing a reviewer decides on
+  const mobile = page.getByTestId("section-mobile");
+  await expect(
+    mobile.getByText("Leave out status and navigation bars"),
+  ).toBeVisible();
+  for (const label of [
+    "Warn about loading states",
+    "Warn about wrong screens",
+    "Reference device",
+  ]) {
+    await expect(page.getByText(label)).toHaveCount(0);
+  }
+  for (const query of ["reference", "warn"]) {
+    await page.getByTestId("settingsSearch").fill(query);
+    await expect(page.getByText("Nothing matches")).toBeVisible();
+  }
+});
+
+test("keeps settings it no longer shows when saving", async ({
+  page,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  authUser,
+}) => {
+  const reference = {
+    os: "Android 15",
+    device: "Pixel 7 emulator",
+    browser: "",
+    viewport: "",
+  };
+  await mockSaveProject(page);
+  await open(page, {
+    uiTreeSettings: JSON.stringify({
+      ...JSON.parse(project.uiTreeSettings),
+      detectLoading: false,
+      detectScreenMismatch: false,
+      referenceDevice: reference,
+    }),
+  });
+  await page.getByLabel("Send hidden changes to review").uncheck();
+  await expect(page.getByTestId("saveBar")).toContainText("Mobile screenshots");
+  const [request] = await Promise.all([
+    putRequest(page),
+    page.getByTestId("saveSettings").click(),
+  ]);
+  expect(JSON.parse(request.postDataJSON().uiTreeSettings)).toMatchObject({
+    detectSemanticChanges: false,
+    detectLoading: false,
+    detectScreenMismatch: false,
+    referenceDevice: reference,
+  });
+  await expect(page.getByTestId("saveBar")).toHaveAttribute(
+    "data-state",
+    "saved",
+  );
 });
 
 test("numbers problem classes and moves one up", async ({

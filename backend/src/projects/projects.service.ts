@@ -159,25 +159,6 @@ export class ProjectsService {
   }
 
   /** Devices the project has checks on, the most used first: candidates for the reference device. */
-  async devices(
-    projectId: string
-  ): Promise<Array<{ os: string; device: string; browser: string; viewport: string; checks: number }>> {
-    const groups = await this.prismaService.testVariation.groupBy({
-      by: ['os', 'device', 'browser', 'viewport'],
-      where: { projectId },
-      _count: { _all: true },
-    });
-    return groups
-      .map((group) => ({
-        os: group.os ?? '',
-        device: group.device ?? '',
-        browser: group.browser ?? '',
-        viewport: group.viewport ?? '',
-        checks: group._count._all,
-      }))
-      .sort((a, b) => b.checks - a.checks);
-  }
-
   async remove(id: string): Promise<Project> {
     this.logger.debug(`Going to remove Project ${id}`);
     const project = await this.prismaService.project.findUnique({

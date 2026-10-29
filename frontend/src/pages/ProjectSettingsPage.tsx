@@ -68,8 +68,6 @@ function sectionMeta(id: SectionId, project: ProjectDto, t: Text): string {
         tree.excludeSystemBars,
         tree.compensateMoves,
         tree.detectSemanticChanges,
-        tree.detectLoading,
-        tree.detectScreenMismatch,
       ].filter(Boolean).length;
       return t("settings.meta.mobileOn", { count: on });
     }

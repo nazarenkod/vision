@@ -13,7 +13,7 @@
 | `src/pages/ProjectSettingsPage.tsx` | налаштування проєкту окремою сторінкою; розділи — у `components/ProjectForm/` |
 | `src/i18n/` | мови інтерфейсу: словники `en.ts`/`uk.ts`, `useT()`, перемикач EN/UK у шапці |
 | `src/constants/brand.ts` | назва продукту (Vision) і слоган — лише тут |
-| `src/components/TestDetailsDialog/` | ревю скриншота: `InsightsPanel` (доступність, зміни, пристрої), `JiraBugDialog`, `DeviceStrip`, `CrossDevicePanel` |
+| `src/components/TestDetailsDialog/` | ревю скриншота: `InsightsPanel` (доступність, зміни), `JiraBugDialog`, `DeviceStrip` |
 | `src/components/ProjectForm/` | налаштування проєкту, зокрема `A11yProblemSettings` (класи проблем) |
 | `src/pages/InsightsPage.tsx` | Insights |
 | `src/services/*.service.ts` | виклики API: `fetch` + `authHeader()` + `handleResponse` |

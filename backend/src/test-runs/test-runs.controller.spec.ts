@@ -1,4 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { PATH_METADATA } from '@nestjs/common/constants';
 import { TestRunsController } from './test-runs.controller';
 import { TestRunsService } from './test-runs.service';
 import { TestVariationsService } from '../test-variations/test-variations.service';
@@ -32,5 +33,15 @@ describe('TestRuns Controller', () => {
 
   it('should be defined', () => {
     expect(controller).toBeDefined();
+  });
+
+  it('serves no reference device comparison', () => {
+    const prototype = TestRunsController.prototype as unknown as Record<string, object>;
+    const paths = Object.getOwnPropertyNames(prototype)
+      .map((name) => Reflect.getMetadata(PATH_METADATA, prototype[name]))
+      .filter(Boolean);
+
+    expect(paths).toContain(':id/structure');
+    expect(paths.filter((path: string) => path.includes('cross-device'))).toEqual([]);
   });
 });

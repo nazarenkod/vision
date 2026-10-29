@@ -27,9 +27,9 @@ const project = {
 
 describe("project settings", () => {
   it("finds settings by section or field name", () => {
-    expect(matchSettings("loading")).toEqual({
+    expect(matchSettings("navigation")).toEqual({
       sections: ["mobile"],
-      labels: ["Warn about loading states"],
+      labels: ["Leave out status and navigation bars"],
     });
     expect(matchSettings("JIRA").sections).toEqual(["jira"]);
     expect(matchSettings("tolerance").sections).toEqual(["comparison"]);
@@ -43,12 +43,12 @@ describe("project settings", () => {
   });
 
   it("finds a setting by its Ukrainian or English name", () => {
-    expect(matchSettings("завантаження", ukrainian)).toEqual({
+    expect(matchSettings("панель навігації", ukrainian)).toEqual({
       sections: ["mobile"],
-      labels: ["Попереджати про завантаження"],
+      labels: ["Не враховувати рядок стану й панель навігації"],
     });
     // the English name still finds it in a Ukrainian interface
-    expect(matchSettings("loading", ukrainian).sections).toEqual(["mobile"]);
+    expect(matchSettings("navigation", ukrainian).sections).toEqual(["mobile"]);
     expect(matchSettings("odiff", ukrainian).sections).toEqual(["comparison"]);
     expect(
       changedSections(project, { ...project, jiraToken: "" }, ukrainian),
@@ -56,6 +56,29 @@ describe("project settings", () => {
     expect(
       changedSections(project, { ...project, maxBuildAllowed: 5 }, ukrainian),
     ).toEqual(["Загальне"]);
+  });
+
+  it("finds no reference device and no warning switches", () => {
+    const nothing = { sections: [], labels: [] };
+    for (const query of ["reference", "warn", "loading", "wrong screen"]) {
+      expect(matchSettings(query)).toEqual(nothing);
+    }
+    for (const query of ["еталонний", "попереджати", "завантаження"]) {
+      expect(matchSettings(query, ukrainian)).toEqual(nothing);
+    }
+    // what an older page saved for them is no unsaved change of any section
+    const tree = JSON.parse(project.uiTreeSettings as string);
+    expect(
+      changedSections(project, {
+        ...project,
+        uiTreeSettings: JSON.stringify({
+          ...tree,
+          detectLoading: false,
+          detectScreenMismatch: false,
+          referenceDevice: { os: "Android 15", device: "Pixel 7" },
+        }),
+      }),
+    ).toEqual([]);
   });
 
   it("names the sections with unsaved changes", () => {

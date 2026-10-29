@@ -63,6 +63,7 @@ class FakeVision(BaseHTTPRequestHandler):
                 "id": "run-1", "status": "unresolved", "diffPercent": 6.9,
                 "url": "http://vision/project-1?buildId=build-1&testId=run-1",
                 "a11y": {"newCount": 1, "totalCount": 2, "url": "x"},
+                # a server from before spec 020 still sends these; they are not shown
                 "warnings": [{"kind": "loading", "message": "Taken before the screen settled: ProgressBar visible."}],
             })
         if self.path == "/test-runs/run-1/a11y":
@@ -186,7 +187,7 @@ class VisionCliTest(unittest.TestCase):
         self.assertEqual(body["name"], "Payment")
 
         self.assertIn("Status: differs from the baseline (diff 6.90%)", out)
-        self.assertIn("Warning: Taken before the screen settled", out)
+        self.assertNotIn("Warning:", out)
         self.assertIn('Hidden change: Button "Pay": default → disabled', out)
         self.assertIn("Changed: BottomNavigationView (id/bottom_nav)", out)
         self.assertIn("Accessibility: 1 new, 2 total", out)

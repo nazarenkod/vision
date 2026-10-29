@@ -32,7 +32,6 @@ import {
 } from "../../types";
 import { StatusPill } from "../StatusPill";
 import { describeChange } from "../ChangeGroups";
-import { CrossDevicePanel } from "./CrossDevicePanel";
 import { JiraBugDialog } from "./JiraBugDialog";
 import { tokens } from "../../theme";
 import { labelOf, useT } from "../../i18n";
@@ -116,7 +115,7 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
   const canEdit = user?.role === "admin" || user?.role === "editor";
   const withUiTree = hasUiTree(testRun);
 
-  const [tab, setTab] = React.useState<"a11y" | "changes" | "devices">(
+  const [tab, setTab] = React.useState<"a11y" | "changes">(
     withUiTree ? "a11y" : "changes",
   );
   const [ruleDraft, setRuleDraft] = React.useState<RuleDraft | null>(null);
@@ -868,8 +867,7 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
       !visibleChanges.length &&
       !structure.regions.length &&
       !structure.hints.length &&
-      !structure.invisible.length &&
-      !structure.warnings.length;
+      !structure.invisible.length;
     return (
       <>
         {canEdit && withUiTree && (
@@ -891,11 +889,6 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
             )}
           </Box>
         )}
-        {structure.warnings.map((warning) => (
-          <Alert key={warning.kind} severity="warning" sx={{ py: 0 }}>
-            {warning.message}
-          </Alert>
-        ))}
         {structure.invisible.length > 0 && (
           <Alert severity="error" sx={{ py: 0 }}>
             <b>{t("panel.invisible")}</b>
@@ -1126,21 +1119,12 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
           label={
             <Box sx={{ display: "flex", gap: 1, alignItems: "center" }}>
               {t("panel.changes")}
-              {(structure?.warnings.length ?? 0) +
-                (structure?.invisible.length ?? 0) >
-                0 && (
-                <StatusPill
-                  tone="failed"
-                  label={
-                    (structure?.warnings.length ?? 0) +
-                    (structure?.invisible.length ?? 0)
-                  }
-                />
+              {(structure?.invisible.length ?? 0) > 0 && (
+                <StatusPill tone="failed" label={structure?.invisible.length} />
               )}
             </Box>
           }
         />
-        {withUiTree && <Tab value="devices" label={t("panel.devices")} />}
       </Tabs>
       <Box
         sx={{
@@ -1152,13 +1136,7 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
           gap: 1.5,
         }}
       >
-        {tab === "a11y" ? (
-          a11yTab()
-        ) : tab === "devices" ? (
-          <CrossDevicePanel testRun={testRun} />
-        ) : (
-          changesTab()
-        )}
+        {tab === "a11y" ? a11yTab() : changesTab()}
       </Box>
 
       <Dialog

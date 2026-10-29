@@ -37,7 +37,6 @@ export interface RunRow {
   updatedAt: Date;
   a11yNewCount: number | null;
   a11yTotalCount: number | null;
-  captureWarnings: string | null;
   semanticChangeCount: number | null;
 }
 
@@ -118,7 +117,6 @@ export function computeInsights(input: InsightsInput) {
     rejected: number;
     flips: number;
     tinyApproved: number;
-    loading: number;
     hidden: number;
     lastChangeAt: Date | null;
     latestA11y: Map<string, { at: Date; total: number; new: number }>;
@@ -137,7 +135,6 @@ export function computeInsights(input: InsightsInput) {
         rejected: 0,
         flips: 0,
         tinyApproved: 0,
-        loading: 0,
         hidden: 0,
         lastChangeAt: null,
         latestA11y: new Map(),
@@ -171,7 +168,6 @@ export function computeInsights(input: InsightsInput) {
     ) {
       stats.tinyApproved++;
     }
-    if (run.captureWarnings?.includes('"loading"')) stats.loading++;
     if ((run.semanticChangeCount ?? 0) > 0) stats.hidden++;
     if (run.status === 'approved' || run.status === 'failed') {
       decisionHours.push((run.updatedAt.getTime() - run.createdAt.getTime()) / 3600000);
@@ -266,15 +262,14 @@ export function computeInsights(input: InsightsInput) {
     .slice(0, LIST_LIMIT);
 
   const captureIssues = all
-    .filter((check) => check.loading >= 2 || check.hidden >= 2)
+    .filter((check) => check.hidden >= 2)
     .map((check) => ({
       name: check.name,
       customTags: check.customTags,
-      loading: check.loading,
       hidden: check.hidden,
       runs: check.runs,
     }))
-    .sort((a, b) => b.loading + b.hidden - (a.loading + a.hidden))
+    .sort((a, b) => b.hidden - a.hidden)
     .slice(0, LIST_LIMIT);
 
   // ---- device coverage, on the main branch: checks a device is missing. Unused

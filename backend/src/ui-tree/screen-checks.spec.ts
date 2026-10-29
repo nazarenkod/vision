@@ -2,11 +2,10 @@ import { readFileSync } from 'fs';
 import path from 'path';
 import { parseUiTree } from './ui-tree.parser';
 import { diffTrees } from './structure-diff';
-import { areaHash, componentChanges, detectLoading, invisibleChanges, screenSimilarity } from './screen-checks';
+import { areaHash, componentChanges, invisibleChanges } from './screen-checks';
 
 const xml = readFileSync(path.join(__dirname, '__fixtures__', 'android-payment.xml'), 'utf8');
-const parse = (source: string, activity?: string) =>
-  parseUiTree(source, { imageWidth: 1080, imageHeight: 2400, densityDpi: 420, activity });
+const parse = (source: string) => parseUiTree(source, { imageWidth: 1080, imageHeight: 2400, densityDpi: 420 });
 const addNode = (source: string, node: string) =>
   source.replace('</android.widget.FrameLayout>\n</hierarchy>', `${node}</android.widget.FrameLayout>\n</hierarchy>`);
 
@@ -19,41 +18,6 @@ function paint(img: ReturnType<typeof image>, x: number, y: number, w: number, h
   for (let yy = y; yy < y + h; yy++)
     for (let xx = x; xx < x + w; xx++) img.data.set([...rgb, 255], (yy * img.width + xx) * 4);
 }
-
-describe('detectLoading', () => {
-  it('finds a visible spinner', () => {
-    const tree = parse(
-      addNode(
-        xml,
-        '<android.widget.ProgressBar class="android.widget.ProgressBar" resource-id="com.bank.app:id/progress" bounds="[490,1150][590,1250]" displayed="true"/>'
-      )
-    );
-    const warning = detectLoading(tree);
-    expect(warning.kind).toBe('loading');
-    expect(warning.message).toContain('ProgressBar (id/progress)');
-    expect(warning.elements).toEqual(['id:com.bank.app:id/progress']);
-  });
-
-  it('finds a shimmer placeholder and a "Loading…" text', () => {
-    const tree = parse(
-      addNode(
-        xml,
-        '<com.facebook.shimmer.ShimmerFrameLayout class="com.facebook.shimmer.ShimmerFrameLayout" bounds="[0,300][1080,600]" displayed="true"/>' +
-          '<android.widget.TextView class="android.widget.TextView" text="Loading…" bounds="[400,700][700,760]" displayed="true"/>'
-      )
-    );
-    expect(detectLoading(tree).elements).toHaveLength(2);
-  });
-
-  it('ignores hidden spinners and settled screens', () => {
-    const hidden = addNode(
-      xml,
-      '<android.widget.ProgressBar class="android.widget.ProgressBar" bounds="[0,0][0,0]" displayed="false"/>'
-    );
-    expect(detectLoading(parse(hidden))).toBeNull();
-    expect(detectLoading(parse(xml))).toBeNull();
-  });
-});
 
 describe('invisibleChanges', () => {
   const baseline = parse(xml);
@@ -96,24 +60,6 @@ describe('invisibleChanges', () => {
     expect(invisibleChanges(changes, [], clickable).map((c) => `${c.kind} ${c.key}`)).toEqual([
       'added id:com.bank.app:id/overlay',
     ]);
-  });
-});
-
-describe('screenSimilarity', () => {
-  const other = `<?xml version='1.0' encoding='UTF-8' standalone='yes' ?>
-<hierarchy width="1080" height="2400"><android.widget.FrameLayout class="android.widget.FrameLayout" bounds="[0,0][1080,2400]">
-  <android.widget.EditText class="android.widget.EditText" resource-id="com.bank.app:id/et_login" bounds="[0,100][1080,200]"/>
-  <android.widget.EditText class="android.widget.EditText" resource-id="com.bank.app:id/et_password" bounds="[0,300][1080,400]"/>
-  <android.widget.Button class="android.widget.Button" resource-id="com.bank.app:id/btn_sign_in" text="Sign in" bounds="[0,500][1080,600]"/>
-</android.widget.FrameLayout></hierarchy>`;
-
-  it('is high for the same screen and low for another one', () => {
-    expect(screenSimilarity(parse(xml), parse(xml.replace('text="Pay"', 'text="Send"')))).toBe(1);
-    expect(screenSimilarity(parse(xml), parse(other))).toBe(0);
-  });
-
-  it('treats different activities as different screens', () => {
-    expect(screenSimilarity(parse(xml, '.PaymentActivity'), parse(xml, '.LoginActivity'))).toBe(0);
   });
 });
 

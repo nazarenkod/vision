@@ -6,7 +6,7 @@
 | Власник | Дмитро Назаренко |
 | Оновлено | 2026-10-27 |
 | Дизайн | [design.md](design.md) |
-| Пов'язане | [ADR-0006](../../decisions/0006-cross-device-is-informational.md), [001](../001-check-identity/spec.md) |
+| Пов'язане | [ADR-0006](../../decisions/0006-cross-device-is-informational.md), [001](../001-check-identity/spec.md); усю фічу знято [020](../020-remove-reference-device/spec.md) ([ADR-0016](../../decisions/0016-no-cross-device-comparison.md)) |
 
 ## Контекст і проблема
 

@@ -37,6 +37,6 @@
 | REQ-003-12 | `backend/src/a11y/a11y.rules.spec.ts › finds the issues of an Android screen`; `backend/src/a11y/a11y-issues.spec.ts › counts everything nobody acted on when there are no decisions` (порада не рахується) |
 | REQ-003-13 | `backend/src/a11y/a11y.rules.spec.ts › finds the issues of an iOS screen` |
 | REQ-003-06 | `backend/src/a11y/a11y.rules.spec.ts › splits issues into new, existing and fixed against the baseline`; `backend/src/a11y/a11y.rules.spec.ts › counts everything as new without a baseline tree` |
-| REQ-003-07 | `backend/src/ui-tree/ui-tree.service.spec.ts › warns about a wrong screen against another device` (той самий вибір дерева еталона) |
+| REQ-003-07 | `backend/src/ui-tree/ui-tree.service.spec.ts › takes the newest baseline of the check on another device, on the run branch first`; `backend/src/ui-tree/ui-tree.service.spec.ts › ignores a reference device chosen before` |
 | REQ-003-08 | `backend/src/a11y/a11y-issues.spec.ts › takes filed bugs out of the new count and false positives out of every count` |
 | REQ-003-09 | manual: відкрити знімок з деревом → вкладка Accessibility, клік по картці |

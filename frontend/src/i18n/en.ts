@@ -203,17 +203,6 @@ export const en = {
   "mobile.hidden": "Send hidden changes to review",
   "mobile.hiddenHelp":
     "A new label, a disabled or unclickable control, an invisible button: changes the pixels do not show.",
-  "mobile.loading": "Warn about loading states",
-  "mobile.loadingHelp":
-    "Spinners, skeletons and toasts mean the screenshot was taken too early.",
-  "mobile.wrongScreen": "Warn about wrong screens",
-  "mobile.wrongScreenHelp":
-    "The UI tree looks like another screen than the baseline.",
-  "mobile.reference": "Reference device",
-  "mobile.referenceHelp":
-    "Other devices of a check are compared with it element by element, for information; it never changes a status.",
-  "mobile.noReference": "None",
-  "mobile.checks": { one: "({count} check)", other: "({count} checks)" },
   "mobile.maxMove": "Only moves up to, dp (empty for any)",
 
   "a11y.title": "Accessibility problems",
@@ -646,7 +635,6 @@ export const en = {
   "panel.details": "Review details",
   "panel.accessibility": "Accessibility",
   "panel.changes": "Changes",
-  "panel.devices": "Devices",
   "panel.linkTitle": "Link an existing Jira issue",
   "panel.linkHelp":
     "The issue will be shown on this problem on every later build.",
@@ -692,9 +680,6 @@ export const en = {
   "groups.regression": "Possible regression",
   "groups.noise": "Probably noise",
   "groups.open": "Open {name} {variant}",
-  "groups.flag.loading": "Loading",
-  "groups.flag.screenMismatch": "Other screen?",
-  "groups.flag.duplicateScreen": "Duplicate?",
   "groups.hiddenHelp":
     "Elements changed in ways the screenshot does not show: labels, states, invisible controls",
   "groups.hidden": "{count} hidden",
@@ -823,39 +808,6 @@ export const en = {
   "variations.diff": "Diff: {value}%",
   "variations.tolerance": "Diff tolerance: {value}%",
 
-  // crossDevice
-  "crossDevice.noTree": "This screenshot came without a UI tree.",
-  "crossDevice.noReference":
-    "Choose the reference device in the project settings (Mobile screenshots) to compare other devices with it.",
-  "crossDevice.isReference":
-    "This is the reference device; other devices are compared with it.",
-  "crossDevice.noReferenceTree":
-    "The reference device has neither a run of this check in this build nor a baseline with a UI tree.",
-  "crossDevice.otherPlatform":
-    "The reference device is on another platform; trees of Android and iOS are not compared.",
-  "crossDevice.failed": "Could not compare with the reference device.",
-  "crossDevice.note":
-    "For information: this comparison does not change the status.",
-  "crossDevice.reference": "Reference: {device}",
-  "crossDevice.comparedWith": "Compared with {device}",
-  "crossDevice.itsRun": "Its run in this build.",
-  "crossDevice.itsBaseline":
-    "Its baseline (no run of this check on it in this build).",
-  "crossDevice.foundOnBoth": {
-    one: "{count} elements found on both.",
-    other: "{count} elements found on both.",
-  },
-  "crossDevice.same":
-    "Elements found on both devices have the same texts, labels and states.",
-  "crossDevice.different": "Different on this device ({count})",
-  "crossDevice.notFound": "Not found here ({count})",
-  "crossDevice.notFoundHelp":
-    "On the reference device but not in this screen’s tree: missing, or only off screen on a smaller display.",
-  "crossDevice.onlyHere": {
-    one: "{count} elements are only on this device.",
-    other: "{count} elements are only on this device.",
-  },
-
   // a11ySummary
   "a11ySummary.empty": "No accessibility data in this build",
   "a11ySummary.emptyHint":
@@ -936,11 +888,10 @@ export const en = {
     "Tiny changes (under 0.2 %) approved again and again. A tolerance, or an element rule for the part that moves, would stop sending them to review.",
   "insights.noNoise": "No screen keeps getting tiny changes approved.",
   "insights.tinyApproved": "{count} tiny changes approved in {runs} runs",
-  "insights.quality": "Screenshot quality",
+  "insights.quality": "Hidden changes",
   "insights.qualityHint":
-    "Taken while something was still loading, or with element changes the pixels did not show. Usually a missing wait in the test.",
+    "Screens whose elements changed in ways the pixels did not show, run after run.",
   "insights.noQuality": "No screen stands out.",
-  "insights.whileLoading": "{count} taken while loading",
   "insights.withHidden": "{count} with hidden changes",
   "insights.ofRuns": "of {count} runs",
   "insights.coverage": "Device coverage",

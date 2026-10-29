@@ -200,21 +200,6 @@ export const uk: Messages = {
   "mobile.hidden": "Надсилати на перегляд невидимі зміни",
   "mobile.hiddenHelp":
     "Новий підпис, неактивний чи некликабельний елемент, невидима кнопка: зміни, яких не видно в пікселях.",
-  "mobile.loading": "Попереджати про завантаження",
-  "mobile.loadingHelp":
-    "Індикатори завантаження, заглушки й спливні повідомлення означають, що знімок зробили зарано.",
-  "mobile.wrongScreen": "Попереджати, якщо екран не той",
-  "mobile.wrongScreenHelp": "UI-дерево схоже на інший екран, ніж еталон.",
-  "mobile.reference": "Еталонний пристрій",
-  "mobile.referenceHelp":
-    "Інші пристрої перевірки порівнюються з ним елемент за елементом, для інформації; статус від цього не змінюється.",
-  "mobile.noReference": "Немає",
-  "mobile.checks": {
-    one: "({count} перевірка)",
-    few: "({count} перевірки)",
-    many: "({count} перевірок)",
-    other: "({count} перевірки)",
-  },
   "mobile.maxMove": "Найбільший зсув, dp (порожньо — будь-який)",
 
   "a11y.title": "Проблеми доступності",
@@ -699,7 +684,6 @@ export const uk: Messages = {
   "panel.details": "Подробиці перегляду",
   "panel.accessibility": "Доступність",
   "panel.changes": "Зміни",
-  "panel.devices": "Пристрої",
   "panel.linkTitle": "Прив’язати наявну задачу Jira",
   "panel.linkHelp":
     "Задачу буде показано біля цієї проблеми в усіх наступних збірках.",
@@ -745,9 +729,6 @@ export const uk: Messages = {
   "groups.regression": "Можлива регресія",
   "groups.noise": "Мабуть, шум",
   "groups.open": "Відкрити {name} {variant}",
-  "groups.flag.loading": "Завантаження",
-  "groups.flag.screenMismatch": "Інший екран?",
-  "groups.flag.duplicateScreen": "Дублікат?",
   "groups.hiddenHelp":
     "Елементи змінилися так, що на знімку цього не видно: підписи, стани, невидимі елементи",
   "groups.hidden": "невидимих: {count}",
@@ -900,42 +881,6 @@ export const uk: Messages = {
   "variations.diff": "Різниця: {value}%",
   "variations.tolerance": "Допуск різниці: {value}%",
 
-  // crossDevice
-  "crossDevice.noTree": "Цей знімок надіслали без UI-дерева.",
-  "crossDevice.noReference":
-    "Виберіть еталонний пристрій у налаштуваннях проєкту (Мобільні знімки), щоб порівнювати з ним інші пристрої.",
-  "crossDevice.isReference":
-    "Це еталонний пристрій: інші пристрої порівнюються з ним.",
-  "crossDevice.noReferenceTree":
-    "На еталонному пристрої немає ні знімка цієї перевірки в цій збірці, ні еталона з UI-деревом.",
-  "crossDevice.otherPlatform":
-    "Еталонний пристрій на іншій платформі; дерева Android та iOS не порівнюються.",
-  "crossDevice.failed": "Не вдалося порівняти з еталонним пристроєм.",
-  "crossDevice.note": "Для інформації: це порівняння не змінює статус.",
-  "crossDevice.reference": "Еталонний: {device}",
-  "crossDevice.comparedWith": "Порівняно з {device}",
-  "crossDevice.itsRun": "Його знімок у цій збірці.",
-  "crossDevice.itsBaseline":
-    "Його еталон (у цій збірці знімка цієї перевірки на ньому немає).",
-  "crossDevice.foundOnBoth": {
-    one: "Знайдено на обох: {count} елемент.",
-    few: "Знайдено на обох: {count} елементи.",
-    many: "Знайдено на обох: {count} елементів.",
-    other: "Знайдено на обох: {count} елемента.",
-  },
-  "crossDevice.same":
-    "Елементи, знайдені на обох пристроях, мають однакові тексти, підписи й стани.",
-  "crossDevice.different": "Інакше на цьому пристрої ({count})",
-  "crossDevice.notFound": "Тут не знайдено ({count})",
-  "crossDevice.notFoundHelp":
-    "Є на еталонному пристрої, але не в дереві цього екрана: бракує або просто не влізло на менший екран.",
-  "crossDevice.onlyHere": {
-    one: "{count} елемент є лише на цьому пристрої.",
-    few: "{count} елементи є лише на цьому пристрої.",
-    many: "{count} елементів є лише на цьому пристрої.",
-    other: "{count} елемента є лише на цьому пристрої.",
-  },
-
   // a11ySummary
   "a11ySummary.empty": "У цій збірці немає даних про доступність",
   "a11ySummary.emptyHint":
@@ -1020,11 +965,10 @@ export const uk: Messages = {
   "insights.noNoise":
     "Жоден екран не отримує раз у раз прийняття крихітних змін.",
   "insights.tinyApproved": "прийнято крихітних змін: {count} за {runs} знімків",
-  "insights.quality": "Якість знімків",
+  "insights.quality": "Невидимі зміни",
   "insights.qualityHint":
-    "Зроблені, поки щось ще завантажувалося, або зі змінами елементів, яких не видно в пікселях. Зазвичай у тесті бракує очікування.",
+    "Екрани, де елементи раз у раз змінюються так, що в пікселях цього не видно.",
   "insights.noQuality": "Жоден екран не вирізняється.",
-  "insights.whileLoading": "під час завантаження: {count}",
   "insights.withHidden": "з невидимими змінами: {count}",
   "insights.ofRuns": "з {count} знімків",
   "insights.coverage": "Покриття пристроїв",

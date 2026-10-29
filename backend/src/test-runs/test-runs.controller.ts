@@ -205,16 +205,6 @@ export class TestRunsController {
     return this.testRunsService.removeElementRule(id, body);
   }
 
-  @Get(':id/cross-device')
-  @ApiOkResponse({
-    description: 'The same check on the reference device, compared element by element; for information only',
-  })
-  @ApiBearerAuth()
-  @UseGuards(MixedGuard)
-  getCrossDevice(@Param('id', new ParseUUIDPipe()) id: string) {
-    return this.testRunsService.getCrossDevice(id);
-  }
-
   @Get(':id/structure')
   @ApiOkResponse({ description: 'Element-level changes, elements under changed areas and noise hints' })
   @ApiBearerAuth()

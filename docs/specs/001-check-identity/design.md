@@ -21,7 +21,7 @@ UI групує прогони й варіації за ним, а правил�
 | Вимога | Перевірка |
 |---|---|
 | REQ-001-01 | `frontend/src/components/checkGrouping.test.ts › finds the same check on every device of the build, by name and custom tags` |
-| REQ-001-02 | `backend/src/ui-tree/ui-tree.service.spec.ts › falls back to the reference device baseline, on the run branch before the main one` (еталони лишаються по пристроях); manual: піксельний діф на одному пристрої не змінюється від іншого |
+| REQ-001-02 | `backend/src/ui-tree/ui-tree.service.spec.ts › takes the newest baseline of the check on another device, on the run branch first` (еталони лишаються по пристроях); manual: піксельний діф на одному пристрої не змінюється від іншого |
 | REQ-001-03 | `frontend/src/components/checkGrouping.test.ts › finds the same check on every device of the build`; manual: «Approve all N» |
 | REQ-001-04 | `backend/src/test-runs/test-runs.service.spec.ts › keeps a rule for this screen by check, so every device and branch gets it`; `backend/src/ui-tree/ui-tree.service.spec.ts › joins the rules kept by check with rules older versions kept on device variations` |
 | REQ-001-05 | `frontend/src/components/checkGrouping.test.ts › puts each check` |

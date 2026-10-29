@@ -193,6 +193,18 @@ describe('TestRunsService', () => {
     expect(eventTestRunUpdatedMock).toBeCalledWith(testRun);
   });
 
+  it('setStatus compares nothing with a reference device', async () => {
+    const testRun = { id: 'id', status: TestStatus.approved, uiTreeName: 'tree.json.gz' };
+    service = await initService({ testRunUpdateMock: jest.fn().mockResolvedValueOnce(testRun) });
+
+    await service.setStatus(testRun.id, TestStatus.approved);
+
+    // a decision once also compared the run with the reference device and kept the result
+    for (const mock of Object.values(service['uiTreeService'] as unknown as Record<string, jest.Mock>)) {
+      expect(mock).not.toHaveBeenCalled();
+    }
+  });
+
   it('create', async () => {
     const initCreateTestRequestDto: CreateTestRequestDto = {
       buildId: 'buildId',

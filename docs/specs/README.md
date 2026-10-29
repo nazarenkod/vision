@@ -80,6 +80,7 @@ docs/specs/NNN-коротка-назва/
 | [017](017-backup-settings-ui/spec.md) | Налаштування бекапів в інтерфейсі | Implemented |
 | [018](018-ui-redesign/spec.md) | Новий вигляд: дві теми, рух, логотип, усі екрани | Implemented |
 | [019](019-element-rules-in-review/spec.md) | Правила елементів лише в порівнянні | Implemented |
+| [020](020-remove-reference-device/spec.md) | Без еталонного пристрою й попереджень про знімок | Implemented |
 | [023](023-ukrainian-ui/spec.md) | Українська мова інтерфейсу | Implemented |
 
 Статусу `Verified` поки немає в жодної: інтеграцію з реальною Jira Cloud і прогони на сервері

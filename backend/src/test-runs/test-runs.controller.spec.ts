@@ -1,5 +1,7 @@
+import { INestApplication } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { PATH_METADATA } from '@nestjs/common/constants';
+import request from 'supertest';
 import { TestRunsController } from './test-runs.controller';
 import { TestRunsService } from './test-runs.service';
 import { TestVariationsService } from '../test-variations/test-variations.service';
@@ -12,9 +14,10 @@ import { JwtAuthGuard } from '../auth/guards/auth.guard';
 
 describe('TestRuns Controller', () => {
   let controller: TestRunsController;
+  let module: TestingModule;
 
   beforeEach(async () => {
-    const module: TestingModule = await Test.createTestingModule({
+    module = await Test.createTestingModule({
       controllers: [TestRunsController],
       providers: [
         { provide: TestRunsService, useValue: {} },
@@ -43,5 +46,19 @@ describe('TestRuns Controller', () => {
 
     expect(paths).toContain(':id/structure');
     expect(paths.filter((path: string) => path.includes('cross-device'))).toEqual([]);
+  });
+
+  // the bulk review of a screen's variations was removed (022); a script or an
+  // old tab asking for a group must get nothing back and change nothing
+  it('has no route for a variation group', async () => {
+    const app: INestApplication = module.createNestApplication();
+    await app.init();
+    try {
+      await request(app.getHttpServer())
+        .get('/test-runs/matchingSiblings/3f7c1a52-2a4b-4d8e-9a51-0c2e6b1d7f90')
+        .expect(404);
+    } finally {
+      await app.close();
+    }
   });
 });

@@ -18,7 +18,6 @@ import {
 } from "@mui/icons-material";
 import { SlidingToggleGroup } from "../motion/SlidingToggleGroup";
 import { Tooltip } from "../Tooltip";
-import { GroupByAxis } from "../../_helpers/testRunGroup.helper";
 import { useT } from "../../i18n";
 
 export type TestRunView = "table" | "grid";
@@ -87,9 +86,6 @@ export const TestRunListControls: React.FunctionComponent<{
   onViewChange: (view: TestRunView) => void;
   density: TestRunDensity;
   onDensityChange: (density: TestRunDensity) => void;
-  grouped: boolean;
-  onGroupedChange: (grouped: boolean) => void;
-  groupByAxis: GroupByAxis;
   showDiff: boolean;
   onShowDiffChange: (showDiff: boolean) => void;
 }> = ({
@@ -97,9 +93,6 @@ export const TestRunListControls: React.FunctionComponent<{
   onViewChange,
   density,
   onDensityChange,
-  grouped,
-  onGroupedChange,
-  groupByAxis,
   showDiff,
   onShowDiffChange,
 }) => {
@@ -162,39 +155,8 @@ export const TestRunListControls: React.FunctionComponent<{
           icon={<DensityLarge fontSize="small" />}
         />
       </SlidingToggleGroup>
-      {groupDivider}
-      {/* what the runs show; switches rather than icons, so "on" is unmistakable.
-        The axis is named in the tooltip and not chosen here: it is a project
-        setting shared by everyone, and the details dialog groups by the same
-        one, so a selector in the toolbar would let the two drift apart */}
-      <Tooltip
-        title={
-          // a node rather than a string, because the wrapper forwards only title
-          // and children, so the line breaks cannot come from a style
-          <React.Fragment>
-            {t(view === "grid" ? "runs.groupHelpCard" : "runs.groupHelpRow")}
-            <br />
-            {t("runs.groupHelpWhere")}
-            <br />
-            {t("runs.groupHelpAxis", { axis: groupByAxis })}
-          </React.Fragment>
-        }
-      >
-        <FormControlLabel
-          control={
-            <Switch
-              size="small"
-              checked={grouped}
-              onChange={(event) => onGroupedChange(event.target.checked)}
-              inputProps={{ "aria-label": t("runs.groupVariations") }}
-              data-testid="groupVariationsToggle"
-            />
-          }
-          label={switchLabel(t("runs.groupVariations"))}
-          sx={{ marginLeft: 0, marginRight: 0 }}
-        />
-      </Tooltip>
-      {/* only the cards carry a picture, so the table has nothing to swap */}
+      {/* only the cards carry a picture, so the table has nothing to swap; a
+        switch rather than an icon, so "on" is unmistakable */}
       {view === "grid" && groupDivider}
       {view === "grid" && (
         <Tooltip title={t("runs.diffHelp")}>

@@ -54,18 +54,6 @@ test("can dismiss a notification without waiting it out", async ({
   });
 });
 
-// TEST_PROJECT leaves bulkApproveVariations off, and the axis it names drives
-// the grid's grouping either way, so it has to stay visible and changeable
-test("offers the group by axis with bulk approve off", async ({
-  projectListPage,
-  page,
-}) => {
-  await projectListPage.editBtn.click();
-
-  await expect(page).toHaveURL(`/projects/${project.id}/settings`);
-  await expect(page.getByLabel("Group variations by")).toBeVisible();
-});
-
 test("creates a project from three fields and opens its settings", async ({
   projectListPage,
   page,

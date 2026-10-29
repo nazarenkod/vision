@@ -13,8 +13,6 @@ export interface Project {
   imageComparisonConfig: string;
   maxBuildAllowed: number;
   maxBranchLifetime: number;
-  bulkApproveVariations: boolean;
-  bulkApproveGroupBy: string;
   // Jira for filing accessibility bugs; the token itself never comes back from the API
   jiraUrl?: string | null;
   jiraEmail?: string | null;

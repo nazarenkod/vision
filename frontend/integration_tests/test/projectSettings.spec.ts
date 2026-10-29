@@ -11,8 +11,6 @@ import {
 
 const project = {
   ...TEST_PROJECT,
-  bulkApproveVariations: false,
-  bulkApproveGroupBy: "customTags",
   jiraUrl: "https://jira.example.com",
   jiraTokenSet: true,
   uiTreeSettings: JSON.stringify({
@@ -160,7 +158,6 @@ test("saves every field the old dialog had", async ({
   await page.locator("#buildCount").fill("40");
   await page.locator("#maxBranchLifetime").fill("14");
   await page.getByLabel("Auto approve feature").uncheck();
-  await page.getByLabel("Bulk approve/reject variations").check();
   await page.getByTestId(`engine-${ImageComparison.odiff}`).click();
   await page.getByLabel("Send hidden changes to review").uncheck();
   await page.locator("#jiraIssueType").fill("Defect");
@@ -181,8 +178,6 @@ test("saves every field the old dialog had", async ({
     maxBuildAllowed: 40,
     maxBranchLifetime: 14,
     autoApproveFeature: false,
-    bulkApproveVariations: true,
-    bulkApproveGroupBy: "customTags",
     imageComparison: ImageComparison.odiff,
     jiraIssueType: "Defect",
     jiraUrl: project.jiraUrl,
@@ -230,9 +225,6 @@ test("shows a dependent field only when its switch is on", async ({
   await expect(maxMove).toHaveCount(0);
   await page.getByLabel("Compare moved elements at their new place").check();
   await expect(maxMove).toBeVisible();
-
-  // the grouping axis drives the test list too, so it is always there
-  await expect(page.getByLabel("Group variations by")).toBeVisible();
 });
 
 test("has no element rules section", async ({
@@ -246,6 +238,20 @@ test("has no element rules section", async ({
   await expect(page.getByTestId("nav-rules")).toHaveCount(0);
   await expect(page.getByText("Element rules")).toHaveCount(0);
   await page.getByTestId("settingsSearch").fill("element rule");
+  await expect(page.getByText("Nothing matches")).toBeVisible();
+});
+
+test("has no settings for variations in the review section", async ({
+  page,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  authUser,
+}) => {
+  // a project saved with them on still has the columns (022)
+  await open(page, { bulkApproveVariations: true, bulkApproveGroupBy: "os" });
+  const review = page.getByTestId("section-review");
+  await expect(review.getByLabel("Auto approve feature")).toBeVisible();
+  await expect(review.getByText(/variations/i)).toHaveCount(0);
+  await page.getByTestId("settingsSearch").fill("variation");
   await expect(page.getByText("Nothing matches")).toBeVisible();
 });
 

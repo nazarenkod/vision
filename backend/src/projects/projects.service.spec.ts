@@ -1,5 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { ProjectsService } from './projects.service';
+import { ProjectsService, toPublicProject } from './projects.service';
+import { TEST_PROJECT } from '../_data_';
 import { PrismaService } from '../prisma/prisma.service';
 import { TestVariationsService } from '../test-variations/test-variations.service';
 import { BuildsService } from '../builds/builds.service';
@@ -80,6 +81,35 @@ describe('ProjectsService', () => {
 
       expect(projectFindUniqueMock).not.toHaveBeenCalled();
       expect(projectUpdateMock.mock.calls[0][0].data.uiTreeSettings).toBeUndefined();
+    });
+
+    it('ignores the variation settings an old page still sends', async () => {
+      const projectUpdateMock = jest.fn().mockResolvedValue({});
+      service = await initService({ projectUpdateMock });
+
+      await service.update({
+        id: 'p1',
+        name: 'Mobile',
+        bulkApproveVariations: true,
+        bulkApproveGroupBy: 'os',
+      } as never);
+
+      const { data } = projectUpdateMock.mock.calls[0][0];
+      expect(data.name).toBe('Mobile');
+      expect(data).not.toHaveProperty('bulkApproveVariations');
+      expect(data).not.toHaveProperty('bulkApproveGroupBy');
+    });
+  });
+
+  describe('toPublicProject', () => {
+    it('leaves the variation settings out of a project it returns', () => {
+      const project = { ...TEST_PROJECT, bulkApproveVariations: true, bulkApproveGroupBy: 'os' };
+
+      const returned = toPublicProject(project);
+
+      expect(returned.name).toBe(TEST_PROJECT.name);
+      expect(returned).not.toHaveProperty('bulkApproveVariations');
+      expect(returned).not.toHaveProperty('bulkApproveGroupBy');
     });
   });
 });

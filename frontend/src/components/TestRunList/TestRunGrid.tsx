@@ -5,16 +5,11 @@ import {
   CardActionArea,
   CardContent,
   Checkbox,
-  Chip,
   Typography,
 } from "@mui/material";
 import TestStatusChip from "../TestStatusChip";
 import noImage from "../../static/no-image.png";
 import { CARD_SIZE_BY_DENSITY, TestRunDensity } from "./TestRunListControls";
-import {
-  groupStatusSummary,
-  TestRunGroup,
-} from "../../_helpers/testRunGroup.helper";
 import { thumbnailFor } from "../../_helpers/testRunImage.helper";
 import { tagValuesOf } from "../../_helpers/testRunTags.helper";
 import { TestRun } from "../../types";
@@ -64,25 +59,25 @@ const clipToLines = (lines: number) => ({
 });
 
 export const TestRunGrid: React.FunctionComponent<{
-  groups: TestRunGroup[];
-  // a set rather than the array: a card looks its runs up on every render, and
-  // a build of thousands can have every one of them selected
+  runs: TestRun[];
+  // a set rather than the array: every card looks itself up on every render,
+  // and a build of thousands can have every one of them selected
   selectedIdSet: Set<string>;
   density: TestRunDensity;
   showDiff: boolean;
   activeTags: string[];
-  tagFieldsFor: (runCount: number) => Array<keyof TestRun>;
-  onToggleGroup: (ids: string[]) => void;
+  tagFields: Array<keyof TestRun>;
+  onToggle: (id: string) => void;
   onToggleTag: (tag: string) => void;
   onOpen: (id: string) => void;
 }> = ({
-  groups,
+  runs,
   selectedIdSet,
   density,
   showDiff,
   activeTags,
-  tagFieldsFor,
-  onToggleGroup,
+  tagFields,
+  onToggle,
   onToggleTag,
   onOpen,
 }) => {
@@ -95,14 +90,13 @@ export const TestRunGrid: React.FunctionComponent<{
       padding={2}
       data-testid="testRunGrid"
     >
-      {groups.map(({ key, runs, representative }, index) => {
-        const ids = runs.map((run) => run.id);
-        const selectedCount = ids.filter((id) => selectedIdSet.has(id)).length;
-        const tags = tagValuesOf(representative, tagFieldsFor(runs.length));
+      {runs.map((run, index) => {
+        const selected = selectedIdSet.has(run.id);
+        const tags = tagValuesOf(run, tagFields);
 
         return (
           <Card
-            key={key}
+            key={run.id}
             variant="outlined"
             data-testid="testRunCard"
             {...staggered(index, 24)}
@@ -120,11 +114,11 @@ export const TestRunGrid: React.FunctionComponent<{
               picture keeps the full width of the card and a tick does not open
               the dialog */}
             <Box position="relative">
-              <CardActionArea onClick={() => onOpen(representative.id)}>
+              <CardActionArea onClick={() => onOpen(run.id)}>
                 <Box
                   component="img"
-                  src={thumbnailFor(representative, showDiff)}
-                  alt={representative.name}
+                  src={thumbnailFor(run, showDiff)}
+                  alt={run.name}
                   loading="lazy"
                   decoding="async"
                   onError={(event: React.SyntheticEvent<HTMLImageElement>) => {
@@ -145,11 +139,10 @@ export const TestRunGrid: React.FunctionComponent<{
               </CardActionArea>
               <Checkbox
                 size="small"
-                checked={selectedCount === ids.length}
-                indeterminate={selectedCount > 0 && selectedCount < ids.length}
-                onChange={() => onToggleGroup(ids)}
+                checked={selected}
+                onChange={() => onToggle(run.id)}
                 inputProps={{
-                  "aria-label": t("runs.select", { name: representative.name }),
+                  "aria-label": t("runs.select", { name: run.name }),
                 }}
                 className="cardSelect"
                 sx={{
@@ -160,26 +153,12 @@ export const TestRunGrid: React.FunctionComponent<{
                   borderRadius: 1,
                   // legible over a screenshot of any colour; shown on hover or when ticked
                   backgroundColor: tokens.surface,
-                  opacity: selectedCount ? 1 : 0,
+                  opacity: selected ? 1 : 0,
                   transition: `opacity ${motion.fast}ms`,
                   "&:focus-within": { opacity: 1 },
                   "&:hover": { backgroundColor: tokens.surface },
                 }}
               />
-              {runs.length > 1 && (
-                <Chip
-                  size="small"
-                  label={runs.length}
-                  data-testid="groupCount"
-                  sx={{
-                    position: "absolute",
-                    top: 4,
-                    right: 4,
-                    backgroundColor: tokens.text,
-                    color: tokens.ground,
-                  }}
-                />
-              )}
             </Box>
             <CardContent
               // body carries a global text-align: center, hence the explicit left.
@@ -202,19 +181,12 @@ export const TestRunGrid: React.FunctionComponent<{
                 fontWeight={600}
                 width="100%"
                 sx={clampToLines(2)}
-                title={representative.name}
+                title={run.name}
                 data-testid="cardName"
               >
-                {representative.name}
+                {run.name}
               </Typography>
-              {/* the chip speaks for the representative, so a half-reviewed
-                group has to say so somewhere */}
-              <Box
-                component="span"
-                title={groupStatusSummary(runs) || undefined}
-              >
-                <TestStatusChip status={representative.status} />
-              </Box>
+              <TestStatusChip status={run.status} />
               {/* tags as quiet text, not chips: five chips wrap over three lines
                 on a narrow card and drown out the name and the status. Each one
                 filters the list by itself, as a button rather than a span so

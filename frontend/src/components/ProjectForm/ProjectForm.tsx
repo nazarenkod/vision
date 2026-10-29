@@ -20,7 +20,6 @@ import {
   setProjectEditState,
 } from "../../contexts";
 import { ImageComparison } from "../../types/imageComparison";
-import { Tooltip } from "../Tooltip";
 import { motion, tokens } from "../../theme";
 import { LooksSameConfigForm } from "./LooksSameConfigForm";
 import { OdiffConfigForm } from "./OdiffConfigForm";
@@ -144,7 +143,7 @@ export const GeneralFields: React.FunctionComponent = () => {
   );
 };
 
-/** Auto approve and reviewing a screen's variations together. */
+/** The review settings: auto approve. */
 export const ReviewFields: React.FunctionComponent = () => {
   const { project, projectDispatch } = useEditedProject();
   const { t } = useT();
@@ -166,52 +165,6 @@ export const ReviewFields: React.FunctionComponent = () => {
           />
         }
       />
-      <Tooltip title={t("review.bulkApproveHelp")}>
-        <FormControlLabel
-          label={t("review.bulkApprove")}
-          control={
-            <Switch
-              checked={project.bulkApproveVariations}
-              onChange={(event, checked) =>
-                setProjectEditState(projectDispatch, {
-                  ...project,
-                  bulkApproveVariations: checked,
-                })
-              }
-              color="primary"
-              name="bulkApproveVariations"
-            />
-          }
-        />
-      </Tooltip>
-      {/* not tied to the switch above: the axis also decides what the test run
-          list groups into one card, which it does whether or not variations can
-          be bulk approved */}
-      <Tooltip title={t("review.groupByHelp")}>
-        <FormControl variant="standard" fullWidth>
-          <InputLabel id="bulkApproveGroupBySelect">
-            {t("review.groupBy")}
-          </InputLabel>
-          <Select
-            variant="standard"
-            id="bulkApproveGroupBySelect"
-            labelId="bulkApproveGroupBySelect"
-            value={project.bulkApproveGroupBy}
-            onChange={(event: SelectChangeEvent<HTMLInputElement>) =>
-              setProjectEditState(projectDispatch, {
-                ...project,
-                bulkApproveGroupBy: event.target.value as string,
-              })
-            }
-          >
-            <MenuItem value="customTags">customTags</MenuItem>
-            <MenuItem value="os">os</MenuItem>
-            <MenuItem value="device">device</MenuItem>
-            <MenuItem value="viewport">viewport</MenuItem>
-            <MenuItem value="browser">browser</MenuItem>
-          </Select>
-        </FormControl>
-      </Tooltip>
     </React.Fragment>
   );
 };

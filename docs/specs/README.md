@@ -81,6 +81,7 @@ docs/specs/NNN-коротка-назва/
 | [018](018-ui-redesign/spec.md) | Новий вигляд: дві теми, рух, логотип, усі екрани | Implemented |
 | [019](019-element-rules-in-review/spec.md) | Правила елементів лише в порівнянні | Implemented |
 | [020](020-remove-reference-device/spec.md) | Без еталонного пристрою й попереджень про знімок | Implemented |
+| [022](022-remove-variation-groups/spec.md) | Без груп варіацій | Implemented |
 | [023](023-ukrainian-ui/spec.md) | Українська мова інтерфейсу | Implemented |
 
 Статусу `Verified` поки немає в жодної: інтеграцію з реальною Jira Cloud і прогони на сервері

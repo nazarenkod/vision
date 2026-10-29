@@ -123,12 +123,6 @@ export const uk: Messages = {
     "Мобільні знімки, доступність і Jira налаштовуються в налаштуваннях проєкту — вони відкриються одразу після створення.",
 
   "review.autoApprove": "Автоматично приймати у feature-гілках",
-  "review.bulkApprove": "Приймати й відхиляти варіації разом",
-  "review.bulkApproveHelp":
-    "Переглядайте й приймайте чи відхиляйте варіації одного екрана (наприклад, усі мови) в одному діалозі. Наперед вибрано лише варіації з однаковою зміною; інші лишаються для ручного перегляду.",
-  "review.groupBy": "Групувати варіації за",
-  "review.groupByHelp":
-    "Вісь варіацій, якою відрізняються перевірки в групі. Екрани, однакові в усьому, крім цієї осі, групуються в списку перевірок і переглядаються разом — наприклад, customTags для знімків різними мовами.",
 
   "comparison.library": "Бібліотека порівняння зображень",
   "comparison.engines": "Порівняння зображень",
@@ -386,13 +380,6 @@ export const uk: Messages = {
   "runs.standardDensity": "Звичайне розміщення",
   "runs.comfortable": "Просторо",
   "runs.comfortableDensity": "Просторе розміщення",
-  "runs.groupHelpCard":
-    "Згортає варіації одного екрана в одну картку за групою.",
-  "runs.groupHelpRow": "Згортає варіації одного екрана в один рядок за групою.",
-  "runs.groupHelpWhere":
-    "Налаштовується в Проєкти → налаштування проєкту → «Групувати варіації за».",
-  "runs.groupHelpAxis": "Поточна вісь: {axis}.",
-  "runs.groupVariations": "Групувати варіації",
   "runs.diffHelp": "Показати чи сховати різницю. Клавіша: D",
   "runs.showDiff": "Показати різницю",
   "runs.searchByName": "Пошук за назвою",
@@ -571,12 +558,6 @@ export const uk: Messages = {
   "review.hotkey": "Клавіша: {key}",
   "review.approve": "Прийняти",
   "review.reject": "Відхилити",
-  "review.approveVariationsHelp":
-    "Переглянути й прийняти схожі варіації цього екрана (наприклад, усі мови), перш ніж застосувати",
-  "review.approveVariations": "Прийняти варіації",
-  "review.rejectVariationsHelp":
-    "Переглянути й відхилити схожі варіації цього екрана (наприклад, усі мови), перш ніж застосувати",
-  "review.rejectVariations": "Відхилити варіації",
   "review.devices": "Пристрої",
   "review.approveAll": "Прийняти всі ({count})",
   "review.approveDevicesTitle": {
@@ -845,41 +826,6 @@ export const uk: Messages = {
   "bug.typeName": "Введіть ім’я",
   "bug.nobody": "Нікого не знайдено",
   "bug.searchByName": "Пошук за ім’ям",
-
-  // variations
-  "variations.approveTitle":
-    "Прийняти варіації — перегляньте, перш ніж застосувати",
-  "variations.rejectTitle":
-    "Відхилити варіації — перегляньте, перш ніж застосувати",
-  "variations.viewFull": "Переглянути {name} в повному розмірі",
-  "variations.approving": {
-    one: "Приймаємо {count} варіацію…",
-    few: "Приймаємо {count} варіації…",
-    many: "Приймаємо {count} варіацій…",
-    other: "Приймаємо {count} варіації…",
-  },
-  "variations.rejecting": {
-    one: "Відхиляємо {count} варіацію…",
-    few: "Відхиляємо {count} варіації…",
-    many: "Відхиляємо {count} варіацій…",
-    other: "Відхиляємо {count} варіації…",
-  },
-  "variations.matchingSelected": "Вибрано схожих: {selected} з {total}",
-  "variations.toggleDiff": "Показати чи сховати різницю. Клавіша: D",
-  "variations.showDiff": "Показати різницю",
-  "variations.clickThumb":
-    "Натисніть на мініатюру, щоб переглянути її в повному розмірі.",
-  "variations.skipped": "Не збіглися: {count} — перегляньте окремо",
-  "variations.skippedHelp":
-    "Вони не збігаються зі зміною, яку ви переглядаєте, тож їх не вибрано. Відкрийте кожну й додайте, лише якщо це та сама навмисна зміна.",
-  "variations.cancel": "Скасувати",
-  "variations.approveSelected": "Прийняти вибрані ({count})",
-  "variations.rejectSelected": "Відхилити вибрані ({count})",
-  "variations.os": "ОС: {value}",
-  "variations.device": "Пристрій: {value}",
-  "variations.customTags": "Теги: {value}",
-  "variations.diff": "Різниця: {value}%",
-  "variations.tolerance": "Допуск різниці: {value}%",
 
   // a11ySummary
   "a11ySummary.empty": "У цій збірці немає даних про доступність",

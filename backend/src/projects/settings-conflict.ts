@@ -11,8 +11,6 @@ export const SETTINGS_FIELDS = [
   'imageComparisonConfig',
   'maxBuildAllowed',
   'maxBranchLifetime',
-  'bulkApproveVariations',
-  'bulkApproveGroupBy',
   'uiTreeSettings',
   'jiraUrl',
   'jiraEmail',

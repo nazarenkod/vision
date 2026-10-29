@@ -35,12 +35,18 @@ function normalizeUiTreeSettings(value: string | null): string | null {
   }
 }
 
-/** A project as the API returns it: the Jira token never leaves the server. */
+/**
+ * A project as the API returns it: the Jira token never leaves the server, and
+ * the columns of the removed variation groups (022) stay in the row unread.
+ */
 export function toPublicProject(
   project: Project
-): Omit<Project, 'jiraToken'> & { jiraTokenSet: boolean; geminiApiKeySet: boolean } {
+): Omit<Project, 'jiraToken' | 'bulkApproveVariations' | 'bulkApproveGroupBy'> & {
+  jiraTokenSet: boolean;
+  geminiApiKeySet: boolean;
+} {
   if (!project) return project as never;
-  const { jiraToken, ...rest } = project;
+  const { jiraToken, bulkApproveVariations, bulkApproveGroupBy, ...rest } = project;
   const comparison = hideConfigSecrets(project.imageComparisonConfig);
   return {
     ...rest,
@@ -91,8 +97,6 @@ export class ProjectsService {
         imageComparisonConfig: projectDto.imageComparisonConfig,
         maxBuildAllowed: projectDto.maxBuildAllowed,
         maxBranchLifetime: projectDto.maxBranchLifetime,
-        bulkApproveVariations: projectDto.bulkApproveVariations,
-        bulkApproveGroupBy: projectDto.bulkApproveGroupBy,
         ...jiraFields(projectDto),
       },
     });
@@ -133,8 +137,6 @@ export class ProjectsService {
         maxBuildAllowed: projectDto.maxBuildAllowed,
         maxBranchLifetime: projectDto.maxBranchLifetime,
         imageComparisonConfig: keepConfigSecrets(projectDto.imageComparisonConfig, stored?.imageComparisonConfig),
-        bulkApproveVariations: projectDto.bulkApproveVariations,
-        bulkApproveGroupBy: projectDto.bulkApproveGroupBy,
         ...fields,
       },
     });

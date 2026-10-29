@@ -137,6 +137,7 @@ sequenceDiagram
 | REQ-024-09 | `frontend/integration_tests/test/elementSelection.spec.ts › offers to remove the rule an element is under` |
 | REQ-024-10 | `frontend/integration_tests/test/elementSelection.spec.ts › opens the full rule form from the element` |
 | REQ-024-11 | `frontend/integration_tests/test/elementSelection.spec.ts › shows actions next to a clicked element` |
+| REQ-024-12 | `frontend/integration_tests/test/elementSelection.spec.ts › keeps the Select elements label while selecting` |
 | REQ-024-15 | `frontend/integration_tests/test/elementSelection.spec.ts › compares only a picked element` |
 | REQ-024-16 | `frontend/integration_tests/test/elementSelection.spec.ts › keeps compare only to this screen`; `backend/src/test-runs/test-runs.service.spec.ts › refuses a compare-only rule for every screen` |
 | REQ-024-17 | `backend/src/ui-tree/compare-only.spec.ts › keeps ignored elements and areas ignored inside a compared one` |

@@ -1094,7 +1094,6 @@ export const en = {
 
   // selecting elements on the screenshots (spec 024)
   "select.button": "Select elements",
-  "select.selecting": "Selecting…",
   "select.hint": "Click an element",
   "select.done": "Done",
   "select.parent": "Select the element around it",

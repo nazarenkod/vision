@@ -1040,7 +1040,8 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
             },
           }}
         >
-          {pickMode ? t("select.selecting") : t("select.button")}
+          {/* the same label while selecting, so the bar keeps its width (REQ-024-12) */}
+          {t("select.button")}
           {/* a child, not endIcon: MUI sizes the first child of an icon slot to 20px */}
           <Box
             component="kbd"

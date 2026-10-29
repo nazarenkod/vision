@@ -245,6 +245,22 @@ test("offers Select elements to editors of a screenshot with a UI tree", async (
   await expect(page.getByTestId("selectingBar")).toBeVisible();
 });
 
+test("keeps the Select elements label while selecting", async ({
+  openProjectPage,
+  page,
+}) => {
+  await openReview(page, openProjectPage);
+  const button = page.getByTestId("selectElements");
+  const before = (await button.boundingBox())?.width ?? 0;
+
+  await startSelecting(page);
+
+  await expect(button).toHaveAttribute("aria-pressed", "true");
+  await expect(button).toHaveText(/^Select elements\s*Esc$/);
+  // only the key hint changes, E to Esc
+  expect((await button.boundingBox())?.width).toBeCloseTo(before, -1);
+});
+
 test.describe("for a guest", () => {
   test.use({ userRole: "guest" });
 

@@ -4,6 +4,7 @@ export const LOCATOR_LOGIN_FORM = "loginform-1";
 export const LOCATOR_BUILD_DETAILS = "build-details";
 export const LOCATOR_RESET_FILTER = "reset-filter";
 export const LOCATOR_TEST_VARIATION_SELECT_BRANCH = "select-branch";
+export const LOCATOR_TEST_VARIATION_MERGE_TOGGLE = "merge-branches";
 export const LOCATOR_PROJECT_LIST_PAGE_PROJECT_LIST = "projectlist-1";
 export const LOCATOR_PROJECT_PAGE_SELECT_PROJECT = "select-project";
 export const LOCATOR_PROJECT_PAGE_BUILD_LIST = "build-list";
@@ -67,10 +68,11 @@ export const TEST_VARIATION_LIST_PAGE = [
     content: "Select the project you want to act on.",
   },
   {
-    target: `#${LOCATOR_TEST_VARIATION_SELECT_BRANCH}`,
+    // the form itself waits behind this button
+    target: `#${LOCATOR_TEST_VARIATION_MERGE_TOGGLE}`,
     title: "Merge from one branch to another",
     content:
-      "Select the branch from/to which you want to merge the variations.",
+      "Open Merge branches and select the branch from/to which you want to merge the variations.",
   },
   {
     target: `#${LOCATOR_TEST_VARIATION_LIST_PAGE_SELECT_RESET_FILTER}`,

@@ -64,6 +64,11 @@ interface Props {
   onPickedDone: () => void;
   // outlines an element chosen in the rule dialog on the screenshot
   onPreviewElement?: (element: PickableElement | undefined) => void;
+  /** the box of what the pointer is over in the panel, outlined on the screenshot */
+  onPreviewViolation?: (id: string | undefined) => void;
+  onPreviewRegion?: (
+    region: { x: number; y: number; width: number; height: number } | undefined,
+  ) => void;
 }
 
 type RuleDraft = {
@@ -96,6 +101,8 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
   pickedElement,
   onPickedDone,
   onPreviewElement,
+  onPreviewViolation,
+  onPreviewRegion,
 }) => {
   const { enqueueSnackbar } = useSnackbar();
   const { user } = useUserState();
@@ -232,7 +239,8 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
         borderRadius: "50%",
         flexShrink: 0,
         bgcolor: isNew ? tokens.a11y : tokens.a11yExisting,
-        color: "#fff",
+        // a number on an orange or grey dot reads in white in both themes
+        color: "white",
         font: "600 11px/20px Inter, sans-serif",
         textAlign: "center",
       }}
@@ -282,10 +290,14 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
         component="article"
         data-testid="a11yProblem"
         onClick={() => onHighlight(violation)}
+        onMouseEnter={() => onPreviewViolation?.(violation.id)}
+        onMouseLeave={() => onPreviewViolation?.(undefined)}
         sx={{
           cursor: "pointer",
-          border: `1px solid ${isNew ? "#FEDF89" : tokens.border}`,
-          bgcolor: isNew ? "#FFFCF5" : tokens.surface,
+          border: `1px solid ${isNew ? tokens.a11y : tokens.border}`,
+          bgcolor: isNew ? tokens.a11ySoft : tokens.surface,
+          transition: "border-color 220ms, background-color 220ms",
+          "&:hover": { borderColor: isNew ? tokens.a11y : tokens.borderStrong },
           outline: highlighted ? `2px solid ${tokens.a11y}` : "none",
           borderRadius: 2.5,
           p: 1.5,
@@ -887,7 +899,14 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
             {structure.regions.map((area, index) => (
               <Box
                 key={index}
+                data-testid="changedArea"
+                onMouseEnter={() => onPreviewRegion?.(area.region)}
+                onMouseLeave={() => onPreviewRegion?.(undefined)}
                 sx={{
+                  borderRadius: 1,
+                  px: 0.5,
+                  mx: -0.5,
+                  "&:hover": { bgcolor: tokens.subtle },
                   display: "flex",
                   alignItems: "center",
                   gap: 1,

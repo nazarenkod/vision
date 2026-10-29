@@ -3,12 +3,14 @@ import { Chip, Grid, Typography, Paper, type Theme } from "@mui/material";
 import { makeStyles } from "@mui/styles";
 import { TestRun } from "../../types";
 import { Tooltip } from "../Tooltip";
+import { DiffMeter } from "./DiffMeter";
+import { tokens } from "../../theme";
 
 const useStyles = makeStyles((theme: Theme) => ({
   vlmContainer: {
     padding: theme.spacing(1.5),
     marginTop: theme.spacing(1),
-    backgroundColor: "rgba(0, 0, 0, 0.02)",
+    backgroundColor: tokens.subtle,
     borderLeft: "3px solid",
     borderColor: theme.palette.primary.main,
   },
@@ -54,20 +56,10 @@ export const TestRunDetails: React.FunctionComponent<IProps> = ({
           </Grid>
         ))}
       <Grid item>
-        <Tooltip title="How many percent of pixels are different according to the defined settings.">
-          <Typography variant="caption">
-            <strong>
-              Diff: {Math.round(testRun.diffPercent * 100) / 100}%
-            </strong>
-          </Typography>
-        </Tooltip>
-      </Grid>
-      <Grid item>
-        <Tooltip title="The allowed diff tolerance. Can be set with the diffTollerancePercent property in the track method.">
-          <Typography variant="caption">
-            <strong>Diff tolerance: {testRun.diffTollerancePercent}%</strong>
-          </Typography>
-        </Tooltip>
+        <DiffMeter
+          diffPercent={testRun.diffPercent}
+          tolerancePercent={testRun.diffTollerancePercent}
+        />
       </Grid>
       {testRun.vlmDescription && (
         <Grid item xs={12}>

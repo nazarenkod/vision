@@ -44,11 +44,11 @@ import {
 import { TestRunDetails } from "./TestRunDetails";
 import useImage from "use-image";
 import { routes, GO_TO_NEXT_KEY } from "../../constants";
-import { useTestRunDispatch, useProjectState } from "../../contexts";
+import { useTestRunDispatch, useProjectState, useTokens } from "../../contexts";
 import { DrawArea, ImageStateLoad } from "./DrawArea";
 import { CommentsPopper } from "../CommentsPopper";
 import { useDialogSnackbar } from "./useDialogSnackbar";
-import { ApproveRejectButtons } from "./ApproveRejectButtons";
+import { APPROVED_TICK_MS, ApproveRejectButtons } from "./ApproveRejectButtons";
 import {
   MatchingVariationsDialog,
   MatchingVariationsMode,
@@ -66,7 +66,9 @@ import {
   hasUiTree,
 } from "../../types";
 import { OverlayRect } from "./DrawArea";
-import { tokens } from "../../theme";
+import { motion, tokens } from "../../theme";
+import { StepDots } from "./StepDots";
+import { prefersReducedMotion } from "../../_helpers/motion.helper";
 import { BaseModal } from "../BaseModal";
 import { Tooltip } from "../Tooltip";
 import ImageDetails, { ImageDetailsProps } from "./ImageDetails";
@@ -103,7 +105,7 @@ const useStyles = makeStyles(() => ({
     gap: 4,
   },
   testRunName: {
-    fontWeight: 300,
+    fontWeight: 400,
   },
   closeIcon: {
     position: "absolute",
@@ -115,6 +117,7 @@ const useStyles = makeStyles(() => ({
   drawAreaContainer: {
     width: "100%",
     height: "100%",
+    background: tokens.lightbox,
   },
   drawAreaItem: {
     padding: "0 4px",
@@ -134,11 +137,16 @@ const defaultStagePos = {
 interface TestDetailsModalProps {
   testRun: TestRun;
   currentRunIndex: number;
+  /** statuses of every step of this review, in order */
+  stepStatuses?: string[];
+  direction?: "forward" | "back" | "none";
   totalTestRunCount: number;
   touched: boolean;
   handleClose: () => void;
   handlePrevious: () => void;
   handleNext: () => void;
+  /** moves this many steps from the current one, within the review */
+  handleStep: (offset: number) => void;
   // the same check on every device of the build
   deviceRuns?: TestRun[];
   handleSelectRun?: (id: string) => void;
@@ -147,10 +155,13 @@ interface TestDetailsModalProps {
 const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
   testRun,
   currentRunIndex,
+  stepStatuses = [],
+  direction = "none",
   totalTestRunCount,
   touched,
   handlePrevious,
   handleNext,
+  handleStep,
   handleClose,
   deviceRuns = [],
   handleSelectRun,
@@ -182,6 +193,33 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
   const [a11yReport, setA11yReport] = useState<A11yReport | null | undefined>();
   const [a11yOverlay, setA11yOverlay] = useState(true);
   const [highlightedViolation, setHighlightedViolation] = useState<string>();
+  // what the pointer is over in the side panel (REQ-018-36)
+  const [previewViolation, setPreviewViolation] = useState<string>();
+  const [previewRegion, setPreviewRegion] = useState<{
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+  }>();
+  // a new step slides in from the side the review moved to; the canvases stay
+  // mounted, and after the slide the screenshots do not move (REQ-018-25, 34)
+  const panesRef = React.useRef<HTMLDivElement>(null);
+  React.useEffect(() => {
+    const panes = panesRef.current;
+    if (!panes || direction === "none" || prefersReducedMotion()) return;
+    const from = direction === "forward" ? 28 : -28;
+    panes.animate?.(
+      [
+        { opacity: 0, transform: `translateX(${from}px)` },
+        { opacity: 1, transform: "none" },
+      ],
+      { duration: motion.base, easing: motion.easing },
+    );
+    // only a change of step slides; direction alone does not
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [testRun.id]);
+  // the canvas needs real colours, not CSS variables
+  const canvas = useTokens();
   const withUiTree = hasUiTree(testRun);
   const loadA11yReport = React.useCallback(() => {
     if (!withUiTree) {
@@ -243,6 +281,8 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
     setHoveredElement(undefined);
     setPickedElement(undefined);
     setPreviewElement(undefined);
+    setPreviewViolation(undefined);
+    setPreviewRegion(undefined);
   }, [testRun.id]);
   useEffect(() => {
     if (!pickMode) return;
@@ -266,7 +306,7 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
     .map((element) => ({
       id: "picked",
       ...element.bounds,
-      color: tokens.brand,
+      color: canvas.brand,
       label:
         element.element.length > 40
           ? `${element.element.slice(0, 39)}…`
@@ -280,26 +320,26 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
             ...structure.systemBars.map((rect, i) => ({
               id: `bar-${i}`,
               ...rect,
-              color: "#98A2B3",
+              color: canvas.a11yExisting,
               dashed: true,
             })),
             ...structure.ignoredAreas.map((rect, i) => ({
               id: `ignored-${i}`,
               ...rect,
-              color: "#667085",
+              color: canvas.textMuted,
               dashed: true,
               label: "ignored",
             })),
             ...structure.toleratedAreas.map((rect, i) => ({
               id: `tolerated-${i}`,
               ...rect,
-              color: "#175CD3",
+              color: canvas.status.new.fg,
               dashed: true,
               label: `±${rect.maxDiffPercent}%`,
             })),
           ]
         : [],
-    [a11yOverlay, structure],
+    [a11yOverlay, structure, canvas],
   );
 
   const overlayRects: OverlayRect[] = React.useMemo(
@@ -311,13 +351,13 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
             return {
               id: violation.id,
               ...violation.bounds,
-              color: tracked ? tokens.a11yExisting : tokens.a11y,
+              color: tracked ? canvas.a11yExisting : canvas.a11y,
               dashed: tracked,
               label: String(index + 1),
             };
           })
         : [],
-    [a11yOverlay, a11yReport],
+    [a11yOverlay, a11yReport, canvas],
   );
   const [overlayOpacity, setOverlayOpacity] = useState(1);
   const [blendDifference, setBlendDifference] = useState(false);
@@ -343,11 +383,49 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
     localStorage.setItem(GO_TO_NEXT_KEY, JSON.stringify(goToNextAutomatically));
   }, [goToNextAutomatically]);
 
-  const handleGoToNextAutomatically = () => {
-    if (goToNextAutomatically) {
-      handleNext();
+  // "Go to the next" moves the review a moment after the key: once the server
+  // answers, and on Approve once the tick is seen too. Steps asked for in that
+  // moment used to act on the step the decision was about to leave, so where
+  // A then → landed depended on timing. They wait, and count from where the
+  // decision moves the review.
+  const decision = React.useRef<{ runId: string; steps: number }>();
+  const advance = React.useRef<ReturnType<typeof setTimeout>>();
+  const latest = React.useRef({ testRunId: testRun.id, handleStep });
+  latest.current = { testRunId: testRun.id, handleStep };
+  // closing the review drops the step it was about to take
+  useEffect(() => () => clearTimeout(advance.current), []);
+
+  const handleDecide = () => {
+    if (goToNextAutomatically && decision.current?.runId !== testRun.id) {
+      decision.current = { runId: testRun.id, steps: 0 };
     }
   };
+
+  // steps keep waiting through the tick: it is part of the decision's move
+  const settleDecision = (moved: boolean, delay = 0) => {
+    if (!decision.current) return;
+    clearTimeout(advance.current);
+    advance.current = setTimeout(() => {
+      const pending = decision.current;
+      decision.current = undefined;
+      if (!pending) return;
+      const offset = (moved ? 1 : 0) + pending.steps;
+      // a reviewer who went elsewhere meanwhile stays where they went
+      if (offset && latest.current.testRunId === pending.runId) {
+        latest.current.handleStep(offset);
+      }
+    }, delay);
+  };
+
+  const step = (offset: number, go: () => void) => {
+    if (decision.current?.runId === testRun.id) {
+      decision.current.steps += offset;
+    } else {
+      go();
+    }
+  };
+  const goNext = () => step(1, handleNext);
+  const goPrevious = () => step(-1, handlePrevious);
 
   const leftItemRef = React.useRef<HTMLDivElement>(null);
   const rightItemRef = React.useRef<HTMLDivElement>(null);
@@ -425,8 +503,8 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [baselineImage, currentImage]);
 
-  useHotkeys("right", handleNext, [currentRunIndex, handleNext]);
-  useHotkeys("left", handlePrevious, [currentRunIndex, handlePrevious]);
+  useHotkeys("right", goNext, [currentRunIndex, handleNext]);
+  useHotkeys("left", goPrevious, [currentRunIndex, handlePrevious]);
 
   const isImageSizeDiffer = React.useMemo(
     () =>
@@ -570,7 +648,6 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
     },
     [testRun.diffName],
   );
-  useHotkeys("ESC", handleClose, [handleClose]);
 
   const openHistoryTab = () => {
     window.open(
@@ -782,11 +859,16 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
           ...(pickMode || pickedElement || previewElement
             ? pickRects
             : overlayRects),
+          ...(previewRegion
+            ? [{ id: "changedArea", ...previewRegion, color: canvas.diff }]
+            : []),
         ]}
         highlightedOverlayId={
           pickMode || pickedElement || previewElement
             ? "picked"
-            : highlightedViolation
+            : previewRegion
+              ? "changedArea"
+              : (previewViolation ?? highlightedViolation)
         }
         pickMode={pickMode}
         onPickHover={(point) => setHoveredElement(elementAt(point))}
@@ -833,6 +915,9 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
         </Grid>
         <Grid item>
           <TestStatusChip status={testRun.status} />
+        </Grid>
+        <Grid item>
+          <StepDots statuses={stepStatuses} currentIndex={currentRunIndex} />
         </Grid>
         <Grid item>
           <RunFlags run={testRun} />
@@ -982,7 +1067,13 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
         className={classes.drawAreaContainer}
         display="flex"
       >
-        <Box flex={1} minWidth={0} height="100%">
+        <Box
+          flex={1}
+          minWidth={0}
+          height="100%"
+          ref={panesRef}
+          data-testid="reviewPanes"
+        >
           <Grid
             container
             justifyContent="center"
@@ -1026,6 +1117,8 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
           pickedElement={pickedElement}
           onPickedDone={() => setPickedElement(undefined)}
           onPreviewElement={setPreviewElement}
+          onPreviewViolation={setPreviewViolation}
+          onPreviewRegion={setPreviewRegion}
         />
       </Box>
       <Grid container className={classes.footer}>
@@ -1068,7 +1161,7 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
               style={{
                 visibility: currentRunIndex > 0 ? "visible" : "hidden",
               }}
-              onClick={handlePrevious}
+              onClick={goPrevious}
               size="large"
             >
               <NavigateBefore />
@@ -1078,8 +1171,11 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
             testRun.status === TestStatus.new) && (
             <ApproveRejectButtons
               testRun={testRun}
-              afterApprove={handleGoToNextAutomatically}
-              afterReject={handleGoToNextAutomatically}
+              onDecide={handleDecide}
+              // the tick is seen before the review moves on
+              afterApprove={() => settleDecision(true, APPROVED_TICK_MS)}
+              afterReject={() => settleDecision(true)}
+              afterFail={() => settleDecision(false)}
               onOpenVariations={setVariationsMode}
             />
           )}
@@ -1092,7 +1188,7 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
                     ? "visible"
                     : "hidden",
               }}
-              onClick={handleNext}
+              onClick={goNext}
               size="large"
             >
               <NavigateNext />

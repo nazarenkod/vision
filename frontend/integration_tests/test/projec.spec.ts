@@ -19,6 +19,7 @@ import {
   TEST_UNRESOLVED,
 } from "~client/_test/test.data.helper";
 import {
+  API_URL,
   mockDeleteBuilds,
   mockGetBuildDetails,
   mockGetBuilds,
@@ -653,4 +654,62 @@ test("renders the difference blend", async ({ openProjectPage, page }) => {
   await page.getByTestId("differenceToggle").click();
 
   await expect(page).toHaveScreenshot("project-page-test-run-difference.png");
+});
+
+test("collapses a change group from its header", async ({
+  openProjectPage,
+  page,
+}) => {
+  const group = (
+    id: string,
+    title: string,
+    runs: (typeof TEST_UNRESOLVED)[],
+  ) => ({
+    id,
+    kind: "visual",
+    title,
+    screens: runs.map((run) => run.name),
+    testRuns: runs,
+    changes: [],
+    noise: null,
+    fingerprint: id,
+  });
+  await page.route(
+    `${API_URL}/test-runs/groups?buildId=${TEST_BUILD_FAILED.id}`,
+    (route) =>
+      route.fulfill({
+        json: [
+          group("g1", "Pay button moved", [TEST_UNRESOLVED]),
+          group("g2", "New screenshots", [TEST_RUN_NEW]),
+        ],
+      }),
+  );
+  await page.addInitScript(() =>
+    localStorage.setItem("vrt.buildView", "changes"),
+  );
+  await openProjectPage(project.id, TEST_BUILD_FAILED.id);
+
+  const first = page.getByTestId("changeGroup").first();
+  await expect(page.getByTestId("changeGroup")).toHaveCount(2);
+  const thumb = first.getByRole("button", {
+    name: new RegExp(`Open ${TEST_UNRESOLVED.name}`),
+  });
+  await expect(thumb).toBeVisible();
+
+  await first.getByTestId("toggleGroup").click();
+  await expect(first.getByTestId("toggleGroup")).toHaveAttribute(
+    "aria-expanded",
+    "false",
+  );
+  await expect(thumb).toBeHidden();
+  // the other group stays open
+  await expect(
+    page
+      .getByTestId("changeGroup")
+      .nth(1)
+      .getByRole("button", { name: /^Open / }),
+  ).toBeVisible();
+
+  await first.getByTestId("toggleGroup").click();
+  await expect(thumb).toBeVisible();
 });

@@ -175,6 +175,9 @@ model User {
   // personal Jira credentials: bugs are filed as this person (email only for Jira Cloud)
   jiraToken String?
   jiraEmail String?
+  // the last time this person signed in to the web interface (password or
+  // SSO); API-key calls from the SDK, CLI and MCP do not count
+  lastSignInAt DateTime?
   updatedAt DateTime   @updatedAt
   createdAt DateTime   @default(now())
   baselines Baseline[]
@@ -300,4 +303,20 @@ enum Role {
   admin
   editor
   guest
+}
+
+// What an approve or reject changed, so it can be undone for a short while
+// (018, ADR-0014). No foreign keys: upstream code deletes runs and variations
+// freely, and a journal row must never stop it.
+model ReviewDecision {
+  id        String    @id @default(uuid())
+  userId    String?
+  // approve | reject
+  kind      String
+  // per run: its state before and after the decision
+  items     Json
+  createdAt DateTime  @default(now())
+  undoneAt  DateTime?
+
+  @@index([createdAt])
 }

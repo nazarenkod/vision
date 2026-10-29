@@ -7,12 +7,16 @@ import { TestVariation } from "../types";
 import { testVariationService } from "../services";
 import {
   Box,
+  Button,
+  Collapse,
   Grid,
   Pagination,
   TextField,
   MenuItem,
   Typography,
 } from "@mui/material";
+import { MergeType } from "@mui/icons-material";
+import { motion } from "../theme";
 import ProjectSelect from "../components/ProjectSelect";
 import Filters from "../components/Filters";
 import { TestVariationMergeForm } from "../components/TestVariationMergeForm";
@@ -20,6 +24,7 @@ import { useSnackbar } from "notistack";
 import { setHelpSteps, useHelpDispatch } from "../contexts/help.context";
 import {
   LOCATOR_TEST_VARIATION_LIST_PAGE_SELECT_PROJECT,
+  LOCATOR_TEST_VARIATION_MERGE_TOGGLE,
   routes,
   TEST_VARIATION_LIST_PAGE,
 } from "../constants";
@@ -46,6 +51,8 @@ const TestVariationListPage: React.FunctionComponent = () => {
   const [filteredItems, setFilteredItems] = React.useState<TestVariation[]>([]);
   const [page, setPage] = React.useState(1);
   const [pageSize, setPageSize] = React.useState(PAGE_SIZE_OPTIONS[0]);
+  // merging is rare: it waits behind a button (REQ-018-62)
+  const [mergeOpen, setMergeOpen] = React.useState(false);
 
   React.useEffect(() => {
     setHelpSteps(helpDispatch, TEST_VARIATION_LIST_PAGE);
@@ -125,25 +132,55 @@ const TestVariationListPage: React.FunctionComponent = () => {
   return (
     <React.Fragment>
       <Box sx={{ px: 4, py: 3 }}>
-        <Typography variant="h4" component="h1" sx={{ mb: 1 }}>
-          Baselines
-        </Typography>
-        <Grid container direction="column" spacing={2}>
-          <Grid item id={LOCATOR_TEST_VARIATION_LIST_PAGE_SELECT_PROJECT}>
+        <Box
+          className="v-enter"
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            gap: 2,
+            mb: 2.5,
+            flexWrap: "wrap",
+          }}
+        >
+          <Typography variant="h4" component="h1">
+            Baselines
+          </Typography>
+          <Box
+            id={LOCATOR_TEST_VARIATION_LIST_PAGE_SELECT_PROJECT}
+          >
             <ProjectSelect
+              compact
               projectId={projectId}
               onProjectSelect={(id) =>
                 navigate(`${routes.VARIATION_LIST_PAGE}/${id}`)
               }
             />
-          </Grid>
+          </Box>
+          <Box sx={{ flex: 1 }} />
+          <Typography variant="body2" color="textSecondary">
+            {groups.length} {groups.length === 1 ? "check" : "checks"}
+          </Typography>
+          <Button
+            variant="outlined"
+            startIcon={<MergeType />}
+            onClick={() => setMergeOpen((open) => !open)}
+            aria-expanded={mergeOpen}
+            data-testid="mergeBranchesToggle"
+            id={LOCATOR_TEST_VARIATION_MERGE_TOGGLE}
+          >
+            Merge branches
+          </Button>
+        </Box>
+        <Grid container direction="column" spacing={2}>
           <Grid item>
-            <TestVariationMergeForm
-              projectId={projectId}
-              items={Array.from(
-                new Set(testVariations.map((t) => t.branchName)),
-              )}
-            />
+            <Collapse in={mergeOpen} timeout={motion.slow} unmountOnExit>
+              <TestVariationMergeForm
+                projectId={projectId}
+                items={Array.from(
+                  new Set(testVariations.map((t) => t.branchName)),
+                )}
+              />
+            </Collapse>
           </Grid>
           <Grid item>
             <Filters

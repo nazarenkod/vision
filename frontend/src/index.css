@@ -1,8 +1,8 @@
 body {
   height: 100vh;
   margin: 0;
-  background: #f6f7f9;
-  color: #101828;
+  background: var(--v-ground);
+  color: var(--v-text);
   font-family: Inter, system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
 }
@@ -13,5 +13,5 @@ body {
 
 .konvajs-content {
   margin: auto;
-  box-shadow: 0 0 0 1px #d0d5dd;
+  box-shadow: 0 0 0 1px var(--v-borderStrong);
 }

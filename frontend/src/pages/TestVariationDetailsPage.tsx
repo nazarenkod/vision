@@ -1,17 +1,12 @@
 import React from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { Link, useParams, useNavigate } from "react-router-dom";
 import { TestVariation } from "../types";
 import { testVariationService, staticService } from "../services";
-import {
-  Container,
-  Box,
-  Grid,
-  Card,
-  CardMedia,
-  CardActions,
-  Button,
-  Typography,
-} from "@mui/material";
+import { Box, Button, ButtonBase, Typography } from "@mui/material";
+import { ArrowBack } from "@mui/icons-material";
+import { routes } from "../constants";
+import { motion, tokens } from "../theme";
+import { staggered } from "../components/motion/Stagger";
 import {
   buildProjectPageUrl,
   buildTestRunLocation,
@@ -21,17 +16,8 @@ import { useSnackbar } from "notistack";
 import { formatDateTime } from "../_helpers/format.helper";
 import TestStatusChip from "../components/TestStatusChip";
 import { Baseline } from "../types/baseline";
-import { makeStyles } from "@mui/styles";
-
-const useStyles = makeStyles({
-  media: {
-    height: 600,
-    objectFit: "contain",
-  },
-});
 
 const TestVariationDetailsPage: React.FunctionComponent = () => {
-  const classes = useStyles();
   const navigate = useNavigate();
   const { enqueueSnackbar } = useSnackbar();
   const { testVariationId } = useParams<{ testVariationId: string }>();
@@ -52,67 +38,260 @@ const TestVariationDetailsPage: React.FunctionComponent = () => {
     }
   }, [testVariationId, enqueueSnackbar]);
 
+  // newest first, as the API sends them; the one shown is compared with the
+  // one before it (REQ-018-63)
+  const [pickedIndex, setPickedIndex] = React.useState(0);
+  React.useEffect(() => setPickedIndex(0), [testVariationId]);
+  const baselines = testVariation?.baselines ?? [];
+  const picked = baselines[pickedIndex];
+  const before = baselines[pickedIndex + 1];
+
+  const openTestRun = (baseline: Baseline) => {
+    const { testRun } = baseline;
+    if (testRun && testVariation) {
+      navigate({
+        pathname: buildProjectPageUrl(testVariation.projectId),
+        ...buildTestRunLocation(testRun.buildId, testRun.id),
+      });
+    }
+  };
+
+  const pane = (
+    title: string,
+    baseline: Baseline | undefined,
+    testId: string,
+  ) => (
+    <Box
+      sx={{
+        display: "flex",
+        flexDirection: "column",
+        minWidth: 0,
+        background: tokens.lightbox,
+      }}
+    >
+      <Box
+        sx={{
+          display: "flex",
+          alignItems: "center",
+          gap: 1,
+          px: 1.5,
+          height: 36,
+          bgcolor: tokens.surface,
+          borderBottom: `1px solid ${tokens.border}`,
+        }}
+      >
+        <Typography
+          variant="overline"
+          sx={{ fontWeight: 600, letterSpacing: "0.06em", color: tokens.text }}
+        >
+          {title}
+        </Typography>
+        {baseline && (
+          <Typography variant="caption" color="textSecondary">
+            {formatDateTime(baseline.createdAt)}
+          </Typography>
+        )}
+      </Box>
+      <Box sx={{ p: 2, display: "grid", placeItems: "center", minHeight: 320 }}>
+        {baseline ? (
+          <Box
+            component="img"
+            key={baseline.id}
+            data-testid={testId}
+            src={staticService.getImage(baseline.baselineName)}
+            alt={`${title}: ${testVariation?.name ?? ""}`}
+            className="v-enter"
+            sx={{
+              maxWidth: "100%",
+              maxHeight: 640,
+              objectFit: "contain",
+              boxShadow: tokens.shadowShot,
+              borderRadius: 1,
+            }}
+          />
+        ) : (
+          <Typography color="textSecondary">Nothing before it</Typography>
+        )}
+      </Box>
+    </Box>
+  );
+
   return (
-    <Container>
-      <Box sx={{ py: 3 }}>
-        {testVariation && (
-          <Grid container direction="column" spacing={2}>
-            <Grid item>
-              <Typography variant="h4" component="h1" sx={{ mb: 1 }}>
-                Baseline history
-              </Typography>
-              <TestVariationDetails testVariation={testVariation} />
-            </Grid>
-            {testVariation.baselines.map((baseline: Baseline) => (
-              <Grid item key={baseline.id}>
-                <Card>
-                  <CardActions>
-                    <Button
-                      color="primary"
-                      disabled={!baseline.testRun}
-                      onClick={() => {
-                        const { testRun } = baseline;
-                        if (testRun) {
-                          navigate({
-                            pathname: buildProjectPageUrl(
-                              testVariation.projectId,
-                            ),
-                            ...buildTestRunLocation(
-                              testRun.buildId,
-                              testRun.id,
-                            ),
-                          });
-                        }
+    <Box sx={{ px: 4, py: 3 }}>
+      {testVariation && (
+        <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+          <Box
+            className="v-enter"
+            sx={{ display: "flex", flexDirection: "column", gap: 1 }}
+          >
+            <Button
+              component={Link}
+              to={`${routes.VARIATION_LIST_PAGE}/${testVariation.projectId}`}
+              startIcon={<ArrowBack />}
+              size="small"
+              sx={{
+                alignSelf: "flex-start",
+                color: tokens.textSecondary,
+                px: 1,
+              }}
+            >
+              Baselines
+            </Button>
+            <Typography
+              variant="overline"
+              sx={{ color: tokens.textMuted, lineHeight: 1 }}
+            >
+              Baseline history
+            </Typography>
+            <Typography variant="h4" component="h1">
+              {testVariation.name}
+            </Typography>
+            <TestVariationDetails testVariation={testVariation} />
+          </Box>
+          <Box
+            sx={{
+              display: "grid",
+              gridTemplateColumns: { xs: "1fr", md: "320px minmax(0, 1fr)" },
+              gap: 2,
+              alignItems: "start",
+            }}
+          >
+            <Box
+              component="ol"
+              aria-label="Baselines, newest first"
+              sx={{
+                listStyle: "none",
+                m: 0,
+                p: 1,
+                bgcolor: tokens.surface,
+                border: `1px solid ${tokens.border}`,
+                borderRadius: 3,
+                position: "relative",
+                // the line the record dots sit on
+                "&::before": {
+                  content: '""',
+                  position: "absolute",
+                  left: 21,
+                  top: 22,
+                  bottom: 22,
+                  width: 2,
+                  bgcolor: tokens.border,
+                },
+              }}
+            >
+              {baselines.map((baseline, index) => {
+                const on = index === pickedIndex;
+                return (
+                  <Box
+                    component="li"
+                    key={baseline.id}
+                    data-testid="historyEntry"
+                    data-picked={on ? "true" : "false"}
+                    {...staggered(index, baselines.length)}
+                    sx={{
+                      display: "flex",
+                      alignItems: "flex-start",
+                      gap: 1,
+                      p: 1,
+                      borderRadius: 2,
+                      bgcolor: on ? tokens.brandSoft : "transparent",
+                      transition: `background-color ${motion.base}ms ${motion.easing}`,
+                      "&:hover": {
+                        bgcolor: on ? tokens.brandSoft : tokens.subtle,
+                      },
+                    }}
+                  >
+                    <Box
+                      aria-hidden="true"
+                      sx={{
+                        width: 10,
+                        height: 10,
+                        mt: 0.75,
+                        ml: 0.5,
+                        borderRadius: "3px",
+                        flexShrink: 0,
+                        position: "relative",
+                        zIndex: 1,
+                        bgcolor: on ? tokens.brand : tokens.borderStrong,
+                        boxShadow: `0 0 0 3px ${tokens.surface}`,
+                        transform: on ? "scale(1.2)" : "none",
+                        transition: `transform ${motion.base}ms ${motion.spring}, background-color ${motion.base}ms`,
                       }}
+                    />
+                    <ButtonBase
+                      onClick={() => setPickedIndex(index)}
+                      aria-pressed={on}
+                      sx={{
+                        flex: 1,
+                        minWidth: 0,
+                        display: "flex",
+                        flexDirection: "column",
+                        alignItems: "flex-start",
+                        textAlign: "left",
+                        gap: 0.25,
+                        borderRadius: 1,
+                      }}
+                    >
+                      <Box
+                        sx={{ display: "flex", gap: 1, alignItems: "center" }}
+                      >
+                        <Typography sx={{ fontWeight: 600 }}>
+                          {index === 0
+                            ? "Current"
+                            : formatDateTime(baseline.createdAt)}
+                        </Typography>
+                        {baseline.testRun && (
+                          <TestStatusChip status={baseline.testRun.status} />
+                        )}
+                      </Box>
+                      {baseline.user && (
+                        <Typography
+                          variant="body2"
+                          color="textSecondary"
+                          sx={{ overflowWrap: "anywhere" }}
+                        >
+                          {`${baseline.user.firstName} ${baseline.user.lastName} <${baseline.user.email}>`}
+                        </Typography>
+                      )}
+                      {index === 0 && (
+                        <Typography variant="caption" color="textSecondary">
+                          {formatDateTime(baseline.createdAt)}
+                        </Typography>
+                      )}
+                    </ButtonBase>
+                    <Button
+                      size="small"
+                      disabled={!baseline.testRun}
+                      onClick={() => openTestRun(baseline)}
                     >
                       Test Run
                     </Button>
-                    {baseline.testRun && (
-                      <Box ml={1}>
-                        <TestStatusChip status={baseline.testRun.status} />
-                      </Box>
-                    )}
-                    {baseline.user && (
-                      <Typography ml={1}>
-                        {`${baseline.user.firstName} ${baseline.user.lastName} <${baseline.user.email}>`}
-                      </Typography>
-                    )}
-                    <Typography>
-                      {formatDateTime(baseline.createdAt)}
-                    </Typography>
-                  </CardActions>
-                  <CardMedia
-                    component="img"
-                    className={classes.media}
-                    image={staticService.getImage(baseline.baselineName)}
-                  />
-                </Card>
-              </Grid>
-            ))}
-          </Grid>
-        )}
-      </Box>
-    </Container>
+                  </Box>
+                );
+              })}
+            </Box>
+            <Box
+              sx={{
+                display: "grid",
+                gridTemplateColumns: "1fr 1fr",
+                gap: "1px",
+                bgcolor: tokens.border,
+                border: `1px solid ${tokens.border}`,
+                borderRadius: 3,
+                overflow: "hidden",
+              }}
+            >
+              {pane(
+                pickedIndex === 0 ? "Current" : "This one",
+                picked,
+                "historyPicked",
+              )}
+              {pane("Before it", before, "historyBefore")}
+            </Box>
+          </Box>
+        </Box>
+      )}
+    </Box>
   );
 };
 

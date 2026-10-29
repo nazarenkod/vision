@@ -48,7 +48,7 @@ test.describe("an expired session", () => {
     const projectListPage = new ProjectListPage(page);
 
     await projectListPage.deleteBtn.click();
-    await projectListPage.modal.confirmBtn.click();
+    await projectListPage.confirmDelete(project.name);
 
     await expect(page).toHaveURL(/\/login$/);
     await expect(new LoginPage(page).loginForm).toBeVisible();
@@ -123,4 +123,56 @@ test.describe("a failing API", () => {
       projectPage.testRunList.pane.getByRole("progressbar"),
     ).toHaveCount(0);
   });
+});
+
+test("shows the reason and Try again when a page fails to load", async ({
+  page,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  authUser,
+}) => {
+  await mockGetProjects(page, [project]);
+  let failing = true;
+  await page.route(`${API_URL}/analytics/${project.id}?days=*`, (route) =>
+    failing
+      ? route.fulfill({
+          status: 500,
+          body: JSON.stringify({ message: "Analytics timed out" }),
+        })
+      : route.fulfill({
+          body: JSON.stringify({
+            days: 30,
+            windowStart: "2026-09-29T12:00:00.000Z",
+            historyStart: "2026-09-29T12:00:00.000Z",
+            partialHistory: false,
+            summary: {
+              baselines: 312,
+              unused: 0,
+              checks: 0,
+              runs: 0,
+              changedPercent: 0,
+              flips: 0,
+              a11yIssues: 0,
+              waiting: 0,
+              medianDecisionHours: null,
+            },
+            unused: [],
+            unstable: [],
+            a11yScreens: [],
+            a11yRules: [],
+            noise: [],
+            captureIssues: [],
+            coverage: [],
+          }),
+        }),
+  );
+  await page.goto(`/insights/${project.id}`);
+
+  const error = page.getByTestId("errorState");
+  await expect(error).toContainText("Could not load the insights.");
+  await expect(error).toContainText("Analytics timed out");
+
+  failing = false;
+  await error.getByRole("button", { name: "Try again" }).click();
+  await expect(error).toBeHidden();
+  await expect(page.getByText("baselines", { exact: true })).toBeVisible();
 });

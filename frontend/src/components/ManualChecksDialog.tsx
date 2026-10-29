@@ -10,7 +10,8 @@ import {
   Tooltip,
   Typography,
 } from "@mui/material";
-import { ContentCopy } from "@mui/icons-material";
+import { Check, ContentCopy } from "@mui/icons-material";
+import { maskKey } from "./ApiKeyCard";
 import { API_URL } from "../_config/env.config";
 import { useProjectState, useUserState } from "../contexts";
 import { BRAND } from "../constants/brand";
@@ -18,8 +19,17 @@ import { tokens } from "../theme";
 
 const quote = (value: string) => `"${value.replace(/(["\\$`])/g, "\\$1")}"`;
 
-const Command: React.FunctionComponent<{ text: string }> = ({ text }) => {
+/** A command to copy. `shown` hides secrets on screen; the copy is whole. */
+const Command: React.FunctionComponent<{ text: string; shown?: string }> = ({
+  text,
+  shown,
+}) => {
   const [copied, setCopied] = React.useState(false);
+  React.useEffect(() => {
+    if (!copied) return;
+    const timer = setTimeout(() => setCopied(false), 1200);
+    return () => clearTimeout(timer);
+  }, [copied]);
   return (
     <Box
       sx={{
@@ -42,12 +52,13 @@ const Command: React.FunctionComponent<{ text: string }> = ({ text }) => {
           wordBreak: "break-all",
         }}
       >
-        {text}
+        {shown ?? text}
       </Box>
       <Tooltip title={copied ? "Copied" : "Copy"}>
         <IconButton
           size="small"
           aria-label="Copy command"
+          sx={{ color: copied ? tokens.brand : undefined }}
           onClick={() =>
             navigator.clipboard
               ?.writeText(text)
@@ -55,12 +66,44 @@ const Command: React.FunctionComponent<{ text: string }> = ({ text }) => {
               .catch(() => setCopied(false))
           }
         >
-          <ContentCopy fontSize="small" />
+          {copied ? (
+            <Check fontSize="small" />
+          ) : (
+            <ContentCopy fontSize="small" />
+          )}
         </IconButton>
       </Tooltip>
     </Box>
   );
 };
+
+const Step: React.FunctionComponent<{
+  number: number;
+  children: React.ReactNode;
+}> = ({ number, children }) => (
+  <Typography
+    variant="subtitle2"
+    component="h3"
+    sx={{ display: "flex", alignItems: "center", gap: 1, mt: 0.5 }}
+  >
+    <Box
+      component="span"
+      sx={{
+        width: 22,
+        height: 22,
+        borderRadius: "50%",
+        display: "grid",
+        placeItems: "center",
+        fontSize: 12,
+        bgcolor: tokens.brandSoft,
+        color: tokens.brand,
+      }}
+    >
+      {number}
+    </Box>
+    {children}
+  </Typography>
+);
 
 /**
  * How a manual tester sends the screen in front of them to Vision: the CLI
@@ -90,11 +133,12 @@ export const ManualChecksDialog: React.FunctionComponent<{
           Python 3; adb for an Android device or emulator, or an Appium session
           for iOS.
         </Typography>
-        <Typography variant="subtitle2">1. Get the CLI</Typography>
+        <Step number={1}>Get the CLI</Step>
         <Command text={`curl -fsSLO ${cliUrl}`} />
-        <Typography variant="subtitle2">2. Connect it, once</Typography>
+        <Step number={2}>Connect it, once</Step>
         <Command
           text={`python3 vision.py config --api ${apiUrl} --key ${user?.apiKey ?? "YOUR_API_KEY"} --project ${quote(project?.name ?? "Project name")}`}
+          shown={`python3 vision.py config --api ${apiUrl} --key ${user?.apiKey ? maskKey(user.apiKey) : "YOUR_API_KEY"} --project ${quote(project?.name ?? "Project name")}`}
         />
         <Typography variant="body2" color="textSecondary">
           The key is yours (profile page); sending needs the editor role. Checks
@@ -102,7 +146,7 @@ export const ManualChecksDialog: React.FunctionComponent<{
           baselines. To compare with the autotests’ baselines pixel by pixel,
           add --device and --os named as in the autotests.
         </Typography>
-        <Typography variant="subtitle2">3. Check a screen</Typography>
+        <Step number={3}>Check a screen</Step>
         <Command text={`python3 vision.py check ${quote("Payment")}`} />
         <Typography variant="body2" color="textSecondary">
           From the connected Android device. Other sources: --serial for one of

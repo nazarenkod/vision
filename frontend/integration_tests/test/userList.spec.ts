@@ -51,3 +51,28 @@ test("lets an admin set a user's password", async ({ userListPage, page }) => {
   expect(request.method()).toBe("PUT");
   expect(request.postDataJSON()).toEqual({ password: "fresh-password-1" });
 });
+
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+test("shows last sign-in or a dash", async ({ page, authUser }) => {
+  const signedIn = {
+    ...EDITOR_USER,
+    lastSignInAt: "2026-10-29T08:15:00.000Z",
+  };
+  await mockGetUsers(page, [signedIn, { ...GUEST_USER, lastSignInAt: null }]);
+  await page.goto("/users");
+
+  const cells = page.getByTestId("lastSignIn");
+  await expect(cells).toHaveCount(2);
+  await expect(cells.nth(0)).toHaveText(
+    await page.evaluate(
+      (value) => new Date(value).toLocaleString(),
+      signedIn.lastSignInAt,
+    ),
+  );
+  await expect(cells.nth(1)).toHaveText("—");
+
+  // and the search narrows the list by name or email
+  await page.getByTestId("userSearch").fill(GUEST_USER.firstName.toUpperCase());
+  await expect(cells).toHaveCount(1);
+  await expect(cells.first()).toHaveText("—");
+});

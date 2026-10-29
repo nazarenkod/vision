@@ -46,7 +46,12 @@ function removeBulk(ids: string[] | number[]): Promise<void> {
   );
 }
 
-function rejectBulk(ids: string[] | number[]): Promise<void> {
+/** What a decision returns: the journal entry Undo works from (018). */
+export interface Decision {
+  decisionId: string;
+}
+
+function rejectBulk(ids: string[] | number[]): Promise<Decision> {
   const requestOptions = {
     method: "POST",
     headers: {
@@ -61,7 +66,10 @@ function rejectBulk(ids: string[] | number[]): Promise<void> {
   );
 }
 
-function approveBulk(ids: string[] | number[], merge: boolean): Promise<void> {
+function approveBulk(
+  ids: string[] | number[],
+  merge: boolean,
+): Promise<Decision> {
   const requestOptions = {
     method: "POST",
     headers: {
@@ -73,6 +81,21 @@ function approveBulk(ids: string[] | number[], merge: boolean): Promise<void> {
 
   return fetch(
     `${API_URL}${ENDPOINT_URL}/approve?merge=${merge}`,
+    requestOptions,
+  ).then(handleResponse);
+}
+
+function undoDecision(decisionId: string): Promise<{ undone: number }> {
+  const requestOptions = {
+    method: "POST",
+    headers: {
+      ...DEFAULT_HEADERS,
+      ...authHeader(),
+    },
+  };
+
+  return fetch(
+    `${API_URL}${ENDPOINT_URL}/undo/${encodeURIComponent(decisionId)}`,
     requestOptions,
   ).then(handleResponse);
 }
@@ -152,6 +175,7 @@ export const testRunService = {
   removeBulk,
   rejectBulk,
   approveBulk,
+  undoDecision,
   getMatchingVariations,
   updateIgnoreAreas,
   addIgnoreAreas,

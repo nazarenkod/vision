@@ -27,4 +27,26 @@ module.exports = {
     // Add your own rules here to override ones from the extended configs.
     "@typescript-eslint/no-non-null-assertion": "warn",
   },
+  overrides: [
+    {
+      // Colours come from theme.ts, so both themes get them (ADR-0015).
+      files: ["src/components/**/*.{ts,tsx}", "src/pages/**/*.{ts,tsx}"],
+      excludedFiles: ["**/*.test.{ts,tsx}"],
+      rules: {
+        "no-restricted-syntax": [
+          "error",
+          {
+            selector: "Literal[value=/#[0-9a-fA-F]{3,8}\\b/]",
+            message:
+              "Take colours from tokens in theme.ts (ADR-0015): a hex colour works in one theme only.",
+          },
+          {
+            selector: "TemplateElement[value.raw=/#[0-9a-fA-F]{3,8}\\b/]",
+            message:
+              "Take colours from tokens in theme.ts (ADR-0015): a hex colour works in one theme only.",
+          },
+        ],
+      },
+    },
+  ],
 };

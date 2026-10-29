@@ -14,9 +14,7 @@ export class ProfilePage extends BasePage {
   password = this.passwordForm.getByTestId("password");
   updatePasswordBtn = this.passwordForm.getByTestId("submit");
 
-  apiKeyCard = this.page
-    .locator(".MuiCard-root")
-    .filter({ hasText: "Api key" });
+  apiKeyCard = this.page.getByTestId("apiKeyCard");
   configFile = this.page.locator("#configFile");
   envVariables = this.page.locator("#envVariables");
   envVariablesTab = this.page.getByRole("tab", { name: "ENV variables" });

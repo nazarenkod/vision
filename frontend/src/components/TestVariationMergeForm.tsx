@@ -1,3 +1,4 @@
+import { tokens } from "../theme";
 import React from "react";
 import {
   Autocomplete,
@@ -58,13 +59,28 @@ export const TestVariationMergeForm: React.FunctionComponent<IProps> = ({
 
   return (
     <form onSubmit={handleSubmit}>
-      <Grid container spacing={2} alignItems="flex-end">
+      <Grid
+        container
+        spacing={2}
+        alignItems="center"
+        sx={{
+          // a quiet card: merging is the rare thing on this page
+          ml: 0,
+          width: "100%",
+          border: `1px solid ${tokens.border}`,
+          borderRadius: 3,
+          bgcolor: tokens.surface,
+          pr: 2,
+          pb: 2,
+        }}
+      >
         <Grid item xs>
           <Select
-            variant="standard"
+            size="small"
             required
             fullWidth
             displayEmpty
+            sx={{ fontFamily: tokens.mono, fontSize: 13 }}
             value={fromBranch}
             onChange={(event: SelectChangeEvent<HTMLInputElement>) =>
               setFromBranch(event.target.value as string)
@@ -92,12 +108,7 @@ export const TestVariationMergeForm: React.FunctionComponent<IProps> = ({
             freeSolo
             fullWidth
             renderInput={(params) => (
-              <TextField
-                variant="standard"
-                {...params}
-                required
-                label="To branch"
-              />
+              <TextField {...params} size="small" required label="To branch" />
             )}
             onInputChange={(_, value) => {
               setToBranch(value);

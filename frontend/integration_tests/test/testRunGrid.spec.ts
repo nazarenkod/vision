@@ -158,7 +158,7 @@ test("selects every run in a group from its card", async ({
   await projectPage.modal.confirmBtn.click();
 
   await expect(projectPage.notification.message).toHaveText(
-    "2 test runs processed.",
+    "Approved 2 screenshots",
   );
   // the request order follows the flat sorted list and both share a name, so it
   // is a tie: what matters is that the whole group went out in one request
@@ -354,7 +354,7 @@ test("selects every filtered run from the header, across pages", async ({
   await projectPage.modal.confirmBtn.click();
 
   await expect(projectPage.notification.message).toHaveText(
-    "12 test runs processed.",
+    "Approved 12 screenshots",
   );
   expect(approved[0]).toHaveLength(MANY_RUNS.length);
 });
@@ -503,7 +503,7 @@ test("approves the runs selected in the grid", async ({
   await projectPage.modal.confirmBtn.click();
 
   await expect(projectPage.notification.message).toHaveText(
-    "2 test runs processed.",
+    "Approved 2 screenshots",
   );
   expect(approved).toEqual([[TEST_RUN_NEW.id, TEST_UNRESOLVED.id]]);
 });
@@ -579,7 +579,7 @@ test("selects a whole group from a table row", async ({
   await projectPage.modal.confirmBtn.click();
 
   await expect(projectPage.notification.message).toHaveText(
-    "2 test runs processed.",
+    "Approved 2 screenshots",
   );
   expect(approved.map((ids) => [...ids].sort())).toEqual([
     [VARIATION_DE.id, VARIATION_EN.id].sort(),
@@ -841,4 +841,34 @@ test("labels its header in the table's colour", async ({
   await expect(projectPage.testRunList.grid).toBeVisible();
 
   expect(await colourOf(page.getByTestId("gridSort-name"))).toBe(inTable);
+});
+
+test("shows phone screenshots as portrait cards", async ({
+  openProjectPage,
+  page,
+}) => {
+  const screens = Array.from({ length: 12 }, (_, i) => ({
+    ...TEST_RUN_OK,
+    id: `screen-${i}`,
+    name: `Screen ${i}`,
+  }));
+  await mockGetTestRuns(page, build.id, screens);
+  await page.setViewportSize({ width: 1440, height: 900 });
+  const projectPage = await openProjectPage(project.id, build.id);
+  await projectPage.testRunList.gridViewToggle.click();
+  // ten to a page
+  await expect(projectPage.testRunList.cards).toHaveCount(10);
+
+  const image = projectPage.testRunList.cards.first().locator("img").first();
+  const box = await image.boundingBox();
+  expect(box && box.height > box.width * 1.5).toBe(true);
+
+  // a main area about 1100 px wide holds at least five cards in a row
+  // layout positions: the cards may still be rising into place
+  const tops = await projectPage.testRunList.cards.evaluateAll((cards) =>
+    cards.map((card) => (card as HTMLElement).offsetTop),
+  );
+  expect(tops.filter((top) => top === tops[0]).length).toBeGreaterThanOrEqual(
+    5,
+  );
 });

@@ -6,7 +6,11 @@
 
 | Шлях | Що там |
 |---|---|
-| `src/theme.ts` | токени кольорів і теми; кольори беремо звідси, не літералами |
+| `src/theme.ts` | палітри світлої й темної тем, `tokens` (CSS-змінні), `motion` (тривалості, крива); кольори й тривалості беремо звідси, не літералами ([ADR-0015](../docs/decisions/0015-theme-tokens-as-css-variables.md)) |
+| `src/contexts/themeMode.context.tsx` | вибір теми (System / Light / Dark), ⇧D, `useTokens()` — справжні кольори для canvas і бібліотек з inline-стилями |
+| `src/components/BrandMark.tsx` | знак «Гніздо» і словесний знак; favicon — `public/favicon.svg`, PNG — `scripts/render-favicon.mjs` |
+| `src/components/motion/` | `useCountUp`, `staggered(i)` (каскад), `GrowFromPointer` (діалоги ростуть з точки кліку), `SlidingToggleGroup` (замість `ToggleButtonGroup`: підсвітка переїжджає) |
+| `src/pages/ProjectSettingsPage.tsx` | налаштування проєкту окремою сторінкою; розділи — у `components/ProjectForm/` |
 | `src/constants/brand.ts` | назва продукту (Vision) і слоган — лише тут |
 | `src/components/TestDetailsDialog/` | ревю скриншота: `InsightsPanel` (доступність, зміни, пристрої), `JiraBugDialog`, `DeviceStrip`, `CrossDevicePanel` |
 | `src/components/ProjectForm/` | налаштування проєкту, зокрема `A11yProblemSettings` (класи проблем) |
@@ -29,6 +33,9 @@ npx playwright test <spec>             # функціональні тести, 
 
 ## Правила
 
+- Колір у `src/components` і `src/pages` — лише `tokens.*` або `useTokens()`: шістнадцятковий
+  літерал там забороняє ESLint, бо він працює лише в одній темі.
+- Рух — з `motion` у `theme.ts`; знімки в порівнянні після появи не рухаються (REQ-018-25).
 - Інтерфейс англійською, тексти короткі й конкретні.
 - Нові елементи, які шукають тести, отримують `data-testid`.
 - Скриншот-тести (`toHaveScreenshot`) на macOS не збігаються ніколи. Еталони генеруємо лише в

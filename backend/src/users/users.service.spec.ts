@@ -22,6 +22,7 @@ const user: User = {
   isActive: true,
   jiraToken: null,
   jiraEmail: null,
+  lastSignInAt: null,
   role: Role.editor,
   updatedAt: new Date(),
   createdAt: new Date(),
@@ -166,6 +167,32 @@ describe('UsersService with DbUserService implementation', () => {
     expect(result).toEqual(expect.any(UserLoginResponseDto));
   });
 
+  it('records the sign-in time on password and SSO sign-in only', async () => {
+    await service.login({ email: 'test@example.com', password: 'doesntmatter' });
+
+    expect(prismaService.user.update).toHaveBeenCalledWith({
+      where: { id: user.id },
+      data: { lastSignInAt: expect.any(Date) },
+      select: { id: true },
+    });
+
+    // other account actions are not sign-ins
+    (prismaService.user.update as jest.Mock).mockClear();
+    (prismaService.user.update as jest.Mock).mockResolvedValueOnce(user);
+    await service.generateNewApiKey(user);
+    expect(prismaService.user.update).not.toHaveBeenCalledWith(
+      expect.objectContaining({ data: { lastSignInAt: expect.any(Date) } })
+    );
+  });
+
+  it('lets a sign-in through when recording it fails', async () => {
+    (prismaService.user.update as jest.Mock).mockRejectedValueOnce(new Error('db down'));
+
+    await expect(service.login({ email: 'test@example.com', password: 'x' })).resolves.toEqual(
+      expect.any(UserLoginResponseDto)
+    );
+  });
+
   it('should delete existing user', async () => {
     // Arrange
     const prismaUserDeleteMock = jest.spyOn(prismaService.user, 'delete');
@@ -216,6 +243,7 @@ describe('UsersService with DbUserService implementation', () => {
 describe('UsersService with OidcUsersService implementation', () => {
   let service: UsersService;
   let oidcUsersService: OidcUsersService;
+  let prismaService: PrismaService;
 
   beforeEach(async () => {
     oidcUsersService = Object.assign(Object.create(OidcUsersService.prototype), {
@@ -228,16 +256,29 @@ describe('UsersService with OidcUsersService implementation', () => {
       providers: [
         UsersService,
         { provide: UsersFactoryService, useValue: { getUsersService: () => oidcUsersService } },
-        { provide: PrismaService, useValue: {} },
+        { provide: PrismaService, useValue: { user: { update: jest.fn() } } },
         { provide: AuthService, useValue: {} },
       ],
     }).compile();
 
     service = module.get<UsersService>(UsersService);
+    prismaService = module.get<PrismaService>(PrismaService);
   });
 
   it('reports OIDC as enabled', () => {
     expect(service.isOidcEnabled()).toBe(true);
+  });
+
+  it('records the sign-in time on SSO sign-in', async () => {
+    (oidcUsersService.handleCallback as jest.Mock).mockResolvedValue({ id: 'sso-user', token: 'jwt' });
+
+    await service.oidcHandleCallback({ code: 'code' }, { state: 'state', codeVerifier: 'verifier' });
+
+    expect(prismaService.user.update).toHaveBeenCalledWith({
+      where: { id: 'sso-user' },
+      data: { lastSignInAt: expect.any(Date) },
+      select: { id: true },
+    });
   });
 
   it('delegates authorization url, callback and redirect building', async () => {

@@ -25,6 +25,7 @@ describe('Users Controller', () => {
     isActive: true,
     jiraToken: null,
     jiraEmail: null,
+    lastSignInAt: null,
     role: Role.editor,
     updatedAt: new Date(),
     createdAt: new Date(),

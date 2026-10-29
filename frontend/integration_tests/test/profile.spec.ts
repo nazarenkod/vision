@@ -90,6 +90,7 @@ test("changes the password", async ({ profilePage, page }) => {
 test("shows the API key and puts it in the config examples", async ({
   profilePage,
 }) => {
+  await profilePage.page.getByRole("button", { name: "Show API key" }).click();
   await expect(profilePage.apiKeyCard).toContainText(AUTH_USER.apiKey);
   await expect(profilePage.configFile).toHaveValue(
     new RegExp(`"apiKey": "${AUTH_USER.apiKey}"`),
@@ -99,5 +100,37 @@ test("shows the API key and puts it in the config examples", async ({
 
   await expect(profilePage.envVariables).toHaveValue(
     new RegExp(`VRT_APIKEY="${AUTH_USER.apiKey}"`),
+  );
+});
+
+test("hides the API key until Show and copies it", async ({
+  profilePage,
+  page,
+  context,
+}) => {
+  await context.grantPermissions(["clipboard-read", "clipboard-write"]);
+  const value = page.getByTestId("apiKeyValue");
+  const lastFour = AUTH_USER.apiKey.slice(-4);
+
+  // hidden, in the examples as well
+  await expect(value).not.toContainText(AUTH_USER.apiKey);
+  await expect(value).toContainText(`•${lastFour}`);
+  await expect(profilePage.configFile).not.toHaveValue(
+    new RegExp(AUTH_USER.apiKey),
+  );
+
+  await page.getByRole("button", { name: "Show API key" }).click();
+  await expect(value).toHaveText(AUTH_USER.apiKey);
+  await page.getByRole("button", { name: "Hide API key" }).click();
+  await expect(value).not.toContainText(AUTH_USER.apiKey);
+
+  // copying needs no Show
+  await page.getByTestId("copyApiKey").click();
+  await expect(page.getByTestId("copyApiKey")).toHaveAttribute(
+    "data-copied",
+    "true",
+  );
+  expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(
+    AUTH_USER.apiKey,
   );
 });

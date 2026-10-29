@@ -11,7 +11,7 @@ import {
 } from "@mui/icons-material";
 import { useProjectState, useUserState } from "../contexts";
 import { routes } from "../constants";
-import { tokens } from "../theme";
+import { motion, tokens } from "../theme";
 
 interface RailItem {
   label: string;
@@ -75,6 +75,15 @@ const NavRail: React.FunctionComponent = () => {
     },
   ];
 
+  const activeIndex = items.findIndex((item) => item.active(pathname));
+  const buttons = React.useRef<Array<HTMLAnchorElement | null>>([]);
+  const [indicatorTop, setIndicatorTop] = React.useState<number | null>(null);
+  // the highlight travels to the new item instead of jumping (REQ-018-22)
+  React.useLayoutEffect(() => {
+    const button = buttons.current[activeIndex];
+    setIndicatorTop(button ? button.offsetTop : null);
+  }, [activeIndex, items.length]);
+
   return (
     <Box
       component="nav"
@@ -89,15 +98,38 @@ const NavRail: React.FunctionComponent = () => {
         alignItems: "center",
         gap: 0.75,
         py: 1.5,
+        position: "relative",
       }}
     >
-      {items.map((item) => {
-        const active = item.active(pathname);
+      <Box
+        aria-hidden="true"
+        data-testid="navIndicator"
+        sx={{
+          position: "absolute",
+          left: 12,
+          top: 0,
+          width: 40,
+          height: 40,
+          borderRadius: 2,
+          bgcolor: tokens.brandSoft,
+          opacity: indicatorTop === null ? 0 : 1,
+          transform: `translateY(${indicatorTop ?? 0}px)`,
+          transition: `transform ${motion.nav}ms ${motion.easing}, opacity ${motion.fast}ms`,
+          "[data-theme='dark'] &": {
+            boxShadow: "0 0 18px -2px rgba(67, 196, 106, 0.35)",
+          },
+        }}
+      />
+      {items.map((item, index) => {
+        const active = index === activeIndex;
         return (
           <Tooltip key={item.label} title={item.label} placement="right">
             <IconButton
               component={Link}
               to={item.to}
+              ref={(element: HTMLAnchorElement | null) => {
+                buttons.current[index] = element;
+              }}
               aria-label={item.label}
               aria-current={active ? "page" : undefined}
               sx={{
@@ -105,9 +137,10 @@ const NavRail: React.FunctionComponent = () => {
                 height: 40,
                 borderRadius: 2,
                 color: active ? tokens.brand : tokens.textMuted,
-                bgcolor: active ? tokens.brandSoft : "transparent",
+                transition: `color ${motion.nav}ms ${motion.easing}, background-color ${motion.fast}ms`,
                 "&:hover": {
-                  bgcolor: active ? tokens.brandSoft : tokens.subtle,
+                  bgcolor: active ? "transparent" : tokens.subtle,
+                  color: active ? tokens.brand : tokens.text,
                 },
               }}
             >

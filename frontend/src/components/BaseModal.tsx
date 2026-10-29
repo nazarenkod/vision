@@ -15,6 +15,8 @@ interface IProps {
   submitButtonText: string;
   onSubmit: () => void;
   onCancel: () => void;
+  // e.g. until a confirmation is typed in
+  submitDisabled?: boolean;
 }
 
 export const BaseModal: React.FunctionComponent<IProps> = ({
@@ -24,6 +26,7 @@ export const BaseModal: React.FunctionComponent<IProps> = ({
   content,
   onSubmit,
   onCancel,
+  submitDisabled = false,
 }) => (
   <Dialog
     open={open}
@@ -43,6 +46,7 @@ export const BaseModal: React.FunctionComponent<IProps> = ({
           color="primary"
           variant="contained"
           data-testid="submitButton"
+          disabled={submitDisabled}
         >
           {submitButtonText}
         </Button>

@@ -91,3 +91,36 @@ test.describe("as guest", () => {
     await expect(projectListPage.deleteBtn).toHaveCount(0);
   });
 });
+
+for (const role of ["admin", "editor", "guest"] as const) {
+  test.describe(`account menu as ${role}`, () => {
+    test.use({ userRole: role });
+
+    test("account menu shows Users and Backups only to admins", async ({
+      projectListPage,
+      page,
+    }) => {
+      await projectListPage.header.openAvatarMenu();
+      const menu = projectListPage.header.avatarMenu;
+
+      // who is signed in, and as what
+      await expect(menu).toContainText(
+        `${role[0].toUpperCase()}${role.slice(1)}`,
+      );
+      await expect(
+        projectListPage.header.avatarMenuItem("Profile"),
+      ).toBeVisible();
+      await expect(page.getByTestId("themeMenuItem")).toBeVisible();
+      await expect(
+        projectListPage.header.avatarMenuItem("Logout"),
+      ).toBeVisible();
+      const adminOnly = role === "admin" ? 1 : 0;
+      await expect(projectListPage.header.avatarMenuItem("Users")).toHaveCount(
+        adminOnly,
+      );
+      await expect(
+        projectListPage.header.avatarMenuItem("Backups"),
+      ).toHaveCount(adminOnly);
+    });
+  });
+}

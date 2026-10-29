@@ -18,6 +18,8 @@ import {
 import { thumbnailFor } from "../../_helpers/testRunImage.helper";
 import { tagValuesOf } from "../../_helpers/testRunTags.helper";
 import { TestRun } from "../../types";
+import { motion, tokens } from "../../theme";
+import { staggered } from "../motion/Stagger";
 
 /**
  * Wraps onto the next line and stops after a few, rather than cutting the text
@@ -86,17 +88,31 @@ export const TestRunGrid: React.FunctionComponent<{
   <Box
     display="grid"
     gridTemplateColumns={`repeat(auto-fill, minmax(${CARD_SIZE_BY_DENSITY[density].width}px, 1fr))`}
-    gap={1}
+    gap={1.5}
     padding={2}
     data-testid="testRunGrid"
   >
-    {groups.map(({ key, runs, representative }) => {
+    {groups.map(({ key, runs, representative }, index) => {
       const ids = runs.map((run) => run.id);
       const selectedCount = ids.filter((id) => selectedIdSet.has(id)).length;
       const tags = tagValuesOf(representative, tagFieldsFor(runs.length));
 
       return (
-        <Card key={key} variant="outlined" data-testid="testRunCard">
+        <Card
+          key={key}
+          variant="outlined"
+          data-testid="testRunCard"
+          {...staggered(index, 24)}
+          sx={{
+            transition: `transform ${motion.base}ms ${motion.easing}, border-color ${motion.base}ms, box-shadow ${motion.base}ms`,
+            "&:hover": {
+              transform: "translateY(-2px)",
+              borderColor: tokens.borderStrong,
+              boxShadow: tokens.shadowShot,
+            },
+            "&:hover .cardSelect": { opacity: 1 },
+          }}
+        >
           {/* the checkbox sits over the image, outside the action area, so the
               picture keeps the full width of the card and a tick does not open
               the dialog */}
@@ -116,8 +132,11 @@ export const TestRunGrid: React.FunctionComponent<{
                   width: "100%",
                   height: CARD_SIZE_BY_DENSITY[density].imageHeight,
                   objectFit: "contain",
-                  objectPosition: "top",
-                  backgroundColor: "grey.100",
+                  objectPosition: "center",
+                  boxSizing: "border-box",
+                  p: 1,
+                  // the lit table the screenshot lies on; its pixels stay as they are
+                  background: tokens.lightbox,
                 }}
               />
             </CardActionArea>
@@ -127,14 +146,19 @@ export const TestRunGrid: React.FunctionComponent<{
               indeterminate={selectedCount > 0 && selectedCount < ids.length}
               onChange={() => onToggleGroup(ids)}
               inputProps={{ "aria-label": `Select ${representative.name}` }}
+              className="cardSelect"
               sx={{
                 position: "absolute",
-                top: 2,
-                left: 2,
-                padding: 0.5,
-                // legible over a screenshot of any colour
-                backgroundColor: "rgba(255, 255, 255, 0.85)",
-                "&:hover": { backgroundColor: "rgba(255, 255, 255, 0.95)" },
+                top: 4,
+                left: 4,
+                padding: 0.25,
+                borderRadius: 1,
+                // legible over a screenshot of any colour; shown on hover or when ticked
+                backgroundColor: tokens.surface,
+                opacity: selectedCount ? 1 : 0,
+                transition: `opacity ${motion.fast}ms`,
+                "&:focus-within": { opacity: 1 },
+                "&:hover": { backgroundColor: tokens.surface },
               }}
             />
             {runs.length > 1 && (
@@ -146,8 +170,8 @@ export const TestRunGrid: React.FunctionComponent<{
                   position: "absolute",
                   top: 4,
                   right: 4,
-                  backgroundColor: "rgba(0, 0, 0, 0.6)",
-                  color: "common.white",
+                  backgroundColor: tokens.text,
+                  color: tokens.ground,
                 }}
               />
             )}
@@ -161,9 +185,10 @@ export const TestRunGrid: React.FunctionComponent<{
               flexDirection: "column",
               alignItems: "flex-start",
               gap: 0.75,
-              paddingX: 1,
+              paddingX: 1.25,
               paddingY: 1,
               textAlign: "left",
+              borderTop: `1px solid ${tokens.border}`,
               "&:last-child": { paddingBottom: 1 },
             }}
           >

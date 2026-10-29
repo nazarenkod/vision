@@ -1,4 +1,4 @@
-import { forwardRef, HttpException, HttpStatus, Inject, Injectable, Logger } from '@nestjs/common';
+import { ConflictException, forwardRef, HttpException, HttpStatus, Inject, Injectable, Logger } from '@nestjs/common';
 import { CreateProjectDto } from './dto/create-project.dto';
 import { BuildsService } from '../builds/builds.service';
 import { TestVariationsService } from '../test-variations/test-variations.service';
@@ -6,6 +6,8 @@ import { PrismaService } from '../prisma/prisma.service';
 import { Project } from '@prisma/client';
 import uuidAPIKey from 'uuid-apikey';
 import { UpdateProjectDto } from './dto/update-project.dto';
+import { settingsConflict } from './settings-conflict';
+import { hideConfigSecrets, keepConfigSecrets } from './project-secrets';
 
 const blankToNull = (value: string | null | undefined) =>
   value === undefined ? undefined : value?.trim() ? value.trim() : null;
@@ -34,10 +36,18 @@ function normalizeUiTreeSettings(value: string | null): string | null {
 }
 
 /** A project as the API returns it: the Jira token never leaves the server. */
-export function toPublicProject(project: Project): Omit<Project, 'jiraToken'> & { jiraTokenSet: boolean } {
+export function toPublicProject(
+  project: Project
+): Omit<Project, 'jiraToken'> & { jiraTokenSet: boolean; geminiApiKeySet: boolean } {
   if (!project) return project as never;
   const { jiraToken, ...rest } = project;
-  return { ...rest, jiraTokenSet: !!jiraToken };
+  const comparison = hideConfigSecrets(project.imageComparisonConfig);
+  return {
+    ...rest,
+    imageComparisonConfig: comparison.config,
+    jiraTokenSet: !!jiraToken,
+    geminiApiKeySet: comparison.apiKeySet,
+  };
 }
 
 @Injectable()
@@ -89,6 +99,26 @@ export class ProjectsService {
   }
 
   async update(projectDto: UpdateProjectDto): Promise<Project> {
+    const checkConflict = !!projectDto.loadedSettings && !projectDto.force;
+    // read only when needed: for a conflict, or for a Gemini key to keep
+    const stored =
+      checkConflict || projectDto.imageComparisonConfig
+        ? await this.prismaService.project.findUnique({ where: { id: projectDto.id } })
+        : null;
+    if (checkConflict) {
+      // the page never saw the key, so compare what it could see
+      const visible = stored && {
+        ...stored,
+        imageComparisonConfig: hideConfigSecrets(stored.imageComparisonConfig).config,
+      };
+      const changed = visible ? settingsConflict(projectDto.loadedSettings, visible) : [];
+      if (changed.length) {
+        throw new ConflictException({
+          message: 'Someone changed these settings after you opened the page.',
+          fields: changed,
+        });
+      }
+    }
     const fields = jiraFields(projectDto);
     if (fields.uiTreeSettings) {
       fields.uiTreeSettings = await this.keepCheckRules(projectDto.id, fields.uiTreeSettings);
@@ -102,7 +132,7 @@ export class ProjectsService {
         imageComparison: projectDto.imageComparison,
         maxBuildAllowed: projectDto.maxBuildAllowed,
         maxBranchLifetime: projectDto.maxBranchLifetime,
-        imageComparisonConfig: projectDto.imageComparisonConfig,
+        imageComparisonConfig: keepConfigSecrets(projectDto.imageComparisonConfig, stored?.imageComparisonConfig),
         bulkApproveVariations: projectDto.bulkApproveVariations,
         bulkApproveGroupBy: projectDto.bulkApproveGroupBy,
         ...fields,

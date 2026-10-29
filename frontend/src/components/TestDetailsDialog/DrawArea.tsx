@@ -9,15 +9,20 @@ import Konva from "konva";
 import { makeStyles } from "@mui/styles";
 import { clampScale } from "../../_helpers/scale.helper";
 import { clampToImage } from "../../_helpers/ignoreArea.helper";
+import { tokens } from "../../theme";
+
+// label text drawn on a coloured tag inside the canvas: always white on those
+const TAG_TEXT = "white";
 
 const useStyles = makeStyles((theme: Theme) => ({
   canvasContainer: {
     overflow: "auto",
-    backgroundColor: "#EEF0F3",
+    // the lit table the screenshot lies on
+    background: tokens.lightbox,
   },
   imageDetailsContainer: {
     position: "absolute",
-    backgroundColor: "white",
+    backgroundColor: tokens.surface,
     zIndex: 1,
     padding: theme.spacing(1),
     height: "48px",
@@ -523,7 +528,7 @@ export const DrawArea: FunctionComponent<IDrawArea> = ({
                             fontSize={px(12)}
                             fontStyle="bold"
                             padding={px(4)}
-                            fill="#FFFFFF"
+                            fill={TAG_TEXT}
                           />
                         </Label>
                       )}

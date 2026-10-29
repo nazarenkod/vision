@@ -53,7 +53,24 @@ export class UsersService {
   }
 
   async login(userLoginRequestDto: UserLoginRequestDto) {
-    return this.usersService.login(userLoginRequestDto);
+    const result = await this.usersService.login(userLoginRequestDto);
+    await this.recordSignIn(result.id);
+    return result;
+  }
+
+  // For the Users page (018). Only sign-ins to the web interface pass here;
+  // API-key requests are authenticated elsewhere and are not sign-ins. A failed
+  // write must not keep anyone out.
+  private async recordSignIn(id: string): Promise<void> {
+    try {
+      await this.prismaService.user.update({
+        where: { id },
+        data: { lastSignInAt: new Date() },
+        select: { id: true },
+      });
+    } catch (error) {
+      this.logger.warn(`Could not record the sign-in of ${id}: ${error}`);
+    }
   }
 
   isOidcEnabled(): boolean {
@@ -68,7 +85,9 @@ export class UsersService {
     params: Record<string, string>,
     checks: { state: string; codeVerifier: string }
   ): Promise<UserLoginResponseDto> {
-    return this.oidcUsersService.handleCallback(params, checks);
+    const result = await this.oidcUsersService.handleCallback(params, checks);
+    await this.recordSignIn(result.id);
+    return result;
   }
 
   oidcBuildFrontendRedirect(token?: string, error?: string): string {

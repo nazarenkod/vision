@@ -9,8 +9,10 @@ export class ProjectListPage extends BasePage {
   deleteBtn = this.page.getByTestId("delete");
   editBtn = this.page.getByTestId("EditIcon");
 
-  // ProjectForm, inside the create or update dialog
+  // the short form inside the New project dialog
   dialog = this.modal.dialog;
+  // deleting asks for the project's name
+  confirmName = this.page.getByTestId("deleteConfirmName");
   name = this.dialog.locator("#name");
   mainBranch = this.dialog.locator("#branchName");
   buildCount = this.dialog.locator("#buildCount");
@@ -19,6 +21,11 @@ export class ProjectListPage extends BasePage {
   imageComparison = this.dialog.getByRole("combobox", {
     name: "Image comparison library",
   });
+
+  async confirmDelete(name: string) {
+    await this.confirmName.fill(name);
+    await this.modal.confirmBtn.click();
+  }
 
   project(name: string) {
     return this.projects.filter({

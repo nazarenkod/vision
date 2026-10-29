@@ -12,18 +12,65 @@ import {
   TableHead,
   TableRow,
   TextField,
+  Tooltip,
   Typography,
 } from "@mui/material";
 import { useSnackbar } from "notistack";
 import { backupsService } from "../services";
 import { BackupsOverview } from "../types";
 import { DriveCard } from "../components/Backups/DriveCard";
+import { BackupDay, dayStrip } from "../_helpers/backups.helper";
+import { tokens } from "../theme";
+import { staggered } from "../components/motion/Stagger";
 
 const when = (value: string | null) =>
   value ? new Date(value).toLocaleString() : "never";
 
 const size = (bytes: number | null) =>
   bytes === null ? "" : `${(bytes / 1024 / 1024).toFixed(1)} MB`;
+
+const DAY_COLOUR = {
+  kept: tokens.status.passed.bar,
+  missing: tokens.status.failed.bar,
+  rotated: tokens.border,
+};
+
+/** The last 14 days at a glance: kept, missed, or past what Drive keeps. */
+const DayStrip: React.FunctionComponent<{ days: BackupDay[] }> = ({ days }) => {
+  const missed = days.filter((d) => d.state === "missing").length;
+  return (
+    <Box sx={{ display: "flex", flexDirection: "column", gap: 0.75 }}>
+      <Box
+        data-testid="backupDays"
+        role="img"
+        aria-label={`Last ${days.length} days: ${missed} without a backup`}
+        sx={{ display: "flex", gap: 0.5 }}
+      >
+        {days.map((d, index) => (
+          <Tooltip
+            key={d.date}
+            title={`${d.date}: ${d.state === "kept" ? "backed up" : d.state === "missing" ? "no backup" : "older than the kept copies"}`}
+          >
+            <Box
+              data-state={d.state}
+              {...staggered(index, days.length)}
+              sx={{
+                width: 16,
+                height: 16,
+                borderRadius: "4px",
+                bgcolor: DAY_COLOUR[d.state],
+              }}
+            />
+          </Tooltip>
+        ))}
+      </Box>
+      <Typography variant="caption" color="textSecondary">
+        Last {days.length} days
+        {missed ? ` · ${missed} without a backup` : " · none missed"}
+      </Typography>
+    </Box>
+  );
+};
 
 const BackupsPage = () => {
   const { enqueueSnackbar } = useSnackbar();
@@ -130,6 +177,15 @@ const BackupsPage = () => {
                 Last successful backup:{" "}
                 <b data-testid="lastSuccess">{when(overview.lastSuccessAt)}</b>
               </Typography>
+              {overview.remote && !overview.remote.error && (
+                <DayStrip
+                  days={dayStrip(
+                    overview.remote.backups,
+                    new Date(),
+                    overview.settings.keep,
+                  )}
+                />
+              )}
               <Typography>
                 Last attempt: {when(overview.lastAttemptAt)}
               </Typography>

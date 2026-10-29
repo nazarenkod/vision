@@ -1,14 +1,14 @@
 import React from "react";
 import {
-  Grid,
+  Box,
   TextField,
-  Select,
   MenuItem,
-  FormControl,
-  InputLabel,
   Button,
-  SelectChangeEvent,
+  InputAdornment,
 } from "@mui/material";
+import { Search } from "@mui/icons-material";
+import { tokens } from "../theme";
+import { pillField } from "./pillField";
 import { TestRun, TestVariation } from "../types";
 import { DebounceInput } from "react-debounce-input";
 import { LOCATOR_RESET_FILTER } from "../constants/help";
@@ -82,227 +82,125 @@ const Filters: React.FunctionComponent<IProps> = ({
       .map((t) => t.branchName)
       .filter((v, i, array) => v && array.indexOf(v) === i);
 
-  return (
-    <Grid container spacing={2} alignItems="flex-end">
-      <Grid item xs>
-        <DebounceInput
-          variant="standard"
-          fullWidth
-          label="Name"
-          value={query}
-          element={TextField}
-          minLength={2}
-          debounceTimeout={300}
-          onChange={(event) => setQuery(event?.target.value)}
-        />
-      </Grid>
-      {osList.length > 0 && (
-        <Grid item xs>
-          <FormControl variant="standard" fullWidth>
-            <InputLabel shrink id="filter_os">
-              OS
-            </InputLabel>
-            <Select
-              variant="standard"
-              id="filter_os"
-              value={os}
-              displayEmpty
-              onChange={(event: SelectChangeEvent<HTMLInputElement>) =>
-                setOs(event.target.value as string)
-              }
-            >
-              <MenuItem value="">
-                <em>All</em>
-              </MenuItem>
-              {osList.map((os) => (
-                <MenuItem key={os} value={os}>
-                  {os}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-        </Grid>
-      )}
-      {deviceList.length > 0 && (
-        <Grid item xs>
-          <FormControl variant="standard" fullWidth>
-            <InputLabel shrink id="filter_device">
-              Device
-            </InputLabel>
-            <Select
-              variant="standard"
-              id="filter_device"
-              value={device}
-              displayEmpty
-              onChange={(event: SelectChangeEvent<HTMLInputElement>) =>
-                setDevice(event.target.value as string)
-              }
-            >
-              <MenuItem value="">
-                <em>All</em>
-              </MenuItem>
-              {deviceList.map((device) => (
-                <MenuItem key={device} value={device}>
-                  {device}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-        </Grid>
-      )}
-      {browserList.length > 0 && (
-        <Grid item xs>
-          <FormControl variant="standard" fullWidth>
-            <InputLabel shrink id="filter_browser">
-              Browser
-            </InputLabel>
-            <Select
-              variant="standard"
-              id="filter_browser"
-              value={browser}
-              displayEmpty
-              onChange={(event: SelectChangeEvent<HTMLInputElement>) =>
-                setBrowser(event.target.value as string)
-              }
-            >
-              <MenuItem value="">
-                <em>All</em>
-              </MenuItem>
-              {browserList.map((item) => (
-                <MenuItem key={item} value={item}>
-                  {item}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-        </Grid>
-      )}
-      {viewportList.length > 0 && (
-        <Grid item xs>
-          <FormControl variant="standard" fullWidth>
-            <InputLabel shrink id="filter_viewport">
-              Viewport
-            </InputLabel>
-            <Select
-              variant="standard"
-              id="filter_viewport"
-              value={viewport}
-              displayEmpty
-              onChange={(event: SelectChangeEvent<HTMLInputElement>) =>
-                setViewport(event.target.value as string)
-              }
-            >
-              <MenuItem value="">
-                <em>All</em>
-              </MenuItem>
-              {viewportList.map((item) => (
-                <MenuItem key={item} value={item}>
-                  {item}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-        </Grid>
-      )}
-      {customTagsList.length > 0 && (
-        <Grid item xs>
-          <FormControl variant="standard" fullWidth>
-            <InputLabel shrink id="filter_customTags">
-              Custom Tags
-            </InputLabel>
-            <Select
-              variant="standard"
-              id="filter_customTags"
-              value={customTags}
-              displayEmpty
-              onChange={(event: SelectChangeEvent<HTMLInputElement>) =>
-                setCustomTags(event.target.value as string)
-              }
-            >
-              <MenuItem value="">
-                <em>All</em>
-              </MenuItem>
-              {customTagsList.map((item) => (
-                <MenuItem key={item} value={item}>
-                  {item}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-        </Grid>
-      )}
-      {testStatusList && testStatusList.length > 0 && (
-        <Grid item xs>
-          <FormControl variant="standard" fullWidth>
-            <InputLabel shrink id="filter_testStatus">
-              Status
-            </InputLabel>
-            <Select
-              variant="standard"
-              id="filter_testStatus"
-              value={testStatus}
-              displayEmpty
-              onChange={(event: SelectChangeEvent<HTMLInputElement>) =>
-                setTestStatus(event.target.value as string)
-              }
-            >
-              <MenuItem value="">
-                <em>All</em>
-              </MenuItem>
-              {testStatusList.map((item) => (
-                <MenuItem key={item} value={item}>
-                  {item}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-        </Grid>
-      )}
-      {branchNameList && branchNameList.length > 0 && (
-        <Grid item xs>
-          <FormControl variant="standard" fullWidth id={LOCATOR_RESET_FILTER}>
-            <InputLabel shrink id="filter_branchName">
-              Branch
-            </InputLabel>
-            <Select
-              variant="standard"
-              id="filter_branchName"
-              value={branchName}
-              displayEmpty
-              onChange={(event: SelectChangeEvent<HTMLInputElement>) =>
-                setBranchName(event.target.value as string)
-              }
-            >
-              <MenuItem value="">
-                <em>All</em>
-              </MenuItem>
-              {branchNameList.map((item) => (
-                <MenuItem key={item} value={item}>
-                  {item}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-        </Grid>
-      )}
-      <Grid item>
-        <Button
-          variant="contained"
-          color="primary"
-          onClick={() => {
-            setQuery("");
-            setOs("");
-            setDevice("");
-            setBrowser("");
-            setViewport("");
-            setCustomTags("");
-            setTestStatus("");
+  // compact selects in one row, each a rounded chip that turns green when set
+  const select = (
+    id: string,
+    label: string,
+    value: string | null,
+    options: string[] | false | undefined,
+    onChange: (value: string) => void,
+    wrapperId?: string,
+  ) =>
+    options && options.length > 0 ? (
+      <Box id={wrapperId} sx={{ display: "inline-flex" }}>
+        <TextField
+          select
+          size="small"
+          label={label}
+          value={value ?? ""}
+          onChange={(event) => onChange(event.target.value)}
+          SelectProps={{
+            id,
+            displayEmpty: true,
+            renderValue: (selected) =>
+              selected ? (
+                String(selected)
+              ) : (
+                <Box component="span" sx={{ color: tokens.textMuted }}>
+                  All
+                </Box>
+              ),
           }}
+          InputLabelProps={{ shrink: true }}
+          sx={{ minWidth: 120, maxWidth: 220, ...pillField(Boolean(value)) }}
         >
-          Reset
-        </Button>
-      </Grid>
-    </Grid>
+          <MenuItem value="">All</MenuItem>
+          {options.map((option) => (
+            <MenuItem key={option} value={option}>
+              {option}
+            </MenuItem>
+          ))}
+        </TextField>
+      </Box>
+    ) : null;
+
+  return (
+    <Box
+      sx={{
+        display: "flex",
+        flexWrap: "wrap",
+        alignItems: "center",
+        gap: 1.25,
+      }}
+    >
+      <DebounceInput
+        size="small"
+        label="Name"
+        value={query}
+        element={TextField}
+        minLength={2}
+        debounceTimeout={300}
+        onChange={(event) => setQuery(event?.target.value)}
+        InputProps={{
+          startAdornment: (
+            <InputAdornment position="start">
+              <Search fontSize="small" />
+            </InputAdornment>
+          ),
+        }}
+        sx={{ width: 220, ...pillField(Boolean(query)) }}
+      />
+      {select("filter_os", "OS", os, osList, setOs)}
+      {select("filter_device", "Device", device, deviceList, setDevice)}
+      {select("filter_browser", "Browser", browser, browserList, setBrowser)}
+      {select(
+        "filter_viewport",
+        "Viewport",
+        viewport,
+        viewportList,
+        setViewport,
+      )}
+      {select(
+        "filter_customTags",
+        "Custom tags",
+        customTags,
+        customTagsList,
+        setCustomTags,
+      )}
+      {select(
+        "filter_testStatus",
+        "Status",
+        testStatus,
+        testStatusList,
+        setTestStatus,
+      )}
+      {select(
+        "filter_branchName",
+        "Branch",
+        branchName,
+        branchNameList,
+        setBranchName,
+        LOCATOR_RESET_FILTER,
+      )}
+      <Button
+        size="small"
+        disabled={
+          ![query, os, device, browser, viewport, customTags, testStatus, branchName].some(Boolean)
+        }
+        onClick={() => {
+          setQuery("");
+          setOs("");
+          setDevice("");
+          setBrowser("");
+          setViewport("");
+          setCustomTags("");
+          setTestStatus("");
+          setBranchName("");
+        }}
+      >
+        Reset
+      </Button>
+    </Box>
   );
 };
 

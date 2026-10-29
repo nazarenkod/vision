@@ -30,6 +30,8 @@ import { Role } from "../types";
 import PasswordField from "../components/PasswordField";
 import { useOidcEnabled } from "../_helpers/useOidcEnabled";
 import { JiraTokenCard } from "../components/JiraTokenCard";
+import { ApiKeyCard, maskKey } from "../components/ApiKeyCard";
+import { AppearanceCard } from "../components/AppearanceCard";
 
 const ProfilePage = () => {
   const { enqueueSnackbar } = useSnackbar();
@@ -42,6 +44,9 @@ const ProfilePage = () => {
   const [lastName, setLastName] = useState(user?.lastName);
   const [password, setPassword] = useState("");
   const [tabIndex, setTabIndex] = React.useState(0);
+  // the key stays hidden, in the examples too, until someone asks for it
+  const [keyRevealed, setKeyRevealed] = React.useState(false);
+  const shownKey = keyRevealed ? user?.apiKey : maskKey(user?.apiKey);
   const oidcEnabled = useOidcEnabled();
 
   const handleUserUpdateSubmit = (event: FormEvent) => {
@@ -237,6 +242,9 @@ const ProfilePage = () => {
                 </ValidatorForm>
               </Grid>
             )}
+            <Grid item xs={12}>
+              <AppearanceCard />
+            </Grid>
           </Grid>
         </Grid>
         <Grid item xs={6}>
@@ -245,12 +253,11 @@ const ProfilePage = () => {
               <JiraTokenCard />
             </Grid>
             <Grid item xs={12}>
-              <Card variant="outlined">
-                <CardHeader title={"Api key"} />
-                <CardContent>
-                  <Typography>{user?.apiKey}</Typography>
-                </CardContent>
-              </Card>
+              <ApiKeyCard
+                apiKey={user?.apiKey}
+                revealed={keyRevealed}
+                onReveal={setKeyRevealed}
+              />
             </Grid>
             <Grid item xs={12}>
               <Card variant="outlined">
@@ -284,7 +291,7 @@ const ProfilePage = () => {
                           disabled
                           value={`{
     "apiUrl": "${window._env_.REACT_APP_API_URL}",
-    "apiKey": "${user?.apiKey}",
+    "apiKey": "${shownKey}",
     "project": "${selectedProjectId ?? "Default project"}",
     "branchName": "master",
     "ciBuildId": "commit_sha",
@@ -308,7 +315,7 @@ const ProfilePage = () => {
                           disabled
                           value={`
   VRT_APIURL="${window._env_.REACT_APP_API_URL}"
-  VRT_APIKEY="${user?.apiKey}"
+  VRT_APIKEY="${shownKey}"
   VRT_PROJECT="${selectedProjectId ?? "Default project"} "
   VRT_BRANCHNAME="master"
   VRT_CIBUILDID="commit_sha"

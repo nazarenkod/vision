@@ -14,7 +14,7 @@ import {
   TableHead,
   TableRow,
 } from "@mui/material";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { StatusPill } from "../components/StatusPill";
 import { tokens } from "../theme";
 import {
@@ -22,7 +22,6 @@ import {
   useProjectDispatch,
   deleteProject,
   createProject,
-  updateProject,
   setProjectEditState,
   useHelpDispatch,
   setHelpSteps,
@@ -35,7 +34,9 @@ import {
   PROJECT_LIST_PAGE_STEPS,
 } from "../constants";
 import { formatDateTime } from "../_helpers/format.helper";
-import { ProjectForm } from "../components/ProjectForm";
+import { NewProjectFields } from "../components/ProjectForm";
+import { buildProjectSettingsUrl } from "../_helpers/route.helpers";
+import { deleteConfirmed } from "../_helpers/projectSettings.helper";
 import { useSnackbar } from "notistack";
 import { BaseModal } from "../components/BaseModal";
 import { User } from "../types";
@@ -52,7 +53,8 @@ const ProjectsListPage = () => {
   const canEditProjects = !!user && PROJECT_EDITOR_ROLES.has(user.role);
 
   const [createDialogOpen, setCreateDialogOpen] = React.useState(false);
-  const [updateDialogOpen, setUpdateDialogOpen] = React.useState(false);
+  const [typedName, setTypedName] = React.useState("");
+  const navigate = useNavigate();
   const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false);
   const [search, setSearch] = React.useState("");
 
@@ -62,10 +64,6 @@ const ProjectsListPage = () => {
 
   const toggleCreateDialogOpen = () => {
     setCreateDialogOpen(!createDialogOpen);
-  };
-
-  const toggleUpdateDialogOpen = () => {
-    setUpdateDialogOpen(!updateDialogOpen);
   };
 
   const toggleDeleteDialogOpen = () => {
@@ -198,16 +196,16 @@ const ProjectsListPage = () => {
                     <>
                       <IconButton
                         aria-label={`Edit ${project.name}`}
-                        onClick={() => {
-                          toggleUpdateDialogOpen();
-                          setProjectEditState(projectDispatch, project);
-                        }}
+                        onClick={() =>
+                          navigate(buildProjectSettingsUrl(project.id))
+                        }
                       >
                         <Edit fontSize="small" />
                       </IconButton>
                       <IconButton
                         aria-label={`Delete ${project.name}`}
                         onClick={() => {
+                          setTypedName("");
                           toggleDeleteDialogOpen();
                           setProjectEditState(projectDispatch, project);
                         }}
@@ -241,10 +239,10 @@ const ProjectsListPage = () => {
         <>
           <BaseModal
             open={createDialogOpen}
-            title={"Create Project"}
-            submitButtonText={"Create"}
+            title={"New project"}
+            submitButtonText={"Create project"}
             onCancel={toggleCreateDialogOpen}
-            content={<ProjectForm />}
+            content={<NewProjectFields />}
             onSubmit={() =>
               createProject(projectDispatch, projectState.projectEditState)
                 .then((project) => {
@@ -252,28 +250,8 @@ const ProjectsListPage = () => {
                   enqueueSnackbar(`${project.name} created`, {
                     variant: "success",
                   });
-                })
-                .catch((err) =>
-                  enqueueSnackbar(err, {
-                    variant: "error",
-                  }),
-                )
-            }
-          />
-
-          <BaseModal
-            open={updateDialogOpen}
-            title={"Update Project"}
-            submitButtonText={"Update"}
-            onCancel={toggleUpdateDialogOpen}
-            content={<ProjectForm />}
-            onSubmit={() =>
-              updateProject(projectDispatch, projectState.projectEditState)
-                .then((project) => {
-                  toggleUpdateDialogOpen();
-                  enqueueSnackbar(`${project.name} updated`, {
-                    variant: "success",
-                  });
+                  // the rest of the setup is on its settings page (REQ-018-52)
+                  navigate(buildProjectSettingsUrl(project.id));
                 })
                 .catch((err) =>
                   enqueueSnackbar(err, {
@@ -285,11 +263,29 @@ const ProjectsListPage = () => {
 
           <BaseModal
             open={deleteDialogOpen}
-            title={"Delete Project"}
-            submitButtonText={"Delete"}
+            title={`Delete ${projectState.projectEditState.name}?`}
+            submitButtonText={"Delete forever"}
             onCancel={toggleDeleteDialogOpen}
+            // the name typed in, as on the settings page (REQ-018-49)
+            submitDisabled={
+              !deleteConfirmed(projectState.projectEditState.name, typedName)
+            }
             content={
-              <Typography>{`Are you sure you want to delete: ${projectState.projectEditState.name}?`}</Typography>
+              <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
+                <Typography>
+                  All builds, baselines and their history go with it. Type{" "}
+                  <b>{projectState.projectEditState.name}</b> to confirm.
+                </Typography>
+                <TextField
+                  size="small"
+                        value={typedName}
+                  onChange={(event) => setTypedName(event.target.value)}
+                  inputProps={{
+                    "aria-label": "Project name to confirm",
+                    "data-testid": "deleteConfirmName",
+                  }}
+                />
+              </Box>
             }
             onSubmit={() =>
               deleteProject(projectDispatch, projectState.projectEditState.id)

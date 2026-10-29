@@ -13,6 +13,7 @@ import { usersService } from "../../services";
 import { Role, User } from "../../types";
 import { useSnackbar } from "notistack";
 import { useUserDispatch, useUserState } from "../../contexts";
+import { filterUsers, lastSignInLabel } from "../../_helpers/users.helper";
 
 const columnsDef: GridColDef[] = [
   {
@@ -35,6 +36,19 @@ const columnsDef: GridColDef[] = [
     flex: 1,
   },
   {
+    field: "lastSignInAt",
+    headerName: "Last sign-in",
+    flex: 1,
+    filterable: false,
+    // newest first when sorted; never signed in sorts last
+    valueGetter: (params) => params.row.lastSignInAt ?? "",
+    renderCell: (params: GridRenderCellParams) => (
+      <span data-testid="lastSignIn">
+        {lastSignInLabel(params.row.lastSignInAt)}
+      </span>
+    ),
+  },
+  {
     field: "role",
     headerName: "Role",
     type: "singleSelect",
@@ -51,7 +65,9 @@ const columnsDef: GridColDef[] = [
   },
 ];
 
-const UserList = () => {
+const UserList: React.FunctionComponent<{ query?: string }> = ({
+  query = "",
+}) => {
   const { enqueueSnackbar } = useSnackbar();
   const userDispatch = useUserDispatch();
   const { userList } = useUserState();
@@ -91,7 +107,7 @@ const UserList = () => {
   return (
     <DataGrid
       apiRef={apiRef}
-      rows={userList}
+      rows={filterUsers(userList, query)}
       columns={columnsDef}
       columnVisibilityModel={{
         id: false,

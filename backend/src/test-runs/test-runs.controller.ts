@@ -43,6 +43,7 @@ import { RoleGuard } from '../auth/guards/role.guard';
 import { Roles } from '../shared/roles.decorator';
 import { A11yIssuesService } from '../a11y/a11y-issues.service';
 import { ChangeGroupsService } from './change-groups.service';
+import { DecisionUndoService } from './decision-undo.service';
 import { AddElementRuleDto, RemoveElementRuleDto } from './dto/element-rule.dto';
 import {
   A11yIssueRefDto,
@@ -61,7 +62,8 @@ export class TestRunsController {
   constructor(
     private testRunsService: TestRunsService,
     private a11yIssuesService: A11yIssuesService,
-    private changeGroupsService: ChangeGroupsService
+    private changeGroupsService: ChangeGroupsService,
+    private decisionUndoService: DecisionUndoService
   ) {}
 
   @Get()
@@ -231,11 +233,10 @@ export class TestRunsController {
     @CurrentUser() user: User,
     @Body() ids: string[],
     @Query('merge', new ParseBoolPipe()) merge: boolean
-  ): Promise<void> {
+  ): Promise<{ decisionId: string }> {
     this.logger.debug(`Going to approve TestRuns: ${ids}`);
-    for (const id of ids) {
-      await this.testRunsService.approve(id, merge, false, user.id);
-    }
+    // the same upstream approve, with a journal entry for Undo
+    return this.decisionUndoService.approve(ids, merge, user.id);
   }
 
   @Get('matchingSiblings/:id')
@@ -262,11 +263,23 @@ export class TestRunsController {
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard, RoleGuard)
   @Roles(Role.admin, Role.editor)
-  async reject(@Body() ids: string[]): Promise<void> {
+  async reject(@CurrentUser() user: User, @Body() ids: string[]): Promise<{ decisionId: string }> {
     this.logger.debug(`Going to reject TestRuns: ${ids}`);
-    for (const id of ids) {
-      await this.testRunsService.setStatus(id, TestStatus.failed);
-    }
+    return this.decisionUndoService.reject(ids, user.id);
+  }
+
+  @Post('undo/:decisionId')
+  @ApiOperation({
+    summary: 'Undo an approve or reject made in the last few seconds',
+    description:
+      'Puts the statuses and baselines back as they were before the decision. Refused (409) when anything ' +
+      'changed the screenshots or their baselines since, or when the decision is too old; all or nothing.',
+  })
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RoleGuard)
+  @Roles(Role.admin, Role.editor)
+  undo(@CurrentUser() user: User, @Param('decisionId') decisionId: string): Promise<{ undone: number }> {
+    return this.decisionUndoService.undo(decisionId, user.id);
   }
 
   @Post('delete')

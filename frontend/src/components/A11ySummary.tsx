@@ -15,6 +15,9 @@ import { useTestRunState } from "../contexts";
 import { buildTestRunLocation } from "../_helpers/route.helpers";
 import { StatusPill } from "./StatusPill";
 import { tokens } from "../theme";
+import { CountUp } from "./motion/useCountUp";
+import { staggered } from "./motion/Stagger";
+import { EmptyState } from "./EmptyState";
 import { deviceLabel } from "../_helpers/device.helper";
 
 const Stat: React.FunctionComponent<{
@@ -42,10 +45,12 @@ const Stat: React.FunctionComponent<{
       sx={{
         fontSize: 24,
         fontWeight: 600,
-        color: accent && value ? tokens.status.changed.fg : tokens.text,
+        fontVariantNumeric: "tabular-nums",
+        letterSpacing: "-0.01em",
+        color: accent && value ? tokens.a11y : tokens.text,
       }}
     >
-      {value}
+      <CountUp value={value} />
     </Typography>
   </Box>
 );
@@ -78,17 +83,12 @@ export const A11ySummary: React.FunctionComponent<{ buildId: string }> = ({
 
   if (!checked.length) {
     return (
-      <Box sx={{ p: 6, textAlign: "center", maxWidth: 640, mx: "auto" }}>
-        <Typography variant="h6">
-          No accessibility data in this build
-        </Typography>
-        <Typography color="textSecondary">
-          Accessibility is checked when a screenshot comes with its Appium page
-          source. In Java or Kotlin add{" "}
-          <code>.uiTree(driver.getPageSource())</code> to the TestRunOptions;
-          for manual testing use the CLI (help menu, Manual checks).
-        </Typography>
-      </Box>
+      <EmptyState title="No accessibility data in this build">
+        Accessibility is checked when a screenshot comes with its Appium page
+        source. In Java or Kotlin add{" "}
+        <code>.uiTree(driver.getPageSource())</code> to the TestRunOptions; for
+        manual testing use the CLI (help menu, Manual checks).
+      </EmptyState>
     );
   }
 
@@ -139,8 +139,12 @@ export const A11ySummary: React.FunctionComponent<{ buildId: string }> = ({
             </TableRow>
           </TableHead>
           <TableBody>
-            {checked.map((run) => (
-              <TableRow key={run.id} hover>
+            {checked.map((run, index) => (
+              <TableRow
+                key={run.id}
+                hover
+                {...staggered(index, checked.length)}
+              >
                 <TableCell>
                   <MuiLink
                     component={Link}
@@ -161,7 +165,22 @@ export const A11ySummary: React.FunctionComponent<{ buildId: string }> = ({
                 </TableCell>
                 <TableCell>
                   {run.a11yNewCount ? (
-                    <StatusPill tone="changed" label={run.a11yNewCount} />
+                    <Box
+                      component="span"
+                      sx={{
+                        display: "inline-flex",
+                        height: 22,
+                        alignItems: "center",
+                        px: 1,
+                        borderRadius: 999,
+                        fontSize: 12,
+                        fontWeight: 600,
+                        color: tokens.a11y,
+                        bgcolor: tokens.a11ySoft,
+                      }}
+                    >
+                      {run.a11yNewCount}
+                    </Box>
                   ) : (
                     <span>0</span>
                   )}

@@ -3,7 +3,6 @@ import { TestVariation } from "../types";
 import {
   Box,
   Card,
-  Grid,
   CardMedia,
   CardContent,
   Button,
@@ -17,7 +16,9 @@ import { Link } from "react-router-dom";
 import { routes } from "../constants";
 import { Delete } from "@mui/icons-material";
 import { BaseModal } from "./BaseModal";
-import { tokens } from "../theme";
+import { motion, tokens } from "../theme";
+import { staggered } from "./motion/Stagger";
+import { EmptyState } from "./EmptyState";
 import { deviceLabel } from "../_helpers/device.helper";
 
 /**
@@ -42,7 +43,8 @@ export function groupByCheck(items: TestVariation[]): TestVariation[][] {
 const CheckCard: React.FunctionComponent<{
   devices: TestVariation[];
   onDelete: (variation: TestVariation) => void;
-}> = ({ devices, onDelete }) => {
+  index: number;
+}> = ({ devices, onDelete, index }) => {
   // a device approved nothing yet has no picture to show
   const [shownId, setShownId] = React.useState(
     (devices.find((d) => d.baselineName) ?? devices[0]).id,
@@ -50,17 +52,39 @@ const CheckCard: React.FunctionComponent<{
   const shown = devices.find((d) => d.id === shownId) ?? devices[0];
   const check = devices[0];
   return (
-    <Card sx={{ maxWidth: 345 }}>
+    <Card
+      {...staggered(index, 12)}
+      sx={{
+        transition: `transform ${motion.base}ms ${motion.easing}, border-color ${motion.base}ms, box-shadow ${motion.base}ms`,
+        "&:hover": {
+          transform: "translateY(-2px)",
+          borderColor: tokens.borderStrong,
+          boxShadow: tokens.shadowShot,
+        },
+      }}
+    >
       <CardMedia
         component="img"
-        sx={{ height: 140, objectFit: "contain" }}
+        // phone screens: as tall as they are
+        sx={{
+          height: 300,
+          objectFit: "contain",
+          boxSizing: "border-box",
+          p: 1.25,
+          background: tokens.lightbox,
+          borderBottom: `1px solid ${tokens.border}`,
+        }}
         image={staticService.getImage(shown.baselineName)}
         title={check.name}
       />
       <CardContent sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
         <Typography sx={{ fontWeight: 600 }}>{check.name}</Typography>
         <Box sx={{ display: "flex", gap: 0.5, flexWrap: "wrap" }}>
-          <Chip size="small" label={check.branchName} />
+          <Chip
+            size="small"
+            label={check.branchName}
+            sx={{ fontFamily: tokens.mono, fontSize: 11.5, borderRadius: 1.5 }}
+          />
           {check.customTags && (
             <Chip size="small" variant="outlined" label={check.customTags} />
           )}
@@ -73,12 +97,13 @@ const CheckCard: React.FunctionComponent<{
             <ButtonBase
               onClick={() => setShownId(device.id)}
               sx={{
-                fontSize: 13.5,
+                fontSize: 12.5,
+                lineHeight: 1.35,
                 textAlign: "left",
                 justifyContent: "flex-start",
                 flex: 1,
                 py: 0.25,
-                fontWeight: device.id === shown.id ? 600 : 400,
+                fontWeight: device.id === shown.id ? 500 : 400,
                 color:
                   device.id === shown.id ? tokens.text : tokens.textSecondary,
               }}
@@ -125,18 +150,30 @@ const TestVariationList: React.FunctionComponent<IProps> = ({
 
   return (
     <>
-      <Grid container spacing={2}>
-        {groups.length === 0 && (
-          <Grid item>
-            <Typography variant="h5">No variations</Typography>
-          </Grid>
-        )}
-        {groups.map((devices) => (
-          <Grid item key={devices[0].id} xs={12} sm={6} md={4}>
-            <CheckCard devices={devices} onDelete={setSelectedItem} />
-          </Grid>
+      {groups.length === 0 && (
+        <EmptyState title="No baselines here">
+          Baselines appear after the first approved screenshot, or none match
+          the filters.
+        </EmptyState>
+      )}
+      <Box
+        sx={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))",
+          gap: 2,
+          alignItems: "start",
+        }}
+      >
+        {groups.map((devices, index) => (
+          <Box key={devices[0].id}>
+            <CheckCard
+              devices={devices}
+              onDelete={setSelectedItem}
+              index={index}
+            />
+          </Box>
         ))}
-      </Grid>
+      </Box>
 
       {selectedItem && (
         <BaseModal

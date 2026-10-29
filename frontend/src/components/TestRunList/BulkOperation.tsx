@@ -1,3 +1,5 @@
+import { useDecisionSnackbar } from "../useDecisionSnackbar";
+import { Decision } from "../../services/testRun.service";
 import React from "react";
 import { Typography, IconButton, LinearProgress } from "@mui/material";
 import { BaseModal } from "../BaseModal";
@@ -24,6 +26,7 @@ export const BulkOperation: React.FunctionComponent<{
 }> = ({ selectedIds, rows, selectionNoun, onProcessed }) => {
   const { testRuns } = useTestRunState();
   const { enqueueSnackbar } = useSnackbar();
+  const announce = useDecisionSnackbar();
   const [approveDialogOpen, setApproveDialogOpen] = React.useState(false);
   const [rejectDialogOpen, setRejectDialogOpen] = React.useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false);
@@ -275,17 +278,27 @@ export const BulkOperation: React.FunctionComponent<{
           const consumesSelection = !downloadDialogOpen;
           const count = selectedIds.length;
           setIsProcessing(true);
+          const decided = approveDialogOpen
+            ? "approve"
+            : rejectDialogOpen
+              ? "reject"
+              : null;
           getBulkAction()
-            .then(() => {
+            .then((result) => {
               setIsProcessing(false);
               // Dropped only once the API has confirmed: a failed request leaves
               // the ticks in place so the action can be retried as it stands.
               if (consumesSelection) {
                 onProcessed();
               }
-              enqueueSnackbar(`${count} test runs processed.`, {
-                variant: "success",
-              });
+              if (decided) {
+                // approvals and rejections can be taken back for a moment
+                announce(decided, count, result as Decision);
+              } else {
+                enqueueSnackbar(`${count} test runs processed.`, {
+                  variant: "success",
+                });
+              }
             })
             .catch((err) => {
               setIsProcessing(false);

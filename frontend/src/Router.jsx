@@ -12,6 +12,7 @@ import InsightsPage from "./pages/InsightsPage";
 import UserListPage from "./pages/UserListPage";
 import BackupsPage from "./pages/BackupsPage";
 import TestVariationDetailsPage from "./pages/TestVariationDetailsPage";
+import ProjectSettingsPage from "./pages/ProjectSettingsPage";
 import { useOidcEnabled } from "./_helpers/useOidcEnabled";
 
 function RegisterRoute() {
@@ -35,6 +36,15 @@ function Router() {
       <Route
         path={routes.PROJECT_LIST_PAGE}
         element={<PrivateRoute component={ProjectsListPage} />}
+      />
+      <Route
+        path={routes.PROJECT_SETTINGS_PAGE}
+        element={
+          <PrivateRoute
+            component={ProjectSettingsPage}
+            roles={["admin", "editor"]}
+          />
+        }
       />
       <Route
         path={routes.USER_LIST_PAGE}

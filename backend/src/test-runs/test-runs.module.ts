@@ -1,6 +1,7 @@
 import { forwardRef, Module } from '@nestjs/common';
 import { TestRunsService } from './test-runs.service';
 import { ChangeGroupsService } from './change-groups.service';
+import { DecisionUndoService } from './decision-undo.service';
 import { SharedModule } from '../shared/shared.module';
 import { TestRunsController } from './test-runs.controller';
 import { TestVariationsModule } from '../test-variations/test-variations.module';
@@ -21,7 +22,7 @@ import { AuthModule } from '../auth/auth.module';
     // the mixed guard lets SDK and CLI users read reports with their API key
     AuthModule,
   ],
-  providers: [TestRunsService, ChangeGroupsService],
+  providers: [TestRunsService, ChangeGroupsService, DecisionUndoService],
   controllers: [TestRunsController],
   exports: [TestRunsService, ChangeGroupsService],
 })

@@ -29,7 +29,13 @@ export class TestVariationListPage extends BasePage {
     return this.getCard(name).getByTestId("DeleteIcon");
   }
 
+  // merging waits behind a button
+  mergeToggle = this.page.getByTestId("mergeBranchesToggle");
+
   async merge(fromBranch: string, toBranch: string) {
+    if ((await this.mergeToggle.getAttribute("aria-expanded")) !== "true") {
+      await this.mergeToggle.click();
+    }
     await this.fromBranch.click();
     await this.page
       .getByRole("option", { name: fromBranch, exact: true })

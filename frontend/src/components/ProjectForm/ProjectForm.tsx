@@ -1,6 +1,7 @@
 import {
   Box,
   Button,
+  ButtonBase,
   Divider,
   TextField,
   Typography,
@@ -21,6 +22,7 @@ import {
 } from "../../contexts";
 import { ImageComparison } from "../../types/imageComparison";
 import { Tooltip } from "../Tooltip";
+import { motion, tokens } from "../../theme";
 import { LooksSameConfigForm } from "./LooksSameConfigForm";
 import { OdiffConfigForm } from "./OdiffConfigForm";
 import { PixelmatchConfigForm } from "./PixelmatchConfigForm";
@@ -35,6 +37,8 @@ import {
 import { insightsService } from "../../services";
 import { A11yProblemSettings } from "./A11yProblemSettings";
 import { deviceLabel } from "../../_helpers/device.helper";
+import { ruleSelectorError } from "../../_helpers/projectSettings.helper";
+import { SecretField } from "./SecretField";
 
 const profileLabel = (profile: DeviceProfile) => deviceLabel(profile);
 const profileKey = (profile: DeviceProfile) =>
@@ -45,29 +49,35 @@ const profileKey = (profile: DeviceProfile) =>
     profile.viewport,
   ]);
 
-export const ProjectForm: React.FunctionComponent = () => {
+// what each engine is for, in one sentence (REQ-018-44)
+const ENGINES: Array<[ImageComparison, string]> = [
+  [
+    ImageComparison.pixelmatch,
+    "Pixel by pixel. Fast and predictable; the default.",
+  ],
+  [
+    ImageComparison.lookSame,
+    "Forgives anti-aliasing and the text caret. Good for text-heavy screens.",
+  ],
+  [
+    ImageComparison.odiff,
+    "The fastest on big screenshots. Can fail on any layout change.",
+  ],
+  [
+    ImageComparison.vlm,
+    "Asks a vision model whether a change matters. Slower; needs a provider.",
+  ],
+];
+
+const useEditedProject = () => {
   const { projectEditState: project } = useProjectState();
   const projectDispatch = useProjectDispatch();
+  return { project, projectDispatch };
+};
 
-  const config = React.useMemo(() => {
-    switch (project.imageComparison) {
-      case ImageComparison.pixelmatch:
-        return <PixelmatchConfigForm />;
-
-      case ImageComparison.lookSame:
-        return <LooksSameConfigForm />;
-
-      case ImageComparison.odiff:
-        return <OdiffConfigForm />;
-
-      case ImageComparison.vlm:
-        return <VlmConfigForm />;
-
-      default:
-        return null;
-    }
-  }, [project.imageComparison]);
-
+/** Name, main branch and how long builds are kept. */
+export const GeneralFields: React.FunctionComponent = () => {
+  const { project, projectDispatch } = useEditedProject();
   return (
     <React.Fragment>
       <TextValidator
@@ -158,6 +168,15 @@ export const ProjectForm: React.FunctionComponent = () => {
           });
         }}
       />
+    </React.Fragment>
+  );
+};
+
+/** Auto approve and reviewing a screen's variations together. */
+export const ReviewFields: React.FunctionComponent = () => {
+  const { project, projectDispatch } = useEditedProject();
+  return (
+    <React.Fragment>
       <FormControlLabel
         label="Auto approve feature"
         control={
@@ -220,50 +239,230 @@ export const ProjectForm: React.FunctionComponent = () => {
           </Select>
         </FormControl>
       </Tooltip>
-      <FormControl variant="standard" fullWidth>
-        <InputLabel id="imageComparisonSelect">
-          Image comparison library
-        </InputLabel>
-        <Select
-          variant="standard"
-          id="imageComparisonSelect"
-          labelId="imageComparisonSelect"
-          value={project.imageComparison}
-          onChange={(event: SelectChangeEvent<HTMLInputElement>) => {
-            const imageComparison = event.target.value as ImageComparison;
-
-            setProjectEditState(projectDispatch, {
-              ...project,
-              imageComparison,
-              imageComparisonConfig:
-                project.imageComparison !== imageComparison
-                  ? getDefaultConfig(imageComparison)
-                  : project.imageComparisonConfig,
-            });
-          }}
-        >
-          <MenuItem value={ImageComparison.pixelmatch}>
-            {ImageComparison.pixelmatch}
-          </MenuItem>
-          <MenuItem value={ImageComparison.lookSame}>
-            {ImageComparison.lookSame}
-          </MenuItem>
-          <MenuItem value={ImageComparison.odiff}>
-            {ImageComparison.odiff}
-          </MenuItem>
-          <MenuItem value={ImageComparison.vlm}>{ImageComparison.vlm}</MenuItem>
-        </Select>
-      </FormControl>
-      {config}
-      <MobileSettings />
-      <A11yProblemSettings />
-      <JiraSettings />
     </React.Fragment>
   );
 };
 
+/** The engine as cards, and below them only the chosen engine's settings. */
+export const ComparisonFields: React.FunctionComponent<{
+  as?: "cards" | "select";
+  // creating a project picks the engine only; its settings come later
+  withConfig?: boolean;
+}> = ({ as = "cards", withConfig = true }) => {
+  const { project, projectDispatch } = useEditedProject();
+  const pick = (imageComparison: ImageComparison) =>
+    setProjectEditState(projectDispatch, {
+      ...project,
+      imageComparison,
+      imageComparisonConfig:
+        project.imageComparison !== imageComparison
+          ? getDefaultConfig(imageComparison)
+          : project.imageComparisonConfig,
+    });
+
+  const config = React.useMemo(() => {
+    switch (project.imageComparison) {
+      case ImageComparison.pixelmatch:
+        return <PixelmatchConfigForm />;
+
+      case ImageComparison.lookSame:
+        return <LooksSameConfigForm />;
+
+      case ImageComparison.odiff:
+        return <OdiffConfigForm />;
+
+      case ImageComparison.vlm:
+        return <VlmConfigForm />;
+
+      default:
+        return null;
+    }
+  }, [project.imageComparison]);
+
+  if (as === "select") {
+    return (
+      <React.Fragment>
+        <FormControl variant="standard" fullWidth>
+          <InputLabel id="imageComparisonSelect">
+            Image comparison library
+          </InputLabel>
+          <Select
+            variant="standard"
+            id="imageComparisonSelect"
+            labelId="imageComparisonSelect"
+            value={project.imageComparison}
+            onChange={(event: SelectChangeEvent<HTMLInputElement>) => {
+              const imageComparison = event.target.value as ImageComparison;
+
+              setProjectEditState(projectDispatch, {
+                ...project,
+                imageComparison,
+                imageComparisonConfig:
+                  project.imageComparison !== imageComparison
+                    ? getDefaultConfig(imageComparison)
+                    : project.imageComparisonConfig,
+              });
+            }}
+          >
+            <MenuItem value={ImageComparison.pixelmatch}>
+              {ImageComparison.pixelmatch}
+            </MenuItem>
+            <MenuItem value={ImageComparison.lookSame}>
+              {ImageComparison.lookSame}
+            </MenuItem>
+            <MenuItem value={ImageComparison.odiff}>
+              {ImageComparison.odiff}
+            </MenuItem>
+            <MenuItem value={ImageComparison.vlm}>
+              {ImageComparison.vlm}
+            </MenuItem>
+          </Select>
+        </FormControl>
+        {withConfig && config}
+      </React.Fragment>
+    );
+  }
+
+  return (
+    <React.Fragment>
+      <Box
+        role="radiogroup"
+        aria-label="Image comparison"
+        data-testid="engineCards"
+        sx={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fill, minmax(170px, 1fr))",
+          gap: 1.25,
+        }}
+      >
+        {ENGINES.map(([engine, description]) => {
+          const on = project.imageComparison === engine;
+          return (
+            <ButtonBase
+              key={engine}
+              role="radio"
+              aria-checked={on}
+              data-testid={`engine-${engine}`}
+              onClick={() => pick(engine)}
+              sx={{
+                position: "relative",
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "flex-start",
+                textAlign: "left",
+                gap: 0.5,
+                p: 1.5,
+                pr: 4,
+                borderRadius: 3,
+                border: `1px solid ${on ? tokens.brand : tokens.borderStrong}`,
+                boxShadow: on ? `0 0 0 1px ${tokens.brand}` : "none",
+                bgcolor: on ? tokens.brandSoft : tokens.surface,
+                transition: `border-color ${motion.base}ms, background-color ${motion.base}ms, box-shadow ${motion.base}ms`,
+                "&:hover": { borderColor: tokens.brand },
+              }}
+            >
+              <Box
+                aria-hidden="true"
+                sx={{
+                  position: "absolute",
+                  top: 12,
+                  right: 12,
+                  width: 16,
+                  height: 16,
+                  borderRadius: "50%",
+                  border: `${on ? 5 : 1.5}px solid ${on ? tokens.brand : tokens.borderStrong}`,
+                  transition: `border ${motion.base}ms ${motion.easing}`,
+                }}
+              />
+              <Typography
+                sx={{ fontFamily: tokens.mono, fontWeight: 600, fontSize: 13 }}
+              >
+                {engine}
+              </Typography>
+              <Typography
+                variant="caption"
+                color="textSecondary"
+                sx={{ lineHeight: 1.4 }}
+              >
+                {description}
+              </Typography>
+            </ButtonBase>
+          );
+        })}
+      </Box>
+      <Box key={project.imageComparison} className="v-enter" sx={{ mt: 1 }}>
+        {config}
+      </Box>
+    </React.Fragment>
+  );
+};
+
+/** Creating a project: three fields; the rest is set on its settings page. */
+export const NewProjectFields: React.FunctionComponent = () => {
+  const { project, projectDispatch } = useEditedProject();
+  return (
+    <React.Fragment>
+      <TextValidator
+        name="projectName"
+        validators={["minStringLength:2"]}
+        errorMessages={["Enter at least two characters."]}
+        margin="dense"
+        id="name"
+        label="Project name"
+        type="text"
+        fullWidth
+        required
+        value={project.name}
+        onChange={(event: React.ChangeEvent<HTMLInputElement>) =>
+          setProjectEditState(projectDispatch, {
+            ...project,
+            name: event.target.value,
+          })
+        }
+      />
+      <TextValidator
+        name="mainBranchName"
+        validators={["minStringLength:2"]}
+        errorMessages={["Enter at least two characters."]}
+        margin="dense"
+        id="branchName"
+        label="Main branch"
+        type="text"
+        fullWidth
+        required
+        value={project.mainBranchName}
+        onChange={(event: React.ChangeEvent<HTMLInputElement>) =>
+          setProjectEditState(projectDispatch, {
+            ...project,
+            mainBranchName: event.target.value,
+          })
+        }
+      />
+      <ComparisonFields as="select" withConfig={false} />
+      <Typography variant="body2" color="textSecondary" sx={{ mt: 1.5 }}>
+        Mobile screenshots, accessibility and Jira are set up in the
+        project&apos;s settings, which open right after it is created.
+      </Typography>
+    </React.Fragment>
+  );
+};
+
+/** Everything in one column: what the old dialog showed. */
+export const ProjectForm: React.FunctionComponent = () => (
+  <React.Fragment>
+    <GeneralFields />
+    <ReviewFields />
+    <ComparisonFields as="select" />
+    <MobileSettings />
+    <A11yProblemSettings />
+    <JiraSettings />
+  </React.Fragment>
+);
+
 /** Jira connection used to file accessibility bugs from the review screen. */
-const JiraSettings: React.FunctionComponent = () => {
+export const JiraSettings: React.FunctionComponent<{ bare?: boolean }> = ({
+  bare = false,
+}) => {
   const { projectEditState: project } = useProjectState();
   const projectDispatch = useProjectDispatch();
   // the API never returns the token, only whether one is saved
@@ -272,15 +471,24 @@ const JiraSettings: React.FunctionComponent = () => {
     setProjectEditState(projectDispatch, { ...project, ...patch });
 
   return (
-    <Box sx={{ mt: 3, display: "flex", flexDirection: "column", gap: 1.5 }}>
-      <Divider />
-      <Typography variant="subtitle1">Jira</Typography>
-      <Typography variant="body2" color="textSecondary">
-        Lets reviewers file accessibility bugs from the review screen. Each
-        person adds their own Jira token in their profile, so bugs are filed as
-        them. A shared token here is optional: it is used for people who have
-        not added one.
-      </Typography>
+    <Box
+      sx={{
+        mt: bare ? 0 : 3,
+        display: "flex",
+        flexDirection: "column",
+        gap: 1.5,
+      }}
+    >
+      {!bare && <Divider />}
+      {!bare && <Typography variant="subtitle1">Jira</Typography>}
+      {!bare && (
+        <Typography variant="body2" color="textSecondary">
+          Lets reviewers file accessibility bugs from the review screen. Each
+          person adds their own Jira token in their profile, so bugs are filed
+          as them. A shared token here is optional: it is used for people who
+          have not added one.
+        </Typography>
+      )}
       <TextField
         id="jiraUrl"
         label="Jira URL"
@@ -289,32 +497,13 @@ const JiraSettings: React.FunctionComponent = () => {
         value={project.jiraUrl ?? ""}
         onChange={(event) => update({ jiraUrl: event.target.value })}
       />
-      <TextField
+      <SecretField
         id="jiraToken"
         label="Shared token (optional)"
-        type="password"
-        size="small"
-        autoComplete="new-password"
-        placeholder={tokenSaved ? "Saved. Leave empty to keep it" : ""}
-        value={project.jiraToken ?? ""}
-        onChange={(event) =>
-          update({ jiraToken: event.target.value || undefined })
-        }
-        helperText={
-          tokenSaved && project.jiraToken === ""
-            ? "The saved token will be removed"
-            : " "
-        }
+        saved={tokenSaved}
+        value={project.jiraToken}
+        onChange={(jiraToken) => update({ jiraToken })}
       />
-      {tokenSaved && project.jiraToken === undefined && (
-        <Button
-          size="small"
-          sx={{ alignSelf: "flex-start" }}
-          onClick={() => update({ jiraToken: "" })}
-        >
-          Remove saved token
-        </Button>
-      )}
       <TextField
         id="jiraEmail"
         label="Shared token's account email (Jira Cloud only)"
@@ -374,8 +563,15 @@ const TOGGLES: Array<[keyof UiTreeSettings, string, string]> = [
   ],
 ];
 
-/** UI tree comparison settings and rules for every screen of the project. */
-const MobileSettings: React.FunctionComponent = () => {
+/**
+ * UI tree comparison settings and rules for every screen of the project. The
+ * settings page shows the two parts as sections of their own, under its own
+ * headings (`bare`).
+ */
+export const MobileSettings: React.FunctionComponent<{
+  show?: "all" | "mobile" | "rules";
+  bare?: boolean;
+}> = ({ show = "all", bare = false }) => {
   const { projectEditState: project } = useProjectState();
   const projectDispatch = useProjectDispatch();
   const settings = parseUiTreeSettings(project.uiTreeSettings);
@@ -415,161 +611,201 @@ const MobileSettings: React.FunctionComponent = () => {
     setSelector("");
   };
 
+  const selectorError = ruleSelectorError(selector);
+
   return (
-    <Box sx={{ mt: 3, display: "flex", flexDirection: "column", gap: 1 }}>
-      <Divider />
-      <Typography variant="subtitle1">Mobile screenshots (UI tree)</Typography>
-      <Typography variant="body2" color="textSecondary">
-        Applies to screenshots sent with an Appium page source.
-      </Typography>
-      {TOGGLES.map(([key, label, help]) => (
-        <FormControlLabel
-          key={key}
-          control={
-            <Switch
-              checked={!!settings[key]}
-              onChange={(_, checked) => save({ ...settings, [key]: checked })}
-              name={key}
-            />
-          }
-          label={
-            <Box>
-              <Typography variant="body2">{label}</Typography>
-              <Typography variant="caption" color="textSecondary">
-                {help}
-              </Typography>
-            </Box>
-          }
-          sx={{ alignItems: "flex-start", "& .MuiSwitch-root": { mt: -0.5 } }}
-        />
-      ))}
-      <TextField
-        id="referenceDevice"
-        select
-        size="small"
-        label="Reference device"
-        value={reference ? profileKey(reference) : ""}
-        onChange={(event) => {
-          const picked = deviceOptions.find(
-            (d) => profileKey(d) === event.target.value,
-          );
-          save({
-            ...settings,
-            referenceDevice: picked
-              ? {
-                  os: picked.os,
-                  device: picked.device,
-                  browser: picked.browser,
-                  viewport: picked.viewport,
-                }
-              : null,
-          });
-        }}
-        helperText="Other devices of a check are compared with it element by element, for information; it never changes a status."
-        sx={{ maxWidth: 520, mt: 1 }}
-      >
-        <MenuItem value="">None</MenuItem>
-        {deviceOptions.map((device) => (
-          <MenuItem key={profileKey(device)} value={profileKey(device)}>
-            {profileLabel(device)}
-            {device.checks ? ` (${device.checks} checks)` : ""}
-          </MenuItem>
-        ))}
-      </TextField>
-      {settings.compensateMoves && (
-        <TextField
-          id="maxMoveDp"
-          size="small"
-          type="number"
-          label="Only moves up to, dp (empty for any)"
-          value={settings.maxMoveDp ?? ""}
-          onChange={(event) =>
-            save({
-              ...settings,
-              maxMoveDp:
-                event.target.value === "" ? null : Number(event.target.value),
-            })
-          }
-          sx={{ maxWidth: 280 }}
-        />
+    <Box
+      sx={{
+        mt: bare ? 0 : 3,
+        display: "flex",
+        flexDirection: "column",
+        gap: 1,
+      }}
+    >
+      {!bare && <Divider />}
+      {!bare && (
+        <Typography variant="subtitle1">
+          Mobile screenshots (UI tree)
+        </Typography>
       )}
-      <Typography variant="body2" sx={{ fontWeight: 600, mt: 1 }}>
-        Element rules for every screen
-      </Typography>
-      {settings.elementRules.map((rule) => (
-        <Box
-          key={rule.id}
-          sx={{ display: "flex", alignItems: "center", gap: 1 }}
-        >
-          <code style={{ fontSize: 12.5 }}>{rule.selector}</code>
-          <Typography variant="body2" color="textSecondary">
-            {rule.action === "ignore" ? "ignored" : `±${rule.maxDiffPercent}%`}
-          </Typography>
-          <Button
+      {show !== "rules" && (
+        <>
+          {!bare && (
+            <Typography variant="body2" color="textSecondary">
+              Applies to screenshots sent with an Appium page source.
+            </Typography>
+          )}
+          {TOGGLES.map(([key, label, help]) => (
+            <FormControlLabel
+              key={key}
+              control={
+                <Switch
+                  checked={!!settings[key]}
+                  onChange={(_, checked) =>
+                    save({ ...settings, [key]: checked })
+                  }
+                  name={key}
+                />
+              }
+              label={
+                <Box>
+                  <Typography variant="body2">{label}</Typography>
+                  <Typography variant="caption" color="textSecondary">
+                    {help}
+                  </Typography>
+                </Box>
+              }
+              sx={{
+                alignItems: "flex-start",
+                "& .MuiSwitch-root": { mt: -0.5 },
+              }}
+            />
+          ))}
+          <TextField
+            id="referenceDevice"
+            select
             size="small"
-            sx={{ ml: "auto" }}
-            onClick={() =>
+            label="Reference device"
+            value={reference ? profileKey(reference) : ""}
+            onChange={(event) => {
+              const picked = deviceOptions.find(
+                (d) => profileKey(d) === event.target.value,
+              );
               save({
                 ...settings,
-                elementRules: settings.elementRules.filter(
-                  (item) => item.id !== rule.id,
-                ),
-              })
-            }
+                referenceDevice: picked
+                  ? {
+                      os: picked.os,
+                      device: picked.device,
+                      browser: picked.browser,
+                      viewport: picked.viewport,
+                    }
+                  : null,
+              });
+            }}
+            helperText="Other devices of a check are compared with it element by element, for information; it never changes a status."
+            sx={{ maxWidth: 520, mt: 1 }}
           >
-            Remove
-          </Button>
-        </Box>
-      ))}
-      <Box
-        sx={{
-          display: "flex",
-          gap: 1,
-          alignItems: "flex-start",
-          flexWrap: "wrap",
-        }}
-      >
-        <TextField
-          id="ruleSelector"
-          size="small"
-          label="Element"
-          placeholder="id:clock or class:MapView"
-          value={selector}
-          onChange={(event) => setSelector(event.target.value)}
-          sx={{ flex: "1 1 200px" }}
-        />
-        <TextField
-          id="ruleAction"
-          size="small"
-          select
-          value={action}
-          onChange={(event) =>
-            setAction(event.target.value as ElementRule["action"])
-          }
-          sx={{ width: 130 }}
-        >
-          <MenuItem value="ignore">Ignore</MenuItem>
-          <MenuItem value="tolerate">Tolerate</MenuItem>
-        </TextField>
-        {action === "tolerate" && (
-          <TextField
-            id="rulePercent"
-            size="small"
-            type="number"
-            label="%"
-            value={percent}
-            onChange={(event) => setPercent(Number(event.target.value))}
-            sx={{ width: 80 }}
-          />
-        )}
-        <Button
-          variant="outlined"
-          disabled={!/^(id|class|text):.+/.test(selector.trim())}
-          onClick={addRule}
-        >
-          Add
-        </Button>
-      </Box>
+            <MenuItem value="">None</MenuItem>
+            {deviceOptions.map((device) => (
+              <MenuItem key={profileKey(device)} value={profileKey(device)}>
+                {profileLabel(device)}
+                {device.checks ? ` (${device.checks} checks)` : ""}
+              </MenuItem>
+            ))}
+          </TextField>
+          {settings.compensateMoves && (
+            <TextField
+              id="maxMoveDp"
+              size="small"
+              type="number"
+              label="Only moves up to, dp (empty for any)"
+              value={settings.maxMoveDp ?? ""}
+              onChange={(event) =>
+                save({
+                  ...settings,
+                  maxMoveDp:
+                    event.target.value === ""
+                      ? null
+                      : Number(event.target.value),
+                })
+              }
+              sx={{ maxWidth: 280 }}
+            />
+          )}
+        </>
+      )}
+      {show !== "mobile" && (
+        <>
+          {!bare && (
+            <Typography variant="body2" sx={{ fontWeight: 600, mt: 1 }}>
+              Element rules for every screen
+            </Typography>
+          )}
+          {settings.elementRules.map((rule) => (
+            <Box
+              key={rule.id}
+              sx={{ display: "flex", alignItems: "center", gap: 1 }}
+            >
+              <code style={{ fontSize: 12.5 }}>{rule.selector}</code>
+              <Typography variant="body2" color="textSecondary">
+                {rule.action === "ignore"
+                  ? "ignored"
+                  : `±${rule.maxDiffPercent}%`}
+              </Typography>
+              <Button
+                size="small"
+                sx={{ ml: "auto" }}
+                onClick={() =>
+                  save({
+                    ...settings,
+                    elementRules: settings.elementRules.filter(
+                      (item) => item.id !== rule.id,
+                    ),
+                  })
+                }
+              >
+                Remove
+              </Button>
+            </Box>
+          ))}
+          <Box
+            sx={{
+              display: "flex",
+              gap: 1,
+              alignItems: "flex-start",
+              flexWrap: "wrap",
+            }}
+          >
+            <TextField
+              id="ruleSelector"
+              size="small"
+              label="Element"
+              placeholder="id:clock or class:MapView"
+              value={selector}
+              onChange={(event) => setSelector(event.target.value)}
+              error={!!selectorError}
+              helperText={
+                selectorError ?? "id:, class: or text: (text takes a /regex/)"
+              }
+              inputProps={{ "data-testid": "ruleSelector" }}
+              sx={{ flex: "1 1 200px" }}
+            />
+            <TextField
+              id="ruleAction"
+              size="small"
+              select
+              value={action}
+              onChange={(event) =>
+                setAction(event.target.value as ElementRule["action"])
+              }
+              sx={{ width: 130 }}
+            >
+              <MenuItem value="ignore">Ignore</MenuItem>
+              <MenuItem value="tolerate">Tolerate</MenuItem>
+            </TextField>
+            {action === "tolerate" && (
+              <TextField
+                id="rulePercent"
+                size="small"
+                type="number"
+                label="%"
+                value={percent}
+                onChange={(event) => setPercent(Number(event.target.value))}
+                sx={{ width: 80 }}
+              />
+            )}
+            <Button
+              variant="outlined"
+              disabled={!selector.trim() || !!selectorError}
+              onClick={addRule}
+              data-testid="addRule"
+            >
+              Add
+            </Button>
+          </Box>
+        </>
+      )}
     </Box>
   );
 };

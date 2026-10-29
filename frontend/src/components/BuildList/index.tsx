@@ -1,6 +1,7 @@
 import React, { FunctionComponent } from "react";
 import { makeStyles, createStyles } from "@mui/styles";
 import { tokens } from "../../theme";
+import { staggered } from "../motion/Stagger";
 import {
   List,
   ListItemButton,
@@ -334,9 +335,10 @@ const BuildList: FunctionComponent = () => {
                 {searchQuery ? `No builds match "${searchQuery}"` : "No builds"}
               </Typography>
             ) : (
-              buildList.map((build) => (
+              buildList.map((build, index) => (
                 <React.Fragment key={build.id}>
                   <ListItemButton
+                    {...staggered(index, buildList.length)}
                     selected={selectedBuild?.id === build.id}
                     onClick={() => selectBuildCalback(build.id)}
                     classes={{

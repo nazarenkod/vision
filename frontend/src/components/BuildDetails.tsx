@@ -5,7 +5,8 @@ import { formatDateTime } from "../_helpers/format.helper";
 import { useBuildState, useTestRunState } from "../contexts";
 import { LOCATOR_BUILD_DETAILS } from "../constants/help";
 import { Tooltip } from "./Tooltip";
-import { tokens } from "../theme";
+import { motion, tokens } from "../theme";
+import { CountUp } from "./motion/useCountUp";
 
 /** Build header: identity, status and a bar of how the screenshots came out. */
 const BuildDetails: React.FunctionComponent = () => {
@@ -78,15 +79,19 @@ const BuildDetails: React.FunctionComponent = () => {
 
       <Box sx={{ display: "flex", flexDirection: "column", gap: 0.75 }}>
         <Box
+          // a new build fills its bar again (REQ-018-23)
+          key={selectedBuild.id}
+          data-testid="buildStatusBar"
           role="img"
           aria-label={`${selectedBuild.unresolvedCount} unresolved, ${selectedBuild.failedCount} failed, ${selectedBuild.passedCount} passed`}
           sx={{
             display: "flex",
-            height: 8,
+            height: 6,
             borderRadius: 999,
             overflow: "hidden",
             gap: "2px",
             bgcolor: tokens.subtle,
+            animation: `v-fill ${motion.fill}ms ${motion.easing} both ${motion.fast}ms`,
           }}
         >
           <Box
@@ -115,29 +120,39 @@ const BuildDetails: React.FunctionComponent = () => {
             gap: "4px 20px",
             fontSize: 13,
             color: tokens.textSecondary,
+            "& b": { fontVariantNumeric: "tabular-nums", fontWeight: 650 },
           }}
         >
           <span>
-            <b style={{ color: tokens.text }}>{total}</b> total
+            <b style={{ color: tokens.text }}>
+              <CountUp value={total} />
+            </b>{" "}
+            total
           </span>
           <span>
             <b style={{ color: tokens.text }}>
-              {selectedBuild.unresolvedCount}
+              <CountUp value={selectedBuild.unresolvedCount} />
             </b>{" "}
             unresolved
           </span>
           <span>
-            <b style={{ color: tokens.text }}>{selectedBuild.failedCount}</b>{" "}
+            <b style={{ color: tokens.text }}>
+              <CountUp value={selectedBuild.failedCount} />
+            </b>{" "}
             failed
           </span>
           <span>
-            <b style={{ color: tokens.text }}>{selectedBuild.passedCount}</b>{" "}
+            <b style={{ color: tokens.text }}>
+              <CountUp value={selectedBuild.passedCount} />
+            </b>{" "}
             passed
           </span>
           {a11yNew > 0 && (
             <span>
-              <b style={{ color: tokens.status.changed.fg }}>{a11yNew}</b> new
-              accessibility issues
+              <b style={{ color: tokens.status.changed.fg }}>
+                <CountUp value={a11yNew} />
+              </b>{" "}
+              new accessibility issues
             </span>
           )}
         </Box>

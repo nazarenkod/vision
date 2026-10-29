@@ -27,6 +27,10 @@ export class UserDto {
   @ApiProperty({ nullable: true })
   readonly jiraEmail: string | null;
 
+  // when they last signed in to the web interface; null: not since 018
+  @ApiProperty({ nullable: true })
+  readonly lastSignInAt: Date | null;
+
   constructor(user: User) {
     this.id = user.id;
     this.email = user.email;
@@ -36,5 +40,6 @@ export class UserDto {
     this.role = user.role;
     this.jiraTokenSet = !!user.jiraToken;
     this.jiraEmail = user.jiraEmail ?? null;
+    this.lastSignInAt = user.lastSignInAt ?? null;
   }
 }

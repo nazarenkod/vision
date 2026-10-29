@@ -1,0 +1,680 @@
+import React from "react";
+import { useBlocker, useNavigate, useParams } from "react-router-dom";
+import { useSnackbar } from "notistack";
+import {
+  Box,
+  Button,
+  ButtonBase,
+  CircularProgress,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  InputAdornment,
+  TextField,
+  Typography,
+} from "@mui/material";
+import { ArrowBack, Check, Search } from "@mui/icons-material";
+import { ValidatorForm } from "react-material-ui-form-validator";
+import {
+  deleteProject,
+  getProjectList,
+  selectProject,
+  setProjectEditState,
+  useProjectDispatch,
+  useProjectState,
+} from "../contexts";
+import { projectsService, SettingsConflict } from "../services";
+import { Project, ProjectDto } from "../types";
+import { routes } from "../constants";
+import { motion, tokens } from "../theme";
+import {
+  changedSections,
+  deleteConfirmed,
+  loadedSettings,
+  matchSettings,
+  SectionId,
+  SETTINGS_SECTIONS,
+} from "../_helpers/projectSettings.helper";
+import { parseUiTreeSettings } from "../types/insights";
+import {
+  ComparisonFields,
+  GeneralFields,
+  JiraSettings,
+  MobileSettings,
+  ReviewFields,
+} from "../components/ProjectForm";
+import { A11yProblemSettings } from "../components/ProjectForm/A11yProblemSettings";
+import { EmptyState } from "../components/EmptyState";
+
+const DESCRIPTION: Partial<Record<SectionId, string>> = {
+  comparison:
+    "How a checkpoint is compared with its baseline. Below the engines: the settings of the one you pick.",
+  mobile: "Applies to screenshots sent with an Appium page source.",
+  rules:
+    "For every screen of the project. A rule names an element by id, class or text; text takes a /regex/.",
+  a11y: "One bug per problem. A problem has an id (a11y-…) that goes into the Jira bug's summary and labels; Vision checks its own records and Jira for it before filing.",
+  jira: "Lets reviewers file accessibility bugs from the review screen. Each person adds their own Jira token in their profile, so bugs are filed as them. A shared token here is used for people who have not added one.",
+};
+
+const asDto = (project: Project): ProjectDto => ({ ...project });
+
+/** A short status beside each section in the contents. */
+function sectionMeta(id: SectionId, project: ProjectDto): string {
+  const tree = parseUiTreeSettings(project.uiTreeSettings);
+  switch (id) {
+    case "comparison":
+      return project.imageComparison;
+    case "mobile": {
+      const on = [
+        tree.excludeSystemBars,
+        tree.compensateMoves,
+        tree.detectSemanticChanges,
+        tree.detectLoading,
+        tree.detectScreenMismatch,
+      ].filter(Boolean).length;
+      return `${on} of 5 on`;
+    }
+    case "rules":
+      return String(tree.elementRules.length);
+    case "a11y": {
+      const classes = tree.a11yClasses?.length ?? 0;
+      return `${classes} ${classes === 1 ? "class" : "classes"}`;
+    }
+    case "jira":
+      return project.jiraUrl ? "set" : "not set";
+    default:
+      return "";
+  }
+}
+
+/**
+ * A project's settings as a page of their own (018, US-5): contents and search
+ * on the left, a card per section, an explicit save, and a guard against
+ * leaving or overwriting someone else's changes.
+ */
+const ProjectSettingsPage: React.FunctionComponent = () => {
+  const { projectId = "" } = useParams<{ projectId: string }>();
+  const navigate = useNavigate();
+  const { enqueueSnackbar } = useSnackbar();
+  const { projectList, projectEditState: edited } = useProjectState();
+  const projectDispatch = useProjectDispatch();
+  const saved = projectList.find((project) => project.id === projectId);
+
+  // the settings as this page loaded them: what a save is checked against
+  const [loaded, setLoaded] = React.useState<Project>();
+  React.useEffect(() => {
+    if (saved && loaded?.id !== saved.id) {
+      setLoaded(saved);
+      setProjectEditState(projectDispatch, asDto(saved));
+      selectProject(projectDispatch, saved.id);
+    }
+  }, [saved, loaded?.id, projectDispatch]);
+
+  const ready = !!loaded && edited.id === loaded.id;
+  const changed = ready ? changedSections(loaded, edited) : [];
+  const dirty = changed.length > 0;
+
+  // ---- leaving with unsaved changes (REQ-018-48)
+  const blocker = useBlocker(
+    ({ currentLocation, nextLocation }) =>
+      dirty && currentLocation.pathname !== nextLocation.pathname,
+  );
+  React.useEffect(() => {
+    if (!dirty) return;
+    const onUnload = (event: BeforeUnloadEvent) => {
+      event.preventDefault();
+      event.returnValue = "";
+    };
+    window.addEventListener("beforeunload", onUnload);
+    return () => window.removeEventListener("beforeunload", onUnload);
+  }, [dirty]);
+
+  // ---- search (REQ-018-43)
+  const [query, setQuery] = React.useState("");
+  const match = matchSettings(query);
+  const sectionsRef = React.useRef<HTMLDivElement>(null);
+  React.useEffect(() => {
+    const root = sectionsRef.current;
+    if (!root) return;
+    root
+      .querySelectorAll(".v-hit")
+      .forEach((el) => el.classList.remove("v-hit"));
+    const wanted = query.trim().toLowerCase();
+    if (!wanted) return;
+    root
+      .querySelectorAll(
+        "label, .MuiFormControlLabel-label p, .MuiFormControlLabel-label, h2, summary",
+      )
+      .forEach((el) => {
+        const own = Array.from(el.childNodes)
+          .filter((node) => node.nodeType === Node.TEXT_NODE)
+          .map((node) => node.textContent ?? "")
+          .join("")
+          .toLowerCase();
+        if (own.includes(wanted)) el.classList.add("v-hit");
+      });
+  }, [query, ready]);
+
+  // ---- contents follow the scroll (REQ-018-41)
+  const [active, setActive] = React.useState<SectionId>("general");
+  const navButtons = React.useRef<
+    Partial<Record<SectionId, HTMLElement | null>>
+  >({});
+  React.useEffect(() => {
+    const root = sectionsRef.current;
+    if (!root) return;
+    const scroller = root.closest("main");
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const visible = entries
+          .filter((entry) => entry.isIntersecting)
+          .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top);
+        if (visible[0]) {
+          setActive(
+            visible[0].target.getAttribute("data-section") as SectionId,
+          );
+        }
+      },
+      { root: scroller, rootMargin: "0px 0px -65% 0px" },
+    );
+    root
+      .querySelectorAll("[data-section]")
+      .forEach((el) => observer.observe(el));
+    return () => observer.disconnect();
+  }, [ready, query]);
+  const goTo = (id: SectionId) => {
+    setActive(id);
+    sectionsRef.current
+      ?.querySelector(`[data-section='${id}']`)
+      ?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+
+  // ---- save, discard, conflicts (REQ-018-47, 53)
+  const [saving, setSaving] = React.useState(false);
+  const [justSaved, setJustSaved] = React.useState(false);
+  const [conflict, setConflict] = React.useState<string[] | null>(null);
+  const save = async (force = false) => {
+    if (!loaded) return;
+    setSaving(true);
+    try {
+      const project = await projectsService.updateSettings(
+        edited,
+        loadedSettings(loaded),
+        force,
+      );
+      projectDispatch({ type: "update", payload: project });
+      setLoaded(project);
+      setProjectEditState(projectDispatch, asDto(project));
+      setConflict(null);
+      setJustSaved(true);
+      setTimeout(() => setJustSaved(false), 1100);
+    } catch (error) {
+      if (error instanceof SettingsConflict) setConflict(error.fields);
+      else enqueueSnackbar(String(error), { variant: "error" });
+    } finally {
+      setSaving(false);
+    }
+  };
+  const discard = () =>
+    loaded && setProjectEditState(projectDispatch, asDto(loaded));
+  const reload = async () => {
+    setConflict(null);
+    const projects = await getProjectList(projectDispatch);
+    const fresh = projects.find((project) => project.id === projectId);
+    if (fresh) {
+      setLoaded(fresh);
+      setProjectEditState(projectDispatch, asDto(fresh));
+    }
+  };
+
+  // ---- delete (REQ-018-49)
+  const [deleteOpen, setDeleteOpen] = React.useState(false);
+  const [typedName, setTypedName] = React.useState("");
+  const remove = () => {
+    // nothing left to save once it is gone: the leave guard must not stop us
+    discard();
+    return deleteProject(projectDispatch, projectId)
+      .then((project) => {
+        enqueueSnackbar(`${project.name} deleted`, { variant: "success" });
+        setLoaded(undefined);
+        navigate(routes.PROJECT_LIST_PAGE);
+      })
+      .catch((error) => enqueueSnackbar(String(error), { variant: "error" }));
+  };
+
+  if (!saved && projectList.length) {
+    return (
+      <EmptyState title="No such project">It may have been deleted.</EmptyState>
+    );
+  }
+  if (!ready) {
+    return (
+      <Box sx={{ p: 6, display: "grid", placeItems: "center" }}>
+        <CircularProgress />
+      </Box>
+    );
+  }
+
+  const section = (id: SectionId, content: React.ReactNode) => {
+    const meta = SETTINGS_SECTIONS.find((s) => s.id === id);
+    const index = SETTINGS_SECTIONS.findIndex((s) => s.id === id);
+    return (
+      <Box
+        component="section"
+        key={id}
+        data-section={id}
+        data-testid={`section-${id}`}
+        aria-labelledby={`section-${id}-title`}
+        hidden={!match.sections.includes(id)}
+        // `hidden` alone loses to the display below
+        style={
+          {
+            "--v-delay": `${index * motion.stagger}ms`,
+            display: match.sections.includes(id) ? undefined : "none",
+          } as React.CSSProperties
+        }
+        className="v-enter"
+        sx={{
+          scrollMarginTop: 16,
+          bgcolor: tokens.surface,
+          border: `1px solid ${id === "danger" ? tokens.status.failed.bar : tokens.border}`,
+          borderRadius: 3.5,
+          px: 2.5,
+          pt: 2,
+          pb: 2.5,
+          display: "flex",
+          flexDirection: "column",
+          gap: 1.5,
+        }}
+      >
+        <Box>
+          <Typography id={`section-${id}-title`} variant="h6" component="h2">
+            {meta?.title}
+          </Typography>
+          {DESCRIPTION[id] && (
+            <Typography
+              variant="body2"
+              color="textSecondary"
+              sx={{ maxWidth: "70ch" }}
+            >
+              {DESCRIPTION[id]}
+            </Typography>
+          )}
+        </Box>
+        {content}
+      </Box>
+    );
+  };
+
+  return (
+    <ValidatorForm onSubmit={() => save()} instantValidate>
+      <Box sx={{ px: 4, pt: 3, pb: 2 }}>
+        <Box
+          className="v-enter"
+          sx={{ display: "flex", flexDirection: "column", gap: 0.5, mb: 2.5 }}
+        >
+          <Button
+            startIcon={<ArrowBack />}
+            size="small"
+            onClick={() => navigate(routes.PROJECT_LIST_PAGE)}
+            sx={{ alignSelf: "flex-start", color: tokens.textSecondary, px: 1 }}
+          >
+            Projects
+          </Button>
+          <Box
+            sx={{
+              display: "flex",
+              alignItems: "baseline",
+              gap: 1.5,
+              flexWrap: "wrap",
+            }}
+          >
+            <Typography variant="h4" component="h1">
+              Settings
+            </Typography>
+            <Typography color="textSecondary">{loaded.name}</Typography>
+          </Box>
+        </Box>
+
+        <Box
+          sx={{
+            display: "grid",
+            gridTemplateColumns: { xs: "1fr", md: "220px minmax(0, 1fr)" },
+            gap: 3.5,
+            alignItems: "start",
+          }}
+        >
+          <Box
+            component="nav"
+            aria-label="Settings sections"
+            sx={{
+              position: { md: "sticky" },
+              top: 16,
+              display: "flex",
+              flexDirection: "column",
+              gap: 1.25,
+            }}
+          >
+            <TextField
+              size="small"
+              placeholder="Find a setting"
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              inputProps={{
+                "aria-label": "Find a setting",
+                "data-testid": "settingsSearch",
+              }}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <Search fontSize="small" />
+                  </InputAdornment>
+                ),
+              }}
+            />
+            <Box
+              sx={{
+                position: "relative",
+                display: "flex",
+                flexDirection: "column",
+                gap: 0.25,
+              }}
+            >
+              <Box
+                aria-hidden="true"
+                sx={{
+                  position: "absolute",
+                  left: 0,
+                  right: 0,
+                  top: 0,
+                  height: 36,
+                  borderRadius: 2,
+                  bgcolor: tokens.brandSoft,
+                  transform: `translateY(${navButtons.current[active]?.offsetTop ?? 0}px)`,
+                  transition: `transform ${motion.nav}ms ${motion.easing}`,
+                }}
+              />
+              {SETTINGS_SECTIONS.map(({ id, title }) => {
+                const found = match.sections.includes(id);
+                const isChanged = changed.includes(title);
+                return (
+                  <ButtonBase
+                    key={id}
+                    ref={(el) => {
+                      navButtons.current[id] = el;
+                    }}
+                    onClick={() => goTo(id)}
+                    aria-current={active === id ? "true" : undefined}
+                    data-testid={`nav-${id}`}
+                    sx={{
+                      position: "relative",
+                      height: 36,
+                      px: 1.25,
+                      borderRadius: 2,
+                      display: "flex",
+                      justifyContent: "space-between",
+                      gap: 1,
+                      textAlign: "left",
+                      whiteSpace: "nowrap",
+                      fontWeight: 500,
+                      fontSize: 14,
+                      color:
+                        active === id ? tokens.brand : tokens.textSecondary,
+                      opacity: found ? 1 : 0.35,
+                      transition: `color ${motion.base}ms, opacity ${motion.base}ms`,
+                    }}
+                  >
+                    <span>
+                      {title}
+                      {isChanged && (
+                        <Box
+                          component="span"
+                          aria-label="unsaved changes"
+                          sx={{
+                            display: "inline-block",
+                            width: 6,
+                            height: 6,
+                            ml: 0.75,
+                            mb: "2px",
+                            borderRadius: "50%",
+                            bgcolor: tokens.status.changed.bar,
+                          }}
+                        />
+                      )}
+                    </span>
+                    <Typography
+                      component="span"
+                      variant="caption"
+                      noWrap
+                      sx={{
+                        fontFamily: tokens.mono,
+                        color: tokens.textMuted,
+                        flexShrink: 0,
+                      }}
+                    >
+                      {sectionMeta(id, edited)}
+                    </Typography>
+                  </ButtonBase>
+                );
+              })}
+            </Box>
+          </Box>
+
+          <Box
+            ref={sectionsRef}
+            sx={{
+              display: "flex",
+              flexDirection: "column",
+              gap: 2.25,
+              maxWidth: 820,
+              minWidth: 0,
+              "& .v-hit": {
+                bgcolor: tokens.brandSoft,
+                boxShadow: `0 0 0 3px ${tokens.brandSoft}`,
+                borderRadius: "4px",
+              },
+            }}
+          >
+            {match.sections.length === 0 && (
+              <EmptyState title={`Nothing matches “${query}”`}>
+                Try another word, or clear the search to see every section.
+              </EmptyState>
+            )}
+            {section("general", <GeneralFields />)}
+            {section("review", <ReviewFields />)}
+            {section("comparison", <ComparisonFields />)}
+            {section("mobile", <MobileSettings show="mobile" bare />)}
+            {section("rules", <MobileSettings show="rules" bare />)}
+            {section("a11y", <A11yProblemSettings bare />)}
+            {section("jira", <JiraSettings bare />)}
+            {section(
+              "danger",
+              <Box
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 2,
+                  flexWrap: "wrap",
+                }}
+              >
+                <Typography variant="body2" sx={{ flex: 1, minWidth: 240 }}>
+                  <b>Delete this project.</b> All builds, baselines and their
+                  history go with it. This cannot be undone.
+                </Typography>
+                <Button
+                  variant="outlined"
+                  color="error"
+                  onClick={() => setDeleteOpen(true)}
+                  data-testid="deleteProject"
+                >
+                  Delete project
+                </Button>
+              </Box>,
+            )}
+
+            {/* the save bar comes up with the first change (REQ-018-47) */}
+            <Box
+              role="status"
+              data-testid="saveBar"
+              data-state={justSaved ? "saved" : dirty ? "dirty" : "clean"}
+              sx={{
+                position: "sticky",
+                bottom: 16,
+                zIndex: 3,
+                display: "flex",
+                alignItems: "center",
+                gap: 1.25,
+                pl: 2,
+                pr: 1,
+                py: 1,
+                borderRadius: 3,
+                bgcolor: justSaved ? tokens.brand : tokens.text,
+                color: justSaved ? tokens.brandInk : tokens.ground,
+                boxShadow: tokens.shadowPop,
+                transform:
+                  dirty || justSaved ? "none" : "translateY(calc(100% + 32px))",
+                opacity: dirty || justSaved ? 1 : 0,
+                pointerEvents: dirty ? "auto" : "none",
+                transition: `transform 380ms ${motion.easing}, opacity 240ms, background-color ${motion.base}ms`,
+              }}
+            >
+              <Typography
+                variant="body2"
+                sx={{ flex: 1, display: "flex", alignItems: "center", gap: 1 }}
+              >
+                {justSaved ? (
+                  <>
+                    <Check fontSize="small" /> Saved
+                  </>
+                ) : (
+                  <span>
+                    Unsaved changes in <b>{changed.join(", ")}</b>
+                  </span>
+                )}
+              </Typography>
+              <Button
+                size="small"
+                variant="outlined"
+                onClick={discard}
+                disabled={saving || justSaved}
+                data-testid="discardSettings"
+                sx={{
+                  color: "inherit",
+                  borderColor: "currentColor",
+                  opacity: 0.85,
+                }}
+              >
+                Discard
+              </Button>
+              <Button
+                size="small"
+                variant="contained"
+                type="submit"
+                disabled={saving || justSaved}
+                data-testid="saveSettings"
+              >
+                {saving ? (
+                  <CircularProgress size={16} color="inherit" />
+                ) : (
+                  "Save changes"
+                )}
+              </Button>
+            </Box>
+          </Box>
+        </Box>
+      </Box>
+
+      <Dialog
+        open={!!conflict}
+        onClose={() => setConflict(null)}
+        data-testid="settingsConflict"
+      >
+        <DialogTitle>
+          Someone saved these settings after you opened the page
+        </DialogTitle>
+        <DialogContent>
+          <Typography gutterBottom>
+            Changed since: {conflict?.join(", ")}.
+          </Typography>
+          <Typography variant="body2" color="textSecondary">
+            Reload to see their version and lose your changes, or save yours
+            over theirs.
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={reload}>Reload settings</Button>
+          <Button
+            variant="contained"
+            onClick={() => save(true)}
+            data-testid="saveOver"
+          >
+            Save over
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog
+        open={blocker.state === "blocked"}
+        onClose={() => blocker.reset?.()}
+        data-testid="leaveSettings"
+      >
+        <DialogTitle>Leave without saving?</DialogTitle>
+        <DialogContent>
+          <Typography>
+            Unsaved changes in {changed.join(", ")} will be lost.
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => blocker.reset?.()}>Stay</Button>
+          <Button
+            color="error"
+            onClick={() => blocker.proceed?.()}
+            data-testid="leaveAnyway"
+          >
+            Leave
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog
+        open={deleteOpen}
+        onClose={() => setDeleteOpen(false)}
+        data-testid="deleteProjectDialog"
+      >
+        <DialogTitle>Delete {loaded.name}?</DialogTitle>
+        <DialogContent
+          sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}
+        >
+          <Typography>
+            All builds, baselines and their history go with it. Type{" "}
+            <b>{loaded.name}</b> to confirm.
+          </Typography>
+          <TextField
+            size="small"
+            value={typedName}
+            onChange={(event) => setTypedName(event.target.value)}
+            inputProps={{
+              "aria-label": "Project name to confirm",
+              "data-testid": "deleteConfirmName",
+            }}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setDeleteOpen(false)}>Cancel</Button>
+          <Button
+            color="error"
+            variant="contained"
+            disabled={!deleteConfirmed(loaded.name, typedName)}
+            onClick={remove}
+            data-testid="deleteForever"
+          >
+            Delete forever
+          </Button>
+        </DialogActions>
+      </Dialog>
+    </ValidatorForm>
+  );
+};
+
+export default ProjectSettingsPage;

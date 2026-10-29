@@ -4,19 +4,21 @@ import { WarningRounded, AltRoute } from "@mui/icons-material";
 import { IgnoreArea } from "../../types/ignoreArea";
 import { Tooltip } from "../Tooltip";
 import { makeStyles } from "@mui/styles";
+import { tokens } from "../../theme";
 
 const useStyles = makeStyles(() => ({
   container: {
     display: "flex",
     alignItems: "center",
-    color: "darkslategrey",
+    gap: 4,
+    color: tokens.textSecondary,
   },
   branchName: {
     cursor: "pointer",
     lineHeight: "20px",
-    fontWeight: "bolder",
-    fontSize: "0.7rem",
-    fontFamily: '"Roboto", "Helvetica", "Arial", sans-serif',
+    fontSize: 12,
+    fontFamily: tokens.mono,
+    color: tokens.text,
     maxWidth: 195,
     textOverflow: "ellipsis",
     whiteSpace: "nowrap",
@@ -47,7 +49,7 @@ const ImageDetails: React.FunctionComponent<ImageDetailsProps> = ({
       imageName && (
         <Typography
           variant="caption"
-          style={{ marginRight: 3, fontSize: "0.7rem" }}
+          sx={{ mr: 0.5, fontSize: 12, color: tokens.textMuted }}
           data-testid="image-size"
         >
           {image ? `(${image?.width} x ${image?.height})` : "Loading..."}
@@ -57,7 +59,15 @@ const ImageDetails: React.FunctionComponent<ImageDetailsProps> = ({
   };
   return (
     <Grid item className={classes.container}>
-      <Typography variant="overline" style={{ marginRight: 3 }}>
+      <Typography
+        variant="overline"
+        sx={{
+          color: tokens.text,
+          fontWeight: 600,
+          letterSpacing: "0.06em",
+          mr: 0.5,
+        }}
+      >
         {type === "Baseline" ? "Baseline" : "Checkpoint"}
       </Typography>
       {imageSize()}

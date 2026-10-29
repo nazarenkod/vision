@@ -4,15 +4,13 @@ import { tokens } from "../theme";
 
 export type PillTone = "changed" | "new" | "failed" | "passed" | "neutral";
 
-const NEUTRAL = { fg: tokens.textSecondary, bg: tokens.subtle };
-
 /** Soft rounded status label; colour comes from the shared status tokens. */
 export const StatusPill: React.FunctionComponent<{
   tone: PillTone;
   label: React.ReactNode;
   title?: string;
 }> = ({ tone, label, title }) => {
-  const colors = tone === "neutral" ? NEUTRAL : tokens.status[tone];
+  const colors = tokens.status[tone];
   return (
     <Box
       component="span"
@@ -29,6 +27,7 @@ export const StatusPill: React.FunctionComponent<{
         whiteSpace: "nowrap",
         color: colors.fg,
         bgcolor: colors.bg,
+        transition: "background-color 220ms, color 220ms",
       }}
     >
       {label}

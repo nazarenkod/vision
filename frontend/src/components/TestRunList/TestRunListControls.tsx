@@ -5,7 +5,6 @@ import {
   FormControlLabel,
   Switch,
   ToggleButton,
-  ToggleButtonGroup,
   Tooltip as MuiTooltip,
   TooltipProps,
   Typography,
@@ -17,6 +16,7 @@ import {
   ViewList,
   ViewModule,
 } from "@mui/icons-material";
+import { SlidingToggleGroup } from "../motion/SlidingToggleGroup";
 import { Tooltip } from "../Tooltip";
 import { GroupByAxis } from "../../_helpers/testRunGroup.helper";
 
@@ -29,9 +29,10 @@ export const CARD_SIZE_BY_DENSITY: Record<
   TestRunDensity,
   { width: number; imageHeight: number }
 > = {
-  compact: { width: 150, imageHeight: 110 },
-  standard: { width: 220, imageHeight: 160 },
-  comfortable: { width: 320, imageHeight: 240 },
+  // phone screens are portrait: a card is as tall as the screenshot is
+  compact: { width: 120, imageHeight: 210 },
+  standard: { width: 150, imageHeight: 270 },
+  comfortable: { width: 210, imageHeight: 390 },
 };
 
 const switchLabel = (text: string) => (
@@ -103,7 +104,8 @@ export const TestRunListControls: React.FunctionComponent<{
 }) => (
   <Box display="flex" alignItems="center" gap={1}>
     {/* laid out as a table or a grid */}
-    <ToggleButtonGroup
+    <SlidingToggleGroup
+      rememberAs="testRunView"
       exclusive
       size="small"
       value={view}
@@ -123,9 +125,9 @@ export const TestRunListControls: React.FunctionComponent<{
         testId="gridViewToggle"
         icon={<ViewModule fontSize="small" />}
       />
-    </ToggleButtonGroup>
+    </SlidingToggleGroup>
     {groupDivider}
-    <ToggleButtonGroup
+    <SlidingToggleGroup
       exclusive
       size="small"
       value={density}
@@ -154,7 +156,7 @@ export const TestRunListControls: React.FunctionComponent<{
         testId="comfortableDensity"
         icon={<DensityLarge fontSize="small" />}
       />
-    </ToggleButtonGroup>
+    </SlidingToggleGroup>
     {groupDivider}
     {/* what the runs show; switches rather than icons, so "on" is unmistakable.
         The axis is named in the tooltip and not chosen here: it is a project

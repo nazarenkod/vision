@@ -1,3 +1,5 @@
+import { SecretField } from "./SecretField";
+import { useProjectState } from "../../contexts";
 import React from "react";
 import { Link } from "@mui/material";
 import { TextValidator } from "react-material-ui-form-validator";
@@ -12,6 +14,10 @@ import {
 
 export const GeminiConfigForm: React.FunctionComponent = () => {
   const [config, updateConfig] = useConfigHook<GeminiVlmConfig>();
+  const { projectEditState } = useProjectState();
+  // the edit state is the project as loaded: the flag rides along with it
+  const keySaved = !!(projectEditState as { geminiApiKeySet?: boolean })
+    .geminiApiKeySet;
 
   return (
     <React.Fragment>
@@ -47,26 +53,37 @@ export const GeminiConfigForm: React.FunctionComponent = () => {
           />
         </div>
       </Tooltip>
-      <Tooltip title="Your Google Gemini API key. Get one from https://makersuite.google.com/app/apikey">
-        <div>
-          <TextValidator
-            name="apiKey"
-            validators={["required"]}
-            errorMessages={["API key is required"]}
-            margin="dense"
-            id="apiKey"
-            label="Gemini API Key"
-            type="password"
-            fullWidth
-            required
-            value={config.apiKey || ""}
-            onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
-              updateConfig("apiKey", event.target.value);
-            }}
-            helperText="Enter your Google Gemini API key"
-          />
-        </div>
-      </Tooltip>
+      {keySaved ? (
+        // the key never comes back from the server: only that one is saved
+        <SecretField
+          id="apiKey"
+          label="Gemini API key"
+          saved
+          value={config.apiKey}
+          onChange={(apiKey) => updateConfig("apiKey", apiKey)}
+        />
+      ) : (
+        <Tooltip title="Your Google Gemini API key. Get one from https://makersuite.google.com/app/apikey">
+          <div>
+            <TextValidator
+              name="apiKey"
+              validators={["required"]}
+              errorMessages={["API key is required"]}
+              margin="dense"
+              id="apiKey"
+              label="Gemini API Key"
+              type="password"
+              fullWidth
+              required
+              value={config.apiKey || ""}
+              onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
+                updateConfig("apiKey", event.target.value);
+              }}
+              helperText="Enter your Google Gemini API key"
+            />
+          </div>
+        </Tooltip>
+      )}
       <VlmPromptField
         value={config.prompt}
         onChange={(value) => updateConfig("prompt", value)}
@@ -82,4 +99,3 @@ export const GeminiConfigForm: React.FunctionComponent = () => {
     </React.Fragment>
   );
 };
-

@@ -29,3 +29,5 @@ Architecture Decision Record фіксує важливе рішення: кон�
 | [ADR-0011](0011-screenshot-baselines-in-docker.md) | Скриншот-еталони Playwright — лише з Docker | Accepted | 2026-10-24 |
 | [ADR-0012](0012-backups-without-secrets.md) | Бекапи без секретів замість шифрування | Accepted | 2026-10-27 |
 | [ADR-0013](0013-ui-drives-host-scripts-through-files.md) | Інтерфейс керує скриптами хоста через файли | Accepted | 2026-10-27 |
+| [ADR-0014](0014-undo-through-decision-journal.md) | Undo рішень — через журнал на сервері | Accepted | 2026-10-29 |
+| [ADR-0015](0015-theme-tokens-as-css-variables.md) | Кольори — CSS-змінні, рух — токени теми | Accepted | 2026-10-29 |

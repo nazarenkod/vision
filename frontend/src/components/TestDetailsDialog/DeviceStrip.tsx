@@ -1,3 +1,4 @@
+import { useDecisionSnackbar } from "../useDecisionSnackbar";
 import React from "react";
 import { Box, Button, ButtonBase, Typography } from "@mui/material";
 import { useSnackbar } from "notistack";
@@ -42,6 +43,7 @@ export const DeviceStrip: React.FunctionComponent<{
   onSelect: (id: string) => void;
 }> = ({ runs, currentId, onSelect }) => {
   const { enqueueSnackbar } = useSnackbar();
+  const announce = useDecisionSnackbar();
   const { user } = useUserState();
   const canEdit = user?.role === "admin" || user?.role === "editor";
   const [confirm, setConfirm] = React.useState(false);
@@ -52,13 +54,11 @@ export const DeviceStrip: React.FunctionComponent<{
   const approveAll = async () => {
     setConfirm(false);
     try {
-      await testRunService.approveBulk(
+      const decision = await testRunService.approveBulk(
         pending.map((run) => run.id),
         pending.some((run) => run.merge),
       );
-      enqueueSnackbar(`Approved ${pending.length} devices`, {
-        variant: "success",
-      });
+      announce("approve", pending.length, decision);
     } catch (error) {
       enqueueSnackbar(String(error), { variant: "error" });
     }

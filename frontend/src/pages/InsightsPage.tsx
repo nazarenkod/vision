@@ -6,7 +6,6 @@ import {
   Button,
   Checkbox,
   MenuItem,
-  Skeleton,
   Table,
   TableBody,
   TableCell,
@@ -17,6 +16,7 @@ import {
   Typography,
 } from "@mui/material";
 import { useSnackbar } from "notistack";
+import { pillField } from "../components/pillField";
 import ProjectSelect from "../components/ProjectSelect";
 import { BaseModal } from "../components/BaseModal";
 import { StatusPill } from "../components/StatusPill";
@@ -24,7 +24,11 @@ import { insightsService, testVariationService } from "../services";
 import { ProjectInsights } from "../types";
 import { useUserState } from "../contexts";
 import { routes } from "../constants";
-import { tokens } from "../theme";
+import { motion, tokens } from "../theme";
+import { CountUp } from "../components/motion/useCountUp";
+import { ErrorState } from "../components/EmptyState";
+import { shimmer } from "../components/SkeletonList";
+import { barShare, largest } from "../_helpers/insights.helper";
 
 const PERIODS = [30, 90, 180, 365];
 const PERIOD_KEY = "vision.insightsDays";
@@ -52,6 +56,7 @@ const Section: React.FunctionComponent<{
 }> = ({ title, hint, action, children }) => (
   <Box
     component="section"
+    className="v-enter"
     sx={{
       bgcolor: tokens.surface,
       border: `1px solid ${tokens.border}`,
@@ -100,7 +105,9 @@ const Stat: React.FunctionComponent<{
     <Typography
       sx={{
         fontSize: 26,
-        fontWeight: 600,
+        fontWeight: 650,
+        letterSpacing: "-0.01em",
+        fontVariantNumeric: "tabular-nums",
         color:
           tone === "danger"
             ? tokens.status.failed.fg
@@ -109,11 +116,48 @@ const Stat: React.FunctionComponent<{
               : tokens.text,
       }}
     >
-      {value}
+      {typeof value === "number" ? <CountUp value={value} /> : value}
     </Typography>
     <Typography variant="body2" color="textSecondary">
       {label}
     </Typography>
+  </Box>
+);
+
+/** A number with a thin bar: its share of the largest in the table. */
+const Amount: React.FunctionComponent<{
+  value: number;
+  max: number;
+  colour: string;
+}> = ({ value, max, colour }) => (
+  <Box sx={{ display: "flex", alignItems: "center", gap: 1, minWidth: 110 }}>
+    <Box
+      component="b"
+      sx={{ fontVariantNumeric: "tabular-nums", minWidth: 22, fontWeight: 600 }}
+    >
+      {value}
+    </Box>
+    <Box
+      aria-hidden="true"
+      sx={{
+        flex: 1,
+        height: 6,
+        borderRadius: 3,
+        bgcolor: tokens.subtle,
+        overflow: "hidden",
+      }}
+    >
+      <Box
+        data-testid="amountBar"
+        style={{ width: `${barShare(value, max)}%` }}
+        sx={{
+          height: "100%",
+          borderRadius: 3,
+          bgcolor: colour,
+          animation: `v-fill 700ms ${motion.easing} both 200ms`,
+        }}
+      />
+    </Box>
   </Box>
 );
 
@@ -134,6 +178,7 @@ const InsightsPage: React.FunctionComponent = () => {
   const [confirm, setConfirm] = React.useState(false);
   const [deleting, setDeleting] = React.useState(false);
 
+  const [loadError, setLoadError] = React.useState<string>();
   const load = React.useCallback(() => {
     if (!projectId) return;
     setData(undefined);
@@ -145,9 +190,10 @@ const InsightsPage: React.FunctionComponent = () => {
       })
       .catch((error) => {
         setData(null);
-        enqueueSnackbar(String(error), { variant: "error" });
+        // the reason stays on the page, next to Try again
+        setLoadError(String(error));
       });
-  }, [projectId, days, enqueueSnackbar]);
+  }, [projectId, days]);
 
   React.useEffect(load, [load]);
 
@@ -192,27 +238,28 @@ const InsightsPage: React.FunctionComponent = () => {
       <Box
         sx={{
           display: "flex",
-          alignItems: "flex-end",
+          alignItems: "center",
           gap: 2,
           flexWrap: "wrap",
         }}
       >
-        <Box sx={{ flex: 1, minWidth: 260 }}>
-          <Typography variant="h4" component="h1" sx={{ mb: 1 }}>
-            Insights
-          </Typography>
-          <ProjectSelect
-            projectId={projectId}
-            onProjectSelect={(id) => navigate(`${routes.INSIGHTS_PAGE}/${id}`)}
-          />
-        </Box>
+        <Typography variant="h4" component="h1">
+          Insights
+        </Typography>
+        <ProjectSelect
+          compact
+          projectId={projectId}
+          onProjectSelect={(id) => navigate(`${routes.INSIGHTS_PAGE}/${id}`)}
+        />
+        <Box sx={{ flex: 1 }} />
         <TextField
           select
           size="small"
           label="Period"
           value={days}
           onChange={(event) => changePeriod(Number(event.target.value))}
-          sx={{ minWidth: 160 }}
+          InputLabelProps={{ shrink: true }}
+          sx={{ minWidth: 160, ...pillField() }}
           data-testid="insightsPeriod"
         >
           {PERIODS.map((period) => (
@@ -223,15 +270,36 @@ const InsightsPage: React.FunctionComponent = () => {
         </TextField>
       </Box>
 
-      {data === undefined && <Skeleton variant="rounded" height={320} />}
-      {data === null && <Empty text="Could not load the insights." />}
+      {data === undefined && (
+        <Box
+          aria-busy="true"
+          sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}
+        >
+          <Box sx={{ display: "flex", gap: 1.5 }}>
+            {[0, 1, 2, 3].map((i) => (
+              <Box
+                key={i}
+                sx={{ ...shimmer, height: 76, flex: 1, borderRadius: 3 }}
+              />
+            ))}
+          </Box>
+          <Box sx={{ ...shimmer, height: 240, borderRadius: 3 }} />
+        </Box>
+      )}
+      {data === null && (
+        <ErrorState
+          title="Could not load the insights."
+          reason={loadError}
+          onRetry={load}
+        />
+      )}
       {data && (
         <>
           {data.partialHistory && (
             <Alert severity="info">
-              Stored history starts on {date(data.historyStart)} (the
-              oldest build kept: the project is younger, or older builds were
-              removed by its build limit). “Unused” means unused since then.
+              Stored history starts on {date(data.historyStart)} (the oldest
+              build kept: the project is younger, or older builds were removed
+              by its build limit). “Unused” means unused since then.
             </Alert>
           )}
 
@@ -384,11 +452,11 @@ const InsightsPage: React.FunctionComponent = () => {
                           {item.changedPercent}%
                         </TableCell>
                         <TableCell align="right">
-                          {item.flips ? (
-                            <StatusPill tone="failed" label={item.flips} />
-                          ) : (
-                            0
-                          )}
+                          <Amount
+                            value={item.flips}
+                            max={largest(data.unstable.map((u) => u.flips))}
+                            colour={tokens.status.failed.bar}
+                          />
                         </TableCell>
                         <TableCell align="right">{item.rejected}</TableCell>
                         <TableCell align="right">
@@ -432,7 +500,15 @@ const InsightsPage: React.FunctionComponent = () => {
                       {data.a11yScreens.map((item) => (
                         <TableRow key={checkName(item)} hover>
                           <TableCell>{checkName(item)}</TableCell>
-                          <TableCell align="right">{item.issues}</TableCell>
+                          <TableCell align="right">
+                            <Amount
+                              value={item.issues}
+                              max={largest(
+                                data.a11yScreens.map((a) => a.issues),
+                              )}
+                              colour={tokens.a11y}
+                            />
+                          </TableCell>
                           <TableCell align="right">
                             {item.newIssues ? (
                               <StatusPill
@@ -469,9 +545,13 @@ const InsightsPage: React.FunctionComponent = () => {
                     }}
                   >
                     <Typography variant="body2">{rule.rule}</Typography>
-                    <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                      {rule.count}
-                    </Typography>
+                    <Box sx={{ width: 160, flexShrink: 0 }}>
+                      <Amount
+                        value={rule.count}
+                        max={largest(data.a11yRules.map((r) => r.count))}
+                        colour={tokens.a11y}
+                      />
+                    </Box>
                   </Box>
                 ))
               )}

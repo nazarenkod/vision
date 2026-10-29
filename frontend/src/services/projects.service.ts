@@ -54,7 +54,46 @@ async function update(project: Partial<Project>): Promise<Project> {
   return handleResponse(response);
 }
 
+/** Someone saved other settings after the page loaded them (REQ-018-53). */
+export class SettingsConflict extends Error {
+  constructor(
+    message: string,
+    public readonly fields: string[],
+  ) {
+    super(message);
+  }
+}
+
+/**
+ * Saves from the settings page: the settings as loaded go along, so a save
+ * over someone else's is refused unless `force`.
+ */
+async function updateSettings(
+  project: Partial<Project> & { jiraToken?: string },
+  loadedSettings: Record<string, unknown>,
+  force = false,
+): Promise<Project> {
+  const response = await fetch(`${API_URL}/projects`, {
+    method: "PUT",
+    headers: {
+      ...DEFAULT_HEADERS,
+      ...authHeader(),
+    },
+    body: JSON.stringify({ ...project, loadedSettings, force }),
+  });
+  if (response.status === 409) {
+    const data = await response.json().catch(() => ({}));
+    throw new SettingsConflict(
+      data?.message ??
+        "Someone changed these settings after you opened the page.",
+      Array.isArray(data?.fields) ? data.fields : [],
+    );
+  }
+  return handleResponse(response);
+}
+
 export const projectsService = {
+  updateSettings,
   getAll,
   remove,
   create,

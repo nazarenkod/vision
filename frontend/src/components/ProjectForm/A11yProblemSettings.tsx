@@ -105,7 +105,10 @@ const emptyDraft = (): Draft => ({
  * where the screen title is, when two issues are the same problem per rule,
  * and the project's problem classes, matched by a pattern on the element id.
  */
-export const A11yProblemSettings: React.FunctionComponent = () => {
+export const A11yProblemSettings: React.FunctionComponent<{
+  // on the settings page the section card carries the heading
+  bare?: boolean;
+}> = ({ bare = false }) => {
   const { projectEditState: project } = useProjectState();
   const projectDispatch = useProjectDispatch();
   const settings = parseUiTreeSettings(project.uiTreeSettings);
@@ -158,16 +161,25 @@ export const A11yProblemSettings: React.FunctionComponent = () => {
 
   return (
     <Box
-      sx={{ mt: 3, display: "flex", flexDirection: "column", gap: 1 }}
+      sx={{
+        mt: bare ? 0 : 3,
+        display: "flex",
+        flexDirection: "column",
+        gap: 1,
+      }}
       data-testid="a11yProblemSettings"
     >
-      <Divider />
-      <Typography variant="subtitle1">Accessibility problems</Typography>
-      <Typography variant="body2" color="textSecondary">
-        One bug per problem. A problem has an id (a11y-…) that goes into the
-        Jira bug&apos;s summary and labels; Vision checks its own records and
-        Jira for it before filing, and marks problems found in Jira as filed.
-      </Typography>
+      {!bare && <Divider />}
+      {!bare && (
+        <Typography variant="subtitle1">Accessibility problems</Typography>
+      )}
+      {!bare && (
+        <Typography variant="body2" color="textSecondary">
+          One bug per problem. A problem has an id (a11y-…) that goes into the
+          Jira bug&apos;s summary and labels; Vision checks its own records and
+          Jira for it before filing, and marks problems found in Jira as filed.
+        </Typography>
+      )}
 
       <TextField
         id="screenTitleSelectors"
@@ -241,16 +253,33 @@ export const A11yProblemSettings: React.FunctionComponent = () => {
       <Typography variant="body2" sx={{ fontWeight: 600, mt: 1 }}>
         Problem classes
       </Typography>
-      <Typography variant="caption" color="textSecondary">
-        First match wins. A class takes an issue when every field filled in
-        matches; within a field, one pattern per line, any may match. Patterns
-        are globs with * and ?, or /regex/; a group in an element id regex
-        becomes the component, so <code>/^.*:id\/(tab)_\d+$/</code> makes
-        tab_0…tab_3 one problem. “Everything this class takes” makes all of it
-        one problem; “Ignore” lists it with the false positives and never files
-        it. Problem ids never change with these settings: what is one problem is
-        worked out again from what each problem was filed for.
-      </Typography>
+      {/* the full explanation is long and read once: it waits behind a toggle */}
+      <Box
+        component="details"
+        data-testid="howMatchingWorks"
+        sx={{
+          color: tokens.textSecondary,
+          fontSize: 12.5,
+          "& summary": {
+            cursor: "pointer",
+            color: tokens.brand,
+            fontWeight: 600,
+            mb: 0.5,
+          },
+        }}
+      >
+        <summary>How matching works</summary>
+        <Typography variant="caption" component="p" color="textSecondary">
+          First match wins. A class takes an issue when every field filled in
+          matches; within a field, one pattern per line, any may match. Patterns
+          are globs with * and ?, or /regex/; a group in an element id regex
+          becomes the component, so <code>/^.*:id\/(tab)_\d+$/</code> makes
+          tab_0…tab_3 one problem. “Everything this class takes” makes all of it
+          one problem; “Ignore” lists it with the false positives and never
+          files it. Problem ids never change with these settings: what is one
+          problem is worked out again from what each problem was filed for.
+        </Typography>
+      </Box>
       {classes.map((item, index) => {
         const when = conditionsOf(item);
         const groupBy = item.groupBy ?? item.mode;
@@ -267,6 +296,25 @@ export const A11yProblemSettings: React.FunctionComponent = () => {
               pb: 0.5,
             }}
           >
+            <Box
+              aria-label={`Checked ${index + 1}${index === 0 ? "st" : index === 1 ? "nd" : index === 2 ? "rd" : "th"}`}
+              data-testid="a11yProblemClassNumber"
+              sx={{
+                width: 24,
+                height: 24,
+                mt: 0.25,
+                borderRadius: 1.5,
+                flexShrink: 0,
+                display: "grid",
+                placeItems: "center",
+                fontFamily: tokens.mono,
+                fontSize: 11.5,
+                fontWeight: 600,
+                bgcolor: tokens.subtle,
+              }}
+            >
+              {index + 1}
+            </Box>
             <Box sx={{ flex: 1, minWidth: 0 }}>
               <Typography variant="body2" sx={{ fontWeight: 500 }}>
                 {item.name}

@@ -1,45 +1,45 @@
 import React from "react";
-import { Grid, Typography, Chip } from "@mui/material";
+import { Box, Chip } from "@mui/material";
 import { TestVariation } from "../types";
+import { tokens } from "../theme";
 
 interface IProps {
   testVariation: TestVariation;
 }
 
+/** What identifies a baseline, on one line of quiet tags. */
 export const TestVariationDetails: React.FunctionComponent<IProps> = ({
   testVariation,
-}) => (
-  <Grid container direction="column" spacing={1}>
-    <Typography sx={{ fontWeight: 600 }}>{testVariation.name}</Typography>
-    <Grid container spacing={2}>
-      {testVariation.os && (
-        <Grid item>
-          <Typography>OS: {testVariation.os}</Typography>
-        </Grid>
-      )}
-      {testVariation.device && (
-        <Grid item>
-          <Typography>Device: {testVariation.device}</Typography>
-        </Grid>
-      )}
-      {testVariation.customTags && (
-        <Grid item>
-          <Typography>Custom Tags: {testVariation.customTags}</Typography>
-        </Grid>
-      )}
-      {testVariation.browser && (
-        <Grid item>
-          <Typography>Browser: {testVariation.browser}</Typography>
-        </Grid>
-      )}
-      {testVariation.viewport && (
-        <Grid item>
-          <Typography>Viewport: {testVariation.viewport}</Typography>
-        </Grid>
-      )}
-      <Grid item>
-        <Chip size="small" label={testVariation.branchName} />
-      </Grid>
-    </Grid>
-  </Grid>
-);
+}) => {
+  const tags = [
+    ["OS", testVariation.os],
+    ["Device", testVariation.device],
+    ["Custom Tags", testVariation.customTags],
+    ["Browser", testVariation.browser],
+    ["Viewport", testVariation.viewport],
+  ].filter(([, value]) => value);
+  return (
+    <Box
+      sx={{
+        display: "flex",
+        flexWrap: "wrap",
+        gap: 0.75,
+        alignItems: "center",
+      }}
+    >
+      {tags.map(([name, value]) => (
+        <Chip
+          key={name}
+          size="small"
+          label={`${name}: ${value}`}
+          sx={{ borderRadius: 1.5, bgcolor: tokens.subtle }}
+        />
+      ))}
+      <Chip
+        size="small"
+        label={testVariation.branchName}
+        sx={{ borderRadius: 1.5, fontFamily: tokens.mono, fontSize: 11.5 }}
+      />
+    </Box>
+  );
+};

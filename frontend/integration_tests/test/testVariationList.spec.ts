@@ -111,10 +111,51 @@ test("does not merge without a branch to merge from", async ({
     }
   });
   const listPage = await openTestVariationListPage(TEST_PROJECT.id);
+  await listPage.mergeToggle.click();
 
   await listPage.toBranch.fill("master");
   await listPage.mergeBtn.click();
 
   await expect(page).toHaveURL(`/variations/${TEST_PROJECT.id}`);
   expect(merges).toEqual([]);
+});
+
+test("filters with chips and hides merge behind a button", async ({
+  openTestVariationListPage,
+  page,
+}) => {
+  const other = {
+    ...TEST_VARIATION_TWO,
+    id: "other-device",
+    name: "other device screen",
+    device: "PIXEL_4_XL",
+  };
+  await mockGetTestVariations(page, TEST_PROJECT.id, [
+    TEST_VARIATION_ONE,
+    TEST_VARIATION_TWO,
+    other,
+  ]);
+  const listPage = await openTestVariationListPage(TEST_PROJECT.id);
+
+  // merging is out of the way until asked for
+  await expect(listPage.toBranch).toBeHidden();
+  await listPage.mergeToggle.click();
+  await expect(listPage.toBranch).toBeVisible();
+
+  // the filters sit in one row
+  const filters = ["Name", "OS", "Device", "Branch"].map((label) =>
+    page.getByLabel(label, { exact: true }),
+  );
+  const tops = await Promise.all(
+    filters.map(async (filter) =>
+      Math.round((await filter.boundingBox())?.y ?? -1),
+    ),
+  );
+  expect(new Set(tops).size).toBe(1);
+
+  await expect(listPage.cards).toHaveCount(3);
+  await page.getByLabel("Device", { exact: true }).click();
+  await page.getByRole("option", { name: "PIXEL_4_XL" }).click();
+  await expect(listPage.cards).toHaveCount(1);
+  await expect(listPage.getCard(other.name)).toBeVisible();
 });

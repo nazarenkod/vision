@@ -1,3 +1,4 @@
+import { tokens } from "../../theme";
 import React, {
   useCallback,
   useEffect,
@@ -24,6 +25,7 @@ import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
 import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 import { makeStyles } from "@mui/styles";
 import { useDialogSnackbar } from "./useDialogSnackbar";
+import { useDecisionSnackbar } from "../useDecisionSnackbar";
 import { useNavigate } from "react-router";
 import { Tooltip } from "../Tooltip";
 import { testRunService, staticService } from "../../services";
@@ -57,13 +59,13 @@ const useStyles = makeStyles(() => ({
     gap: 12,
   },
   card: {
-    border: "1px solid #e0e0e0",
+    border: `1px solid ${tokens.border}`,
     borderRadius: 6,
     padding: 6,
   },
   cardSelected: {
-    borderColor: "#3f51b5",
-    boxShadow: "0 0 0 1px #3f51b5",
+    borderColor: tokens.brand,
+    boxShadow: `0 0 0 1px ${tokens.brand}`,
   },
   cardHead: {
     display: "flex",
@@ -84,7 +86,7 @@ const useStyles = makeStyles(() => ({
     width: "100%",
     height: 220,
     objectFit: "contain",
-    background: "#fafafa",
+    background: tokens.lightbox,
   },
   thumbButton: {
     display: "block",
@@ -120,7 +122,7 @@ const useStyles = makeStyles(() => ({
     maxHeight: "74vh",
     objectFit: "contain",
     verticalAlign: "top",
-    background: "#fafafa",
+    background: tokens.lightbox,
   },
 }));
 
@@ -153,6 +155,7 @@ export const MatchingVariationsDialog: React.FunctionComponent<{
 }> = ({ mode, testRun, groupBy = "customTags", onClose }) => {
   const classes = useStyles();
   const { enqueueSnackbar } = useDialogSnackbar();
+  const announce = useDecisionSnackbar(enqueueSnackbar);
   const navigate = useNavigate();
   const { testRuns: allTestRuns, filteredSortedTestRunIds } = useTestRunState();
   const { selectedBuild } = useBuildState();
@@ -384,7 +387,7 @@ export const MatchingVariationsDialog: React.FunctionComponent<{
       ? testRunService.approveBulk(ids, testRun.merge)
       : testRunService.rejectBulk(ids)
     )
-      .then(() => {
+      .then((decision) => {
         // Only remember these as acted once the API confirms success, so a failed
         // request doesn't make findNextUnresolved skip still-unresolved runs.
         rememberActed(testRun.buildId, ids);
@@ -398,15 +401,10 @@ export const MatchingVariationsDialog: React.FunctionComponent<{
         }
         onClose();
         // Shown after we've landed on the destination screen.
-        enqueueSnackbar(
-          `${mode === "approve" ? "Approved" : "Rejected"} ${
-            ids.length
-          } variations`,
-          {
-            // green for an approval only: a rejection is a deliberate outcome,
-            // not a success, and must not read as its opposite
-            variant: mode === "approve" ? "success" : "info",
-          },
+        announce(
+          mode === "approve" ? "approve" : "reject",
+          ids.length,
+          decision,
         );
       })
       .catch((err) => {

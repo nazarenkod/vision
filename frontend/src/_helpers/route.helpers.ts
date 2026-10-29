@@ -24,3 +24,6 @@ export const getQueryParams = (guery: string): QueryParams => {
     testId: queryParams.testId as string,
   };
 };
+
+export const buildProjectSettingsUrl = (projectId: string) =>
+  `/projects/${encodeURIComponent(projectId)}/settings`;

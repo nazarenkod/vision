@@ -6,11 +6,13 @@ import {
   Skeleton,
   Tooltip,
   ButtonBase,
+  IconButton,
+  Collapse,
 } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 import { useSnackbar } from "notistack";
 import { v4 as uuid } from "uuid";
-import { AccessTimeOutlined } from "@mui/icons-material";
+import { AccessTimeOutlined, ExpandMore } from "@mui/icons-material";
 import { useTestRunState } from "../contexts";
 import { insightsService, staticService, testRunService } from "../services";
 import {
@@ -25,7 +27,11 @@ import {
 import { buildTestRunLocation } from "../_helpers/route.helpers";
 import { BaseModal } from "./BaseModal";
 import { PillTone, StatusPill } from "./StatusPill";
-import { tokens } from "../theme";
+import { motion, tokens } from "../theme";
+import { staggered } from "./motion/Stagger";
+import { shimmer } from "./SkeletonList";
+import { EmptyState } from "./EmptyState";
+import { useDecisionSnackbar } from "./useDecisionSnackbar";
 
 const MAX_THUMBS = 6;
 const MAX_AUTO_SUMMARIES = 10;
@@ -106,12 +112,16 @@ const Thumb: React.FunctionComponent<{ run: TestRun; onOpen: () => void }> = ({
       display: "flex",
       flexDirection: "column",
       alignItems: "stretch",
-      gap: 0.5,
+      gap: 0.75,
       width: 112,
       borderRadius: 2,
+      "&:hover .thumb, &:focus-visible .thumb": {
+        transform: "translateY(-2px)",
+      },
     }}
   >
     <Box
+      className="thumb"
       component="img"
       src={staticService.getImage(
         run.diffThumbnailName ?? run.imageThumbnailName ?? run.imageName,
@@ -124,8 +134,11 @@ const Thumb: React.FunctionComponent<{ run: TestRun; onOpen: () => void }> = ({
         // whole screen: a change at the bottom (a menu) must show too
         objectFit: "contain",
         borderRadius: 2,
-        border: `1px solid ${tokens.border}`,
-        bgcolor: tokens.surface,
+        p: 0.75,
+        boxSizing: "border-box",
+        background: tokens.lightbox,
+        boxShadow: tokens.shadowShot,
+        transition: `transform ${motion.base}ms ${motion.easing}`,
       }}
     />
     <Box
@@ -202,6 +215,7 @@ export const ChangeGroups: React.FunctionComponent<Props> = ({
 }) => {
   const navigate = useNavigate();
   const { enqueueSnackbar } = useSnackbar();
+  const announce = useDecisionSnackbar();
   const { testRuns } = useTestRunState();
   const aiStatus = useAiStatus();
   const [groups, setGroups] = React.useState<ChangeGroup[] | null>(null);
@@ -213,6 +227,14 @@ export const ChangeGroups: React.FunctionComponent<Props> = ({
     action: "approve" | "reject";
   } | null>(null);
   const [busy, setBusy] = React.useState(false);
+  const [collapsed, setCollapsed] = React.useState<Set<string>>(new Set());
+  const toggleGroup = (id: string) =>
+    setCollapsed((current) => {
+      const next = new Set(current);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
 
   // refetch when a decision changes what still needs one
   const pendingKey = React.useMemo(
@@ -292,20 +314,14 @@ export const ChangeGroups: React.FunctionComponent<Props> = ({
     const ids = confirm.group.testRuns.map((run) => run.id);
     setBusy(true);
     try {
-      if (confirm.action === "approve") {
-        await testRunService.approveBulk(
-          ids,
-          confirm.group.testRuns.some((run) => run.merge),
-        );
-      } else {
-        await testRunService.rejectBulk(ids);
-      }
-      enqueueSnackbar(
-        `${confirm.action === "approve" ? "Approved" : "Rejected"} ${ids.length} screenshots`,
-        {
-          variant: "success",
-        },
-      );
+      const decision =
+        confirm.action === "approve"
+          ? await testRunService.approveBulk(
+              ids,
+              confirm.group.testRuns.some((run) => run.merge),
+            )
+          : await testRunService.rejectBulk(ids);
+      announce(confirm.action, ids.length, decision);
     } catch (error) {
       enqueueSnackbar(`${error}`, { variant: "error" });
     } finally {
@@ -331,9 +347,12 @@ export const ChangeGroups: React.FunctionComponent<Props> = ({
 
   if (!groups) {
     return (
-      <Box sx={{ p: 3, display: "flex", flexDirection: "column", gap: 2 }}>
+      <Box
+        aria-busy="true"
+        sx={{ px: 3, py: 2, display: "flex", flexDirection: "column", gap: 2 }}
+      >
         {[0, 1, 2].map((i) => (
-          <Skeleton key={i} variant="rounded" height={140} />
+          <Box key={i} sx={{ ...shimmer, height: 140, borderRadius: 3 }} />
         ))}
       </Box>
     );
@@ -341,14 +360,9 @@ export const ChangeGroups: React.FunctionComponent<Props> = ({
 
   if (!groups.length) {
     return (
-      <Box sx={{ p: 6, textAlign: "center" }}>
-        <Typography variant="h6">
-          Nothing needs a decision in this build
-        </Typography>
-        <Typography color="textSecondary">
-          Every screenshot matches its baseline or has been reviewed.
-        </Typography>
-      </Box>
+      <EmptyState title="Nothing needs a decision in this build">
+        Every screenshot matches its baseline or has been reviewed.
+      </EmptyState>
     );
   }
 
@@ -356,23 +370,26 @@ export const ChangeGroups: React.FunctionComponent<Props> = ({
     <Box
       sx={{ px: 3, py: 2, display: "flex", flexDirection: "column", gap: 2 }}
     >
-      {groups.map((group) => {
+      {groups.map((group, index) => {
         const summary = summaries[group.id];
         const many = group.testRuns.length > 1;
         const noise = group.noise;
+        const expanded = !collapsed.has(group.id);
         return (
           <Box
             key={group.id}
             component="section"
             aria-label={group.title}
+            data-testid="changeGroup"
+            {...staggered(index, groups.length)}
             sx={{
               bgcolor: tokens.surface,
               border: `1px ${noise ? "dashed" : "solid"} ${noise ? tokens.borderStrong : tokens.border}`,
               borderRadius: 3,
-              p: 2,
+              px: 2,
+              py: 1.5,
               display: "flex",
               flexDirection: "column",
-              gap: 1.5,
             }}
           >
             <Box
@@ -383,6 +400,21 @@ export const ChangeGroups: React.FunctionComponent<Props> = ({
                 gap: "8px 12px",
               }}
             >
+              <IconButton
+                size="small"
+                aria-label={expanded ? "Collapse group" : "Expand group"}
+                aria-expanded={expanded}
+                data-testid="toggleGroup"
+                onClick={() => toggleGroup(group.id)}
+                sx={{ ml: -0.75, color: tokens.textMuted }}
+              >
+                <ExpandMore
+                  sx={{
+                    transform: expanded ? "none" : "rotate(-90deg)",
+                    transition: `transform ${motion.nav}ms ${motion.easing}`,
+                  }}
+                />
+              </IconButton>
               {noise && (
                 <AccessTimeOutlined
                   sx={{ color: tokens.textMuted, fontSize: 20 }}
@@ -436,104 +468,115 @@ export const ChangeGroups: React.FunctionComponent<Props> = ({
               </Button>
             </Box>
 
-            {noise && (
-              <Typography variant="body2" color="textSecondary">
-                {noise.message}
-              </Typography>
-            )}
-
-            {!!group.alsoChangedElsewhere?.length && (
-              <Typography variant="body2" color="textSecondary">
-                The component changed the same way on{" "}
-                {group.alsoChangedElsewhere.map((run, index) => (
-                  <React.Fragment key={run.id}>
-                    {index > 0 && ", "}
-                    <ButtonBase
-                      onClick={() => open(run)}
-                      sx={{
-                        font: "inherit",
-                        color: tokens.brand,
-                        textDecoration: "underline",
-                        verticalAlign: "baseline",
-                      }}
-                    >
-                      {run.name}
-                    </ButtonBase>
-                  </React.Fragment>
-                ))}{" "}
-                too, but those changed elsewhere as well and are reviewed on
-                their own.
-              </Typography>
-            )}
-
-            {group.changes.slice(0, 3).map((change) => (
-              <Box
-                key={`${change.kind}:${change.key}`}
-                sx={{
-                  display: "flex",
-                  gap: 1,
-                  alignItems: "baseline",
-                  fontSize: 13.5,
-                }}
-              >
-                <Tag>UI TREE</Tag>
-                <span>{describeChange(change)}</span>
-              </Box>
-            ))}
-
-            {group.kind !== "new" && aiStatus?.enabled && (
+            <Collapse in={expanded} timeout={motion.slow}>
               <Box
                 sx={{
                   display: "flex",
-                  flexWrap: "wrap",
-                  gap: 1,
-                  alignItems: "baseline",
-                  fontSize: 13.5,
+                  flexDirection: "column",
+                  gap: 1.5,
+                  pt: 1.5,
                 }}
               >
-                <Tag color={tokens.brand}>AI</Tag>
-                {summary === "loading" || summary === undefined ? (
-                  <Skeleton width={360} />
-                ) : summary === "error" ? (
-                  <Button size="small" onClick={() => summarize(group)}>
-                    Explain this change
-                  </Button>
-                ) : (
-                  <>
-                    <span>{summary.summary}</span>
-                    <StatusPill
-                      tone={VERDICT[summary.verdict].tone}
-                      label={`${VERDICT[summary.verdict].label} · ${summary.confidence.toFixed(2)}`}
-                      title={
-                        summary.source === "rules"
-                          ? "Decided by rules, no AI call"
-                          : `Model: ${summary.model}`
-                      }
-                    />
-                  </>
-                )}
-              </Box>
-            )}
-
-            <Box
-              sx={{
-                display: "flex",
-                flexWrap: "wrap",
-                gap: 1.5,
-                alignItems: "center",
-              }}
-            >
-              {group.testRuns.slice(0, MAX_THUMBS).map((run) => (
-                <Thumb key={run.id} run={run} onOpen={() => open(run)} />
-              ))}
-              {group.testRuns.length > MAX_THUMBS && (
-                <Tooltip title="Open the first one to step through all of them">
+                {noise && (
                   <Typography variant="body2" color="textSecondary">
-                    + {group.testRuns.length - MAX_THUMBS} more
+                    {noise.message}
                   </Typography>
-                </Tooltip>
-              )}
-            </Box>
+                )}
+
+                {!!group.alsoChangedElsewhere?.length && (
+                  <Typography variant="body2" color="textSecondary">
+                    The component changed the same way on{" "}
+                    {group.alsoChangedElsewhere.map((run, index) => (
+                      <React.Fragment key={run.id}>
+                        {index > 0 && ", "}
+                        <ButtonBase
+                          onClick={() => open(run)}
+                          sx={{
+                            font: "inherit",
+                            color: tokens.brand,
+                            textDecoration: "underline",
+                            verticalAlign: "baseline",
+                          }}
+                        >
+                          {run.name}
+                        </ButtonBase>
+                      </React.Fragment>
+                    ))}{" "}
+                    too, but those changed elsewhere as well and are reviewed on
+                    their own.
+                  </Typography>
+                )}
+
+                {group.changes.slice(0, 3).map((change) => (
+                  <Box
+                    key={`${change.kind}:${change.key}`}
+                    sx={{
+                      display: "flex",
+                      gap: 1,
+                      alignItems: "baseline",
+                      fontSize: 13.5,
+                    }}
+                  >
+                    <Tag>UI TREE</Tag>
+                    <span>{describeChange(change)}</span>
+                  </Box>
+                ))}
+
+                {group.kind !== "new" && aiStatus?.enabled && (
+                  <Box
+                    sx={{
+                      display: "flex",
+                      flexWrap: "wrap",
+                      gap: 1,
+                      alignItems: "baseline",
+                      fontSize: 13.5,
+                    }}
+                  >
+                    <Tag color={tokens.brand}>AI</Tag>
+                    {summary === "loading" || summary === undefined ? (
+                      <Skeleton width={360} />
+                    ) : summary === "error" ? (
+                      <Button size="small" onClick={() => summarize(group)}>
+                        Explain this change
+                      </Button>
+                    ) : (
+                      <>
+                        <span>{summary.summary}</span>
+                        <StatusPill
+                          tone={VERDICT[summary.verdict].tone}
+                          label={`${VERDICT[summary.verdict].label} · ${summary.confidence.toFixed(2)}`}
+                          title={
+                            summary.source === "rules"
+                              ? "Decided by rules, no AI call"
+                              : `Model: ${summary.model}`
+                          }
+                        />
+                      </>
+                    )}
+                  </Box>
+                )}
+
+                <Box
+                  sx={{
+                    display: "flex",
+                    flexWrap: "wrap",
+                    gap: 1.5,
+                    alignItems: "center",
+                  }}
+                >
+                  {group.testRuns.slice(0, MAX_THUMBS).map((run) => (
+                    <Thumb key={run.id} run={run} onOpen={() => open(run)} />
+                  ))}
+                  {group.testRuns.length > MAX_THUMBS && (
+                    <Tooltip title="Open the first one to step through all of them">
+                      <Typography variant="body2" color="textSecondary">
+                        + {group.testRuns.length - MAX_THUMBS} more
+                      </Typography>
+                    </Tooltip>
+                  )}
+                </Box>
+              </Box>
+            </Collapse>
           </Box>
         );
       })}

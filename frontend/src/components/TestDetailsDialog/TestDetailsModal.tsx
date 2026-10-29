@@ -32,8 +32,6 @@ import {
   WarningRounded,
   Compare,
   OpenInNew,
-  Visibility,
-  VisibilityOff,
   ZoomIn,
   ZoomOut,
   Fullscreen,
@@ -168,23 +166,6 @@ interface Selection {
   selected: PickableElement[];
   anchor: { x: number; y: number };
 }
-
-// rule marks on the screenshots, on or off per reviewer (REQ-024-21)
-const SHOW_RULES_KEY = "vision.review.showRules";
-const readShowRules = () => {
-  try {
-    return localStorage.getItem(SHOW_RULES_KEY) !== "false";
-  } catch {
-    return true;
-  }
-};
-const writeShowRules = (shown: boolean) => {
-  try {
-    localStorage.setItem(SHOW_RULES_KEY, String(shown));
-  } catch {
-    // private windows refuse storage; the choice then lasts the session
-  }
-};
 
 interface TestDetailsModalProps {
   testRun: TestRun;
@@ -347,12 +328,6 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
     );
   const [ruleBusy, setRuleBusy] = useState(false);
   const [noTreeAnchor, setNoTreeAnchor] = useState<HTMLElement | null>(null);
-  const [showRules, setShowRules] = useState(readShowRules);
-  const toggleShowRules = () =>
-    setShowRules((shown) => {
-      writeShowRules(!shown);
-      return !shown;
-    });
   const selectButton = React.useRef<HTMLButtonElement>(null);
   const elementsOf = (side: Side) =>
     (side === "baseline" ? structure?.baselineElements : structure?.elements) ??
@@ -457,7 +432,11 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
       click: { shiftKey: boolean; clientX: number; clientY: number },
     ) => {
       const element = elementAt(point, elementsOf(side));
-      if (!element) return;
+      // a click beside every element puts the actions away; selecting stays on (REQ-024-11)
+      if (!element) {
+        setSelection(undefined);
+        return;
+      }
       setSelection((current) => {
         const additive = click.shiftKey && current?.side === side;
         const selected = toggleSelection(
@@ -588,7 +567,7 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
 
   // what the rules do, drawn on each screenshot (REQ-024-20)
   const ruleMarks = (side: Side): OverlayRect[] =>
-    showRules && structure
+    structure
       ? [
           ...(side === "current"
             ? structure.systemBars.map((rect, i) => ({
@@ -631,7 +610,7 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
   // a check that names its elements dims the rest (REQ-015-30)
   const dimOutside = (side: Side) => {
     const compareOnly = structure?.compareOnly;
-    if (!showRules || !compareOnly?.active) return undefined;
+    if (!compareOnly?.active) return undefined;
     const rects =
       side === "current"
         ? compareOnly.keep
@@ -1082,28 +1061,6 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
         onSave={saveIgnoreAreasOrCompareArea}
         onDiscard={discardAreas}
       />
-      <Tooltip title={showRules ? t("rules.hide") : t("rules.show")}>
-        <IconButton
-          size="small"
-          onClick={toggleShowRules}
-          aria-pressed={showRules}
-          aria-label={showRules ? t("rules.hide") : t("rules.show")}
-          data-testid="toggleRules"
-          sx={{
-            width: 34,
-            height: 34,
-            borderRadius: "8px",
-            color: showRules ? tokens.brand : tokens.textSecondary,
-            bgcolor: showRules ? tokens.brandSoft : "transparent",
-          }}
-        >
-          {showRules ? (
-            <Visibility fontSize="small" />
-          ) : (
-            <VisibilityOff fontSize="small" />
-          )}
-        </IconButton>
-      </Tooltip>
     </Box>
   );
 

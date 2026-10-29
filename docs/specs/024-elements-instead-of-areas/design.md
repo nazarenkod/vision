@@ -68,7 +68,7 @@
 | Підказка біля елемента | `frontend/src/components/TestDetailsDialog/ElementPopover.tsx` (новий) | Назва, ↑ / ↓, «⋯» (повна форма правила, REQ-024-10); Ignore / Compare only / Allow N % з клавішами I, C, T; This screen / All screens (All screens вимкнене для Compare only, REQ-024-16); наявне правило → «Remove rule» (REQ-024-09). |
 | Меню областей | `frontend/src/components/TestDetailsDialog/AreasMenu.tsx` (новий) | Вміст колишнього `ignoreAreasToolbar` з підписами; лічильник `ignoreAreas` + `tempIgnoreAreas`; «Use element» біля області з пропозицією; питання про незбережене (REQ-024-30…34, REQ-024-50). |
 | Блок «What's compared» | `frontend/src/components/TestDetailsDialog/WhatsCompared.tsx` (новий) | Підсумок, правила за групами, проблеми «порівнювати лише». Селектор і «found» — у підказці рядка. Наведення підсвічує елементи (REQ-024-22…24, 015/20…22, 015/31). |
-| Екран порівняння | `frontend/src/components/TestDetailsDialog/TestDetailsModal.tsx` | Рядок інструментів; режим вибору: E, Esc, Shift, ↑ / ↓; перемикач позначок у `localStorage` (`vision.review.showRules`, REQ-024-21); Undo для правила (REQ-024-07). |
+| Екран порівняння | `frontend/src/components/TestDetailsDialog/TestDetailsModal.tsx` | Рядок інструментів; режим вибору: E, Esc, Shift, ↑ / ↓; Undo для правила (REQ-024-07). |
 | Панель | `frontend/src/components/TestDetailsDialog/InsightsPanel.tsx` | Без «Pick element» і без «Rules for this screen» (їх замінює `WhatsCompared`). Підказка про шум з елементом → «Ignore» (REQ-024-40). У рядку зміненої області — Ignore і «⋯» з Compare only та Allow changes (REQ-024-41). |
 | Полотно | `frontend/src/components/TestDetailsDialog/DrawArea.tsx` | `OverlayRect.style`: `hatch` / `dashed` / `solid`; `dimOutside?: Rect[]` — затемнення поза областями (REQ-024-20, 015/30). |
 | Undo правила | `frontend/src/components/useRuleSnackbar.tsx` (новий) | Як `useDecisionSnackbar`: 8 s, Undo → `removeElementRule` (або повернути область після заміни). |
@@ -136,11 +136,12 @@ sequenceDiagram
 | REQ-024-08 | `frontend/integration_tests/test/elementSelection.spec.ts › stays in selection until Esc` |
 | REQ-024-09 | `frontend/integration_tests/test/elementSelection.spec.ts › offers to remove the rule an element is under` |
 | REQ-024-10 | `frontend/integration_tests/test/elementSelection.spec.ts › opens the full rule form from the element` |
+| REQ-024-11 | `frontend/integration_tests/test/elementSelection.spec.ts › shows actions next to a clicked element` |
 | REQ-024-15 | `frontend/integration_tests/test/elementSelection.spec.ts › compares only a picked element` |
 | REQ-024-16 | `frontend/integration_tests/test/elementSelection.spec.ts › keeps compare only to this screen`; `backend/src/test-runs/test-runs.service.spec.ts › refuses a compare-only rule for every screen` |
 | REQ-024-17 | `backend/src/ui-tree/compare-only.spec.ts › keeps ignored elements and areas ignored inside a compared one` |
 | REQ-024-20 | `frontend/integration_tests/test/elementSelection.spec.ts › marks rules on both screenshots` |
-| REQ-024-21 | `frontend/integration_tests/test/elementSelection.spec.ts › hides rule marks and remembers it` |
+| REQ-024-21 | Знято 2026-10-30 |
 | REQ-024-22 | `frontend/src/_helpers/whatsCompared.helper.test.ts › sums up what is compared` |
 | REQ-024-23 | `frontend/src/_helpers/whatsCompared.helper.test.ts › groups rules by what they do` |
 | REQ-024-24 | `frontend/integration_tests/test/elementSelection.spec.ts › highlights a rule's elements on hover` |

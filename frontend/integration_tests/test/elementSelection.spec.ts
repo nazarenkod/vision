@@ -276,6 +276,13 @@ test("shows actions next to a clicked element", async ({
   await expect(
     popover.getByRole("button", { name: "This screen" }),
   ).toHaveAttribute("aria-pressed", "true");
+
+  // a click beside every element puts the actions away, selecting stays on;
+  // on the baseline, as the actions sit over that corner of the checkpoint
+  const beside = await at(page, "baseline", empty.x, empty.y);
+  await page.mouse.click(beside.x, beside.y);
+  await expect(popover).toHaveCount(0);
+  await expect(page.getByTestId("selectingBar")).toBeVisible();
 });
 
 test("ignores a clicked element and compares again", async ({
@@ -431,24 +438,6 @@ test("marks rules on both screenshots", async ({ openProjectPage, page }) => {
     await expect.poll(() => overlayAlpha(page, side, middleOf(pay))).toBe(0);
   }
   await expect.poll(() => overlayAlpha(page, "current", empty)).toBe(0);
-});
-
-test("hides rule marks and remembers it", async ({ openProjectPage, page }) => {
-  const structure = { ...baseStructure, rules: [ruleOn(pay, "tolerate")] };
-  await openReview(page, openProjectPage, structure);
-  const edge = () => overlayAlpha(page, "current", edgeOf(pay));
-  await expect.poll(edge).toBeGreaterThan(0);
-
-  await page.getByTestId("toggleRules").click();
-  await expect.poll(edge).toBe(0);
-
-  await page.reload();
-  await expect(page.getByTestId("toggleRules")).toHaveAttribute(
-    "aria-pressed",
-    "false",
-  );
-  await expect(canvasOf(page, "current")).toBeVisible();
-  await expect.poll(edge).toBe(0);
 });
 
 test("highlights a rule's elements on hover", async ({

@@ -1124,8 +1124,6 @@ export const en = {
     other: "{count} rules added; compared again",
   },
   "select.removed": "Rule removed; compared again",
-  "rules.show": "Show rules on screenshots",
-  "rules.hide": "Hide rules on screenshots",
 
   // pixel areas, behind one button (spec 024)
   "areas.button": "Areas",

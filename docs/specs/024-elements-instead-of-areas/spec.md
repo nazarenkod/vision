@@ -2,10 +2,10 @@
 
 | | |
 |---|---|
-| Статус | Draft |
+| Статус | Approved |
 | Власник | Дмитро Назаренко |
 | Оновлено | 2026-10-29 |
-| Дизайн | [макет екрана порівняння](https://claude.ai/artifact/J6iTa3meUu4nCQgkibs871); `design.md` з'являється після `Approved` |
+| Дизайн | [design.md](design.md), [tasks.md](tasks.md), [макет екрана порівняння](https://claude.ai/artifact/J6iTa3meUu4nCQgkibs871) |
 | Пов'язане | спирається на [015](../015-compare-selected-elements/spec.md) (як порівнюються лише обрані елементи), [019](../019-element-rules-in-review/spec.md) (правила лише в порівнянні), [002](../002-ui-tree-analysis/spec.md) REQ-002-12, REQ-002-13, REQ-002-15 (правила елементів); змінює [018](../018-ui-redesign/spec.md) (рядок інструментів порівняння) |
 
 ## Контекст і проблема

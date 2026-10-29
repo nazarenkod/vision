@@ -1079,7 +1079,7 @@ export const en = {
   "builds.summaryFailed": " · {count} failed",
 
   // review
-  "review.tolerance": "tol. {value}%",
+  "review.tolerance": "tolerance {value}%",
 
   // severity
   "severity.error": "error",

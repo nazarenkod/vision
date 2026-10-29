@@ -521,7 +521,7 @@ export const uk: Messages = {
   "review.vlm": "Аналіз VLM:",
   "review.diffMeterHelp":
     "Відрізняється {diff}% пікселів; допуск — {tolerance}% (diffTollerancePercent у виклику track)",
-  "review.diff": "Різн.",
+  "review.diff": "Різниця",
   "review.steps":
     "прийнято: {approved}, відхилено: {rejected}, чекають: {waiting}",
   "review.mergeHelp": "Якщо прийняти, замінить еталон цільової гілки",
@@ -1158,7 +1158,7 @@ export const uk: Messages = {
   "builds.summaryFailed": " · не\u00a0пройшли:\u00a0{count}",
 
   // review
-  "review.tolerance": "доп. {value}%",
+  "review.tolerance": "допуск {value}%",
 
   // severity
   "severity.error": "помилка",

@@ -360,7 +360,7 @@ const ProjectSettingsPage: React.FunctionComponent = () => {
           >
             <TextField
               size="small"
-              placeholder={t("settings.find")}
+              placeholder={t("settings.findPlaceholder")}
               value={query}
               onChange={(event) => setQuery(event.target.value)}
               inputProps={{

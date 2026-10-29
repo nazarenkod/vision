@@ -65,6 +65,7 @@ export const uk: Messages = {
   "settings.backToProjects": "Проєкти",
   "settings.sections": "Розділи налаштувань",
   "settings.find": "Пошук налаштувань",
+  "settings.findPlaceholder": "Пошук",
   "settings.unsavedMark": "незбережені зміни",
   "settings.noSuchProject": "Такого проєкту немає",
   "settings.maybeDeleted": "Можливо, його видалили.",
@@ -103,14 +104,14 @@ export const uk: Messages = {
   "section.general": "Загальне",
   "section.review": "Перегляд",
   "section.comparison": "Порівняння",
-  "section.mobile": "Мобільні скриншоти",
+  "section.mobile": "Мобільні знімки",
   "section.rules": "Правила елементів",
   "section.a11y": "Проблеми доступності",
   "section.jira": "Jira",
   "section.danger": "Небезпечна зона",
   "section.comparisonIntro":
     "Як знімок порівнюється з еталоном. Під способами порівняння — параметри того, який ви виберете.",
-  "section.mobileIntro": "Для скриншотів, надісланих з Appium page source.",
+  "section.mobileIntro": "Для знімків, надісланих з Appium page source.",
   "section.rulesIntro":
     "Для всіх екранів проєкту. Правило називає елемент за id, класом чи текстом; для тексту можна /regex/.",
   "section.a11yIntro":
@@ -121,9 +122,9 @@ export const uk: Messages = {
   "general.name": "Назва проєкту",
   "general.mainBranch": "Основна гілка",
   "general.buildCount": "Скільки збірок зберігати",
-  "general.branchLifetime": "Найдовше життя гілки (днів)",
+  "general.branchLifetime": "Скільки днів зберігати гілку",
   "general.newProjectHint":
-    "Мобільні скриншоти, доступність і Jira налаштовуються в налаштуваннях проєкту — вони відкриються одразу після створення.",
+    "Мобільні знімки, доступність і Jira налаштовуються в налаштуваннях проєкту — вони відкриються одразу після створення.",
 
   "review.autoApprove": "Автоматично приймати у feature-гілках",
   "review.bulkApprove": "Приймати й відхиляти варіації разом",
@@ -131,7 +132,7 @@ export const uk: Messages = {
     "Переглядайте й приймайте чи відхиляйте варіації одного екрана (наприклад, усі мови) в одному діалозі. Наперед вибрано лише варіації з однаковою зміною; інші лишаються для ручного перегляду.",
   "review.groupBy": "Групувати варіації за",
   "review.groupByHelp":
-    "Вісь варіацій, якою відрізняються перевірки в групі. Екрани, однакові в усьому, крім цієї осі, групуються в списку перевірок і переглядаються разом — наприклад, customTags для скриншотів різними мовами.",
+    "Вісь варіацій, якою відрізняються перевірки в групі. Екрани, однакові в усьому, крім цієї осі, групуються в списку перевірок і переглядаються разом — наприклад, customTags для знімків різними мовами.",
 
   "comparison.library": "Бібліотека порівняння зображень",
   "comparison.engines": "Порівняння зображень",
@@ -140,7 +141,7 @@ export const uk: Messages = {
   "comparison.lookSameHelp":
     "Не помічає згладжування й курсор у полі. Добре для екранів з великою кількістю тексту.",
   "comparison.odiffHelp":
-    "Найшвидший на великих скриншотах. Може падати на будь-якій зміні розмітки.",
+    "Найшвидший на великих знімках. Може падати на будь-якій зміні розмітки.",
   "comparison.vlmHelp":
     "Питає візуальну модель, чи важлива зміна. Повільніше; потрібен постачальник моделі.",
   "comparison.allowDiffDimensions": "Порівнювати зображення різного розміру",
@@ -150,10 +151,10 @@ export const uk: Messages = {
   "comparison.ignoreAntialiasingHelp":
     "Згладжені пікселі не вважаються зміною.",
   "comparison.ignoreAntialiasingLooksSame": "Не помічати згладжування",
-  "comparison.threshold": "Поріг різниці пікселя",
+  "comparison.threshold": "Поріг різниці пікселів",
   "comparison.thresholdHelp":
     "Наскільки може відрізнятися піксель, доки його не вважають зміненим (0–1).",
-  "comparison.strict": "Суворо",
+  "comparison.strict": "Суворий режим",
   "comparison.tolerance": "Допуск",
   "comparison.toleranceHelp":
     "Типовий допуск у несуворому режимі — 2,3, і цього досить майже завжди. Допуск 0 дає те саме, що strict: true, але суворий режим швидший. Допуск у суворому режимі дає помилку.",
@@ -191,11 +192,11 @@ export const uk: Messages = {
     "Наскільки випадкова відповідь VLM. Нижчі значення (0–0,3) дають сталіші результати, вищі (0,7–1) — різноманітніші.",
   "comparison.temperatureShortHelp":
     "Випадковість відповіді (0–1). Нижчі значення — сталіші.",
-  "comparison.useThinking": "Режим роздумів",
-  "comparison.useThinkingHelp": "Вмикає режим роздумів моделі VLM.",
+  "comparison.useThinking": "Режим міркування",
+  "comparison.useThinkingHelp": "Вмикає режим міркування моделі VLM.",
 
-  "mobile.title": "Мобільні скриншоти (UI-дерево)",
-  "mobile.systemBars": "Не враховувати статус-бар і навігаційну панель",
+  "mobile.title": "Мобільні знімки (UI-дерево)",
+  "mobile.systemBars": "Не враховувати рядок стану й панель навігації",
   "mobile.systemBarsHelp": "Годинник, батарея й сигнал змінюються щоразу.",
   "mobile.moves": "Порівнювати зсунуті елементи на новому місці",
   "mobile.movesHelp":
@@ -205,8 +206,8 @@ export const uk: Messages = {
     "Новий підпис, неактивний чи некликабельний елемент, невидима кнопка: зміни, яких не видно в пікселях.",
   "mobile.loading": "Попереджати про завантаження",
   "mobile.loadingHelp":
-    "Спінери, скелетони й тости означають, що скриншот зробили зарано.",
-  "mobile.wrongScreen": "Попереджати про не той екран",
+    "Індикатори завантаження, заглушки й спливні повідомлення означають, що знімок зробили зарано.",
+  "mobile.wrongScreen": "Попереджати, якщо екран не той",
   "mobile.wrongScreenHelp": "UI-дерево схоже на інший екран, ніж еталон.",
   "mobile.reference": "Еталонний пристрій",
   "mobile.referenceHelp":
@@ -218,7 +219,7 @@ export const uk: Messages = {
     many: "({count} перевірок)",
     other: "({count} перевірки)",
   },
-  "mobile.maxMove": "Лише зсуви до, dp (порожньо — будь-які)",
+  "mobile.maxMove": "Найбільший зсув, dp (порожньо — будь-який)",
 
   "rules.title": "Правила елементів для всіх екранів",
   "rules.ignored": "ігнорується",
@@ -241,8 +242,8 @@ export const uk: Messages = {
   "a11y.mode.componentValue": "Той самий компонент і значення",
   "a11y.mode.component": "Той самий компонент, будь-які значення",
   "a11y.mode.screen": "Кожен екран окремо",
-  "a11y.mode.class": "Усе, що бере цей клас",
-  "a11y.rule.touchTarget": "Замала область натискання",
+  "a11y.mode.class": "Усе, що потрапляє в клас",
+  "a11y.rule.touchTarget": "Замала область дотику",
   "a11y.rule.lowContrast": "Низький контраст тексту",
   "a11y.rule.missingLabel": "Елемент керування без підпису",
   "a11y.rule.inputWithoutLabel": "Поле вводу без підпису чи підказки",
@@ -252,7 +253,7 @@ export const uk: Messages = {
   "a11y.classes": "Класи проблем",
   "a11y.howMatching": "Як працює зіставлення",
   "a11y.howMatchingText":
-    "Перший збіг виграє. Клас бере знахідку, коли збігаються всі заповнені поля; у полі — по одному шаблону в рядку, досить збігу будь-якого. Шаблони — це маски з * і ? або /regex/; група в regex id елемента стає компонентом, тож {example} робить tab_0…tab_3 однією проблемою. «Усе, що бере цей клас» робить усе це однією проблемою; «Ігнорувати» показує його серед хибних результатів і ніколи не заводить. Id проблем від цих налаштувань не змінюються: що є однією проблемою, щоразу визначається з того, для чого кожну проблему заведено.",
+    "Перший збіг виграє. Знахідка потрапляє в клас, коли збігаються всі заповнені поля; у полі — по одному шаблону в рядку, досить збігу будь-якого. Шаблони — це маски з * і ? або /regex/; група в regex id елемента стає компонентом, тож {example} робить tab_0…tab_3 однією проблемою. «Усе, що потрапляє в клас» робить усе це однією проблемою; «Ігнорувати» показує його серед хибних результатів і ніколи не заводить. Id проблем від цих налаштувань не змінюються: що є однією проблемою, щоразу визначається з того, для чого кожну проблему заведено.",
   "a11y.checkedAt": "Перевіряється {position}",
   "a11y.everyRule": "усі правила",
   "a11y.ignored": "ігнорується",
@@ -499,7 +500,7 @@ export const uk: Messages = {
   "baselines.deleteOf": "Видалити {device}",
   "baselines.empty": "Тут ще немає еталонів",
   "baselines.emptyHint":
-    "Еталони з’являються після першого прийнятого скриншота — або жоден не відповідає фільтрам.",
+    "Еталони з’являються після першого прийнятого знімка — або жоден не відповідає фільтрам.",
   "baselines.deleteTitle": "Видалити еталон",
   "baselines.delete": "Видалити",
   "baselines.deleteConfirm": "Видалити еталон «{name}»?",
@@ -536,8 +537,8 @@ export const uk: Messages = {
   "filters.selectProject": "Виберіть проєкт",
 
   // review
-  "review.ignoreAreas": "Ігноровані області",
-  "review.compareArea": "Область порівняння",
+  "review.ignoreAreas": "Ігнорування",
+  "review.compareArea": "Порівняння",
   "review.applyIgnoreArea":
     "Застосувати вибрану ігноровану область до всіх зображень цієї збірки.",
   "review.ignoreSaved": "Ігноровані області оновлено.",
@@ -553,10 +554,10 @@ export const uk: Messages = {
   "review.toggleDiff": "Показати чи сховати різницю. Клавіша: D",
   "review.toggleDiffLabel": "Показати різницю",
   "review.step": "Крок {current}/{total}: ",
-  "review.overlay": "Накладка",
+  "review.overlay": "Накладання",
   "review.fadeHelp":
     "Зробити знімок прозорим, щоб крізь нього було видно еталон",
-  "review.fade": "Прозорість",
+  "review.fade": "Злиття",
   "review.fadeLabel": "Прозорість до еталона",
   "review.blendHelp":
     "Накласти обидва як різницю: однакове стає чорним, а зсув видно як зміщений контур",
@@ -565,7 +566,7 @@ export const uk: Messages = {
   "review.commentUpdated": "Коментар збережено",
   "review.zoomIn": "Збільшити",
   "review.zoomOut": "Зменшити",
-  "review.originalSize": "Справжній розмір",
+  "review.originalSize": "Оригінальний розмір",
   "review.fit": "Умістити в екран",
   "review.hotkeyLeft": "Клавіша: ←",
   "review.hotkeyRight": "Клавіша: →",
@@ -589,7 +590,7 @@ export const uk: Messages = {
   "review.vlm": "Аналіз VLM:",
   "review.diffMeterHelp":
     "Відрізняється {diff}% пікселів; допуск — {tolerance}% (diffTollerancePercent у виклику track)",
-  "review.diff": "Різниця",
+  "review.diff": "Різн.",
   "review.steps":
     "прийнято: {approved}, відхилено: {rejected}, чекають: {waiting}",
   "review.mergeHelp": "Якщо прийняти, замінить еталон цільової гілки",
@@ -613,7 +614,7 @@ export const uk: Messages = {
   },
   "review.approveDevicesText":
     "Кожен стане еталоном для свого пристрою: {devices}.",
-  "review.comments": "Коментарі",
+  "review.comments": "Коментар",
   "review.commentPlaceholder": "Додайте будь-які подробиці",
   "review.save": "Зберегти",
   "review.notAvailable": "Немає зображення",
@@ -626,7 +627,7 @@ export const uk: Messages = {
   "panel.noSuggestions": "Пропозицій немає",
   "panel.copied": "Скопійовано",
   "panel.ignoreAreaAdded":
-    "Ігноровану область додано; скриншот порівнюється заново",
+    "Ігноровану область додано; знімок порівнюється заново",
   "panel.new": "Нова",
   "panel.existing": "Наявна",
   "panel.bug": "Баг ",
@@ -650,7 +651,7 @@ export const uk: Messages = {
   "panel.linkExisting": "Прив’язати наявний",
   "panel.falsePositive": "Хибна знахідка",
   "panel.noTree":
-    "Цей скриншот надіслали без UI-дерева. Щоб перевірити доступність, надсилайте з ним Appium page source (у Java SDK: {code}) або перевірте екран через Vision CLI.",
+    "Цей знімок надіслали без UI-дерева. Щоб перевірити доступність, надсилайте з ним Appium page source (у Java SDK: {code}) або перевірте екран через Vision CLI.",
   "panel.treeFailed": "UI-дерево не вдалося перевірити.",
   "panel.checkedFrom": "Перевірено за UI-деревом {platform}.",
   "panel.newCount": "нових: {count}",
@@ -677,15 +678,15 @@ export const uk: Messages = {
   "panel.restore": "Повернути",
   "panel.ruleAddedProject":
     "Правило додано для всіх екранів; збірка порівнюється заново",
-  "panel.ruleAdded": "Правило додано; скриншот порівнюється заново",
+  "panel.ruleAdded": "Правило додано; знімок порівнюється заново",
   "panel.ignore": "Ігнорувати",
   "panel.tolerance": "Допуск",
   "panel.noDetails": "Подробиць про цю зміну немає.",
   "panel.cancelPicking": "Скасувати вибір",
-  "panel.pick": "Вибрати елемент на скриншоті",
+  "panel.pick": "Вибрати елемент на знімку",
   "panel.pickHelp":
     "Наведіть на елемент на правому зображенні й натисніть, щоб ігнорувати його або дозволити в ньому дрібні зміни. Esc — скасувати.",
-  "panel.invisible": "Зміни, яких не видно на скриншоті",
+  "panel.invisible": "Зміни, яких не видно на знімку",
   "panel.ignoreArea": "Ігнорувати область",
   "panel.nothingChanged": "Порівняно з еталоном нічого не змінилося.",
   "panel.changedAreas": "Змінені області",
@@ -727,9 +728,9 @@ export const uk: Messages = {
   "panel.ignoreElement": "Ігнорувати елемент",
   "panel.element": "Елемент",
   "panel.elementPlaceholder": "Почніть вводити: Pay, balance, toolbar…",
-  "panel.foundBy": "Знайдено за {by}, обведено на скриншоті",
-  "panel.noElements": "На цьому скриншоті немає елементів для вибору",
-  "panel.pickOnScreenshot": "Вибрати на скриншоті",
+  "panel.foundBy": "Знайдено за {by}, обведено на знімку",
+  "panel.noElements": "На цьому знімку немає елементів для вибору",
+  "panel.pickOnScreenshot": "Вибрати на знімку",
   "panel.hideSelector": "Сховати селектор",
   "panel.matchDifferently": "Інший спосіб пошуку",
   "panel.selector": "Селектор",
@@ -760,17 +761,16 @@ export const uk: Messages = {
   "groups.flag.screenMismatch": "Інший екран?",
   "groups.flag.duplicateScreen": "Дублікат?",
   "groups.hiddenHelp":
-    "Елементи змінилися так, що на скриншоті цього не видно: підписи, стани, невидимі елементи",
+    "Елементи змінилися так, що на знімку цього не видно: підписи, стани, невидимі елементи",
   "groups.hidden": "невидимих: {count}",
   "groups.loadFailed": "Не вдалося завантажити групи змін: {error}",
-  "groups.ignoreAdded":
-    "Ігноровану область додано; скриншоти порівнюються заново",
+  "groups.ignoreAdded": "Ігноровану область додано; знімки порівнюються заново",
   "groups.empty": "У цій збірці нічого не чекає рішення",
   "groups.emptyHint":
-    "Кожен скриншот збігається з еталоном або вже переглянутий.",
+    "Кожен знімок збігається з еталоном або вже переглянутий.",
   "groups.collapse": "Згорнути групу",
   "groups.expand": "Розгорнути групу",
-  "groups.newScreenshots": "Нові скриншоти",
+  "groups.newScreenshots": "Нові знімки",
   "groups.withoutBaseline": "без еталона: {count}",
   "groups.sameOnScreens": {
     one: "Однаково змінилося на {count} екрані",
@@ -779,12 +779,12 @@ export const uk: Messages = {
     other: "Однаково змінилося на {count} екрана",
   },
   "groups.sameChange": {
-    one: "Однакова зміна в {count} скриншоті",
-    few: "Однакова зміна в {count} скриншотах",
-    many: "Однакова зміна в {count} скриншотах",
-    other: "Однакова зміна в {count} скриншота",
+    one: "Однакова зміна в {count} знімку",
+    few: "Однакова зміна в {count} знімках",
+    many: "Однакова зміна в {count} знімках",
+    other: "Однакова зміна в {count} знімка",
   },
-  "groups.oneScreenshot": "1 скриншот",
+  "groups.oneScreenshot": "1 знімок",
   "groups.screens": {
     one: " · {count} екран",
     few: " · {count} екрани",
@@ -804,16 +804,16 @@ export const uk: Messages = {
   "groups.openFirst": "Відкрийте перший, щоб пройти всі по черзі",
   "groups.more": "і ще {count}",
   "groups.approveTitle": {
-    one: "Прийняти {count} скриншот?",
-    few: "Прийняти {count} скриншоти?",
-    many: "Прийняти {count} скриншотів?",
-    other: "Прийняти {count} скриншота?",
+    one: "Прийняти {count} знімок?",
+    few: "Прийняти {count} знімки?",
+    many: "Прийняти {count} знімків?",
+    other: "Прийняти {count} знімка?",
   },
   "groups.rejectTitle": {
-    one: "Відхилити {count} скриншот?",
-    few: "Відхилити {count} скриншоти?",
-    many: "Відхилити {count} скриншотів?",
-    other: "Відхилити {count} скриншота?",
+    one: "Відхилити {count} знімок?",
+    few: "Відхилити {count} знімки?",
+    many: "Відхилити {count} знімків?",
+    other: "Відхилити {count} знімка?",
   },
   "groups.approveText":
     "Вони стануть новими еталонами для своїх екранів і пристроїв.",
@@ -849,7 +849,7 @@ export const uk: Messages = {
   "bug.theClass": "цього класу",
   "bug.labels": "Мітки:",
   "bug.description":
-    "Опис: сервіс, екран, фактичний і очікуваний результат, пристрій, елемент; скриншот з обведеною проблемою.",
+    "Опис: сервіс, екран, фактичний і очікуваний результат, пристрій, елемент; знімок з обведеною проблемою.",
   "bug.onePerProblem":
     " Один баг на проблему: та сама знахідка на кількох елементах одного компонента потрапить в один баг з усіма ними.",
   "bug.existingFiled":
@@ -913,9 +913,9 @@ export const uk: Messages = {
   "variations.tolerance": "Допуск різниці: {value}%",
 
   // crossDevice
-  "crossDevice.noTree": "Цей скриншот надіслали без UI-дерева.",
+  "crossDevice.noTree": "Цей знімок надіслали без UI-дерева.",
   "crossDevice.noReference":
-    "Виберіть еталонний пристрій у налаштуваннях проєкту (Мобільні скриншоти), щоб порівнювати з ним інші пристрої.",
+    "Виберіть еталонний пристрій у налаштуваннях проєкту (Мобільні знімки), щоб порівнювати з ним інші пристрої.",
   "crossDevice.isReference":
     "Це еталонний пристрій: інші пристрої порівнюються з ним.",
   "crossDevice.noReferenceTree":
@@ -951,9 +951,9 @@ export const uk: Messages = {
   // a11ySummary
   "a11ySummary.empty": "У цій збірці немає даних про доступність",
   "a11ySummary.emptyHint":
-    "Доступність перевіряється, коли скриншот надходить разом з Appium page source. У Java чи Kotlin додайте {code} до TestRunOptions; для ручного тестування скористайтеся CLI (меню довідки, «Ручні перевірки»).",
+    "Доступність перевіряється, коли знімок надходить разом з Appium page source. У Java чи Kotlin додайте {code} до TestRunOptions; для ручного тестування скористайтеся CLI (меню довідки, «Ручні перевірки»).",
   "a11ySummary.intro":
-    "UI-дерево надійшло з {checked} з {total} скриншотів. Знахідки порівнюються з еталоном кожного екрана, тож новими вважаються лише ті, що з’явилися в цій збірці. Заведені баги й хибні знахідки не рахуються.",
+    "UI-дерево надійшло з {checked} з {total} знімків. Знахідки порівнюються з еталоном кожного екрана, тож новими вважаються лише ті, що з’явилися в цій збірці. Заведені баги й хибні знахідки не рахуються.",
   "a11ySummary.newIssues": "Нові знахідки",
   "a11ySummary.openIssues": "Усі відкриті знахідки",
   "a11ySummary.screensChecked": "Перевірено екранів",
@@ -962,7 +962,7 @@ export const uk: Messages = {
   "a11ySummary.device": "Пристрій",
   "a11ySummary.new": "Нові",
   "a11ySummary.open": "Відкриті",
-  "a11ySummary.screenshot": "Скриншот",
+  "a11ySummary.screenshot": "Знімок",
 
   // insights
   "insights.deleted": {
@@ -1015,16 +1015,16 @@ export const uk: Messages = {
   "insights.lastChange": "Остання зміна",
   "insights.hotspots": "Гарячі точки доступності",
   "insights.hotspotsHint":
-    "Екрани з найбільшою кількістю знахідок у найновішому скриншоті (рахується найгірший пристрій), із заведеними багами й позначеними хибними знахідками.",
+    "Екрани з найбільшою кількістю знахідок у найновішому знімку (рахується найгірший пристрій), із заведеними багами й позначеними хибними знахідками.",
   "insights.noHotspots":
-    "Знахідок доступності немає, або жоден скриншот не надійшов з UI-деревом.",
+    "Знахідок доступності немає, або жоден знімок не надійшов з UI-деревом.",
   "insights.issues": "Знахідки",
   "insights.new": "Нові",
   "insights.bugsFiled": "Заведено багів",
   "insights.falsePositives": "Хибні знахідки",
   "insights.frequent": "Найчастіші знахідки",
   "insights.frequentHint":
-    "За найновішим скриншотом кожної перевірки: що виправити один раз — у спільному компоненті чи стилі, — щоб очистити багато екранів.",
+    "За найновішим знімком кожної перевірки: що виправити один раз — у спільному компоненті чи стилі, — щоб очистити багато екранів.",
   "insights.nothingToRank": "Немає що ранжувати.",
   "insights.noise": "Шум, який приймають",
   "insights.noiseHint":
@@ -1032,7 +1032,7 @@ export const uk: Messages = {
   "insights.noNoise":
     "Жоден екран не отримує раз у раз прийняття крихітних змін.",
   "insights.tinyApproved": "прийнято крихітних змін: {count} за {runs} знімків",
-  "insights.quality": "Якість скриншотів",
+  "insights.quality": "Якість знімків",
   "insights.qualityHint":
     "Зроблені, поки щось ще завантажувалося, або зі змінами елементів, яких не видно в пікселях. Зазвичай у тесті бракує очікування.",
   "insights.noQuality": "Жоден екран не вирізняється.",
@@ -1232,16 +1232,16 @@ export const uk: Messages = {
   "undo.approved": "Прийнято",
   "undo.rejected": "Відхилено",
   "undo.approvedMany": {
-    one: "Прийнято {count} скриншот",
-    few: "Прийнято {count} скриншоти",
-    many: "Прийнято {count} скриншотів",
-    other: "Прийнято {count} скриншота",
+    one: "Прийнято {count} знімок",
+    few: "Прийнято {count} знімки",
+    many: "Прийнято {count} знімків",
+    other: "Прийнято {count} знімка",
   },
   "undo.rejectedMany": {
-    one: "Відхилено {count} скриншот",
-    few: "Відхилено {count} скриншоти",
-    many: "Відхилено {count} скриншотів",
-    other: "Відхилено {count} скриншота",
+    one: "Відхилено {count} знімок",
+    few: "Відхилено {count} знімки",
+    many: "Відхилено {count} знімків",
+    other: "Відхилено {count} знімка",
   },
   "undo.undone": "Скасовано",
   "undo.failed": "Не вдалося скасувати: {error}",
@@ -1264,7 +1264,7 @@ export const uk: Messages = {
     "Ключ — ваш власний (сторінка профілю); щоб надсилати, потрібна роль редактора. Перевірки йдуть у гілку «manual» і порівнюються з еталонами основної гілки. Щоб порівнювати з еталонами автотестів піксель за пікселем, додайте --device і --os з тими самими назвами, що в автотестах.",
   "manual.step3": "Перевірте екран",
   "manual.sources":
-    "З підключеного пристрою Android. Інші джерела: --serial для одного з кількох пристроїв, --appium http://127.0.0.1:4723 для сесії Appium (Android чи iOS), --simulator для симулятора iOS (лише скриншот), --png file.png --xml file.xml для збережених файлів. Кожен стан екрана — окрема перевірка: «Payment – error».",
+    "З підключеного пристрою Android. Інші джерела: --serial для одного з кількох пристроїв, --appium http://127.0.0.1:4723 для сесії Appium (Android чи iOS), --simulator для симулятора iOS (лише знімок), --png file.png --xml file.xml для збережених файлів. Кожен стан екрана — окрема перевірка: «Payment – error».",
   "manual.many": "Багато екранів в одній збірці",
   "manual.mcp": "З AI-асистента (MCP)",
   "manual.mcpHelp":
@@ -1299,7 +1299,7 @@ export const uk: Messages = {
   "builds.summaryFailed": " · не\u00a0пройшли:\u00a0{count}",
 
   // review
-  "review.tolerance": "допуск {value}%",
+  "review.tolerance": "доп. {value}%",
 
   // severity
   "severity.error": "помилка",

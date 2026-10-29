@@ -11,15 +11,14 @@ export const DiffMeter: React.FunctionComponent<{
   tolerancePercent: number;
 }> = ({ diffPercent, tolerancePercent }) => {
   const meter = diffMeter(diffPercent, tolerancePercent);
-  const diff = Math.round(diffPercent * 100) / 100;
   const { t, formatNumber } = useT();
+  // both numbers the same way: two decimals at most, the language's mark
+  const percent = (value: number) =>
+    formatNumber(Math.round(value * 100) / 100);
+  const diff = percent(diffPercent);
+  const tolerance = percent(tolerancePercent);
   return (
-    <Tooltip
-      title={t("review.diffMeterHelp", {
-        diff,
-        tolerance: tolerancePercent,
-      })}
-    >
+    <Tooltip title={t("review.diffMeterHelp", { diff, tolerance })}>
       <Box
         data-testid="diffMeter"
         sx={{
@@ -42,7 +41,7 @@ export const DiffMeter: React.FunctionComponent<{
             fontVariantNumeric: "tabular-nums",
           }}
         >
-          {formatNumber(diff)}%
+          {diff}%
         </Typography>
         <Box
           aria-hidden="true"
@@ -82,7 +81,7 @@ export const DiffMeter: React.FunctionComponent<{
           />
         </Box>
         <Typography variant="caption" sx={{ color: tokens.textMuted }}>
-          {t("review.tolerance", { value: tolerancePercent })}
+          {t("review.tolerance", { value: tolerance })}
         </Typography>
       </Box>
     </Tooltip>

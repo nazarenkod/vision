@@ -70,6 +70,8 @@ export const en = {
   "settings.backToProjects": "Projects",
   "settings.sections": "Settings sections",
   "settings.find": "Find a setting",
+  // the field is narrow: Ukrainian needs a shorter placeholder than its label
+  "settings.findPlaceholder": "Find a setting",
   "settings.unsavedMark": "unsaved changes",
   "settings.noSuchProject": "No such project",
   "settings.maybeDeleted": "It may have been deleted.",

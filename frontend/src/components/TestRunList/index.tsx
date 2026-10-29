@@ -125,6 +125,8 @@ const buildColumns = (
     field: "status",
     headerName: t("runs.status"),
     flex: 0.3,
+    // room for the longest status pill, «чекає рішення», at 1280px
+    minWidth: 140,
     filterable: false,
     // the chip speaks for the representative, so a half-reviewed group has to
     // say so somewhere

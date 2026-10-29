@@ -485,7 +485,6 @@ export const uk: Messages = {
   "review.toggleDiff": "Показати чи сховати різницю. Клавіша: D",
   "review.toggleDiffLabel": "Показати різницю",
   "review.step": "Крок {current}/{total}: ",
-  "review.overlay": "Позначки доступності",
   "review.fadeHelp":
     "Зробити знімок прозорим, щоб крізь нього було видно еталон",
   "review.fade": "Злиття",
@@ -578,6 +577,7 @@ export const uk: Messages = {
   "panel.noTree":
     "Цей знімок надіслали без UI-дерева. Щоб перевірити доступність, надсилайте з ним Appium page source (у Java SDK: {code}) або перевірте екран через Vision CLI.",
   "panel.treeFailed": "UI-дерево не вдалося перевірити.",
+  "panel.highlightOnScreenshot": "Підсвічувати на знімку",
   "panel.checkedFrom": "Перевірено за UI-деревом {platform}.",
   "panel.newCount": "нових: {count}",
   "panel.compared":

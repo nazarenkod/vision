@@ -101,6 +101,9 @@ interface Props {
   bugs?: VisualBug[];
   bugMarks?: boolean;
   onBugMarksChange?: (on: boolean) => void;
+  // findings framed on the screenshot, switched beside them (REQ-003-14)
+  a11yMarks?: boolean;
+  onA11yMarksChange?: (on: boolean) => void;
 }
 
 type RuleDraft = {
@@ -143,6 +146,8 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
   bugs = [],
   bugMarks = true,
   onBugMarksChange,
+  a11yMarks = true,
+  onA11yMarksChange,
 }) => {
   const { enqueueSnackbar } = useSnackbar();
   const { t, tx } = useT();
@@ -675,6 +680,24 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
     );
     return (
       <>
+        {onA11yMarksChange && report.violations.length > 0 && (
+          <FormControlLabel
+            sx={{ alignSelf: "flex-end", mr: 0, mt: -0.5 }}
+            control={
+              <Switch
+                size="small"
+                checked={a11yMarks}
+                onChange={(event) => onA11yMarksChange(event.target.checked)}
+                data-testid="a11yMarksSwitch"
+              />
+            }
+            label={
+              <Typography variant="caption" color="textSecondary">
+                {t("panel.highlightOnScreenshot")}
+              </Typography>
+            }
+          />
+        )}
         <Typography variant="body2" color="textSecondary">
           {t("panel.checkedFrom", {
             platform: report.format === "appium-ios" ? "iOS" : "Android",

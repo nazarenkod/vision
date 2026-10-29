@@ -444,7 +444,6 @@ export const en = {
   "review.toggleDiff": "Toggle diff. Hotkey: D",
   "review.toggleDiffLabel": "Toggle diff",
   "review.step": "Step {current}/{total}: ",
-  "review.overlay": "Accessibility marks",
   "review.fadeHelp": "Fade the checkpoint out to see the baseline through it",
   "review.fade": "Fade",
   "review.fadeLabel": "Fade to the baseline",
@@ -533,6 +532,7 @@ export const en = {
   "panel.noTree":
     "No UI tree came with this screenshot. Send the Appium page source with it (in the Java SDK: {code}), or check the screen with the Vision CLI, to check accessibility.",
   "panel.treeFailed": "The UI tree could not be checked.",
+  "panel.highlightOnScreenshot": "Highlight on screenshot",
   "panel.checkedFrom": "Checked from the {platform} UI tree.",
   "panel.newCount": "{count} new",
   "panel.compared":

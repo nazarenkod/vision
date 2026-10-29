@@ -1319,22 +1319,6 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
         <Grid item>
           <RunFlags run={testRun} />
         </Grid>
-        {withUiTree && (
-          <Grid item>
-            <FormControlLabel
-              control={
-                <Switch
-                  size="small"
-                  checked={a11yOverlay}
-                  onChange={(event) => setA11yOverlay(event.target.checked)}
-                />
-              }
-              label={
-                <Typography variant="body2">{t("review.overlay")}</Typography>
-              }
-            />
-          </Grid>
-        )}
         {deviceRuns.length > 1 && handleSelectRun && (
           <Grid item>
             <DeviceStrip
@@ -1565,6 +1549,8 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
           bugs={bugs}
           bugMarks={showBugMarks}
           onBugMarksChange={setShowBugMarks}
+          a11yMarks={a11yOverlay}
+          onA11yMarksChange={setA11yOverlay}
         />
       </Box>
       <Grid container className={classes.footer}>

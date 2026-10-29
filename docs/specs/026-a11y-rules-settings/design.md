@@ -97,3 +97,5 @@ flowchart LR
 | REQ-026-13 | `backend/src/ui-tree/comparison-inputs.spec.ts › looks for the screen title in Appbar#Title when the project saved none` |
 | REQ-026-14 | `frontend/integration_tests/test/projectSettings.spec.ts › keeps the screen title selectors the project saved` |
 | REQ-026-15 | `frontend/src/_helpers/projectSettings.helper.test.ts › finds the accessibility norms by tap, touch, contrast…` |
+| REQ-026-16 | `frontend/integration_tests/test/projectSettings.spec.ts › sets the project's touch target and turns a rule off` |
+| REQ-026-17 | `frontend/src/_helpers/projectSettings.helper.test.ts › names the sections with unsaved changes`; `frontend/integration_tests/test/projectSettings.spec.ts › sets the project's touch target and turns a rule off` |

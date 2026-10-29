@@ -105,3 +105,4 @@ sequenceDiagram
 | REQ-017-12 | `backend/src/backups/backups.controller.spec.ts › lets only admins manage backups` |
 | REQ-017-20 | `backend/src/backups/drive-auth.spec.ts › accepts a daily time and a number of copies`; `scripts/tests/test_vision_backup.py › test_runs_the_daily_backup_once_after_its_time`; `scripts/tests/test_vision_backup.py › test_counts_any_backup_after_the_daily_time_as_the_daily_one`; `scripts/tests/test_vision_backup.py › test_installs_a_cron_line_every_5_minutes_once` |
 | REQ-017-21 | `scripts/tests/test_vision_backup.py › test_uses_the_drive_connected_in_the_ui` |
+| REQ-017-22 | `frontend/integration_tests/test/backups.spec.ts › asks the server for a backup and saves the schedule` |

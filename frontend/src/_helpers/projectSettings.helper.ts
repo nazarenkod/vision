@@ -158,6 +158,7 @@ const TREE_SECTION: Record<string, SectionId> = {
   detectScreenMismatch: "mobile",
   referenceDevice: "mobile",
   screenTitle: "a11y",
+  a11yNorms: "a11y",
 };
 
 const FIELD_SECTION: Partial<Record<keyof ProjectDto, SectionId>> = {

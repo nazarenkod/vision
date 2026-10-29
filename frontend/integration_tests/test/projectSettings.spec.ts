@@ -133,6 +133,38 @@ test("lists the sections and highlights the one in view", async ({
   );
   await expect(page.getByTestId("section-jira")).toBeInViewport();
 
+  // scrolling by hand lights the section being read, the short last one too;
+  // first the smooth scroll to Jira has to come to rest
+  const scrollTop = () => page.locator("main").evaluate((el) => el.scrollTop);
+  await expect
+    .poll(async () => {
+      const before = await scrollTop();
+      await page.waitForTimeout(150);
+      return (await scrollTop()) === before;
+    })
+    .toBe(true);
+  const main = await page.locator("main").boundingBox();
+  if (!main) throw new Error("no main");
+  await page.mouse.move(main.x + main.width / 2, main.y + main.height / 2);
+  await page.mouse.wheel(0, -10000);
+  await expect(page.getByTestId("nav-general")).toHaveAttribute(
+    "aria-current",
+    "true",
+  );
+  const a11yTop = await page
+    .getByTestId("section-a11y")
+    .evaluate((el) => el.getBoundingClientRect().top);
+  await page.mouse.wheel(0, a11yTop - 150);
+  await expect(page.getByTestId("nav-a11y")).toHaveAttribute(
+    "aria-current",
+    "true",
+  );
+  await page.mouse.wheel(0, 10000);
+  await expect(page.getByTestId("nav-danger")).toHaveAttribute(
+    "aria-current",
+    "true",
+  );
+
   // search keeps the matching section and marks the setting
   await page.getByTestId("settingsSearch").fill("loading");
   await expect(page.getByTestId("section-mobile")).toBeVisible();
@@ -308,6 +340,20 @@ test("sets the project's touch target and turns a rule off", async ({
     .getByTestId("a11yRule-redundant-role")
     .getByRole("checkbox")
     .uncheck();
+  // a change here brings the save bar up and marks this section, and no
+  // other, in the rail (REQ-026-17)
+  await expect(page.getByTestId("saveBar")).toHaveAttribute(
+    "data-state",
+    "dirty",
+  );
+  await expect(
+    page.getByTestId("nav-a11y").getByLabel("unsaved changes"),
+  ).toBeVisible();
+  await expect(
+    page.getByTestId("nav-mobile").getByLabel("unsaved changes"),
+  ).toHaveCount(0);
+  // the rail counts the rules on (REQ-026-16)
+  await expect(page.getByTestId("nav-a11y")).toContainText("6 of 7 on");
 
   const [request] = await Promise.all([
     putRequest(page),

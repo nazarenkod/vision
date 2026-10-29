@@ -97,6 +97,7 @@ export const en = {
   "settings.dangerTitle": "Delete this project.",
   "settings.deleteProject": "Delete project",
   "settings.meta.mobileOn": "{count} of 5 on",
+  "settings.meta.rulesOn": "{count} of {total} on",
   "settings.meta.set": "set",
   "settings.meta.notSet": "not set",
 
@@ -985,8 +986,11 @@ export const en = {
   "backups.askedAt":
     "Asked for at {when}; the server starts it within 5 minutes.",
   "backups.schedule": "Schedule",
-  "backups.dailyAt": "Daily at (server time)",
-  "backups.keep": "Database backups kept in Drive",
+  "backups.dailyAt": "Back up every day at",
+  "backups.dailyAtHelp": "Server time",
+  "backups.keep": "Keep in Drive",
+  "backups.keepUnit": { one: "copy", other: "copies" },
+  "backups.keepHelp": "Older database copies are deleted",
   "backups.save": "Save",
   "backups.inDrive": "In Google Drive",
   "backups.backup": "Backup",

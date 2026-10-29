@@ -2,6 +2,7 @@ import React from "react";
 import {
   Alert,
   Box,
+  InputAdornment,
   Button,
   Card,
   CardContent,
@@ -89,6 +90,11 @@ const BackupsPage = () => {
   const [loadError, setLoadError] = React.useState<string | null>(null);
   const [time, setTime] = React.useState("");
   const [keep, setKeep] = React.useState("");
+  // what the server has, so Save is offered only for a change
+  const [savedSchedule, setSavedSchedule] = React.useState({
+    time: "",
+    keep: "",
+  });
 
   const load = React.useCallback(
     () =>
@@ -98,6 +104,10 @@ const BackupsPage = () => {
           setOverview(data);
           setTime(data.settings.time);
           setKeep(String(data.settings.keep));
+          setSavedSchedule({
+            time: data.settings.time,
+            keep: String(data.settings.keep),
+          });
           setLoadError(null);
         })
         .catch((err) => setLoadError(`${err}`)),
@@ -135,6 +145,27 @@ const BackupsPage = () => {
         load();
       })
       .catch((err) => enqueueSnackbar(`${err}`, { variant: "error" }));
+
+  const scheduleField = (
+    id: string,
+    label: string,
+    help: string,
+    field: React.ReactNode,
+  ) => (
+    <Box sx={{ display: "flex", flexDirection: "column", gap: 0.75 }}>
+      <Typography
+        id={id}
+        component="label"
+        sx={{ fontSize: 13, fontWeight: 600, color: tokens.textSecondary }}
+      >
+        {label}
+      </Typography>
+      {field}
+      <Typography sx={{ fontSize: 12, color: tokens.textMuted, minHeight: 16 }}>
+        {help}
+      </Typography>
+    </Box>
+  );
 
   return (
     <Box
@@ -226,31 +257,66 @@ const BackupsPage = () => {
 
           <Card variant="outlined">
             <CardHeader title={t("backups.schedule")} />
+            {/* labels above the fields: floating ones were cut to "Daily at (ser…" */}
             <CardContent
-              sx={{ display: "flex", gap: 2, alignItems: "flex-start" }}
+              sx={{
+                display: "flex",
+                flexWrap: "wrap",
+                gap: 3,
+                alignItems: "flex-end",
+              }}
             >
-              <TextField
-                size="small"
-                type="time"
-                label={t("backups.dailyAt")}
-                value={time}
-                onChange={(event) => setTime(event.target.value)}
-                inputProps={{ "data-testid": "backupTime" }}
-                InputLabelProps={{ shrink: true }}
-              />
-              <TextField
-                size="small"
-                type="number"
-                label={t("backups.keep")}
-                value={keep}
-                onChange={(event) => setKeep(event.target.value)}
-                inputProps={{ min: 1, max: 365, "data-testid": "backupKeep" }}
-              />
+              {scheduleField(
+                "backupTimeLabel",
+                t("backups.dailyAt"),
+                t("backups.dailyAtHelp"),
+                <TextField
+                  size="small"
+                  type="time"
+                  value={time}
+                  onChange={(event) => setTime(event.target.value)}
+                  inputProps={{
+                    "data-testid": "backupTime",
+                    "aria-labelledby": "backupTimeLabel",
+                  }}
+                  sx={{ width: 150 }}
+                />,
+              )}
+              {scheduleField(
+                "backupKeepLabel",
+                t("backups.keep"),
+                t("backups.keepHelp"),
+                <TextField
+                  size="small"
+                  type="number"
+                  value={keep}
+                  onChange={(event) => setKeep(event.target.value)}
+                  inputProps={{
+                    min: 1,
+                    max: 365,
+                    "data-testid": "backupKeep",
+                    "aria-labelledby": "backupKeepLabel",
+                  }}
+                  InputProps={{
+                    endAdornment: (
+                      <InputAdornment position="end">
+                        {t("backups.keepUnit", { count: Number(keep) || 0 })}
+                      </InputAdornment>
+                    ),
+                  }}
+                  sx={{ width: 150 }}
+                />,
+              )}
               <Button
-                variant="outlined"
+                variant="contained"
                 data-testid="saveBackupSettings"
-                disabled={!overview.available}
+                disabled={
+                  !overview.available ||
+                  (time === savedSchedule.time && keep === savedSchedule.keep)
+                }
                 onClick={saveSettings}
+                // level with the fields, above their helper lines
+                sx={{ mb: "22px" }}
               >
                 {t("backups.save")}
               </Button>

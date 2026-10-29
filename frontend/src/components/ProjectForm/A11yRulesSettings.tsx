@@ -153,11 +153,20 @@ export const A11yRulesSettings: React.FunctionComponent<{
   const settings = parseUiTreeSettings(project.uiTreeSettings);
   const norms = a11yNormsOf(settings);
 
-  const save = (next: A11yNorms) =>
+  // only the norms change: the defaults parsing fills in are not written, or
+  // a project saved without them would look changed under Mobile screenshots
+  const save = (next: A11yNorms) => {
+    let stored: Record<string, unknown> = {};
+    try {
+      stored = JSON.parse(project.uiTreeSettings || "{}") ?? {};
+    } catch {
+      stored = {};
+    }
     setProjectEditState(projectDispatch, {
       ...project,
-      uiTreeSettings: JSON.stringify({ ...settings, a11yNorms: next }),
+      uiTreeSettings: JSON.stringify({ ...stored, a11yNorms: next }),
     });
+  };
 
   return (
     <Box

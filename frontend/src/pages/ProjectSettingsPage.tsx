@@ -36,7 +36,11 @@ import {
   SectionId,
   SETTINGS_SECTIONS,
 } from "../_helpers/projectSettings.helper";
-import { parseUiTreeSettings } from "../types/insights";
+import {
+  A11Y_RULES,
+  a11yNormsOf,
+  parseUiTreeSettings,
+} from "../types/insights";
 import {
   ComparisonFields,
   GeneralFields,
@@ -73,6 +77,11 @@ function sectionMeta(id: SectionId, project: ProjectDto, t: Text): string {
       ].filter(Boolean).length;
       return t("settings.meta.mobileOn", { count: on });
     }
+    case "a11y":
+      return t("settings.meta.rulesOn", {
+        count: A11Y_RULES.length - a11yNormsOf(tree).disabledRules.length,
+        total: A11Y_RULES.length,
+      });
     case "jira":
       return t(project.jiraUrl ? "settings.meta.set" : "settings.meta.notSet");
     default:
@@ -152,6 +161,7 @@ const ProjectSettingsPage: React.FunctionComponent = () => {
 
   // ---- contents follow the scroll (REQ-018-41)
   const [active, setActive] = React.useState<SectionId>("general");
+  const pinned = React.useRef<SectionId>();
   const navButtons = React.useRef<
     Partial<Record<SectionId, HTMLElement | null>>
   >({});
@@ -159,25 +169,51 @@ const ProjectSettingsPage: React.FunctionComponent = () => {
     const root = sectionsRef.current;
     if (!root) return;
     const scroller = root.closest("main");
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const visible = entries
-          .filter((entry) => entry.isIntersecting)
-          .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top);
-        if (visible[0]) {
-          setActive(
-            visible[0].target.getAttribute("data-section") as SectionId,
-          );
-        }
-      },
-      { root: scroller, rootMargin: "0px 0px -65% 0px" },
-    );
-    root
-      .querySelectorAll("[data-section]")
-      .forEach((el) => observer.observe(el));
-    return () => observer.disconnect();
+    if (!scroller) return;
+    // the section being read is the last one whose top has passed the upper
+    // third; the observer it replaces kept the section above lit while its
+    // tail was still on screen, and never reached a short last section
+    const update = () => {
+      // a section picked in the rail stays lit while the page scrolls to it
+      if (pinned.current) {
+        setActive(pinned.current);
+        return;
+      }
+      const sections = Array.from(
+        root.querySelectorAll<HTMLElement>("[data-section]"),
+      );
+      if (!sections.length) return;
+      const view = scroller.getBoundingClientRect();
+      const atEnd =
+        scroller.scrollTop + scroller.clientHeight >= scroller.scrollHeight - 2;
+      const line = view.top + view.height / 3;
+      const current = atEnd
+        ? sections[sections.length - 1]
+        : (sections
+            .filter((el) => el.getBoundingClientRect().top <= line)
+            .pop() ?? sections[0]);
+      setActive(current.getAttribute("data-section") as SectionId);
+    };
+    // the reader scrolling again lets the page decide
+    const release = () => {
+      if (!pinned.current) return;
+      pinned.current = undefined;
+      update();
+    };
+    update();
+    scroller.addEventListener("scroll", update, { passive: true });
+    scroller.addEventListener("wheel", release, { passive: true });
+    scroller.addEventListener("touchstart", release, { passive: true });
+    window.addEventListener("keydown", release);
+    return () => {
+      scroller.removeEventListener("scroll", update);
+      scroller.removeEventListener("wheel", release);
+      scroller.removeEventListener("touchstart", release);
+      window.removeEventListener("keydown", release);
+    };
   }, [ready, query]);
   const goTo = (id: SectionId) => {
+    pinned.current = id;
     setActive(id);
     sectionsRef.current
       ?.querySelector(`[data-section='${id}']`)
@@ -524,17 +560,20 @@ const ProjectSettingsPage: React.FunctionComponent = () => {
                 alignItems: "center",
                 gap: 1.25,
                 pl: 2,
-                pr: 1,
+                pr: 1.25,
                 py: 1,
-                borderRadius: 3,
-                bgcolor: justSaved ? tokens.brand : tokens.text,
-                color: justSaved ? tokens.brandInk : tokens.ground,
+                // a floating card like the Areas menu: a black bar was the one
+                // dark slab on the light page
+                borderRadius: "14px",
+                border: `1px solid ${justSaved ? tokens.brand : tokens.border}`,
+                bgcolor: justSaved ? tokens.brandSoft : tokens.surface,
+                color: justSaved ? tokens.brandDark : tokens.text,
                 boxShadow: tokens.shadowPop,
                 transform:
                   dirty || justSaved ? "none" : "translateY(calc(100% + 32px))",
                 opacity: dirty || justSaved ? 1 : 0,
                 pointerEvents: dirty ? "auto" : "none",
-                transition: `transform 380ms ${motion.easing}, opacity 240ms, background-color ${motion.base}ms`,
+                transition: `transform 380ms ${motion.easing}, opacity 240ms, background-color ${motion.base}ms, border-color ${motion.base}ms`,
               }}
             >
               <Typography
@@ -546,24 +585,33 @@ const ProjectSettingsPage: React.FunctionComponent = () => {
                     <Check fontSize="small" /> {t("settings.saved")}
                   </>
                 ) : (
-                  <span>
-                    {tx("settings.unsavedIn", {
-                      sections: <b>{changed.join(", ")}</b>,
-                    })}
-                  </span>
+                  <>
+                    {/* the same mark as the changed sections in the rail */}
+                    <Box
+                      component="span"
+                      aria-hidden="true"
+                      sx={{
+                        width: 8,
+                        height: 8,
+                        borderRadius: "50%",
+                        flexShrink: 0,
+                        bgcolor: tokens.status.changed.bar,
+                      }}
+                    />
+                    <span>
+                      {tx("settings.unsavedIn", {
+                        sections: <b>{changed.join(", ")}</b>,
+                      })}
+                    </span>
+                  </>
                 )}
               </Typography>
               <Button
                 size="small"
-                variant="outlined"
                 onClick={discard}
                 disabled={saving || justSaved}
                 data-testid="discardSettings"
-                sx={{
-                  color: "inherit",
-                  borderColor: "currentColor",
-                  opacity: 0.85,
-                }}
+                sx={{ color: tokens.textSecondary }}
               >
                 {t("settings.discard")}
               </Button>

@@ -75,7 +75,7 @@ docs/specs/NNN-коротка-назва/
 | [012](012-java-sdk/spec.md) | Java SDK з UI-деревом | Implemented |
 | [013](013-backups-and-secrets/spec.md) | Бекапи в Google Drive | Implemented |
 | [014](014-element-order-changes/spec.md) | Зміна порядку елементів: повідомлення й ручне рев'ю | Draft |
-| [015](015-compare-selected-elements/spec.md) | Порівняння лише обраних елементів | Approved |
+| [015](015-compare-selected-elements/spec.md) | Порівняння лише обраних елементів | Implemented |
 | [016](016-production-and-cutover/spec.md) | Робоча конфігурація й переїзд з VRT | Draft |
 | [017](017-backup-settings-ui/spec.md) | Налаштування бекапів в інтерфейсі | Implemented |
 | [018](018-ui-redesign/spec.md) | Новий вигляд: дві теми, рух, логотип, усі екрани | Implemented |
@@ -83,7 +83,7 @@ docs/specs/NNN-коротка-назва/
 | [021](021-fixed-a11y-grouping/spec.md) | Фіксоване групування проблем доступності | Implemented |
 | [022](022-remove-variation-groups/spec.md) | Без груп варіацій | Implemented |
 | [023](023-ukrainian-ui/spec.md) | Українська мова інтерфейсу | Implemented |
-| [024](024-elements-instead-of-areas/spec.md) | Елементи замість областей: ігнорувати й порівнювати те, що на екрані | Approved |
+| [024](024-elements-instead-of-areas/spec.md) | Елементи замість областей: ігнорувати й порівнювати те, що на екрані | Implemented |
 
 Статусу `Verified` поки немає в жодної: інтеграцію з реальною Jira Cloud і прогони на сервері
 команда ще не підтвердила.

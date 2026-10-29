@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| Статус | Approved |
+| Статус | Implemented |
 | Власник | Дмитро Назаренко |
 | Оновлено | 2026-10-29 |
 | Дизайн | [design.md](design.md) (спільний з [024](../024-elements-instead-of-areas/design.md)), [tasks.md 024](../024-elements-instead-of-areas/tasks.md) |

@@ -56,7 +56,7 @@
     Docker, переглянувши знімок.
   - Залежить від: T8–T10.
 - [x] **T12** Документація.
-  - Статуси 015 і 024 → `Implemented`, коли код злито в `main`; ADR-0018 → `Accepted` після згоди.
+  - Статуси 015 і 024 → `Implemented`; ADR-0018 → `Accepted` (2026-10-29).
   - `DEMO.md`: як показати вибір елементів.
   - [018](../018-ui-redesign/spec.md): посилання на 024 біля вимог до рядка інструментів.
   - [019](../019-element-rules-in-review/spec.md): «Rules for this screen» тепер «What's compared».

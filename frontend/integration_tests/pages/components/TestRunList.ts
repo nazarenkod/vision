@@ -10,7 +10,6 @@ export class TestRunList extends Table {
   // locators, not their text: an assertion on them retries while the list
   // re-renders, which a one-shot allTextContents() read wrong under load
   cardNames = this.cards.getByTestId("cardName");
-  groupToggle = this.page.getByTestId("groupVariationsToggle");
   diffToggle = this.page.getByTestId("showDiffToggle");
   compactDensity = this.page.getByTestId("compactDensity");
   standardDensity = this.page.getByTestId("standardDensity");

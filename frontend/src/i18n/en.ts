@@ -124,12 +124,6 @@ export const en = {
     "Mobile screenshots, accessibility and Jira are set up in the project's settings, which open right after it is created.",
 
   "review.autoApprove": "Auto approve feature",
-  "review.bulkApprove": "Bulk approve/reject variations",
-  "review.bulkApproveHelp":
-    "Review and bulk approve or reject a screen's variations (e.g. all locales) in one dialog. Only variations with the same change are pre-selected; different ones are left for manual review.",
-  "review.groupBy": "Group variations by",
-  "review.groupByHelp":
-    "Which test-variation axis differs within a group. Screens that match on everything except this axis are grouped in the test run list and reviewed together — e.g. customTags for per-locale screenshots.",
 
   "comparison.library": "Image comparison library",
   "comparison.engines": "Image comparison",
@@ -339,13 +333,6 @@ export const en = {
   "runs.standardDensity": "Standard density",
   "runs.comfortable": "Comfortable",
   "runs.comfortableDensity": "Comfortable density",
-  "runs.groupHelpCard":
-    "Collapses a screen's variations into one card by group.",
-  "runs.groupHelpRow": "Collapses a screen's variations into one row by group.",
-  "runs.groupHelpWhere":
-    'Set it in Projects → Edit the project → "Group variations by".',
-  "runs.groupHelpAxis": "Current axis: {axis}.",
-  "runs.groupVariations": "Group variations",
   "runs.diffHelp": "Toggle diff. Hotkey: D",
   "runs.showDiff": "Show diff",
   "runs.searchByName": "Search by name",
@@ -505,12 +492,6 @@ export const en = {
   "review.hotkey": "Hotkey: {key}",
   "review.approve": "Approve",
   "review.reject": "Reject",
-  "review.approveVariationsHelp":
-    "Review and approve this screen's matching variations (e.g. all locales) before applying",
-  "review.approveVariations": "Approve variations",
-  "review.rejectVariationsHelp":
-    "Review and reject this screen's matching variations (e.g. all locales) before applying",
-  "review.rejectVariations": "Reject variations",
   "review.devices": "Devices",
   "review.approveAll": "Approve all {count}",
   "review.approveDevicesTitle": {
@@ -765,34 +746,6 @@ export const en = {
   "bug.typeName": "Type a name",
   "bug.nobody": "Nobody found",
   "bug.searchByName": "Search by name",
-
-  // variations
-  "variations.approveTitle": "Approve variations — review before applying",
-  "variations.rejectTitle": "Reject variations — review before applying",
-  "variations.viewFull": "View {name} full size",
-  "variations.approving": {
-    one: "Approving {count} variations…",
-    other: "Approving {count} variations…",
-  },
-  "variations.rejecting": {
-    one: "Rejecting {count} variations…",
-    other: "Rejecting {count} variations…",
-  },
-  "variations.matchingSelected": "{selected} of {total} matching selected",
-  "variations.toggleDiff": "Toggle diff. Hotkey: D",
-  "variations.showDiff": "Show diff",
-  "variations.clickThumb": "Click a thumbnail to view it full-size.",
-  "variations.skipped": "{count} didn't match — review separately",
-  "variations.skippedHelp":
-    "These don't match the change you're reviewing, so they're unchecked. Open each to inspect and include only if it's the same intended change.",
-  "variations.cancel": "Cancel",
-  "variations.approveSelected": "Approve {count} selected",
-  "variations.rejectSelected": "Reject {count} selected",
-  "variations.os": "OS: {value}",
-  "variations.device": "Device: {value}",
-  "variations.customTags": "Custom Tags: {value}",
-  "variations.diff": "Diff: {value}%",
-  "variations.tolerance": "Diff tolerance: {value}%",
 
   // crossDevice
   "crossDevice.noTree": "This screenshot came without a UI tree.",

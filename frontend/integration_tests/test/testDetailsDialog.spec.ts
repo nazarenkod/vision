@@ -8,7 +8,7 @@ import {
   TEST_UNRESOLVED,
 } from "~client/_test/test.data.helper";
 import { GO_TO_NEXT_KEY } from "~client/constants/storage";
-import { TestRun } from "~client/types";
+import { Project, TestRun } from "~client/types";
 import {
   API_URL,
   mockGetBuildDetails,
@@ -51,7 +51,7 @@ test("raises its toast clear of the approve buttons", async ({
     TEST_UNRESOLVED.id,
   );
   // by text, not by role name: the tooltip wrapper makes "Hotkey: A" the
-  // button's accessible name. Anchored so "Approve variations" cannot match.
+  // button's accessible name. Anchored so no longer label can match.
   const approve = page.locator("button").filter({ hasText: /^Approve$/ });
   await expect(approve).toBeVisible();
   const buttons = await approve.boundingBox();
@@ -261,6 +261,29 @@ test("shows the diff against the tolerance and the steps of the review", async (
   const dots = page.getByTestId("stepDots").locator("[data-state]");
   await expect(dots).toHaveCount(2);
   await expect(dots.first()).toHaveAttribute("data-state", "current");
+});
+
+// the bulk review of a screen's variations was removed (022); a project saved
+// with it on still has the columns, and the review must not bring it back
+test("offers no variations actions, even where the project had them on", async ({
+  openProjectPage,
+  page,
+}) => {
+  const sibling = { ...TEST_UNRESOLVED, id: "sibling", customTags: "uk" };
+  await mockGetProjects(page, [
+    {
+      ...project,
+      bulkApproveVariations: true,
+      bulkApproveGroupBy: "customTags",
+    } as Project,
+  ]);
+  await mockGetTestRuns(page, build.id, [TEST_UNRESOLVED, sibling]);
+  await mockTestRun(page, sibling);
+
+  await openProjectPage(project.id, build.id, TEST_UNRESOLVED.id);
+
+  await expect(page.getByTestId("approveButton")).toBeVisible();
+  await expect(page.getByText(/variations/i)).toHaveCount(0);
 });
 
 test("takes a decision back with Undo", async ({ openProjectPage, page }) => {

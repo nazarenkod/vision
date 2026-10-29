@@ -10,7 +10,7 @@ upstream VRT, а згодом зможе працювати й на живій.
 |---|---|---|
 | `TestRun` | `uiTreeName`, `baselineUiTreeName`, `uiTreeOptions`, `a11yReportName`, `a11yNewCount`, `a11yTotalCount`, `diffRegions`, `changeSignature`, `imageThumbnailName`, `diffThumbnailName`, `captureWarnings`, `semanticChangeCount`, `componentChanges` | результати аналізу дерева: файли й лічильники |
 | `TestVariation`, `Baseline` | `baselineUiTreeName` / `uiTreeName` | дерево еталона йде разом із картинкою |
-| `Project` | `jiraUrl`, `jiraToken` (спільний, необов'язковий), `jiraEmail`, `jiraIssueType`, `jiraLinkType`, `uiTreeSettings` (JSON) | Jira і налаштування мобільного порівняння, заголовок екрана |
+| `Project` | `jiraUrl`, `jiraToken` (спільний, необов'язковий), `jiraEmail`, `jiraIssueType`, `jiraLinkType`, `uiTreeSettings` (JSON); `bulkApproveVariations`, `bulkApproveGroupBy` — від прибраних груп варіацій ([022](../specs/022-remove-variation-groups/spec.md)), лишаються в рядку, але не читаються й не віддаються API | Jira і налаштування мобільного порівняння, заголовок екрана |
 | `User` | `jiraToken`, `jiraEmail`, `lastSignInAt` | особистий токен Jira ([ADR-0010](../decisions/0010-personal-jira-tokens.md)); останній вхід в інтерфейс паролем чи SSO, для сторінки Users ([018](../specs/018-ui-redesign/spec.md)) |
 
 `uiTreeSettings` — JSON, який читає `parseUiTreeSettings` (`ui-tree/comparison-inputs.ts`):

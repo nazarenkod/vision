@@ -20,7 +20,7 @@ export const SETTINGS_SECTIONS = [
   {
     id: "review",
     title: "section.review",
-    labels: ["review.autoApprove", "review.bulkApprove", "review.groupBy"],
+    labels: ["review.autoApprove"],
   },
   {
     id: "comparison",
@@ -156,8 +156,6 @@ const FIELD_SECTION: Partial<Record<keyof ProjectDto, SectionId>> = {
   maxBuildAllowed: "general",
   maxBranchLifetime: "general",
   autoApproveFeature: "review",
-  bulkApproveVariations: "review",
-  bulkApproveGroupBy: "review",
   imageComparison: "comparison",
   imageComparisonConfig: "comparison",
   jiraUrl: "jira",

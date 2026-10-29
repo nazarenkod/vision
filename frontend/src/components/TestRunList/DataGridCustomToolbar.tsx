@@ -7,7 +7,6 @@ import {
   TestRunView,
 } from "./TestRunListControls";
 import { TestRun } from "../../types";
-import { GroupByAxis } from "../../_helpers/testRunGroup.helper";
 
 // how the data grid learns the types of the props passed via slotProps.toolbar
 declare module "@mui/x-data-grid" {
@@ -18,9 +17,6 @@ declare module "@mui/x-data-grid" {
     onViewChange: (view: TestRunView) => void;
     density: TestRunDensity;
     onDensityChange: (density: TestRunDensity) => void;
-    grouped: boolean;
-    onGroupedChange: (grouped: boolean) => void;
-    groupByAxis: GroupByAxis;
     showDiff: boolean;
     onShowDiffChange: (showDiff: boolean) => void;
     onProcessed: () => void;
@@ -34,9 +30,6 @@ export const DataGridCustomToolbar: React.FunctionComponent<{
   onViewChange: (view: TestRunView) => void;
   density: TestRunDensity;
   onDensityChange: (density: TestRunDensity) => void;
-  grouped: boolean;
-  onGroupedChange: (grouped: boolean) => void;
-  groupByAxis: GroupByAxis;
   showDiff: boolean;
   onShowDiffChange: (showDiff: boolean) => void;
   onProcessed: () => void;
@@ -47,9 +40,6 @@ export const DataGridCustomToolbar: React.FunctionComponent<{
   onViewChange,
   density,
   onDensityChange,
-  grouped,
-  onGroupedChange,
-  groupByAxis,
   showDiff,
   onShowDiffChange,
   onProcessed,
@@ -60,9 +50,6 @@ export const DataGridCustomToolbar: React.FunctionComponent<{
       onViewChange={onViewChange}
       density={density}
       onDensityChange={onDensityChange}
-      grouped={grouped}
-      onGroupedChange={onGroupedChange}
-      groupByAxis={groupByAxis}
       showDiff={showDiff}
       onShowDiffChange={onShowDiffChange}
     />

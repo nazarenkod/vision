@@ -15,8 +15,6 @@ const ukrainian: Text = (key, params) =>
 
 const project = {
   ...TEST_PROJECT,
-  bulkApproveVariations: false,
-  bulkApproveGroupBy: "customTags",
   jiraUrl: null,
   uiTreeSettings: JSON.stringify({
     excludeSystemBars: true,
@@ -52,6 +50,16 @@ describe("project settings", () => {
       sections: ["a11y"],
       labels: ["Screen title in the UI tree"],
     });
+  });
+
+  // the bulk review of a screen's variations was removed (REQ-022-01)
+  it("finds no settings for variations in either language", () => {
+    for (const query of ["variation", "group", "bulk"]) {
+      expect(matchSettings(query).sections).toEqual([]);
+    }
+    for (const query of ["варіац", "групувати"]) {
+      expect(matchSettings(query, ukrainian).sections).toEqual([]);
+    }
   });
 
   it("finds a setting by its Ukrainian or English name", () => {

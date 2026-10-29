@@ -3,7 +3,9 @@ import { IsUUID, IsString, IsNumber, IsBoolean, IsEnum, IsJSON, IsDate, IsOption
 import { ImageComparison, Project } from '@prisma/client';
 import { Type } from 'class-transformer';
 
-export class ProjectDto implements Project {
+// the variation group columns stay in the row (ADR-0003) but are no longer
+// part of the API (022)
+export class ProjectDto implements Omit<Project, 'bulkApproveVariations' | 'bulkApproveGroupBy'> {
   @ApiProperty()
   @IsUUID()
   readonly id: string;
@@ -49,14 +51,6 @@ export class ProjectDto implements Project {
   @ApiProperty()
   @IsJSON()
   imageComparisonConfig: string;
-
-  @ApiProperty()
-  @IsBoolean()
-  bulkApproveVariations: boolean;
-
-  @ApiProperty()
-  @IsString()
-  bulkApproveGroupBy: string;
 
   @ApiPropertyOptional({ example: 'https://jira.example.com' })
   @IsOptional()

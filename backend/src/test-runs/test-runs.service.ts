@@ -21,10 +21,8 @@ import { TestRunDto } from './dto/testRun.dto';
 import { getTestVariationUniqueData } from '../utils';
 import { CompareService } from '../compare/compare.service';
 import { UpdateTestRunDto } from './dto/update-test.dto';
-import { parseConfig } from '../compare/utils';
-import { DEFAULT_CONFIG } from '../compare/libs/pixelmatch/pixelmatch.service';
 import { PixelmatchConfig } from '../compare/libs/pixelmatch/pixelmatch.types';
-import { signaturesMatch, SIGNATURE_LENGTH } from '../compare/libs/pixelmatch/signature.core';
+import { SIGNATURE_LENGTH } from '../compare/libs/pixelmatch/signature.core';
 import { CrossDeviceResult, StructureInfo, UiTreeService } from '../ui-tree/ui-tree.service';
 import { UiTree } from '../ui-tree/ui-tree.types';
 import { A11yIssuesService } from '../a11y/a11y-issues.service';
@@ -200,139 +198,6 @@ export class TestRunsService {
   }
 
   /**
-   * Finds sibling variations of a test run in the same build — same screen
-   * (name) and same test-variation axes except the one configured on the project
-   * as `bulkApproveGroupBy` (customTags by default, i.e. per-locale screenshots).
-   * The feature is opt-in per project via `bulkApproveVariations`.
-   *
-   * Matching uses a position-independent color signature of the changed pixels
-   * (which colors appeared/changed), so it survives per-locale layout shifts —
-   * e.g. a title wrapping to a different number of lines pushes the whole screen
-   * down, but the same change (a moved selection, a recolored button) still
-   * produces the same signature. A loose guard on change size (diffPercent) also
-   * skips variations whose change area is far larger/smaller — a same-palette but
-   * additional/different change — while tolerating per-locale text reflow.
-   * Siblings that don't match, or have no diff to compare, are reported as
-   * skipped. Used by {@link getMatchingVariations}.
-   */
-  private async findMatchingSiblings(
-    id: string
-  ): Promise<{ testRun: TestRun; matching: TestRun[]; skipped: SkippedSibling[] }> {
-    const testRun = await this.findOne(id);
-    if (!testRun) {
-      throw new Error(`No test run found: ${id}`);
-    }
-
-    const project = testRun.projectId
-      ? await this.prismaService.project.findUnique({ where: { id: testRun.projectId } })
-      : null;
-    if (!project?.bulkApproveVariations) {
-      return { testRun, matching: [], skipped: [] };
-    }
-
-    // Mirror the project's diff config so the change signature classifies the
-    // same way the normal pixelmatch diff does, rather than a hardcoded threshold.
-    const config: PixelmatchConfig = {
-      ...DEFAULT_CONFIG,
-      ...parseConfig(project.imageComparisonConfig, DEFAULT_CONFIG, this.logger),
-    };
-
-    const groupBy = resolveGroupByAxis(project.bulkApproveGroupBy);
-    const fixedAxes: Record<string, string | null> = {};
-    for (const axis of GROUP_BY_AXES) {
-      if (axis !== groupBy) {
-        fixedAxes[axis] = (testRun as unknown as Record<string, string | null>)[axis] ?? null;
-      }
-    }
-
-    const siblings = await this.prismaService.testRun.findMany({
-      where: {
-        id: { not: testRun.id },
-        buildId: testRun.buildId,
-        branchName: testRun.branchName,
-        name: testRun.name,
-        ...fixedAxes,
-        status: { in: [TestStatus.unresolved, TestStatus.new] },
-      },
-    });
-
-    const matching: TestRun[] = [];
-    const skipped: SkippedSibling[] = [];
-
-    // Comparing change sizes is free, computing a signature costs two decoded
-    // screenshots — so the cheap test goes first and takes those siblings out
-    // of the expensive pass entirely.
-    const candidates: TestRun[] = [];
-    for (const sibling of siblings) {
-      if (!sibling.diffPercent) {
-        // Nothing changed on this one, so there is no change to recognise —
-        // the same verdict the signature pass would have reached, for free.
-        skipped.push({ run: sibling, reason: 'no diff to match' });
-      } else if (!magnitudesSimilar(testRun.diffPercent, sibling.diffPercent)) {
-        skipped.push({ run: sibling, reason: 'different change size' });
-      } else {
-        candidates.push(sibling);
-      }
-    }
-
-    // The reviewed run and every remaining sibling are signed in one bounded
-    // fan-out across the worker pool. Signing them one after another is what
-    // made this dialog take tens of seconds on a build with many locales.
-    const [referenceSignature, ...candidateSignatures] = await mapWithConcurrency(
-      [testRun, ...candidates],
-      SIGNATURE_CONCURRENCY,
-      (run) => this.getChangeSignature(run, config)
-    );
-
-    // Nothing to match against: every sibling goes to manual review, whatever
-    // the cheap pass made of it.
-    if (!referenceSignature) {
-      return {
-        testRun,
-        matching,
-        skipped: siblings.map((run) => ({ run, reason: 'no reference diff' })),
-      };
-    }
-
-    candidates.forEach((sibling, index) => {
-      const signature = candidateSignatures[index];
-      if (!signature) {
-        skipped.push({ run: sibling, reason: 'no diff to match' });
-      } else if (!signaturesMatch(referenceSignature, signature)) {
-        skipped.push({ run: sibling, reason: 'different change pattern' });
-      } else {
-        matching.push(sibling);
-      }
-    });
-
-    // The cheap pass ran first, so restore the order the siblings came in —
-    // the dialog lists them as one group and its order should not depend on
-    // which test rejected a sibling.
-    const orderOf = new Map(siblings.map((sibling, index) => [sibling.id, index] as const));
-    skipped.sort((a, b) => orderOf.get(a.run.id) - orderOf.get(b.run.id));
-
-    return { testRun, matching, skipped };
-  }
-
-  /**
-   * Returns the group of variations for the reviewed run — the run itself plus
-   * the sibling variations whose change matches it — for the reviewer to confirm
-   * before a bulk approve/reject. Nothing is mutated here: the actual action is
-   * driven by the reviewer's explicit selection (regular approve/reject of the
-   * chosen ids), so a regression that merely looks similar can never be approved
-   * without a human seeing it. `skipped` lists siblings left out of the group
-   * (different/additional change, or no diff to compare).
-   */
-  async getMatchingVariations(
-    id: string
-  ): Promise<{ variations: TestRunDto[]; skipped: Array<TestRunDto & { reason: string }> }> {
-    const { testRun, matching, skipped } = await this.findMatchingSiblings(id);
-    const variations = [testRun, ...matching].map((run) => new TestRunDto(run));
-    const skippedDto = skipped.map((item) => ({ ...new TestRunDto(item.run), reason: item.reason }));
-    return { variations, skipped: skippedDto };
-  }
-
-  /**
    * Position-independent color signature of the change between a test run's
    * baseline and image. Null when there is no baseline, dimensions differ, or
    * nothing changed.
@@ -342,8 +207,8 @@ export class TestRunsService {
    * it is read from. The rest of this is the fallback for runs that carry no
    * stored signature — ingested before the column existed, or compared by
    * something other than pixelmatch: their bytes go to the worker pool
-   * undecoded, and the result is memoized so reopening the dialog on an old
-   * build does not pay for the same decodes twice.
+   * undecoded, and the result is memoized so reopening the change groups of
+   * an old build does not pay for the same decodes twice.
    */
   async getChangeSignature(testRun: TestRun, config: PixelmatchConfig): Promise<number[] | null> {
     const stored = parseStoredSignature(testRun.changeSignature, config, this.logger);
@@ -862,23 +727,10 @@ interface AutoApproveProps {
   testRun: TestRun;
 }
 
-interface SkippedSibling {
-  run: TestRun;
-  reason: string;
-}
-
-// Test-variation axes a project may bulk-approve across (the one that varies
-// within a group). customTags (e.g. locales) is the default.
-const GROUP_BY_AXES = ['customTags', 'os', 'device', 'browser', 'viewport'] as const;
-
-function resolveGroupByAxis(value: string | null | undefined): string {
-  return value && (GROUP_BY_AXES as readonly string[]).includes(value) ? value : 'customTags';
-}
-
-// How many sibling screenshots may be in the worker pool at once for one
-// variations dialog. The pool queue is shared with build ingestion, and every
-// queued job holds two image buffers, so the fan-out stays bounded rather than
-// handing the pool a job per locale.
+// How many screenshots may be in the worker pool at once while a build's
+// change groups are signed. The pool queue is shared with build ingestion, and
+// every queued job holds two image buffers, so the fan-out stays bounded rather
+// than handing the pool a job per screen.
 export const SIGNATURE_CONCURRENCY = 8;
 
 // Signatures kept across requests, keyed by the image pair and diff settings.
@@ -942,7 +794,7 @@ export async function mapWithConcurrency<T, R>(items: T[], limit: number, task: 
  * project's comparison settings have moved on since it was written.
  *
  * That last case is the point. Comparing a signature taken at one threshold
- * against a sibling's taken at another quietly makes grouping worse, and the
+ * against another run's taken at another quietly makes grouping worse, and the
  * reviewer has no way to tell why. The in-memory memo has always keyed on the
  * same settings; this is the stored equivalent.
  */
@@ -975,8 +827,8 @@ function parseStoredSignature(
 }
 
 // Same palette but a much larger/smaller change area signals a different or
-// additional change (an extra element changed too), not just per-locale text
-// reflow — which stays well under this ratio. Such variations go to manual review.
+// additional change (an extra element changed too), not just text reflowing
+// differently — which stays well under this ratio. Such runs stay out of a group.
 const MATCH_MAGNITUDE_RATIO = 2;
 
 export function magnitudesSimilar(a: number | null, b: number | null): boolean {

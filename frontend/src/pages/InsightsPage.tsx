@@ -29,6 +29,7 @@ import { CountUp } from "../components/motion/useCountUp";
 import { ErrorState } from "../components/EmptyState";
 import { shimmer } from "../components/SkeletonList";
 import { barShare, largest } from "../_helpers/insights.helper";
+import { MessageKey, useT } from "../i18n";
 
 const PERIODS = [30, 90, 180, 365];
 const PERIOD_KEY = "vision.insightsDays";
@@ -45,8 +46,15 @@ const readPeriod = () => {
 const checkName = (item: { name: string; customTags: string }) =>
   item.customTags ? `${item.name} [${item.customTags}]` : item.name;
 
-const date = (value: string | null) =>
-  value ? new Date(value).toLocaleDateString() : "—";
+const RULE_KEY: Record<string, MessageKey> = {
+  "touch-target": "a11y.rule.touchTarget",
+  "low-contrast": "a11y.rule.lowContrast",
+  "missing-label": "a11y.rule.missingLabel",
+  "input-without-label": "a11y.rule.inputWithoutLabel",
+  "duplicate-label": "a11y.rule.duplicateLabel",
+  "redundant-role": "a11y.rule.redundantRole",
+  "not-accessible": "a11y.rule.notAccessible",
+};
 
 const Section: React.FunctionComponent<{
   title: string;
@@ -170,6 +178,12 @@ const InsightsPage: React.FunctionComponent = () => {
   const { projectId = "" } = useParams<{ projectId: string }>();
   const navigate = useNavigate();
   const { enqueueSnackbar } = useSnackbar();
+  const { t, formatDate, formatNumber } = useT();
+  // the parts toLocaleDateString shows
+  const date = (value: string | null) =>
+    value
+      ? formatDate(value, { year: "numeric", month: "numeric", day: "numeric" })
+      : "—";
   const { user } = useUserState();
   const canEdit = user?.role === "admin" || user?.role === "editor";
   const [days, setDays] = React.useState(readPeriod);
@@ -219,7 +233,9 @@ const InsightsPage: React.FunctionComponent = () => {
       }
     }
     setDeleting(false);
-    enqueueSnackbar(`Deleted ${done} baselines`, { variant: "success" });
+    enqueueSnackbar(t("insights.deleted", { count: done }), {
+      variant: "success",
+    });
     load();
   };
 
@@ -244,7 +260,7 @@ const InsightsPage: React.FunctionComponent = () => {
         }}
       >
         <Typography variant="h4" component="h1">
-          Insights
+          {t("insights.title")}
         </Typography>
         <ProjectSelect
           compact
@@ -255,7 +271,7 @@ const InsightsPage: React.FunctionComponent = () => {
         <TextField
           select
           size="small"
-          label="Period"
+          label={t("insights.period")}
           value={days}
           onChange={(event) => changePeriod(Number(event.target.value))}
           InputLabelProps={{ shrink: true }}
@@ -264,7 +280,7 @@ const InsightsPage: React.FunctionComponent = () => {
         >
           {PERIODS.map((period) => (
             <MenuItem key={period} value={period}>
-              Last {period} days
+              {t("insights.lastDays", { count: period })}
             </MenuItem>
           ))}
         </TextField>
@@ -288,7 +304,7 @@ const InsightsPage: React.FunctionComponent = () => {
       )}
       {data === null && (
         <ErrorState
-          title="Could not load the insights."
+          title={t("insights.loadFailed")}
           reason={loadError}
           onRetry={load}
         />
@@ -297,46 +313,54 @@ const InsightsPage: React.FunctionComponent = () => {
         <>
           {data.partialHistory && (
             <Alert severity="info">
-              Stored history starts on {date(data.historyStart)} (the oldest
-              build kept: the project is younger, or older builds were removed
-              by its build limit). “Unused” means unused since then.
+              {t("insights.partial", { date: date(data.historyStart) })}
             </Alert>
           )}
 
           <Box sx={{ display: "flex", gap: 1.5, flexWrap: "wrap" }}>
-            <Stat label="baselines" value={data.summary.baselines} />
             <Stat
-              label={`unused for ${data.days} days`}
+              label={t("insights.baselines")}
+              value={data.summary.baselines}
+            />
+            <Stat
+              label={t("insights.unusedFor", { count: data.days })}
               value={data.summary.unused}
               tone={data.summary.unused ? "warning" : undefined}
             />
             <Stat
-              label={`of ${data.summary.runs} runs changed`}
-              value={`${data.summary.changedPercent}%`}
+              label={t("insights.changedOf", { count: data.summary.runs })}
+              value={`${formatNumber(data.summary.changedPercent)}%`}
             />
             <Stat
-              label="flips (changed, then back)"
+              label={t("insights.flips")}
               value={data.summary.flips}
               tone={data.summary.flips ? "danger" : undefined}
             />
             <Stat
-              label="accessibility issues"
+              label={t("insights.a11yIssues")}
               value={data.summary.a11yIssues}
             />
-            <Stat label="waiting for a decision" value={data.summary.waiting} />
+            <Stat label={t("insights.waiting")} value={data.summary.waiting} />
             <Stat
-              label="median time to a decision"
+              label={t("insights.median")}
               value={
                 data.summary.medianDecisionHours === null
                   ? "—"
-                  : `${data.summary.medianDecisionHours} h`
+                  : t("insights.hours", {
+                      count: data.summary.medianDecisionHours,
+                    })
               }
             />
           </Box>
 
           <Section
-            title="Unused baselines"
-            hint={`Nothing was compared with these in the last ${data.days} days${data.partialHistory ? " of history" : ""}: the screen was renamed, removed from the tests, or the device is gone. Deleting a baseline removes its images and history.`}
+            title={t("insights.unused")}
+            hint={t(
+              data.partialHistory
+                ? "insights.unusedHintPartial"
+                : "insights.unusedHint",
+              { count: data.days },
+            )}
             action={
               canEdit && data.unused.length > 0 ? (
                 <Box sx={{ display: "flex", gap: 1 }}>
@@ -351,8 +375,8 @@ const InsightsPage: React.FunctionComponent = () => {
                     }
                   >
                     {selected.size === data.unused.length
-                      ? "Select none"
-                      : "Select all"}
+                      ? t("insights.selectNone")
+                      : t("insights.selectAll")}
                   </Button>
                   <Button
                     size="small"
@@ -361,25 +385,27 @@ const InsightsPage: React.FunctionComponent = () => {
                     disabled={!selected.size || deleting}
                     onClick={() => setConfirm(true)}
                   >
-                    Delete {selected.size || ""}
+                    {t("insights.delete", { count: selected.size || "" })}
                   </Button>
                 </Box>
               ) : undefined
             }
           >
             {data.unused.length === 0 ? (
-              <Empty text="Every baseline was used." />
+              <Empty text={t("insights.allUsed")} />
             ) : (
               <TableContainer sx={{ maxHeight: 420 }}>
                 <Table size="small" stickyHeader>
                   <TableHead>
                     <TableRow>
                       {canEdit && <TableCell padding="checkbox" />}
-                      <TableCell>Check</TableCell>
-                      <TableCell>Device</TableCell>
-                      <TableCell>Branch</TableCell>
-                      <TableCell>Last used</TableCell>
-                      <TableCell align="right">Idle, days</TableCell>
+                      <TableCell>{t("insights.check")}</TableCell>
+                      <TableCell>{t("insights.device")}</TableCell>
+                      <TableCell>{t("insights.branch")}</TableCell>
+                      <TableCell>{t("insights.lastUsed")}</TableCell>
+                      <TableCell align="right">
+                        {t("insights.idleDays")}
+                      </TableCell>
                     </TableRow>
                   </TableHead>
                   <TableBody>
@@ -392,7 +418,9 @@ const InsightsPage: React.FunctionComponent = () => {
                               checked={selected.has(item.id)}
                               onChange={() => toggle(item.id)}
                               inputProps={{
-                                "aria-label": `Select ${item.name}`,
+                                "aria-label": t("insights.select", {
+                                  name: item.name,
+                                }),
                               }}
                             />
                           </TableCell>
@@ -400,7 +428,10 @@ const InsightsPage: React.FunctionComponent = () => {
                         <TableCell>
                           {checkName(item)}{" "}
                           {!item.hasBaseline && (
-                            <StatusPill tone="neutral" label="never approved" />
+                            <StatusPill
+                              tone="neutral"
+                              label={t("insights.neverApproved")}
+                            />
                           )}
                         </TableCell>
                         <TableCell>{item.device}</TableCell>
@@ -420,24 +451,32 @@ const InsightsPage: React.FunctionComponent = () => {
           </Section>
 
           <Section
-            title="Unstable screens"
-            hint="Flips: the screen differed, then matched the same baseline again with nobody changing it. That is the screen moving, not the app: animations, data, timing. Screens that change on most runs or get new baselines often are listed after them."
+            title={t("insights.unstable")}
+            hint={t("insights.unstableHint")}
           >
             {data.unstable.length === 0 ? (
-              <Empty text="No screen changed often enough to stand out." />
+              <Empty text={t("insights.noUnstable")} />
             ) : (
               <TableContainer sx={{ maxHeight: 420 }}>
                 <Table size="small" stickyHeader>
                   <TableHead>
                     <TableRow>
-                      <TableCell>Check</TableCell>
-                      <TableCell>Devices</TableCell>
-                      <TableCell align="right">Runs</TableCell>
-                      <TableCell align="right">Changed</TableCell>
-                      <TableCell align="right">Flips</TableCell>
-                      <TableCell align="right">Rejected</TableCell>
-                      <TableCell align="right">New baselines</TableCell>
-                      <TableCell>Last change</TableCell>
+                      <TableCell>{t("insights.check")}</TableCell>
+                      <TableCell>{t("insights.devices")}</TableCell>
+                      <TableCell align="right">{t("insights.runs")}</TableCell>
+                      <TableCell align="right">
+                        {t("insights.changed")}
+                      </TableCell>
+                      <TableCell align="right">
+                        {t("insights.flipsColumn")}
+                      </TableCell>
+                      <TableCell align="right">
+                        {t("insights.rejected")}
+                      </TableCell>
+                      <TableCell align="right">
+                        {t("insights.newBaselines")}
+                      </TableCell>
+                      <TableCell>{t("insights.lastChange")}</TableCell>
                     </TableRow>
                   </TableHead>
                   <TableBody>
@@ -449,7 +488,7 @@ const InsightsPage: React.FunctionComponent = () => {
                         </TableCell>
                         <TableCell align="right">{item.runs}</TableCell>
                         <TableCell align="right">
-                          {item.changedPercent}%
+                          {formatNumber(item.changedPercent)}%
                         </TableCell>
                         <TableCell align="right">
                           <Amount
@@ -479,21 +518,27 @@ const InsightsPage: React.FunctionComponent = () => {
             }}
           >
             <Section
-              title="Accessibility hotspots"
-              hint="Screens with the most issues in their newest screenshot (the worst device counts), with the bugs filed and false positives marked on them."
+              title={t("insights.hotspots")}
+              hint={t("insights.hotspotsHint")}
             >
               {data.a11yScreens.length === 0 ? (
-                <Empty text="No accessibility issues, or no screenshots came with a UI tree." />
+                <Empty text={t("insights.noHotspots")} />
               ) : (
                 <TableContainer sx={{ maxHeight: 380 }}>
                   <Table size="small" stickyHeader>
                     <TableHead>
                       <TableRow>
-                        <TableCell>Check</TableCell>
-                        <TableCell align="right">Issues</TableCell>
-                        <TableCell align="right">New</TableCell>
-                        <TableCell align="right">Bugs filed</TableCell>
-                        <TableCell align="right">False positives</TableCell>
+                        <TableCell>{t("insights.check")}</TableCell>
+                        <TableCell align="right">
+                          {t("insights.issues")}
+                        </TableCell>
+                        <TableCell align="right">{t("insights.new")}</TableCell>
+                        <TableCell align="right">
+                          {t("insights.bugsFiled")}
+                        </TableCell>
+                        <TableCell align="right">
+                          {t("insights.falsePositives")}
+                        </TableCell>
                       </TableRow>
                     </TableHead>
                     <TableBody>
@@ -529,11 +574,11 @@ const InsightsPage: React.FunctionComponent = () => {
               )}
             </Section>
             <Section
-              title="Most frequent issues"
-              hint="Across the newest screenshot of each check: what to fix once, in a shared component or style, to clear many screens."
+              title={t("insights.frequent")}
+              hint={t("insights.frequentHint")}
             >
               {data.a11yRules.length === 0 ? (
-                <Empty text="Nothing to rank." />
+                <Empty text={t("insights.nothingToRank")} />
               ) : (
                 data.a11yRules.map((rule) => (
                   <Box
@@ -544,7 +589,9 @@ const InsightsPage: React.FunctionComponent = () => {
                       gap: 2,
                     }}
                   >
-                    <Typography variant="body2">{rule.rule}</Typography>
+                    <Typography variant="body2">
+                      {RULE_KEY[rule.rule] ? t(RULE_KEY[rule.rule]) : rule.rule}
+                    </Typography>
                     <Box sx={{ width: 160, flexShrink: 0 }}>
                       <Amount
                         value={rule.count}
@@ -565,38 +612,42 @@ const InsightsPage: React.FunctionComponent = () => {
               gap: 2,
             }}
           >
-            <Section
-              title="Noise that gets approved"
-              hint="Tiny changes (under 0.2 %) approved again and again. A tolerance, or an element rule for the part that moves, would stop sending them to review."
-            >
+            <Section title={t("insights.noise")} hint={t("insights.noiseHint")}>
               {data.noise.length === 0 ? (
-                <Empty text="No screen keeps getting tiny changes approved." />
+                <Empty text={t("insights.noNoise")} />
               ) : (
                 data.noise.map((item) => (
                   <Typography key={checkName(item)} variant="body2">
-                    <b>{checkName(item)}</b>: {item.tinyApproved} tiny changes
-                    approved in {item.runs} runs
+                    <b>{checkName(item)}</b>:{" "}
+                    {t("insights.tinyApproved", {
+                      count: item.tinyApproved,
+                      runs: item.runs,
+                    })}
                   </Typography>
                 ))
               )}
             </Section>
             <Section
-              title="Screenshot quality"
-              hint="Taken while something was still loading, or with element changes the pixels did not show. Usually a missing wait in the test."
+              title={t("insights.quality")}
+              hint={t("insights.qualityHint")}
             >
               {data.captureIssues.length === 0 ? (
-                <Empty text="No screen stands out." />
+                <Empty text={t("insights.noQuality")} />
               ) : (
                 data.captureIssues.map((item) => (
                   <Typography key={checkName(item)} variant="body2">
                     <b>{checkName(item)}</b>:{" "}
                     {[
-                      item.loading ? `${item.loading} taken while loading` : "",
-                      item.hidden ? `${item.hidden} with hidden changes` : "",
+                      item.loading
+                        ? t("insights.whileLoading", { count: item.loading })
+                        : "",
+                      item.hidden
+                        ? t("insights.withHidden", { count: item.hidden })
+                        : "",
                     ]
                       .filter(Boolean)
                       .join(", ")}{" "}
-                    of {item.runs} runs
+                    {t("insights.ofRuns", { count: item.runs })}
                   </Typography>
                 ))
               )}
@@ -604,17 +655,20 @@ const InsightsPage: React.FunctionComponent = () => {
           </Box>
 
           <Section
-            title="Device coverage"
-            hint="Checks that run on other devices of the main branch but not on this one."
+            title={t("insights.coverage")}
+            hint={t("insights.coverageHint")}
           >
             {data.coverage.length === 0 ? (
-              <Empty text="Every device runs every check." />
+              <Empty text={t("insights.fullCoverage")} />
             ) : (
               data.coverage.map((entry) => (
                 <Box key={entry.device}>
                   <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                    {entry.device}: {entry.missingCount} missing of{" "}
-                    {entry.checks + entry.missingCount}
+                    {t("insights.missing", {
+                      device: entry.device,
+                      missing: entry.missingCount,
+                      total: entry.checks + entry.missingCount,
+                    })}
                   </Typography>
                   <Typography variant="body2" color="textSecondary">
                     {entry.missing.map(checkName).join(", ")}
@@ -629,15 +683,12 @@ const InsightsPage: React.FunctionComponent = () => {
 
       <BaseModal
         open={confirm}
-        title={`Delete ${selected.size} baselines?`}
-        submitButtonText="Delete"
+        title={t("insights.deleteTitle", { count: selected.size })}
+        submitButtonText={t("insights.deleteSubmit")}
         onCancel={() => setConfirm(false)}
         onSubmit={deleteSelected}
         content={
-          <Typography variant="body2">
-            Their images and history go too. A check that runs again later comes
-            back as new.
-          </Typography>
+          <Typography variant="body2">{t("insights.deleteText")}</Typography>
         }
       />
     </Box>

@@ -75,18 +75,32 @@ export function placeholdersOf(message: Message): string[] {
 
 export const STORAGE_KEY = "vision.language";
 
-/** The language picked earlier in this browser, else Ukrainian only for a browser that puts it first. */
-export function initialLanguage(
-  stored: string | null | undefined,
-  browserLanguages: readonly string[] = [],
-): Language {
-  if (stored === "en" || stored === "uk") return stored;
-  return browserLanguages[0]?.toLowerCase().startsWith("uk") ? "uk" : "en";
+/**
+ * The language picked earlier in this browser; English for everyone else,
+ * whatever the browser's own language is.
+ */
+export function initialLanguage(stored: string | null | undefined): Language {
+  return stored === "uk" ? "uk" : "en";
 }
 
 export function formatNumber(value: number, language: Language): string {
+  // no thousands separators: counts and pixel sizes read as they did before
   return new Intl.NumberFormat(localeOf(language), {
     maximumFractionDigits: 3,
+    useGrouping: false,
+  }).format(value);
+}
+
+/** A number with a fixed count of decimals, as toFixed gives, with the language's decimal mark. */
+export function formatFixed(
+  value: number,
+  digits: number,
+  language: Language,
+): string {
+  return new Intl.NumberFormat(localeOf(language), {
+    minimumFractionDigits: digits,
+    maximumFractionDigits: digits,
+    useGrouping: false,
   }).format(value);
 }
 

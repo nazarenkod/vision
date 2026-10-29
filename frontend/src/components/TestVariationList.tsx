@@ -20,6 +20,7 @@ import { motion, tokens } from "../theme";
 import { staggered } from "./motion/Stagger";
 import { EmptyState } from "./EmptyState";
 import { deviceLabel } from "../_helpers/device.helper";
+import { useT } from "../i18n";
 
 /**
  * Baselines grouped by check (its name and custom tags, per branch): one card
@@ -51,6 +52,7 @@ const CheckCard: React.FunctionComponent<{
   );
   const shown = devices.find((d) => d.id === shownId) ?? devices[0];
   const check = devices[0];
+  const { t } = useT();
   return (
     <Card
       {...staggered(index, 12)}
@@ -108,19 +110,21 @@ const CheckCard: React.FunctionComponent<{
                   device.id === shown.id ? tokens.text : tokens.textSecondary,
               }}
             >
-              {deviceLabel(device)}
+              {deviceLabel(device, undefined, t)}
             </ButtonBase>
             <Button
               size="small"
               component={Link}
               to={`${routes.VARIATION_DETAILS_PAGE}/${device.id}`}
             >
-              History
+              {t("baselines.history")}
             </Button>
             <IconButton
               onClick={() => onDelete(device)}
               size="small"
-              aria-label={`Delete ${deviceLabel(device)}`}
+              aria-label={t("baselines.deleteOf", {
+                device: deviceLabel(device, undefined, t),
+              })}
             >
               <Delete fontSize="small" />
             </IconButton>
@@ -144,6 +148,7 @@ const TestVariationList: React.FunctionComponent<IProps> = ({
     null,
   );
 
+  const { t } = useT();
   const handleClose = () => {
     setSelectedItem(null);
   };
@@ -151,9 +156,8 @@ const TestVariationList: React.FunctionComponent<IProps> = ({
   return (
     <>
       {groups.length === 0 && (
-        <EmptyState title="No baselines here">
-          Baselines appear after the first approved screenshot, or none match
-          the filters.
+        <EmptyState title={t("baselines.empty")}>
+          {t("baselines.emptyHint")}
         </EmptyState>
       )}
       <Box
@@ -178,15 +182,19 @@ const TestVariationList: React.FunctionComponent<IProps> = ({
       {selectedItem && (
         <BaseModal
           open={!!selectedItem}
-          title={"Delete baseline"}
-          submitButtonText={"Delete"}
+          title={t("baselines.deleteTitle")}
+          submitButtonText={t("baselines.delete")}
           onCancel={handleClose}
           content={
             <>
-              <Typography>{`Are you sure you want to delete: ${selectedItem.name}?`}</Typography>
+              <Typography>
+                {t("baselines.deleteConfirm", { name: selectedItem.name })}
+              </Typography>
               <Typography variant="body2" color="textSecondary">
-                Only the baseline for {deviceLabel(selectedItem)} on{" "}
-                {selectedItem.branchName}.
+                {t("baselines.deleteScope", {
+                  device: deviceLabel(selectedItem, undefined, t),
+                  branch: selectedItem.branchName,
+                })}
               </Typography>
             </>
           }

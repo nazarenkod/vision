@@ -1,5 +1,6 @@
 import { createTheme, Theme } from "@mui/material/styles";
 import type {} from "@mui/x-data-grid/themeAugmentation";
+import { ukUA as ukUAGrid } from "@mui/x-data-grid/locales";
 import { GrowFromPointer } from "./components/motion/GrowFromPointer";
 
 // Two themes (ADR-0015). Light (A) sits next to the company's other internal
@@ -181,7 +182,16 @@ export const motion = {
   ms: (value: number) => `${value}ms`,
 };
 
-export function createAppTheme(mode: ThemeMode): Theme {
+export function createAppTheme(
+  mode: ThemeMode,
+  language: "en" | "uk" = "en",
+): Theme {
+  const theme = themeFor(mode);
+  // MUI's own texts (pagination, "No options", the data grid) in Ukrainian
+  return language === "uk" ? createTheme(theme, ukUAGrid) : theme;
+}
+
+function themeFor(mode: ThemeMode): Theme {
   const p = palettes[mode];
   return createTheme({
     palette: {

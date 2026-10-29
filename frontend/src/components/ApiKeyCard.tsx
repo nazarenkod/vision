@@ -15,6 +15,7 @@ import {
   VisibilityOff,
 } from "@mui/icons-material";
 import { motion, tokens } from "../theme";
+import { useT } from "../i18n";
 
 /** All but the last four characters hidden (REQ-018-68). */
 export const maskKey = (key: string | undefined): string =>
@@ -27,6 +28,7 @@ export const ApiKeyCard: React.FunctionComponent<{
   onReveal: (revealed: boolean) => void;
 }> = ({ apiKey, revealed, onReveal }) => {
   const [copied, setCopied] = React.useState(false);
+  const { t } = useT();
   React.useEffect(() => {
     if (!copied) return;
     const timer = setTimeout(() => setCopied(false), 1200);
@@ -42,8 +44,8 @@ export const ApiKeyCard: React.FunctionComponent<{
   return (
     <Card variant="outlined" data-testid="apiKeyCard">
       <CardHeader
-        title="Api key"
-        subheader="For the SDK, the CLI and the MCP server."
+        title={t("profile.apiKey")}
+        subheader={t("profile.apiKeyHelp")}
         subheaderTypographyProps={{ variant: "body2" }}
       />
       <CardContent sx={{ pt: 0 }}>
@@ -72,10 +74,10 @@ export const ApiKeyCard: React.FunctionComponent<{
           >
             {revealed ? apiKey : maskKey(apiKey)}
           </Typography>
-          <Tooltip title={revealed ? "Hide" : "Show"}>
+          <Tooltip title={t(revealed ? "profile.hide" : "profile.show")}>
             <IconButton
               size="small"
-              aria-label={revealed ? "Hide API key" : "Show API key"}
+              aria-label={t(revealed ? "profile.hideKey" : "profile.showKey")}
               onClick={() => onReveal(!revealed)}
             >
               {revealed ? (
@@ -85,10 +87,10 @@ export const ApiKeyCard: React.FunctionComponent<{
               )}
             </IconButton>
           </Tooltip>
-          <Tooltip title={copied ? "Copied" : "Copy"}>
+          <Tooltip title={t(copied ? "profile.copied" : "profile.copy")}>
             <IconButton
               size="small"
-              aria-label="Copy API key"
+              aria-label={t("profile.copyKey")}
               data-testid="copyApiKey"
               data-copied={copied ? "true" : "false"}
               onClick={copy}

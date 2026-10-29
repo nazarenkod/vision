@@ -23,6 +23,7 @@ import {
 } from "../../types";
 import { ChosenValue, JiraFieldInput } from "./JiraFieldInput";
 import { tokens } from "../../theme";
+import { useT } from "../../i18n";
 
 const JIRA_KEY = /^[A-Za-z][A-Za-z0-9_]*-\d+$/;
 
@@ -86,6 +87,7 @@ export const JiraBugDialog: React.FunctionComponent<{
   onDone: () => void;
 }> = ({ testRun, problems, onClose, onDone }) => {
   const { enqueueSnackbar } = useSnackbar();
+  const { t } = useT();
   const { selectedProjectId } = useProjectState();
   const projectId = selectedProjectId ?? "";
   const [parentKey, setParentKey] = React.useState(
@@ -251,11 +253,13 @@ export const JiraBugDialog: React.FunctionComponent<{
     }
     setProgress(null);
     if (created.length) {
-      enqueueSnackbar(`Filed ${created.join(", ")}`, { variant: "success" });
+      enqueueSnackbar(t("bug.filed", { keys: created.join(", ") }), {
+        variant: "success",
+      });
     }
     if (linked.length) {
       enqueueSnackbar(
-        `Filed already, linked: ${[...new Set(linked)].join(", ")}`,
+        t("bug.linkedAlready", { keys: [...new Set(linked)].join(", ") }),
         { variant: "info" },
       );
     }
@@ -272,8 +276,8 @@ export const JiraBugDialog: React.FunctionComponent<{
     >
       <DialogTitle>
         {problems.length > 1
-          ? `Create Jira bugs for ${problems.length} problems`
-          : "Create Jira bug"}
+          ? t("bug.titleMany", { count: problems.length })
+          : t("bug.title")}
       </DialogTitle>
       <DialogContent
         sx={{
@@ -285,17 +289,17 @@ export const JiraBugDialog: React.FunctionComponent<{
       >
         <TextField
           id="jira-parent"
-          label="Task"
+          label={t("bug.task")}
           placeholder="P24MOB-14136"
           value={parentKey}
           onChange={(event) => setParentKey(event.target.value)}
           error={!!parentKey && !keyValid}
           helperText={
             parentKey && !keyValid
-              ? "Looks like ABC-123"
+              ? t("bug.looksLike")
               : prep
                 ? `${prep.parent.summary}${prep.parent.assignee ? ` — ${prep.parent.assignee}` : ""}`
-                : "The bug goes under this task, into its project. Remembered for this screen."
+                : t("bug.taskHelp")
           }
         />
         {loading && <LinearProgress />}
@@ -306,7 +310,7 @@ export const JiraBugDialog: React.FunctionComponent<{
               <TextField
                 id="jira-issue-type"
                 select
-                label="Issue type"
+                label={t("bug.issueType")}
                 value={issueTypeId ?? ""}
                 onChange={(event) => setIssueTypeId(event.target.value)}
                 sx={{ flex: "1 1 200px" }}
@@ -314,7 +318,7 @@ export const JiraBugDialog: React.FunctionComponent<{
                 {prep.issueTypes.map((type) => (
                   <MenuItem key={type.id} value={type.id}>
                     {type.name}
-                    {type.subtask ? " (sub-task)" : ""}
+                    {type.subtask ? t("bug.subtask") : ""}
                   </MenuItem>
                 ))}
               </TextField>
@@ -322,7 +326,7 @@ export const JiraBugDialog: React.FunctionComponent<{
                 <TextField
                   id="jira-link-type"
                   select
-                  label="Link to the task as"
+                  label={t("bug.linkAs")}
                   value={linkType ?? ""}
                   onChange={(event) => setLinkType(event.target.value)}
                   sx={{ flex: "1 1 200px" }}
@@ -337,7 +341,7 @@ export const JiraBugDialog: React.FunctionComponent<{
             </Box>
             {issueType?.subtask && (
               <Typography variant="body2" color="textSecondary">
-                Created as a sub-task of {prep.parent.key}.
+                {t("bug.subtaskOf", { key: prep.parent.key })}
               </Typography>
             )}
             {inputs.map((input) => (
@@ -369,7 +373,10 @@ export const JiraBugDialog: React.FunctionComponent<{
             >
               <Typography variant="body2" sx={{ fontWeight: 600 }}>
                 {problems.length > 1
-                  ? `${prep.summary} and ${problems.length - 1} more`
+                  ? t("bug.andMore", {
+                      summary: prep.summary,
+                      count: problems.length - 1,
+                    })
                   : prep.summary}
               </Typography>
               {prep.filled.map((item) => (
@@ -380,69 +387,81 @@ export const JiraBugDialog: React.FunctionComponent<{
                 >
                   {item.field}:{" "}
                   <span style={{ color: tokens.text }}>{item.value}</span>
-                  {item.source === "task" ? " (from the task)" : ""}
+                  {item.source === "task" ? t("bug.fromTask") : ""}
                 </Typography>
               ))}
               <Typography variant="body2" color="textSecondary">
-                Problem id {prep.problem.code}
-                {problems.length > 1 ? " and one per problem" : ""}: in the
-                summary, labels and description, to find the bug in Jira.
+                {t(
+                  problems.length > 1 ? "bug.problemIdMany" : "bug.problemId",
+                  {
+                    code: prep.problem.code,
+                  },
+                )}
                 {prep.problem.everyScreen &&
-                  ` One bug for ${prep.problem.component ?? "the class"} on every screen.`}
+                  t("bug.everyScreen", {
+                    component: prep.problem.component ?? t("bug.theClass"),
+                  })}
               </Typography>
               {!!prep.markers?.length && (
                 <Typography variant="body2" color="textSecondary">
-                  Labels:{" "}
+                  {t("bug.labels")}{" "}
                   <span style={{ fontFamily: tokens.mono, fontSize: 12 }}>
                     {prep.markers.join(" ")}
                   </span>
                 </Typography>
               )}
               <Typography variant="body2" color="textSecondary">
-                Description: service, screen, actual and expected result,
-                device, element; screenshot with the problem outlined.
+                {t("bug.description")}
                 {problems.some((problem) => problem.length > 1) &&
-                  " One bug per problem: the same issue on several elements of one component goes into one bug with all of them."}
+                  t("bug.onePerProblem")}
               </Typography>
             </Box>
             {problems.length === 1 && prep.existing && (
               <Alert severity="warning" data-testid="jiraExisting">
-                {prep.existing.status === "reported"
-                  ? `Filed already as ${prep.existing.jiraKey}`
-                  : prep.existing.status === "filing"
-                    ? "A bug is being filed right now"
-                    : "Marked as a false positive"}{" "}
-                from screen “
-                {prep.existing.screenTitle || prep.existing.screenName}”.
-                Creating will not file another one.
+                {t(
+                  prep.existing.status === "reported"
+                    ? "bug.existingFiled"
+                    : prep.existing.status === "filing"
+                      ? "bug.existingFiling"
+                      : "bug.existingIgnored",
+                  {
+                    key: prep.existing.jiraKey ?? "",
+                    screen:
+                      prep.existing.screenTitle ||
+                      prep.existing.screenName ||
+                      "",
+                  },
+                )}
               </Alert>
             )}
             {problems.length === 1 &&
               prep.inJira.some((issue) => !issue.done) && (
                 <Alert severity="warning" data-testid="jiraFound">
-                  Jira has{" "}
-                  {prep.inJira
-                    .filter((issue) => !issue.done)
-                    .map((issue) => `${issue.key} (${issue.status})`)
-                    .join(", ")}{" "}
-                  with {prep.problem.code}: it will be linked instead of filing
-                  a new bug.
+                  {t("bug.found", {
+                    issues: prep.inJira
+                      .filter((issue) => !issue.done)
+                      .map((issue) => `${issue.key} (${issue.status})`)
+                      .join(", "),
+                    code: prep.problem.code,
+                  })}
                 </Alert>
               )}
             {problems.length === 1 &&
               prep.inJira.length > 0 &&
               prep.inJira.every((issue) => issue.done) && (
                 <Alert severity="info">
-                  {prep.problem.code} was filed before as{" "}
-                  {prep.inJira.map((issue) => issue.key).join(", ")} (done). The
-                  problem is back, so a new bug makes sense.
+                  {t("bug.filedBefore", {
+                    code: prep.problem.code,
+                    keys: prep.inJira.map((issue) => issue.key).join(", "),
+                  })}
                 </Alert>
               )}
             {cannotAsk.length > 0 && (
               <Alert severity="warning">
-                Jira requires fields Vision cannot ask for here:{" "}
-                {cannotAsk.join(", ")}. Fill them on {prep.parent.key} or pick
-                another issue type.
+                {t("bug.cannotAsk", {
+                  fields: cannotAsk.join(", "),
+                  key: prep.parent.key,
+                })}
               </Alert>
             )}
           </>
@@ -454,19 +473,19 @@ export const JiraBugDialog: React.FunctionComponent<{
               value={(progress / problems.length) * 100}
             />
             <Typography variant="caption" color="textSecondary">
-              {progress} of {problems.length}
+              {t("bug.progress", { done: progress, total: problems.length })}
             </Typography>
           </Box>
         )}
       </DialogContent>
       <DialogActions>
         <Button onClick={onClose} disabled={progress !== null}>
-          Cancel
+          {t("bug.cancel")}
         </Button>
         <Button variant="contained" disabled={!canCreate} onClick={create}>
           {problems.length > 1
-            ? `Create ${problems.length} bugs`
-            : "Create bug"}
+            ? t("bug.createMany", { count: problems.length })
+            : t("bug.create")}
         </Button>
       </DialogActions>
     </Dialog>

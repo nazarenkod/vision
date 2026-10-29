@@ -1,6 +1,7 @@
 import React from "react";
 import { TestStatus } from "../types/testStatus";
 import { PillTone, StatusPill } from "./StatusPill";
+import { labelOf, useT } from "../i18n";
 
 const TONE: Record<string, PillTone> = {
   [TestStatus.new]: "new",
@@ -13,6 +14,14 @@ const TONE: Record<string, PillTone> = {
 
 const TestStatusChip: React.FunctionComponent<{
   status: string | undefined;
-}> = ({ status }) => <StatusPill tone={(status && TONE[status]) || "neutral"} label={status} />;
+}> = ({ status }) => {
+  const { t } = useT();
+  return (
+    <StatusPill
+      tone={(status && TONE[status]) || "neutral"}
+      label={status && labelOf(t, "testStatus", status)}
+    />
+  );
+};
 
 export default TestStatusChip;

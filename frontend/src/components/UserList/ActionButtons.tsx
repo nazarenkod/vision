@@ -12,6 +12,7 @@ import { useUserDispatch, useUserState } from "../../contexts";
 import { Tooltip } from "../Tooltip";
 import { BaseModal } from "../BaseModal";
 import PasswordField from "../PasswordField";
+import { useT } from "../../i18n";
 
 export const ActionButtons: React.FunctionComponent = () => {
   const apiRef = useGridApiContext();
@@ -19,6 +20,7 @@ export const ActionButtons: React.FunctionComponent = () => {
   const selection = gridRowSelectionStateSelector(state);
 
   const { enqueueSnackbar } = useSnackbar();
+  const { t } = useT();
   const userDispatch = useUserDispatch();
   const { userList, user } = useUserState();
 
@@ -37,10 +39,7 @@ export const ActionButtons: React.FunctionComponent = () => {
 
   return (
     <React.Fragment>
-      <Tooltip
-        title="Set a password for the selected user (after a restore, people have none)."
-        aria-label="set password"
-      >
+      <Tooltip title={t("users.setPasswordHelp")} aria-label="set password">
         <span>
           <IconButton
             disabled={ids.length !== 1}
@@ -54,15 +53,19 @@ export const ActionButtons: React.FunctionComponent = () => {
       </Tooltip>
       <BaseModal
         open={!!passwordFor}
-        title={`Set password${passwordUser ? ` for ${passwordUser.email}` : ""}`}
-        submitButtonText="Set password"
+        title={
+          passwordUser
+            ? t("users.setPasswordFor", { email: passwordUser.email })
+            : t("users.setPasswordTitle")
+        }
+        submitButtonText={t("users.setPasswordTitle")}
         onCancel={closePasswordDialog}
         onSubmit={() =>
           passwordFor &&
           usersService
             .setPassword(passwordFor, password)
             .then(() => {
-              enqueueSnackbar("Password set", { variant: "success" });
+              enqueueSnackbar(t("users.passwordSet"), { variant: "success" });
               closePasswordDialog();
             })
             .catch((err) => enqueueSnackbar(err, { variant: "error" }))
@@ -71,11 +74,11 @@ export const ActionButtons: React.FunctionComponent = () => {
           <PasswordField
             password={password}
             setPassword={setPassword}
-            label="New password"
+            label={t("users.newPassword")}
           />
         }
       />
-      <Tooltip title="Delete selected rows." aria-label="delete">
+      <Tooltip title={t("users.deleteRows")} aria-label="delete">
         <span>
           <IconButton
             disabled={!ids.length}
@@ -83,14 +86,14 @@ export const ActionButtons: React.FunctionComponent = () => {
               const currentUserId = user?.id;
 
               if (currentUserId && ids.includes(currentUserId)) {
-                enqueueSnackbar(`You cannot delete yourself.`, {
+                enqueueSnackbar(t("users.notYourself"), {
                   variant: "error",
                 });
               } else {
                 usersService
                   .remove(ids)
                   .then(() => {
-                    enqueueSnackbar(`Removed`, {
+                    enqueueSnackbar(t("users.removed"), {
                       variant: "success",
                     });
                     userDispatch({

@@ -14,52 +14,56 @@ import { Role, User } from "../../types";
 import { useSnackbar } from "notistack";
 import { useUserDispatch, useUserState } from "../../contexts";
 import { filterUsers, lastSignInLabel } from "../../_helpers/users.helper";
+import { labelOf, Text, useT } from "../../i18n";
 
-const columnsDef: GridColDef[] = [
+const columnsFor = (
+  t: Text,
+  formatDate: (value: string) => string,
+): GridColDef[] => [
   {
     field: "id",
     filterable: false,
   },
   {
     field: "email",
-    headerName: "Email",
+    headerName: t("users.email"),
     flex: 2,
   },
   {
     field: "firstName",
-    headerName: "First name",
+    headerName: t("users.firstName"),
     flex: 1,
   },
   {
     field: "lastName",
-    headerName: "Last name",
+    headerName: t("users.lastName"),
     flex: 1,
   },
   {
     field: "lastSignInAt",
-    headerName: "Last sign-in",
+    headerName: t("users.lastSignIn"),
     flex: 1,
     filterable: false,
     // newest first when sorted; never signed in sorts last
     valueGetter: (params) => params.row.lastSignInAt ?? "",
     renderCell: (params: GridRenderCellParams) => (
       <span data-testid="lastSignIn">
-        {lastSignInLabel(params.row.lastSignInAt)}
+        {lastSignInLabel(params.row.lastSignInAt, formatDate)}
       </span>
     ),
   },
   {
     field: "role",
-    headerName: "Role",
+    headerName: t("users.role"),
     type: "singleSelect",
     editable: true,
-    valueOptions: Object.entries(Role).map(([key, value]) => ({
+    valueOptions: Object.keys(Role).map((key) => ({
       value: key,
-      label: value,
+      label: labelOf(t, "role", key),
     })),
     renderCell: (params: GridRenderCellParams) => {
       const role = params.value as keyof typeof Role;
-      return Role[role];
+      return Role[role] ? labelOf(t, "role", role) : role;
     },
     flex: 1,
   },
@@ -69,6 +73,11 @@ const UserList: React.FunctionComponent<{ query?: string }> = ({
   query = "",
 }) => {
   const { enqueueSnackbar } = useSnackbar();
+  const { t, formatDate } = useT();
+  const columnsDef = React.useMemo(
+    () => columnsFor(t, (value) => formatDate(value)),
+    [t, formatDate],
+  );
   const userDispatch = useUserDispatch();
   const { userList } = useUserState();
 
@@ -87,7 +96,7 @@ const UserList: React.FunctionComponent<{ query?: string }> = ({
         usersService
           .assignRole(oldState.id, newState.role as Role)
           .then(() => {
-            enqueueSnackbar("Updated", {
+            enqueueSnackbar(t("users.updated"), {
               variant: "success",
             });
           })
@@ -99,7 +108,7 @@ const UserList: React.FunctionComponent<{ query?: string }> = ({
       }
       return newState;
     },
-    [enqueueSnackbar],
+    [enqueueSnackbar, t],
   );
 
   const apiRef = useGridApiRef();

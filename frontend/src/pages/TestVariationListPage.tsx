@@ -28,12 +28,14 @@ import {
   routes,
   TEST_VARIATION_LIST_PAGE,
 } from "../constants";
+import { useT } from "../i18n";
 
 const PAGE_SIZE_OPTIONS = [12, 24, 48, 96];
 
 const TestVariationListPage: React.FunctionComponent = () => {
   const navigate = useNavigate();
   const { enqueueSnackbar } = useSnackbar();
+  const { t } = useT();
   const helpDispatch = useHelpDispatch();
   const { projectId = "" } = useParams<{ projectId: string }>();
   const [testVariations, setTestVariations] = React.useState<TestVariation[]>(
@@ -143,11 +145,9 @@ const TestVariationListPage: React.FunctionComponent = () => {
           }}
         >
           <Typography variant="h4" component="h1">
-            Baselines
+            {t("baselines.title")}
           </Typography>
-          <Box
-            id={LOCATOR_TEST_VARIATION_LIST_PAGE_SELECT_PROJECT}
-          >
+          <Box id={LOCATOR_TEST_VARIATION_LIST_PAGE_SELECT_PROJECT}>
             <ProjectSelect
               compact
               projectId={projectId}
@@ -158,7 +158,7 @@ const TestVariationListPage: React.FunctionComponent = () => {
           </Box>
           <Box sx={{ flex: 1 }} />
           <Typography variant="body2" color="textSecondary">
-            {groups.length} {groups.length === 1 ? "check" : "checks"}
+            {t("baselines.checks", { count: groups.length })}
           </Typography>
           <Button
             variant="outlined"
@@ -168,7 +168,7 @@ const TestVariationListPage: React.FunctionComponent = () => {
             data-testid="mergeBranchesToggle"
             id={LOCATOR_TEST_VARIATION_MERGE_TOGGLE}
           >
-            Merge branches
+            {t("baselines.merge")}
           </Button>
         </Box>
         <Grid container direction="column" spacing={2}>
@@ -222,7 +222,7 @@ const TestVariationListPage: React.FunctionComponent = () => {
                   <TextField
                     select
                     size="small"
-                    label="Per page"
+                    label={t("baselines.perPage")}
                     sx={{ minWidth: 120 }}
                     SelectProps={{
                       sx: {

@@ -13,6 +13,7 @@ import {
 import { useSnackbar } from "notistack";
 import { backupsService } from "../../services";
 import { BackupsOverview, DriveCode } from "../../types";
+import { useT } from "../../i18n";
 
 interface Props {
   drive: BackupsOverview["drive"];
@@ -28,6 +29,7 @@ export const DriveCard: React.FunctionComponent<Props> = ({
   onChange,
 }) => {
   const { enqueueSnackbar } = useSnackbar();
+  const { t, tx, formatDate } = useT();
   const [clientId, setClientId] = React.useState("");
   const [clientSecret, setClientSecret] = React.useState("");
   const [code, setCode] = React.useState<DriveCode | null>(null);
@@ -50,9 +52,12 @@ export const DriveCard: React.FunctionComponent<Props> = ({
               return;
             }
             setClientSecret("");
-            enqueueSnackbar(`Google Drive connected as ${result.email}`, {
-              variant: "success",
-            });
+            enqueueSnackbar(
+              t("backups.driveConnectedAs", { email: result.email ?? "" }),
+              {
+                variant: "success",
+              },
+            );
             onChange();
           })
           .catch((err) => active && setError(`${err}`));
@@ -89,9 +94,10 @@ export const DriveCard: React.FunctionComponent<Props> = ({
         {drive.connected ? (
           <>
             <Typography data-testid="driveConnected">
-              Connected as <b>{drive.email ?? "unknown account"}</b>. Backups go
-              to the folder <b>{drive.folderName}</b> on its My Drive; Vision
-              sees only the files it made there.
+              {tx("backups.connected", {
+                email: <b>{drive.email ?? t("backups.unknownAccount")}</b>,
+                folder: <b>{drive.folderName}</b>,
+              })}
             </Typography>
             <Box sx={{ display: "flex", gap: 1 }}>
               <Button
@@ -102,13 +108,13 @@ export const DriveCard: React.FunctionComponent<Props> = ({
                   act(async () => {
                     const result = await backupsService.test();
                     if (!result.ok) throw result.error;
-                    enqueueSnackbar("The backup folder is reachable", {
+                    enqueueSnackbar(t("backups.reachable"), {
                       variant: "success",
                     });
                   })
                 }
               >
-                Test connection
+                {t("backups.test")}
               </Button>
               <Button
                 color="error"
@@ -121,7 +127,7 @@ export const DriveCard: React.FunctionComponent<Props> = ({
                   })
                 }
               >
-                Disconnect
+                {t("backups.disconnect")}
               </Button>
             </Box>
           </>
@@ -131,11 +137,17 @@ export const DriveCard: React.FunctionComponent<Props> = ({
             sx={{ display: "flex", flexDirection: "column", gap: 1 }}
           >
             <Typography>
-              Open{" "}
-              <Link href={code.verificationUrl} target="_blank" rel="noopener">
-                {code.verificationUrl}
-              </Link>{" "}
-              on any device, sign in with your work Google account and enter:
+              {tx("backups.openUrl", {
+                url: (
+                  <Link
+                    href={code.verificationUrl}
+                    target="_blank"
+                    rel="noopener"
+                  >
+                    {code.verificationUrl}
+                  </Link>
+                ),
+              })}
             </Typography>
             <Typography
               variant="h4"
@@ -146,23 +158,28 @@ export const DriveCard: React.FunctionComponent<Props> = ({
               {code.userCode}
             </Typography>
             <Typography variant="body2" color="textSecondary">
-              Waiting for the confirmation; the code works until{" "}
-              {new Date(code.expiresAt).toLocaleTimeString()}.
+              {t("backups.waitingCode", {
+                time: formatDate(code.expiresAt, {
+                  hour: "numeric",
+                  minute: "numeric",
+                  second: "numeric",
+                }),
+              })}
             </Typography>
             <Box>
-              <Button onClick={() => setCode(null)}>Cancel</Button>
+              <Button onClick={() => setCode(null)}>
+                {t("backups.cancel")}
+              </Button>
             </Box>
           </Box>
         ) : (
           <>
             <Typography variant="body2" color="textSecondary">
-              An OAuth client of the type “TVs and Limited Input devices” from
-              the bank&apos;s Google Cloud project (DEPLOY.md, backups). The
-              secret stays on the server and is never shown again.
+              {t("backups.clientHelp")}
             </Typography>
             <TextField
               size="small"
-              label="Client ID"
+              label={t("backups.clientId")}
               value={clientId}
               onChange={(event) => setClientId(event.target.value)}
               inputProps={{ "data-testid": "driveClientId" }}
@@ -171,7 +188,7 @@ export const DriveCard: React.FunctionComponent<Props> = ({
               size="small"
               type="password"
               autoComplete="new-password"
-              label="Client secret"
+              label={t("backups.clientSecret")}
               value={clientSecret}
               onChange={(event) => setClientSecret(event.target.value)}
               inputProps={{ "data-testid": "driveClientSecret" }}
@@ -192,7 +209,7 @@ export const DriveCard: React.FunctionComponent<Props> = ({
                   )
                 }
               >
-                {error ? "Start again" : "Connect"}
+                {t(error ? "backups.startAgain" : "backups.connect")}
               </Button>
             </Box>
           </>

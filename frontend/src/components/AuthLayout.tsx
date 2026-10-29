@@ -1,8 +1,8 @@
 import React from "react";
 import { Box, Typography } from "@mui/material";
 import { BrandLockup } from "./BrandMark";
-import { BRAND } from "../constants/brand";
 import { tokens } from "../theme";
+import { useT } from "../i18n";
 
 // One pixel off the grid that settles back: the logo's story, once, quietly.
 const StrayPixel: React.FunctionComponent = () => (
@@ -31,6 +31,12 @@ const StrayPixel: React.FunctionComponent = () => (
 );
 
 /** Centered card with the product's mark for sign-in and sign-up. */
+// the slogan is BRAND.tagline in English and its translation in Ukrainian
+const Tagline: React.FunctionComponent = () => {
+  const { t } = useT();
+  return <Typography color="textSecondary">{t("brand.tagline")}</Typography>;
+};
+
 export const AuthLayout: React.FunctionComponent<{
   title: string;
   children: React.ReactNode;
@@ -85,7 +91,7 @@ export const AuthLayout: React.FunctionComponent<{
         }}
       >
         <BrandLockup markSize={56} wordSize={32} direction="column" gap={1.5} />
-        <Typography color="textSecondary">{BRAND.tagline}</Typography>
+        <Tagline />
       </Box>
       <Box
         className="v-enter"

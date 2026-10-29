@@ -12,6 +12,7 @@ import {
   decisionSnackOptions,
   DecisionKind,
 } from "../_helpers/undo.helper";
+import { useT } from "../i18n";
 
 type Enqueue = (
   message: SnackbarMessage,
@@ -25,9 +26,10 @@ type Enqueue = (
 export function useDecisionSnackbar(enqueue?: Enqueue) {
   const app = useSnackbar();
   const show = enqueue ?? app.enqueueSnackbar;
+  const { t } = useT();
   return React.useCallback(
     (kind: DecisionKind, count: number, decision: Decision | void) => {
-      const key = show(decisionNotice(kind, count), {
+      const key = show(decisionNotice(kind, count, t), {
         ...decisionSnackOptions(kind),
         action: decision?.decisionId
           ? (snackKey: SnackbarKey) => (
@@ -40,25 +42,27 @@ export function useDecisionSnackbar(enqueue?: Enqueue) {
                   testRunService
                     .undoDecision(decision.decisionId)
                     .then(() =>
-                      show("Undone", {
+                      show(t("undo.undone"), {
                         variant: "info",
                         autoHideDuration: 2000,
                       }),
                     )
                     .catch((error) =>
                       // the reason is worth reading: someone decided again
-                      show(`Could not undo: ${error}`, { variant: "error" }),
+                      show(t("undo.failed", { error: String(error) }), {
+                        variant: "error",
+                      }),
                     );
                 }}
                 sx={{ fontWeight: 700 }}
               >
-                Undo
+                {t("undo.undo")}
               </Button>
             )
           : undefined,
       });
       return key;
     },
-    [show, app],
+    [show, app, t],
   );
 }

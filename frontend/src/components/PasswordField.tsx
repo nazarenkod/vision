@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { IconButton, InputAdornment } from "@mui/material";
 import { Visibility, VisibilityOff } from "@mui/icons-material";
 import { TextValidator } from "react-material-ui-form-validator";
+import { useT } from "../i18n";
 
 interface PasswordFieldProps {
   password: string;
@@ -12,7 +13,7 @@ interface PasswordFieldProps {
 const PasswordField = ({
   password,
   setPassword,
-  label = "Password",
+  label,
 }: PasswordFieldProps) => {
   const [showPassword, setShowPassword] = useState<boolean>(false);
 
@@ -24,7 +25,8 @@ const PasswordField = ({
     event.preventDefault();
   };
 
-  const errorForTwoChar = "Enter at least two characters.";
+  const { t } = useT();
+  const errorForTwoChar = t("validation.twoCharacters");
 
   return (
     <TextValidator
@@ -33,13 +35,13 @@ const PasswordField = ({
       id="password"
       name="password"
       value={password}
-      label={label}
+      label={label ?? t("profile.password")}
       type={showPassword ? "text" : "password"}
       InputProps={{
         endAdornment: (
           <InputAdornment position="end">
             <IconButton
-              aria-label="toggle password visibility"
+              aria-label={t("profile.togglePassword")}
               onClick={handleClickShowPassword}
               onMouseDown={handleMouseDownPassword}
               edge="end"

@@ -12,6 +12,7 @@ import { pillField } from "./pillField";
 import { TestRun, TestVariation } from "../types";
 import { DebounceInput } from "react-debounce-input";
 import { LOCATOR_RESET_FILTER } from "../constants/help";
+import { labelOf, useT } from "../i18n";
 
 const emptyFn = () => undefined;
 
@@ -38,6 +39,8 @@ const Filters: React.FunctionComponent<IProps> = ({
   testStatusState,
   branchNameState,
 }) => {
+  // `t` is taken: the lists below name each item t
+  const i18n = useT();
   const [query, setQuery] = queryState;
   const [os, setOs] = osState;
   const [device, setDevice] = deviceState;
@@ -90,6 +93,8 @@ const Filters: React.FunctionComponent<IProps> = ({
     options: string[] | false | undefined,
     onChange: (value: string) => void,
     wrapperId?: string,
+    // the label of a value: statuses have their own, the rest is data
+    labelOfValue: (value: string) => string = (value) => value,
   ) =>
     options && options.length > 0 ? (
       <Box id={wrapperId} sx={{ display: "inline-flex" }}>
@@ -104,20 +109,20 @@ const Filters: React.FunctionComponent<IProps> = ({
             displayEmpty: true,
             renderValue: (selected) =>
               selected ? (
-                String(selected)
+                labelOfValue(String(selected))
               ) : (
                 <Box component="span" sx={{ color: tokens.textMuted }}>
-                  All
+                  {i18n.t("filters.all")}
                 </Box>
               ),
           }}
           InputLabelProps={{ shrink: true }}
           sx={{ minWidth: 120, maxWidth: 220, ...pillField(Boolean(value)) }}
         >
-          <MenuItem value="">All</MenuItem>
+          <MenuItem value="">{i18n.t("filters.all")}</MenuItem>
           {options.map((option) => (
             <MenuItem key={option} value={option}>
-              {option}
+              {labelOfValue(option)}
             </MenuItem>
           ))}
         </TextField>
@@ -135,7 +140,7 @@ const Filters: React.FunctionComponent<IProps> = ({
     >
       <DebounceInput
         size="small"
-        label="Name"
+        label={i18n.t("filters.name")}
         value={query}
         element={TextField}
         minLength={2}
@@ -150,33 +155,47 @@ const Filters: React.FunctionComponent<IProps> = ({
         }}
         sx={{ width: 220, ...pillField(Boolean(query)) }}
       />
-      {select("filter_os", "OS", os, osList, setOs)}
-      {select("filter_device", "Device", device, deviceList, setDevice)}
-      {select("filter_browser", "Browser", browser, browserList, setBrowser)}
+      {select("filter_os", i18n.t("filters.os"), os, osList, setOs)}
+      {select(
+        "filter_device",
+        i18n.t("filters.device"),
+        device,
+        deviceList,
+        setDevice,
+      )}
+      {select(
+        "filter_browser",
+        i18n.t("filters.browser"),
+        browser,
+        browserList,
+        setBrowser,
+      )}
       {select(
         "filter_viewport",
-        "Viewport",
+        i18n.t("filters.viewport"),
         viewport,
         viewportList,
         setViewport,
       )}
       {select(
         "filter_customTags",
-        "Custom tags",
+        i18n.t("filters.customTags"),
         customTags,
         customTagsList,
         setCustomTags,
       )}
       {select(
         "filter_testStatus",
-        "Status",
+        i18n.t("filters.status"),
         testStatus,
         testStatusList,
         setTestStatus,
+        undefined,
+        (value) => labelOf(i18n.t, "testStatus", value),
       )}
       {select(
         "filter_branchName",
-        "Branch",
+        i18n.t("filters.branch"),
         branchName,
         branchNameList,
         setBranchName,
@@ -185,7 +204,16 @@ const Filters: React.FunctionComponent<IProps> = ({
       <Button
         size="small"
         disabled={
-          ![query, os, device, browser, viewport, customTags, testStatus, branchName].some(Boolean)
+          ![
+            query,
+            os,
+            device,
+            browser,
+            viewport,
+            customTags,
+            testStatus,
+            branchName,
+          ].some(Boolean)
         }
         onClick={() => {
           setQuery("");
@@ -198,7 +226,7 @@ const Filters: React.FunctionComponent<IProps> = ({
           setBranchName("");
         }}
       >
-        Reset
+        {i18n.t("filters.reset")}
       </Button>
     </Box>
   );

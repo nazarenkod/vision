@@ -2,6 +2,7 @@ import React from "react";
 import { Box } from "@mui/material";
 import { StepState, stepStates } from "../../_helpers/review.helper";
 import { motion, tokens } from "../../theme";
+import { useT } from "../../i18n";
 
 const COLOUR: Record<StepState, string> = {
   current: tokens.text,
@@ -18,6 +19,7 @@ export const StepDots: React.FunctionComponent<{
   statuses: string[];
   currentIndex: number;
 }> = ({ statuses, currentIndex }) => {
+  const { t } = useT();
   if (statuses.length < 2) return null;
   const states = stepStates(statuses, currentIndex);
   const asBar = states.length > MAX_DOTS;
@@ -25,7 +27,11 @@ export const StepDots: React.FunctionComponent<{
     <Box
       data-testid="stepDots"
       role="img"
-      aria-label={`${states.filter((s) => s === "approved").length} approved, ${states.filter((s) => s === "rejected").length} rejected, ${states.filter((s) => s === "waiting").length} waiting`}
+      aria-label={t("review.steps", {
+        approved: states.filter((s) => s === "approved").length,
+        rejected: states.filter((s) => s === "rejected").length,
+        waiting: states.filter((s) => s === "waiting").length,
+      })}
       sx={{
         display: "flex",
         alignItems: "center",

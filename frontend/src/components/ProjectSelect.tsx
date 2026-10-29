@@ -17,6 +17,7 @@ import {
 } from "../contexts";
 import { tokens } from "../theme";
 import { pillField } from "./pillField";
+import { useT } from "../i18n";
 
 const useStyles = makeStyles((theme: Theme) =>
   createStyles({
@@ -41,6 +42,7 @@ const ProjectSelect: FunctionComponent<{
   compact?: boolean;
 }> = ({ projectId, onProjectSelect, compact = false }) => {
   const classes = useStyles();
+  const { t } = useT();
   const { projectList, selectedProjectId } = useProjectState();
   const projectDispatch = useProjectDispatch();
 
@@ -55,7 +57,7 @@ const ProjectSelect: FunctionComponent<{
       <TextField
         select
         size="small"
-        label="Project"
+        label={t("filters.project")}
         value={selectedProjectId ?? ""}
         onChange={(event) => onProjectSelect(event.target.value)}
         SelectProps={{
@@ -64,7 +66,7 @@ const ProjectSelect: FunctionComponent<{
           renderValue: (selected) =>
             projectList.find((project) => project.id === selected)?.name ?? (
               <Box component="span" sx={{ color: tokens.textMuted }}>
-                Select project
+                {t("filters.selectProject")}
               </Box>
             ),
         }}
@@ -85,7 +87,7 @@ const ProjectSelect: FunctionComponent<{
       {projectList.length > 0 && (
         <FormControl variant="standard" className={classes.formControl}>
           <InputLabel id="projectSelect" className={classes.label} shrink>
-            Project
+            {t("filters.project")}
           </InputLabel>
           <Select
             variant="standard"
@@ -99,7 +101,7 @@ const ProjectSelect: FunctionComponent<{
             }
           >
             <MenuItem value="" disabled>
-              <em>Select project</em>
+              <em>{t("filters.selectProject")}</em>
             </MenuItem>
             {projectList.map((project) => (
               <MenuItem key={project.id} value={project.id}>

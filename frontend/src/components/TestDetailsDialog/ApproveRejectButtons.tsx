@@ -17,6 +17,7 @@ import {
   isSibling,
   resolveGroupByAxis,
 } from "../../_helpers/testRunGroup.helper";
+import { useT } from "../../i18n";
 
 // The key on the button as a small keycap. Generated content, so the button's
 // text stays "Approve" for people and for anything that finds it by its text.
@@ -72,6 +73,7 @@ export const ApproveRejectButtons: React.FunctionComponent<{
   // the dialog's own placement and one-at-a-time rule, with Undo for 8 s
   const announce = useDecisionSnackbar(enqueueSnackbar);
   const classes = useStyles();
+  const { t } = useT();
   const { selectedProjectId, projectList } = useProjectState();
   const { testRuns } = useTestRunState();
   const project = projectList.find((item) => item.id === selectedProjectId);
@@ -145,15 +147,17 @@ export const ApproveRejectButtons: React.FunctionComponent<{
   return (
     <>
       {testRun.merge && (
-        <Tooltip title="Will replace target branch baseline if accepted">
+        <Tooltip title={t("review.mergeHelp")}>
           <Chip
-            label={`merge into: ${testRun.baselineBranchName}`}
+            label={t("review.mergeInto", {
+              branch: testRun.baselineBranchName,
+            })}
             color="secondary"
             size="small"
           />
         </Tooltip>
       )}
-      <Tooltip title={`Hotkey: ${REVIEW_KEYS.approve}`}>
+      <Tooltip title={t("review.hotkey", { key: REVIEW_KEYS.approve })}>
         <Button
           onClick={approve}
           variant="contained"
@@ -186,33 +190,33 @@ export const ApproveRejectButtons: React.FunctionComponent<{
               : "none",
           }}
         >
-          Approve
+          {t("review.approve")}
         </Button>
       </Tooltip>
       {variationsEnabled && (
-        <Tooltip title="Review and approve this screen's matching variations (e.g. all locales) before applying">
+        <Tooltip title={t("review.approveVariationsHelp")}>
           <Button
             onClick={() => onOpenVariations("approve")}
             variant="outlined"
             className={classes.wideActionButton}
           >
-            Approve variations
+            {t("review.approveVariations")}
           </Button>
         </Tooltip>
       )}
       {variationsEnabled && (
-        <Tooltip title="Review and reject this screen's matching variations (e.g. all locales) before applying">
+        <Tooltip title={t("review.rejectVariationsHelp")}>
           <Button
             color="secondary"
             onClick={() => onOpenVariations("reject")}
             variant="outlined"
             className={classes.wideActionButton}
           >
-            Reject variations
+            {t("review.rejectVariations")}
           </Button>
         </Tooltip>
       )}
-      <Tooltip title={`Hotkey: ${REVIEW_KEYS.reject}`}>
+      <Tooltip title={t("review.hotkey", { key: REVIEW_KEYS.reject })}>
         <Button
           color="secondary"
           onClick={reject}
@@ -226,7 +230,7 @@ export const ApproveRejectButtons: React.FunctionComponent<{
             },
           }}
         >
-          Reject
+          {t("review.reject")}
         </Button>
       </Tooltip>
     </>

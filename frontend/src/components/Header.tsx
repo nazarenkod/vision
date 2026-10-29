@@ -23,7 +23,7 @@ import GuidedTour from "./GuidedTour";
 import { BRAND } from "../constants/brand";
 import { BrandLockup } from "./BrandMark";
 import { ManualChecksDialog } from "./ManualChecksDialog";
-import { LanguageSwitch, useT } from "../i18n";
+import { labelOf, LanguageSwitch, useT } from "../i18n";
 import {
   HEADER_HELP_MENU_ID,
   HEADER_AVATAR_MENU_ID,
@@ -147,9 +147,7 @@ const Header: FunctionComponent = () => {
         </Typography>
         <Typography variant="caption" sx={{ color: tokens.textMuted }}>
           {user?.email}
-          {user?.role
-            ? ` · ${user.role[0].toUpperCase()}${user.role.slice(1)}`
-            : ""}
+          {user?.role ? ` · ${labelOf(t, "role", user.role)}` : ""}
         </Typography>
       </Box>
       <Divider sx={{ mb: 0.75 }} />

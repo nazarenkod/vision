@@ -36,6 +36,7 @@ import { GO_TO_NEXT_KEY } from "../../constants";
 import { imageFor, thumbnailFor } from "../../_helpers/testRunImage.helper";
 import { TestRun } from "../../types";
 import { TestStatus } from "../../types/testStatus";
+import { useT } from "../../i18n";
 
 const useStyles = makeStyles(() => ({
   toolbar: {
@@ -342,7 +343,7 @@ export const MatchingVariationsDialog: React.FunctionComponent<{
     });
   };
 
-  const verb = mode === "approve" ? "Approve" : "Reject";
+  const { t, formatFixed } = useT();
 
   // Honours the shared "Go to the next after Approve/Reject" toggle used by the
   // single approve/reject buttons (persisted in localStorage).
@@ -441,14 +442,14 @@ export const MatchingVariationsDialog: React.FunctionComponent<{
             }
           />
           <Typography variant="caption" color="textSecondary">
-            {(run.diffPercent ?? 0).toFixed(1)}%
+            {formatFixed(run.diffPercent ?? 0, 1)}%
           </Typography>
         </div>
         <button
           type="button"
           className={classes.thumbButton}
           onClick={() => setPreview({ index: openIndex, showDiff })}
-          aria-label={`View ${labelOf(run)} full size`}
+          aria-label={t("variations.viewFull", { name: labelOf(run) })}
         >
           <img
             className={classes.thumb}
@@ -471,14 +472,24 @@ export const MatchingVariationsDialog: React.FunctionComponent<{
   return (
     <>
       <Dialog open={!!mode} onClose={onClose} maxWidth="lg" fullWidth>
-        <DialogTitle>{verb} variations — review before applying</DialogTitle>
+        <DialogTitle>
+          {t(
+            mode === "approve"
+              ? "variations.approveTitle"
+              : "variations.rejectTitle",
+          )}
+        </DialogTitle>
         <DialogContent dividers>
           {submitting && (
             <div className={classes.loading}>
               <CircularProgress />
               <Typography style={{ marginLeft: 12 }}>
-                {mode === "approve" ? "Approving" : "Rejecting"} {selected.size}{" "}
-                variations…
+                {t(
+                  mode === "approve"
+                    ? "variations.approving"
+                    : "variations.rejecting",
+                  { count: selected.size },
+                )}
               </Typography>
             </div>
           )}
@@ -500,9 +511,12 @@ export const MatchingVariationsDialog: React.FunctionComponent<{
                       onChange={toggleAllMatched}
                     />
                   }
-                  label={`${matchedSelectedCount} of ${variations.length} matching selected`}
+                  label={t("variations.matchingSelected", {
+                    selected: matchedSelectedCount,
+                    total: variations.length,
+                  })}
                 />
-                <Tooltip title="Toggle diff. Hotkey: D">
+                <Tooltip title={t("variations.toggleDiff")}>
                   <FormControlLabel
                     control={
                       <Switch
@@ -510,7 +524,7 @@ export const MatchingVariationsDialog: React.FunctionComponent<{
                         onChange={(e) => setShowDiff(e.target.checked)}
                       />
                     }
-                    label="Show diff"
+                    label={t("variations.showDiff")}
                   />
                 </Tooltip>
               </div>
@@ -519,7 +533,7 @@ export const MatchingVariationsDialog: React.FunctionComponent<{
                 color="textSecondary"
                 className={classes.hint}
               >
-                Click a thumbnail to view it full-size.
+                {t("variations.clickThumb")}
               </Typography>
               <div className={classes.grid}>
                 {variations.map((run) => renderCard(run))}
@@ -538,16 +552,14 @@ export const MatchingVariationsDialog: React.FunctionComponent<{
                         onChange={toggleAllSkipped}
                       />
                     }
-                    label={`${skipped.length} didn't match — review separately`}
+                    label={t("variations.skipped", { count: skipped.length })}
                   />
                   <Typography
                     variant="caption"
                     color="textSecondary"
                     className={classes.sectionSubtitle}
                   >
-                    These don&apos;t match the change you&apos;re reviewing, so
-                    they&apos;re unchecked. Open each to inspect and include
-                    only if it&apos;s the same intended change.
+                    {t("variations.skippedHelp")}
                   </Typography>
                   <div className={classes.grid}>
                     {skipped.map((run) => renderCard(run, run.reason))}
@@ -559,14 +571,19 @@ export const MatchingVariationsDialog: React.FunctionComponent<{
         </DialogContent>
         {!submitting && (
           <DialogActions>
-            <Button onClick={onClose}>Cancel</Button>
+            <Button onClick={onClose}>{t("variations.cancel")}</Button>
             <Button
               variant="contained"
               color={mode === "reject" ? "secondary" : "primary"}
               disabled={selected.size === 0}
               onClick={submit}
             >
-              {`${verb} ${selected.size} selected`}
+              {t(
+                mode === "approve"
+                  ? "variations.approveSelected"
+                  : "variations.rejectSelected",
+                { count: selected.size },
+              )}
             </Button>
           </DialogActions>
         )}
@@ -604,7 +621,7 @@ export const MatchingVariationsDialog: React.FunctionComponent<{
                   </span>
                 </Box>
                 <Box display="flex" alignItems="center">
-                  <Tooltip title="Toggle diff. Hotkey: D">
+                  <Tooltip title={t("variations.toggleDiff")}>
                     <FormControlLabel
                       control={
                         <Switch
@@ -617,7 +634,7 @@ export const MatchingVariationsDialog: React.FunctionComponent<{
                           }
                         />
                       }
-                      label="Show diff"
+                      label={t("variations.showDiff")}
                     />
                   </Tooltip>
                   <IconButton onClick={() => setPreview(null)}>
@@ -628,19 +645,25 @@ export const MatchingVariationsDialog: React.FunctionComponent<{
             </DialogTitle>
             <div className={classes.meta}>
               <Typography variant="caption">
-                OS: {previewRun.os || "—"}
+                {t("variations.os", { value: previewRun.os || "—" })}
               </Typography>
               <Typography variant="caption">
-                Device: {previewRun.device || "—"}
+                {t("variations.device", { value: previewRun.device || "—" })}
               </Typography>
               <Typography variant="caption">
-                Custom Tags: {previewRun.customTags || "—"}
+                {t("variations.customTags", {
+                  value: previewRun.customTags || "—",
+                })}
               </Typography>
               <Typography variant="caption">
-                Diff: {(previewRun.diffPercent ?? 0).toFixed(2)}%
+                {t("variations.diff", {
+                  value: formatFixed(previewRun.diffPercent ?? 0, 2),
+                })}
               </Typography>
               <Typography variant="caption">
-                Diff tolerance: {previewRun.diffTollerancePercent ?? 0}%
+                {t("variations.tolerance", {
+                  value: previewRun.diffTollerancePercent ?? 0,
+                })}
               </Typography>
             </div>
             <DialogContent dividers>

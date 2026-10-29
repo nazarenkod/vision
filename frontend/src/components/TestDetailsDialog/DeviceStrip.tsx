@@ -9,6 +9,7 @@ import { useUserState } from "../../contexts";
 import { tokens } from "../../theme";
 import { BaseModal } from "../BaseModal";
 import { deviceLabel } from "../../_helpers/device.helper";
+import { labelOf, useT } from "../../i18n";
 
 export { deviceLabel };
 
@@ -43,6 +44,7 @@ export const DeviceStrip: React.FunctionComponent<{
   onSelect: (id: string) => void;
 }> = ({ runs, currentId, onSelect }) => {
   const { enqueueSnackbar } = useSnackbar();
+  const { t } = useT();
   const announce = useDecisionSnackbar();
   const { user } = useUserState();
   const canEdit = user?.role === "admin" || user?.role === "editor";
@@ -75,7 +77,7 @@ export const DeviceStrip: React.FunctionComponent<{
       data-testid="deviceStrip"
     >
       <Typography variant="body2" color="textSecondary" sx={{ mr: 0.5 }}>
-        Devices
+        {t("review.devices")}
       </Typography>
       {runs.map((run) => {
         const current = run.id === currentId;
@@ -83,7 +85,7 @@ export const DeviceStrip: React.FunctionComponent<{
           <ButtonBase
             key={run.id}
             onClick={() => !current && onSelect(run.id)}
-            title={run.status}
+            title={labelOf(t, "testStatus", run.status)}
             sx={{
               display: "inline-flex",
               alignItems: "center",
@@ -107,25 +109,28 @@ export const DeviceStrip: React.FunctionComponent<{
                 bgcolor: dotColor(run.status),
               }}
             />
-            {deviceLabel(run)}
+            {deviceLabel(run, undefined, t)}
           </ButtonBase>
         );
       })}
       {canEdit && pending.length > 1 && (
         <Button size="small" onClick={() => setConfirm(true)}>
-          Approve all {pending.length}
+          {t("review.approveAll", { count: pending.length })}
         </Button>
       )}
       <BaseModal
         open={confirm}
-        title={`Approve ${pending.length} devices?`}
-        submitButtonText="Approve"
+        title={t("review.approveDevicesTitle", { count: pending.length })}
+        submitButtonText={t("review.approve")}
         onCancel={() => setConfirm(false)}
         onSubmit={approveAll}
         content={
           <Typography variant="body2">
-            Each becomes the baseline for its device:{" "}
-            {pending.map((run) => deviceLabel(run)).join(", ")}.
+            {t("review.approveDevicesText", {
+              devices: pending
+                .map((run) => deviceLabel(run, undefined, t))
+                .join(", "),
+            })}
           </Typography>
         }
       />

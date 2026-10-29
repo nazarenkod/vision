@@ -27,6 +27,7 @@ import {
   mockGetTestRuns,
   mockImage,
   mockTestRun,
+  inUkrainian,
 } from "utils/mocks";
 
 const project = TEST_PROJECT;
@@ -64,6 +65,37 @@ test("renders", async ({ openProjectPage, page }) => {
   await projectPage.testRunList.getRow(TEST_UNRESOLVED.id).click();
 
   await expect(page).toHaveScreenshot("project-page-test-run-details.png");
+});
+
+// Ukrainian texts run longer: nothing is cut off or wrapped mid-word
+test("renders the build and the review in Ukrainian", async ({
+  openProjectPage,
+  page,
+}) => {
+  await inUkrainian(page);
+  const projectPage = await openProjectPage(project.id);
+  await projectPage.buildList.getBuildLocator(TEST_BUILD_FAILED.number).click();
+
+  await expect(page).toHaveScreenshot("project-page-test-run-list-uk.png");
+
+  await projectPage.testRunList.getRow(TEST_UNRESOLVED.id).click();
+
+  await expect(page).toHaveScreenshot("project-page-test-run-details-uk.png");
+});
+
+test("renders the review in Ukrainian in the dark theme", async ({
+  openProjectPage,
+  page,
+}) => {
+  await inUkrainian(page);
+  await page.emulateMedia({ colorScheme: "dark" });
+  const projectPage = await openProjectPage(project.id);
+  await projectPage.buildList.getBuildLocator(TEST_BUILD_FAILED.number).click();
+  await projectPage.testRunList.getRow(TEST_UNRESOLVED.id).click();
+
+  await expect(page).toHaveScreenshot(
+    "project-page-test-run-details-uk-dark.png",
+  );
 });
 
 test("searches builds by ci build id", async ({ openProjectPage }) => {

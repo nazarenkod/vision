@@ -59,11 +59,13 @@ import {
   statusRank,
 } from "../../_helpers/testRunStatus.helper";
 import { tagsOf } from "../../_helpers/testRunTags.helper";
+import { Text, useT } from "../../i18n";
 
 // https://mui.com/x/react-data-grid/column-definition/
 const buildColumns = (
   runsFor: (id: string) => TestRun[],
   tagFieldsFor: (runCount: number) => Array<keyof TestRun>,
+  t: Text,
 ): GridColDef[] => [
   {
     field: "id",
@@ -71,7 +73,7 @@ const buildColumns = (
   },
   {
     field: "name",
-    headerName: "Name",
+    headerName: t("runs.name"),
     flex: 1,
     filterable: false,
     renderCell: (params: GridRenderCellParams) => {
@@ -91,7 +93,7 @@ const buildColumns = (
   },
   {
     field: "tags",
-    headerName: "Tags",
+    headerName: t("runs.tags"),
     flex: 1,
     filterable: false,
     valueGetter: (params: GridValueGetterParams) =>
@@ -121,7 +123,7 @@ const buildColumns = (
   },
   {
     field: "status",
-    headerName: "Status",
+    headerName: t("runs.status"),
     flex: 0.3,
     filterable: false,
     // the chip speaks for the representative, so a half-reviewed group has to
@@ -164,8 +166,8 @@ const comparatorFor =
       sort.field === "status"
         ? bySettled(a, b)
         : sort.field === "name"
-        ? byName(a, b)
-        : tagsOf(a, tagFields).localeCompare(tagsOf(b, tagFields));
+          ? byName(a, b)
+          : tagsOf(a, tagFields).localeCompare(tagsOf(b, tagFields));
     const primary = sort.direction === "asc" ? ascending : -ascending;
     const tieBreak = sort.field === "name" ? byAttention(a, b) : byName(a, b);
 
@@ -192,6 +194,7 @@ const TestRunList: React.FunctionComponent = () => {
   const apiRef = useGridApiRef();
   const { enqueueSnackbar } = useSnackbar();
   const navigate = useNavigate();
+  const { t } = useT();
   const { selectedTestRun, testRuns, loading } = useTestRunState();
   const { selectedBuild } = useBuildState();
   const { selectedProjectId, projectList } = useProjectState();
@@ -373,8 +376,8 @@ const TestRunList: React.FunctionComponent = () => {
   );
 
   const columns = React.useMemo(
-    () => buildColumns(runsFor, tagFieldsFor),
-    [runsFor, tagFieldsFor],
+    () => buildColumns(runsFor, tagFieldsFor, t),
+    [runsFor, tagFieldsFor, t],
   );
 
   const tableRows = React.useMemo(
@@ -686,7 +689,7 @@ const TestRunList: React.FunctionComponent = () => {
                     sx={{ padding: 2 }}
                     data-testid="testRunGridEmpty"
                   >
-                    No test runs match the filters
+                    {t("runs.noMatch")}
                   </Typography>
                 ) : (
                   <TestRunGrid
@@ -716,9 +719,7 @@ const TestRunList: React.FunctionComponent = () => {
                     marginLeft={2}
                     data-testid="gridSelectionCount"
                   >
-                    {selectedCardCount === 1
-                      ? "1 card selected"
-                      : `${selectedCardCount} cards selected`}
+                    {t("runs.cardsSelected", { count: selectedCardCount })}
                   </Typography>
                 )}
                 <Box marginLeft="auto">
@@ -728,7 +729,7 @@ const TestRunList: React.FunctionComponent = () => {
                     page={gridPage}
                     rowsPerPage={paginationModel.pageSize}
                     rowsPerPageOptions={PAGE_SIZE_OPTIONS}
-                    labelRowsPerPage="Cards per page:"
+                    labelRowsPerPage={t("runs.cardsPerPage")}
                     onPageChange={(event, next) =>
                       setPaginationModel((prev) => ({ ...prev, page: next }))
                     }
@@ -748,7 +749,7 @@ const TestRunList: React.FunctionComponent = () => {
     );
   }
 
-  return <Typography variant="h5">Select build from list</Typography>;
+  return <Typography variant="h5">{t("runs.selectBuild")}</Typography>;
 };
 
 export default TestRunList;

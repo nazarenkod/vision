@@ -6,6 +6,7 @@ import {
   mockGetProjects,
   mockGetTestVariationDetails,
   mockImage,
+  inUkrainian,
 } from "utils/mocks";
 import {
   TEST_PROJECT,
@@ -23,6 +24,15 @@ test("renders", async ({ openTestVariationDetailsPage, page }) => {
   await openTestVariationDetailsPage(TEST_VARIATION_ONE.id);
 
   await expect(page).toHaveScreenshot("test-variation-details-page.png", {
+    fullPage: true,
+  });
+});
+
+test("renders in Ukrainian", async ({ openTestVariationDetailsPage, page }) => {
+  await inUkrainian(page);
+  await openTestVariationDetailsPage(TEST_VARIATION_ONE.id);
+
+  await expect(page).toHaveScreenshot("test-variation-details-page-uk.png", {
     fullPage: true,
   });
 });

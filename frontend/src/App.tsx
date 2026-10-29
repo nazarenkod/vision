@@ -108,7 +108,11 @@ const ThemedApp: React.FunctionComponent<{ children: React.ReactNode }> = ({
   children,
 }) => {
   const { mode } = useThemeMode();
-  const theme = React.useMemo(() => createAppTheme(mode), [mode]);
+  const { language } = useT();
+  const theme = React.useMemo(
+    () => createAppTheme(mode, language),
+    [mode, language],
+  );
   return (
     <ThemeProvider theme={theme}>
       <GlobalStyles styles={globalStyles} />

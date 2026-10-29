@@ -14,6 +14,7 @@ import {
   bindToggle,
   bindPopper,
 } from "material-ui-popup-state/hooks";
+import { useT } from "../i18n";
 
 const useStyles = makeStyles((theme: Theme) => ({
   popperContainer: {
@@ -34,6 +35,7 @@ export const CommentsPopper: React.FunctionComponent<IProps> = ({
   onSave,
 }) => {
   const classes = useStyles();
+  const { t } = useT();
   const popupState = usePopupState({
     variant: "popper",
     popupId: "commentPopper",
@@ -56,7 +58,7 @@ export const CommentsPopper: React.FunctionComponent<IProps> = ({
         invisible={!comment || comment === ""}
       >
         <Button {...bindToggle(popupState)} color="primary">
-          Comments
+          {t("review.comments")}
         </Button>
       </Badge>
       <Popper
@@ -74,7 +76,7 @@ export const CommentsPopper: React.FunctionComponent<IProps> = ({
                   name="comment"
                   variant="outlined"
                   value={comment}
-                  placeholder={"Add any additional data here"}
+                  placeholder={t("review.commentPlaceholder")}
                   multiline
                   rows={4}
                   fullWidth
@@ -90,7 +92,7 @@ export const CommentsPopper: React.FunctionComponent<IProps> = ({
                     onSave(comment).then(() => popupState.close());
                   }}
                 >
-                  Save
+                  {t("review.save")}
                 </Button>
               </React.Fragment>
             </Paper>

@@ -35,6 +35,7 @@ import { describeChange } from "../ChangeGroups";
 import { CrossDevicePanel } from "./CrossDevicePanel";
 import { JiraBugDialog } from "./JiraBugDialog";
 import { tokens } from "../../theme";
+import { labelOf, useT } from "../../i18n";
 
 type JiraDialog = { mode: "link"; violationIds: string[] } | null;
 
@@ -105,6 +106,7 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
   onPreviewRegion,
 }) => {
   const { enqueueSnackbar } = useSnackbar();
+  const { t, tx } = useT();
   const { user } = useUserState();
   const { projectList, selectedProjectId } = useProjectState();
   const project = projectList.find((p) => p.id === selectedProjectId);
@@ -189,7 +191,7 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
       await run(
         () =>
           insightsService.linkA11y(testRun.id, jiraDialog.violationIds, key),
-        `Linked ${key.toUpperCase()}`,
+        t("panel.linked", { key: key.toUpperCase() }),
       )
     ) {
       setJiraDialog(null);
@@ -204,7 +206,7 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
         Object.fromEntries(suggestions.map((s) => [s.violationId, s.label])),
       );
       if (!suggestions.length)
-        enqueueSnackbar("No suggestions", { variant: "info" });
+        enqueueSnackbar(t("panel.noSuggestions"), { variant: "info" });
     } catch (error) {
       enqueueSnackbar(`${error}`, { variant: "error" });
     } finally {
@@ -214,7 +216,7 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
 
   const copy = (text: string) => {
     navigator.clipboard?.writeText(text).then(
-      () => enqueueSnackbar("Copied", { variant: "success" }),
+      () => enqueueSnackbar(t("panel.copied"), { variant: "success" }),
       () => enqueueSnackbar(text, { variant: "info" }),
     );
   };
@@ -231,7 +233,7 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
           ids: [testRun.id],
           ignoreAreas: [{ id: uuid(), ...area }],
         }),
-      "Ignore area added; the screenshot is compared again",
+      t("panel.ignoreAreaAdded"),
     );
 
   const numberBadge = (number: number, isNew: boolean) => (
@@ -334,17 +336,26 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
               color: SEVERITY_COLOR[violation.severity],
             }}
           >
-            {violation.severity.toUpperCase()}
+            {labelOf(t, "severity", violation.severity).toUpperCase()}
           </Typography>
         </Box>
         {several ? (
           <>
             <Typography sx={{ fontSize: 13, color: tokens.textSecondary }}>
-              The same issue on {problem.length} elements of{" "}
-              <Box component="code" sx={{ font: `500 12px ${tokens.mono}` }}>
-                {component}
-              </Box>
-              : one problem, one bug.
+              {tx(
+                "panel.sameIssue",
+                {
+                  component: (
+                    <Box
+                      component="code"
+                      sx={{ font: `500 12px ${tokens.mono}` }}
+                    >
+                      {component}
+                    </Box>
+                  ),
+                },
+                { count: problem.length },
+              )}
             </Typography>
             <Box
               component="ol"
@@ -393,7 +404,7 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
           {!violation.issue && (
             <StatusPill
               tone={isNew ? "changed" : "neutral"}
-              label={isNew ? "New" : "Existing"}
+              label={t(isNew ? "panel.new" : "panel.existing")}
             />
           )}
           {!several && violation.resourceId && (
@@ -415,17 +426,15 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
               label={jiraLink(
                 violation.issue?.jiraKey,
                 violation.issue?.jiraUrl,
-                "Bug ",
+                t("panel.bug"),
               )}
             />
           )}
-          {filing && (
-            <StatusPill tone="changed" label="A bug is being filed…" />
-          )}
+          {filing && <StatusPill tone="changed" label={t("panel.filing")} />}
           {violation.problemClass && (
             <StatusPill tone="neutral" label={violation.problemClass} />
           )}
-          <Tooltip title="Problem id: in the Jira bug's summary and labels. Click to copy.">
+          <Tooltip title={t("panel.codeHelp")}>
             <Box
               component="code"
               data-testid="a11yProblemCode"
@@ -456,13 +465,17 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
               py: 0.5,
             }}
           >
-            {component ? `A problem of ${component}: ` : ""}
-            {violation.issue?.status === "ignored"
-              ? "marked as a false positive"
-              : violation.issue?.status === "filing"
-                ? "a bug is being filed"
-                : "filed"}{" "}
-            on screen “{elsewhere}”. It holds here too; nothing to file.
+            {t(
+              violation.issue?.status === "ignored"
+                ? "panel.elsewhereIgnored"
+                : violation.issue?.status === "filing"
+                  ? "panel.elsewhereFiling"
+                  : "panel.elsewhereFiled",
+              {
+                prefix: component ? t("panel.problemOf", { component }) : "",
+                screen: elsewhere,
+              },
+            )}
           </Box>
         )}
         {!!violation.issue?.related?.length && (
@@ -470,7 +483,7 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
             sx={{ fontSize: 12.5, color: tokens.textSecondary }}
             data-testid="a11yRelated"
           >
-            Also filed for it:{" "}
+            {t("panel.alsoFiled")}{" "}
             {violation.issue.related.map((item, index) => (
               <React.Fragment key={item.code}>
                 {index ? ", " : ""}
@@ -509,7 +522,7 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
             </Box>
             <span>
               {several && <b>{numberOf.get(item.id)}: </b>}
-              Suggested{" "}
+              {t("panel.suggested")}{" "}
               {report?.format === "appium-ios"
                 ? "accessibilityLabel"
                 : "contentDescription"}
@@ -520,7 +533,7 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
               sx={{ ml: "auto" }}
               onClick={() => copy(labels[item.id])}
             >
-              Copy
+              {t("panel.copy")}
             </Button>
           </Box>
         ))}
@@ -535,11 +548,11 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
                 onClick={() =>
                   run(
                     () => insightsService.resetA11y(testRun.id, ids),
-                    "Unlinked",
+                    t("panel.unlinked"),
                   )
                 }
               >
-                {elsewhere ? "Unlink on every screen" : "Unlink bug"}
+                {t(elsewhere ? "panel.unlinkEverywhere" : "panel.unlink")}
               </Button>
             ) : (
               <>
@@ -549,7 +562,7 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
                     variant="outlined"
                     onClick={() => setBugFor({ problems: [problem] })}
                   >
-                    Create Jira bug
+                    {t("panel.createBug")}
                   </Button>
                 )}
                 <Button
@@ -559,7 +572,7 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
                     setJiraDialog({ mode: "link", violationIds: ids });
                   }}
                 >
-                  Link existing
+                  {t("panel.linkExisting")}
                 </Button>
                 <Button
                   size="small"
@@ -569,7 +582,7 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
                     setIgnoreFor(ids);
                   }}
                 >
-                  False positive
+                  {t("panel.falsePositive")}
                 </Button>
               </>
             )}
@@ -583,10 +596,13 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
     if (!withUiTree) {
       return (
         <Typography variant="body2" color="textSecondary">
-          No UI tree came with this screenshot. Send the Appium page source with
-          it (in the Java SDK:{" "}
-          <code>TestRunOptions.builder().uiTree(driver.getPageSource())</code>),
-          or check the screen with the Vision CLI, to check accessibility.
+          {tx("panel.noTree", {
+            code: (
+              <code>
+                TestRunOptions.builder().uiTree(driver.getPageSource())
+              </code>
+            ),
+          })}
         </Typography>
       );
     }
@@ -595,7 +611,7 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
     if (report === null) {
       return (
         <Typography variant="body2" color="textSecondary">
-          The UI tree could not be checked.
+          {t("panel.treeFailed")}
         </Typography>
       );
     }
@@ -605,29 +621,33 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
     return (
       <>
         <Typography variant="body2" color="textSecondary">
-          Checked from the {report.format === "appium-ios" ? "iOS" : "Android"}{" "}
-          UI tree.{" "}
-          {report.baselineChecked ? (
-            <>
-              Compared with the baseline:{" "}
-              <b style={{ color: tokens.text }}>{report.summary.new} new</b>,{" "}
-              {report.summary.existing} existing, {report.summary.fixed} fixed
-              {report.summary.reported
-                ? `, ${report.summary.reported} with a bug`
-                : ""}
-              .
-            </>
-          ) : (
-            "The baseline has no UI tree, so every issue counts as new."
-          )}
-          {report.pixelsPerDpEstimated &&
-            " Sizes are estimated: the client sent no screen density."}
+          {t("panel.checkedFrom", {
+            platform: report.format === "appium-ios" ? "iOS" : "Android",
+          })}{" "}
+          {report.baselineChecked
+            ? tx(
+                "panel.compared",
+                {
+                  new: (
+                    <b style={{ color: tokens.text }}>
+                      {t("panel.newCount", { count: report.summary.new })}
+                    </b>
+                  ),
+                },
+                {
+                  existing: report.summary.existing,
+                  fixed: report.summary.fixed,
+                  reported: report.summary.reported
+                    ? t("panel.withBug", { count: report.summary.reported })
+                    : "",
+                },
+              )
+            : t("panel.noBaselineTree")}
+          {report.pixelsPerDpEstimated && t("panel.estimated")}
         </Typography>
         {!jiraReady && canEdit && (
           <Alert severity="info" sx={{ py: 0 }}>
-            {project?.jiraUrl
-              ? "Add your Jira token in your profile to file bugs from here."
-              : "Add the Jira URL in project settings to file bugs from here."}
+            {project?.jiraUrl ? t("panel.addToken") : t("panel.addUrl")}
           </Alert>
         )}
         {jiraReady && canEdit && toFile.length > 1 && (
@@ -638,19 +658,20 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
             onClick={() => setBugFor({ problems: toFile })}
             data-testid="fileAllBugs"
           >
-            Create Jira bugs for all {toFile.length} open problems
+            {t("panel.fileAll", { count: toFile.length })}
           </Button>
         )}
         {report.resolved.map((item) => (
           <Alert key={item.violationId} severity="success" sx={{ py: 0 }}>
-            {item.jiraUrl ? (
-              <Link href={item.jiraUrl} target="_blank" rel="noreferrer">
-                {item.jiraKey}
-              </Link>
-            ) : (
-              item.jiraKey
-            )}{" "}
-            is no longer found on this screen. The bug can probably be closed.
+            {tx("panel.resolved", {
+              key: item.jiraUrl ? (
+                <Link href={item.jiraUrl} target="_blank" rel="noreferrer">
+                  {item.jiraKey}
+                </Link>
+              ) : (
+                item.jiraKey
+              ),
+            })}
           </Alert>
         ))}
         {aiEnabled && missingLabels && canEdit && (
@@ -661,13 +682,11 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
             onClick={suggestLabels}
             sx={{ alignSelf: "flex-start" }}
           >
-            {labelsLoading ? "Asking AI…" : "Suggest labels with AI"}
+            {t(labelsLoading ? "panel.askingAi" : "panel.suggestLabels")}
           </Button>
         )}
         {report.violations.length === 0 && (
-          <Typography variant="body2">
-            No accessibility issues found on this screen.
-          </Typography>
+          <Typography variant="body2">{t("panel.noIssues")}</Typography>
         )}
         {problems.map(problemCard)}
         {report.ignored.length > 0 && (
@@ -680,7 +699,7 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
             }}
           >
             <summary style={{ cursor: "pointer", fontWeight: 500 }}>
-              False positives ({report.ignored.length})
+              {t("panel.falsePositives", { count: report.ignored.length })}
             </summary>
             {report.ignored.map((violation) => (
               <Box
@@ -696,7 +715,11 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
                     ? ` — ${violation.issue.comment}`
                     : ""}
                   {violation.issue?.screenName
-                    ? ` (on screen “${violation.issue.screenTitle || violation.issue.screenName}”)`
+                    ? t("panel.onScreen", {
+                        screen:
+                          violation.issue.screenTitle ||
+                          violation.issue.screenName,
+                      })
                     : ""}
                 </span>
                 {canEdit && !violation.issue?.byClass && (
@@ -706,13 +729,13 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
                       run(
                         () =>
                           insightsService.resetA11y(testRun.id, [violation.id]),
-                        "Restored",
+                        t("panel.restored"),
                       )
                     }
                   >
                     {violation.issue?.screenName
-                      ? "Restore on every screen"
-                      : "Restore"}
+                      ? t("panel.restoreEverywhere")
+                      : t("panel.restore")}
                   </Button>
                 )}
               </Box>
@@ -796,8 +819,8 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
             : {}),
         }),
       ruleDraft.scope === "project"
-        ? "Rule added for every screen; the build is compared again"
-        : "Rule added; the screenshot is compared again",
+        ? t("panel.ruleAddedProject")
+        : t("panel.ruleAdded"),
     );
     if (ok) {
       closeRule();
@@ -816,14 +839,14 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
           sx={{ minWidth: 0, px: 0.75 }}
           onClick={() => openRule(resourceId, "ignore")}
         >
-          Ignore
+          {t("panel.ignore")}
         </Button>
         <Button
           size="small"
           sx={{ minWidth: 0, px: 0.75 }}
           onClick={() => openRule(resourceId, "tolerate")}
         >
-          Tolerance
+          {t("panel.tolerance")}
         </Button>
       </Box>
     ) : null;
@@ -834,7 +857,7 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
     if (!structure) {
       return (
         <Typography variant="body2" color="textSecondary">
-          No details about this change.
+          {t("panel.noDetails")}
         </Typography>
       );
     }
@@ -859,12 +882,11 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
               onClick={() => onPickModeChange(!pickMode)}
               data-testid="pickElement"
             >
-              {pickMode ? "Cancel picking" : "Pick element on screenshot"}
+              {t(pickMode ? "panel.cancelPicking" : "panel.pick")}
             </Button>
             {pickMode && (
               <Typography variant="body2" color="textSecondary">
-                Point at an element on the right image and click it to ignore it
-                or allow small changes in it. Esc cancels.
+                {t("panel.pickHelp")}
               </Typography>
             )}
           </Box>
@@ -876,10 +898,10 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
         ))}
         {structure.invisible.length > 0 && (
           <Alert severity="error" sx={{ py: 0 }}>
-            <b>Changes the screenshot does not show</b>
+            <b>{t("panel.invisible")}</b>
             {structure.invisible.map((change) => (
               <div key={`${change.kind}:${change.key}`}>
-                {describeChange(change)}
+                {describeChange(change, t)}
               </div>
             ))}
           </Alert>
@@ -895,7 +917,7 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
                   size="small"
                   onClick={() => addIgnoreArea(hint.ignoreArea!)}
                 >
-                  Ignore area
+                  {t("panel.ignoreArea")}
                 </Button>
               ) : undefined
             }
@@ -906,13 +928,15 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
         {nothing && (
           <Typography variant="body2" color="textSecondary">
             {testRun.diffName
-              ? "No details about this change."
-              : "Nothing changed against the baseline."}
+              ? t("panel.noDetails")
+              : t("panel.nothingChanged")}
           </Typography>
         )}
         {structure.regions.length > 0 && (
           <Box sx={{ display: "flex", flexDirection: "column", gap: 0.5 }}>
-            <Typography variant="subtitle2">Changed areas</Typography>
+            <Typography variant="subtitle2">
+              {t("panel.changedAreas")}
+            </Typography>
             {structure.regions.map((area, index) => (
               <Box
                 key={index}
@@ -936,8 +960,7 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
                   }}
                 >
                   {index + 1}.{" "}
-                  {area.element ??
-                    `${area.region.width} × ${area.region.height} px at ${area.region.x}, ${area.region.y}`}
+                  {area.element ?? t("panel.areaAt", { ...area.region })}
                 </span>
                 {elementActions(area.resourceId)}
               </Box>
@@ -946,7 +969,7 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
         )}
         {visibleChanges.length > 0 && (
           <Box sx={{ display: "flex", flexDirection: "column", gap: 0.5 }}>
-            <Typography variant="subtitle2">From the UI tree</Typography>
+            <Typography variant="subtitle2">{t("panel.fromTree")}</Typography>
             {visibleChanges.map((change) => (
               <Box
                 key={`${change.kind}:${change.key}`}
@@ -957,7 +980,7 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
                   fontSize: 14,
                 }}
               >
-                <span>{describeChange(change)}</span>
+                <span>{describeChange(change, t)}</span>
                 {elementActions(change.resourceId || null)}
               </Box>
             ))}
@@ -965,21 +988,23 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
         )}
         {structure.moves.length > 0 && (
           <Box sx={{ display: "flex", flexDirection: "column", gap: 0.5 }}>
-            <Typography variant="subtitle2">
-              Compared at their new place
-            </Typography>
+            <Typography variant="subtitle2">{t("panel.moved")}</Typography>
             <Typography variant="body2" color="textSecondary">
-              These moved without changing, so the move alone is not counted:
+              {t("panel.movedHelp")}
             </Typography>
             {structure.moves.slice(0, 8).map((move) => (
               <Typography key={move.key} variant="body2">
                 {move.element}:{" "}
                 {move.dyDp
-                  ? `${move.dyDp > 0 ? "down" : "up"} ${Math.abs(move.dyDp)} dp`
+                  ? t(move.dyDp > 0 ? "panel.down" : "panel.up", {
+                      count: Math.abs(move.dyDp),
+                    })
                   : ""}
                 {move.dxDp && move.dyDp ? ", " : ""}
                 {move.dxDp
-                  ? `${move.dxDp > 0 ? "right" : "left"} ${Math.abs(move.dxDp)} dp`
+                  ? t(move.dxDp > 0 ? "panel.right" : "panel.left", {
+                      count: Math.abs(move.dxDp),
+                    })
                   : ""}
               </Typography>
             ))}
@@ -995,10 +1020,10 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
               pt: 1.5,
             }}
           >
-            <Typography variant="subtitle2">Rules for this screen</Typography>
+            <Typography variant="subtitle2">{t("panel.rules")}</Typography>
             {structure.systemBars.length > 0 && (
               <Typography variant="body2" color="textSecondary">
-                Status and navigation bars are left out (project setting).
+                {t("panel.systemBars")}
               </Typography>
             )}
             {structure.rules.map((rule) => (
@@ -1014,18 +1039,20 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
               >
                 <StatusPill
                   tone="neutral"
-                  label={
-                    rule.scope === "project" ? "All screens" : "This screen"
-                  }
+                  label={t(
+                    rule.scope === "project"
+                      ? "panel.allScreens"
+                      : "panel.thisScreen",
+                  )}
                 />
                 <Box component="code" sx={{ font: `500 12px ${tokens.mono}` }}>
                   {rule.selector}
                 </Box>
                 <span style={{ color: tokens.textSecondary }}>
                   {rule.action === "ignore"
-                    ? "ignored"
+                    ? t("panel.ignored")
                     : `±${rule.maxDiffPercent}%`}{" "}
-                  · {rule.matches} found
+                  {t("panel.found", { count: rule.matches })}
                 </span>
                 {canEdit && (
                   <Button
@@ -1039,7 +1066,7 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
                         : removeRule(rule)
                     }
                   >
-                    Remove
+                    {t("panel.remove")}
                   </Button>
                 )}
               </Box>
@@ -1052,7 +1079,7 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
             sx={{ alignSelf: "flex-start" }}
             onClick={() => openRule(null)}
           >
-            Add element rule
+            {t("panel.addRuleButton")}
           </Button>
         )}
       </>
@@ -1064,7 +1091,7 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
   return (
     <Box
       component="aside"
-      aria-label="Review details"
+      aria-label={t("panel.details")}
       sx={{
         width: 380,
         flexShrink: 0,
@@ -1084,9 +1111,12 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
           value="a11y"
           label={
             <Box sx={{ display: "flex", gap: 1, alignItems: "center" }}>
-              Accessibility{" "}
+              {t("panel.accessibility")}{" "}
               {newCount > 0 && (
-                <StatusPill tone="changed" label={`${newCount} new`} />
+                <StatusPill
+                  tone="changed"
+                  label={t("builds.a11yNewPill", { count: newCount })}
+                />
               )}
             </Box>
           }
@@ -1095,7 +1125,7 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
           value="changes"
           label={
             <Box sx={{ display: "flex", gap: 1, alignItems: "center" }}>
-              Changes
+              {t("panel.changes")}
               {(structure?.warnings.length ?? 0) +
                 (structure?.invisible.length ?? 0) >
                 0 && (
@@ -1110,7 +1140,7 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
             </Box>
           }
         />
-        {withUiTree && <Tab value="devices" label="Devices" />}
+        {withUiTree && <Tab value="devices" label={t("panel.devices")} />}
       </Tabs>
       <Box
         sx={{
@@ -1137,23 +1167,23 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
         fullWidth
         maxWidth="xs"
       >
-        <DialogTitle>Link an existing Jira issue</DialogTitle>
+        <DialogTitle>{t("panel.linkTitle")}</DialogTitle>
         <DialogContent
           sx={{ display: "flex", flexDirection: "column", gap: 2 }}
         >
           <Typography variant="body2" color="textSecondary">
-            The issue will be shown on this problem on every later build.
+            {t("panel.linkHelp")}
           </Typography>
           <TextField
             id="jira-key"
-            label="Jira issue"
+            label={t("panel.jiraIssue")}
             placeholder="MOB-1234"
             value={jiraKey}
             onChange={(e) => setJiraKey(e.target.value)}
             error={!!jiraKey && !JIRA_KEY.test(jiraKey.trim())}
             helperText={
               jiraKey && !JIRA_KEY.test(jiraKey.trim())
-                ? "Looks like ABC-123"
+                ? t("panel.looksLike")
                 : " "
             }
             onKeyDown={(e) => {
@@ -1163,13 +1193,15 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
           />
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setJiraDialog(null)}>Cancel</Button>
+          <Button onClick={() => setJiraDialog(null)}>
+            {t("panel.cancel")}
+          </Button>
           <Button
             variant="contained"
             disabled={submitting || !JIRA_KEY.test(jiraKey.trim())}
             onClick={submitJira}
           >
-            Link
+            {t("panel.link")}
           </Button>
         </DialogActions>
       </Dialog>
@@ -1188,23 +1220,24 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
         fullWidth
         maxWidth="xs"
       >
-        <DialogTitle>Mark as false positive</DialogTitle>
+        <DialogTitle>{t("panel.fpTitle")}</DialogTitle>
         <DialogContent
           sx={{ display: "flex", flexDirection: "column", gap: 2 }}
         >
           <Typography variant="body2" color="textSecondary">
-            This issue stops counting on this screen in every later build and
-            device. You can restore it from the list of false positives.
+            {t("panel.fpHelp")}
           </Typography>
           <TextField
             id="ignore-comment"
-            label="Why (optional)"
+            label={t("panel.why")}
             value={ignoreComment}
             onChange={(e) => setIgnoreComment(e.target.value)}
           />
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setIgnoreFor(null)}>Cancel</Button>
+          <Button onClick={() => setIgnoreFor(null)}>
+            {t("panel.cancel")}
+          </Button>
           <Button
             variant="contained"
             disabled={submitting}
@@ -1218,14 +1251,14 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
                       ignoreFor,
                       ignoreComment || undefined,
                     ),
-                  "Marked as false positive",
+                  t("panel.fpDone"),
                 ))
               ) {
                 setIgnoreFor(null);
               }
             }}
           >
-            Mark as false positive
+            {t("panel.fpTitle")}
           </Button>
         </DialogActions>
       </Dialog>
@@ -1260,8 +1293,8 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
       <Dialog open={!!ruleDraft} onClose={closeRule} fullWidth maxWidth="xs">
         <DialogTitle>
           {ruleDraft?.action === "tolerate"
-            ? "Allow small changes"
-            : "Ignore element"}
+            ? t("panel.allowSmall")
+            : t("panel.ignoreElement")}
         </DialogTitle>
         <DialogContent
           sx={{
@@ -1299,13 +1332,15 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
             renderInput={(params) => (
               <TextField
                 {...params}
-                label="Element"
-                placeholder="Type to search: Pay, balance, toolbar…"
+                label={t("panel.element")}
+                placeholder={t("panel.elementPlaceholder")}
                 helperText={
                   chosenElement
-                    ? `Found by ${chosenElement.selector.replace(/:.*/, "")}, outlined on the screenshot`
+                    ? t("panel.foundBy", {
+                        by: chosenElement.selector.replace(/:.*/, ""),
+                      })
                     : !elementOptions.length
-                      ? "This screenshot has no elements to choose from"
+                      ? t("panel.noElements")
                       : " "
                 }
               />
@@ -1321,21 +1356,25 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
                 if (draft) onPickModeChange(true);
               }}
             >
-              Pick on the screenshot
+              {t("panel.pickOnScreenshot")}
             </Button>
             <Button
               size="small"
               sx={{ color: tokens.textSecondary, ml: "auto" }}
               onClick={() => setAdvancedSelector((value) => !value)}
             >
-              {advancedSelector ? "Hide selector" : "Match differently"}
+              {t(
+                advancedSelector
+                  ? "panel.hideSelector"
+                  : "panel.matchDifferently",
+              )}
             </Button>
           </Box>
           {(advancedSelector || (!!ruleDraft?.selector && !chosenElement)) && (
             <TextField
               id="rule-selector"
               size="small"
-              label="Selector"
+              label={t("panel.selector")}
               value={ruleDraft?.selector ?? ""}
               onChange={(e) =>
                 ruleDraft &&
@@ -1345,13 +1384,13 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
                   element: undefined,
                 })
               }
-              helperText="For a whole kind of element or a pattern: class:ImageButton, text:/\d+:\d+/ (any time), id:banner"
+              helperText={t("panel.selectorHelp")}
             />
           )}
           <TextField
             id="rule-action"
             select
-            label="What to do"
+            label={t("panel.whatToDo")}
             value={ruleDraft?.action ?? "ignore"}
             onChange={(e) =>
               ruleDraft &&
@@ -1361,14 +1400,14 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
               })
             }
           >
-            <MenuItem value="ignore">Ignore it wherever it is</MenuItem>
-            <MenuItem value="tolerate">Allow small changes inside it</MenuItem>
+            <MenuItem value="ignore">{t("panel.ignoreAnywhere")}</MenuItem>
+            <MenuItem value="tolerate">{t("panel.allowInside")}</MenuItem>
           </TextField>
           {ruleDraft?.action === "tolerate" && (
             <TextField
               id="rule-percent"
               type="number"
-              label="Share of the element that may change, %"
+              label={t("panel.share")}
               inputProps={{ min: 0, max: 100, step: 0.5 }}
               value={ruleDraft.maxDiffPercent}
               onChange={(e) =>
@@ -1382,7 +1421,7 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
           <TextField
             id="rule-scope"
             select
-            label="Where"
+            label={t("panel.where")}
             value={ruleDraft?.scope ?? "screen"}
             onChange={(e) =>
               ruleDraft &&
@@ -1392,12 +1431,14 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
               })
             }
           >
-            <MenuItem value="screen">This screen ({testRun.name})</MenuItem>
-            <MenuItem value="project">Every screen of the project</MenuItem>
+            <MenuItem value="screen">
+              {t("panel.thisScreenOf", { name: testRun.name })}
+            </MenuItem>
+            <MenuItem value="project">{t("panel.everyScreen")}</MenuItem>
           </TextField>
         </DialogContent>
         <DialogActions>
-          <Button onClick={closeRule}>Cancel</Button>
+          <Button onClick={closeRule}>{t("panel.cancel")}</Button>
           <Button
             variant="contained"
             disabled={
@@ -1406,7 +1447,7 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
             }
             onClick={saveRule}
           >
-            Add rule
+            {t("panel.addRule")}
           </Button>
         </DialogActions>
       </Dialog>

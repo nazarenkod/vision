@@ -1,17 +1,18 @@
 import React from "react";
 import { Typography, Box, LinearProgress } from "@mui/material";
 import { BuildStatusChip } from "./BuildStatusChip";
-import { formatDateTime } from "../_helpers/format.helper";
 import { useBuildState, useTestRunState } from "../contexts";
 import { LOCATOR_BUILD_DETAILS } from "../constants/help";
 import { Tooltip } from "./Tooltip";
 import { motion, tokens } from "../theme";
 import { CountUp } from "./motion/useCountUp";
+import { useT } from "../i18n";
 
 /** Build header: identity, status and a bar of how the screenshots came out. */
 const BuildDetails: React.FunctionComponent = () => {
   const { selectedBuild } = useBuildState();
   const { testRuns } = useTestRunState();
+  const { t, tx, formatDate } = useT();
   const buildNumber = React.useMemo(
     () => `#${selectedBuild?.number} ${selectedBuild?.ciBuildId || ""}`,
     [selectedBuild?.number, selectedBuild?.ciBuildId],
@@ -71,9 +72,9 @@ const BuildDetails: React.FunctionComponent = () => {
         </Tooltip>
         <BuildStatusChip status={selectedBuild.status} />
         <Typography variant="body2" color="textSecondary">
-          {formatDateTime(selectedBuild.createdAt)}
+          {formatDate(selectedBuild.createdAt)}
           {selectedBuild.updatedAt &&
-            ` · last run ${formatDateTime(selectedBuild.updatedAt)}`}
+            t("builds.lastRun", { date: formatDate(selectedBuild.updatedAt) })}
         </Typography>
       </Box>
 
@@ -83,7 +84,11 @@ const BuildDetails: React.FunctionComponent = () => {
           key={selectedBuild.id}
           data-testid="buildStatusBar"
           role="img"
-          aria-label={`${selectedBuild.unresolvedCount} unresolved, ${selectedBuild.failedCount} failed, ${selectedBuild.passedCount} passed`}
+          aria-label={t("builds.statusBar", {
+            unresolved: selectedBuild.unresolvedCount,
+            failed: selectedBuild.failedCount,
+            passed: selectedBuild.passedCount,
+          })}
           sx={{
             display: "flex",
             height: 6,
@@ -124,35 +129,70 @@ const BuildDetails: React.FunctionComponent = () => {
           }}
         >
           <span>
-            <b style={{ color: tokens.text }}>
-              <CountUp value={total} />
-            </b>{" "}
-            total
+            {tx(
+              "builds.total",
+              {
+                value: (
+                  <b style={{ color: tokens.text }}>
+                    <CountUp value={total} />
+                  </b>
+                ),
+              },
+              { count: total },
+            )}
           </span>
           <span>
-            <b style={{ color: tokens.text }}>
-              <CountUp value={selectedBuild.unresolvedCount} />
-            </b>{" "}
-            unresolved
+            {tx(
+              "builds.unresolved",
+              {
+                value: (
+                  <b style={{ color: tokens.text }}>
+                    <CountUp value={selectedBuild.unresolvedCount} />
+                  </b>
+                ),
+              },
+              { count: selectedBuild.unresolvedCount },
+            )}
           </span>
           <span>
-            <b style={{ color: tokens.text }}>
-              <CountUp value={selectedBuild.failedCount} />
-            </b>{" "}
-            failed
+            {tx(
+              "builds.failed",
+              {
+                value: (
+                  <b style={{ color: tokens.text }}>
+                    <CountUp value={selectedBuild.failedCount} />
+                  </b>
+                ),
+              },
+              { count: selectedBuild.failedCount },
+            )}
           </span>
           <span>
-            <b style={{ color: tokens.text }}>
-              <CountUp value={selectedBuild.passedCount} />
-            </b>{" "}
-            passed
+            {tx(
+              "builds.passed",
+              {
+                value: (
+                  <b style={{ color: tokens.text }}>
+                    <CountUp value={selectedBuild.passedCount} />
+                  </b>
+                ),
+              },
+              { count: selectedBuild.passedCount },
+            )}
           </span>
           {a11yNew > 0 && (
             <span>
-              <b style={{ color: tokens.status.changed.fg }}>
-                <CountUp value={a11yNew} />
-              </b>{" "}
-              new accessibility issues
+              {tx(
+                "builds.a11yNew",
+                {
+                  value: (
+                    <b style={{ color: tokens.status.changed.fg }}>
+                      <CountUp value={a11yNew} />
+                    </b>
+                  ),
+                },
+                { count: a11yNew },
+              )}
             </span>
           )}
         </Box>

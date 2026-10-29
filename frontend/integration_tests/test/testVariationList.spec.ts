@@ -9,6 +9,7 @@ import {
   mockGetTestVariations,
   mockImage,
   mockMergeTestVariations,
+  inUkrainian,
 } from "utils/mocks";
 import {
   TEST_BUILD_PASSED,
@@ -31,6 +32,13 @@ test("renders", async ({ openTestVariationListPage, page }) => {
   await openTestVariationListPage(TEST_PROJECT.id);
 
   await expect(page).toHaveScreenshot("test-variation-list-page.png");
+});
+
+test("renders in Ukrainian", async ({ openTestVariationListPage, page }) => {
+  await inUkrainian(page);
+  await openTestVariationListPage(TEST_PROJECT.id);
+
+  await expect(page).toHaveScreenshot("test-variation-list-page-uk.png");
 });
 
 test("deletes a variation", async ({ openTestVariationListPage, page }) => {

@@ -3,6 +3,7 @@ import { Box, Typography } from "@mui/material";
 import { diffMeter } from "../../_helpers/review.helper";
 import { motion, tokens } from "../../theme";
 import { Tooltip } from "../Tooltip";
+import { useT } from "../../i18n";
 
 /** The diff against the tolerance on one bar (REQ-018-31). */
 export const DiffMeter: React.FunctionComponent<{
@@ -11,9 +12,13 @@ export const DiffMeter: React.FunctionComponent<{
 }> = ({ diffPercent, tolerancePercent }) => {
   const meter = diffMeter(diffPercent, tolerancePercent);
   const diff = Math.round(diffPercent * 100) / 100;
+  const { t, formatNumber } = useT();
   return (
     <Tooltip
-      title={`${diff}% of pixels differ; the tolerance is ${tolerancePercent}% (diffTollerancePercent in the track call)`}
+      title={t("review.diffMeterHelp", {
+        diff,
+        tolerance: tolerancePercent,
+      })}
     >
       <Box
         data-testid="diffMeter"
@@ -25,7 +30,7 @@ export const DiffMeter: React.FunctionComponent<{
         }}
       >
         <Typography variant="caption" sx={{ color: tokens.textSecondary }}>
-          Diff
+          {t("review.diff")}
         </Typography>
         <Typography
           variant="caption"
@@ -37,7 +42,7 @@ export const DiffMeter: React.FunctionComponent<{
             fontVariantNumeric: "tabular-nums",
           }}
         >
-          {diff}%
+          {formatNumber(diff)}%
         </Typography>
         <Box
           aria-hidden="true"
@@ -77,7 +82,7 @@ export const DiffMeter: React.FunctionComponent<{
           />
         </Box>
         <Typography variant="caption" sx={{ color: tokens.textMuted }}>
-          tol. {tolerancePercent}%
+          {t("review.tolerance", { value: tolerancePercent })}
         </Typography>
       </Box>
     </Tooltip>

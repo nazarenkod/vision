@@ -10,6 +10,7 @@ import {
 } from "@mui/material";
 import { useSnackbar } from "notistack";
 import { setJira, useUserDispatch, useUserState } from "../contexts";
+import { useT } from "../i18n";
 
 /**
  * The person's own Jira credentials: bugs are filed as them, and Jira is
@@ -22,6 +23,7 @@ export const JiraTokenCard: React.FunctionComponent = () => {
   const [token, setToken] = React.useState("");
   const [email, setEmail] = React.useState(user?.jiraEmail ?? "");
   const [saving, setSaving] = React.useState(false);
+  const { t } = useT();
 
   const save = async (values: { jiraToken?: string; jiraEmail?: string }) => {
     setSaving(true);
@@ -29,7 +31,9 @@ export const JiraTokenCard: React.FunctionComponent = () => {
       await setJira(dispatch, values);
       setToken("");
       enqueueSnackbar(
-        values.jiraToken === "" ? "Jira token removed" : "Jira token saved",
+        t(
+          values.jiraToken === "" ? "profile.jiraRemoved" : "profile.jiraSaved",
+        ),
         { variant: "success" },
       );
     } catch (error) {
@@ -44,14 +48,12 @@ export const JiraTokenCard: React.FunctionComponent = () => {
       <CardHeader title="Jira" />
       <CardContent sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
         <Typography variant="body2" color="textSecondary">
-          Your own token: accessibility bugs are filed as you, and Jira is
-          searched with your rights. Server or Data Center: a personal access
-          token. Jira Cloud: an API token and your account email.
+          {t("profile.jiraIntro")}
         </Typography>
         <TextField
           id="jiraEmail"
           size="small"
-          label="Email (Jira Cloud only)"
+          label={t("profile.jiraEmail")}
           value={email}
           onChange={(event) => setEmail(event.target.value)}
         />
@@ -60,14 +62,14 @@ export const JiraTokenCard: React.FunctionComponent = () => {
           size="small"
           type="password"
           autoComplete="new-password"
-          label={user?.jiraTokenSet ? "New token" : "Token"}
-          placeholder={user?.jiraTokenSet ? "Saved; type to replace" : ""}
+          label={t(user?.jiraTokenSet ? "profile.newToken" : "profile.token")}
+          placeholder={user?.jiraTokenSet ? t("profile.tokenReplace") : ""}
           value={token}
           onChange={(event) => setToken(event.target.value)}
           helperText={
             user?.jiraTokenSet
-              ? "A token is saved. It is never shown again."
-              : "Not set: Jira works only where the project has a shared token."
+              ? t("profile.tokenSaved")
+              : t("profile.tokenNotSet")
           }
         />
         <Box sx={{ display: "flex", gap: 1 }}>
@@ -83,7 +85,7 @@ export const JiraTokenCard: React.FunctionComponent = () => {
               })
             }
           >
-            Save
+            {t("profile.save")}
           </Button>
           {user?.jiraTokenSet && (
             <Button
@@ -91,7 +93,7 @@ export const JiraTokenCard: React.FunctionComponent = () => {
               disabled={saving}
               onClick={() => save({ jiraToken: "" })}
             >
-              Remove token
+              {t("profile.removeToken")}
             </Button>
           )}
         </Box>

@@ -1,6 +1,7 @@
 import React from "react";
 import { BuildStatus } from "../types/buildStatus";
 import { PillTone, StatusPill } from "./StatusPill";
+import { labelOf, useT } from "../i18n";
 
 const TONE: Partial<Record<BuildStatus, PillTone>> = {
   [BuildStatus.passed]: "passed",
@@ -10,4 +11,12 @@ const TONE: Partial<Record<BuildStatus, PillTone>> = {
 
 export const BuildStatusChip: React.FunctionComponent<{
   status: BuildStatus;
-}> = ({ status }) => <StatusPill tone={TONE[status] ?? "neutral"} label={status} />;
+}> = ({ status }) => {
+  const { t } = useT();
+  return (
+    <StatusPill
+      tone={TONE[status] ?? "neutral"}
+      label={labelOf(t, "buildStatus", status)}
+    />
+  );
+};

@@ -5,6 +5,7 @@ import { useHotkeys } from "react-hotkeys-hook";
 import { TestRun } from "../../types";
 import { Tooltip } from "../Tooltip";
 import { makeStyles } from "@mui/styles";
+import { useT } from "../../i18n";
 
 const useStyles = makeStyles(() => ({
   button: {
@@ -27,6 +28,7 @@ export const ArrowButtons: React.FunctionComponent<{
   handleNavigation: (testRunId: string) => void;
 }> = ({ testRuns, selectedTestRunIndex, handleNavigation }) => {
   const classes = useStyles();
+  const { t } = useT();
 
   const navigateNext = () => {
     if (testRuns.length > selectedTestRunIndex + 1) {
@@ -48,7 +50,7 @@ export const ArrowButtons: React.FunctionComponent<{
   return (
     <>
       {testRuns.length > selectedTestRunIndex + 1 && (
-        <Tooltip title={"Hotkey: ArrowRight"}>
+        <Tooltip title={t("review.hotkeyRight")}>
           <IconButton
             color="secondary"
             className={classes.button}
@@ -63,7 +65,7 @@ export const ArrowButtons: React.FunctionComponent<{
         </Tooltip>
       )}
       {selectedTestRunIndex > 0 && (
-        <Tooltip title={"Hotkey: ArrowLeft"}>
+        <Tooltip title={t("review.hotkeyLeft")}>
           <IconButton
             color="secondary"
             className={classes.button}

@@ -1,3 +1,4 @@
+import { BRAND } from "../constants/brand";
 import { Message } from "./translate";
 
 /**
@@ -289,6 +290,926 @@ export const en = {
   "validation.lessThan": "Enter less than {max}",
   "validation.atLeast": "Enter greater than or equal to {min}",
   "validation.atMost": "Enter less than or equal to {max}",
+
+  // status
+  "testStatus.new": "new",
+  "testStatus.unresolved": "unresolved",
+  "testStatus.failed": "failed",
+  "testStatus.approved": "approved",
+  "testStatus.autoApproved": "autoApproved",
+  "testStatus.ok": "ok",
+  "buildStatus.passed": "passed",
+  "buildStatus.unresolved": "unresolved",
+  "buildStatus.failed": "failed",
+
+  // builds
+  "builds.clearSelection": "Clear selection",
+  "builds.selectAll": "Select all ({total})",
+  "builds.deletedMany": {
+    one: "{count} build(s) deleted",
+    other: "{count} build(s) deleted",
+  },
+  "builds.deleteFailed": {
+    one: "Failed to delete {count} build(s)",
+    other: "Failed to delete {count} build(s)",
+  },
+  "builds.search": "Search build",
+  "builds.searchPlaceholder": "Search by CI build id",
+  "builds.deleteSelected": "Delete {count} selected",
+  "builds.loadFailed": "Builds could not be loaded",
+  "builds.noMatch": 'No builds match "{search}"',
+  "builds.empty": "No builds",
+  "builds.stop": "Stop",
+  "builds.editCiBuild": "Edit CI Build",
+  "builds.delete": "Delete",
+  "builds.editTitle": "Edit CI Build ID",
+  "builds.edit": "Edit",
+  "builds.editText": "Edit the ci build id for build: #{number}",
+  "builds.newCiBuildId": "New CI Build Id",
+  "builds.deleteTitle": "Delete Build",
+  "builds.deleteConfirm": "Are you sure you want to delete build: #{number}?",
+  "builds.deleted": "Build #{number} deleted",
+  "builds.deleteManyTitle": "Delete Builds",
+  "builds.deleteManyConfirm": {
+    one: "Are you sure you want to delete {count} build(s)?",
+    other: "Are you sure you want to delete {count} build(s)?",
+  },
+  "builds.deleteManyHint": "This also removes their test runs.",
+  "builds.lastRun": " · last run {date}",
+  "builds.statusBar":
+    "{unresolved} unresolved, {failed} failed, {passed} passed",
+  "builds.total": { one: "{value} total", other: "{value} total" },
+  "builds.unresolved": {
+    one: "{value} unresolved",
+    other: "{value} unresolved",
+  },
+  "builds.failed": { one: "{value} failed", other: "{value} failed" },
+  "builds.passed": { one: "{value} passed", other: "{value} passed" },
+  "builds.a11yNew": {
+    one: "{value} new accessibility issues",
+    other: "{value} new accessibility issues",
+  },
+  "builds.views": "Build views",
+  "builds.changes": "Changes",
+  "builds.toReview": "{count} to review",
+  "builds.allTests": "All tests · {count}",
+  "builds.accessibility": "Accessibility",
+  "builds.a11yNewPill": { one: "{count} new", other: "{count} new" },
+
+  // runs
+  "runs.name": "Name",
+  "runs.tags": "Tags",
+  "runs.status": "Status",
+  "runs.noMatch": "No test runs match the filters",
+  "runs.cardsSelected": {
+    one: "{count} card selected",
+    other: "{count} cards selected",
+  },
+  "runs.cardsPerPage": "Cards per page:",
+  "runs.selectBuild": "Select build from list",
+  "runs.selectAllRuns": "Select all runs",
+  "runs.select": "Select {name}",
+  "runs.table": "Table",
+  "runs.tableView": "Table view",
+  "runs.grid": "Grid",
+  "runs.gridView": "Grid view",
+  "runs.compact": "Compact",
+  "runs.compactDensity": "Compact density",
+  "runs.standard": "Standard",
+  "runs.standardDensity": "Standard density",
+  "runs.comfortable": "Comfortable",
+  "runs.comfortableDensity": "Comfortable density",
+  "runs.groupHelpCard":
+    "Collapses a screen's variations into one card by group.",
+  "runs.groupHelpRow": "Collapses a screen's variations into one row by group.",
+  "runs.groupHelpWhere":
+    'Set it in Projects → Edit the project → "Group variations by".',
+  "runs.groupHelpAxis": "Current axis: {axis}.",
+  "runs.groupVariations": "Group variations",
+  "runs.diffHelp": "Toggle diff. Hotkey: D",
+  "runs.showDiff": "Show diff",
+  "runs.searchByName": "Search by name",
+  "runs.tag": "Tag",
+  "runs.anyTag": "Any tag",
+  "runs.anyStatus": "Any status",
+  "runs.reset": "Reset",
+
+  // bulk
+  "bulk.clearIgnoreTitle": "Clear Ignore Area For Selected Items",
+  "bulk.approveTitle": "Approve Test Runs",
+  "bulk.rejectTitle": "Reject Test Runs",
+  "bulk.deleteTitle": "Delete Test Runs",
+  "bulk.downloadTitle": "Download Test Runs",
+  "bulk.approve": "Approve",
+  "bulk.reject": "Reject",
+  "bulk.delete": "Delete",
+  "bulk.download": "Download",
+  "bulk.clear": "Clear",
+  "bulk.approveConfirm": {
+    one: "Are you sure you want to approve {count} items?",
+    other: "Are you sure you want to approve {count} items?",
+  },
+  "bulk.rejectConfirm": {
+    one: "Are you sure you want to reject {count} items?",
+    other: "Are you sure you want to reject {count} items?",
+  },
+  "bulk.deleteConfirm": {
+    one: "Are you sure you want to delete {count} items?",
+    other: "Are you sure you want to delete {count} items?",
+  },
+  "bulk.downloadConfirm": {
+    one: "Are you sure you want to download {count} items?",
+    other: "Are you sure you want to download {count} items?",
+  },
+  "bulk.clearConfirm": {
+    one: "Are you sure you want to clear {count} items?",
+    other: "Are you sure you want to clear {count} items?",
+  },
+  "bulk.processed": {
+    one: "{count} test runs processed.",
+    other: "{count} test runs processed.",
+  },
+  "bulk.approveRows": "Approve unresolved in selected rows.",
+  "bulk.approveCards": "Approve unresolved in selected cards.",
+  "bulk.rejectRows": "Reject unresolved in selected rows.",
+  "bulk.rejectCards": "Reject unresolved in selected cards.",
+  "bulk.downloadRows": "Download images for selected rows.",
+  "bulk.downloadCards": "Download images for selected cards.",
+  "bulk.deleteRows": "Delete selected rows.",
+  "bulk.deleteCards": "Delete selected cards.",
+  "bulk.clearRows": "Clear ignore areas for selected rows.",
+  "bulk.clearCards": "Clear ignore areas for selected cards.",
+
+  // baselines
+  "baselines.title": "Baselines",
+  "baselines.checks": { one: "{count} check", other: "{count} checks" },
+  "baselines.merge": "Merge branches",
+  "baselines.perPage": "Per page",
+  "baselines.history": "History",
+  "baselines.deleteOf": "Delete {device}",
+  "baselines.empty": "No baselines here",
+  "baselines.emptyHint":
+    "Baselines appear after the first approved screenshot, or none match the filters.",
+  "baselines.deleteTitle": "Delete baseline",
+  "baselines.delete": "Delete",
+  "baselines.deleteConfirm": "Are you sure you want to delete: {name}?",
+  "baselines.deleteScope": "Only the baseline for {device} on {branch}.",
+  "baselines.mergeStarted": "Merge started in build: {id}",
+  "baselines.fromBranch": "From branch",
+  "baselines.toBranch": "To branch",
+  "baselines.mergeSubmit": "Merge",
+  "baselines.historyTitle": "Baseline history",
+  "baselines.newestFirst": "Baselines, newest first",
+  "baselines.current": "Current",
+  "baselines.thisOne": "This one",
+  "baselines.beforeIt": "Before it",
+  "baselines.nothingBefore": "Nothing before it",
+  "baselines.testRun": "Test Run",
+  "baselines.tag.os": "OS",
+  "baselines.tag.device": "Device",
+  "baselines.tag.customTags": "Custom Tags",
+  "baselines.tag.browser": "Browser",
+  "baselines.tag.viewport": "Viewport",
+
+  // filters
+  "filters.all": "All",
+  "filters.name": "Name",
+  "filters.os": "OS",
+  "filters.device": "Device",
+  "filters.browser": "Browser",
+  "filters.viewport": "Viewport",
+  "filters.customTags": "Custom tags",
+  "filters.status": "Status",
+  "filters.branch": "Branch",
+  "filters.reset": "Reset",
+  "filters.project": "Project",
+  "filters.selectProject": "Select project",
+
+  // review
+  "review.ignoreAreas": "Ignore Areas",
+  "review.compareArea": "Compare Area",
+  "review.applyIgnoreArea":
+    "Apply selected ignore area to all images in this build.",
+  "review.ignoreSaved": "Ignore areas are updated.",
+  "review.compareSaved":
+    "Selected area has been inverted to ignore areas and saved.",
+  "review.ignoreAppliedAll":
+    "Ignore areas are updated in all images in this build.",
+  "review.error": "There was an error : {error}",
+  "review.ignoreUnknown":
+    "There was an error determining which ignore area to apply.",
+  "review.clearIgnore": "Clears all ignore areas.",
+  "review.history": "History",
+  "review.toggleDiff": "Toggle diff. Hotkey: D",
+  "review.toggleDiffLabel": "Toggle diff",
+  "review.step": "Step {current}/{total}: ",
+  "review.overlay": "Overlay",
+  "review.fadeHelp": "Fade the checkpoint out to see the baseline through it",
+  "review.fade": "Fade",
+  "review.fadeLabel": "Fade to the baseline",
+  "review.blendHelp":
+    "Blend the two as a difference: what matches goes black, and a shift shows as an offset ghost",
+  "review.sizeDiffers":
+    "Image height/width differ from baseline! Cannot calculate diff!",
+  "review.commentUpdated": "Comment updated",
+  "review.zoomIn": "Zoom In",
+  "review.zoomOut": "Zoom Out",
+  "review.originalSize": "Original size",
+  "review.fit": "Fit into screen",
+  "review.hotkeyLeft": "Hotkey: ArrowLeft",
+  "review.hotkeyRight": "Hotkey: ArrowRight",
+  "review.goNext": "Go to the next after Approve/Reject",
+  "review.yes": "Yes",
+  "review.applyIgnoreConfirm":
+    "All images in the current build will be re-compared with new ignore area taken into account. Are you sure?",
+  "review.baseline": "Baseline",
+  "review.checkpoint": "Checkpoint",
+  "review.loading": "Loading...",
+  "review.branch": "Branch: {branch}",
+  "review.uploadIgnore":
+    "Contains noneditable ignore areas applied during image upload.",
+  "review.attr.os": "OS",
+  "review.attr.device": "Device",
+  "review.attr.browser": "Browser",
+  "review.attr.viewport": "Viewport",
+  "review.attr.customTags": "Custom Tags",
+  "review.vlmHelp":
+    "AI-generated description of the differences found by the Vision Language Model (VLM).",
+  "review.vlm": "VLM Analysis:",
+  "review.diffMeterHelp":
+    "{diff}% of pixels differ; the tolerance is {tolerance}% (diffTollerancePercent in the track call)",
+  "review.diff": "Diff",
+  "review.steps": "{approved} approved, {rejected} rejected, {waiting} waiting",
+  "review.mergeHelp": "Will replace target branch baseline if accepted",
+  "review.mergeInto": "merge into: {branch}",
+  "review.hotkey": "Hotkey: {key}",
+  "review.approve": "Approve",
+  "review.reject": "Reject",
+  "review.approveVariationsHelp":
+    "Review and approve this screen's matching variations (e.g. all locales) before applying",
+  "review.approveVariations": "Approve variations",
+  "review.rejectVariationsHelp":
+    "Review and reject this screen's matching variations (e.g. all locales) before applying",
+  "review.rejectVariations": "Reject variations",
+  "review.devices": "Devices",
+  "review.approveAll": "Approve all {count}",
+  "review.approveDevicesTitle": {
+    one: "Approve {count} devices?",
+    other: "Approve {count} devices?",
+  },
+  "review.approveDevicesText":
+    "Each becomes the baseline for its device: {devices}.",
+  "review.comments": "Comments",
+  "review.commentPlaceholder": "Add any additional data here",
+  "review.save": "Save",
+  "review.notAvailable": "Not available",
+  "review.unsavedTitle": "You have not saved ignore areas",
+  "review.discard": "Discard",
+  "review.discardConfirm": "Are you sure you want to discard changes?",
+
+  // panel
+  "panel.linked": "Linked {key}",
+  "panel.noSuggestions": "No suggestions",
+  "panel.copied": "Copied",
+  "panel.ignoreAreaAdded":
+    "Ignore area added; the screenshot is compared again",
+  "panel.new": "New",
+  "panel.existing": "Existing",
+  "panel.bug": "Bug ",
+  "panel.filing": "A bug is being filed…",
+  "panel.codeHelp":
+    "Problem id: in the Jira bug's summary and labels. Click to copy.",
+  "panel.problemOf": "A problem of {component}: ",
+  "panel.elsewhereIgnored":
+    "{prefix}marked as a false positive on screen “{screen}”. It holds here too; nothing to file.",
+  "panel.elsewhereFiling":
+    "{prefix}a bug is being filed on screen “{screen}”. It holds here too; nothing to file.",
+  "panel.elsewhereFiled":
+    "{prefix}filed on screen “{screen}”. It holds here too; nothing to file.",
+  "panel.alsoFiled": "Also filed for it:",
+  "panel.suggested": "Suggested",
+  "panel.copy": "Copy",
+  "panel.unlinked": "Unlinked",
+  "panel.unlinkEverywhere": "Unlink on every screen",
+  "panel.unlink": "Unlink bug",
+  "panel.createBug": "Create Jira bug",
+  "panel.linkExisting": "Link existing",
+  "panel.falsePositive": "False positive",
+  "panel.noTree":
+    "No UI tree came with this screenshot. Send the Appium page source with it (in the Java SDK: {code}), or check the screen with the Vision CLI, to check accessibility.",
+  "panel.treeFailed": "The UI tree could not be checked.",
+  "panel.checkedFrom": "Checked from the {platform} UI tree.",
+  "panel.newCount": "{count} new",
+  "panel.compared":
+    "Compared with the baseline: {new}, {existing} existing, {fixed} fixed{reported}.",
+  "panel.withBug": ", {count} with a bug",
+  "panel.noBaselineTree":
+    "The baseline has no UI tree, so every issue counts as new.",
+  "panel.estimated": " Sizes are estimated: the client sent no screen density.",
+  "panel.addToken":
+    "Add your Jira token in your profile to file bugs from here.",
+  "panel.addUrl":
+    "Add the Jira URL in project settings to file bugs from here.",
+  "panel.fileAll": "Create Jira bugs for all {count} open problems",
+  "panel.resolved":
+    "{key} is no longer found on this screen. The bug can probably be closed.",
+  "panel.askingAi": "Asking AI…",
+  "panel.suggestLabels": "Suggest labels with AI",
+  "panel.noIssues": "No accessibility issues found on this screen.",
+  "panel.falsePositives": "False positives ({count})",
+  "panel.onScreen": " (on screen “{screen}”)",
+  "panel.restored": "Restored",
+  "panel.restoreEverywhere": "Restore on every screen",
+  "panel.restore": "Restore",
+  "panel.ruleAddedProject":
+    "Rule added for every screen; the build is compared again",
+  "panel.ruleAdded": "Rule added; the screenshot is compared again",
+  "panel.ignore": "Ignore",
+  "panel.tolerance": "Tolerance",
+  "panel.noDetails": "No details about this change.",
+  "panel.cancelPicking": "Cancel picking",
+  "panel.pick": "Pick element on screenshot",
+  "panel.pickHelp":
+    "Point at an element on the right image and click it to ignore it or allow small changes in it. Esc cancels.",
+  "panel.invisible": "Changes the screenshot does not show",
+  "panel.ignoreArea": "Ignore area",
+  "panel.nothingChanged": "Nothing changed against the baseline.",
+  "panel.changedAreas": "Changed areas",
+  "panel.areaAt": "{width} × {height} px at {x}, {y}",
+  "panel.fromTree": "From the UI tree",
+  "panel.moved": "Compared at their new place",
+  "panel.movedHelp":
+    "These moved without changing, so the move alone is not counted:",
+  "panel.down": "down {count} dp",
+  "panel.up": "up {count} dp",
+  "panel.right": "right {count} dp",
+  "panel.left": "left {count} dp",
+  "panel.rules": "Rules for this screen",
+  "panel.systemBars":
+    "Status and navigation bars are left out (project setting).",
+  "panel.allScreens": "All screens",
+  "panel.thisScreen": "This screen",
+  "panel.ignored": "ignored",
+  "panel.found": "· {count} found",
+  "panel.ruleRemoved": "Rule removed; compared again",
+  "panel.remove": "Remove",
+  "panel.addRuleButton": "Add element rule",
+  "panel.details": "Review details",
+  "panel.accessibility": "Accessibility",
+  "panel.changes": "Changes",
+  "panel.devices": "Devices",
+  "panel.linkTitle": "Link an existing Jira issue",
+  "panel.linkHelp":
+    "The issue will be shown on this problem on every later build.",
+  "panel.jiraIssue": "Jira issue",
+  "panel.looksLike": "Looks like ABC-123",
+  "panel.cancel": "Cancel",
+  "panel.link": "Link",
+  "panel.fpTitle": "Mark as false positive",
+  "panel.fpHelp":
+    "This issue stops counting on this screen in every later build and device. You can restore it from the list of false positives.",
+  "panel.why": "Why (optional)",
+  "panel.fpDone": "Marked as false positive",
+  "panel.allowSmall": "Allow small changes",
+  "panel.ignoreElement": "Ignore element",
+  "panel.element": "Element",
+  "panel.elementPlaceholder": "Type to search: Pay, balance, toolbar…",
+  "panel.foundBy": "Found by {by}, outlined on the screenshot",
+  "panel.noElements": "This screenshot has no elements to choose from",
+  "panel.pickOnScreenshot": "Pick on the screenshot",
+  "panel.hideSelector": "Hide selector",
+  "panel.matchDifferently": "Match differently",
+  "panel.selector": "Selector",
+  "panel.selectorHelp":
+    "For a whole kind of element or a pattern: class:ImageButton, text:/\\d+:\\d+/ (any time), id:banner",
+  "panel.whatToDo": "What to do",
+  "panel.ignoreAnywhere": "Ignore it wherever it is",
+  "panel.allowInside": "Allow small changes inside it",
+  "panel.share": "Share of the element that may change, %",
+  "panel.where": "Where",
+  "panel.thisScreenOf": "This screen ({name})",
+  "panel.everyScreen": "Every screen of the project",
+  "panel.addRule": "Add rule",
+
+  // groups
+  "groups.textOf": "Text of {element}: “{before}” → “{after}”",
+  "groups.labelOf": "Label of {element}: “{before}” → “{after}”",
+  "groups.appeared": "{element} appeared",
+  "groups.disappeared": "{element} disappeared",
+  "groups.resized": "{element} resized {before} → {after} dp",
+  "groups.state": "{element}: {before} → {after}",
+  "groups.moved": "{element} moved",
+  "groups.intended": "Likely intended",
+  "groups.regression": "Possible regression",
+  "groups.noise": "Probably noise",
+  "groups.open": "Open {name} {variant}",
+  "groups.flag.loading": "Loading",
+  "groups.flag.screenMismatch": "Other screen?",
+  "groups.flag.duplicateScreen": "Duplicate?",
+  "groups.hiddenHelp":
+    "Elements changed in ways the screenshot does not show: labels, states, invisible controls",
+  "groups.hidden": "{count} hidden",
+  "groups.loadFailed": "Cannot load change groups: {error}",
+  "groups.ignoreAdded": "Ignore area added; the screenshots are compared again",
+  "groups.empty": "Nothing needs a decision in this build",
+  "groups.emptyHint":
+    "Every screenshot matches its baseline or has been reviewed.",
+  "groups.collapse": "Collapse group",
+  "groups.expand": "Expand group",
+  "groups.newScreenshots": "New screenshots",
+  "groups.withoutBaseline": "{count} without a baseline",
+  "groups.sameOnScreens": {
+    one: "Changed the same way on {count} screens",
+    other: "Changed the same way on {count} screens",
+  },
+  "groups.sameChange": {
+    one: "Same change in {count} screenshots",
+    other: "Same change in {count} screenshots",
+  },
+  "groups.oneScreenshot": "1 screenshot",
+  "groups.screens": { one: " · {count} screens", other: " · {count} screens" },
+  "groups.ignoreStatusBar": "Ignore status bar",
+  "groups.ignoreArea": "Ignore this area",
+  "groups.rejectAll": "Reject all",
+  "groups.reject": "Reject",
+  "groups.acceptBaselines": "Accept as baselines",
+  "groups.approveAll": "Approve all {count}",
+  "groups.approve": "Approve",
+  "groups.explain": "Explain this change",
+  "groups.byRules": "Decided by rules, no AI call",
+  "groups.model": "Model: {model}",
+  "groups.openFirst": "Open the first one to step through all of them",
+  "groups.more": "+ {count} more",
+  "groups.approveTitle": {
+    one: "Approve {count} screenshot?",
+    other: "Approve {count} screenshots?",
+  },
+  "groups.rejectTitle": {
+    one: "Reject {count} screenshot?",
+    other: "Reject {count} screenshots?",
+  },
+  "groups.approveText":
+    "They become the new baselines for their screens and devices.",
+  "groups.rejectText":
+    "They stay as they are and the build keeps failing until fixed.",
+  "groups.working": " Working…",
+
+  // bug
+  "bug.filed": "Filed {keys}",
+  "bug.linkedAlready": "Filed already, linked: {keys}",
+  "bug.titleMany": {
+    one: "Create Jira bugs for {count} problems",
+    other: "Create Jira bugs for {count} problems",
+  },
+  "bug.title": "Create Jira bug",
+  "bug.task": "Task",
+  "bug.looksLike": "Looks like ABC-123",
+  "bug.taskHelp":
+    "The bug goes under this task, into its project. Remembered for this screen.",
+  "bug.issueType": "Issue type",
+  "bug.subtask": " (sub-task)",
+  "bug.linkAs": "Link to the task as",
+  "bug.subtaskOf": "Created as a sub-task of {key}.",
+  "bug.andMore": "{summary} and {count} more",
+  "bug.fromTask": " (from the task)",
+  "bug.problemId":
+    "Problem id {code}: in the summary, labels and description, to find the bug in Jira.",
+  "bug.problemIdMany":
+    "Problem id {code} and one per problem: in the summary, labels and description, to find the bug in Jira.",
+  "bug.everyScreen": " One bug for {component} on every screen.",
+  "bug.theClass": "the class",
+  "bug.labels": "Labels:",
+  "bug.description":
+    "Description: service, screen, actual and expected result, device, element; screenshot with the problem outlined.",
+  "bug.onePerProblem":
+    " One bug per problem: the same issue on several elements of one component goes into one bug with all of them.",
+  "bug.existingFiled":
+    "Filed already as {key} from screen “{screen}”. Creating will not file another one.",
+  "bug.existingFiling":
+    "A bug is being filed right now from screen “{screen}”. Creating will not file another one.",
+  "bug.existingIgnored":
+    "Marked as a false positive from screen “{screen}”. Creating will not file another one.",
+  "bug.found":
+    "Jira has {issues} with {code}: it will be linked instead of filing a new bug.",
+  "bug.filedBefore":
+    "{code} was filed before as {keys} (done). The problem is back, so a new bug makes sense.",
+  "bug.cannotAsk":
+    "Jira requires fields Vision cannot ask for here: {fields}. Fill them on {key} or pick another issue type.",
+  "bug.progress": "{done} of {total}",
+  "bug.cancel": "Cancel",
+  "bug.createMany": {
+    one: "Create {count} bugs",
+    other: "Create {count} bugs",
+  },
+  "bug.create": "Create bug",
+  "bug.typeName": "Type a name",
+  "bug.nobody": "Nobody found",
+  "bug.searchByName": "Search by name",
+
+  // variations
+  "variations.approveTitle": "Approve variations — review before applying",
+  "variations.rejectTitle": "Reject variations — review before applying",
+  "variations.viewFull": "View {name} full size",
+  "variations.approving": {
+    one: "Approving {count} variations…",
+    other: "Approving {count} variations…",
+  },
+  "variations.rejecting": {
+    one: "Rejecting {count} variations…",
+    other: "Rejecting {count} variations…",
+  },
+  "variations.matchingSelected": "{selected} of {total} matching selected",
+  "variations.toggleDiff": "Toggle diff. Hotkey: D",
+  "variations.showDiff": "Show diff",
+  "variations.clickThumb": "Click a thumbnail to view it full-size.",
+  "variations.skipped": "{count} didn't match — review separately",
+  "variations.skippedHelp":
+    "These don't match the change you're reviewing, so they're unchecked. Open each to inspect and include only if it's the same intended change.",
+  "variations.cancel": "Cancel",
+  "variations.approveSelected": "Approve {count} selected",
+  "variations.rejectSelected": "Reject {count} selected",
+  "variations.os": "OS: {value}",
+  "variations.device": "Device: {value}",
+  "variations.customTags": "Custom Tags: {value}",
+  "variations.diff": "Diff: {value}%",
+  "variations.tolerance": "Diff tolerance: {value}%",
+
+  // crossDevice
+  "crossDevice.noTree": "This screenshot came without a UI tree.",
+  "crossDevice.noReference":
+    "Choose the reference device in the project settings (Mobile screenshots) to compare other devices with it.",
+  "crossDevice.isReference":
+    "This is the reference device; other devices are compared with it.",
+  "crossDevice.noReferenceTree":
+    "The reference device has neither a run of this check in this build nor a baseline with a UI tree.",
+  "crossDevice.otherPlatform":
+    "The reference device is on another platform; trees of Android and iOS are not compared.",
+  "crossDevice.failed": "Could not compare with the reference device.",
+  "crossDevice.note":
+    "For information: this comparison does not change the status.",
+  "crossDevice.reference": "Reference: {device}",
+  "crossDevice.comparedWith": "Compared with {device}",
+  "crossDevice.itsRun": "Its run in this build.",
+  "crossDevice.itsBaseline":
+    "Its baseline (no run of this check on it in this build).",
+  "crossDevice.foundOnBoth": {
+    one: "{count} elements found on both.",
+    other: "{count} elements found on both.",
+  },
+  "crossDevice.same":
+    "Elements found on both devices have the same texts, labels and states.",
+  "crossDevice.different": "Different on this device ({count})",
+  "crossDevice.notFound": "Not found here ({count})",
+  "crossDevice.notFoundHelp":
+    "On the reference device but not in this screen’s tree: missing, or only off screen on a smaller display.",
+  "crossDevice.onlyHere": {
+    one: "{count} elements are only on this device.",
+    other: "{count} elements are only on this device.",
+  },
+
+  // a11ySummary
+  "a11ySummary.empty": "No accessibility data in this build",
+  "a11ySummary.emptyHint":
+    "Accessibility is checked when a screenshot comes with its Appium page source. In Java or Kotlin add {code} to the TestRunOptions; for manual testing use the CLI (help menu, Manual checks).",
+  "a11ySummary.intro":
+    "{checked} of {total} screenshots came with a UI tree. Issues are compared with each screen's baseline, so only issues this build introduced count as new. Filed bugs and false positives do not count.",
+  "a11ySummary.newIssues": "New issues",
+  "a11ySummary.openIssues": "All open issues",
+  "a11ySummary.screensChecked": "Screens checked",
+  "a11ySummary.screensWithNew": "Screens with new issues",
+  "a11ySummary.screen": "Screen",
+  "a11ySummary.device": "Device",
+  "a11ySummary.new": "New",
+  "a11ySummary.open": "Open issues",
+  "a11ySummary.screenshot": "Screenshot",
+
+  // insights
+  "insights.deleted": {
+    one: "Deleted {count} baselines",
+    other: "Deleted {count} baselines",
+  },
+  "insights.title": "Insights",
+  "insights.period": "Period",
+  "insights.lastDays": "Last {count} days",
+  "insights.loadFailed": "Could not load the insights.",
+  "insights.partial":
+    "Stored history starts on {date} (the oldest build kept: the project is younger, or older builds were removed by its build limit). “Unused” means unused since then.",
+  "insights.baselines": "baselines",
+  "insights.unusedFor": "unused for {count} days",
+  "insights.changedOf": "of {count} runs changed",
+  "insights.flips": "flips (changed, then back)",
+  "insights.a11yIssues": "accessibility issues",
+  "insights.waiting": "waiting for a decision",
+  "insights.median": "median time to a decision",
+  "insights.hours": "{count} h",
+  "insights.unused": "Unused baselines",
+  "insights.unusedHint":
+    "Nothing was compared with these in the last {count} days: the screen was renamed, removed from the tests, or the device is gone. Deleting a baseline removes its images and history.",
+  "insights.unusedHintPartial":
+    "Nothing was compared with these in the last {count} days of history: the screen was renamed, removed from the tests, or the device is gone. Deleting a baseline removes its images and history.",
+  "insights.selectNone": "Select none",
+  "insights.selectAll": "Select all",
+  "insights.delete": "Delete {count}",
+  "insights.allUsed": "Every baseline was used.",
+  "insights.check": "Check",
+  "insights.device": "Device",
+  "insights.branch": "Branch",
+  "insights.lastUsed": "Last used",
+  "insights.idleDays": "Idle, days",
+  "insights.select": "Select {name}",
+  "insights.neverApproved": "never approved",
+  "insights.unstable": "Unstable screens",
+  "insights.unstableHint":
+    "Flips: the screen differed, then matched the same baseline again with nobody changing it. That is the screen moving, not the app: animations, data, timing. Screens that change on most runs or get new baselines often are listed after them.",
+  "insights.noUnstable": "No screen changed often enough to stand out.",
+  "insights.devices": "Devices",
+  "insights.runs": "Runs",
+  "insights.changed": "Changed",
+  "insights.flipsColumn": "Flips",
+  "insights.rejected": "Rejected",
+  "insights.newBaselines": "New baselines",
+  "insights.lastChange": "Last change",
+  "insights.hotspots": "Accessibility hotspots",
+  "insights.hotspotsHint":
+    "Screens with the most issues in their newest screenshot (the worst device counts), with the bugs filed and false positives marked on them.",
+  "insights.noHotspots":
+    "No accessibility issues, or no screenshots came with a UI tree.",
+  "insights.issues": "Issues",
+  "insights.new": "New",
+  "insights.bugsFiled": "Bugs filed",
+  "insights.falsePositives": "False positives",
+  "insights.frequent": "Most frequent issues",
+  "insights.frequentHint":
+    "Across the newest screenshot of each check: what to fix once, in a shared component or style, to clear many screens.",
+  "insights.nothingToRank": "Nothing to rank.",
+  "insights.noise": "Noise that gets approved",
+  "insights.noiseHint":
+    "Tiny changes (under 0.2 %) approved again and again. A tolerance, or an element rule for the part that moves, would stop sending them to review.",
+  "insights.noNoise": "No screen keeps getting tiny changes approved.",
+  "insights.tinyApproved": "{count} tiny changes approved in {runs} runs",
+  "insights.quality": "Screenshot quality",
+  "insights.qualityHint":
+    "Taken while something was still loading, or with element changes the pixels did not show. Usually a missing wait in the test.",
+  "insights.noQuality": "No screen stands out.",
+  "insights.whileLoading": "{count} taken while loading",
+  "insights.withHidden": "{count} with hidden changes",
+  "insights.ofRuns": "of {count} runs",
+  "insights.coverage": "Device coverage",
+  "insights.coverageHint":
+    "Checks that run on other devices of the main branch but not on this one.",
+  "insights.fullCoverage": "Every device runs every check.",
+  "insights.missing": "{device}: {missing} missing of {total}",
+  "insights.deleteTitle": {
+    one: "Delete {count} baselines?",
+    other: "Delete {count} baselines?",
+  },
+  "insights.deleteSubmit": "Delete",
+  "insights.deleteText":
+    "Their images and history go too. A check that runs again later comes back as new.",
+
+  // role
+  "role.admin": "Admin",
+  "role.editor": "Editor",
+  "role.guest": "Guest",
+
+  // profile
+  "profile.userUpdated": "User updated",
+  "profile.passwordUpdated": "Password updated",
+  "profile.title": "Profile",
+  "profile.details": "User details",
+  "profile.firstName": "First name",
+  "profile.lastName": "Last name",
+  "profile.validEmail": "Enter valid email address",
+  "profile.email": "Email address",
+  "profile.update": "Update",
+  "profile.changePassword": "Change password",
+  "profile.newPassword": "New password",
+  "profile.examples": "Configuration examples",
+  "profile.configFile": "Config file",
+  "profile.env": "ENV variables",
+  "profile.configHelp":
+    "Save as vrt.json in project root. Could be overridden with ENV variables",
+  "profile.envHelp": "Add Environment variables inside CI environment",
+  "profile.apiKey": "Api key",
+  "profile.apiKeyHelp": "For the SDK, the CLI and the MCP server.",
+  "profile.hide": "Hide",
+  "profile.show": "Show",
+  "profile.hideKey": "Hide API key",
+  "profile.showKey": "Show API key",
+  "profile.copied": "Copied",
+  "profile.copy": "Copy",
+  "profile.copyKey": "Copy API key",
+  "profile.jiraRemoved": "Jira token removed",
+  "profile.jiraSaved": "Jira token saved",
+  "profile.jiraIntro":
+    "Your own token: accessibility bugs are filed as you, and Jira is searched with your rights. Server or Data Center: a personal access token. Jira Cloud: an API token and your account email.",
+  "profile.jiraEmail": "Email (Jira Cloud only)",
+  "profile.newToken": "New token",
+  "profile.token": "Token",
+  "profile.tokenReplace": "Saved; type to replace",
+  "profile.tokenSaved": "A token is saved. It is never shown again.",
+  "profile.tokenNotSet":
+    "Not set: Jira works only where the project has a shared token.",
+  "profile.save": "Save",
+  "profile.removeToken": "Remove token",
+  "profile.appearance": "Appearance",
+  "profile.appearanceHelp":
+    "Follows the system until you choose. Remembered in this browser.",
+  "profile.system": "System",
+  "profile.light": "Light",
+  "profile.dark": "Dark",
+  "profile.password": "Password",
+  "profile.togglePassword": "toggle password visibility",
+
+  // users
+  "users.title": "Users",
+  "users.people": { one: "{count} person", other: "{count} people" },
+  "users.search": "Search people",
+  "users.email": "Email",
+  "users.firstName": "First name",
+  "users.lastName": "Last name",
+  "users.lastSignIn": "Last sign-in",
+  "users.role": "Role",
+  "users.updated": "Updated",
+  "users.setPasswordHelp":
+    "Set a password for the selected user (after a restore, people have none).",
+  "users.setPasswordFor": "Set password for {email}",
+  "users.setPasswordTitle": "Set password",
+  "users.passwordSet": "Password set",
+  "users.newPassword": "New password",
+  "users.deleteRows": "Delete selected rows.",
+  "users.notYourself": "You cannot delete yourself.",
+  "users.removed": "Removed",
+
+  // backups
+  "backups.never": "never",
+  "backups.lastDaysLabel": "Last {count} days: {missed} without a backup",
+  "backups.dayKept": "{date}: backed up",
+  "backups.dayMissing": "{date}: no backup",
+  "backups.dayOld": "{date}: older than the kept copies",
+  "backups.lastDays": "Last {count} days",
+  "backups.missed": " · {count} without a backup",
+  "backups.noneMissed": " · none missed",
+  "backups.requested": "Backup asked for; it starts within 5 minutes",
+  "backups.scheduleSaved": "Backup schedule saved",
+  "backups.title": "Backups",
+  "backups.now": "Back up now",
+  "backups.unavailable":
+    "Backups cannot be set up from here yet: update Vision with ./scripts/vision.sh up -d --build, then reload this page.",
+  "backups.status": "Status",
+  "backups.lastAttemptError": "Last attempt: {error}",
+  "backups.lastSuccess": "Last successful backup:",
+  "backups.lastAttempt": "Last attempt: {when}",
+  "backups.waitingUpload": "Waiting for upload: {count}",
+  "backups.running": "A backup is running since {when}.",
+  "backups.askedAt":
+    "Asked for at {when}; the server starts it within 5 minutes.",
+  "backups.schedule": "Schedule",
+  "backups.dailyAt": "Daily at (server time)",
+  "backups.keep": "Database backups kept in Drive",
+  "backups.save": "Save",
+  "backups.inDrive": "In Google Drive",
+  "backups.backup": "Backup",
+  "backups.uploaded": "Uploaded",
+  "backups.size": "Size",
+  "backups.noneInDrive": "No backups in Drive yet.",
+  "backups.driveConnectedAs": "Google Drive connected as {email}",
+  "backups.connected":
+    "Connected as {email}. Backups go to the folder {folder} on its My Drive; Vision sees only the files it made there.",
+  "backups.unknownAccount": "unknown account",
+  "backups.reachable": "The backup folder is reachable",
+  "backups.test": "Test connection",
+  "backups.disconnect": "Disconnect",
+  "backups.openUrl":
+    "Open {url} on any device, sign in with your work Google account and enter:",
+  "backups.waitingCode":
+    "Waiting for the confirmation; the code works until {time}.",
+  "backups.cancel": "Cancel",
+  "backups.clientHelp":
+    "An OAuth client of the type “TVs and Limited Input devices” from the bank's Google Cloud project (DEPLOY.md, backups). The secret stays on the server and is never shown again.",
+  "backups.clientId": "Client ID",
+  "backups.clientSecret": "Client secret",
+  "backups.startAgain": "Start again",
+  "backups.connect": "Connect",
+  "backups.open": "Open Backups",
+
+  // auth
+  "auth.sso": "Sign in with SSO",
+  "auth.validEmail": "Enter a valid email.",
+  "auth.email": "Email address",
+  "auth.signIn": "Sign in",
+  "auth.noAccount": "No account?",
+  "auth.createOne": "Create one",
+  "auth.created": "Successfully created account.",
+  "auth.firstName": "First name",
+  "auth.lastName": "Last name",
+  "auth.createAccount": "Create account",
+  "auth.haveAccount": "Have an account?",
+  "auth.createTitle": "Create an account",
+
+  // brand
+  "brand.tagline": BRAND.tagline,
+
+  // tour
+  "tour.take": "Take a tour",
+  "tour.back": "Back",
+  "tour.close": "Close",
+  "tour.last": "Last",
+  "tour.next": "Next",
+  "tour.skip": "Skip",
+  "tour.loginAdmin":
+    "Default admin account: visual-regression-tracker@example.com / 123456. Make sure to change default password.",
+  "tour.loginRegister": "Create new account without restrictions.",
+  "tour.projectListTitle": "Project List",
+  "tour.projectList":
+    "Default project is created after first start, feel free to edit/add/delete projects.",
+  "tour.selectProject":
+    "Select the project for which you want to view details.",
+  "tour.buildList": "List of Builds",
+  "tour.noBuilds":
+    "If you see 'No Builds', please run your image comparison from any client.",
+  "tour.buildDetails": "Brief details for selected build.",
+  "tour.testRuns": "TestRuns for selected build.",
+  "tour.variationsTitle":
+    "Shows all the historical record of baselines by Name + Branch + OS + Browser + Viewport + Device",
+  "tour.variationsProject": "Select the project you want to act on.",
+  "tour.mergeTitle": "Merge from one branch to another",
+  "tour.merge":
+    "Open Merge branches and select the branch from/to which you want to merge the variations.",
+  "tour.filtered":
+    "Only filtered items are displayed/merged to the target branch.",
+
+  // undo
+  "undo.approved": "Approved",
+  "undo.rejected": "Rejected",
+  "undo.approvedMany": {
+    one: "Approved {count} screenshots",
+    other: "Approved {count} screenshots",
+  },
+  "undo.rejectedMany": {
+    one: "Rejected {count} screenshots",
+    other: "Rejected {count} screenshots",
+  },
+  "undo.undone": "Undone",
+  "undo.failed": "Could not undo: {error}",
+  "undo.undo": "Undo",
+
+  // states
+  "states.tryAgain": "Try again",
+  "states.routeError": "Something went wrong on this page.",
+
+  // manual
+  "manual.copied": "Copied",
+  "manual.copy": "Copy",
+  "manual.copyCommand": "Copy command",
+  "manual.title": "Manual checks",
+  "manual.intro":
+    "Send the screen you are testing to {brand}: it is compared with the baseline of the check, and accessibility issues, hidden changes and wrong screens are reported, with a link to the review. Needs Python 3; adb for an Android device or emulator, or an Appium session for iOS.",
+  "manual.step1": "Get the CLI",
+  "manual.step2": "Connect it, once",
+  "manual.keyHelp":
+    "The key is yours (profile page); sending needs the editor role. Checks go to the branch “manual” and are compared with the main branch’s baselines. To compare with the autotests’ baselines pixel by pixel, add --device and --os named as in the autotests.",
+  "manual.step3": "Check a screen",
+  "manual.sources":
+    "From the connected Android device. Other sources: --serial for one of several devices, --appium http://127.0.0.1:4723 for an Appium session (Android or iOS), --simulator for the iOS simulator (screenshot only), --png file.png --xml file.xml for saved files. A state of a screen is its own check: “Payment – error”.",
+  "manual.many": "Many screens in one build",
+  "manual.mcp": "From an AI assistant (MCP)",
+  "manual.mcpHelp":
+    "Any MCP client can run “python3 vision.py mcp” as a stdio server. Its tools: vision_check, vision_devices, vision_session.",
+  "manual.close": "Close",
+
+  // groups
+  "groups.alsoElsewhere":
+    "The component changed the same way on {runs} too, but those changed elsewhere as well and are reviewed on their own.",
+  "groups.uiTree": "UI TREE",
+
+  // panel
+  "panel.sameIssue": {
+    one: "The same issue on {count} elements of {component}: one problem, one bug.",
+    other:
+      "The same issue on {count} elements of {component}: one problem, one bug.",
+  },
+
+  // device
+  "device.none": "No device",
+
+  // device
+  "device.os": "OS: {value}",
+  "device.device": "Device: {value}",
+  "device.browser": "Browser: {value}",
+  "device.viewport": "Viewport: {value}",
+
+  // builds
+  "builds.summary": "{changed} changed · {passed} passed",
+  "builds.summaryFailed": " · {count} failed",
+
+  // review
+  "review.tolerance": "tol. {value}%",
+
+  // severity
+  "severity.error": "error",
+  "severity.warning": "warning",
+  "severity.info": "info",
 } satisfies Record<string, Message>;
 
 export type MessageKey = keyof typeof en;

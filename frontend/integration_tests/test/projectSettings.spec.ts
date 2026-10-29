@@ -2,7 +2,12 @@ import { expect, Page } from "@playwright/test";
 import { test } from "fixtures";
 import { TEST_PROJECT } from "~client/_test/test.data.helper";
 import { ImageComparison } from "~client/types/imageComparison";
-import { API_URL, mockGetProjects, mockSaveProject } from "utils/mocks";
+import {
+  API_URL,
+  inUkrainian,
+  mockGetProjects,
+  mockSaveProject,
+} from "utils/mocks";
 
 const project = {
   ...TEST_PROJECT,
@@ -46,6 +51,17 @@ const putRequest = (page: Page) =>
 
 test.beforeEach(async ({ page }) => {
   await mockGetProjects(page, [project]);
+});
+
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+test("renders in Ukrainian", async ({ page, authUser }) => {
+  await inUkrainian(page);
+  await page.goto(`/projects/${project.id}/settings`);
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText(
+    "Налаштування",
+  );
+
+  await expect(page).toHaveScreenshot("project-settings-page-uk.png");
 });
 
 test("opens the settings page from the pencil and by its address", async ({

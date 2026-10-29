@@ -18,6 +18,9 @@ import {
   PROJECT_PAGE_STEPS,
   TEST_VARIATION_LIST_PAGE,
 } from "~client/constants/help";
+// the steps hold dictionary keys; the tour shows their English
+import { english } from "~client/i18n/dictionaries";
+import type { MessageKey } from "~client/i18n";
 import {
   mockGetBuildDetails,
   mockGetBuilds,
@@ -70,10 +73,10 @@ test.describe("Guided Tour", () => {
     test("should display all tour steps", async ({ loginPage }) => {
       const tour = await loginPage.header.startTour();
 
-      await expect(tour.joyrideOverlay).toContainText(LOGIN_PAGE_STEPS[0].content as string);
+      await expect(tour.joyrideOverlay).toContainText(english(LOGIN_PAGE_STEPS[0].content as MessageKey));
       await tour.clickNext();
 
-      await expect(tour.joyrideOverlay).toContainText(LOGIN_PAGE_STEPS[1].content as string);
+      await expect(tour.joyrideOverlay).toContainText(english(LOGIN_PAGE_STEPS[1].content as MessageKey));
       await tour.clickLast();
 
       await expect(tour.joyrideOverlay).not.toBeVisible();
@@ -84,7 +87,7 @@ test.describe("Guided Tour", () => {
     test("should display all tour steps", async ({ projectListPage }) => {
       const tour = await projectListPage.header.startTour();
 
-      await expect(tour.joyrideOverlay).toContainText(PROJECT_LIST_PAGE_STEPS[0].title as string);
+      await expect(tour.joyrideOverlay).toContainText(english(PROJECT_LIST_PAGE_STEPS[0].title as MessageKey));
       await tour.clickLast();
 
       await expect(tour.joyrideOverlay).not.toBeVisible();
@@ -98,19 +101,19 @@ test.describe("Guided Tour", () => {
 
       const tour = await projectPage.header.startTour();
 
-      await expect(tour.joyrideOverlay).toContainText(PROJECT_PAGE_STEPS[0].content as string);
+      await expect(tour.joyrideOverlay).toContainText(english(PROJECT_PAGE_STEPS[0].content as MessageKey));
       await tour.clickNext();
 
-      await expect(tour.joyrideOverlay).toContainText(PROJECT_PAGE_STEPS[1].content as string);
+      await expect(tour.joyrideOverlay).toContainText(english(PROJECT_PAGE_STEPS[1].content as MessageKey));
       await tour.clickNext();
 
-      await expect(tour.joyrideOverlay).toContainText(PROJECT_PAGE_STEPS[2].content as string);
+      await expect(tour.joyrideOverlay).toContainText(english(PROJECT_PAGE_STEPS[2].content as MessageKey));
       await tour.clickNext();
 
-      await expect(tour.joyrideOverlay).toContainText(PROJECT_PAGE_STEPS[3].content as string);
+      await expect(tour.joyrideOverlay).toContainText(english(PROJECT_PAGE_STEPS[3].content as MessageKey));
       await tour.clickNext();
 
-      await expect(tour.joyrideOverlay).toContainText(PROJECT_PAGE_STEPS[4].content as string);
+      await expect(tour.joyrideOverlay).toContainText(english(PROJECT_PAGE_STEPS[4].content as MessageKey));
       await tour.clickLast();
 
       await expect(tour.joyrideOverlay).not.toBeVisible();
@@ -122,13 +125,13 @@ test.describe("Guided Tour", () => {
       const variationListPage = await openTestVariationListPage(project.id);
       const tour = await variationListPage.header.startTour();
 
-      await expect(tour.joyrideOverlay).toContainText(TEST_VARIATION_LIST_PAGE[0].title);
+      await expect(tour.joyrideOverlay).toContainText(english(TEST_VARIATION_LIST_PAGE[0].title as MessageKey));
       await tour.clickNext();
 
-      await expect(tour.joyrideOverlay).toContainText(TEST_VARIATION_LIST_PAGE[1].content);
+      await expect(tour.joyrideOverlay).toContainText(english(TEST_VARIATION_LIST_PAGE[1].content as MessageKey));
       await tour.clickNext();
 
-      await expect(tour.joyrideOverlay).toContainText(TEST_VARIATION_LIST_PAGE[2].content);
+      await expect(tour.joyrideOverlay).toContainText(english(TEST_VARIATION_LIST_PAGE[2].content as MessageKey));
       await tour.clickLast();
 
       await expect(tour.joyrideOverlay).not.toBeVisible();

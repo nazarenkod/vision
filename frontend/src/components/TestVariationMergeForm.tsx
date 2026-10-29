@@ -18,6 +18,7 @@ import {
 import { useSnackbar } from "notistack";
 import { selectBuild, useBuildDispatch } from "../contexts";
 import { LOCATOR_TEST_VARIATION_SELECT_BRANCH } from "../constants/help";
+import { useT } from "../i18n";
 
 const isString = (a): a is string => typeof a === "string";
 
@@ -33,6 +34,7 @@ export const TestVariationMergeForm: React.FunctionComponent<IProps> = ({
   const navigate = useNavigate();
   const buildDispatch = useBuildDispatch();
   const { enqueueSnackbar } = useSnackbar();
+  const { t } = useT();
   const [fromBranch, setFromBranch] = React.useState("");
   const [toBranch, setToBranch] = React.useState("");
 
@@ -41,7 +43,7 @@ export const TestVariationMergeForm: React.FunctionComponent<IProps> = ({
     testVariationService
       .merge(projectId, fromBranch, toBranch)
       .then((build) => {
-        enqueueSnackbar(`Merge started in build: ${build.id}`, {
+        enqueueSnackbar(t("baselines.mergeStarted", { id: build.id }), {
           variant: "success",
         });
         navigate({
@@ -87,7 +89,7 @@ export const TestVariationMergeForm: React.FunctionComponent<IProps> = ({
             }
           >
             <MenuItem value="">
-              <em>From branch</em>
+              <em>{t("baselines.fromBranch")}</em>
             </MenuItem>
             {items.map((i) => (
               <MenuItem key={i} value={i}>
@@ -108,7 +110,12 @@ export const TestVariationMergeForm: React.FunctionComponent<IProps> = ({
             freeSolo
             fullWidth
             renderInput={(params) => (
-              <TextField {...params} size="small" required label="To branch" />
+              <TextField
+                {...params}
+                size="small"
+                required
+                label={t("baselines.toBranch")}
+              />
             )}
             onInputChange={(_, value) => {
               setToBranch(value);
@@ -122,7 +129,7 @@ export const TestVariationMergeForm: React.FunctionComponent<IProps> = ({
             variant="contained"
             id={LOCATOR_TEST_VARIATION_SELECT_BRANCH}
           >
-            Merge
+            {t("baselines.mergeSubmit")}
           </Button>
         </Grid>
       </Grid>

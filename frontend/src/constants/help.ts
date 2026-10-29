@@ -1,5 +1,7 @@
 import { Step } from "react-joyride";
 
+// content and title are dictionary keys (src/i18n): GuidedTour shows their text
+
 export const LOCATOR_LOGIN_FORM = "loginform-1";
 export const LOCATOR_BUILD_DETAILS = "build-details";
 export const LOCATOR_RESET_FILTER = "reset-filter";
@@ -18,64 +20,59 @@ export const LOCATOR_TEST_VARIATION_LIST_PAGE_SELECT_RESET_FILTER =
 export const LOGIN_PAGE_STEPS: Step[] = [
   {
     target: `#${LOCATOR_LOGIN_FORM}`,
-    content:
-      "Default admin account: visual-regression-tracker@example.com / 123456. Make sure to change default password.",
+    content: "tour.loginAdmin",
   },
   {
     target: `#${LOCATOR_LOGIN_FORM}`,
-    content: "Create new account without restrictions.",
+    content: "tour.loginRegister",
   },
 ];
 
 export const PROJECT_LIST_PAGE_STEPS: Step[] = [
   {
     target: `#${LOCATOR_PROJECT_LIST_PAGE_PROJECT_LIST}`,
-    content:
-      "Default project is created after first start, feel free to edit/add/delete projects.",
-    title: "Project List",
+    content: "tour.projectList",
+    title: "tour.projectListTitle",
   },
 ];
 
 export const PROJECT_PAGE_STEPS: Step[] = [
   {
     target: `#${LOCATOR_PROJECT_PAGE_SELECT_PROJECT}`,
-    content: "Select the project for which you want to view details.",
+    content: "tour.selectProject",
   },
   {
     target: `#${LOCATOR_PROJECT_PAGE_BUILD_LIST}`,
-    content: "List of Builds",
+    content: "tour.buildList",
   },
   {
     target: `#${LOCATOR_PROJECT_PAGE_BUILD_LIST}`,
-    content:
-      "If you see 'No Builds', please run your image comparison from any client.",
+    content: "tour.noBuilds",
   },
   {
     target: `#${LOCATOR_PROJECT_PAGE_BUILD_DETAILS}`,
-    content: "Brief details for selected build.",
+    content: "tour.buildDetails",
   },
   {
     target: `#${LOCATOR_PROJECT_PAGE_TEST_RUN_LIST}`,
-    content: "TestRuns for selected build.",
+    content: "tour.testRuns",
   },
 ];
 
 export const TEST_VARIATION_LIST_PAGE = [
   {
     target: `#${LOCATOR_TEST_VARIATION_LIST_PAGE_SELECT_PROJECT}`,
-    title:
-      "Shows all the historical record of baselines by Name + Branch + OS + Browser + Viewport + Device",
-    content: "Select the project you want to act on.",
+    title: "tour.variationsTitle",
+    content: "tour.variationsProject",
   },
   {
     // the form itself waits behind this button
     target: `#${LOCATOR_TEST_VARIATION_MERGE_TOGGLE}`,
-    title: "Merge from one branch to another",
-    content:
-      "Open Merge branches and select the branch from/to which you want to merge the variations.",
+    title: "tour.mergeTitle",
+    content: "tour.merge",
   },
   {
     target: `#${LOCATOR_TEST_VARIATION_LIST_PAGE_SELECT_RESET_FILTER}`,
-    content: "Only filtered items are displayed/merged to the target branch.",
+    content: "tour.filtered",
   },
 ];

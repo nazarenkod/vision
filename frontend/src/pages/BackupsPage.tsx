@@ -22,9 +22,7 @@ import { DriveCard } from "../components/Backups/DriveCard";
 import { BackupDay, dayStrip } from "../_helpers/backups.helper";
 import { tokens } from "../theme";
 import { staggered } from "../components/motion/Stagger";
-
-const when = (value: string | null) =>
-  value ? new Date(value).toLocaleString() : "never";
+import { useT } from "../i18n";
 
 const size = (bytes: number | null) =>
   bytes === null ? "" : `${(bytes / 1024 / 1024).toFixed(1)} MB`;
@@ -37,19 +35,27 @@ const DAY_COLOUR = {
 
 /** The last 14 days at a glance: kept, missed, or past what Drive keeps. */
 const DayStrip: React.FunctionComponent<{ days: BackupDay[] }> = ({ days }) => {
+  const { t } = useT();
   const missed = days.filter((d) => d.state === "missing").length;
   return (
     <Box sx={{ display: "flex", flexDirection: "column", gap: 0.75 }}>
       <Box
         data-testid="backupDays"
         role="img"
-        aria-label={`Last ${days.length} days: ${missed} without a backup`}
+        aria-label={t("backups.lastDaysLabel", { count: days.length, missed })}
         sx={{ display: "flex", gap: 0.5 }}
       >
         {days.map((d, index) => (
           <Tooltip
             key={d.date}
-            title={`${d.date}: ${d.state === "kept" ? "backed up" : d.state === "missing" ? "no backup" : "older than the kept copies"}`}
+            title={t(
+              d.state === "kept"
+                ? "backups.dayKept"
+                : d.state === "missing"
+                  ? "backups.dayMissing"
+                  : "backups.dayOld",
+              { date: d.date },
+            )}
           >
             <Box
               data-state={d.state}
@@ -65,8 +71,10 @@ const DayStrip: React.FunctionComponent<{ days: BackupDay[] }> = ({ days }) => {
         ))}
       </Box>
       <Typography variant="caption" color="textSecondary">
-        Last {days.length} days
-        {missed ? ` · ${missed} without a backup` : " · none missed"}
+        {t("backups.lastDays", { count: days.length })}
+        {missed
+          ? t("backups.missed", { count: missed })
+          : t("backups.noneMissed")}
       </Typography>
     </Box>
   );
@@ -74,6 +82,9 @@ const DayStrip: React.FunctionComponent<{ days: BackupDay[] }> = ({ days }) => {
 
 const BackupsPage = () => {
   const { enqueueSnackbar } = useSnackbar();
+  const { t, formatDate } = useT();
+  const when = (value: string | null) =>
+    value ? formatDate(value) : t("backups.never");
   const [overview, setOverview] = React.useState<BackupsOverview | null>(null);
   const [loadError, setLoadError] = React.useState<string | null>(null);
   const [time, setTime] = React.useState("");
@@ -109,7 +120,7 @@ const BackupsPage = () => {
     backupsService
       .run()
       .then(() => {
-        enqueueSnackbar("Backup asked for; it starts within 5 minutes", {
+        enqueueSnackbar(t("backups.requested"), {
           variant: "success",
         });
         load();
@@ -120,7 +131,7 @@ const BackupsPage = () => {
     backupsService
       .saveSettings({ time, keep: Number(keep) })
       .then(() => {
-        enqueueSnackbar("Backup schedule saved", { variant: "success" });
+        enqueueSnackbar(t("backups.scheduleSaved"), { variant: "success" });
         load();
       })
       .catch((err) => enqueueSnackbar(`${err}`, { variant: "error" }));
@@ -138,7 +149,7 @@ const BackupsPage = () => {
     >
       <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
         <Typography variant="h4" component="h1" sx={{ flex: 1 }}>
-          Backups
+          {t("backups.title")}
         </Typography>
         <Button
           variant="contained"
@@ -146,22 +157,19 @@ const BackupsPage = () => {
           disabled={!overview?.available || waiting}
           onClick={run}
         >
-          Back up now
+          {t("backups.now")}
         </Button>
       </Box>
 
       {loadError && <Alert severity="error">{loadError}</Alert>}
       {overview && !overview.available && (
-        <Alert severity="info">
-          Backups cannot be set up from here yet: update Vision with
-          ./scripts/vision.sh up -d --build, then reload this page.
-        </Alert>
+        <Alert severity="info">{t("backups.unavailable")}</Alert>
       )}
 
       {overview && (
         <>
           <Card variant="outlined" data-testid="backupStatus">
-            <CardHeader title="Status" />
+            <CardHeader title={t("backups.status")} />
             <CardContent
               sx={{ display: "flex", flexDirection: "column", gap: 1 }}
             >
@@ -170,11 +178,11 @@ const BackupsPage = () => {
               )}
               {overview.lastError && (
                 <Alert severity="error" data-testid="backupError">
-                  Last attempt: {overview.lastError}
+                  {t("backups.lastAttemptError", { error: overview.lastError })}
                 </Alert>
               )}
               <Typography>
-                Last successful backup:{" "}
+                {t("backups.lastSuccess")}{" "}
                 <b data-testid="lastSuccess">{when(overview.lastSuccessAt)}</b>
               </Typography>
               {overview.remote && !overview.remote.error && (
@@ -187,22 +195,27 @@ const BackupsPage = () => {
                 />
               )}
               <Typography>
-                Last attempt: {when(overview.lastAttemptAt)}
+                {t("backups.lastAttempt", {
+                  when: when(overview.lastAttemptAt),
+                })}
               </Typography>
               {overview.pendingUploads > 0 && (
                 <Typography>
-                  Waiting for upload: {overview.pendingUploads}
+                  {t("backups.waitingUpload", {
+                    count: overview.pendingUploads,
+                  })}
                 </Typography>
               )}
               {overview.runningSince ? (
                 <Typography data-testid="backupRunning">
-                  A backup is running since {when(overview.runningSince)}.
+                  {t("backups.running", { when: when(overview.runningSince) })}
                 </Typography>
               ) : (
                 overview.backupRequestedAt && (
                   <Typography data-testid="backupRequested">
-                    Asked for at {when(overview.backupRequestedAt)}; the server
-                    starts it within 5 minutes.
+                    {t("backups.askedAt", {
+                      when: when(overview.backupRequestedAt),
+                    })}
                   </Typography>
                 )
               )}
@@ -212,14 +225,14 @@ const BackupsPage = () => {
           <DriveCard drive={overview.drive} onChange={load} />
 
           <Card variant="outlined">
-            <CardHeader title="Schedule" />
+            <CardHeader title={t("backups.schedule")} />
             <CardContent
               sx={{ display: "flex", gap: 2, alignItems: "flex-start" }}
             >
               <TextField
                 size="small"
                 type="time"
-                label="Daily at (server time)"
+                label={t("backups.dailyAt")}
                 value={time}
                 onChange={(event) => setTime(event.target.value)}
                 inputProps={{ "data-testid": "backupTime" }}
@@ -228,7 +241,7 @@ const BackupsPage = () => {
               <TextField
                 size="small"
                 type="number"
-                label="Database backups kept in Drive"
+                label={t("backups.keep")}
                 value={keep}
                 onChange={(event) => setKeep(event.target.value)}
                 inputProps={{ min: 1, max: 365, "data-testid": "backupKeep" }}
@@ -239,14 +252,14 @@ const BackupsPage = () => {
                 disabled={!overview.available}
                 onClick={saveSettings}
               >
-                Save
+                {t("backups.save")}
               </Button>
             </CardContent>
           </Card>
 
           {overview.remote && (
             <Card variant="outlined">
-              <CardHeader title="In Google Drive" />
+              <CardHeader title={t("backups.inDrive")} />
               <CardContent>
                 {overview.remote.error ? (
                   <Alert severity="error">{overview.remote.error}</Alert>
@@ -254,9 +267,9 @@ const BackupsPage = () => {
                   <Table size="small">
                     <TableHead>
                       <TableRow>
-                        <TableCell>Backup</TableCell>
-                        <TableCell>Uploaded</TableCell>
-                        <TableCell align="right">Size</TableCell>
+                        <TableCell>{t("backups.backup")}</TableCell>
+                        <TableCell>{t("backups.uploaded")}</TableCell>
+                        <TableCell align="right">{t("backups.size")}</TableCell>
                       </TableRow>
                     </TableHead>
                     <TableBody>
@@ -273,7 +286,7 @@ const BackupsPage = () => {
                   </Table>
                 ) : (
                   <Typography color="textSecondary">
-                    No backups in Drive yet.
+                    {t("backups.noneInDrive")}
                   </Typography>
                 )}
               </CardContent>

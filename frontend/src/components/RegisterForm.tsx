@@ -7,10 +7,12 @@ import { TextValidator, ValidatorForm } from "react-material-ui-form-validator";
 import { useNavigate, Link } from "react-router-dom";
 import { routes } from "../constants";
 import PasswordField from "../components/PasswordField";
+import { useT } from "../i18n";
 
 const RegisterForm = () => {
   const navigate = useNavigate();
   const { enqueueSnackbar } = useSnackbar();
+  const { t } = useT();
   const [email, setEmail] = useState("");
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
@@ -22,7 +24,7 @@ const RegisterForm = () => {
     usersService
       .register(firstName, lastName, email, password)
       .then(() => {
-        enqueueSnackbar("Successfully created account.", {
+        enqueueSnackbar(t("auth.created"), {
           variant: "success",
         });
         login(dispatch, email, password).then(() => navigate(routes.HOME));
@@ -34,7 +36,7 @@ const RegisterForm = () => {
       );
   };
 
-  const errorForTwoChar = "Enter at least two characters.";
+  const errorForTwoChar = t("validation.twoCharacters");
 
   return (
     <ValidatorForm onSubmit={handleSubmit} instantValidate>
@@ -47,7 +49,7 @@ const RegisterForm = () => {
               id="firstName"
               name="firstName"
               value={firstName}
-              label={"First name"}
+              label={t("auth.firstName")}
               type="text"
               variant="outlined"
               required
@@ -66,7 +68,7 @@ const RegisterForm = () => {
               id="lastName"
               name="lastName"
               value={lastName}
-              label={"Last name"}
+              label={t("auth.lastName")}
               type="text"
               variant="outlined"
               required
@@ -81,11 +83,11 @@ const RegisterForm = () => {
           <Grid item>
             <TextValidator
               validators={["isEmail"]}
-              errorMessages={["Enter a valid email."]}
+              errorMessages={[t("auth.validEmail")]}
               id="email"
               name="email"
               value={email}
-              label={"Email address"}
+              label={t("auth.email")}
               type="text"
               variant="outlined"
               required
@@ -110,16 +112,16 @@ const RegisterForm = () => {
             fullWidth
             data-testid="submit"
           >
-            Create account
+            {t("auth.createAccount")}
           </Button>
           <Typography
             variant="body2"
             color="textSecondary"
             sx={{ textAlign: "center" }}
           >
-            Have an account?{" "}
+            {t("auth.haveAccount")}{" "}
             <MuiLink component={Link} to={routes.LOGIN}>
-              Sign in
+              {t("auth.signIn")}
             </MuiLink>
           </Typography>
         </Box>

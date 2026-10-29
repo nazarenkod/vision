@@ -2,6 +2,7 @@ import { en } from "./en";
 import { uk } from "./uk";
 import {
   formatDate,
+  formatFixed,
   formatNumber,
   formatOrdinal,
   initialLanguage,
@@ -67,18 +68,16 @@ describe("translate", () => {
 });
 
 describe("initialLanguage", () => {
-  it("starts in Ukrainian only for a Ukrainian browser", () => {
-    expect(initialLanguage(null, ["uk-UA", "en"])).toBe("uk");
-    expect(initialLanguage(null, ["uk"])).toBe("uk");
-    expect(initialLanguage(null, ["en-US", "uk"])).toBe("en");
-    expect(initialLanguage(null, ["ru"])).toBe("en");
-    expect(initialLanguage(null, [])).toBe("en");
+  it("starts in English until someone picks Ukrainian", () => {
+    expect(initialLanguage(null)).toBe("en");
+    expect(initialLanguage(undefined)).toBe("en");
+    expect(initialLanguage("uk")).toBe("uk");
   });
 
-  it("keeps the language picked before over the browser's", () => {
-    expect(initialLanguage("en", ["uk-UA"])).toBe("en");
-    expect(initialLanguage("uk", ["en-US"])).toBe("uk");
-    expect(initialLanguage("de", ["en-US"])).toBe("en");
+  it("keeps the language picked before, and nothing else", () => {
+    expect(initialLanguage("en")).toBe("en");
+    expect(initialLanguage("de")).toBe("en");
+    expect(initialLanguage("")).toBe("en");
   });
 });
 
@@ -86,6 +85,11 @@ describe("numbers and dates", () => {
   it("formats numbers and dates the Ukrainian way", () => {
     expect(formatNumber(0.1, "uk")).toBe("0,1");
     expect(formatNumber(0.1, "en")).toBe("0.1");
+    // no thousands separator, so sizes and counts read as before
+    expect(formatNumber(1080, "en")).toBe("1080");
+    // fixed decimals as toFixed gives them, with the language's mark
+    expect(formatFixed(1.2, 2, "en")).toBe("1.20");
+    expect(formatFixed(1.2, 1, "uk")).toBe("1,2");
     expect(
       formatDate("2026-10-27T12:00:00Z", "uk", {
         dateStyle: "medium",

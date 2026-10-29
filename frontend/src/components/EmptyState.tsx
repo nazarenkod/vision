@@ -2,6 +2,7 @@ import React from "react";
 import { Box, Button, Typography } from "@mui/material";
 import { RefreshOutlined } from "@mui/icons-material";
 import { tokens } from "../theme";
+import { useT } from "../i18n";
 
 // The logo's story in a still: a grid of pixels, one set back into place.
 const PixelGrid: React.FunctionComponent = () => (
@@ -70,6 +71,17 @@ export const EmptyState: React.FunctionComponent<{
 );
 
 /** Loading failed: what happened, and a way to try again (REQ-018-66). */
+const TryAgain: React.FunctionComponent<{ onClick: () => void }> = ({
+  onClick,
+}) => {
+  const { t } = useT();
+  return (
+    <Button variant="contained" size="small" onClick={onClick}>
+      {t("states.tryAgain")}
+    </Button>
+  );
+};
+
 export const ErrorState: React.FunctionComponent<{
   title: string;
   reason?: string;
@@ -109,10 +121,6 @@ export const ErrorState: React.FunctionComponent<{
         {reason}
       </Typography>
     )}
-    {onRetry && (
-      <Button variant="contained" size="small" onClick={onRetry}>
-        Try again
-      </Button>
-    )}
+    {onRetry && <TryAgain onClick={onRetry} />}
   </Box>
 );

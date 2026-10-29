@@ -13,5 +13,8 @@ export function filterUsers<
   );
 }
 
-export const lastSignInLabel = (value: string | null | undefined): string =>
-  value ? new Date(value).toLocaleString() : "—";
+export const lastSignInLabel = (
+  value: string | null | undefined,
+  // the interface passes its own, in the language picked
+  format: (value: string) => string = (date) => new Date(date).toLocaleString(),
+): string => (value ? format(value) : "—");

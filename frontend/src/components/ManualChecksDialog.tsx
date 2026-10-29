@@ -16,6 +16,7 @@ import { API_URL } from "../_config/env.config";
 import { useProjectState, useUserState } from "../contexts";
 import { BRAND } from "../constants/brand";
 import { tokens } from "../theme";
+import { useT } from "../i18n";
 
 const quote = (value: string) => `"${value.replace(/(["\\$`])/g, "\\$1")}"`;
 
@@ -25,6 +26,7 @@ const Command: React.FunctionComponent<{ text: string; shown?: string }> = ({
   shown,
 }) => {
   const [copied, setCopied] = React.useState(false);
+  const { t } = useT();
   React.useEffect(() => {
     if (!copied) return;
     const timer = setTimeout(() => setCopied(false), 1200);
@@ -54,10 +56,10 @@ const Command: React.FunctionComponent<{ text: string; shown?: string }> = ({
       >
         {shown ?? text}
       </Box>
-      <Tooltip title={copied ? "Copied" : "Copy"}>
+      <Tooltip title={t(copied ? "manual.copied" : "manual.copy")}>
         <IconButton
           size="small"
-          aria-label="Copy command"
+          aria-label={t("manual.copyCommand")}
           sx={{ color: copied ? tokens.brand : undefined }}
           onClick={() =>
             navigator.clipboard
@@ -115,6 +117,7 @@ export const ManualChecksDialog: React.FunctionComponent<{
 }> = ({ open, onClose }) => {
   const { user } = useUserState();
   const { projectList, selectedProjectId } = useProjectState();
+  const { t } = useT();
   const project =
     projectList.find((item) => item.id === selectedProjectId) ?? projectList[0];
   const cliUrl = `${window.location.origin}/cli/vision.py`;
@@ -122,54 +125,42 @@ export const ManualChecksDialog: React.FunctionComponent<{
 
   return (
     <Dialog open={open} onClose={onClose} fullWidth maxWidth="md">
-      <DialogTitle>Manual checks</DialogTitle>
+      <DialogTitle>{t("manual.title")}</DialogTitle>
       <DialogContent
         sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}
       >
         <Typography variant="body2">
-          Send the screen you are testing to {BRAND.name}: it is compared with
-          the baseline of the check, and accessibility issues, hidden changes
-          and wrong screens are reported, with a link to the review. Needs
-          Python 3; adb for an Android device or emulator, or an Appium session
-          for iOS.
+          {t("manual.intro", { brand: BRAND.name })}
         </Typography>
-        <Step number={1}>Get the CLI</Step>
+        <Step number={1}>{t("manual.step1")}</Step>
         <Command text={`curl -fsSLO ${cliUrl}`} />
-        <Step number={2}>Connect it, once</Step>
+        <Step number={2}>{t("manual.step2")}</Step>
         <Command
           text={`python3 vision.py config --api ${apiUrl} --key ${user?.apiKey ?? "YOUR_API_KEY"} --project ${quote(project?.name ?? "Project name")}`}
           shown={`python3 vision.py config --api ${apiUrl} --key ${user?.apiKey ? maskKey(user.apiKey) : "YOUR_API_KEY"} --project ${quote(project?.name ?? "Project name")}`}
         />
         <Typography variant="body2" color="textSecondary">
-          The key is yours (profile page); sending needs the editor role. Checks
-          go to the branch “manual” and are compared with the main branch’s
-          baselines. To compare with the autotests’ baselines pixel by pixel,
-          add --device and --os named as in the autotests.
+          {t("manual.keyHelp")}
         </Typography>
-        <Step number={3}>Check a screen</Step>
+        <Step number={3}>{t("manual.step3")}</Step>
         <Command text={`python3 vision.py check ${quote("Payment")}`} />
         <Typography variant="body2" color="textSecondary">
-          From the connected Android device. Other sources: --serial for one of
-          several devices, --appium http://127.0.0.1:4723 for an Appium session
-          (Android or iOS), --simulator for the iOS simulator (screenshot only),
-          --png file.png --xml file.xml for saved files. A state of a screen is
-          its own check: “Payment – error”.
+          {t("manual.sources")}
         </Typography>
-        <Typography variant="subtitle2">Many screens in one build</Typography>
+        <Typography variant="subtitle2">{t("manual.many")}</Typography>
         <Command
           text={`python3 vision.py start\npython3 vision.py check ${quote("Login")}\npython3 vision.py check ${quote("Payment")}\npython3 vision.py finish`}
         />
-        <Typography variant="subtitle2">From an AI assistant (MCP)</Typography>
+        <Typography variant="subtitle2">{t("manual.mcp")}</Typography>
         <Command
           text={`claude mcp add vision -- python3 /path/to/vision.py mcp`}
         />
         <Typography variant="body2" color="textSecondary">
-          Any MCP client can run “python3 vision.py mcp” as a stdio server. Its
-          tools: vision_check, vision_devices, vision_session.
+          {t("manual.mcpHelp")}
         </Typography>
       </DialogContent>
       <DialogActions>
-        <Button onClick={onClose}>Close</Button>
+        <Button onClick={onClose}>{t("manual.close")}</Button>
       </DialogActions>
     </Dialog>
   );

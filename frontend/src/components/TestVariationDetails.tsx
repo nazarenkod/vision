@@ -2,6 +2,7 @@ import React from "react";
 import { Box, Chip } from "@mui/material";
 import { TestVariation } from "../types";
 import { tokens } from "../theme";
+import { MessageKey, useT } from "../i18n";
 
 interface IProps {
   testVariation: TestVariation;
@@ -11,13 +12,16 @@ interface IProps {
 export const TestVariationDetails: React.FunctionComponent<IProps> = ({
   testVariation,
 }) => {
-  const tags = [
-    ["OS", testVariation.os],
-    ["Device", testVariation.device],
-    ["Custom Tags", testVariation.customTags],
-    ["Browser", testVariation.browser],
-    ["Viewport", testVariation.viewport],
-  ].filter(([, value]) => value);
+  const { t } = useT();
+  const tags = (
+    [
+      ["baselines.tag.os", testVariation.os],
+      ["baselines.tag.device", testVariation.device],
+      ["baselines.tag.customTags", testVariation.customTags],
+      ["baselines.tag.browser", testVariation.browser],
+      ["baselines.tag.viewport", testVariation.viewport],
+    ] as Array<[MessageKey, string | undefined]>
+  ).filter(([, value]) => value);
   return (
     <Box
       sx={{
@@ -31,7 +35,7 @@ export const TestVariationDetails: React.FunctionComponent<IProps> = ({
         <Chip
           key={name}
           size="small"
-          label={`${name}: ${value}`}
+          label={`${t(name)}: ${value}`}
           sx={{ borderRadius: 1.5, bgcolor: tokens.subtle }}
         />
       ))}

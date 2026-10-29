@@ -29,7 +29,6 @@ import {
 } from "../../contexts";
 import { BuildStatusChip } from "../BuildStatusChip";
 import { SkeletonList } from "../SkeletonList";
-import { formatDateTime } from "../../_helpers/format.helper";
 import { useSnackbar } from "notistack";
 import { TextValidator } from "react-material-ui-form-validator";
 import { Build } from "../../types";
@@ -41,6 +40,7 @@ import {
   getQueryParams,
 } from "../../_helpers/route.helpers";
 import { Tooltip } from "../Tooltip";
+import { useT } from "../../i18n";
 
 const useStyles = makeStyles(() =>
   createStyles({
@@ -71,6 +71,7 @@ const BuildList: FunctionComponent = () => {
     useBuildState();
   const buildDispatch = useBuildDispatch();
   const { enqueueSnackbar } = useSnackbar();
+  const { t, formatDate } = useT();
   const { selectedProjectId } = useProjectState();
   const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false);
   const [editDialogOpen, setEditDialogOpen] = React.useState(false);
@@ -127,7 +128,9 @@ const BuildList: FunctionComponent = () => {
     selectedIds.length > 0 ? clearSelection() : selectAllMatching();
 
   const selectAllLabel =
-    selectedIds.length > 0 ? "Clear selection" : `Select all (${total})`;
+    selectedIds.length > 0
+      ? t("builds.clearSelection")
+      : t("builds.selectAll", { total });
 
   const handleMenuClick = (
     event: React.MouseEvent<HTMLElement>,
@@ -235,12 +238,12 @@ const BuildList: FunctionComponent = () => {
       const failed = results.filter((r) => !r.ok);
 
       if (deleted.length > 0) {
-        enqueueSnackbar(`${deleted.length} build(s) deleted`, {
+        enqueueSnackbar(t("builds.deletedMany", { count: deleted.length }), {
           variant: "success",
         });
       }
       if (failed.length > 0) {
-        enqueueSnackbar(`Failed to delete ${failed.length} build(s)`, {
+        enqueueSnackbar(t("builds.deleteFailed", { count: failed.length }), {
           variant: "error",
         });
       }
@@ -280,8 +283,8 @@ const BuildList: FunctionComponent = () => {
               size="small"
               variant="outlined"
               fullWidth
-              label="Search build"
-              placeholder="Search by CI build id"
+              label={t("builds.search")}
+              placeholder={t("builds.searchPlaceholder")}
               value={searchQuery}
               element={TextField}
               debounceTimeout={300}
@@ -292,7 +295,11 @@ const BuildList: FunctionComponent = () => {
           {/* fades in place so picking a build does not resize the search field */}
           <Fade in={selectedIds.length > 0}>
             <span>
-              <Tooltip title={`Delete ${selectedIds.length} selected`}>
+              <Tooltip
+                title={t("builds.deleteSelected", {
+                  count: selectedIds.length,
+                })}
+              >
                 <IconButton
                   color="error"
                   disabled={bulkDeleting}
@@ -322,7 +329,7 @@ const BuildList: FunctionComponent = () => {
                 sx={{ padding: 2, overflowWrap: "anywhere" }}
                 data-testid="buildListError"
               >
-                Builds could not be loaded
+                {t("builds.loadFailed")}
               </Typography>
             ) : buildList.length === 0 ? (
               <Typography
@@ -332,7 +339,9 @@ const BuildList: FunctionComponent = () => {
                 sx={{ padding: 2, overflowWrap: "anywhere" }}
                 data-testid="buildListEmpty"
               >
-                {searchQuery ? `No builds match "${searchQuery}"` : "No builds"}
+                {searchQuery
+                  ? t("builds.noMatch", { search: searchQuery })
+                  : t("builds.empty")}
               </Typography>
             ) : (
               buildList.map((build, index) => (
@@ -395,11 +404,16 @@ const BuildList: FunctionComponent = () => {
                             </Typography>
                           </Tooltip>
                           <Typography variant="caption" color="textSecondary">
-                            {`${build.unresolvedCount} changed · ${build.passedCount} passed${
+                            {`${t("builds.summary", {
+                              changed: build.unresolvedCount,
+                              passed: build.passedCount,
+                            })}${
                               build.failedCount
-                                ? ` · ${build.failedCount} failed`
+                                ? t("builds.summaryFailed", {
+                                    count: build.failedCount,
+                                  })
                                 : ""
-                            } · ${formatDateTime(build.updatedAt ?? build.createdAt)}`}
+                            } · ${formatDate(build.updatedAt ?? build.createdAt)}`}
                           </Typography>
                         </Box>
                       }
@@ -461,7 +475,7 @@ const BuildList: FunctionComponent = () => {
                 handleMenuClose();
               }}
             >
-              Stop
+              {t("builds.stop")}
             </MenuItem>
           )}
           {/* the menu closes, the build stays selected for the dialog */}
@@ -471,7 +485,7 @@ const BuildList: FunctionComponent = () => {
               toggleEditDialogOpen();
             }}
           >
-            Edit CI Build
+            {t("builds.editCiBuild")}
           </MenuItem>
           <MenuItem
             onClick={() => {
@@ -479,28 +493,30 @@ const BuildList: FunctionComponent = () => {
               toggleDeleteDialogOpen();
             }}
           >
-            Delete
+            {t("builds.delete")}
           </MenuItem>
         </Menu>
       )}
       {menuBuild && (
         <BaseModal
           open={editDialogOpen}
-          title={"Edit CI Build ID"}
-          submitButtonText={"Edit"}
+          title={t("builds.editTitle")}
+          submitButtonText={t("builds.edit")}
           onCancel={toggleEditDialogOpen}
           content={
             <React.Fragment>
-              <Typography>{`Edit the ci build id for build: #${
-                menuBuild.number || menuBuild.id
-              }`}</Typography>
+              <Typography>
+                {t("builds.editText", {
+                  number: menuBuild.number || menuBuild.id,
+                })}
+              </Typography>
               <TextValidator
                 name="newCiBuildId"
                 validators={["minStringLength:2"]}
-                errorMessages={["Enter at least two characters."]}
+                errorMessages={[t("validation.twoCharacters")]}
                 margin="dense"
                 id="name"
-                label="New CI Build Id"
+                label={t("builds.newCiBuildId")}
                 type="text"
                 fullWidth
                 required
@@ -533,20 +549,24 @@ const BuildList: FunctionComponent = () => {
       {menuBuild && (
         <BaseModal
           open={deleteDialogOpen}
-          title={"Delete Build"}
-          submitButtonText={"Delete"}
+          title={t("builds.deleteTitle")}
+          submitButtonText={t("builds.delete")}
           onCancel={toggleDeleteDialogOpen}
           content={
-            <Typography>{`Are you sure you want to delete build: #${
-              menuBuild.number || menuBuild.id
-            }?`}</Typography>
+            <Typography>
+              {t("builds.deleteConfirm", {
+                number: menuBuild.number || menuBuild.id,
+              })}
+            </Typography>
           }
           onSubmit={() => {
             deleteBuild(buildDispatch, menuBuild.id)
               .then(() => {
                 toggleDeleteDialogOpen();
                 enqueueSnackbar(
-                  `Build #${menuBuild.number || menuBuild.id} deleted`,
+                  t("builds.deleted", {
+                    number: menuBuild.number || menuBuild.id,
+                  }),
                   {
                     variant: "success",
                   },
@@ -572,15 +592,15 @@ const BuildList: FunctionComponent = () => {
       )}
       <BaseModal
         open={bulkDeleteDialogOpen}
-        title={"Delete Builds"}
-        submitButtonText={"Delete"}
+        title={t("builds.deleteManyTitle")}
+        submitButtonText={t("builds.delete")}
         onCancel={() => setBulkDeleteDialogOpen(false)}
         content={
           <>
             <Typography>
-              {`Are you sure you want to delete ${selectedIds.length} build(s)?`}
+              {t("builds.deleteManyConfirm", { count: selectedIds.length })}
             </Typography>
-            <Typography>This also removes their test runs.</Typography>
+            <Typography>{t("builds.deleteManyHint")}</Typography>
           </>
         }
         onSubmit={handleBulkDelete}

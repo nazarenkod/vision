@@ -2,6 +2,7 @@ import React from "react";
 import { Autocomplete, MenuItem, TextField } from "@mui/material";
 import { insightsService } from "../../services";
 import { JiraBugInput, JiraUser } from "../../types";
+import { useT } from "../../i18n";
 
 /** A chosen value in Jira's create form, with the text to show for it. */
 export interface ChosenValue {
@@ -29,6 +30,7 @@ export const JiraFieldInput: React.FunctionComponent<{
   onChange: (value: ChosenValue | undefined) => void;
 }> = ({ testRunId, input, chosen, onChange }) => {
   const value = chosen?.value ?? input.value;
+  const { t } = useT();
   const label = `${input.name}${input.required ? " *" : ""}`;
   const [query, setQuery] = React.useState("");
   const [people, setPeople] = React.useState<JiraUser[]>([]);
@@ -87,9 +89,15 @@ export const JiraFieldInput: React.FunctionComponent<{
               : undefined,
           )
         }
-        noOptionsText={query.trim().length < 2 ? "Type a name" : "Nobody found"}
+        noOptionsText={t(
+          query.trim().length < 2 ? "bug.typeName" : "bug.nobody",
+        )}
         renderInput={(params) => (
-          <TextField {...params} label={label} placeholder="Search by name" />
+          <TextField
+            {...params}
+            label={label}
+            placeholder={t("bug.searchByName")}
+          />
         )}
       />
     );

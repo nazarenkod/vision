@@ -15,6 +15,7 @@ import { staticService, testRunService } from "../../services";
 import { TestRun, TestStatus } from "../../types";
 import { Tooltip } from "../Tooltip";
 import { useTestRunState } from "../../contexts";
+import { useT } from "../../i18n";
 
 export const BulkOperation: React.FunctionComponent<{
   selectedIds: string[];
@@ -27,6 +28,7 @@ export const BulkOperation: React.FunctionComponent<{
   const { testRuns } = useTestRunState();
   const { enqueueSnackbar } = useSnackbar();
   const announce = useDecisionSnackbar();
+  const { t } = useT();
   const [approveDialogOpen, setApproveDialogOpen] = React.useState(false);
   const [rejectDialogOpen, setRejectDialogOpen] = React.useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false);
@@ -81,37 +83,37 @@ export const BulkOperation: React.FunctionComponent<{
     setClearIgnoreDialogOpen(!clearIgnoreDialogOpen);
   };
 
-  const getTitle = () => {
-    if (clearIgnoreDialogOpen) {
-      return "Clear Ignore Area For Selected Items";
-    }
+  // the open dialog's action: its title, button and question
+  const action = ():
+    "approve" | "reject" | "delete" | "download" | "clear" | null => {
+    if (approveDialogOpen) return "approve";
+    if (rejectDialogOpen) return "reject";
+    if (deleteDialogOpen) return "delete";
+    if (downloadDialogOpen) return "download";
+    if (clearIgnoreDialogOpen) return "clear";
+    return null;
+  };
 
-    return submitButtonText() + " Test Runs";
+  const getTitle = () => {
+    const open = action();
+    return open === "clear"
+      ? t("bulk.clearIgnoreTitle")
+      : open
+        ? t(`bulk.${open}Title`)
+        : "";
   };
 
   const submitButtonText = (): string => {
-    if (approveDialogOpen) {
-      return "Approve";
-    }
-
-    if (rejectDialogOpen) {
-      return "Reject";
-    }
-
-    if (deleteDialogOpen) {
-      return "Delete";
-    }
-
-    if (downloadDialogOpen) {
-      return "Download";
-    }
-
-    if (clearIgnoreDialogOpen) {
-      return "Clear";
-    }
-
-    return "";
+    const open = action();
+    return open ? t(`bulk.${open}`) : "";
   };
+
+  const confirmText = (): string => {
+    const open = action();
+    return open ? t(`bulk.${open}Confirm`, { count: selectedIds.length }) : "";
+  };
+
+  const noun = selectionNoun === "rows" ? "Rows" : "Cards";
 
   const closeModal = () => {
     if (deleteDialogOpen) {
@@ -187,10 +189,7 @@ export const BulkOperation: React.FunctionComponent<{
 
   return (
     <React.Fragment>
-      <Tooltip
-        title={`Approve unresolved in selected ${selectionNoun}.`}
-        aria-label="approve"
-      >
+      <Tooltip title={t(`bulk.approve${noun}`)} aria-label="approve">
         <span>
           <IconButton
             disabled={selectedIds.length === 0}
@@ -201,10 +200,7 @@ export const BulkOperation: React.FunctionComponent<{
           </IconButton>
         </span>
       </Tooltip>
-      <Tooltip
-        title={`Reject unresolved in selected ${selectionNoun}.`}
-        aria-label="reject"
-      >
+      <Tooltip title={t(`bulk.reject${noun}`)} aria-label="reject">
         <span>
           <IconButton
             disabled={selectedIds.length === 0}
@@ -215,10 +211,7 @@ export const BulkOperation: React.FunctionComponent<{
           </IconButton>
         </span>
       </Tooltip>
-      <Tooltip
-        title={`Download images for selected ${selectionNoun}.`}
-        aria-label="download"
-      >
+      <Tooltip title={t(`bulk.download${noun}`)} aria-label="download">
         <span>
           <IconButton
             disabled={selectedIds.length === 0}
@@ -229,7 +222,7 @@ export const BulkOperation: React.FunctionComponent<{
           </IconButton>
         </span>
       </Tooltip>
-      <Tooltip title={`Delete selected ${selectionNoun}.`} aria-label="delete">
+      <Tooltip title={t(`bulk.delete${noun}`)} aria-label="delete">
         <span>
           <IconButton
             disabled={selectedIds.length === 0}
@@ -240,10 +233,7 @@ export const BulkOperation: React.FunctionComponent<{
           </IconButton>
         </span>
       </Tooltip>
-      <Tooltip
-        title={`Clear ignore areas for selected ${selectionNoun}.`}
-        aria-label="clear ignore area"
-      >
+      <Tooltip title={t(`bulk.clear${noun}`)} aria-label="clear ignore area">
         <span>
           <IconButton
             disabled={selectedIds.length === 0}
@@ -265,13 +255,7 @@ export const BulkOperation: React.FunctionComponent<{
         title={getTitle()}
         submitButtonText={submitButtonText()}
         onCancel={dismissDialog}
-        content={
-          <Typography>
-            {`Are you sure you want to ${submitButtonText().toLowerCase()} ${
-              selectedIds.length
-            } items?`}
-          </Typography>
-        }
+        content={<Typography>{confirmText()}</Typography>}
         onSubmit={() => {
           // a download leaves the runs as they were, so the selection is still
           // about something and is kept; everything else has just consumed it
@@ -295,7 +279,7 @@ export const BulkOperation: React.FunctionComponent<{
                 // approvals and rejections can be taken back for a moment
                 announce(decided, count, result as Decision);
               } else {
-                enqueueSnackbar(`${count} test runs processed.`, {
+                enqueueSnackbar(t("bulk.processed", { count }), {
                   variant: "success",
                 });
               }

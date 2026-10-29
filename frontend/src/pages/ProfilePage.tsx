@@ -32,9 +32,11 @@ import { useOidcEnabled } from "../_helpers/useOidcEnabled";
 import { JiraTokenCard } from "../components/JiraTokenCard";
 import { ApiKeyCard, maskKey } from "../components/ApiKeyCard";
 import { AppearanceCard } from "../components/AppearanceCard";
+import { labelOf, useT } from "../i18n";
 
 const ProfilePage = () => {
   const { enqueueSnackbar } = useSnackbar();
+  const { t } = useT();
   const { user } = useUserState();
   const authDispatch = useUserDispatch();
   const projectDispatch = useProjectDispatch();
@@ -58,7 +60,7 @@ const ProfilePage = () => {
         email,
       })
         .then(() =>
-          enqueueSnackbar("User updated", {
+          enqueueSnackbar(t("profile.userUpdated"), {
             variant: "success",
           }),
         )
@@ -79,7 +81,7 @@ const ProfilePage = () => {
           setPassword("");
         })
         .then(() =>
-          enqueueSnackbar("Password updated", {
+          enqueueSnackbar(t("profile.passwordUpdated"), {
             variant: "success",
           }),
         )
@@ -91,12 +93,12 @@ const ProfilePage = () => {
     }
   };
 
-  const errorForTwoChar = "Enter at least two characters.";
+  const errorForTwoChar = t("validation.twoCharacters");
 
   return (
     <Box sx={{ px: 4, py: 3, maxWidth: 1280 }}>
       <Typography variant="h4" component="h1" sx={{ mb: 2 }}>
-        Profile
+        {t("profile.title")}
       </Typography>
       <Grid container spacing={2}>
         <Grid item xs={6}>
@@ -104,7 +106,7 @@ const ProfilePage = () => {
             <Grid item xs={12}>
               <ValidatorForm onSubmit={handleUserUpdateSubmit} instantValidate>
                 <Card variant="outlined">
-                  <CardHeader title={"User details"} />
+                  <CardHeader title={t("profile.details")} />
                   <CardContent>
                     <Grid container spacing={2}>
                       <Grid item xs={6}>
@@ -114,7 +116,7 @@ const ProfilePage = () => {
                           id="firstName"
                           name="firstName"
                           value={firstName}
-                          label={"First name"}
+                          label={t("profile.firstName")}
                           type="text"
                           variant="outlined"
                           required
@@ -134,7 +136,7 @@ const ProfilePage = () => {
                           id="lastName"
                           name="lastName"
                           value={lastName}
-                          label={"Last name"}
+                          label={t("profile.lastName")}
                           type="text"
                           variant="outlined"
                           required
@@ -150,11 +152,11 @@ const ProfilePage = () => {
                       <Grid item xs={12}>
                         <TextValidator
                           validators={["isEmail"]}
-                          errorMessages={["Enter valid email address"]}
+                          errorMessages={[t("profile.validEmail")]}
                           id="email"
                           name="email"
                           value={email}
-                          label={"Email address"}
+                          label={t("profile.email")}
                           type="text"
                           variant="outlined"
                           required
@@ -181,7 +183,7 @@ const ProfilePage = () => {
                         >
                           {Object.entries(Role).map(([key, value]) => (
                             <MenuItem key={key} value={key}>
-                              {value}
+                              {labelOf(t, "role", key) || value}
                             </MenuItem>
                           ))}
                         </Select>
@@ -197,7 +199,7 @@ const ProfilePage = () => {
                           variant="outlined"
                           data-testid="submit"
                         >
-                          Update
+                          {t("profile.update")}
                         </Button>
                       </Grid>
                     </Grid>
@@ -212,14 +214,14 @@ const ProfilePage = () => {
                   instantValidate
                 >
                   <Card variant="outlined">
-                    <CardHeader title="Change password" />
+                    <CardHeader title={t("profile.changePassword")} />
                     <CardContent>
                       <Grid container spacing={2}>
                         <Grid item xs={12}>
                           <PasswordField
                             password={password}
                             setPassword={setPassword}
-                            label={"New password"}
+                            label={t("profile.newPassword")}
                           />
                         </Grid>
                       </Grid>
@@ -233,7 +235,7 @@ const ProfilePage = () => {
                             variant="outlined"
                             data-testid="submit"
                           >
-                            Update
+                            {t("profile.update")}
                           </Button>
                         </Grid>
                       </Grid>
@@ -261,7 +263,7 @@ const ProfilePage = () => {
             </Grid>
             <Grid item xs={12}>
               <Card variant="outlined">
-                <CardHeader title={"Configuration examples"} />
+                <CardHeader title={t("profile.examples")} />
                 <CardContent>
                   <ProjectSelect
                     onProjectSelect={(id) => selectProject(projectDispatch, id)}
@@ -278,8 +280,8 @@ const ProfilePage = () => {
                       setTabIndex(newValue);
                     }}
                   >
-                    <Tab label="Config file" />
-                    <Tab label="ENV variables" />
+                    <Tab label={t("profile.configFile")} />
+                    <Tab label={t("profile.env")} />
                   </Tabs>
                   <div role="tabpanel" hidden={tabIndex !== 0}>
                     {tabIndex === 0 && (
@@ -300,7 +302,7 @@ const ProfilePage = () => {
                           multiline
                           rows={8}
                           fullWidth
-                          helperText="Save as vrt.json in project root. Could be overridden with ENV variables"
+                          helperText={t("profile.configHelp")}
                         />
                       </Box>
                     )}
@@ -324,7 +326,7 @@ const ProfilePage = () => {
                           multiline
                           rows={8}
                           fullWidth
-                          helperText="Add Environment variables inside CI environment"
+                          helperText={t("profile.envHelp")}
                         />
                       </Box>
                     )}

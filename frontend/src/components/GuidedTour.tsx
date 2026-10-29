@@ -1,28 +1,34 @@
 import React, { FunctionComponent } from "react";
-import Joyride, { CallBackProps, STATUS } from "react-joyride";
+import Joyride, { CallBackProps, STATUS, Step } from "react-joyride";
 import { Button } from "@mui/material";
 import { useHelpState, useTokens } from "../contexts";
 import { ExploreOutlined } from "@mui/icons-material";
 import { TAKE_TOUR_BUTTON_TEST_ID } from "./GuidedTour.locators";
+import { isMessageKey, useT } from "../i18n";
 
 const GuidedTour: FunctionComponent = () => {
   const [run, setRun] = React.useState(false);
   const { helpSteps } = useHelpState();
   // react-joyride paints with inline styles, so it gets real colours
   const colours = useTokens();
+  const { t } = useT();
 
   const getHelpSteps = React.useCallback(() => {
     if (!helpSteps?.length) {
       return [];
     }
 
-    for (const step of helpSteps) {
-      step.disableBeacon = true;
-      step.hideCloseButton = true;
-    }
-
-    return helpSteps;
-  }, [helpSteps]);
+    // a key reads as its text; anything else is shown as it is
+    const text = (value: Step["content"] | Step["title"]) =>
+      typeof value === "string" && isMessageKey(value) ? t(value) : value;
+    return helpSteps.map((step) => ({
+      ...step,
+      content: text(step.content),
+      title: text(step.title),
+      disableBeacon: true,
+      hideCloseButton: true,
+    }));
+  }, [helpSteps, t]);
 
   const handleJoyrideCallback = ({ status }: CallBackProps) => {
     if (status === STATUS.FINISHED || status === STATUS.SKIPPED) {
@@ -73,6 +79,13 @@ const GuidedTour: FunctionComponent = () => {
         showProgress={true}
         showSkipButton={true}
         steps={getHelpSteps()}
+        locale={{
+          back: t("tour.back"),
+          close: t("tour.close"),
+          last: t("tour.last"),
+          next: t("tour.next"),
+          skip: t("tour.skip"),
+        }}
         disableCloseOnEsc={true}
         styles={{
           options: {
@@ -94,7 +107,7 @@ const GuidedTour: FunctionComponent = () => {
           buttonSkip: { color: colours.textMuted },
         }}
       />
-      Take a tour
+      {t("tour.take")}
     </Button>
   );
 };

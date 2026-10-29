@@ -19,6 +19,7 @@ import {
 import { SlidingToggleGroup } from "../motion/SlidingToggleGroup";
 import { Tooltip } from "../Tooltip";
 import { GroupByAxis } from "../../_helpers/testRunGroup.helper";
+import { useT } from "../../i18n";
 
 export type TestRunView = "table" | "grid";
 
@@ -101,114 +102,117 @@ export const TestRunListControls: React.FunctionComponent<{
   groupByAxis,
   showDiff,
   onShowDiffChange,
-}) => (
-  <Box display="flex" alignItems="center" gap={1}>
-    {/* laid out as a table or a grid */}
-    <SlidingToggleGroup
-      rememberAs="testRunView"
-      exclusive
-      size="small"
-      value={view}
-      onChange={(event, next: TestRunView | null) => next && onViewChange(next)}
-    >
-      <IconToggle
-        value="table"
-        title="Table"
-        ariaLabel="Table view"
-        testId="tableViewToggle"
-        icon={<ViewList fontSize="small" />}
-      />
-      <IconToggle
-        value="grid"
-        title="Grid"
-        ariaLabel="Grid view"
-        testId="gridViewToggle"
-        icon={<ViewModule fontSize="small" />}
-      />
-    </SlidingToggleGroup>
-    {groupDivider}
-    <SlidingToggleGroup
-      exclusive
-      size="small"
-      value={density}
-      onChange={(event, next: TestRunDensity | null) =>
-        next && onDensityChange(next)
-      }
-    >
-      <IconToggle
-        value="compact"
-        title="Compact"
-        ariaLabel="Compact density"
-        testId="compactDensity"
-        icon={<DensitySmall fontSize="small" />}
-      />
-      <IconToggle
-        value="standard"
-        title="Standard"
-        ariaLabel="Standard density"
-        testId="standardDensity"
-        icon={<DensityMedium fontSize="small" />}
-      />
-      <IconToggle
-        value="comfortable"
-        title="Comfortable"
-        ariaLabel="Comfortable density"
-        testId="comfortableDensity"
-        icon={<DensityLarge fontSize="small" />}
-      />
-    </SlidingToggleGroup>
-    {groupDivider}
-    {/* what the runs show; switches rather than icons, so "on" is unmistakable.
+}) => {
+  const { t } = useT();
+  return (
+    <Box display="flex" alignItems="center" gap={1}>
+      {/* laid out as a table or a grid */}
+      <SlidingToggleGroup
+        rememberAs="testRunView"
+        exclusive
+        size="small"
+        value={view}
+        onChange={(event, next: TestRunView | null) =>
+          next && onViewChange(next)
+        }
+      >
+        <IconToggle
+          value="table"
+          title={t("runs.table")}
+          ariaLabel={t("runs.tableView")}
+          testId="tableViewToggle"
+          icon={<ViewList fontSize="small" />}
+        />
+        <IconToggle
+          value="grid"
+          title={t("runs.grid")}
+          ariaLabel={t("runs.gridView")}
+          testId="gridViewToggle"
+          icon={<ViewModule fontSize="small" />}
+        />
+      </SlidingToggleGroup>
+      {groupDivider}
+      <SlidingToggleGroup
+        exclusive
+        size="small"
+        value={density}
+        onChange={(event, next: TestRunDensity | null) =>
+          next && onDensityChange(next)
+        }
+      >
+        <IconToggle
+          value="compact"
+          title={t("runs.compact")}
+          ariaLabel={t("runs.compactDensity")}
+          testId="compactDensity"
+          icon={<DensitySmall fontSize="small" />}
+        />
+        <IconToggle
+          value="standard"
+          title={t("runs.standard")}
+          ariaLabel={t("runs.standardDensity")}
+          testId="standardDensity"
+          icon={<DensityMedium fontSize="small" />}
+        />
+        <IconToggle
+          value="comfortable"
+          title={t("runs.comfortable")}
+          ariaLabel={t("runs.comfortableDensity")}
+          testId="comfortableDensity"
+          icon={<DensityLarge fontSize="small" />}
+        />
+      </SlidingToggleGroup>
+      {groupDivider}
+      {/* what the runs show; switches rather than icons, so "on" is unmistakable.
         The axis is named in the tooltip and not chosen here: it is a project
         setting shared by everyone, and the details dialog groups by the same
         one, so a selector in the toolbar would let the two drift apart */}
-    <Tooltip
-      title={
-        // a node rather than a string, because the wrapper forwards only title
-        // and children, so the line breaks cannot come from a style
-        <React.Fragment>
-          Collapses a screen&apos;s variations into one{" "}
-          {view === "grid" ? "card" : "row"} by group.
-          <br />
-          Set it in Projects → Edit the project → &quot;Group variations
-          by&quot;.
-          <br />
-          Current axis: {groupByAxis}.
-        </React.Fragment>
-      }
-    >
-      <FormControlLabel
-        control={
-          <Switch
-            size="small"
-            checked={grouped}
-            onChange={(event) => onGroupedChange(event.target.checked)}
-            inputProps={{ "aria-label": "Group variations" }}
-            data-testid="groupVariationsToggle"
-          />
+      <Tooltip
+        title={
+          // a node rather than a string, because the wrapper forwards only title
+          // and children, so the line breaks cannot come from a style
+          <React.Fragment>
+            {t(view === "grid" ? "runs.groupHelpCard" : "runs.groupHelpRow")}
+            <br />
+            {t("runs.groupHelpWhere")}
+            <br />
+            {t("runs.groupHelpAxis", { axis: groupByAxis })}
+          </React.Fragment>
         }
-        label={switchLabel("Group variations")}
-        sx={{ marginLeft: 0, marginRight: 0 }}
-      />
-    </Tooltip>
-    {/* only the cards carry a picture, so the table has nothing to swap */}
-    {view === "grid" && groupDivider}
-    {view === "grid" && (
-      <Tooltip title="Toggle diff. Hotkey: D">
+      >
         <FormControlLabel
           control={
             <Switch
               size="small"
-              checked={showDiff}
-              onChange={(event) => onShowDiffChange(event.target.checked)}
-              inputProps={{ "aria-label": "Show diff" }}
-              data-testid="showDiffToggle"
+              checked={grouped}
+              onChange={(event) => onGroupedChange(event.target.checked)}
+              inputProps={{ "aria-label": t("runs.groupVariations") }}
+              data-testid="groupVariationsToggle"
             />
           }
-          label={switchLabel("Show diff")}
+          label={switchLabel(t("runs.groupVariations"))}
           sx={{ marginLeft: 0, marginRight: 0 }}
         />
       </Tooltip>
-    )}
-  </Box>
-);
+      {/* only the cards carry a picture, so the table has nothing to swap */}
+      {view === "grid" && groupDivider}
+      {view === "grid" && (
+        <Tooltip title={t("runs.diffHelp")}>
+          <FormControlLabel
+            control={
+              <Switch
+                size="small"
+                checked={showDiff}
+                onChange={(event) => onShowDiffChange(event.target.checked)}
+                inputProps={{ "aria-label": t("runs.showDiff") }}
+                data-testid="showDiffToggle"
+              />
+            }
+            label={switchLabel(t("runs.showDiff"))}
+            sx={{ marginLeft: 0, marginRight: 0 }}
+          />
+        </Tooltip>
+      )}
+    </Box>
+  );
+};

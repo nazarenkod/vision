@@ -1,12 +1,25 @@
+import { english, Text } from "../i18n";
+
 /** How long a decision can be taken back from its notification (REQ-018-70). */
 export const UNDO_OFFER_MS = 8000;
 
 export type DecisionKind = "approve" | "reject";
 
 /** What the notification says about a decision. */
-export function decisionNotice(kind: DecisionKind, count: number): string {
-  const verb = kind === "approve" ? "Approved" : "Rejected";
-  return count > 1 ? `${verb} ${count} screenshots` : verb;
+export function decisionNotice(
+  kind: DecisionKind,
+  count: number,
+  text: Text = english,
+): string {
+  if (count > 1) {
+    return text(
+      kind === "approve" ? "undo.approvedMany" : "undo.rejectedMany",
+      {
+        count,
+      },
+    );
+  }
+  return text(kind === "approve" ? "undo.approved" : "undo.rejected");
 }
 
 /** Notification options for a decision: long enough to change one's mind. */

@@ -13,13 +13,14 @@ import {
 } from "../_helpers/route.helpers";
 import { TestVariationDetails } from "../components/TestVariationDetails";
 import { useSnackbar } from "notistack";
-import { formatDateTime } from "../_helpers/format.helper";
+import { useT } from "../i18n";
 import TestStatusChip from "../components/TestStatusChip";
 import { Baseline } from "../types/baseline";
 
 const TestVariationDetailsPage: React.FunctionComponent = () => {
   const navigate = useNavigate();
   const { enqueueSnackbar } = useSnackbar();
+  const { t, formatDate } = useT();
   const { testVariationId } = useParams<{ testVariationId: string }>();
   const [testVariation, setTestVariation] = React.useState<TestVariation>();
 
@@ -88,7 +89,7 @@ const TestVariationDetailsPage: React.FunctionComponent = () => {
         </Typography>
         {baseline && (
           <Typography variant="caption" color="textSecondary">
-            {formatDateTime(baseline.createdAt)}
+            {formatDate(baseline.createdAt)}
           </Typography>
         )}
       </Box>
@@ -110,7 +111,9 @@ const TestVariationDetailsPage: React.FunctionComponent = () => {
             }}
           />
         ) : (
-          <Typography color="textSecondary">Nothing before it</Typography>
+          <Typography color="textSecondary">
+            {t("baselines.nothingBefore")}
+          </Typography>
         )}
       </Box>
     </Box>
@@ -135,13 +138,13 @@ const TestVariationDetailsPage: React.FunctionComponent = () => {
                 px: 1,
               }}
             >
-              Baselines
+              {t("baselines.title")}
             </Button>
             <Typography
               variant="overline"
               sx={{ color: tokens.textMuted, lineHeight: 1 }}
             >
-              Baseline history
+              {t("baselines.historyTitle")}
             </Typography>
             <Typography variant="h4" component="h1">
               {testVariation.name}
@@ -158,7 +161,7 @@ const TestVariationDetailsPage: React.FunctionComponent = () => {
           >
             <Box
               component="ol"
-              aria-label="Baselines, newest first"
+              aria-label={t("baselines.newestFirst")}
               sx={{
                 listStyle: "none",
                 m: 0,
@@ -237,8 +240,8 @@ const TestVariationDetailsPage: React.FunctionComponent = () => {
                       >
                         <Typography sx={{ fontWeight: 600 }}>
                           {index === 0
-                            ? "Current"
-                            : formatDateTime(baseline.createdAt)}
+                            ? t("baselines.current")
+                            : formatDate(baseline.createdAt)}
                         </Typography>
                         {baseline.testRun && (
                           <TestStatusChip status={baseline.testRun.status} />
@@ -255,7 +258,7 @@ const TestVariationDetailsPage: React.FunctionComponent = () => {
                       )}
                       {index === 0 && (
                         <Typography variant="caption" color="textSecondary">
-                          {formatDateTime(baseline.createdAt)}
+                          {formatDate(baseline.createdAt)}
                         </Typography>
                       )}
                     </ButtonBase>
@@ -264,7 +267,7 @@ const TestVariationDetailsPage: React.FunctionComponent = () => {
                       disabled={!baseline.testRun}
                       onClick={() => openTestRun(baseline)}
                     >
-                      Test Run
+                      {t("baselines.testRun")}
                     </Button>
                   </Box>
                 );
@@ -282,11 +285,13 @@ const TestVariationDetailsPage: React.FunctionComponent = () => {
               }}
             >
               {pane(
-                pickedIndex === 0 ? "Current" : "This one",
+                pickedIndex === 0
+                  ? t("baselines.current")
+                  : t("baselines.thisOne"),
                 picked,
                 "historyPicked",
               )}
-              {pane("Before it", before, "historyBefore")}
+              {pane(t("baselines.beforeIt"), before, "historyBefore")}
             </Box>
           </Box>
         </Box>

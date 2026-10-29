@@ -5,6 +5,7 @@ import { IgnoreArea } from "../../types/ignoreArea";
 import { Tooltip } from "../Tooltip";
 import { makeStyles } from "@mui/styles";
 import { tokens } from "../../theme";
+import { useT } from "../../i18n";
 
 const useStyles = makeStyles(() => ({
   container: {
@@ -44,6 +45,7 @@ const ImageDetails: React.FunctionComponent<ImageDetailsProps> = ({
   ignoreAreas,
 }) => {
   const classes = useStyles();
+  const { t } = useT();
   const imageSize = () => {
     return (
       imageName && (
@@ -52,7 +54,7 @@ const ImageDetails: React.FunctionComponent<ImageDetailsProps> = ({
           sx={{ mr: 0.5, fontSize: 12, color: tokens.textMuted }}
           data-testid="image-size"
         >
-          {image ? `(${image?.width} x ${image?.height})` : "Loading..."}
+          {image ? `(${image?.width} x ${image?.height})` : t("review.loading")}
         </Typography>
       )
     );
@@ -68,19 +70,15 @@ const ImageDetails: React.FunctionComponent<ImageDetailsProps> = ({
           mr: 0.5,
         }}
       >
-        {type === "Baseline" ? "Baseline" : "Checkpoint"}
+        {t(type === "Baseline" ? "review.baseline" : "review.checkpoint")}
       </Typography>
       {imageSize()}
       <AltRoute fontSize="small" />
-      <Tooltip title={`Branch: ${branchName}`}>
+      <Tooltip title={t("review.branch", { branch: branchName })}>
         <span className={classes.branchName}>{branchName}</span>
       </Tooltip>
       {ignoreAreas && ignoreAreas.length > 0 && (
-        <Tooltip
-          title={
-            "Contains noneditable ignore areas applied during image upload."
-          }
-        >
+        <Tooltip title={t("review.uploadIgnore")}>
           <IconButton size="large">
             <WarningRounded color="secondary" />
           </IconButton>

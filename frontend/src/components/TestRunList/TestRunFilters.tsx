@@ -9,6 +9,7 @@ import {
 } from "@mui/material";
 import { DebounceInput } from "react-debounce-input";
 import { TestStatus } from "../../types";
+import { labelOf, useT } from "../../i18n";
 
 interface IProps {
   tagOptions: string[];
@@ -33,6 +34,7 @@ const TestRunFilters: React.FunctionComponent<IProps> = ({
   onTagsChange,
   onReset,
 }) => {
+  const { t } = useT();
   const hasActiveFilters =
     name.length > 0 || statuses.length > 0 || tags.length > 0;
 
@@ -44,8 +46,8 @@ const TestRunFilters: React.FunctionComponent<IProps> = ({
             size="small"
             variant="outlined"
             fullWidth
-            label="Name"
-            placeholder="Search by name"
+            label={t("runs.name")}
+            placeholder={t("runs.searchByName")}
             value={name}
             element={TextField}
             minLength={2}
@@ -78,8 +80,8 @@ const TestRunFilters: React.FunctionComponent<IProps> = ({
               <TextField
                 {...params}
                 variant="outlined"
-                label="Tag"
-                placeholder={tags.length === 0 ? "Any tag" : undefined}
+                label={t("runs.tag")}
+                placeholder={tags.length === 0 ? t("runs.anyTag") : undefined}
               />
             )}
           />
@@ -91,6 +93,7 @@ const TestRunFilters: React.FunctionComponent<IProps> = ({
             disableCloseOnSelect
             limitTags={3}
             options={statusOptions}
+            getOptionLabel={(option) => labelOf(t, "testStatus", option)}
             value={statuses}
             onChange={(_event, value) => onStatusesChange(value)}
             renderTags={(value, getTagProps) =>
@@ -99,7 +102,7 @@ const TestRunFilters: React.FunctionComponent<IProps> = ({
                   {...getTagProps({ index })}
                   key={option}
                   size="small"
-                  label={option}
+                  label={labelOf(t, "testStatus", option)}
                 />
               ))
             }
@@ -107,8 +110,10 @@ const TestRunFilters: React.FunctionComponent<IProps> = ({
               <TextField
                 {...params}
                 variant="outlined"
-                label="Status"
-                placeholder={statuses.length === 0 ? "Any status" : undefined}
+                label={t("runs.status")}
+                placeholder={
+                  statuses.length === 0 ? t("runs.anyStatus") : undefined
+                }
               />
             )}
           />
@@ -120,7 +125,7 @@ const TestRunFilters: React.FunctionComponent<IProps> = ({
             onClick={onReset}
             disabled={!hasActiveFilters}
           >
-            Reset
+            {t("runs.reset")}
           </Button>
         </Grid>
       </Grid>

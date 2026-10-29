@@ -2,6 +2,7 @@ import React from "react";
 import { Box, Button, Checkbox } from "@mui/material";
 import { ArrowDownward, ArrowUpward } from "@mui/icons-material";
 import { TestRunDensity } from "./TestRunListControls";
+import { MessageKey, useT } from "../../i18n";
 
 // the grid sorts on its own: the table sorts by clicking its column headers
 export type TestRunSortField = "status" | "name" | "tags";
@@ -11,10 +12,10 @@ export type TestRunSort = {
   direction: "asc" | "desc";
 };
 
-export const SORT_LABELS: Record<TestRunSortField, string> = {
-  name: "Name",
-  tags: "Tags",
-  status: "Status",
+export const SORT_LABELS: Record<TestRunSortField, MessageKey> = {
+  name: "runs.name",
+  tags: "runs.tags",
+  status: "runs.status",
 };
 
 // the direction a field is most useful in when it is first picked
@@ -63,6 +64,7 @@ export const TestRunGridHeader: React.FunctionComponent<{
   onToggleAll,
 }) => {
   const Arrow = sort.direction === "asc" ? ArrowUpward : ArrowDownward;
+  const { t } = useT();
 
   // the table's column widths, so the labels land where its headers are.
   // textAlign is explicit because body carries a global text-align: center,
@@ -77,7 +79,7 @@ export const TestRunGridHeader: React.FunctionComponent<{
         data-testid={`gridSort-${field}`}
         sx={{ textTransform: "none", fontSize: 14, fontWeight: 500 }}
       >
-        {SORT_LABELS[field]}
+        {t(SORT_LABELS[field])}
       </Button>
     </Box>
   );
@@ -97,7 +99,7 @@ export const TestRunGridHeader: React.FunctionComponent<{
           checked={totalCount > 0 && selectedCount === totalCount}
           indeterminate={selectedCount > 0 && selectedCount < totalCount}
           onChange={onToggleAll}
-          inputProps={{ "aria-label": "Select all runs" }}
+          inputProps={{ "aria-label": t("runs.selectAllRuns") }}
           data-testid="gridSelectAll"
         />
       </Box>

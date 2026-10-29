@@ -13,6 +13,7 @@ import {
   neighbourImageNames,
   prefetchImages,
 } from "../../_helpers/imagePrefetch.helper";
+import { useT } from "../../i18n";
 
 const useStyles = makeStyles(() => ({
   modal: {
@@ -22,6 +23,7 @@ const useStyles = makeStyles(() => ({
 
 export const TestDetailsDialog: React.FunctionComponent = () => {
   const classes = useStyles();
+  const { t } = useT();
   const {
     selectedTestRun,
     touched,
@@ -199,12 +201,10 @@ export const TestDetailsDialog: React.FunctionComponent = () => {
       />
       <BaseModal
         open={notSavedChangesModal}
-        title={"You have not saved ignore areas"}
-        submitButtonText={"Discard"}
+        title={t("review.unsavedTitle")}
+        submitButtonText={t("review.discard")}
         onCancel={() => setNotSavedChangesModal(false)}
-        content={
-          <Typography>{`Are you sure you want to discard changes?`}</Typography>
-        }
+        content={<Typography>{t("review.discardConfirm")}</Typography>}
         onSubmit={() => {
           navigate(buildTestRunLocation(selectedBuild?.id, navigationTargetId));
           setNotSavedChangesModal(false);

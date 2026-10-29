@@ -9,12 +9,14 @@ import PasswordField from "../components/PasswordField";
 import { usersService } from "../services";
 import { OIDC_AUTO_REDIRECT } from "../_config/env.config";
 import { useOidcEnabled } from "../_helpers/useOidcEnabled";
+import { useT } from "../i18n";
 
 const LoginForm = () => {
   const location = useLocation();
   const navigate = useNavigate();
 
   const { enqueueSnackbar } = useSnackbar();
+  const { t } = useT();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const dispatch = useUserDispatch();
@@ -69,7 +71,7 @@ const LoginForm = () => {
           data-testid="oidcLoginBtn"
           onClick={() => usersService.startOidcLogin()}
         >
-          Sign in with SSO
+          {t("auth.sso")}
         </Button>
       </Box>
     );
@@ -82,11 +84,11 @@ const LoginForm = () => {
           <Grid item>
             <TextValidator
               validators={["isEmail"]}
-              errorMessages={["Enter a valid email."]}
+              errorMessages={[t("auth.validEmail")]}
               id="email"
               name="email"
               value={email}
-              label={"Email address"}
+              label={t("auth.email")}
               type="text"
               variant="outlined"
               required
@@ -112,16 +114,16 @@ const LoginForm = () => {
             fullWidth
             data-testid="loginBtn"
           >
-            Sign in
+            {t("auth.signIn")}
           </Button>
           <Typography
             variant="body2"
             color="textSecondary"
             sx={{ textAlign: "center" }}
           >
-            No account?{" "}
+            {t("auth.noAccount")}{" "}
             <MuiLink component={Link} to={routes.REGISTER}>
-              Create one
+              {t("auth.createOne")}
             </MuiLink>
           </Typography>
         </Box>

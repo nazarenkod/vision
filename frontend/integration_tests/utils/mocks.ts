@@ -76,9 +76,8 @@ export const mockGetBuilds = async (
       const take = Number(params.get("take"));
       const ciBuildId = params.get("ciBuildId");
       const matching = ciBuildId
-        ? builds.filter(
-            (build) =>
-              build.ciBuildId?.toLowerCase().includes(ciBuildId.toLowerCase()),
+        ? builds.filter((build) =>
+            build.ciBuildId?.toLowerCase().includes(ciBuildId.toLowerCase()),
           )
         : builds;
 
@@ -229,3 +228,9 @@ export const mockMergeTestVariations = async (page: Page, build: Build) => {
     (route) => route.fulfill({ body: JSON.stringify(build) }),
   );
 };
+
+/** Opens the app in Ukrainian, as if the switch had been set before. */
+export const inUkrainian = (page: Page) =>
+  page.addInitScript(() =>
+    window.localStorage.setItem("vision.language", "uk"),
+  );

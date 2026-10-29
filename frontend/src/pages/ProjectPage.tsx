@@ -23,6 +23,7 @@ import {
 } from "../constants";
 import { buildProjectPageUrl } from "../_helpers/route.helpers";
 import { tokens } from "../theme";
+import { useT } from "../i18n";
 
 type BuildView = "changes" | "all" | "a11y";
 const VIEW_KEY = "vrt.buildView";
@@ -43,6 +44,7 @@ const ProjectPage = () => {
   const { selectedBuild } = useBuildState();
   const { testRuns } = useTestRunState();
   const [view, setView] = React.useState<BuildView>(readView);
+  const { t } = useT();
 
   useEffect(() => {
     setHelpSteps(helpDispatch, PROJECT_PAGE_STEPS);
@@ -101,30 +103,38 @@ const ProjectPage = () => {
               value={view}
               onChange={(_, next) => changeView(next)}
               sx={{ px: 3, borderBottom: `1px solid ${tokens.border}` }}
-              aria-label="Build views"
+              aria-label={t("builds.views")}
             >
               <Tab
                 value="changes"
                 label={
                   <Box sx={{ display: "flex", gap: 1, alignItems: "center" }}>
-                    Changes{" "}
+                    {t("builds.changes")}{" "}
                     {!!selectedBuild?.unresolvedCount && (
                       <StatusPill
                         tone="changed"
-                        label={`${selectedBuild.unresolvedCount} to review`}
+                        label={t("builds.toReview", {
+                          count: selectedBuild.unresolvedCount,
+                        })}
                       />
                     )}
                   </Box>
                 }
               />
-              <Tab value="all" label={`All tests · ${testRuns.length}`} />
+              <Tab
+                value="all"
+                label={t("builds.allTests", { count: testRuns.length })}
+              />
               <Tab
                 value="a11y"
                 label={
                   <Box sx={{ display: "flex", gap: 1, alignItems: "center" }}>
-                    Accessibility{" "}
+                    {t("builds.accessibility")}{" "}
                     {a11yNew > 0 && (
-                      <StatusPill tone="changed" label={`${a11yNew} new`} />
+                      <StatusPill
+                        tone="changed"
+                        label={t("builds.a11yNewPill", { count: a11yNew })}
+                      />
                     )}
                   </Box>
                 }

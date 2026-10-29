@@ -3,6 +3,7 @@ import { MessageKey } from "./en";
 import { DICTIONARIES } from "./dictionaries";
 import {
   formatDate,
+  formatFixed,
   formatNumber,
   formatOrdinal,
   initialLanguage,
@@ -56,6 +57,7 @@ export interface I18n {
     params?: Params,
   ) => React.ReactNode;
   formatNumber: (value: number) => string;
+  formatFixed: (value: number, digits: number) => string;
   formatOrdinal: (value: number) => string;
   formatDate: (
     value: string | number | Date,
@@ -73,6 +75,7 @@ const make = (
   tx: (key, nodes, params) =>
     withNodes(translate(DICTIONARIES, language, key, params), nodes),
   formatNumber: (value) => formatNumber(value, language),
+  formatFixed: (value, digits) => formatFixed(value, digits, language),
   formatOrdinal: (value) => formatOrdinal(value, language),
   formatDate: (value, options) => formatDate(value, language, options),
 });
@@ -82,7 +85,7 @@ const I18nContext = React.createContext<I18n>(make("en", () => undefined));
 
 export function LanguageProvider({ children }: { children: React.ReactNode }) {
   const [language, setLanguageState] = React.useState<Language>(() =>
-    initialLanguage(readStored(), navigator.languages ?? [navigator.language]),
+    initialLanguage(readStored()),
   );
 
   React.useEffect(() => {

@@ -1,7 +1,7 @@
 import { expect } from "@playwright/test";
 import { test } from "fixtures";
 import { TEST_PROJECT } from "~client/_test/test.data.helper";
-import { mockGetProjects } from "utils/mocks";
+import { inUkrainian, mockGetProjects } from "utils/mocks";
 
 test.beforeEach(async ({ page }) => {
   await mockGetProjects(page, [TEST_PROJECT]);
@@ -41,9 +41,7 @@ test("switches the header and the page to Ukrainian and keeps it after a reload"
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 test("shows the project settings in Ukrainian", async ({ page, authUser }) => {
-  await page.addInitScript(() =>
-    window.localStorage.setItem("vision.language", "uk"),
-  );
+  await inUkrainian(page);
   await page.goto(`/projects/${TEST_PROJECT.id}/settings`);
 
   await expect(page.getByRole("heading", { level: 1 })).toHaveText(
@@ -66,9 +64,7 @@ test("shows the project settings in Ukrainian", async ({ page, authUser }) => {
 // Ukrainian texts run longer: nothing is cut off or wrapped mid-word
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 test("renders the project list in Ukrainian", async ({ page, authUser }) => {
-  await page.addInitScript(() =>
-    window.localStorage.setItem("vision.language", "uk"),
-  );
+  await inUkrainian(page);
   await page.goto("/projects");
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("Проєкти");
 

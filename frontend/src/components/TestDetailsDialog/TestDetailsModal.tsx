@@ -75,6 +75,7 @@ import ImageDetails, { ImageDetailsProps } from "./ImageDetails";
 import { calculateScale, clampScale } from "../../_helpers/scale.helper";
 import { canCompareToBaseline } from "../../_helpers/testRunStatus.helper";
 import TestStatusChip from "../TestStatusChip";
+import { useT } from "../../i18n";
 
 const useStyles = makeStyles(() => ({
   header: {
@@ -181,6 +182,7 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
   const [stageInitPos, setStageInitPos] = React.useState(defaultStagePos);
   const [stageOffset, setStageOffset] = React.useState(defaultStagePos);
   const [processing, setProcessing] = React.useState(false);
+  const { t } = useT();
   const [isDrawMode, setIsDrawMode] = useState(false);
 
   const [valueOfIgnoreOrCompare, setValueOfIgnoreOrCompare] =
@@ -446,8 +448,7 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
     staticService.getImage(testRun.diffName),
   );
 
-  const applyIgnoreAreaText =
-    "Apply selected ignore area to all images in this build.";
+  const applyIgnoreAreaText = t("review.applyIgnoreArea");
 
   const fitImageToStage = (image: HTMLImageElement, container: HTMLElement) => {
     // the pane's own padding is not room for the image: counted in, the image
@@ -557,7 +558,7 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
 
   const saveIgnoreAreasOrCompareArea = () => {
     if (valueOfIgnoreOrCompare.includes("Ignore")) {
-      saveTestRun(ignoreAreas, "Ignore areas are updated.");
+      saveTestRun(ignoreAreas, t("review.ignoreSaved"));
     } else if (currentImage) {
       const invertedIgnoreAreas = invertIgnoreArea(
         currentImage.width,
@@ -566,10 +567,7 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
       );
 
       handleIgnoreAreaChange(invertedIgnoreAreas);
-      saveTestRun(
-        invertedIgnoreAreas,
-        "Selected area has been inverted to ignore areas and saved.",
-      );
+      saveTestRun(invertedIgnoreAreas, t("review.compareSaved"));
     }
 
     testRunDispatch({
@@ -615,27 +613,21 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
           testRunService.addIgnoreAreas(data).then(() => {
             setProcessing(false);
             setSelectedRectId(undefined);
-            enqueueSnackbar(
-              "Ignore areas are updated in all images in this build.",
-              {
-                variant: "success",
-              },
-            );
+            enqueueSnackbar(t("review.ignoreAppliedAll"), {
+              variant: "success",
+            });
           });
         })
         .catch((error) => {
-          enqueueSnackbar(`There was an error : ${error}`, {
+          enqueueSnackbar(t("review.error", { error: String(error) }), {
             variant: "error",
           });
           setProcessing(false);
         });
     } else {
-      enqueueSnackbar(
-        "There was an error determining which ignore area to apply.",
-        {
-          variant: "error",
-        },
-      );
+      enqueueSnackbar(t("review.ignoreUnknown"), {
+        variant: "error",
+      });
     }
   };
 
@@ -678,7 +670,11 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
           >
             {["Ignore Areas", "Compare Area"].map((eachItem) => (
               <MenuItem key={eachItem} value={eachItem}>
-                {eachItem}
+                {t(
+                  eachItem === "Ignore Areas"
+                    ? "review.ignoreAreas"
+                    : "review.compareArea",
+                )}
               </MenuItem>
             ))}
           </Select>
@@ -707,7 +703,7 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
             <Delete />
           </IconButton>
         </Grid>
-        <Tooltip title="Clears all ignore areas." aria-label="reject">
+        <Tooltip title={t("review.clearIgnore")} aria-label="reject">
           <Grid item>
             <IconButton
               size="small"
@@ -771,7 +767,7 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
             disabled={!testRun.testVariationId}
             onClick={openHistoryTab}
           >
-            History <OpenInNew fontSize="small" />
+            {t("review.history")} <OpenInNew fontSize="small" />
           </Button>
         </Grid>
       </Grid>
@@ -824,12 +820,12 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
         />
         {testRun.diffName && (
           <Grid item>
-            <Tooltip title={"Toggle diff. Hotkey: D"}>
+            <Tooltip title={t("review.toggleDiff")}>
               <Switch
                 checked={isDiffShown}
                 onChange={() => setIsDiffShown(!isDiffShown)}
                 name="Toggle diff"
-                inputProps={{ "aria-label": "Toggle diff" }}
+                inputProps={{ "aria-label": t("review.toggleDiffLabel") }}
               />
             </Tooltip>
           </Grid>
@@ -902,9 +898,12 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
         spacing={2}
       >
         <Grid item>
-          <Typography variant="h6" display="inline">{`Step ${
-            currentRunIndex + 1
-          }/${totalTestRunCount}: `}</Typography>
+          <Typography variant="h6" display="inline">
+            {t("review.step", {
+              current: currentRunIndex + 1,
+              total: totalTestRunCount,
+            })}
+          </Typography>
           <Typography
             variant="h6"
             display="inline"
@@ -932,7 +931,9 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
                   onChange={(event) => setA11yOverlay(event.target.checked)}
                 />
               }
-              label={<Typography variant="body2">Overlay</Typography>}
+              label={
+                <Typography variant="body2">{t("review.overlay")}</Typography>
+              }
             />
           </Grid>
         )}
@@ -961,10 +962,10 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
     <>
       {canCompareToBaseline(testRun) && (
         <Box display="flex" alignItems="center" gap={1}>
-          <MuiTooltip title="Fade the checkpoint out to see the baseline through it">
+          <MuiTooltip title={t("review.fadeHelp")}>
             <Box display="flex" alignItems="center" gap={1} minWidth={0}>
               <Typography variant="caption" color="textSecondary" noWrap>
-                Fade
+                {t("review.fade")}
               </Typography>
               <Box width={80} display="flex" data-testid="overlayOpacity">
                 <Slider
@@ -978,12 +979,12 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
                     setOverlayOpacity(value as number);
                     setIsDiffShown(false);
                   }}
-                  aria-label="Fade to the baseline"
+                  aria-label={t("review.fadeLabel")}
                 />
               </Box>
             </Box>
           </MuiTooltip>
-          <MuiTooltip title="Blend the two as a difference: what matches goes black, and a shift shows as an offset ghost">
+          <MuiTooltip title={t("review.blendHelp")}>
             <ToggleButton
               value="blend"
               size="small"
@@ -1014,11 +1015,7 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
         <TestRunDetails testRun={testRun} />
         {isImageSizeDiffer && (
           <Grid item>
-            <Tooltip
-              title={
-                "Image height/width differ from baseline! Cannot calculate diff!"
-              }
-            >
+            <Tooltip title={t("review.sizeDiffers")}>
               <IconButton size="large">
                 <WarningRounded color="secondary" />
               </IconButton>
@@ -1038,7 +1035,7 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
                   comment,
                 })
                 .then(() =>
-                  enqueueSnackbar("Comment updated", {
+                  enqueueSnackbar(t("review.commentUpdated"), {
                     variant: "success",
                   }),
                 )
@@ -1123,7 +1120,7 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
       </Box>
       <Grid container className={classes.footer}>
         <Grid item xs={3} className={classes.scaleActions}>
-          <Tooltip title={"Zoom In"}>
+          <Tooltip title={t("review.zoomIn")}>
             <IconButton
               onClick={() =>
                 setStageScale(clampScale(stageScale * stageScaleBy))
@@ -1133,7 +1130,7 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
               <ZoomIn />
             </IconButton>
           </Tooltip>
-          <Tooltip title={"Zoom Out"}>
+          <Tooltip title={t("review.zoomOut")}>
             <IconButton
               onClick={() =>
                 setStageScale(clampScale(stageScale / stageScaleBy))
@@ -1143,19 +1140,19 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
               <ZoomOut />
             </IconButton>
           </Tooltip>
-          <Tooltip title={"Original size"}>
+          <Tooltip title={t("review.originalSize")}>
             <IconButton onClick={setOriginalSize} size="large">
               <Fullscreen />
             </IconButton>
           </Tooltip>
-          <Tooltip title={"Fit into screen"}>
+          <Tooltip title={t("review.fit")}>
             <IconButton onClick={fitImagesToStage} size="large">
               <FullscreenExit />
             </IconButton>
           </Tooltip>
         </Grid>
         <Grid item xs={6} className={classes.centerActions}>
-          <Tooltip title={"Hotkey: ArrowLeft"}>
+          <Tooltip title={t("review.hotkeyLeft")}>
             <IconButton
               color="secondary"
               style={{
@@ -1179,7 +1176,7 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
               onOpenVariations={setVariationsMode}
             />
           )}
-          <Tooltip title={"Hotkey: ArrowRight"}>
+          <Tooltip title={t("review.hotkeyRight")}>
             <IconButton
               color="secondary"
               style={{
@@ -1212,7 +1209,7 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
             }
             label={
               <Typography variant="body2" color="textSecondary">
-                Go to the next after Approve/Reject
+                {t("review.goNext")}
               </Typography>
             }
           />
@@ -1221,13 +1218,9 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
       <BaseModal
         open={applyIgnoreDialogOpen}
         title={applyIgnoreAreaText}
-        submitButtonText={"Yes"}
+        submitButtonText={t("review.yes")}
         onCancel={toggleApplyIgnoreDialogOpen}
-        content={
-          <Typography>
-            {`All images in the current build will be re-compared with new ignore area taken into account. Are you sure?`}
-          </Typography>
-        }
+        content={<Typography>{t("review.applyIgnoreConfirm")}</Typography>}
         onSubmit={() => {
           toggleApplyIgnoreDialogOpen();
           applyIgnoreArea();

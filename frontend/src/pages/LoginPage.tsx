@@ -6,12 +6,14 @@ import { AuthLayout } from "../components/AuthLayout";
 import { setHelpSteps, useHelpDispatch, useUserDispatch } from "../contexts";
 import { LOGIN_PAGE_STEPS, routes } from "../constants";
 import { usersService } from "../services";
+import { useT } from "../i18n";
 
 const LoginPage = () => {
   const helpDispatch = useHelpDispatch();
   const userDispatch = useUserDispatch();
   const navigate = useNavigate();
   const { enqueueSnackbar } = useSnackbar();
+  const { t } = useT();
 
   useEffect(() => {
     setHelpSteps(helpDispatch, LOGIN_PAGE_STEPS);
@@ -46,7 +48,7 @@ const LoginPage = () => {
   }, [enqueueSnackbar, navigate, userDispatch]);
 
   return (
-    <AuthLayout title="Sign in">
+    <AuthLayout title={t("auth.signIn")}>
       <LoginForm />
     </AuthLayout>
   );

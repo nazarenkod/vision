@@ -5,6 +5,7 @@ import { TestRun } from "../../types";
 import { Tooltip } from "../Tooltip";
 import { DiffMeter } from "./DiffMeter";
 import { tokens } from "../../theme";
+import { useT } from "../../i18n";
 
 const useStyles = makeStyles((theme: Theme) => ({
   vlmContainer: {
@@ -35,13 +36,14 @@ export const TestRunDetails: React.FunctionComponent<IProps> = ({
   testRun,
 }) => {
   const classes = useStyles();
+  const { t } = useT();
 
   const attributes = [
-    { name: "OS", value: testRun.os },
-    { name: "Device", value: testRun.device },
-    { name: "Browser", value: testRun.browser },
-    { name: "Viewport", value: testRun.viewport },
-    { name: "Custom Tags", value: testRun.customTags },
+    { name: t("review.attr.os"), value: testRun.os },
+    { name: t("review.attr.device"), value: testRun.device },
+    { name: t("review.attr.browser"), value: testRun.browser },
+    { name: t("review.attr.viewport"), value: testRun.viewport },
+    { name: t("review.attr.customTags"), value: testRun.customTags },
   ];
 
   return (
@@ -63,10 +65,10 @@ export const TestRunDetails: React.FunctionComponent<IProps> = ({
       </Grid>
       {testRun.vlmDescription && (
         <Grid item xs={12}>
-          <Tooltip title="AI-generated description of the differences found by the Vision Language Model (VLM).">
+          <Tooltip title={t("review.vlmHelp")}>
             <Paper elevation={0} className={classes.vlmContainer}>
               <Typography variant="caption" className={classes.vlmLabel}>
-                VLM Analysis:
+                {t("review.vlm")}
               </Typography>
               <Typography variant="body2" className={classes.vlmDescription}>
                 {testRun.vlmDescription}

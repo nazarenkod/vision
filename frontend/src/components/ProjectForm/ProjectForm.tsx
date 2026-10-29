@@ -36,9 +36,10 @@ import { insightsService } from "../../services";
 import { A11yProblemSettings } from "./A11yProblemSettings";
 import { deviceLabel } from "../../_helpers/device.helper";
 import { SecretField } from "./SecretField";
-import { MessageKey, useT } from "../../i18n";
+import { MessageKey, Text, useT } from "../../i18n";
 
-const profileLabel = (profile: DeviceProfile) => deviceLabel(profile);
+const profileLabel = (profile: DeviceProfile, text: Text) =>
+  deviceLabel(profile, undefined, text);
 const profileKey = (profile: DeviceProfile) =>
   JSON.stringify([
     profile.os,
@@ -634,7 +635,7 @@ export const MobileSettings: React.FunctionComponent<{
         <MenuItem value="">{t("mobile.noReference")}</MenuItem>
         {deviceOptions.map((device) => (
           <MenuItem key={profileKey(device)} value={profileKey(device)}>
-            {profileLabel(device)}
+            {profileLabel(device, t)}
             {device.checks
               ? ` ${t("mobile.checks", { count: device.checks })}`
               : ""}

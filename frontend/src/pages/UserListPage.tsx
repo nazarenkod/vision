@@ -3,9 +3,11 @@ import { Box, InputAdornment, TextField, Typography } from "@mui/material";
 import { Search } from "@mui/icons-material";
 import UserList from "../components/UserList";
 import { useUserState } from "../contexts";
+import { useT } from "../i18n";
 
 const UserListPage = () => {
   const { userList } = useUserState();
+  const { t } = useT();
   const [query, setQuery] = React.useState("");
   return (
     <Box
@@ -24,19 +26,19 @@ const UserListPage = () => {
         sx={{ display: "flex", alignItems: "center", gap: 2, flexWrap: "wrap" }}
       >
         <Typography variant="h4" component="h1">
-          Users
+          {t("users.title")}
         </Typography>
         <Typography color="textSecondary">
-          {userList.length} {userList.length === 1 ? "person" : "people"}
+          {t("users.people", { count: userList.length })}
         </Typography>
         <Box sx={{ flex: 1 }} />
         <TextField
           size="small"
-          placeholder="Search people"
+          placeholder={t("users.search")}
           value={query}
           onChange={(event) => setQuery(event.target.value)}
           inputProps={{
-            "aria-label": "Search people",
+            "aria-label": t("users.search"),
             "data-testid": "userSearch",
           }}
           InputProps={{

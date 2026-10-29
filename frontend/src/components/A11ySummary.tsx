@@ -19,6 +19,7 @@ import { CountUp } from "./motion/useCountUp";
 import { staggered } from "./motion/Stagger";
 import { EmptyState } from "./EmptyState";
 import { deviceLabel } from "../_helpers/device.helper";
+import { labelOf, useT } from "../i18n";
 
 const Stat: React.FunctionComponent<{
   label: string;
@@ -60,6 +61,7 @@ export const A11ySummary: React.FunctionComponent<{ buildId: string }> = ({
   buildId,
 }) => {
   const { testRuns } = useTestRunState();
+  const { t, tx } = useT();
   const checked = React.useMemo(
     () =>
       testRuns
@@ -83,11 +85,10 @@ export const A11ySummary: React.FunctionComponent<{ buildId: string }> = ({
 
   if (!checked.length) {
     return (
-      <EmptyState title="No accessibility data in this build">
-        Accessibility is checked when a screenshot comes with its Appium page
-        source. In Java or Kotlin add{" "}
-        <code>.uiTree(driver.getPageSource())</code> to the TestRunOptions; for
-        manual testing use the CLI (help menu, Manual checks).
+      <EmptyState title={t("a11ySummary.empty")}>
+        {tx("a11ySummary.emptyHint", {
+          code: <code>.uiTree(driver.getPageSource())</code>,
+        })}
       </EmptyState>
     );
   }
@@ -101,9 +102,7 @@ export const A11ySummary: React.FunctionComponent<{ buildId: string }> = ({
         color="textSecondary"
         sx={{ maxWidth: "72ch" }}
       >
-        {checked.length} of {withTree} screenshots came with a UI tree. Issues
-        are compared with each screen&apos;s baseline, so only issues this build
-        introduced count as new. Filed bugs and false positives do not count.
+        {t("a11ySummary.intro", { checked: checked.length, total: withTree })}
       </Typography>
       <Box
         sx={{
@@ -112,11 +111,11 @@ export const A11ySummary: React.FunctionComponent<{ buildId: string }> = ({
           gap: 1.5,
         }}
       >
-        <Stat label="New issues" value={totalNew} accent />
-        <Stat label="All open issues" value={total} />
-        <Stat label="Screens checked" value={checked.length} />
+        <Stat label={t("a11ySummary.newIssues")} value={totalNew} accent />
+        <Stat label={t("a11ySummary.openIssues")} value={total} />
+        <Stat label={t("a11ySummary.screensChecked")} value={checked.length} />
         <Stat
-          label="Screens with new issues"
+          label={t("a11ySummary.screensWithNew")}
           value={checked.filter((run) => run.a11yNewCount).length}
           accent
         />
@@ -131,11 +130,11 @@ export const A11ySummary: React.FunctionComponent<{ buildId: string }> = ({
         <Table size="small">
           <TableHead>
             <TableRow>
-              <TableCell>Screen</TableCell>
-              <TableCell>Device</TableCell>
-              <TableCell>New</TableCell>
-              <TableCell>Open issues</TableCell>
-              <TableCell>Screenshot</TableCell>
+              <TableCell>{t("a11ySummary.screen")}</TableCell>
+              <TableCell>{t("a11ySummary.device")}</TableCell>
+              <TableCell>{t("a11ySummary.new")}</TableCell>
+              <TableCell>{t("a11ySummary.open")}</TableCell>
+              <TableCell>{t("a11ySummary.screenshot")}</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
@@ -161,7 +160,7 @@ export const A11ySummary: React.FunctionComponent<{ buildId: string }> = ({
                     color: tokens.textSecondary,
                   }}
                 >
-                  {deviceLabel(run, "—")}
+                  {deviceLabel(run, "—", t)}
                 </TableCell>
                 <TableCell>
                   {run.a11yNewCount ? (
@@ -195,7 +194,7 @@ export const A11ySummary: React.FunctionComponent<{ buildId: string }> = ({
                           ? "new"
                           : "passed"
                     }
-                    label={run.status}
+                    label={labelOf(t, "testStatus", run.status)}
                   />
                 </TableCell>
               </TableRow>

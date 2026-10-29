@@ -32,6 +32,7 @@ import { staggered } from "./motion/Stagger";
 import { shimmer } from "./SkeletonList";
 import { EmptyState } from "./EmptyState";
 import { useDecisionSnackbar } from "./useDecisionSnackbar";
+import { english, MessageKey, Text, useT } from "../i18n";
 
 const MAX_THUMBS = 6;
 const MAX_AUTO_SUMMARIES = 10;
@@ -54,31 +55,41 @@ const variantLabel = (run: TestRun) =>
     .filter(Boolean)
     .join(" · ") || run.name;
 
-export function describeChange(change: StructuralChange): string {
+export function describeChange(
+  change: StructuralChange,
+  text: Text = english,
+): string {
+  // before and after are what the UI tree held: data, as it was
+  const params = {
+    element: change.element,
+    before: String(change.before ?? ""),
+    after: String(change.after ?? ""),
+  };
   switch (change.kind) {
     case "text":
+      return text("groups.textOf", params);
     case "label":
-      return `${change.kind === "text" ? "Text" : "Label"} of ${change.element}: “${change.before}” → “${change.after}”`;
+      return text("groups.labelOf", params);
     case "added":
-      return `${change.element} appeared`;
+      return text("groups.appeared", params);
     case "removed":
-      return `${change.element} disappeared`;
+      return text("groups.disappeared", params);
     case "resized":
-      return `${change.element} resized ${change.before} → ${change.after} dp`;
+      return text("groups.resized", params);
     case "state":
-      return `${change.element}: ${change.before} → ${change.after}`;
+      return text("groups.state", params);
     default:
-      return `${change.element} moved`;
+      return text("groups.moved", params);
   }
 }
 
 const VERDICT: Record<
   GroupSummary["verdict"],
-  { tone: PillTone; label: string }
+  { tone: PillTone; label: MessageKey }
 > = {
-  intended: { tone: "passed", label: "Likely intended" },
-  regression: { tone: "failed", label: "Possible regression" },
-  noise: { tone: "neutral", label: "Probably noise" },
+  intended: { tone: "passed", label: "groups.intended" },
+  regression: { tone: "failed", label: "groups.regression" },
+  noise: { tone: "neutral", label: "groups.noise" },
 };
 
 const Tag: React.FunctionComponent<{
@@ -104,74 +115,84 @@ const Tag: React.FunctionComponent<{
 const Thumb: React.FunctionComponent<{ run: TestRun; onOpen: () => void }> = ({
   run,
   onOpen,
-}) => (
-  <ButtonBase
-    onClick={onOpen}
-    aria-label={`Open ${run.name} ${variantLabel(run)}`}
-    sx={{
-      display: "flex",
-      flexDirection: "column",
-      alignItems: "stretch",
-      gap: 0.75,
-      width: 112,
-      borderRadius: 2,
-      "&:hover .thumb, &:focus-visible .thumb": {
-        transform: "translateY(-2px)",
-      },
-    }}
-  >
-    <Box
-      className="thumb"
-      component="img"
-      src={staticService.getImage(
-        run.diffThumbnailName ?? run.imageThumbnailName ?? run.imageName,
-      )}
-      alt=""
-      loading="lazy"
-      sx={{
-        width: 112,
-        height: 160,
-        // whole screen: a change at the bottom (a menu) must show too
-        objectFit: "contain",
-        borderRadius: 2,
-        p: 0.75,
-        boxSizing: "border-box",
-        background: tokens.lightbox,
-        boxShadow: tokens.shadowShot,
-        transition: `transform ${motion.base}ms ${motion.easing}`,
-      }}
-    />
-    <Box
+}) => {
+  const { t, formatFixed } = useT();
+  return (
+    <ButtonBase
+      onClick={onOpen}
+      aria-label={t("groups.open", {
+        name: run.name,
+        variant: variantLabel(run),
+      })}
       sx={{
         display: "flex",
-        justifyContent: "space-between",
-        gap: 0.5,
-        font: `400 11px ${tokens.mono}`,
+        flexDirection: "column",
+        alignItems: "stretch",
+        gap: 0.75,
+        width: 112,
+        borderRadius: 2,
+        "&:hover .thumb, &:focus-visible .thumb": {
+          transform: "translateY(-2px)",
+        },
       }}
     >
-      <Typography noWrap sx={{ font: "inherit", color: tokens.textSecondary }}>
-        {variantLabel(run)}
-      </Typography>
-      {run.diffPercent > 0 && (
-        <span style={{ color: tokens.diff, flexShrink: 0 }}>
-          {run.diffPercent.toFixed(1)}%
-        </span>
-      )}
-    </Box>
-    <RunFlags run={run} />
-  </ButtonBase>
-);
+      <Box
+        className="thumb"
+        component="img"
+        src={staticService.getImage(
+          run.diffThumbnailName ?? run.imageThumbnailName ?? run.imageName,
+        )}
+        alt=""
+        loading="lazy"
+        sx={{
+          width: 112,
+          height: 160,
+          // whole screen: a change at the bottom (a menu) must show too
+          objectFit: "contain",
+          borderRadius: 2,
+          p: 0.75,
+          boxSizing: "border-box",
+          background: tokens.lightbox,
+          boxShadow: tokens.shadowShot,
+          transition: `transform ${motion.base}ms ${motion.easing}`,
+        }}
+      />
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "space-between",
+          gap: 0.5,
+          font: `400 11px ${tokens.mono}`,
+        }}
+      >
+        <Typography
+          noWrap
+          sx={{ font: "inherit", color: tokens.textSecondary }}
+        >
+          {variantLabel(run)}
+        </Typography>
+        {run.diffPercent > 0 && (
+          <span style={{ color: tokens.diff, flexShrink: 0 }}>
+            {formatFixed(run.diffPercent, 1)}%
+          </span>
+        )}
+      </Box>
+      <RunFlags run={run} />
+    </ButtonBase>
+  );
+};
 
-const FLAG_LABEL: Record<CaptureWarning["kind"], string> = {
-  loading: "Loading",
-  "screen-mismatch": "Other screen?",
-  "duplicate-screen": "Duplicate?",
+const FLAG_LABEL: Record<CaptureWarning["kind"], MessageKey> = {
+  loading: "groups.flag.loading",
+  "screen-mismatch": "groups.flag.screenMismatch",
+  "duplicate-screen": "groups.flag.duplicateScreen",
 };
 
 /** Small flags for what the UI tree noticed about a screenshot. */
 export const RunFlags: React.FunctionComponent<{ run: TestRun }> = ({
   run,
 }) => {
+  const { t } = useT();
   const warnings = captureWarnings(run);
   if (!warnings.length && !run.semanticChangeCount) return null;
   return (
@@ -181,17 +202,21 @@ export const RunFlags: React.FunctionComponent<{ run: TestRun }> = ({
           <span>
             <StatusPill
               tone="failed"
-              label={FLAG_LABEL[warning.kind] ?? warning.kind}
+              label={
+                FLAG_LABEL[warning.kind]
+                  ? t(FLAG_LABEL[warning.kind])
+                  : warning.kind
+              }
             />
           </span>
         </Tooltip>
       ))}
       {!!run.semanticChangeCount && (
-        <Tooltip title="Elements changed in ways the screenshot does not show: labels, states, invisible controls">
+        <Tooltip title={t("groups.hiddenHelp")}>
           <span>
             <StatusPill
               tone="changed"
-              label={`${run.semanticChangeCount} hidden`}
+              label={t("groups.hidden", { count: run.semanticChangeCount })}
             />
           </span>
         </Tooltip>
@@ -215,6 +240,7 @@ export const ChangeGroups: React.FunctionComponent<Props> = ({
 }) => {
   const navigate = useNavigate();
   const { enqueueSnackbar } = useSnackbar();
+  const { t, tx, formatFixed } = useT();
   const announce = useDecisionSnackbar();
   const { testRuns } = useTestRunState();
   const aiStatus = useAiStatus();
@@ -261,9 +287,12 @@ export const ChangeGroups: React.FunctionComponent<Props> = ({
           .catch(
             (error) =>
               !cancelled &&
-              enqueueSnackbar(`Cannot load change groups: ${error}`, {
-                variant: "error",
-              }),
+              enqueueSnackbar(
+                t("groups.loadFailed", { error: String(error) }),
+                {
+                  variant: "error",
+                },
+              ),
           );
       },
       groups ? REFRESH_DELAY_MS : 0,
@@ -337,7 +366,7 @@ export const ChangeGroups: React.FunctionComponent<Props> = ({
         ids: group.testRuns.map((run) => run.id),
         ignoreAreas: [{ id: uuid(), ...group.noise.ignoreArea }],
       });
-      enqueueSnackbar("Ignore area added; the screenshots are compared again", {
+      enqueueSnackbar(t("groups.ignoreAdded"), {
         variant: "success",
       });
     } catch (error) {
@@ -360,9 +389,7 @@ export const ChangeGroups: React.FunctionComponent<Props> = ({
 
   if (!groups.length) {
     return (
-      <EmptyState title="Nothing needs a decision in this build">
-        Every screenshot matches its baseline or has been reviewed.
-      </EmptyState>
+      <EmptyState title={t("groups.empty")}>{t("groups.emptyHint")}</EmptyState>
     );
   }
 
@@ -402,7 +429,7 @@ export const ChangeGroups: React.FunctionComponent<Props> = ({
             >
               <IconButton
                 size="small"
-                aria-label={expanded ? "Collapse group" : "Expand group"}
+                aria-label={t(expanded ? "groups.collapse" : "groups.expand")}
                 aria-expanded={expanded}
                 data-testid="toggleGroup"
                 onClick={() => toggleGroup(group.id)}
@@ -421,16 +448,28 @@ export const ChangeGroups: React.FunctionComponent<Props> = ({
                 />
               )}
               <Typography variant="h6" component="h3">
-                {group.kind === "new" ? "New screenshots" : group.title}
+                {group.kind === "new"
+                  ? t("groups.newScreenshots")
+                  : group.title}
               </Typography>
               <Typography variant="body2" color="textSecondary">
                 {group.kind === "new"
-                  ? `${group.testRuns.length} without a baseline`
+                  ? t("groups.withoutBaseline", {
+                      count: group.testRuns.length,
+                    })
                   : group.kind === "component"
-                    ? `Changed the same way on ${group.screens.length} screens`
-                    : `${many ? `Same change in ${group.testRuns.length} screenshots` : "1 screenshot"}${
+                    ? t("groups.sameOnScreens", {
+                        count: group.screens.length,
+                      })
+                    : `${
+                        many
+                          ? t("groups.sameChange", {
+                              count: group.testRuns.length,
+                            })
+                          : t("groups.oneScreenshot")
+                      }${
                         group.screens.length > 1
-                          ? ` · ${group.screens.length} screens`
+                          ? t("groups.screens", { count: group.screens.length })
                           : ""
                       }`}
               </Typography>
@@ -442,8 +481,8 @@ export const ChangeGroups: React.FunctionComponent<Props> = ({
                   onClick={() => ignoreNoise(group)}
                 >
                   {noise.kind === "status-bar"
-                    ? "Ignore status bar"
-                    : "Ignore this area"}
+                    ? t("groups.ignoreStatusBar")
+                    : t("groups.ignoreArea")}
                 </Button>
               )}
               <Button
@@ -453,7 +492,7 @@ export const ChangeGroups: React.FunctionComponent<Props> = ({
                 sx={{ color: tokens.status.failed.fg }}
                 onClick={() => setConfirm({ group, action: "reject" })}
               >
-                {many ? "Reject all" : "Reject"}
+                {t(many ? "groups.rejectAll" : "groups.reject")}
               </Button>
               <Button
                 variant="contained"
@@ -461,10 +500,10 @@ export const ChangeGroups: React.FunctionComponent<Props> = ({
                 onClick={() => setConfirm({ group, action: "approve" })}
               >
                 {group.kind === "new"
-                  ? "Accept as baselines"
+                  ? t("groups.acceptBaselines")
                   : many
-                    ? `Approve all ${group.testRuns.length}`
-                    : "Approve"}
+                    ? t("groups.approveAll", { count: group.testRuns.length })
+                    : t("groups.approve")}
               </Button>
             </Box>
 
@@ -485,25 +524,24 @@ export const ChangeGroups: React.FunctionComponent<Props> = ({
 
                 {!!group.alsoChangedElsewhere?.length && (
                   <Typography variant="body2" color="textSecondary">
-                    The component changed the same way on{" "}
-                    {group.alsoChangedElsewhere.map((run, index) => (
-                      <React.Fragment key={run.id}>
-                        {index > 0 && ", "}
-                        <ButtonBase
-                          onClick={() => open(run)}
-                          sx={{
-                            font: "inherit",
-                            color: tokens.brand,
-                            textDecoration: "underline",
-                            verticalAlign: "baseline",
-                          }}
-                        >
-                          {run.name}
-                        </ButtonBase>
-                      </React.Fragment>
-                    ))}{" "}
-                    too, but those changed elsewhere as well and are reviewed on
-                    their own.
+                    {tx("groups.alsoElsewhere", {
+                      runs: group.alsoChangedElsewhere.map((run, index) => (
+                        <React.Fragment key={run.id}>
+                          {index > 0 && ", "}
+                          <ButtonBase
+                            onClick={() => open(run)}
+                            sx={{
+                              font: "inherit",
+                              color: tokens.brand,
+                              textDecoration: "underline",
+                              verticalAlign: "baseline",
+                            }}
+                          >
+                            {run.name}
+                          </ButtonBase>
+                        </React.Fragment>
+                      )),
+                    })}
                   </Typography>
                 )}
 
@@ -517,8 +555,8 @@ export const ChangeGroups: React.FunctionComponent<Props> = ({
                       fontSize: 13.5,
                     }}
                   >
-                    <Tag>UI TREE</Tag>
-                    <span>{describeChange(change)}</span>
+                    <Tag>{t("groups.uiTree")}</Tag>
+                    <span>{describeChange(change, t)}</span>
                   </Box>
                 ))}
 
@@ -537,18 +575,20 @@ export const ChangeGroups: React.FunctionComponent<Props> = ({
                       <Skeleton width={360} />
                     ) : summary === "error" ? (
                       <Button size="small" onClick={() => summarize(group)}>
-                        Explain this change
+                        {t("groups.explain")}
                       </Button>
                     ) : (
                       <>
                         <span>{summary.summary}</span>
                         <StatusPill
                           tone={VERDICT[summary.verdict].tone}
-                          label={`${VERDICT[summary.verdict].label} · ${summary.confidence.toFixed(2)}`}
+                          label={`${t(VERDICT[summary.verdict].label)} · ${formatFixed(summary.confidence, 2)}`}
                           title={
                             summary.source === "rules"
-                              ? "Decided by rules, no AI call"
-                              : `Model: ${summary.model}`
+                              ? t("groups.byRules")
+                              : t("groups.model", {
+                                  model: summary.model ?? "",
+                                })
                           }
                         />
                       </>
@@ -568,9 +608,11 @@ export const ChangeGroups: React.FunctionComponent<Props> = ({
                     <Thumb key={run.id} run={run} onOpen={() => open(run)} />
                   ))}
                   {group.testRuns.length > MAX_THUMBS && (
-                    <Tooltip title="Open the first one to step through all of them">
+                    <Tooltip title={t("groups.openFirst")}>
                       <Typography variant="body2" color="textSecondary">
-                        + {group.testRuns.length - MAX_THUMBS} more
+                        {t("groups.more", {
+                          count: group.testRuns.length - MAX_THUMBS,
+                        })}
                       </Typography>
                     </Tooltip>
                   )}
@@ -585,20 +627,25 @@ export const ChangeGroups: React.FunctionComponent<Props> = ({
         open={!!confirm}
         title={
           confirm
-            ? `${confirm.action === "approve" ? "Approve" : "Reject"} ${confirm.group.testRuns.length} screenshot${
-                confirm.group.testRuns.length > 1 ? "s" : ""
-              }?`
+            ? t(
+                confirm.action === "approve"
+                  ? "groups.approveTitle"
+                  : "groups.rejectTitle",
+                { count: confirm.group.testRuns.length },
+              )
             : ""
         }
-        submitButtonText={confirm?.action === "approve" ? "Approve" : "Reject"}
+        submitButtonText={t(
+          confirm?.action === "approve" ? "groups.approve" : "groups.reject",
+        )}
         onCancel={() => setConfirm(null)}
         onSubmit={decide}
         content={
           <Typography>
             {confirm?.action === "approve"
-              ? "They become the new baselines for their screens and devices."
-              : "They stay as they are and the build keeps failing until fixed."}
-            {busy ? " Working…" : ""}
+              ? t("groups.approveText")
+              : t("groups.rejectText")}
+            {busy ? t("groups.working") : ""}
           </Typography>
         }
       />

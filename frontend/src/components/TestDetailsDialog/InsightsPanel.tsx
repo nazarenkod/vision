@@ -8,7 +8,9 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
+  IconButton,
   Link,
+  Menu,
   MenuItem,
   Skeleton,
   Tab,
@@ -17,7 +19,7 @@ import {
   Tooltip,
   Typography,
 } from "@mui/material";
-import { AdsClick } from "@mui/icons-material";
+import { MoreHoriz, VisibilityOffOutlined } from "@mui/icons-material";
 import { useSnackbar } from "notistack";
 import { v4 as uuid } from "uuid";
 import { useProjectState, useUserState } from "../../contexts";
@@ -36,6 +38,9 @@ import { CrossDevicePanel } from "./CrossDevicePanel";
 import { JiraBugDialog } from "./JiraBugDialog";
 import { tokens } from "../../theme";
 import { labelOf, useT } from "../../i18n";
+import { WhatsCompared } from "./WhatsCompared";
+import { groupAreas, splitElement } from "./changedAreas";
+import { IgnoreArea } from "../../types/ignoreArea";
 
 type JiraDialog = { mode: "link"; violationIds: string[] } | null;
 
@@ -58,9 +63,7 @@ interface Props {
   // element-level changes, rules and warnings, loaded by the dialog for the overlay too
   structure: StructureInfo | null | undefined;
   onStructureChanged: () => void;
-  // picking an element on the screenshot, kept by the dialog that owns the image
-  pickMode: boolean;
-  onPickModeChange: (on: boolean) => void;
+  // an element chosen on the screenshot for the full rule form (REQ-024-10)
   pickedElement?: PickableElement;
   onPickedDone: () => void;
   // outlines an element chosen in the rule dialog on the screenshot
@@ -70,13 +73,19 @@ interface Props {
   onPreviewRegion?: (
     region: { x: number; y: number; width: number; height: number } | undefined,
   ) => void;
+  // a rule or an area the pointer is over, lit up on the screenshots (REQ-024-24)
+  onPreviewMark?: (id: string | undefined) => void;
+  // replaces a saved area with a rule for the element it covers (REQ-024-51)
+  onUseElement: (areaId: string) => void;
+  // the dialog is adding or removing a rule
+  ruleBusy?: boolean;
 }
 
 type RuleDraft = {
   selector: string;
   // what the selector was picked from, when picked on the screenshot
   element?: string;
-  action: "ignore" | "tolerate";
+  action: "ignore" | "tolerate" | "compare";
   maxDiffPercent: number;
   scope: "screen" | "project";
 };
@@ -97,13 +106,14 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
   aiEnabled,
   structure,
   onStructureChanged,
-  pickMode,
-  onPickModeChange,
   pickedElement,
   onPickedDone,
   onPreviewElement,
   onPreviewViolation,
   onPreviewRegion,
+  onPreviewMark,
+  onUseElement,
+  ruleBusy,
 }) => {
   const { enqueueSnackbar } = useSnackbar();
   const { t, tx } = useT();
@@ -219,6 +229,23 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
       () => enqueueSnackbar(t("panel.copied"), { variant: "success" }),
       () => enqueueSnackbar(text, { variant: "info" }),
     );
+  };
+
+  // an ignore rule for this screen, straight from a noise hint (REQ-024-40)
+  const ignoreElement = async (selector: string) => {
+    if (
+      await run(
+        () =>
+          insightsService.addElementRule(testRun.id, {
+            scope: "screen",
+            selector,
+            action: "ignore",
+          }),
+        t("panel.ruleAdded"),
+      )
+    ) {
+      onStructureChanged();
+    }
   };
 
   const addIgnoreArea = (area: {
@@ -825,28 +852,114 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
     }
   };
 
+  // Ignore at hand; Compare only and Allow changes one step away (REQ-024-41)
+  const [actionsFor, setActionsFor] = React.useState<{
+    anchor: HTMLElement;
+    resourceId: string;
+  } | null>(null);
+  // quiet icons: a text button on every row drowned the elements out
+  const quietIcon = {
+    width: 28,
+    height: 28,
+    color: tokens.textMuted,
+    "&:hover, &:focus-visible": { color: tokens.brand },
+  } as const;
   const elementActions = (resourceId: string | null) =>
     canEdit && resourceId ? (
-      <Box
-        component="span"
-        sx={{ display: "inline-flex", gap: 0.5, ml: "auto", flexShrink: 0 }}
-      >
-        <Button
+      <>
+        <Tooltip title={t("panel.ignoreElement")}>
+          <IconButton
+            size="small"
+            aria-label={t("panel.ignore")}
+            onClick={() => openRule(resourceId, "ignore")}
+            sx={quietIcon}
+          >
+            <VisibilityOffOutlined sx={{ fontSize: 18 }} />
+          </IconButton>
+        </Tooltip>
+        <IconButton
           size="small"
-          sx={{ minWidth: 0, px: 0.75 }}
-          onClick={() => openRule(resourceId, "ignore")}
+          aria-label={t("compared.more")}
+          data-testid="changedAreaMore"
+          onClick={(event) =>
+            setActionsFor({ anchor: event.currentTarget, resourceId })
+          }
+          sx={quietIcon}
         >
-          {t("panel.ignore")}
-        </Button>
-        <Button
-          size="small"
-          sx={{ minWidth: 0, px: 0.75 }}
-          onClick={() => openRule(resourceId, "tolerate")}
-        >
-          {t("panel.tolerance")}
-        </Button>
-      </Box>
+          <MoreHoriz sx={{ fontSize: 18 }} />
+        </IconButton>
+      </>
     ) : null;
+
+  const rowSx = {
+    display: "grid",
+    gridTemplateColumns: "minmax(0, 1fr) auto",
+    alignItems: "center",
+    columnGap: 1,
+    py: 0.5,
+    px: 1,
+    mx: -1,
+    borderRadius: 1,
+    "&:hover": { bgcolor: tokens.subtle },
+  } as const;
+
+  const sectionTitle = (title: string, count: number) => (
+    <Typography variant="subtitle2" sx={{ mb: 0.25 }}>
+      {title}
+      <Box component="span" sx={{ color: tokens.textMuted, ml: 0.75 }}>
+        {count}
+      </Box>
+    </Typography>
+  );
+
+  const actionsCell = (children: React.ReactNode) => (
+    <Box sx={{ display: "flex", alignItems: "center", gap: 0.25 }}>
+      {children}
+    </Box>
+  );
+
+  // the name leads; the type and the id follow quietly, so twenty rows stay scannable
+  const elementCell = (element: string) => {
+    const { type, name, id } = splitElement(element);
+    return (
+      <Box sx={{ minWidth: 0 }}>
+        <Box
+          sx={{
+            fontSize: 14,
+            lineHeight: 1.35,
+            color: tokens.text,
+            overflowWrap: "anywhere",
+            display: "-webkit-box",
+            WebkitLineClamp: 2,
+            WebkitBoxOrient: "vertical",
+            overflow: "hidden",
+          }}
+          title={name ?? undefined}
+        >
+          {name ?? type}
+        </Box>
+        <Box
+          sx={{
+            fontSize: 12,
+            lineHeight: 1.4,
+            color: tokens.textMuted,
+            whiteSpace: "nowrap",
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+          }}
+          title={id ?? undefined}
+        >
+          {name ? type : null}
+          {name && id ? " · " : null}
+          {id && (
+            <Box component="span" sx={{ font: `400 12px ${tokens.mono}` }}>
+              {id}
+            </Box>
+          )}
+        </Box>
+      </Box>
+    );
+  };
 
   const changesTab = () => {
     if (structure === undefined)
@@ -869,25 +982,23 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
       !structure.warnings.length;
     return (
       <>
-        {canEdit && withUiTree && (
-          <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
-            <Button
-              size="small"
-              variant={pickMode ? "contained" : "outlined"}
-              startIcon={<AdsClick fontSize="small" />}
-              sx={{ alignSelf: "flex-start" }}
-              onClick={() => onPickModeChange(!pickMode)}
-              data-testid="pickElement"
-            >
-              {t(pickMode ? "panel.cancelPicking" : "panel.pick")}
-            </Button>
-            {pickMode && (
-              <Typography variant="body2" color="textSecondary">
-                {t("panel.pickHelp")}
-              </Typography>
-            )}
-          </Box>
-        )}
+        <WhatsCompared
+          structure={structure}
+          areas={
+            [
+              ...JSON.parse(testRun.ignoreAreas ?? "[]"),
+              ...JSON.parse(testRun.tempIgnoreAreas ?? "[]"),
+            ] as IgnoreArea[]
+          }
+          canEdit={canEdit}
+          busy={submitting || !!ruleBusy}
+          onRemove={(rule) =>
+            // a rule for every screen is asked about: it changes the whole project
+            rule.scope === "project" ? setRemoving(rule) : removeRule(rule)
+          }
+          onUseElement={onUseElement}
+          onPreview={(id) => onPreviewMark?.(id)}
+        />
         {structure.warnings.map((warning) => (
           <Alert key={warning.kind} severity="warning" sx={{ py: 0 }}>
             {warning.message}
@@ -909,7 +1020,18 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
             severity="info"
             sx={{ py: 0 }}
             action={
-              hint.ignoreArea && canEdit ? (
+              canEdit && hint.element ? (
+                // a rule follows the element when the layout moves; an area does not (REQ-024-40)
+                <Button
+                  size="small"
+                  data-testid="hintIgnoreElement"
+                  onClick={() =>
+                    hint.element && ignoreElement(hint.element.selector)
+                  }
+                >
+                  {t("panel.ignore")}
+                </Button>
+              ) : hint.ignoreArea && canEdit ? (
                 <Button
                   size="small"
                   onClick={() => addIgnoreArea(hint.ignoreArea!)}
@@ -930,55 +1052,70 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
           </Typography>
         )}
         {structure.regions.length > 0 && (
-          <Box sx={{ display: "flex", flexDirection: "column", gap: 0.5 }}>
-            <Typography variant="subtitle2">
-              {t("panel.changedAreas")}
-            </Typography>
-            {structure.regions.map((area, index) => (
+          <Box sx={{ display: "flex", flexDirection: "column" }}>
+            {sectionTitle(t("panel.changedAreas"), structure.regions.length)}
+            {groupAreas(structure.regions).map((group, index) => (
               <Box
-                key={index}
+                key={group.element ?? `area-${index}`}
                 data-testid="changedArea"
-                onMouseEnter={() => onPreviewRegion?.(area.region)}
+                onMouseEnter={() => onPreviewRegion?.(group.bounds)}
                 onMouseLeave={() => onPreviewRegion?.(undefined)}
-                sx={{
-                  borderRadius: 1,
-                  px: 0.5,
-                  mx: -0.5,
-                  "&:hover": { bgcolor: tokens.subtle },
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 1,
-                  fontSize: 14,
-                }}
+                sx={rowSx}
               >
-                <span
-                  style={{
-                    color: area.element ? tokens.text : tokens.textSecondary,
-                  }}
-                >
-                  {index + 1}.{" "}
-                  {area.element ?? t("panel.areaAt", { ...area.region })}
-                </span>
-                {elementActions(area.resourceId)}
+                {group.element ? (
+                  elementCell(group.element)
+                ) : (
+                  <Box sx={{ fontSize: 14, color: tokens.textSecondary }}>
+                    {t("panel.areaAt", { ...group.regions[0] })}
+                  </Box>
+                )}
+                {actionsCell(
+                  <>
+                    {group.regions.length > 1 && (
+                      <Tooltip
+                        title={t("panel.spots", {
+                          count: group.regions.length,
+                        })}
+                      >
+                        <Box
+                          component="span"
+                          sx={{
+                            font: `600 11px ${tokens.mono}`,
+                            color: tokens.textSecondary,
+                            bgcolor: tokens.subtle,
+                            border: `1px solid ${tokens.border}`,
+                            borderRadius: 1,
+                            px: 0.5,
+                            mr: 0.25,
+                          }}
+                        >
+                          ×{group.regions.length}
+                        </Box>
+                      </Tooltip>
+                    )}
+                    {elementActions(group.resourceId)}
+                  </>,
+                )}
               </Box>
             ))}
           </Box>
         )}
         {visibleChanges.length > 0 && (
-          <Box sx={{ display: "flex", flexDirection: "column", gap: 0.5 }}>
-            <Typography variant="subtitle2">{t("panel.fromTree")}</Typography>
+          <Box sx={{ display: "flex", flexDirection: "column" }}>
+            {sectionTitle(t("panel.fromTree"), visibleChanges.length)}
             {visibleChanges.map((change) => (
-              <Box
-                key={`${change.kind}:${change.key}`}
-                sx={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 1,
-                  fontSize: 14,
-                }}
-              >
-                <span>{describeChange(change, t)}</span>
-                {elementActions(change.resourceId || null)}
+              <Box key={`${change.kind}:${change.key}`} sx={rowSx}>
+                <Box
+                  sx={{
+                    fontSize: 14,
+                    lineHeight: 1.35,
+                    minWidth: 0,
+                    overflowWrap: "anywhere",
+                  }}
+                >
+                  {describeChange(change, t)}
+                </Box>
+                {actionsCell(elementActions(change.resourceId || null))}
               </Box>
             ))}
           </Box>
@@ -1007,68 +1144,10 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
             ))}
           </Box>
         )}
-        {(structure.rules.length > 0 || structure.systemBars.length > 0) && (
-          <Box
-            sx={{
-              display: "flex",
-              flexDirection: "column",
-              gap: 0.5,
-              borderTop: `1px solid ${tokens.border}`,
-              pt: 1.5,
-            }}
-          >
-            <Typography variant="subtitle2">{t("panel.rules")}</Typography>
-            {structure.systemBars.length > 0 && (
-              <Typography variant="body2" color="textSecondary">
-                {t("panel.systemBars")}
-              </Typography>
-            )}
-            {structure.rules.map((rule) => (
-              <Box
-                key={rule.id}
-                data-testid="elementRule"
-                sx={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 1,
-                  fontSize: 13.5,
-                }}
-              >
-                <StatusPill
-                  tone="neutral"
-                  label={t(
-                    rule.scope === "project"
-                      ? "panel.allScreens"
-                      : "panel.thisScreen",
-                  )}
-                />
-                <Box component="code" sx={{ font: `500 12px ${tokens.mono}` }}>
-                  {rule.selector}
-                </Box>
-                <span style={{ color: tokens.textSecondary }}>
-                  {rule.action === "ignore"
-                    ? t("panel.ignored")
-                    : `±${rule.maxDiffPercent}%`}{" "}
-                  {t("panel.found", { count: rule.matches })}
-                </span>
-                {canEdit && (
-                  <Button
-                    size="small"
-                    sx={{ ml: "auto", minWidth: 0 }}
-                    disabled={submitting}
-                    // a rule for every screen is asked about: it changes the whole project
-                    onClick={() =>
-                      rule.scope === "project"
-                        ? setRemoving(rule)
-                        : removeRule(rule)
-                    }
-                  >
-                    {t("panel.remove")}
-                  </Button>
-                )}
-              </Box>
-            ))}
-          </Box>
+        {structure.systemBars.length > 0 && (
+          <Typography variant="body2" color="textSecondary">
+            {t("panel.systemBars")}
+          </Typography>
         )}
         {canEdit && withUiTree && (
           <Button
@@ -1259,6 +1338,28 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
           </Button>
         </DialogActions>
       </Dialog>
+      <Menu
+        open={!!actionsFor}
+        anchorEl={actionsFor?.anchor}
+        onClose={() => setActionsFor(null)}
+      >
+        <MenuItem
+          onClick={() => {
+            if (actionsFor) openRule(actionsFor.resourceId, "compare");
+            setActionsFor(null);
+          }}
+        >
+          {t("select.compare")}
+        </MenuItem>
+        <MenuItem
+          onClick={() => {
+            if (actionsFor) openRule(actionsFor.resourceId, "tolerate");
+            setActionsFor(null);
+          }}
+        >
+          {t("panel.allowSmall")}
+        </MenuItem>
+      </Menu>
       <Dialog
         open={!!removing}
         onClose={() => setRemoving(null)}
@@ -1293,7 +1394,9 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
         <DialogTitle>
           {ruleDraft?.action === "tolerate"
             ? t("panel.allowSmall")
-            : t("panel.ignoreElement")}
+            : ruleDraft?.action === "compare"
+              ? t("select.compare")
+              : t("panel.ignoreElement")}
         </DialogTitle>
         <DialogContent
           sx={{
@@ -1348,17 +1451,6 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
           <Box sx={{ display: "flex", gap: 1, mt: -1.5 }}>
             <Button
               size="small"
-              startIcon={<AdsClick fontSize="small" />}
-              onClick={() => {
-                const draft = ruleDraft;
-                closeRule();
-                if (draft) onPickModeChange(true);
-              }}
-            >
-              {t("panel.pickOnScreenshot")}
-            </Button>
-            <Button
-              size="small"
               sx={{ color: tokens.textSecondary, ml: "auto" }}
               onClick={() => setAdvancedSelector((value) => !value)}
             >
@@ -1391,16 +1483,20 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
             select
             label={t("panel.whatToDo")}
             value={ruleDraft?.action ?? "ignore"}
-            onChange={(e) =>
-              ruleDraft &&
+            onChange={(e) => {
+              if (!ruleDraft) return;
+              const action = e.target.value as RuleDraft["action"];
+              // compare only is for one screen (REQ-024-16)
               setRuleDraft({
                 ...ruleDraft,
-                action: e.target.value as RuleDraft["action"],
-              })
-            }
+                action,
+                scope: action === "compare" ? "screen" : ruleDraft.scope,
+              });
+            }}
           >
             <MenuItem value="ignore">{t("panel.ignoreAnywhere")}</MenuItem>
             <MenuItem value="tolerate">{t("panel.allowInside")}</MenuItem>
+            <MenuItem value="compare">{t("select.compare")}</MenuItem>
           </TextField>
           {ruleDraft?.action === "tolerate" && (
             <TextField
@@ -1433,7 +1529,12 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
             <MenuItem value="screen">
               {t("panel.thisScreenOf", { name: testRun.name })}
             </MenuItem>
-            <MenuItem value="project">{t("panel.everyScreen")}</MenuItem>
+            <MenuItem
+              value="project"
+              disabled={ruleDraft?.action === "compare"}
+            >
+              {t("panel.everyScreen")}
+            </MenuItem>
           </TextField>
         </DialogContent>
         <DialogActions>

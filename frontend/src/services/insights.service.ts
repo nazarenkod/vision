@@ -8,10 +8,13 @@ import {
   ChangeGroup,
   CrossDeviceResult,
   DeviceProfile,
+  ElementRule,
+  ElementRuleAction,
   GroupSummary,
   JiraBugPreparation,
   JiraUser,
   ProjectInsights,
+  Rect,
   StructureInfo,
 } from "../types/insights";
 
@@ -103,10 +106,19 @@ export const insightsService = {
     rule: {
       scope: "screen" | "project";
       selector: string;
-      action: "ignore" | "tolerate";
+      action: ElementRuleAction;
       maxDiffPercent?: number;
     },
-  ) => post(`/test-runs/${testRunId}/element-rules`, rule),
+  ) => post<ElementRule>(`/test-runs/${testRunId}/element-rules`, rule),
+  replaceAreaWithElement: (
+    testRunId: string,
+    areaId: string,
+    selector: string,
+  ) =>
+    post<{ rule: ElementRule; area: Rect & { id: string } }>(
+      `/test-runs/${testRunId}/ignore-areas/replace-with-element`,
+      { areaId, selector },
+    ),
   removeElementRule: (
     testRunId: string,
     scope: "screen" | "project",

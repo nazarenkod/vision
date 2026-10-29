@@ -88,6 +88,8 @@ export interface NoiseHint {
   kind: "status-bar" | "dynamic-text" | "anti-aliasing";
   message: string;
   ignoreArea?: Rect;
+  // the element the noisy area stands for, when there is one (REQ-024-40)
+  element?: { selector: string; element: string };
 }
 
 export interface CaptureWarning {
@@ -98,10 +100,13 @@ export interface CaptureWarning {
   looksLike?: string;
 }
 
+export type ElementRuleAction = "ignore" | "tolerate" | "compare";
+
 export interface ElementRule {
   id: string;
   selector: string;
-  action: "ignore" | "tolerate";
+  // compare: only the elements such rules match are compared on this screen
+  action: ElementRuleAction;
   maxDiffPercent?: number;
   note?: string;
 }
@@ -256,15 +261,62 @@ export interface StructureInfo {
   hints: NoiseHint[];
   invisible: StructuralChange[];
   warnings: CaptureWarning[];
-  rules: Array<ElementRule & { scope: "screen" | "project"; matches: number }>;
+  rules: ScreenRule[];
+  // what is compared when the check names its elements (spec 015)
+  compareOnly?: {
+    active: boolean;
+    keep: Rect[];
+    problems: CompareOnlyProblem[];
+  };
   ignoredAreas: Rect[];
   toleratedAreas: Array<Rect & { maxDiffPercent: number }>;
   systemBars: Rect[];
   moves: Array<{ key: string; element: string; dxDp: number; dyDp: number }>;
   // elements a rule can be made for by clicking them on the screenshot
   elements?: PickableElement[];
+  baselineElements?: PickableElement[];
+  // saved ignore areas that stand for one element (REQ-024-50)
+  areaSuggestions?: Array<{
+    areaId: string;
+    selector: string;
+    element: string;
+  }>;
   settings: UiTreeSettings;
 }
+
+export type RuleScope = "screen" | "project";
+
+export type ScreenRule = ElementRule & {
+  scope: RuleScope;
+  matches: number;
+  // what the rule matched on each screenshot
+  found?: { current: Rect[]; baseline: Rect[] };
+};
+
+export type CompareOnlyProblem =
+  | { kind: "no-tree" }
+  | { kind: "nothing-found"; ruleId: string; selector: string }
+  | {
+      kind: "disappeared" | "appeared";
+      ruleId: string;
+      selector: string;
+      element: string;
+    }
+  | {
+      kind: "count";
+      ruleId: string;
+      selector: string;
+      baseline: number;
+      current: number;
+    }
+  | {
+      kind: "resized";
+      ruleId: string;
+      selector: string;
+      element: string;
+      before: Rect;
+      after: Rect;
+    };
 
 export interface ChangeGroup {
   id: string;
@@ -326,6 +378,10 @@ export function parseUiTreeSettings(value?: string | null): UiTreeSettings {
 }
 
 export interface PickableElement {
+  // the node's index in its tree and the nearest pickable element around it
+  // (absent from servers older than spec 024)
+  index?: number;
+  parent?: number | null;
   selector: string;
   element: string;
   bounds: Rect;

@@ -1,7 +1,8 @@
 import { Rect, UiNode, UiTree } from './ui-tree.types';
 import { A11yNorms, DEFAULT_A11Y_NORMS, parseA11yNorms } from '../a11y/a11y-norms';
 
-export type ElementRuleAction = 'ignore' | 'tolerate';
+// compare: only the elements the check's compare rules match are compared (spec 015)
+export type ElementRuleAction = 'ignore' | 'tolerate' | 'compare';
 
 /**
  * A rule about elements, kept on the project (every screen) or on one screen.
@@ -173,33 +174,37 @@ export interface ResolvedRules {
   tolerate: Array<Rect & { maxDiffPercent: number }>;
   // how many elements each rule matched, for the UI
   matches: Record<string, number>;
+  // per rule, what it matched on each side, for drawing it on both screenshots
+  found: Record<string, { current: Rect[]; baseline: Rect[] }>;
 }
 
 /**
- * Areas the rules cover, taken from both trees: an element that moved is
- * covered where it was and where it is.
+ * Areas the rules cover, taken from both trees (current first, then the
+ * baseline): an element that moved is covered where it was and where it is.
+ * Compare-only rules cover nothing here; planCompareOnly works them out.
  */
 export function resolveRules(rules: ElementRule[], trees: Array<UiTree | null>): ResolvedRules {
-  const result: ResolvedRules = { ignore: [], tolerate: [], matches: {} };
+  const result: ResolvedRules = { ignore: [], tolerate: [], matches: {}, found: {} };
   for (const rule of rules) {
     const selector = parseSelector(rule.selector);
     if (!selector) continue;
-    // the same element is usually in both trees, so the count is the larger of the two
-    let count = 0;
+    const sides: Rect[][] = [];
     for (const tree of trees) {
-      let inTree = 0;
+      const bounds: Rect[] = [];
       for (const node of tree?.nodes ?? []) {
         if (!node.visible || !node.bounds.width || !node.bounds.height || !matchesSelector(node, selector)) continue;
-        inTree++;
+        bounds.push(node.bounds);
         if (rule.action === 'ignore') {
           result.ignore.push(pad(node.bounds, RULE_PADDING_PX));
-        } else {
+        } else if (rule.action === 'tolerate') {
           result.tolerate.push({ ...node.bounds, maxDiffPercent: rule.maxDiffPercent ?? 5 });
         }
       }
-      count = Math.max(count, inTree);
+      sides.push(bounds);
     }
-    result.matches[rule.id] = count;
+    // the same element is usually in both trees, so the count is the larger of the two
+    result.matches[rule.id] = Math.max(0, ...sides.map((bounds) => bounds.length));
+    result.found[rule.id] = { current: sides[0] ?? [], baseline: sides[1] ?? [] };
   }
   return result;
 }

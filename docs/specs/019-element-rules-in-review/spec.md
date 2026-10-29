@@ -6,7 +6,7 @@
 | Власник | Дмитро Назаренко |
 | Оновлено | 2026-10-29 |
 | Дизайн | [design.md](design.md), [tasks.md](tasks.md) |
-| Пов'язане | змінює [018](../018-ui-redesign/spec.md): REQ-018-41 (без розділу Element rules), REQ-018-42 (без правил елементів), REQ-018-45 (без відсотка для Tolerate); знімає REQ-018-51. Правила елементів — [REQ-002-12](../002-ui-tree-analysis/spec.md), [REQ-002-13](../002-ui-tree-analysis/spec.md) |
+| Пов'язане | список «Rules for this screen» став блоком «What's compared» у [024](../024-elements-instead-of-areas/spec.md) (селектор і кількість — у підказці рядка); змінює [018](../018-ui-redesign/spec.md): REQ-018-41 (без розділу Element rules), REQ-018-42 (без правил елементів), REQ-018-45 (без відсотка для Tolerate); знімає REQ-018-51. Правила елементів — [REQ-002-12](../002-ui-tree-analysis/spec.md), [REQ-002-13](../002-ui-tree-analysis/spec.md) |
 
 ## Контекст і проблема
 

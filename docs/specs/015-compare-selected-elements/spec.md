@@ -2,10 +2,10 @@
 
 | | |
 |---|---|
-| Статус | Draft |
+| Статус | Implemented |
 | Власник | Дмитро Назаренко |
-| Оновлено | 2026-10-27 |
-| Дизайн | — (з'являється після `Approved`) |
+| Оновлено | 2026-10-29 |
+| Дизайн | [design.md](design.md) (спільний з [024](../024-elements-instead-of-areas/design.md)), [tasks.md 024](../024-elements-instead-of-areas/tasks.md) |
 | Пов'язане | [002](../002-ui-tree-analysis/spec.md) (правила елементів, вибір елемента на скриншоті), [001](../001-check-identity/spec.md) (перевірка) |
 
 ## Контекст і проблема

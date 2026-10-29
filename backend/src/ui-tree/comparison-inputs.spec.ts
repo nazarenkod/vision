@@ -65,6 +65,33 @@ describe('resolveRules', () => {
   });
 });
 
+describe('resolveRules: compare only', () => {
+  it('reads compare-only rules with every kind of selector', () => {
+    const tree = parse(xml);
+    const settings = parseUiTreeSettings(
+      JSON.stringify({
+        checkRules: {
+          '["Payment",""]': [
+            { id: 'a', selector: 'id:btn_pay', action: 'compare' },
+            { id: 'b', selector: 'class:ImageButton', action: 'compare' },
+            { id: 'c', selector: 'text:Next', action: 'compare' },
+            { id: 'd', selector: 'text:/^commission \\d+/i', action: 'compare' },
+          ],
+        },
+      })
+    );
+    const rules = settings.checkRules['["Payment",""]'];
+    const resolved = resolveRules(rules, [tree, tree]);
+
+    // compare-only rules hide nothing by themselves
+    expect(resolved.ignore).toEqual([]);
+    expect(resolved.tolerate).toEqual([]);
+    expect(resolved.matches).toEqual({ a: 1, b: 4, c: 2, d: 1 });
+    expect(resolved.found.a.current).toEqual([{ x: 42, y: 2200, width: 996, height: 126 }]);
+    expect(resolved.found.a.baseline).toEqual(resolved.found.a.current);
+  });
+});
+
 describe('findSystemBars', () => {
   it('uses the status and navigation bar views when the tree has them', () => {
     const withBars = xml.replace(

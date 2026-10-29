@@ -20,6 +20,8 @@ upstream VRT, а згодом зможе працювати й на живій.
 яких він не знає, лишає як є: так `a11yDuplicates` і `a11yClasses`, які до
 [021](../specs/021-fixed-a11y-grouping/spec.md) задавали групування проблем, переживають збереження,
 але ніхто їх не читає.
+Правило елемента має дію `ignore`, `tolerate` або `compare`; `compare` («порівнювати лише»,
+[015](../specs/015-compare-selected-elements/spec.md)) лежить лише в `checkRules` перевірки.
 
 ## Нові таблиці
 

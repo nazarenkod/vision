@@ -27,7 +27,7 @@ import { PixelmatchConfigForm } from "./PixelmatchConfigForm";
 import { VlmConfigForm } from "./VlmConfigForm";
 import { getDefaultConfig } from "./utils";
 import { UiTreeSettings, parseUiTreeSettings } from "../../types/insights";
-import { A11yProblemSettings } from "./A11yProblemSettings";
+import { A11yRulesSettings } from "./A11yRulesSettings";
 import { SecretField } from "./SecretField";
 import { MessageKey, useT } from "../../i18n";
 
@@ -381,7 +381,7 @@ export const ProjectForm: React.FunctionComponent = () => (
     <ReviewFields />
     <ComparisonFields as="select" />
     <MobileSettings />
-    <A11yProblemSettings />
+    <A11yRulesSettings />
     <JiraSettings />
   </React.Fragment>
 );

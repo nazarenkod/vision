@@ -44,7 +44,7 @@ import {
   MobileSettings,
   ReviewFields,
 } from "../components/ProjectForm";
-import { A11yProblemSettings } from "../components/ProjectForm/A11yProblemSettings";
+import { A11yRulesSettings } from "../components/ProjectForm/A11yRulesSettings";
 import { EmptyState } from "../components/EmptyState";
 import { MessageKey, Text, useT } from "../i18n";
 
@@ -71,10 +71,6 @@ function sectionMeta(id: SectionId, project: ProjectDto, t: Text): string {
       ].filter(Boolean).length;
       return t("settings.meta.mobileOn", { count: on });
     }
-    case "a11y":
-      return t("settings.meta.classes", {
-        count: tree.a11yClasses?.length ?? 0,
-      });
     case "jira":
       return t(project.jiraUrl ? "settings.meta.set" : "settings.meta.notSet");
     default:
@@ -485,7 +481,7 @@ const ProjectSettingsPage: React.FunctionComponent = () => {
             {section("review", <ReviewFields />)}
             {section("comparison", <ComparisonFields />)}
             {section("mobile", <MobileSettings bare />)}
-            {section("a11y", <A11yProblemSettings bare />)}
+            {section("a11y", <A11yRulesSettings bare />)}
             {section("jira", <JiraSettings bare />)}
             {section(
               "danger",

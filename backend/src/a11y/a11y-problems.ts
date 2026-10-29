@@ -4,18 +4,17 @@ import { UiNode, UiTree } from '../ui-tree/ui-tree.types';
 import { matchesSelector, parseSelector } from '../ui-tree/comparison-inputs';
 
 /**
- * When two issues are the same problem, per rule or per class:
+ * When two issues are the same problem, per rule:
  * - component-value: same component id and the same measured values (a 38 × 38 dp
  *   tap area everywhere is one problem; 38 × 40 on another screen is another);
  * - component: same component id, whatever the values;
- * - screen: never across screens; one problem per element id on a screen;
- * - class (classes only): everything the class takes, per rule, is one problem.
- * Elements without an id are always problems of their own screen, unless a class says otherwise.
+ * - screen: never across screens; one problem per element id on a screen.
+ * Elements without an id are always problems of their own screen.
+ * The same for every project (021): nobody set it per project, and nobody could tell how.
  */
 export type DuplicateMode = 'component-value' | 'component' | 'screen';
-export type GroupBy = DuplicateMode | 'class';
 
-export const DEFAULT_DUPLICATE_MODES: Record<A11yRule, DuplicateMode> = {
+export const DUPLICATE_MODES: Record<A11yRule, DuplicateMode> = {
   'touch-target': 'component-value',
   'low-contrast': 'component-value',
   'missing-label': 'component',
@@ -29,9 +28,9 @@ export const DEFAULT_DUPLICATE_MODES: Record<A11yRule, DuplicateMode> = {
 export const DEFAULT_SCREEN_TITLE_SELECTORS = ['id:Appbar#Title'];
 
 /**
- * What is known about one occurrence of a problem, independent of any
- * setting. Problems keep these, so when the settings change, what is one
- * problem is worked out again from the facts, and ids and bugs stay.
+ * What is known about one occurrence of a problem, independent of how
+ * problems are told apart. Problems keep these, so when that changes, what is
+ * one problem is worked out again from the facts, and ids and bugs stay.
  */
 export interface ProblemFacets {
   rule: string;
@@ -47,71 +46,6 @@ export interface ProblemFacets {
   measure: string;
   className: string;
   label: string;
-}
-
-/**
- * Conditions of a class on the facts of an issue: every field given must
- * match (and), any of the patterns of a field may (or). Patterns are globs
- * with * and ?, or /regex/; a group in an element pattern is the component id.
- */
-export interface ClassConditions {
-  element?: string[];
-  screen?: string[];
-  className?: string[];
-  label?: string[];
-}
-
-/**
- * A class of problems the project defines: which issues it takes and what
- * they are — how duplicates are told, which part of the id is the
- * component, and whether bugs are filed for them or they are ignored. The
- * first class that takes an issue wins.
- */
-export interface ProblemClass {
-  id: string;
-  name: string;
-  // rules it takes; empty or absent for every rule
-  rules?: string[];
-  when?: ClassConditions;
-  // an element pattern, as classes were first written; read as when.element
-  match?: string;
-  groupBy?: GroupBy;
-  // as classes were first written; read as groupBy
-  mode?: DuplicateMode;
-  // report: found and filed as usual; ignore: listed with the false positives, never counted or filed
-  action?: 'report' | 'ignore';
-}
-
-export interface ProblemSettings {
-  duplicateModes?: Partial<Record<string, DuplicateMode>>;
-  classes?: ProblemClass[];
-}
-
-const patterns = new Map<string, RegExp | null>();
-
-/** A class pattern as a regex: /regex/flags as written, else a whole-value glob; null when it does not compile. */
-export function compilePattern(pattern: string): RegExp | null {
-  if (!patterns.has(pattern)) {
-    let compiled: RegExp | null = null;
-    try {
-      const regex = /^\/(.+)\/([a-z]*)$/s.exec(pattern.trim());
-      if (regex) {
-        compiled = new RegExp(regex[1], regex[2].replace(/[^imsu]/g, ''));
-      } else {
-        const glob = pattern
-          .trim()
-          .replace(/[.+^$(){}|[\]\\]/g, '\\$&')
-          .replace(/\*/g, '.*')
-          .replace(/\?/g, '.');
-        compiled = new RegExp(`^${glob}$`, 'i');
-      }
-    } catch {
-      compiled = null;
-    }
-    if (patterns.size > 1000) patterns.clear();
-    patterns.set(pattern, compiled);
-  }
-  return patterns.get(pattern);
 }
 
 /**
@@ -154,74 +88,19 @@ export function facetsOf(
   };
 }
 
-const conditionsOf = (problemClass: ProblemClass): ClassConditions => ({
-  ...problemClass.when,
-  ...(!problemClass.when?.element?.length && problemClass.match ? { element: [problemClass.match] } : {}),
-});
-
-export const groupByOf = (problemClass: ProblemClass): GroupBy | undefined => problemClass.groupBy ?? problemClass.mode;
-
-/** The first pattern of a list that matches a value, with its match; undefined when the list is empty. */
-function matchAny(list: string[] | undefined, value: string): RegExpExecArray | null | undefined {
-  const given = (list ?? []).filter((item) => item?.trim());
-  if (!given.length) return undefined;
-  for (const pattern of given) {
-    const match = compilePattern(pattern)?.exec(value);
-    if (match) return match;
-  }
-  return null;
-}
-
-/** The class that takes an issue, and the component its element pattern captured, if any. */
-export function classOf(
-  facets: ProblemFacets,
-  classes: ProblemClass[] = []
-): { problemClass: ProblemClass; component: string | null } | null {
-  for (const problemClass of classes) {
-    if (problemClass.rules?.length && !problemClass.rules.includes(facets.rule)) continue;
-    const when = conditionsOf(problemClass);
-    const element = matchAny(when.element, facets.element ?? facets.nodeKey);
-    const checks = [
-      element,
-      matchAny(when.screen, facets.screen),
-      matchAny(when.className, facets.className),
-      matchAny(when.label, facets.label),
-    ];
-    // a class without any condition takes nothing: it would swallow every issue of its rules by mistake
-    if (checks.every((check) => check === undefined) || checks.some((check) => check === null)) continue;
-    return { problemClass, component: element?.[1]?.trim() || null };
-  }
-  return null;
-}
-
-export function duplicateModeOf(rule: string, settings: ProblemSettings = {}): DuplicateMode {
-  const mode = settings.duplicateModes?.[rule];
-  return mode === 'component-value' || mode === 'component' || mode === 'screen'
-    ? mode
-    : (DEFAULT_DUPLICATE_MODES[rule as A11yRule] ?? 'screen');
-}
-
-/** How an issue is told from others under the current settings: its class, component and grouping. */
-export function readingOf(facets: ProblemFacets, settings: ProblemSettings = {}) {
-  const taken = classOf(facets, settings.classes);
-  const groupBy: GroupBy = (taken && groupByOf(taken.problemClass)) || duplicateModeOf(facets.rule, settings);
-  return {
-    problemClass: taken?.problemClass ?? null,
-    component: taken?.component ?? facets.component,
-    groupBy,
-  };
-}
+const modeOf = (rule: string): DuplicateMode => DUPLICATE_MODES[rule as A11yRule] ?? 'screen';
 
 /**
- * Which problem an occurrence is under the current settings. Worked out from
- * the facts every time, for issues and for stored problems alike, so the
- * settings decide what is one problem without changing any problem's id.
+ * Which problem an occurrence is. Worked out from the facts every time, for
+ * issues and for stored problems alike, so a problem decided when problems
+ * were told apart otherwise (by the per-project settings of 004) keeps its id
+ * and bug in every part it now falls into.
  */
-export function problemKeyOf(facets: ProblemFacets, settings: ProblemSettings = {}): string {
-  const { problemClass, component, groupBy } = readingOf(facets, settings);
-  if (groupBy === 'class' && problemClass) return `${facets.rule}|k:${problemClass.id}|`;
-  if (component && groupBy !== 'screen') {
-    return `${facets.rule}|c:${component}|${groupBy === 'component-value' ? facets.measure : ''}`;
+export function problemKeyOf(facets: ProblemFacets): string {
+  const mode = modeOf(facets.rule);
+  const { component } = facets;
+  if (component && mode !== 'screen') {
+    return `${facets.rule}|c:${component}|${mode === 'component-value' ? facets.measure : ''}`;
   }
   return component
     ? `${facets.rule}|s:${facets.screen}|c:${component}|${facets.measure}`
@@ -231,7 +110,7 @@ export function problemKeyOf(facets: ProblemFacets, settings: ProblemSettings = 
 /**
  * The id a new problem gets, as people see it in Vision and in Jira (summary,
  * label, description): short, searchable as one word. Given once, at
- * creation, and kept: later settings never change it.
+ * creation, and kept whatever problems are later told apart by.
  */
 export function problemCode(projectId: string, key: string): string {
   return `a11y-${createHash('sha1').update(`${projectId}\n${key}`).digest('hex').slice(0, 8)}`;
@@ -243,43 +122,38 @@ export function problemComponent(key: string): string | null {
   return match ? match[1] : null;
 }
 
-/** Problems that hold on every screen (a component's or a class's), rather than on one screen. */
-export const isComponentProblem = (key: string) => /^[^|]+\|[ck]:/.test(key);
+/** Problems that hold on every screen (a component's), rather than on one screen. */
+export const isComponentProblem = (key: string) => /^[^|]+\|c:/.test(key);
 
 /** A Jira label from free text: labels take no spaces. */
 export const asLabel = (value: string) => value.replace(/[^\p{L}\p{N}_.-]+/gu, '_').slice(0, 100);
 
 /**
- * Markers of a problem in Jira, as labels: its id, the rule, the component,
- * the measured values and the class. Bugs are found by the id, or by the
- * markers the current settings tell problems apart with, so a bug filed
- * under other settings, by another Vision or by hand with the markers is
- * found too.
+ * Markers of a problem in Jira, as labels: its id, the rule, the component and
+ * the measured values. Bugs are found by the id, or by the markers problems are
+ * told apart with, so a bug filed by another Vision or by hand with the
+ * markers is found too.
  */
-export function problemMarkers(code: string, facets: ProblemFacets, settings: ProblemSettings = {}): string[] {
-  const { problemClass, component } = readingOf(facets, settings);
+export function problemMarkers(code: string, facets: ProblemFacets): string[] {
   return [
     code,
     `a11y-${facets.rule}`,
-    ...(component ? [asLabel(`a11y-component-${component}`)] : []),
+    ...(facets.component ? [asLabel(`a11y-component-${facets.component}`)] : []),
     ...(facets.measure ? [asLabel(`a11y-value-${facets.measure}`)] : []),
-    ...(problemClass ? [asLabel(`a11y-class-${problemClass.name}`)] : []),
   ];
 }
 
 /**
- * The labels a bug of the same problem carries under the current settings,
- * all of which must be on it; null when the problem is one screen's (found
- * by its id only).
+ * The labels a bug of the same problem carries, all of which must be on it;
+ * null when the problem is one screen's (found by its id only).
  */
-export function markerQuery(facets: ProblemFacets, settings: ProblemSettings = {}): string[] | null {
-  const { problemClass, component, groupBy } = readingOf(facets, settings);
-  if (groupBy === 'class' && problemClass) return [`a11y-${facets.rule}`, asLabel(`a11y-class-${problemClass.name}`)];
-  if (!component || groupBy === 'screen') return null;
+export function markerQuery(facets: ProblemFacets): string[] | null {
+  const mode = modeOf(facets.rule);
+  if (!facets.component || mode === 'screen') return null;
   return [
     `a11y-${facets.rule}`,
-    asLabel(`a11y-component-${component}`),
-    ...(groupBy === 'component-value' && facets.measure ? [asLabel(`a11y-value-${facets.measure}`)] : []),
+    asLabel(`a11y-component-${facets.component}`),
+    ...(mode === 'component-value' && facets.measure ? [asLabel(`a11y-value-${facets.measure}`)] : []),
   ];
 }
 

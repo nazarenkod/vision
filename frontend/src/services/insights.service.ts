@@ -6,11 +6,19 @@ import {
   JiraBugResult,
   AiStatus,
   ChangeGroup,
+  ElementRule,
+  ElementRuleAction,
   GroupSummary,
   JiraBugPreparation,
   JiraUser,
   ProjectInsights,
+  Rect,
   StructureInfo,
+  BugDraft,
+  VisualBug,
+  VisualBugFiling,
+  VisualBugPreparation,
+  VisualBugResult,
 } from "../types/insights";
 
 const JSON_HEADERS = { "Content-Type": "application/json" };
@@ -95,15 +103,46 @@ export const insightsService = {
     rule: {
       scope: "screen" | "project";
       selector: string;
-      action: "ignore" | "tolerate";
+      action: ElementRuleAction;
       maxDiffPercent?: number;
     },
-  ) => post(`/test-runs/${testRunId}/element-rules`, rule),
+  ) => post<ElementRule>(`/test-runs/${testRunId}/element-rules`, rule),
+  replaceAreaWithElement: (
+    testRunId: string,
+    areaId: string,
+    selector: string,
+  ) =>
+    post<{ rule: ElementRule; area: Rect & { id: string } }>(
+      `/test-runs/${testRunId}/ignore-areas/replace-with-element`,
+      { areaId, selector },
+    ),
   removeElementRule: (
     testRunId: string,
     scope: "screen" | "project",
     ruleId: string,
   ) => post(`/test-runs/${testRunId}/element-rules/remove`, { scope, ruleId }),
+  prepareVisualBug: (
+    testRunId: string,
+    parentKey: string,
+    issueTypeId?: string,
+    fieldValues?: Record<string, unknown>,
+  ) =>
+    post<VisualBugPreparation>(`/test-runs/${testRunId}/bug/prepare`, {
+      parentKey,
+      ...(issueTypeId ? { issueTypeId } : {}),
+      ...(fieldValues ? { fieldValues } : {}),
+    }),
+  fileVisualBug: (testRunId: string, filing: VisualBugFiling) =>
+    post<VisualBugResult>(`/test-runs/${testRunId}/bug`, filing),
+  visualBugs: (testRunId: string) =>
+    get<VisualBug[]>(`/test-runs/${testRunId}/bugs`),
+  draftBug: (request: {
+    testRunId: string;
+    note: string;
+    marks: Array<{ x: number; y: number; width: number; height: number }>;
+    changes: string[];
+    attempt: number;
+  }) => post<BugDraft>(`/ai/bug-draft`, request),
   aiStatus: () => get<AiStatus>(`/ai/status`),
   groupSummary: (buildId: string, groupId: string) =>
     post<GroupSummary>(`/ai/group-summary`, { buildId, groupId }),

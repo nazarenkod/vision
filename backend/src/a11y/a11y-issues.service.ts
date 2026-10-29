@@ -13,6 +13,7 @@ import { StaticService } from '../static/static.service';
 import { EventsGateway } from '../shared/events/events.gateway';
 import { UiTreeService } from '../ui-tree/ui-tree.service';
 import { A11yReport, A11yViolation } from './a11y.types';
+import { applyNorms } from './a11y-norms';
 import {
   A11yIssueStatus,
   decidingProblem,
@@ -25,8 +26,8 @@ import {
 } from './a11y-issues';
 import { JiraAttachment, JiraClient, JiraError, JiraFoundIssue } from './jira.client';
 import { bugText, buildBugFields, defaultIssueType } from './jira-bug';
+import { JiraAccess, jiraAccess } from './jira-access';
 import {
-  classOf,
   facetsFromKey,
   facetsOf,
   isComponentProblem,
@@ -35,10 +36,7 @@ import {
   problemCode,
   problemKeyOf,
   problemMarkers,
-  ProblemClass,
   ProblemFacets,
-  ProblemSettings,
-  readingOf,
   screenTitle,
   unlinkedLabel,
 } from './a11y-problems';
@@ -86,7 +84,7 @@ const CODE_LABEL = /^a11y-[0-9a-f]{8}$/;
 
 export type A11yDecisionAction = 'filed' | 'linked' | 'found' | 'unlinked' | 'ignored' | 'restored';
 
-/** One problem of a run under the current settings: the issues it takes and the stored problems it matches. */
+/** One problem of a run: the issues it takes and the stored problems it matches. */
 interface RunProblem {
   key: string;
   // the id: the deciding stored problem's, else the one a new problem would get
@@ -99,7 +97,7 @@ interface RunProblem {
   deciding: A11yProblem | undefined;
 }
 
-/** The project's problems indexed under its settings, kept while neither changes. */
+/** The project's problems indexed, kept while they do not change. */
 interface CachedIndex {
   version: string;
   index: ProblemIndex;
@@ -115,12 +113,12 @@ const dedupeFacets = (facets: ProblemFacets[]): ProblemFacets[] => [
  *
  * A problem is created once, with an id (a11y-3f9c2a1b) and the facts of the
  * occurrences it was decided for. What is one problem is worked out from the
- * facts under the project's current settings, for issues and stored problems
- * alike, so settings can change without changing ids or losing bugs; a bug
- * filed from one screen covers the problem on every screen it shows on.
+ * facts, for issues and stored problems alike, so how problems are told apart
+ * can change without changing ids or losing bugs; a bug filed from one screen
+ * covers the problem on every screen it shows on.
  *
  * In Jira, a bug carries the id and markers of the facts (rule, component,
- * values, class) as labels. Before filing, Vision claims the problem in its
+ * values) as labels. Before filing, Vision claims the problem in its
  * database, so two people cannot file it at once, and searches Jira for the
  * id or the markers, so a bug filed some other way is linked instead; a
  * review looks its screen's open problems up the same way. Unlinking takes
@@ -159,28 +157,36 @@ export class A11yIssuesService implements OnModuleInit {
     return parseUiTreeSettings(project?.uiTreeSettings);
   }
 
-  private problemSettings(settings: UiTreeSettings): ProblemSettings {
-    return {
-      duplicateModes: settings.a11yDuplicates as ProblemSettings['duplicateModes'],
-      classes: settings.a11yClasses as unknown as ProblemClass[],
-    };
+  /**
+   * A run's report as the project's current norms see it (026): what a norm
+   * changed since the snapshot lets pass, or a rule turned off, is not shown,
+   * counted or filed.
+   */
+  private async reportOf(
+    testRun: Pick<TestRun, 'projectId' | 'a11yReportName'>,
+    settings?: UiTreeSettings
+  ): Promise<A11yReport | null> {
+    const report = await this.uiTreeService.loadReport(testRun.a11yReportName);
+    if (!report) return null;
+    const { a11yNorms } = settings ?? (await this.settingsFor(testRun.projectId));
+    return applyNorms(report, a11yNorms);
   }
 
   /**
-   * The project's problems indexed under its settings. Rebuilt when a problem
-   * or the settings change; checking that is one small query.
+   * The project's problems indexed. Rebuilt when a problem changes; checking
+   * that is one small query.
    */
-  private async indexFor(projectId: string, settings: ProblemSettings): Promise<ProblemIndex> {
+  private async indexFor(projectId: string): Promise<ProblemIndex> {
     const stats = await this.prismaService.a11yProblem.aggregate({
       where: { projectId },
       _count: { _all: true },
       _max: { updatedAt: true },
     });
-    const version = `${stats._count._all}|${stats._max.updatedAt?.getTime() ?? 0}|${JSON.stringify(settings)}`;
+    const version = `${stats._count._all}|${stats._max.updatedAt?.getTime() ?? 0}`;
     const cached = this.indexes.get(projectId);
     if (cached?.version === version) return cached.index;
     const problems = await this.prismaService.a11yProblem.findMany({ where: { projectId } });
-    const index = indexProblems(problems, settings);
+    const index = indexProblems(problems);
     this.indexes.set(projectId, { version, index });
     return index;
   }
@@ -204,25 +210,23 @@ export class A11yIssuesService implements OnModuleInit {
     return this.titles.get(cacheKey);
   }
 
-  /** Everything a report is reviewed with: the screen, the settings and the decisions that touch it. */
+  /** Everything a report is reviewed with: the screen and the decisions that touch it. */
   private async contextFor(
     testRun: Pick<TestRun, 'projectId' | 'name' | 'uiTreeName'>,
     report: A11yReport,
     settings?: UiTreeSettings
-  ): Promise<ReviewContext & { title: string | null; settings: ProblemSettings; index: ProblemIndex }> {
+  ): Promise<ReviewContext & { title: string | null; index: ProblemIndex }> {
     const projectSettings = settings ?? (await this.settingsFor(testRun.projectId));
     const title = await this.titleOf(testRun, report, projectSettings.screenTitle);
-    const problemSettings = this.problemSettings(projectSettings);
     const [states, index] = await Promise.all([
       this.statesFor(testRun.projectId, testRun.name),
-      this.indexFor(testRun.projectId, problemSettings),
+      this.indexFor(testRun.projectId),
     ]);
     return {
       projectId: testRun.projectId,
       screenName: testRun.name,
       screen: title ?? testRun.name,
       title,
-      settings: problemSettings,
       states,
       index,
     };
@@ -246,7 +250,7 @@ export class A11yIssuesService implements OnModuleInit {
 
   async getReviewedReport(testRunId: string, userId?: string): Promise<ReviewedA11yReport | null> {
     const testRun = await this.loadRun(testRunId);
-    const report = await this.uiTreeService.loadReport(testRun.a11yReportName);
+    const report = await this.reportOf(testRun);
     if (!report) return null;
     const reviewed = await this.review(testRun, report);
     const found = await this.lookUpInJira(testRun, report, reviewed, userId).catch((error) => {
@@ -294,8 +298,8 @@ export class A11yIssuesService implements OnModuleInit {
   }
 
   /** The JQL that finds bugs of a problem: its id as a label or in the summary, or its markers. */
-  private jqlFor(code: string, facets: ProblemFacets, settings: ProblemSettings): string {
-    const markers = markerQuery(facets, settings);
+  private jqlFor(code: string, facets: ProblemFacets): string {
+    const markers = markerQuery(facets);
     return [
       `labels = "${code}"`,
       `summary ~ "\\"${code}\\""`,
@@ -304,10 +308,10 @@ export class A11yIssuesService implements OnModuleInit {
   }
 
   /** Whether a found issue is a bug of the problem: by its id, or by all of its markers. */
-  private isBugOf(issue: JiraFoundIssue, code: string, facets: ProblemFacets, settings: ProblemSettings): boolean {
+  private isBugOf(issue: JiraFoundIssue, code: string, facets: ProblemFacets): boolean {
     if (issue.done || issue.labels.includes(unlinkedLabel(code))) return false;
     if (issue.labels.includes(code) || issue.summary.includes(code)) return true;
-    const markers = markerQuery(facets, settings);
+    const markers = markerQuery(facets);
     return !!markers && markers.every((label) => issue.labels.includes(label));
   }
 
@@ -321,7 +325,7 @@ export class A11yIssuesService implements OnModuleInit {
   /**
    * Looks up the screen's open problems in Jira by their ids or markers, in a
    * few queries, and records the open bugs found as filed: a bug filed by
-   * hand, from another Vision, under other settings, or by a colleague a
+   * hand, from another Vision, or by a colleague a
    * moment ago marks the problem as filed on every screen. Bugs someone
    * unlinked are left alone. Returns how many were found.
    */
@@ -356,7 +360,7 @@ export class A11yIssuesService implements OnModuleInit {
     let found = 0;
     for (let start = 0; start < candidates.length; start += JIRA_LOOKUP_BATCH) {
       const batch = candidates.slice(start, start + JIRA_LOOKUP_BATCH);
-      const jql = batch.map((item) => `(${this.jqlFor(item.code, item.facets, context.settings)})`).join(' OR ');
+      const jql = batch.map((item) => `(${this.jqlFor(item.code, item.facets)})`).join(' OR ');
       const issues = await jira.search(`(${jql}) ORDER BY created DESC`, 100, JIRA_LOOKUP_TIMEOUT_MS);
       const unlinked = await this.unlinkedKeys(
         testRun.projectId,
@@ -365,8 +369,7 @@ export class A11yIssuesService implements OnModuleInit {
       for (const item of batch) {
         this.lookedUp.set(`${testRun.projectId}\n${item.code}`, now);
         const issue = issues.find(
-          (candidate) =>
-            !unlinked.has(candidate.key) && this.isBugOf(candidate, item.code, item.facets, context.settings)
+          (candidate) => !unlinked.has(candidate.key) && this.isBugOf(candidate, item.code, item.facets)
         );
         if (!issue) continue;
         const code = this.codeOn(issue) ?? item.code;
@@ -407,17 +410,34 @@ export class A11yIssuesService implements OnModuleInit {
   }
 
   /**
+   * After the project's settings are saved: the counts of its latest builds by
+   * the norms saved. Older builds keep theirs until a decision in their review
+   * recounts them; the review itself always shows the current norms.
+   */
+  async recountLatestBuilds(projectId: string, builds = 5): Promise<void> {
+    const latest = await this.prismaService.build.findMany({
+      where: { projectId },
+      orderBy: { createdAt: 'desc' },
+      take: builds,
+      select: { id: true },
+    });
+    for (const build of latest) {
+      await this.refreshCounts({ projectId, buildId: build.id });
+    }
+  }
+
+  /**
    * Refreshes the counts of the build's runs after a decision changed. A
    * problem decided on one screen is decided on the others too, so every
    * screen of the build is looked at.
    */
-  private async refreshCounts(testRun: TestRun): Promise<void> {
+  private async refreshCounts(testRun: Pick<TestRun, 'projectId' | 'buildId'>): Promise<void> {
     const runs = await this.prismaService.testRun.findMany({
       where: { buildId: testRun.buildId, a11yReportName: { not: null } },
     });
     const settings = await this.settingsFor(testRun.projectId);
     for (const run of runs) {
-      const report = await this.uiTreeService.loadReport(run.a11yReportName);
+      const report = await this.reportOf(run, settings);
       if (!report) continue;
       const { summary } = reviewReport(report, await this.contextFor(run, report, settings));
       if (summary.new === run.a11yNewCount && summary.total === run.a11yTotalCount) continue;
@@ -429,14 +449,14 @@ export class A11yIssuesService implements OnModuleInit {
     }
   }
 
-  /** The issues of a run by id, grouped into the problems they are under the current settings. */
+  /** The issues of a run by id, grouped into the problems they are. */
   private async problemsOf(
     testRun: TestRun,
     violationIds: string[]
-  ): Promise<{ problems: RunProblem[]; title: string | null; settings: ProblemSettings }> {
+  ): Promise<{ problems: RunProblem[]; title: string | null }> {
     const ids = [...new Set(violationIds)];
     if (!ids.length) throw new BadRequestException('No accessibility issue given');
-    const report = await this.uiTreeService.loadReport(testRun.a11yReportName);
+    const report = await this.reportOf(testRun);
     const violations = ids.map((id) => report?.violations.find((v) => v.id === id));
     if (!report || violations.some((v) => !v)) {
       throw new BadRequestException('This accessibility issue is not on this test run');
@@ -445,7 +465,7 @@ export class A11yIssuesService implements OnModuleInit {
     const byKey = new Map<string, RunProblem>();
     for (const violation of violations) {
       const facets = facetsOf(violation, context.screen);
-      const key = problemKeyOf(facets, context.settings);
+      const key = problemKeyOf(facets);
       const existing = byKey.get(key);
       if (existing) {
         existing.violations.push(violation);
@@ -454,11 +474,10 @@ export class A11yIssuesService implements OnModuleInit {
       }
       const matching = context.index.get(key) ?? [];
       const deciding = decidingProblem(matching, testRun.name);
-      const { component } = readingOf(facets, context.settings);
       byKey.set(key, {
         key,
         code: deciding?.code ?? problemCode(testRun.projectId, key),
-        component,
+        component: facets.component,
         everyScreen: isComponentProblem(key),
         violations: [violation],
         facets: [facets],
@@ -466,7 +485,7 @@ export class A11yIssuesService implements OnModuleInit {
         deciding,
       });
     }
-    return { problems: [...byKey.values()], title: context.title, settings: context.settings };
+    return { problems: [...byKey.values()], title: context.title };
   }
 
   /** Puts Vision's markers of a problem on a bug, or takes them off and marks it unlinked. */
@@ -575,7 +594,7 @@ export class A11yIssuesService implements OnModuleInit {
    */
   async reset(testRunId: string, violationIds: string[], userId?: string): Promise<{ warnings: string[] }> {
     const testRun = await this.loadRun(testRunId);
-    const { problems, settings } = await this.problemsOf(testRun, violationIds);
+    const { problems } = await this.problemsOf(testRun, violationIds);
     const keys = new Set(problems.map((problem) => problem.key));
     const touched = [
       ...new Map(problems.flatMap((problem) => problem.matching).map((item) => [item.id, item])).values(),
@@ -588,8 +607,8 @@ export class A11yIssuesService implements OnModuleInit {
       : null;
     const warnings: string[] = [];
     for (const problem of touched) {
-      // settings may now see parts of a stored problem as other problems: only these parts are forgotten
-      const remaining = storedFacets(problem).filter((facets) => !keys.has(problemKeyOf(facets, settings)));
+      // parts of a stored problem may now be other problems: only these parts are forgotten
+      const remaining = storedFacets(problem).filter((facets) => !keys.has(problemKeyOf(facets)));
       const action: A11yDecisionAction = problem.status === 'ignored' ? 'restored' : 'unlinked';
       if (remaining.length) {
         await this.prismaService.a11yProblem.update({
@@ -633,30 +652,8 @@ export class A11yIssuesService implements OnModuleInit {
    * Jira as the person acting: their own token from their profile, else the
    * project's shared token when it has one. The Jira URL is the project's.
    */
-  private async jiraFor(
-    projectId: string,
-    userId?: string
-  ): Promise<{ jira: JiraClient; issueType: string | null; linkType: string | null }> {
-    const [project, user] = await Promise.all([
-      this.prismaService.project.findUnique({ where: { id: projectId } }),
-      userId ? this.prismaService.user.findUnique({ where: { id: userId } }) : null,
-    ]);
-    if (!project?.jiraUrl) {
-      throw new BadRequestException('Jira is not set up for this project: add its URL in project settings');
-    }
-    const credentials = user?.jiraToken
-      ? { token: user.jiraToken, email: user.jiraEmail }
-      : project.jiraToken
-        ? { token: project.jiraToken, email: project.jiraEmail }
-        : null;
-    if (!credentials) {
-      throw new BadRequestException('Add your Jira token in your profile to work with Jira from Vision');
-    }
-    return {
-      jira: new JiraClient({ url: project.jiraUrl, ...credentials }),
-      issueType: project.jiraIssueType,
-      linkType: project.jiraLinkType,
-    };
+  private jiraFor(projectId: string, userId?: string): Promise<JiraAccess> {
+    return jiraAccess(this.prismaService, projectId, userId);
   }
 
   /** Records a Jira issue that already exists for the problem, and puts the problem's markers on it. */
@@ -672,7 +669,6 @@ export class A11yIssuesService implements OnModuleInit {
       if (error instanceof JiraError) throw new BadRequestException(error.message);
       // no Jira set up: keep the key as typed
     }
-    const { settings } = await this.problemsOf(testRun, violationIds);
     const saved = await this.decide(
       testRun,
       violationIds,
@@ -691,13 +687,7 @@ export class A11yIssuesService implements OnModuleInit {
         userId,
       });
       const facets = storedFacets(problem)[0];
-      const warning = await this.mirror(
-        jira,
-        key,
-        'linked',
-        problem.code,
-        problemMarkers(problem.code, facets, settings)
-      );
+      const warning = await this.mirror(jira, key, 'linked', problem.code, problemMarkers(problem.code, facets));
       if (warning) warnings.push(warning);
     }
     return { jiraKey: key, jiraUrl: url, problems: saved.map((problem) => problem.code), warnings };
@@ -708,12 +698,11 @@ export class A11yIssuesService implements OnModuleInit {
     jira: JiraClient,
     projectId: string,
     projectKey: string,
-    problem: RunProblem,
-    settings: ProblemSettings
+    problem: RunProblem
   ): Promise<JiraFoundIssue[]> {
     const facets = problem.facets[0];
     const issues = await jira.search(
-      `project = "${projectKey}" AND (${this.jqlFor(problem.code, facets, settings)}) ORDER BY created DESC`,
+      `project = "${projectKey}" AND (${this.jqlFor(problem.code, facets)}) ORDER BY created DESC`,
       10
     );
     const unlinked = await this.unlinkedKeys(
@@ -721,16 +710,16 @@ export class A11yIssuesService implements OnModuleInit {
       issues.map((issue) => issue.key)
     );
     return issues.filter(
-      (issue) => !unlinked.has(issue.key) && (issue.done || this.isBugOf(issue, problem.code, facets, settings))
+      (issue) => !unlinked.has(issue.key) && (issue.done || this.isBugOf(issue, problem.code, facets))
     );
   }
 
-  private async bugContext(testRun: TestRun, problem: RunProblem, title: string | null, settings: ProblemSettings) {
+  private async bugContext(testRun: TestRun, problem: RunProblem, title: string | null) {
     const device = [testRun.device, testRun.os, testRun.viewport, testRun.browser].filter(Boolean).join(' · ');
     const url = `${process.env.APP_FRONTEND_URL}/${testRun.projectId}?buildId=${testRun.buildId}&testId=${testRun.id}`;
     return {
       ...bugText({ violations: problem.violations, testName: testRun.name, title, device, url, problem }),
-      labels: [...BUG_LABELS, ...problemMarkers(problem.code, problem.facets[0], settings)],
+      labels: [...BUG_LABELS, ...problemMarkers(problem.code, problem.facets[0])],
     };
   }
 
@@ -787,7 +776,7 @@ export class A11yIssuesService implements OnModuleInit {
     userId?: string
   ) {
     const testRun = await this.loadRun(testRunId);
-    const { problems, title, settings } = await this.problemsOf(testRun, violationIds);
+    const { problems, title } = await this.problemsOf(testRun, violationIds);
     const problem = this.single(problems);
     const { jira, issueType: configuredType, linkType: configuredLink } = await this.jiraFor(testRun.projectId, userId);
     return this.jiraCall(async () => {
@@ -795,7 +784,7 @@ export class A11yIssuesService implements OnModuleInit {
       const [issueTypes, linkTypes, inJira] = await Promise.all([
         jira.issueTypes(parent.projectKey),
         jira.linkTypes().catch(() => []),
-        this.findInJira(jira, testRun.projectId, parent.projectKey, problem, settings).catch((error) => {
+        this.findInJira(jira, testRun.projectId, parent.projectKey, problem).catch((error) => {
           this.logger.warn(`Jira search for ${problem.code} failed: ${error}`);
           return [] as JiraFoundIssue[];
         }),
@@ -804,7 +793,7 @@ export class A11yIssuesService implements OnModuleInit {
         (issueTypeId && issueTypes.find((type) => type.id === issueTypeId)) ||
         defaultIssueType(issueTypes, configuredType);
       if (!chosen) throw new BadRequestException(`Project ${parent.projectKey} offers no issue type to create`);
-      const text = await this.bugContext(testRun, problem, title, settings);
+      const text = await this.bugContext(testRun, problem, title);
       const meta = await jira.createFields(parent.projectKey, chosen.id);
       const bug = buildBugFields({
         meta,
@@ -906,16 +895,8 @@ export class A11yIssuesService implements OnModuleInit {
     userId?: string
   ): Promise<{ jiraKey: string; jiraUrl: string | null; code: string; alreadyFiled: boolean; warnings: string[] }> {
     const testRun = await this.loadRun(testRunId);
-    const { problems, title, settings } = await this.problemsOf(testRun, violationIds);
+    const { problems, title } = await this.problemsOf(testRun, violationIds);
     const problem = this.single(problems);
-    const ignoredBy = problem.facets
-      .map((facets) => classOf(facets, settings.classes)?.problemClass)
-      .find((item) => item?.action === 'ignore');
-    if (ignoredBy) {
-      throw new BadRequestException(
-        `The project's class “${ignoredBy.name}” ignores this problem: no bugs are filed for it`
-      );
-    }
     const { jira, issueType: configuredType, linkType: configuredLink } = await this.jiraFor(testRun.projectId, userId);
 
     const claimed = await this.claim(testRun, problem, title, userId);
@@ -966,12 +947,10 @@ export class A11yIssuesService implements OnModuleInit {
     try {
       const parent = await this.jiraCall(() => jira.getIssue(options.parentKey.trim().toUpperCase()));
       const warnings: string[] = [];
-      const found = await this.findInJira(jira, testRun.projectId, parent.projectKey, problem, settings).catch(
-        (error) => {
-          warnings.push(`Could not check Jira for ${problem.code}: ${error.message}`);
-          return [] as JiraFoundIssue[];
-        }
-      );
+      const found = await this.findInJira(jira, testRun.projectId, parent.projectKey, problem).catch((error) => {
+        warnings.push(`Could not check Jira for ${problem.code}: ${error.message}`);
+        return [] as JiraFoundIssue[];
+      });
       const open = found.find((issue) => !issue.done);
       if (open) {
         await finish(open.key, open.url, 'found');
@@ -980,7 +959,7 @@ export class A11yIssuesService implements OnModuleInit {
           open.key,
           'linked',
           problem.code,
-          problemMarkers(problem.code, problem.facets[0], settings)
+          problemMarkers(problem.code, problem.facets[0])
         );
         return {
           jiraKey: open.key,
@@ -1020,7 +999,7 @@ export class A11yIssuesService implements OnModuleInit {
           (options.issueTypeId && issueTypes.find((type) => type.id === options.issueTypeId)) ||
           defaultIssueType(issueTypes, configuredType);
         if (!issueType) throw new BadRequestException(`Project ${parent.projectKey} offers no issue type to create`);
-        const text = await this.bugContext(testRun, problem, title, settings);
+        const text = await this.bugContext(testRun, problem, title);
         const bug = buildBugFields({
           meta: await jira.createFields(parent.projectKey, issueType.id),
           parent,
@@ -1106,7 +1085,7 @@ export class A11yIssuesService implements OnModuleInit {
       }
       const context = await this.contextFor(run, report, settingsByProject.get(state.projectId));
       const facets = facetsOf(violation, context.screen);
-      const key = problemKeyOf(facets, context.settings);
+      const key = problemKeyOf(facets);
       const exists = await this.prismaService.a11yProblem.findUnique({
         where: { projectId_key: { projectId: state.projectId, key } },
       });

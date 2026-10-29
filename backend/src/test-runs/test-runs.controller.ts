@@ -44,7 +44,7 @@ import { Roles } from '../shared/roles.decorator';
 import { A11yIssuesService } from '../a11y/a11y-issues.service';
 import { ChangeGroupsService } from './change-groups.service';
 import { DecisionUndoService } from './decision-undo.service';
-import { AddElementRuleDto, RemoveElementRuleDto } from './dto/element-rule.dto';
+import { AddElementRuleDto, RemoveElementRuleDto, ReplaceAreaWithElementDto } from './dto/element-rule.dto';
 import {
   A11yIssueRefDto,
   FileA11yBugDto,
@@ -203,6 +203,15 @@ export class TestRunsController {
   @Roles(Role.admin, Role.editor)
   removeElementRule(@Param('id', new ParseUUIDPipe()) id: string, @Body() body: RemoveElementRuleDto) {
     return this.testRunsService.removeElementRule(id, body);
+  }
+
+  @Post(':id/ignore-areas/replace-with-element')
+  @ApiOkResponse({ description: 'Replaces a saved ignore area with an ignore rule for the element it covers' })
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RoleGuard)
+  @Roles(Role.admin, Role.editor)
+  replaceAreaWithElement(@Param('id', new ParseUUIDPipe()) id: string, @Body() body: ReplaceAreaWithElementDto) {
+    return this.testRunsService.replaceAreaWithElement(id, body);
   }
 
   @Get(':id/structure')

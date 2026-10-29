@@ -48,14 +48,16 @@ test("shows the project settings in Ukrainian", async ({ page, authUser }) => {
     "Налаштування",
   );
   await expect(page.getByTestId("nav-mobile")).toContainText("Мобільні знімки");
-  await expect(page.getByText("Попереджати про завантаження")).toBeVisible();
+  await expect(
+    page.getByText("Не враховувати рядок стану й панель навігації"),
+  ).toBeVisible();
 
   // a setting is found by its Ukrainian name, and by its English one
   const search = page.getByTestId("settingsSearch");
-  await search.fill("завантаження");
+  await search.fill("панель навігації");
   await expect(page.getByTestId("section-mobile")).toBeVisible();
   await expect(page.getByTestId("section-jira")).toBeHidden();
-  await search.fill("loading");
+  await search.fill("navigation");
   await expect(page.getByTestId("section-mobile")).toBeVisible();
 });
 

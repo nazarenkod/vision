@@ -89,6 +89,17 @@ describe('parseUiTree', () => {
     const pay = tree.nodes.find((n) => n.resourceId.endsWith('btn_pay'));
     expect(describeNode(pay)).toBe('Button "Pay" (id/btn_pay)');
   });
+
+  it('shows emoji the dump wrote as character references', () => {
+    const tree = parseUiTree(
+      `<hierarchy><node class="android.widget.Button" text="Закинь на телефон&amp;#128241; &#x1F686;" resource-id="top_up" clickable="true" bounds="[0,0][500,100]" /></hierarchy>`,
+      { imageWidth: 1080, imageHeight: 2400 }
+    );
+    const button = tree.nodes.find((n) => n.resourceId === 'top_up');
+    expect(describeNode(button)).toBe('Button "Закинь на телефон📱 🚆" (top_up)');
+    // the tree keeps the text as it came, so problem identities do not change
+    expect(button.text).toContain('&#128241;');
+  });
 });
 
 describe('parseUiTree with a plain uiautomator dump (adb, no Appium)', () => {

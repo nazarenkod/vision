@@ -97,7 +97,6 @@ export const en = {
   "settings.dangerTitle": "Delete this project.",
   "settings.deleteProject": "Delete project",
   "settings.meta.mobileOn": "{count} of 5 on",
-  "settings.meta.classes": { one: "{count} class", other: "{count} classes" },
   "settings.meta.set": "set",
   "settings.meta.notSet": "not set",
 
@@ -105,7 +104,7 @@ export const en = {
   "section.review": "Review",
   "section.comparison": "Image comparison",
   "section.mobile": "Mobile screenshots",
-  "section.a11y": "Accessibility problems",
+  "section.a11y": "Accessibility",
   "section.jira": "Jira",
   "section.danger": "Danger zone",
   "section.comparisonIntro":
@@ -113,7 +112,7 @@ export const en = {
   "section.mobileIntro":
     "Applies to screenshots sent with an Appium page source.",
   "section.a11yIntro":
-    "One bug per problem. A problem has an id (a11y-…) that goes into the Jira bug's summary and labels; Vision checks its own records and Jira for it before filing.",
+    "What Vision checks on every screenshot sent with a UI tree, by your team's norms.",
   "section.jiraIntro":
     "Lets reviewers file accessibility bugs from the review screen. Each person adds their own Jira token in their profile, so bugs are filed as them. A shared token here is used for people who have not added one.",
 
@@ -199,20 +198,20 @@ export const en = {
     "A new label, a disabled or unclickable control, an invisible button: changes the pixels do not show.",
   "mobile.maxMove": "Only moves up to, dp (empty for any)",
 
-  "a11y.title": "Accessibility problems",
-  "a11y.intro":
-    "One bug per problem. A problem has an id (a11y-…) that goes into the Jira bug's summary and labels; Vision checks its own records and Jira for it before filing, and marks problems found in Jira as filed.",
-  "a11y.screenTitle": "Screen title in the UI tree",
-  "a11y.screenTitleHelp":
-    "One selector per line, first match wins: id:Appbar#Title, id:toolbar_title, class:…, text:/regex/. Without a match, the check's name is the screen.",
-  "a11y.sameProblem": "Same problem when",
-  "a11y.sameProblemIntro":
-    "Per rule, for elements with an id. A component's problem holds on every screen with it: filed once, covered everywhere. Elements without an id are always a problem of their own screen.",
-  "a11y.sameProblemFor": "Same problem when: {rule}",
-  "a11y.mode.componentValue": "Same component and values",
-  "a11y.mode.component": "Same component, any values",
-  "a11y.mode.screen": "Each screen on its own",
-  "a11y.mode.class": "Everything this class takes",
+  "a11y.norm.touchTarget": "Minimum touch target",
+  "a11y.norm.contrast": "Minimum contrast",
+  "a11y.norm.android": "Android",
+  "a11y.norm.ios": "iOS",
+  "a11y.norm.text": "Text",
+  "a11y.norm.large": "Large text",
+  "a11y.norm.default": "Default {value}",
+  "a11y.norm.reset": "Reset",
+  "a11y.norm.whole": "A whole number from {min} to {max}",
+  "a11y.norm.range": "From {min} to {max}, one decimal",
+  "a11y.norm.iosOnly": "iOS only",
+  "a11y.norm.advice": "advice, not counted",
+  "a11y.norm.applies":
+    "A looser norm also hides issues on screenshots already received; a stricter one finds new issues from the next screenshots.",
   "a11y.rule.touchTarget": "Touch target too small",
   "a11y.rule.lowContrast": "Low text contrast",
   "a11y.rule.missingLabel": "Control has no label",
@@ -220,28 +219,6 @@ export const en = {
   "a11y.rule.duplicateLabel": "Same label on several controls",
   "a11y.rule.redundantRole": "Label repeats the role",
   "a11y.rule.notAccessible": "Control hidden from VoiceOver",
-  "a11y.classes": "Problem classes",
-  "a11y.howMatching": "How matching works",
-  "a11y.howMatchingText":
-    "First match wins. A class takes an issue when every field filled in matches; within a field, one pattern per line, any may match. Patterns are globs with * and ?, or /regex/; a group in an element id regex becomes the component, so {example} makes tab_0…tab_3 one problem. “Everything this class takes” makes all of it one problem; “Ignore” lists it with the false positives and never files it. Problem ids never change with these settings: what is one problem is worked out again from what each problem was filed for.",
-  "a11y.checkedAt": "Checked {position}",
-  "a11y.everyRule": "every rule",
-  "a11y.ignored": "ignored",
-  "a11y.rulesSetting": "rule's setting",
-  "a11y.up": "Up",
-  "a11y.field.element": "Element id",
-  "a11y.field.screen": "Screen",
-  "a11y.field.className": "Element class",
-  "a11y.field.label": "Element label",
-  "a11y.className": "Name",
-  "a11y.patternHelp": "One pattern per line",
-  "a11y.required": "Required",
-  "a11y.classRules": "Rules",
-  "a11y.classRulesHelp": "Empty for every rule",
-  "a11y.classRuleSetting": "Rule's setting",
-  "a11y.classAction": "Then",
-  "a11y.fileBugs": "File bugs",
-  "a11y.addClass": "Add class",
 
   "jira.title": "Jira",
   "jira.intro":
@@ -451,8 +428,6 @@ export const en = {
   "filters.selectProject": "Select project",
 
   // review
-  "review.ignoreAreas": "Ignore Areas",
-  "review.compareArea": "Compare Area",
   "review.applyIgnoreArea":
     "Apply selected ignore area to all images in this build.",
   "review.ignoreSaved": "Ignore areas are updated.",
@@ -584,16 +559,12 @@ export const en = {
     "Rule added for every screen; the build is compared again",
   "panel.ruleAdded": "Rule added; the screenshot is compared again",
   "panel.ignore": "Ignore",
-  "panel.tolerance": "Tolerance",
   "panel.noDetails": "No details about this change.",
-  "panel.cancelPicking": "Cancel picking",
-  "panel.pick": "Pick element on screenshot",
-  "panel.pickHelp":
-    "Point at an element on the right image and click it to ignore it or allow small changes in it. Esc cancels.",
   "panel.invisible": "Changes the screenshot does not show",
   "panel.ignoreArea": "Ignore area",
   "panel.nothingChanged": "Nothing changed against the baseline.",
   "panel.changedAreas": "Changed areas",
+  "panel.spots": "Changed in {count} spots",
   "panel.areaAt": "{width} × {height} px at {x}, {y}",
   "panel.fromTree": "From the UI tree",
   "panel.moved": "Compared at their new place",
@@ -603,15 +574,9 @@ export const en = {
   "panel.up": "up {count} dp",
   "panel.right": "right {count} dp",
   "panel.left": "left {count} dp",
-  "panel.rules": "Rules for this screen",
   "panel.systemBars":
     "Status and navigation bars are left out (project setting).",
-  "panel.allScreens": "All screens",
-  "panel.thisScreen": "This screen",
-  "panel.ignored": "ignored",
-  "panel.found": "· {count} found",
   "panel.ruleRemoved": "Rule removed; compared again",
-  "panel.remove": "Remove",
   "panel.addRuleButton": "Add element rule",
   "panel.details": "Review details",
   "panel.accessibility": "Accessibility",
@@ -634,7 +599,6 @@ export const en = {
   "panel.elementPlaceholder": "Type to search: Pay, balance, toolbar…",
   "panel.foundBy": "Found by {by}, outlined on the screenshot",
   "panel.noElements": "This screenshot has no elements to choose from",
-  "panel.pickOnScreenshot": "Pick on the screenshot",
   "panel.hideSelector": "Hide selector",
   "panel.matchDifferently": "Match differently",
   "panel.selector": "Selector",
@@ -905,6 +869,20 @@ export const en = {
     "Not set: Jira works only where the project has a shared token.",
   "profile.save": "Save",
   "profile.removeToken": "Remove token",
+  "profile.geminiIntro":
+    "Your own key from Google AI Studio: AI drafts bugs from the comparison on it, so what it costs is yours to decide.",
+  "profile.geminiGetKey": "Get a key",
+  "profile.geminiKey": "Gemini API key",
+  "profile.newKey": "New key",
+  "profile.geminiKeySaved": "A key is saved. It is never shown again.",
+  "profile.geminiKeyNotSet":
+    "Not set: you fill bugs from the comparison in yourself.",
+  "profile.geminiSaved": "Gemini key saved",
+  "profile.geminiRemoved": "Gemini key removed",
+  "profile.removeKey": "Remove key",
+  "reportBug.needGeminiKey":
+    "Add your Gemini API key in your profile to let AI fill these.",
+  "reportBug.openProfile": "Open profile",
   "profile.appearance": "Appearance",
   "profile.appearanceHelp":
     "Follows the system until you choose. Remembered in this browser.",
@@ -1109,6 +1087,147 @@ export const en = {
   "panel.removeProjectRuleText":
     "{selector} applies to every screen of the project. Without it, this screenshot and the rest of the build are compared again.",
   "panel.removeRule": "Remove rule",
+
+  // selecting elements on the screenshots (spec 024)
+  "select.button": "Select elements",
+  "select.selecting": "Selecting…",
+  "select.hint": "Click an element",
+  "select.done": "Done",
+  "select.parent": "Select the element around it",
+  "select.child": "Back to the inner element",
+  "select.more": "Match differently",
+  "select.ignore": "Ignore",
+  "select.compare": "Compare only",
+  "select.allow": "Allow {percent}%",
+  "select.thisScreen": "This screen",
+  "select.allScreens": "All screens",
+  "select.compareOneScreen":
+    "Compare only is for one screen: each check names its own elements",
+  "select.onScreen": "{count} on this screen",
+  "select.selected": "{count} selected",
+  "select.ruleIgnore": "Ignored",
+  "select.ruleTolerate": "Allowed ±{percent}%",
+  "select.ruleCompare": "Compared only",
+  "select.remove": "Remove rule",
+  "select.confirmRemove": "Remove on every screen",
+  "select.noTree": "No UI tree on this screenshot",
+  "select.why": "Why?",
+  "select.whyText":
+    "The test sent the screenshot without the page source, so there are no elements to pick. Tests send it with uiTree in the SDK.",
+  "select.drawArea": "Draw an area",
+  "select.added": {
+    one: "Rule added; compared again",
+    other: "{count} rules added; compared again",
+  },
+  "select.removed": "Rule removed; compared again",
+  "rules.show": "Show rules on screenshots",
+  "rules.hide": "Hide rules on screenshots",
+
+  // pixel areas, behind one button (spec 024)
+  "areas.button": "Areas",
+  "areas.title": "Pixel areas",
+  "areas.ignore": "Ignore",
+  "areas.compare": "Compare",
+  "areas.draw": "Draw",
+  "areas.delete": "Delete",
+  "areas.clear": "Clear",
+  "areas.toBuild": "To whole build",
+  "areas.useElement": "Use element",
+  "areas.useElementHelp":
+    "Replace with a rule for {element}: it follows the element when the layout moves",
+  "areas.fromTest": "Sent by the test",
+  "areas.fromTestHelp": "change them in the test code",
+  "areas.area": "Area {width} × {height}",
+  "areas.save": "Save areas",
+  "areas.discard": "Discard",
+  "areas.unsavedTitle": "Save the areas?",
+  "areas.unsavedText":
+    "Areas on this screenshot changed and are not saved yet.",
+  "areas.replaced": "Area replaced with a rule for {element}; compared again",
+
+  // what is compared (spec 024)
+  "compared.whole": "Whole screen",
+  "compared.except": "Whole screen except {count}",
+  "compared.only": {
+    one: "Only {count} element",
+    other: "Only {count} elements",
+  },
+  "compared.areas": {
+    one: "· without {count} area",
+    other: "· without {count} areas",
+  },
+  "compared.allScreens": "all screens",
+  "compared.found":
+    "{selector} · {current} found here, {baseline} on the baseline",
+  "compared.more": "More actions",
+  "compared.problem.noTree":
+    "No UI tree: only the named elements could not be compared",
+  "compared.problem.nothingFound": "{selector} found nothing",
+  "compared.problem.disappeared": "{element} disappeared",
+  "compared.problem.appeared": "{element} appeared",
+  "compared.problem.count":
+    "{selector}: {baseline} on the baseline, {current} now",
+  "compared.problem.resized": "{element} changed size",
+  "reportBug.title": "Report bug",
+  "reportBug.open": "Report bug",
+  "reportBug.openHelp": "File a Jira bug about this screen. Hotkey: B",
+  "reportBug.needToken":
+    "Add your Jira token in your profile to file bugs from here.",
+  "reportBug.checkpoint": "Checkpoint",
+  "reportBug.baseline": "Baseline",
+  "reportBug.markArea": "Mark area",
+  "reportBug.pickElement": "Pick element",
+  "reportBug.areaAt": "{width} × {height} px at {x}, {y}",
+  "reportBug.removeMark": "Remove mark",
+  "reportBug.markHint":
+    "Drag on the screenshot or pick an element to show where the problem is.",
+  "reportBug.marksOnCheckpoint": "Marks go on the checkpoint.",
+  "reportBug.note": "What is wrong? In your words, for AI",
+  "reportBug.notePlaceholder":
+    "e.g. the Pay button is cut off at the bottom; “Total due” is intended",
+  "reportBug.add": "Add:",
+  "reportBug.quick.cutOff": "Cut off",
+  "reportBug.quick.overlaps": "Overlaps",
+  "reportBug.quick.unchanged": "Should not have changed",
+  "reportBug.quick.wrongText": "Wrong text",
+  "reportBug.quick.missing": "Missing",
+  "reportBug.quick.misaligned": "Not aligned",
+  "reportBug.changesItLooksAt": "Changes it looks at",
+  "reportBug.aiGets":
+    "Gemini gets your note, the baseline and checkpoint cut around {areas} area(s), {changes} ticked change(s) and the check’s name. Not the whole screenshots, not your tokens.",
+  "reportBug.fillWithAi": "Fill with AI",
+  "reportBug.askAgain": "Ask again",
+  "reportBug.drafting": "Drafting…",
+  "reportBug.aiFailed":
+    "AI did not fill the bug: {error}. Your note and fields are kept; fill in the rest yourself.",
+  "reportBug.aiTag": "AI",
+  "reportBug.field.essence": "Summary",
+  "reportBug.field.environment": "Environment",
+  "reportBug.field.steps": "Steps",
+  "reportBug.field.actual": "Actual result",
+  "reportBug.field.expected": "Expected result",
+  "reportBug.stepsPlaceholder": "1. …\n2. Open the screen of the feature",
+  "reportBug.screenshots":
+    "The marked checkpoint goes into the actual result, the baseline into the expected one.",
+  "reportBug.screenshotsNoBaseline":
+    "The marked checkpoint goes into the actual result; this check has no baseline yet.",
+  "reportBug.visionAdds":
+    "Vision adds the check, the build and a link back to this review, labels the bug “vision” and copies the customer from the task.",
+  "reportBug.alsoReject": "Also reject the checkpoint",
+  "reportBug.missing": {
+    one: "1 required field left: {fields}",
+    other: "{count} required fields left: {fields}",
+  },
+  "reportBug.creating": "Creating…",
+  "reportBug.filed": "Filed {key}",
+  "reportBug.filedRejected": "Filed {key} · checkpoint rejected",
+  "reportBug.openInJira": "Open in Jira",
+  "reportBug.rejectFailed":
+    "{key} is filed, but the checkpoint was not rejected: {error}",
+  "reportBug.bugsForScreen": "Bugs for this screen",
+  "reportBug.filedFrom": "Filed {date}",
+  "reportBug.bugMarks": "Bug marks",
+  "reportBug.fromChange": "Report bug",
 } satisfies Record<string, Message>;
 
 export type MessageKey = keyof typeof en;

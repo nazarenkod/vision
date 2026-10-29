@@ -107,7 +107,7 @@ test("lists the sections and highlights the one in view", async ({
     "Review",
     "Image comparison",
     "Mobile screenshots",
-    "Accessibility problems",
+    "Accessibility",
     "Jira",
     "Danger zone",
   ];
@@ -335,32 +335,109 @@ test("keeps settings it no longer shows when saving", async ({
   );
 });
 
-test("numbers problem classes and moves one up", async ({
+test("shows only the rules under Accessibility", async ({
   page,
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   authUser,
 }) => {
+  // the project saved problem classes before grouping was fixed (021)
   await open(page);
-  const classes = page.getByTestId("a11yProblemClass");
-  await expect(classes).toHaveCount(2);
-  await expect(classes.nth(0).getByTestId("a11yProblemClassNumber")).toHaveText(
-    "1",
-  );
-  await expect(classes.nth(0)).toContainText("Tabs");
-  await expect(classes.nth(1).getByTestId("a11yProblemClassNumber")).toHaveText(
-    "2",
-  );
+  const section = page.getByTestId("a11yRules");
+  await expect(section.getByRole("checkbox")).toHaveCount(7);
+  // norms only for the tap area and contrast: two fields each
+  await expect(section.getByRole("textbox")).toHaveCount(4);
+  await expect(page.locator("#screenTitleSelectors")).toHaveCount(0);
+  await expect(page.getByText("Screen title")).toHaveCount(0);
+  await expect(page.getByText("Problem classes")).toHaveCount(0);
+  await expect(section.getByText("a11y-")).toHaveCount(0);
+  await page.getByTestId("settingsSearch").fill("class");
+  await expect(page.getByTestId("section-a11y")).toBeHidden();
+});
 
-  await classes.nth(1).getByRole("button", { name: "Up" }).click();
-  await expect(classes.nth(0)).toContainText("Map controls");
-  await expect(classes.nth(0).getByTestId("a11yProblemClassNumber")).toHaveText(
-    "1",
-  );
-  // the long explanation waits behind a toggle
-  await expect(page.getByTestId("howMatchingWorks")).not.toHaveAttribute(
-    "open",
-    "",
-  );
+test("sets the project's touch target and turns a rule off", async ({
+  page,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  authUser,
+}) => {
+  await mockSaveProject(page);
+  await open(page);
+  const android = page.locator("#norm-touchTargetAndroid");
+  await expect(android).toHaveValue("48");
+  await expect(page.getByTestId("reset-touchTargetAndroid")).toHaveCount(0);
+
+  await android.fill("40");
+  await expect(page.getByText("Default 48")).toBeVisible();
+  await expect(page.getByTestId("reset-touchTargetAndroid")).toBeVisible();
+  await page
+    .getByTestId("a11yRule-redundant-role")
+    .getByRole("checkbox")
+    .uncheck();
+
+  const [request] = await Promise.all([
+    putRequest(page),
+    page.getByTestId("saveSettings").click(),
+  ]);
+  expect(
+    JSON.parse(request.postDataJSON().uiTreeSettings).a11yNorms,
+  ).toMatchObject({
+    touchTargetAndroid: 40,
+    touchTargetIos: 44,
+    disabledRules: ["redundant-role"],
+  });
+
+  await page.getByTestId("reset-touchTargetAndroid").click();
+  await expect(android).toHaveValue("48");
+});
+
+test("does not save a norm out of range", async ({
+  page,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  authUser,
+}) => {
+  await mockSaveProject(page);
+  await open(page);
+  await page.locator("#norm-touchTargetAndroid").fill("100");
+  await expect(page.getByText("A whole number from 24 to 96")).toBeVisible();
+  await page.locator("#norm-contrast").fill("8");
+  await expect(page.getByText("From 1.5 to 7, one decimal")).toBeVisible();
+  await page.locator("#norm-touchTargetIos").fill("40");
+
+  const [request] = await Promise.all([
+    putRequest(page),
+    page.getByTestId("saveSettings").click(),
+  ]);
+  expect(
+    JSON.parse(request.postDataJSON().uiTreeSettings).a11yNorms,
+  ).toMatchObject({
+    touchTargetAndroid: 48,
+    touchTargetIos: 40,
+    contrast: 4.5,
+  });
+});
+
+test("keeps the screen title selectors the project saved", async ({
+  page,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  authUser,
+}) => {
+  await mockSaveProject(page);
+  await open(page, {
+    uiTreeSettings: JSON.stringify({
+      ...JSON.parse(project.uiTreeSettings),
+      screenTitle: ["id:toolbar_title"],
+    }),
+  });
+  await page.locator("#norm-touchTargetAndroid").fill("40");
+
+  const [request] = await Promise.all([
+    putRequest(page),
+    page.getByTestId("saveSettings").click(),
+  ]);
+  // what is no longer on the page is kept as it was
+  expect(JSON.parse(request.postDataJSON().uiTreeSettings)).toMatchObject({
+    screenTitle: ["id:toolbar_title"],
+    a11yClasses: [{ id: "tabs" }, { id: "maps" }],
+  });
 });
 
 test("asks before leaving with unsaved changes", async ({

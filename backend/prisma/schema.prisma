@@ -108,6 +108,9 @@ model TestRun {
   diffRegions           String?
   // per-run overrides sent by the client, as JSON ({"excludeSystemBars": false})
   uiTreeOptions         String?
+  // the feature the screen belongs to, sent by the test (025, ADR-0019); names
+  // bugs filed from the review and is not part of the check's identity
+  featureName           String?
   // [{kind, message}] — taken while loading, looks like another screen, …
   captureWarnings       String?
   // changes the pixels do not show: labels, states, invisible controls
@@ -175,6 +178,8 @@ model User {
   // personal Jira credentials: bugs are filed as this person (email only for Jira Cloud)
   jiraToken String?
   jiraEmail String?
+  // personal Gemini API key: bugs from the comparison are drafted on the person's own key (025)
+  geminiApiKey String?
   // the last time this person signed in to the web interface (password or
   // SSO); API-key calls from the SDK, CLI and MCP do not count
   lastSignInAt DateTime?
@@ -319,4 +324,26 @@ model ReviewDecision {
   undoneAt  DateTime?
 
   @@index([createdAt])
+}
+
+// A Jira bug filed from the comparison (025): shown on every run of its check.
+// No foreign keys, like ReviewDecision: upstream deletes runs freely.
+model VisualBug {
+  id         String   @id @default(uuid())
+  projectId  String
+  // the check: name + customTags (ADR-0005)
+  checkName  String
+  customTags String   @default("")
+  // the run it was filed from, and that run's device profile
+  testRunId  String
+  device     String   @default("")
+  jiraKey    String
+  jiraUrl    String?
+  summary    String
+  // [{n, x, y, width, height, element?}] in screenshot pixels; a few hundred bytes
+  marks      String   @default("[]")
+  userId     String?
+  createdAt  DateTime @default(now())
+
+  @@index([projectId, checkName, customTags])
 }

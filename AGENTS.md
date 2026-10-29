@@ -19,7 +19,7 @@ Vision — внутрішній форк [Visual Regression Tracker](https://git
 3. **Міграції лише додавальні:** нова таблиця, nullable-колонка, індекс; без змін enum, видалень,
    перейменувань ([ADR-0003](docs/decisions/0003-additive-schema-only.md)).
 4. **Жодних скидань і видалень бази** (`prisma migrate reset`, `DROP DATABASE`, `dropdb`).
-5. **SDK = upstream + один необов'язковий параметр** `TestRunOptions.uiTree` ([ADR-0004](docs/decisions/0004-sdk-upstream-plus-ui-tree.md)).
+5. **SDK = upstream + два необов'язкові параметри** `TestRunOptions.uiTree` і `featureName` ([ADR-0019](docs/decisions/0019-sdk-upstream-plus-ui-tree-and-feature.md)).
 6. **LLM — лише на вимогу,** ніколи при прийомі знімків ([ADR-0007](docs/decisions/0007-deterministic-first-ai-on-demand.md)).
 7. **Секрети не виходять із сервера:** токени Jira лише записуються (`jiraTokenSet`); рядок
    `User` ніколи не віддається цілком.
@@ -39,7 +39,7 @@ Vision — внутрішній форк [Visual Regression Tracker](https://git
 |---|---|---|
 | `backend/` | NestJS 11 + Prisma 6 + Postgres: API, UI-дерево, доступність, Jira, AI | [backend/AGENTS.md](backend/AGENTS.md) |
 | `frontend/` | React 18 + MUI 5 + Vite, Playwright; CLI `public/cli/vision.py` | [frontend/AGENTS.md](frontend/AGENTS.md) |
-| `sdk-java/` | Java SDK (upstream + `uiTree`) | [sdk-java/AGENTS.md](sdk-java/AGENTS.md) |
+| `sdk-java/` | Java SDK (upstream + `uiTree`, `featureName`) | [sdk-java/AGENTS.md](sdk-java/AGENTS.md) |
 | `scripts/` | `vision.sh`, копія даних проду, jar SDK, перевірка документації | [scripts/AGENTS.md](scripts/AGENTS.md) |
 | `docs/` | специфікації, рішення, архітектура, гайди | [docs/README.md](docs/README.md) |
 | `DEPLOY.md`, `DEMO.md` | розгортання поруч із продом (рос.), демо (англ.) | — |

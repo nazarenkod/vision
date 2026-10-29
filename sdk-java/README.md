@@ -37,8 +37,8 @@ dependencies {
 
 ### Vision build
 
-This copy adds one optional field, `TestRunOptions.uiTree`. Publish it and change only the
-version in your build (default `4.3.1-vision.1`; JDK 11–17 and Gradle 7 to build, runs on Java 11+):
+This copy adds two optional fields, `TestRunOptions.uiTree` and `featureName`. Publish it and change only the
+version in your build (default `4.3.1-vision.2`; JDK 11–17 and Gradle 7 to build, runs on Java 11+):
 
 ```bash
 gradle publishToMavenLocal
@@ -199,6 +199,7 @@ visualRegressionTracker.track(
             .device("Pixel 7")
             .os("Android 15")
             .uiTree(driver.getPageSource())
+            .featureName("Checkout") // optional: names bugs filed from the review
             .build()
 );
 ```

@@ -2,12 +2,8 @@ import { describeNode, ownSpeakableText } from '../ui-tree/ui-tree.parser';
 import { UiNode, UiTree } from '../ui-tree/ui-tree.types';
 import { A11yReport, A11yRule, A11ySeverity, A11yViolation, RgbaImage } from './a11y.types';
 import { estimateContrast } from './contrast';
+import { A11yNorms, DEFAULT_A11Y_NORMS, summarize, touchTargetOf, unitOf } from './a11y-norms';
 
-// Minimum touch target: 48 dp on Android (Material, ATF), 44 pt on iOS (HIG).
-const MIN_TARGET = { 'appium-android': 48, 'appium-ios': 44 };
-// WCAG AA: 4.5:1 for body text, 3:1 for large text.
-const MIN_CONTRAST = 4.5;
-const MIN_CONTRAST_LARGE = 3;
 // A single line taller than this (dp) is treated as large text.
 const LARGE_TEXT_HEIGHT_DP = 28;
 // Containers that cover most of the screen are layout, not controls.
@@ -22,14 +18,15 @@ interface Context {
   tree: UiTree;
   children: number[][];
   image?: RgbaImage;
+  norms: A11yNorms;
 }
 
-function buildContext(tree: UiTree, image?: RgbaImage): Context {
+function buildContext(tree: UiTree, norms: A11yNorms, image?: RgbaImage): Context {
   const children: number[][] = tree.nodes.map(() => []);
   tree.nodes.forEach((node) => {
     if (node.parent !== null) children[node.parent].push(node.index);
   });
-  return { tree, children, image };
+  return { tree, children, image, norms };
 }
 
 const isShown = (node: UiNode) => node.visible && node.bounds.width > 0 && node.bounds.height > 0;
@@ -106,12 +103,12 @@ function checkMissingLabel(node: UiNode, ctx: Context): A11yViolation[] {
 
 function checkTouchTarget(node: UiNode, ctx: Context): A11yViolation[] {
   if (!isControl(node, ctx)) return [];
-  const min = MIN_TARGET[ctx.tree.format];
+  const min = touchTargetOf(ctx.norms, ctx.tree.format);
   const width = node.bounds.width / ctx.tree.pixelsPerDp;
   const height = node.bounds.height / ctx.tree.pixelsPerDp;
   // half a unit of slack for rounding in bounds and density
   if (width >= min - 0.5 && height >= min - 0.5) return [];
-  const unit = ctx.tree.format === 'appium-ios' ? 'pt' : 'dp';
+  const unit = unitOf(ctx.tree.format);
   return [
     violation(
       'touch-target',
@@ -120,7 +117,7 @@ function checkTouchTarget(node: UiNode, ctx: Context): A11yViolation[] {
       ctx,
       'Touch target too small',
       `${describeNode(node)} is ${Math.round(width)} × ${Math.round(height)} ${unit}, minimum is ${min} × ${min} ${unit}.`,
-      { widthDp: round1(width), heightDp: round1(height), min, estimatedDensity: ctx.tree.pixelsPerDpEstimated }
+      { widthDp: round1(width), heightDp: round1(height), min, unit, estimatedDensity: ctx.tree.pixelsPerDpEstimated }
     ),
   ];
 }
@@ -159,7 +156,7 @@ function checkContrast(node: UiNode, ctx: Context): A11yViolation[] {
   if (!estimate) return [];
   const heightDp = node.bounds.height / ctx.tree.pixelsPerDp;
   const large = heightDp >= LARGE_TEXT_HEIGHT_DP && node.text.length <= 30;
-  const required = large ? MIN_CONTRAST_LARGE : MIN_CONTRAST;
+  const required = large ? ctx.norms.contrastLarge : ctx.norms.contrast;
   if (estimate.ratio >= required) return [];
   return [
     violation(
@@ -169,7 +166,7 @@ function checkContrast(node: UiNode, ctx: Context): A11yViolation[] {
       ctx,
       'Low text contrast',
       `${describeNode(node)}: ${estimate.ratio.toFixed(1)} : 1, needs ${required} : 1.`,
-      { ratio: estimate.ratio, required, foreground: estimate.foreground, background: estimate.background }
+      { ratio: estimate.ratio, required, large, foreground: estimate.foreground, background: estimate.background }
     ),
   ];
 }
@@ -228,13 +225,21 @@ const NODE_RULES = [
   checkIosAccessible,
 ];
 
-/** All accessibility issues of one screen. The screenshot is only needed for contrast. */
-export function findViolations(tree: UiTree, image?: RgbaImage): A11yViolation[] {
-  const ctx = buildContext(tree, image);
+/**
+ * All accessibility issues of one screen, by the project's norms; rules the
+ * project turned off are not run. The screenshot is only needed for contrast.
+ */
+export function findViolations(
+  tree: UiTree,
+  image?: RgbaImage,
+  norms: A11yNorms = DEFAULT_A11Y_NORMS
+): A11yViolation[] {
+  const ctx = buildContext(tree, norms, image);
   const found = tree.nodes.flatMap((node) => NODE_RULES.flatMap((rule) => rule(node, ctx)));
   found.push(...checkDuplicateLabels(ctx));
+  const off = new Set(norms.disabledRules);
   // one entry per id: the same element can't be reported twice by the same rule
-  return [...new Map(found.map((v) => [v.id, v])).values()];
+  return [...new Map(found.filter((v) => !off.has(v.rule)).map((v) => [v.id, v])).values()];
 }
 
 const SEVERITY_ORDER: Record<A11ySeverity, number> = { error: 0, warning: 1, info: 2 };
@@ -256,21 +261,14 @@ export function buildReport(tree: UiTree, current: A11yViolation[], baseline: A1
         a.bounds.y - b.bounds.y
     );
   const fixed = (baseline ?? []).filter((v) => !currentIds.has(v.id));
-  // advice (severity info) is listed but never counted, so it cannot fail a build
-  const counted = violations.filter((v) => v.severity !== 'info');
-  const newCount = counted.filter((v) => v.status === 'new').length;
   return {
     version: 1,
     format: tree.format,
     pixelsPerDp: tree.pixelsPerDp,
     pixelsPerDpEstimated: tree.pixelsPerDpEstimated,
     baselineChecked: baseline !== null,
-    summary: {
-      new: newCount,
-      existing: counted.length - newCount,
-      fixed: fixed.filter((v) => v.severity !== 'info').length,
-      total: counted.length,
-    },
+    // advice (severity info) is listed but never counted, so it cannot fail a build
+    summary: summarize(violations, fixed),
     violations,
     fixed,
   };

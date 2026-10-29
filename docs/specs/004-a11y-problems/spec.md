@@ -6,7 +6,7 @@
 | Власник | Дмитро Назаренко |
 | Оновлено | 2026-10-27 |
 | Дизайн | [design.md](design.md) |
-| Пов'язане | [003](../003-accessibility-checks/spec.md) (звідки знахідки), [005](../005-jira-bugs/spec.md) (як заводиться баг), [ADR-0008](../../decisions/0008-stable-problem-ids-from-facts.md), [ADR-0009](../../decisions/0009-jira-mirrors-local-decisions.md) |
+| Пов'язане | [026](../026-a11y-rules-settings/spec.md) змінює REQ-004-43: селектори заголовка не налаштовуються в інтерфейсі; [003](../003-accessibility-checks/spec.md) (звідки знахідки), [005](../005-jira-bugs/spec.md) (як заводиться баг), [ADR-0008](../../decisions/0008-stable-problem-ids-from-facts.md), [ADR-0009](../../decisions/0009-jira-mirrors-local-decisions.md); групування фіксоване, класи й режими знято — [021](../021-fixed-a11y-grouping/spec.md) |
 
 ## Контекст і проблема
 

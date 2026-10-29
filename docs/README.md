@@ -14,7 +14,7 @@
 | Задача | Читай |
 |---|---|
 | Нова фіча чи зміна поведінки | [agentic-workflow](guides/agentic-workflow.md) → `/spec` |
-| Доступність, проблеми, дублі багів | [003](specs/003-accessibility-checks/spec.md), [004](specs/004-a11y-problems/spec.md), [ADR-0008](decisions/0008-stable-problem-ids-from-facts.md), [ADR-0009](decisions/0009-jira-mirrors-local-decisions.md) |
+| Доступність, проблеми, дублі багів | [a11y-checklist](guides/a11y-checklist.md), [003](specs/003-accessibility-checks/spec.md), [004](specs/004-a11y-problems/spec.md), [ADR-0008](decisions/0008-stable-problem-ids-from-facts.md), [ADR-0009](decisions/0009-jira-mirrors-local-decisions.md) |
 | Jira | [005](specs/005-jira-bugs/spec.md), [ADR-0010](decisions/0010-personal-jira-tokens.md) |
 | Порівняння мобільних екранів | [002](specs/002-ui-tree-analysis/spec.md), [001](specs/001-check-identity/spec.md) |
 | Розгортання й оновлення сервера | [DEPLOY.md](../DEPLOY.md), [011](specs/011-deployment-safety/spec.md), [ADR-0002](decisions/0002-production-is-read-only.md) |

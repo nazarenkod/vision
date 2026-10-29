@@ -23,4 +23,5 @@ public class TestRunRequest {
     private final List<IgnoreAreas> ignoreAreas;
     // gzipped and base64-encoded page source
     private final String uiTree;
+    private final String featureName;
 }

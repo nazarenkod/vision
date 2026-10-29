@@ -1,6 +1,6 @@
 import { BadRequestException, forwardRef, Inject, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { randomUUID } from 'crypto';
-import { AddElementRuleDto, RemoveElementRuleDto } from './dto/element-rule.dto';
+import { AddElementRuleDto, RemoveElementRuleDto, ReplaceAreaWithElementDto } from './dto/element-rule.dto';
 import {
   checkKey,
   ElementRule,
@@ -10,6 +10,7 @@ import {
 } from '../ui-tree/comparison-inputs';
 import { CreateTestRequestDto } from './dto/create-test-request.dto';
 import { IgnoreAreaDto } from './dto/ignore-area.dto';
+import { compareOnlyStatus } from '../ui-tree/compare-only';
 import { StaticService } from '../static/static.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { Baseline, Prisma, TestRun, TestStatus, TestVariation } from '@prisma/client';
@@ -328,9 +329,20 @@ export class TestRunsService {
         saveDiffAsFile: true,
         moves: fromTree.moves,
         toleranceAreas: fromTree.toleranceAreas,
+        // a check that names its elements measures the difference against them (ADR-0018)
+        ...(fromTree.compareOnly.active ? { measureAreas: fromTree.compareOnly.keep } : {}),
       },
     });
     let saved = await this.saveDiffResult(testRun.id, diffResult);
+
+    // a compared element that is gone, resized or not found cannot pass on its pixels (spec 015)
+    if (saved && compareOnlyStatus(saved.status, fromTree.compareOnly.problems) !== saved.status) {
+      saved = await this.prismaService.testRun.update({
+        where: { id: saved.id },
+        data: { status: TestStatus.unresolved },
+      });
+      this.eventsGateway.testRunUpdated(saved);
+    }
 
     previous.forEach((name) => this.staticService.deleteImage(name));
 
@@ -393,6 +405,7 @@ export class TestRunsService {
         baselineName: testVariation.baselineName,
         baselineUiTreeName: testVariation.baselineUiTreeName,
         uiTreeName,
+        featureName: createTestRequestDto.featureName?.trim() || null,
         uiTreeOptions:
           createTestRequestDto.excludeSystemBars !== undefined
             ? JSON.stringify({ excludeSystemBars: createTestRequestDto.excludeSystemBars })
@@ -462,6 +475,10 @@ export class TestRunsService {
     if (!parseSelector(dto.selector)) {
       throw new BadRequestException('Selector must start with id:, class: or text:');
     }
+    // each check names its own elements; "compare only these" for every screen would compare nothing elsewhere
+    if (dto.action === 'compare' && dto.scope === 'project') {
+      throw new BadRequestException('Compare only applies to one screen');
+    }
     const testRun = await this.findOne(id);
     if (!testRun) throw new NotFoundException('Test run not found');
     const rule: ElementRule = {
@@ -474,6 +491,34 @@ export class TestRunsService {
     await this.updateRules(testRun, dto.scope, (rules) => [...rules, rule]);
     await this.recompareAfterRuleChange(testRun, dto.scope);
     return rule;
+  }
+
+  /**
+   * Swaps a pixel area for an ignore rule on the element it stands for, so the
+   * exclusion follows the element when the layout moves (REQ-024-51). The run is
+   * compared once, with both changes in place.
+   */
+  async replaceAreaWithElement(
+    id: string,
+    dto: ReplaceAreaWithElementDto
+  ): Promise<{ rule: ElementRule; area: IgnoreAreaDto }> {
+    if (!parseSelector(dto.selector)) {
+      throw new BadRequestException('Selector must start with id:, class: or text:');
+    }
+    const testRun = await this.findOne(id);
+    if (!testRun) throw new NotFoundException('Test run not found');
+    // areas drawn in the UI carry an id; the DTO only describes the rectangle
+    const areas = parseJsonArray<IgnoreAreaDto & { id?: string }>(testRun.ignoreAreas);
+    const area = areas.find((item) => item.id !== undefined && String(item.id) === dto.areaId);
+    if (!area) throw new NotFoundException('Ignore area not found');
+    const rule: ElementRule = { id: randomUUID(), selector: dto.selector.trim(), action: 'ignore' };
+    await this.updateRules(testRun, 'screen', (rules) => [...rules, rule]);
+    // updateIgnoreAreas compares the run again, now with the rule in place too
+    await this.updateIgnoreAreas(
+      id,
+      areas.filter((item) => item !== area)
+    );
+    return { rule, area };
   }
 
   async removeElementRule(id: string, dto: RemoveElementRuleDto): Promise<void> {

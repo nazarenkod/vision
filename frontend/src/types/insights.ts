@@ -23,9 +23,7 @@ export interface A11yIssueInfo {
   // set when it was decided on another check: a component's problem holds on every screen
   screenName?: string;
   screenTitle?: string | null;
-  // ignored by the project's problem class of this name, not by a decision
-  byClass?: string;
-  // other bugs of the same problem, when the settings now see several problems as one
+  // other bugs of the same problem, when problems decided apart are now one
   related?: Array<{
     code: string;
     jiraKey: string | null;
@@ -51,8 +49,6 @@ export interface A11yViolation {
   group: string;
   // the problem's id, as in the Jira bug's summary and labels (a11y-3f9c2a1b)
   problemCode: string;
-  // the project's problem class that took it
-  problemClass?: string;
 }
 
 export interface A11yReport {
@@ -92,12 +88,17 @@ export interface NoiseHint {
   kind: "status-bar" | "dynamic-text" | "anti-aliasing";
   message: string;
   ignoreArea?: Rect;
+  // the element the noisy area stands for, when there is one (REQ-024-40)
+  element?: { selector: string; element: string };
 }
+
+export type ElementRuleAction = "ignore" | "tolerate" | "compare";
 
 export interface ElementRule {
   id: string;
   selector: string;
-  action: "ignore" | "tolerate";
+  // compare: only the elements such rules match are compared on this screen
+  action: ElementRuleAction;
   maxDiffPercent?: number;
   note?: string;
 }
@@ -108,39 +109,80 @@ export interface UiTreeSettings {
   maxMoveDp: number | null;
   detectSemanticChanges: boolean;
   elementRules: ElementRule[];
-  // where the screen's title is in the UI tree, first match wins
+  // where the screen's title is in the UI tree, first match wins; not on the
+  // settings page since 026, but kept so a save does not erase it
   screenTitle?: string[];
-  // when two accessibility issues are the same problem, per rule
-  a11yDuplicates?: Partial<Record<A11yRule, DuplicateMode>>;
-  // the project's problem classes, first match wins
-  a11yClasses?: ProblemClass[];
+  // what the team agreed an accessible screen is (026)
+  a11yNorms?: Partial<A11yNorms>;
 }
 
-export type GroupBy = DuplicateMode | "class";
+/** Every accessibility rule, in the order the settings page lists them. */
+export const A11Y_RULES: A11yRule[] = [
+  "touch-target",
+  "low-contrast",
+  "missing-label",
+  "input-without-label",
+  "duplicate-label",
+  "not-accessible",
+  "redundant-role",
+];
 
-/**
- * Conditions of a class on the facts of an issue: every field given must
- * match (and), any pattern of a field may (or). Globs with * and ?, or
- * /regex/; a group in an element pattern is the component id.
- */
-export interface ClassConditions {
-  element?: string[];
-  screen?: string[];
-  className?: string[];
-  label?: string[];
+export interface A11yNorms {
+  // minimum tap area: dp on Android, pt on iOS
+  touchTargetAndroid: number;
+  touchTargetIos: number;
+  // minimum contrast ratio for body text and for large text
+  contrast: number;
+  contrastLarge: number;
+  disabledRules: A11yRule[];
 }
 
-/** Which issues are one problem and what is done with them. */
-export interface ProblemClass {
-  id: string;
-  name: string;
-  rules?: A11yRule[];
-  when?: ClassConditions;
-  // as classes were first written: one element pattern, and the grouping
-  match?: string;
-  mode?: DuplicateMode;
-  groupBy?: GroupBy;
-  action?: "report" | "ignore";
+export const DEFAULT_A11Y_NORMS: A11yNorms = {
+  touchTargetAndroid: 48,
+  touchTargetIos: 44,
+  contrast: 4.5,
+  contrastLarge: 3,
+  disabledRules: [],
+};
+
+export type A11yNormField = Exclude<keyof A11yNorms, "disabledRules">;
+
+// the same limits the server reads them by
+export const A11Y_NORM_LIMITS: Record<
+  A11yNormField,
+  { min: number; max: number; integer: boolean }
+> = {
+  touchTargetAndroid: { min: 24, max: 96, integer: true },
+  touchTargetIos: { min: 24, max: 96, integer: true },
+  contrast: { min: 1.5, max: 7, integer: false },
+  contrastLarge: { min: 1.5, max: 7, integer: false },
+};
+
+/** A typed norm, or null when it is not a number within the limits. */
+export function parseNorm(field: A11yNormField, text: string): number | null {
+  const value = Number(text.trim().replace(",", "."));
+  const { min, max, integer } = A11Y_NORM_LIMITS[field];
+  if (!text.trim() || !Number.isFinite(value) || value < min || value > max)
+    return null;
+  // contrast to one decimal: 1.1 * 10 is not exactly 11 in floating point
+  const step = integer ? 1 : 10;
+  if (Math.abs(Math.round(value * step) - value * step) > 1e-9) return null;
+  return value;
+}
+
+/** The project's norms, the default for whatever it has not set. */
+export function a11yNormsOf(settings: UiTreeSettings): A11yNorms {
+  const saved = settings.a11yNorms ?? {};
+  const norms = { ...DEFAULT_A11Y_NORMS };
+  (Object.keys(A11Y_NORM_LIMITS) as A11yNormField[]).forEach((field) => {
+    const value = saved[field];
+    if (typeof value === "number" && parseNorm(field, String(value)) !== null)
+      norms[field] = value;
+  });
+  norms.disabledRules = Array.isArray(saved.disabledRules)
+    ? A11Y_RULES.filter((rule) => saved.disabledRules?.includes(rule))
+    : [];
+  return norms;
 }
 
 /** What a decision answers: the problems it touched, and what did not work out in Jira. */
@@ -148,19 +190,6 @@ export interface A11yDecisionResult {
   problems?: string[];
   warnings?: string[];
 }
-
-export type DuplicateMode = "component-value" | "component" | "screen";
-
-// as the server defaults them (a11y-problems.ts)
-export const DEFAULT_DUPLICATE_MODES: Record<A11yRule, DuplicateMode> = {
-  "touch-target": "component-value",
-  "low-contrast": "component-value",
-  "missing-label": "component",
-  "input-without-label": "component",
-  "redundant-role": "component",
-  "not-accessible": "component",
-  "duplicate-label": "screen",
-};
 
 export const DEFAULT_UI_TREE_SETTINGS: UiTreeSettings = {
   excludeSystemBars: true,
@@ -182,15 +211,62 @@ export interface StructureInfo {
   }>;
   hints: NoiseHint[];
   invisible: StructuralChange[];
-  rules: Array<ElementRule & { scope: "screen" | "project"; matches: number }>;
+  rules: ScreenRule[];
+  // what is compared when the check names its elements (spec 015)
+  compareOnly?: {
+    active: boolean;
+    keep: Rect[];
+    problems: CompareOnlyProblem[];
+  };
   ignoredAreas: Rect[];
   toleratedAreas: Array<Rect & { maxDiffPercent: number }>;
   systemBars: Rect[];
   moves: Array<{ key: string; element: string; dxDp: number; dyDp: number }>;
   // elements a rule can be made for by clicking them on the screenshot
   elements?: PickableElement[];
+  baselineElements?: PickableElement[];
+  // saved ignore areas that stand for one element (REQ-024-50)
+  areaSuggestions?: Array<{
+    areaId: string;
+    selector: string;
+    element: string;
+  }>;
   settings: UiTreeSettings;
 }
+
+export type RuleScope = "screen" | "project";
+
+export type ScreenRule = ElementRule & {
+  scope: RuleScope;
+  matches: number;
+  // what the rule matched on each screenshot
+  found?: { current: Rect[]; baseline: Rect[] };
+};
+
+export type CompareOnlyProblem =
+  | { kind: "no-tree" }
+  | { kind: "nothing-found"; ruleId: string; selector: string }
+  | {
+      kind: "disappeared" | "appeared";
+      ruleId: string;
+      selector: string;
+      element: string;
+    }
+  | {
+      kind: "count";
+      ruleId: string;
+      selector: string;
+      baseline: number;
+      current: number;
+    }
+  | {
+      kind: "resized";
+      ruleId: string;
+      selector: string;
+      element: string;
+      before: Rect;
+      after: Rect;
+    };
 
 export interface ChangeGroup {
   id: string;
@@ -239,6 +315,10 @@ export function parseUiTreeSettings(value?: string | null): UiTreeSettings {
 }
 
 export interface PickableElement {
+  // the node's index in its tree and the nearest pickable element around it
+  // (absent from servers older than spec 024)
+  index?: number;
+  parent?: number | null;
   selector: string;
   element: string;
   bounds: Rect;
@@ -364,6 +444,8 @@ export interface JiraBugInput {
   required: boolean;
   type: "user" | "option" | "options" | "text" | "number";
   options?: Array<{ id: string; label: string }>;
+  // severity and customer are found by name; a bug from the comparison treats them apart
+  role?: "severity" | "customer";
   value?: unknown;
   display?: string;
 }
@@ -373,4 +455,76 @@ export interface JiraUser {
   name?: string;
   key?: string;
   displayName?: string;
+}
+
+/** What the bug-from-comparison dialog shows and fills in (025). */
+export interface VisualBugPreparation {
+  parent: {
+    key: string;
+    summary: string;
+    projectKey: string;
+    assignee: string | null;
+  };
+  issueTypes: Array<{ id: string; name: string; subtask: boolean }>;
+  issueTypeId: string;
+  linkTypes: string[];
+  linkType: string | null;
+  feature: string;
+  // "[Automation] [feature]": Vision puts it before the essence
+  prefix: string;
+  environment: string;
+  hasBaseline: boolean;
+  inputs: JiraBugInput[];
+  filled: Array<{ field: string; value: string; source: "task" | "vision" }>;
+  missing: string[];
+}
+
+export interface VisualBugMark {
+  n: number;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  element?: string;
+}
+
+export interface VisualBugFiling {
+  parentKey: string;
+  issueTypeId?: string;
+  linkType?: string;
+  fieldValues?: Record<string, unknown>;
+  essence: string;
+  environment: string;
+  steps: string;
+  actual: string;
+  expected: string;
+  marks: Array<Omit<VisualBugMark, "n">>;
+}
+
+export interface VisualBugResult {
+  jiraKey: string;
+  jiraUrl: string | null;
+  summary: string;
+  warnings: string[];
+}
+
+/** A bug filed from the comparison for this check, on any device or build. */
+export interface VisualBug {
+  id: string;
+  jiraKey: string;
+  jiraUrl: string | null;
+  summary: string;
+  marks: VisualBugMark[];
+  // marks are in the pixels of the device the bug was filed from
+  sameDevice: boolean;
+  testRunId: string;
+  createdAt: string;
+}
+
+export interface BugDraft {
+  essence: string;
+  steps: string;
+  actual: string;
+  expected: string;
+  cached: boolean;
 }

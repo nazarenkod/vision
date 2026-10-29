@@ -11,6 +11,8 @@ import { diffTrees, elementsUnderRegions, RegionElement, StructuralChange } from
 import { findNoiseHints, NoiseHint } from './noise-hints';
 import { ComponentChange, componentChanges, invisibleChanges } from './screen-checks';
 import { PrismaService } from '../prisma/prisma.service';
+import { CompareOnlyPlan, insideCompared, planCompareOnly } from './compare-only';
+import { elementForArea } from './area-elements';
 import {
   checkKey,
   computeMoves,
@@ -44,6 +46,8 @@ export interface ComparisonInputs {
   systemBars: Rect[];
   rules: ResolvedRules;
   settings: UiTreeSettings | null;
+  // only some elements are compared (spec 015); inactive otherwise
+  compareOnly: CompareOnlyPlan;
 }
 
 export interface UiTreeOptions {
@@ -67,7 +71,16 @@ export interface StructureInfo {
   hints: NoiseHint[];
   // changes the screenshot does not show
   invisible: StructuralChange[];
-  rules: Array<ElementRule & { scope: 'screen' | 'project'; matches: number }>;
+  rules: Array<
+    ElementRule & {
+      scope: 'screen' | 'project';
+      matches: number;
+      // what the rule matched on each screenshot, for drawing it there
+      found: { current: Rect[]; baseline: Rect[] };
+    }
+  >;
+  // what is compared when the check names its elements, and what the pixels cannot vouch for
+  compareOnly: Pick<CompareOnlyPlan, 'active' | 'keep' | 'problems'>;
   ignoredAreas: Rect[];
   toleratedAreas: Array<Rect & { maxDiffPercent: number }>;
   systemBars: Rect[];
@@ -75,10 +88,16 @@ export interface StructureInfo {
   moves: Array<{ key: string; element: string; dxDp: number; dyDp: number }>;
   // elements a rule can be made for by clicking them on the screenshot
   elements: PickableElement[];
+  baselineElements: PickableElement[];
+  // saved ignore areas that stand for one element (REQ-024-50)
+  areaSuggestions: Array<{ areaId: string; selector: string; element: string }>;
   settings: UiTreeSettings;
 }
 
 export interface PickableElement {
+  // the node's index in its tree, and the nearest pickable element around it
+  index: number;
+  parent: number | null;
   selector: string;
   element: string;
   bounds: Rect;
@@ -100,11 +119,28 @@ export function selectorForNode(node: UiNode): string | null {
 /** Visible elements with a selector, for picking on the screenshot. */
 export function pickableElements(tree: UiTree): PickableElement[] {
   const screen = tree.width * tree.height;
-  return tree.nodes.flatMap((node) => {
+  const selectors = tree.nodes.map((node) => {
     const area = node.bounds.width * node.bounds.height;
-    const selector = node.visible && area > 0 && area / screen <= MAX_PICKABLE_SCREEN_SHARE && selectorForNode(node);
-    return selector ? [{ selector, element: describeNode(node), bounds: node.bounds }] : [];
+    return node.visible && area > 0 && area / screen <= MAX_PICKABLE_SCREEN_SHARE ? selectorForNode(node) : null;
   });
+  const pickableParent = (index: number): number | null => {
+    let parent = tree.nodes[index].parent;
+    while (parent !== null && !selectors[parent]) parent = tree.nodes[parent].parent;
+    return parent;
+  };
+  return tree.nodes.flatMap((node, i) =>
+    selectors[i]
+      ? [
+          {
+            index: node.index,
+            parent: pickableParent(i),
+            selector: selectors[i],
+            element: describeNode(node),
+            bounds: node.bounds,
+          },
+        ]
+      : []
+  );
 }
 
 /** Width and height from a PNG's IHDR chunk, without decoding the image. */
@@ -239,8 +275,11 @@ export class UiTreeService {
       : [null, undefined];
     const checkTree = baselineTree ?? otherTree;
 
-    const current = findViolations(tree, image);
-    const baseline = checkTree ? findViolations(checkTree, baselineTree ? baselineImage : otherImage) : null;
+    // the baseline by the same norms, so a changed norm alone fixes nothing
+    const current = findViolations(tree, image, settings.a11yNorms);
+    const baseline = checkTree
+      ? findViolations(checkTree, baselineTree ? baselineImage : otherImage, settings.a11yNorms)
+      : null;
     const report = {
       ...buildReport(tree, current, baseline),
       // problems that are not a component's are told apart by screen
@@ -255,8 +294,10 @@ export class UiTreeService {
     );
 
     const regions = parseRegions(testRun.diffRegions);
-    const ignored = (await this.comparisonInputs(testRun)).ignoreAreas;
-    const changes = baselineTree ? outsideAreas(diffTrees(baselineTree, tree), ignored) : [];
+    const inputs = await this.comparisonInputs(testRun);
+    const changes = baselineTree
+      ? insideCompared(outsideAreas(diffTrees(baselineTree, tree), inputs.ignoreAreas), inputs.compareOnly)
+      : [];
     const clickable = new Set(
       [...tree.nodes, ...(baselineTree?.nodes ?? [])].filter((node) => node.clickable).map((node) => node.key)
     );
@@ -285,8 +326,10 @@ export class UiTreeService {
     if (!tree) return { components: [], invisible: [] };
     const settings = parseUiTreeSettings(project?.uiTreeSettings);
     const regions = parseRegions(testRun.diffRegions);
-    const ignored = (await this.comparisonInputs(testRun)).ignoreAreas;
-    const changes = baselineTree ? outsideAreas(diffTrees(baselineTree, tree), ignored) : [];
+    const inputs = await this.comparisonInputs(testRun);
+    const changes = baselineTree
+      ? insideCompared(outsideAreas(diffTrees(baselineTree, tree), inputs.ignoreAreas), inputs.compareOnly)
+      : [];
     const clickable = new Set(
       [...tree.nodes, ...(baselineTree?.nodes ?? [])].filter((node) => node.clickable).map((node) => node.key)
     );
@@ -340,14 +383,23 @@ export class UiTreeService {
     ]);
     const regions = parseRegions(testRun.diffRegions);
     const size = imageBuffer ? pngSize(imageBuffer) : { width: tree?.width ?? 0, height: tree?.height ?? 0 };
-    const changes = tree && baselineTree ? outsideAreas(diffTrees(baselineTree, tree), inputs.ignoreAreas) : [];
+    const changes =
+      tree && baselineTree
+        ? insideCompared(outsideAreas(diffTrees(baselineTree, tree), inputs.ignoreAreas), inputs.compareOnly)
+        : [];
     const clickable = new Set(
       [...(tree?.nodes ?? []), ...(baselineTree?.nodes ?? [])].filter((n) => n.clickable).map((n) => n.key)
     );
     const settings = parseUiTreeSettings(project?.uiTreeSettings);
     const checkRules = await this.checkRules(testRun, settings);
     const withScope = (rules: ElementRule[], scope: 'screen' | 'project') =>
-      rules.map((rule) => ({ ...rule, scope, matches: inputs.rules.matches[rule.id] ?? 0 }));
+      rules.map((rule) => ({
+        ...rule,
+        scope,
+        matches: inputs.rules.matches[rule.id] ?? 0,
+        found: inputs.rules.found[rule.id] ?? { current: [], baseline: [] },
+      }));
+    const elements = tree ? pickableElements(tree) : [];
     const nodesByKey = new Map((tree?.nodes ?? []).map((node) => [node.key, node]));
     return {
       hasUiTree: !!tree,
@@ -362,6 +414,10 @@ export class UiTreeService {
         imageWidth: size.width,
         imageHeight: size.height,
         tree,
+      }).map((hint) => {
+        // a rule for the element follows it when the layout moves; the area does not
+        const element = hint.ignoreArea && elementForArea(hint.ignoreArea, elements);
+        return element ? { ...hint, element: { selector: element.selector, element: element.element } } : hint;
       }),
       invisible: tree && baselineTree ? invisibleChanges(changes, regions, clickable) : [],
       rules: [...withScope(checkRules, 'screen'), ...withScope(settings.elementRules, 'project')],
@@ -378,7 +434,17 @@ export class UiTreeService {
           dyDp: Math.round((move.to.y - move.from.y) / ppd),
         };
       }),
-      elements: tree ? pickableElements(tree) : [],
+      compareOnly: {
+        active: inputs.compareOnly.active,
+        keep: inputs.compareOnly.keep,
+        problems: inputs.compareOnly.problems,
+      },
+      elements,
+      baselineElements: baselineTree ? pickableElements(baselineTree) : [],
+      areaSuggestions: parseJsonArray<Rect & { id: string }>(testRun.ignoreAreas).flatMap((area) => {
+        const element = area.id ? elementForArea(area, elements) : null;
+        return element ? [{ areaId: String(area.id), selector: element.selector, element: element.element }] : [];
+      }),
       settings,
     };
   }
@@ -425,22 +491,32 @@ export class UiTreeService {
       toleranceAreas: [],
       moves: [],
       systemBars: [],
-      rules: { ignore: [], tolerate: [], matches: {} },
+      rules: { ignore: [], tolerate: [], matches: {}, found: {} },
       settings: null,
+      compareOnly: planCompareOnly([], null, null),
     };
-    if (!testRun.uiTreeName) return empty;
     const [tree, baselineTree, project] = await Promise.all([
       this.load(testRun.uiTreeName),
       this.load(testRun.baselineUiTreeName),
       testRun.projectId ? this.prismaService.project.findUnique({ where: { id: testRun.projectId } }) : null,
     ]);
-    if (!tree) return empty;
-
     const settings = parseUiTreeSettings(project?.uiTreeSettings);
+    const checkRules = testRun.projectId
+      ? await this.checkRules(
+          { projectId: testRun.projectId, name: testRun.name, customTags: testRun.customTags },
+          settings
+        )
+      : [];
+    if (!tree) {
+      // a check that names its elements cannot be compared without a tree: it goes to review (REQ-015-22)
+      return { ...empty, compareOnly: planCompareOnly(checkRules, null, null) };
+    }
+
     const options = parseUiTreeOptions(testRun.uiTreeOptions);
     const excludeSystemBars = options.excludeSystemBars ?? settings.excludeSystemBars;
-    const rules = [...settings.elementRules, ...(await this.checkRules(testRun, settings))];
+    const rules = [...settings.elementRules, ...checkRules];
     const resolved = resolveRules(rules, [tree, baselineTree]);
+    const compareOnly = planCompareOnly(checkRules, baselineTree, tree);
     const systemBars = excludeSystemBars ? findSystemBars(tree) : [];
     const clamp = (rect: Rect): Rect => {
       const x = Math.max(0, Math.round(rect.x));
@@ -452,13 +528,20 @@ export class UiTreeService {
         height: Math.max(0, Math.min(tree.height, Math.round(rect.y + rect.height)) - y),
       };
     };
+    const compensated =
+      settings.compensateMoves && baselineTree ? computeMoves(baselineTree, tree, settings.maxMoveDp) : [];
     return {
-      ignoreAreas: [...systemBars, ...resolved.ignore].map(clamp).filter((r) => r.width && r.height),
+      ignoreAreas: [
+        ...[...systemBars, ...resolved.ignore].map(clamp).filter((r) => r.width && r.height),
+        ...compareOnly.ignoreOutside,
+      ],
       toleranceAreas: resolved.tolerate.map((area) => ({ ...clamp(area), maxDiffPercent: area.maxDiffPercent })),
-      moves: settings.compensateMoves && baselineTree ? computeMoves(baselineTree, tree, settings.maxMoveDp) : [],
+      // a compared element is aligned with itself whether or not moves are compensated
+      moves: [...compensated, ...compareOnly.moves],
       systemBars,
       rules: resolved,
       settings,
+      compareOnly,
     };
   }
 

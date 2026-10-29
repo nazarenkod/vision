@@ -238,20 +238,23 @@ bugs for all N open problems** для всех открытых сразу. Ук
 - **Link existing** ставит на баг маркеры проблемы.
 - **Unlink** снимает с бага маркеры Vision и ставит `a11y-unlinked-3f9c2a1b`; отвязанный баг
   поиск больше никогда не привяжет сам (по журналу и по этой метке), пока его не привяжут
-  руками. Если настройки сейчас видят только часть проблемы, Unlink убирает только эту часть,
-  остальное остаётся при баге, и в Jira ничего не меняется.
+  руками. Если проблема, решённая по прежним настройкам, теперь разделилась, Unlink убирает
+  только эту часть, остальное остаётся при баге, и в Jira ничего не меняется.
 
-**Настройки** (Projects → карандаш → Accessibility problems):
-- *Screen title in the UI tree* — селекторы заголовка экрана, по одному в строке;
-- *Same problem when* — для каждого правила: «Same component and values» (по умолчанию для зоны
-  тапа и контраста), «Same component, any values», «Each screen on its own»;
-- *Problem classes* — первое подходящее правило выигрывает. Условия по полям: id элемента,
-  экран, класс элемента, подпись; внутри поля шаблоны по одному в строке (любой), между полями
-  — все заполненные. Шаблоны: `*` и `?` или `/regex/`; группа в regex по id становится
-  компонентом (`/^.*:id\/(tab)_\d+$/` склеит `tab_0…tab_3`). Группировка: как у правила, по
-  компоненту (со значениями или без), по экрану или «Everything this class takes» — всё, что
-  поймал класс, одна проблема. Действие: «File bugs» или «Ignore» (к false positives, не
-  считаются и не заводятся).
+**Настройки** (Projects → карандаш → Accessibility, спецификация 026):
+- каждое из 7 правил можно выключить; его находки пропадают из ревью, счётчиков, Insights, CLI и MCP;
+- *Minimum touch target* — нормы проекта для Android (dp) и iOS (pt), по умолчанию 48 и 44;
+- *Minimum contrast* — для обычного и крупного текста, по умолчанию 4.5 и 3.
+
+Более мягкая норма скрывает находки и на уже полученных снимках; более строгая находит новые
+только на следующих снимках. После сохранения настроек счётчики 5 последних билдов
+пересчитываются в фоне. Заголовок экрана (`id:Appbar#Title`) в интерфейсе не настраивается;
+селекторы, сохранённые раньше, продолжают работать.
+
+Что считать одной проблемой, не настраивается (спецификация 021): зона тапа и контраст — тот же
+компонент и то же значение на любом экране; остальные правила — тот же компонент; одинаковая
+подпись — в пределах экрана; элемент без id — проблема только своего экрана. Режимы и классы,
+сохранённые раньше, остаются в настройках проекта, но не читаются.
 
 Решения, принятые до этой версии, переносятся при старте API (в логе: «Moved N accessibility
 decisions to problems»).
@@ -277,8 +280,8 @@ decisions to problems»).
 изменений работают. Новый SDK нужен только для отправки XML-дерева экрана: доступность,
 изменения по элементам, правила по элементам.
 
-Новый SDK — это upstream 4.3.1 плюс одно необязательное поле `uiTree`. Пакет и классы те же,
-работает на Java 11+. Готовый jar лежит в репозитории: `dist/sdk-java/sdk-java-4.3.1-vision.1.jar`
+Новый SDK — это upstream 4.3.1 плюс два необязательных поля: `uiTree` и `featureName`. Пакет и классы те же,
+работает на Java 11+. Готовый jar лежит в репозитории: `dist/sdk-java/sdk-java-4.3.1-vision.2.jar`
 (рядом его pom). Пересобрать: `./scripts/build-sdk-jar.sh` (JDK 11–17, Gradle 7).
 
 ### Вариант А: установить в локальный Maven (рекомендую)
@@ -286,7 +289,7 @@ decisions to problems»).
 Один раз на каждой машине, где собираются тесты (ноутбук, агенты CI):
 
 ```bash
-mvn install:install-file -Dfile=dist/sdk-java/sdk-java-4.3.1-vision.1.jar -DpomFile=dist/sdk-java/sdk-java-4.3.1-vision.1.pom
+mvn install:install-file -Dfile=dist/sdk-java/sdk-java-4.3.1-vision.2.jar -DpomFile=dist/sdk-java/sdk-java-4.3.1-vision.2.pom
 ```
 
 В pom.xml меняется только версия:
@@ -295,7 +298,7 @@ mvn install:install-file -Dfile=dist/sdk-java/sdk-java-4.3.1-vision.1.jar -DpomF
 <dependency>
     <groupId>com.github.Visual-Regression-Tracker</groupId>
     <artifactId>sdk-java</artifactId>
-    <version>4.3.1-vision.1</version>
+    <version>4.3.1-vision.2</version>
 </dependency>
 ```
 
@@ -309,9 +312,9 @@ mvn install:install-file -Dfile=dist/sdk-java/sdk-java-4.3.1-vision.1.jar -DpomF
 <dependency>
     <groupId>com.github.Visual-Regression-Tracker</groupId>
     <artifactId>sdk-java</artifactId>
-    <version>4.3.1-vision.1</version>
+    <version>4.3.1-vision.2</version>
     <scope>system</scope>
-    <systemPath>${project.basedir}/libs/sdk-java-4.3.1-vision.1.jar</systemPath>
+    <systemPath>${project.basedir}/libs/sdk-java-4.3.1-vision.2.jar</systemPath>
 </dependency>
 <!-- jar из файла не приносит своих зависимостей; если они уже есть в проекте, эти две не нужны -->
 <dependency>
@@ -369,6 +372,7 @@ vrt.track(
         .device("Pixel 7 emulator")
         .os("Android 15")
         .uiTree(WebDriverRunner.getWebDriver().getPageSource())
+        .featureName("Checkout")   // необязательно: фича для названия бага
         .build()
 );
 ```
@@ -383,12 +387,14 @@ vrt.track(
         .device("Pixel 7 emulator")
         .os("Android 15")
         .uiTree(WebDriverRunner.getWebDriver().pageSource)
+        .featureName("Checkout")   // необязательно: фича для названия бага
         .build()
 )
 ```
 
 Если у вас обёртка над `vrt.track`, правка одна, в ней. Без `.uiTree(...)` всё работает как
-раньше.
+раньше. `featureName` попадает в название бага из сравнения (`[Automation] [Checkout] …`); без него
+Vision берёт часть названия проверки до первой точки. Эталоны от него не зависят.
 
 ### 8.3. Правила, о которых стоит помнить
 

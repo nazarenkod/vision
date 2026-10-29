@@ -177,6 +177,34 @@ public class VisualRegressionTrackerTest {
         assertThat(body.has("uiTree"), is(false));
     }
 
+    @Test
+    public void trackSendsFeature() throws IOException, InterruptedException {
+        mockWebServer.enqueue(new MockResponse().setBody(gson.toJson(TestRunResponse.builder()
+                .status(TestRunStatus.OK)
+                .build())));
+        vrt.buildId = BUILD_ID;
+        vrt.projectId = PROJECT_ID;
+
+        vrt.submitTestRun(NAME, IMAGE_BASE_64, TestRunOptions.builder().featureName("Checkout").build());
+
+        JsonObject body = gson.fromJson(mockWebServer.takeRequest().getBody().readUtf8(), JsonObject.class);
+        assertThat(body.get("featureName").getAsString(), is("Checkout"));
+    }
+
+    @Test
+    public void trackWithoutFeatureSendsTheSameRequest() throws IOException, InterruptedException {
+        mockWebServer.enqueue(new MockResponse().setBody(gson.toJson(TestRunResponse.builder()
+                .status(TestRunStatus.OK)
+                .build())));
+        vrt.buildId = BUILD_ID;
+        vrt.projectId = PROJECT_ID;
+
+        vrt.submitTestRun(NAME, IMAGE_BASE_64, TestRunOptions.builder().build());
+
+        JsonObject body = gson.fromJson(mockWebServer.takeRequest().getBody().readUtf8(), JsonObject.class);
+        assertThat(body.has("featureName"), is(false));
+    }
+
     @Test(expectedExceptions = TestRunException.class,
             expectedExceptionsMessageRegExp = "Visual Regression Tracker has not been started")
     public void stopShouldThrowExceptionIfNotStarted() throws IOException, InterruptedException {

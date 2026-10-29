@@ -17,6 +17,7 @@ import { TerminusModule } from '@nestjs/terminus';
 import { HealthController } from './health/health.controller';
 import { AiModule } from './ai/ai.module';
 import { BackupsModule } from './backups/backups.module';
+import { VisualBugsModule } from './visual-bugs/visual-bugs.module';
 
 @Module({
   imports: [
@@ -32,6 +33,7 @@ import { BackupsModule } from './backups/backups.module';
     TerminusModule,
     CompareModule,
     AiModule,
+    VisualBugsModule,
     AnalyticsModule,
     BackupsModule,
   ],

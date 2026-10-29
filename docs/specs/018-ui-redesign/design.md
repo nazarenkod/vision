@@ -73,7 +73,7 @@
 | Компонент | Шлях | Роль |
 |---|---|---|
 | Сторінка | `frontend/src/pages/ProjectSettingsPage.tsx` | маршрут, зміст, пошук, панель збереження, `useBlocker`, конфлікт |
-| Розділи | `frontend/src/components/ProjectForm/ProjectForm.tsx`, `frontend/src/components/ProjectForm/A11yProblemSettings.tsx` | старий діалог розкладено на `GeneralFields`, `ReviewFields`, `ComparisonFields` (картки движків і параметри лише обраного), `MobileSettings` (`show="mobile"` / `"rules"`, `bare`), `A11yProblemSettings` (нумерація класів, «How matching works»), `JiraSettings`; поля й їхня логіка ті самі |
+| Розділи | `frontend/src/components/ProjectForm/ProjectForm.tsx`, `A11yProblemSettings` (з [026](../026-a11y-rules-settings/spec.md) — `frontend/src/components/ProjectForm/A11yRulesSettings.tsx`) | старий діалог розкладено на `GeneralFields`, `ReviewFields`, `ComparisonFields` (картки движків і параметри лише обраного), `MobileSettings` (`show="mobile"` / `"rules"`, `bare`), `A11yProblemSettings` (нумерація класів, «How matching works»), `JiraSettings`; поля й їхня логіка ті самі |
 | Секрети | `frontend/src/components/ProjectForm/SecretField.tsx`, `frontend/src/components/ProjectForm/GeminiConfigForm.tsx` | «Saved» з Replace і Remove для спільного токена Jira і ключа Gemini |
 | Чисті функції | `frontend/src/_helpers/projectSettings.helper.ts` | `matchSettings(rows, query)`, `changedSections(saved, edited)`, `ruleSelectorError(text)`, `deleteConfirmed(name, typed)` |
 | Новий проєкт | `frontend/src/components/ProjectForm/ProjectForm.tsx` (`NewProjectFields`), `frontend/src/components/BaseModal.tsx` | три поля → створити → перейти на налаштування; `submitDisabled` для підтвердження назвою |
@@ -218,7 +218,7 @@ Undo на сервері дозволене до 30 s після рішення:
 | REQ-018-43 | `frontend/src/_helpers/projectSettings.helper.test.ts › finds settings by section or field name` |
 | REQ-018-44 | `frontend/integration_tests/test/projectSettings.spec.ts › shows only the chosen engine's settings` |
 | REQ-018-45 | `frontend/integration_tests/test/projectSettings.spec.ts › shows a dependent field only when its switch is on` |
-| REQ-018-46 | `frontend/integration_tests/test/projectSettings.spec.ts › numbers problem classes and moves one up` |
+| REQ-018-46 | manual: знято [021](../021-fixed-a11y-grouping/spec.md), класів проблем більше немає |
 | REQ-018-47 | `frontend/src/_helpers/projectSettings.helper.test.ts › names the sections with unsaved changes` |
 | REQ-018-48 | `frontend/integration_tests/test/projectSettings.spec.ts › asks before leaving with unsaved changes` |
 | REQ-018-49 | `frontend/src/_helpers/projectSettings.helper.test.ts › deletes only after the exact project name` |

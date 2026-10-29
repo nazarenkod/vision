@@ -49,6 +49,23 @@ describe('functionalBlock', () => {
 });
 
 describe('bugText', () => {
+  it('expects the norm the issue was found by', () => {
+    const at40 = { ...violation, details: { widthDp: 347, heightDp: 38, min: 40, unit: 'dp' } };
+    const text = bugText({ violations: [at40], testName: 'Login', title: null, device: '', url: '', problem });
+    expect(text.description).toContain('h3. Очікуваний результат\nОбласть натискання не менше 40 × 40 dp.');
+
+    const contrast = { ...violation, rule: 'low-contrast' as const, details: { ratio: 2.1, required: 3.5 } };
+    const contrastText = bugText({
+      violations: [contrast],
+      testName: 'Login',
+      title: null,
+      device: '',
+      url: '',
+      problem,
+    });
+    expect(contrastText.description).toContain('Контраст тексту з фоном не менше 3.5 : 1.');
+  });
+
   it('fills the template: service, screen, actual and expected result', () => {
     const text = bugText({
       violations: [violation],
@@ -276,6 +293,35 @@ describe('buildBugFields', () => {
     });
     expect(after.fields.customfield_99).toBeUndefined();
     expect(after.missing).toEqual(['Epic']);
+  });
+
+  it('leaves severity empty and required when none is given', () => {
+    const meta = [
+      field('customfield_1', 'Серйозність помилки', {
+        schema: { type: 'option' },
+        allowedValues: ['S1', 'S4'].map((value, i) => ({ id: String(i), value })),
+      }),
+    ];
+    const { severity, ...withoutSeverity } = base;
+    const bug = buildBugFields({ ...withoutSeverity, meta, parent: parent(), issueType: subtask });
+    expect(severity).toBe('S4');
+    expect(bug.fields.customfield_1).toBeUndefined();
+    expect(bug.inputs).toEqual([expect.objectContaining({ id: 'customfield_1', role: 'severity', required: true })]);
+    expect(bug.inputs[0].value).toBeUndefined();
+  });
+
+  it('marks the customer input so the dialog can hide it', () => {
+    const meta = [field('customfield_2', 'Замовник', { required: true, schema: { type: 'user' } })];
+    const bug = buildBugFields({
+      ...base,
+      meta,
+      parent: parent({ customfield_2: { accountId: 'olena', displayName: 'Олена Коваль' } }),
+      issueType: subtask,
+    });
+    expect(bug.fields.customfield_2).toEqual({ accountId: 'olena' });
+    expect(bug.inputs).toEqual([
+      expect.objectContaining({ id: 'customfield_2', role: 'customer', display: 'Олена Коваль' }),
+    ]);
   });
 
   it('sends only fields on the create screen', () => {

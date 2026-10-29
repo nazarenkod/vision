@@ -3,7 +3,7 @@
 # Needs JDK 11-17 and Gradle 7.x on PATH. The jar runs on Java 11 and later.
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-VERSION="${1:-4.3.1-vision.1}"
+VERSION="${1:-4.3.1-vision.2}"
 OUT="$ROOT/dist/sdk-java"
 REPO="$(mktemp -d)"
 trap 'rm -rf "$REPO"' EXIT

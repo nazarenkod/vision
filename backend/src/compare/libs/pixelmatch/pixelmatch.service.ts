@@ -59,6 +59,7 @@ export class PixelmatchService implements ImageComparator {
       withRegions: data.saveDiffAsFile,
       moves: data.moves,
       toleranceAreas: data.toleranceAreas,
+      measureAreas: data.measureAreas,
     });
 
     if (output.equal) {

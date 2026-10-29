@@ -64,16 +64,15 @@ export const SETTINGS_SECTIONS = [
     id: "a11y",
     title: "section.a11y",
     labels: [
-      "a11y.screenTitle",
-      "a11y.sameProblem",
-      "a11y.classes",
+      "a11y.norm.touchTarget",
+      "a11y.norm.contrast",
       "a11y.rule.touchTarget",
       "a11y.rule.lowContrast",
       "a11y.rule.missingLabel",
       "a11y.rule.inputWithoutLabel",
       "a11y.rule.duplicateLabel",
-      "a11y.rule.redundantRole",
       "a11y.rule.notAccessible",
+      "a11y.rule.redundantRole",
     ],
   },
   {
@@ -153,8 +152,6 @@ const TREE_SECTION: Record<string, SectionId> = {
   maxMoveDp: "mobile",
   detectSemanticChanges: "mobile",
   screenTitle: "a11y",
-  a11yDuplicates: "a11y",
-  a11yClasses: "a11y",
 };
 
 const FIELD_SECTION: Partial<Record<keyof ProjectDto, SectionId>> = {

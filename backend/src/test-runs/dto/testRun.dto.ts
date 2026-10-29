@@ -60,6 +60,9 @@ export class TestRunDto {
   @ApiPropertyOptional({ description: 'Element changes the screenshot does not show' })
   semanticChangeCount?: number;
 
+  @ApiPropertyOptional({ description: 'Feature sent by the test, for bug titles' })
+  featureName?: string;
+
   constructor(testRun: TestRun) {
     this.id = testRun.id;
     this.buildId = testRun.buildId;
@@ -89,5 +92,6 @@ export class TestRunDto {
     this.a11yNewCount = testRun.a11yNewCount;
     this.a11yTotalCount = testRun.a11yTotalCount;
     this.semanticChangeCount = testRun.semanticChangeCount;
+    this.featureName = testRun.featureName;
   }
 }

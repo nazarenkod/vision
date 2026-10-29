@@ -10,4 +10,5 @@ export interface ImageCompareInput {
   // from the UI trees (pixelmatch and VLM only): see PixelmatchJobInput
   moves?: Array<{ from: AreaRect; to: AreaRect }>;
   toleranceAreas?: Array<AreaRect & { maxDiffPercent: number }>;
+  measureAreas?: AreaRect[];
 }

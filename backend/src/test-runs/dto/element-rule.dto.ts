@@ -12,9 +12,12 @@ export class AddElementRuleDto {
   @MaxLength(300)
   selector: string;
 
-  @ApiProperty({ enum: ['ignore', 'tolerate'] })
-  @IsIn(['ignore', 'tolerate'])
-  action: 'ignore' | 'tolerate';
+  @ApiProperty({
+    enum: ['ignore', 'tolerate', 'compare'],
+    description: 'compare: only the elements such rules match are compared on this screen',
+  })
+  @IsIn(['ignore', 'tolerate', 'compare'])
+  action: 'ignore' | 'tolerate' | 'compare';
 
   @ApiPropertyOptional({ description: 'tolerate: share of the element that may change, in percent' })
   @IsOptional()
@@ -39,4 +42,17 @@ export class RemoveElementRuleDto {
   @IsString()
   @IsNotEmpty()
   ruleId: string;
+}
+
+export class ReplaceAreaWithElementDto {
+  @ApiProperty({ description: "id of one of the run's saved ignore areas" })
+  @IsString()
+  @IsNotEmpty()
+  areaId: string;
+
+  @ApiProperty({ example: 'id:banner', description: 'the element the area stands for' })
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(300)
+  selector: string;
 }

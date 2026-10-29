@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, HttpException, HttpStatus, Injectable, NotFoundException } from '@nestjs/common';
 import z from 'zod/v3';
 import { PrismaService } from '../prisma/prisma.service';
 import { StaticService } from '../static/static.service';
@@ -8,6 +8,23 @@ import { UiTreeService, parseRegions } from '../ui-tree/ui-tree.service';
 import { ownSpeakableText } from '../ui-tree/ui-tree.parser';
 import { AiService } from './ai.service';
 import { cropPng } from './image-crop';
+import { BugDraft, cropAreas, draftFields, draftPrompt, draftSchema } from '../visual-bugs/bug-draft';
+import { featureOf } from '../visual-bugs/visual-bug';
+import { Rect } from '../ui-tree/ui-tree.types';
+
+// a person waits in the dialog: past this, they fill the bug in themselves
+export const BUG_DRAFT_TIMEOUT_MS = 30_000;
+
+export interface BugDraftRequest {
+  testRunId: string;
+  // the person's own words; the bug is about what they say
+  note: string;
+  marks?: Rect[];
+  // the changes they ticked, as the review describes them
+  changes?: string[];
+  // 1 for Fill with AI, more for Ask again: a new attempt is a new call, not the cached answer
+  attempt?: number;
+}
 
 const SummarySchema = z.object({
   summary: z.string(),
@@ -160,5 +177,65 @@ export class AiFeaturesService {
         .filter((item) => item.index >= 1 && item.index <= missing.length && item.label.trim())
         .map((item) => ({ violationId: missing[item.index - 1].id, label: item.label.trim() })),
     };
+  }
+
+  /**
+   * A draft of the bug's text from the person's note, small crops of the
+   * baseline and checkpoint around their marks (else the changed areas) and
+   * the changes they ticked. On the person's own Gemini key: a small local
+   * model reads crops poorly, and the cost is theirs to decide.
+   */
+  async draftBug(request: BugDraftRequest, userId?: string): Promise<BugDraft & { cached: boolean }> {
+    // the person's own key, never the instance's or a project's (025)
+    const user = userId
+      ? await this.prismaService.user.findUnique({ where: { id: userId }, select: { geminiApiKey: true } })
+      : null;
+    if (!user?.geminiApiKey) {
+      throw new BadRequestException('Add your Gemini API key in your profile to draft bugs with AI');
+    }
+    if (!request.note?.trim()) throw new BadRequestException('Say in a few words what is wrong');
+    const run = await this.prismaService.testRun.findUnique({ where: { id: request.testRunId } });
+    if (!run) throw new NotFoundException('Test run not found');
+
+    const areas = cropAreas(request.marks ?? [], parseRegions(run.diffRegions));
+    const [baseline, image] = await Promise.all([
+      run.baselineName ? this.staticService.getImage(run.baselineName) : null,
+      this.staticService.getImage(run.imageName),
+    ]);
+    const images = areas.flatMap((area) => [
+      ...(baseline ? [cropPng(baseline, area, { maxSide: 384 })] : []),
+      ...(image ? [cropPng(image, area, { maxSide: 384 })] : []),
+    ]);
+    const changes = (request.changes ?? []).slice(0, 15).map((change) => change.slice(0, 200));
+
+    let timer: NodeJS.Timeout;
+    const timeout = new Promise<never>((_, reject) => {
+      timer = setTimeout(
+        () => reject(new HttpException('Gemini did not answer in 30 s', HttpStatus.GATEWAY_TIMEOUT)),
+        BUG_DRAFT_TIMEOUT_MS
+      );
+    });
+    try {
+      const answer = await Promise.race([
+        this.aiService.generateJson({
+          kind: 'bug-draft',
+          schema: draftSchema,
+          personalGeminiKey: user.geminiApiKey,
+          images,
+          cacheParts: { attempt: request.attempt ?? 1, changes, areas },
+          prompt: draftPrompt({
+            note: request.note,
+            feature: featureOf(run),
+            checkName: run.name,
+            changes,
+            areaCount: baseline && image ? areas.length : 0,
+          }),
+        }),
+        timeout,
+      ]);
+      return { ...draftFields(answer.result), cached: answer.cached };
+    } finally {
+      clearTimeout(timer);
+    }
   }
 }

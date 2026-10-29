@@ -7,44 +7,53 @@ import {
   Switch,
   IconButton,
   Box,
-  Select,
-  MenuItem,
   LinearProgress,
   Divider,
   FormControlLabel,
   Checkbox,
   ToggleButton,
-  SelectChangeEvent,
   Slider,
+  Popover,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
   Tooltip as MuiTooltip,
+  Chip,
 } from "@mui/material";
 import { useHotkeys } from "react-hotkeys-hook";
-import { TestRun } from "../../types";
+import { TestRun, VisualBug, VisualBugResult } from "../../types";
 import { testRunService, staticService } from "../../services";
 import { TestStatus } from "../../types/testStatus";
 import { IgnoreArea, UpdateIgnoreAreaDto } from "../../types/ignoreArea";
 import Konva from "konva";
 import {
   Close,
-  Add,
-  Delete,
-  Save,
   WarningRounded,
-  LayersClear,
   Compare,
-  Collections,
   OpenInNew,
+  Visibility,
+  VisibilityOff,
   ZoomIn,
   ZoomOut,
   Fullscreen,
   FullscreenExit,
   NavigateNext,
   NavigateBefore,
+  BugReport,
 } from "@mui/icons-material";
 import { TestRunDetails } from "./TestRunDetails";
 import useImage from "use-image";
 import { routes, GO_TO_NEXT_KEY } from "../../constants";
-import { useTestRunDispatch, useTokens } from "../../contexts";
+import {
+  useProjectState,
+  useTestRunDispatch,
+  useTokens,
+  useUserState,
+} from "../../contexts";
+import { ReportBugDialog } from "./ReportBugDialog";
+import { BugMark } from "../../_helpers/bugReport.helper";
+import { useDecisionSnackbar } from "../useDecisionSnackbar";
 import { DrawArea, ImageStateLoad } from "./DrawArea";
 import { CommentsPopper } from "../CommentsPopper";
 import { useDialogSnackbar } from "./useDialogSnackbar";
@@ -62,6 +71,25 @@ import {
   hasUiTree,
 } from "../../types";
 import { OverlayRect } from "./DrawArea";
+import {
+  ElementRule,
+  ElementRuleAction,
+  RuleScope,
+  ScreenRule,
+} from "../../types/insights";
+import {
+  elementAt,
+  countBySelector,
+  Picked,
+  ruleFor,
+  stepDown,
+  stepUp,
+  toggleSelection,
+} from "../../_helpers/elementPicking.helper";
+import { ALLOW_PERCENT, ElementPopover } from "./ElementPopover";
+import { AreaKind, AreasMenu } from "./AreasMenu";
+import { areaMarkId, ruleMarkId } from "./WhatsCompared";
+import { useRuleSnackbar } from "../useRuleSnackbar";
 import { motion, tokens } from "../../theme";
 import { StepDots } from "./StepDots";
 import { prefersReducedMotion } from "../../_helpers/motion.helper";
@@ -131,6 +159,33 @@ const defaultStagePos = {
   y: 0,
 };
 
+type Side = "baseline" | "current";
+
+// what is selected on a screenshot, and where the click was
+interface Selection {
+  side: Side;
+  picked: Picked;
+  selected: PickableElement[];
+  anchor: { x: number; y: number };
+}
+
+// rule marks on the screenshots, on or off per reviewer (REQ-024-21)
+const SHOW_RULES_KEY = "vision.review.showRules";
+const readShowRules = () => {
+  try {
+    return localStorage.getItem(SHOW_RULES_KEY) !== "false";
+  } catch {
+    return true;
+  }
+};
+const writeShowRules = (shown: boolean) => {
+  try {
+    localStorage.setItem(SHOW_RULES_KEY, String(shown));
+  } catch {
+    // private windows refuse storage; the choice then lasts the session
+  }
+};
+
 interface TestDetailsModalProps {
   testRun: TestRun;
   currentRunIndex: number;
@@ -177,13 +232,29 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
   const { t } = useT();
   const [isDrawMode, setIsDrawMode] = useState(false);
 
-  const [valueOfIgnoreOrCompare, setValueOfIgnoreOrCompare] =
-    useState("Ignore Areas");
+  // pixel areas: what the next one drawn is, and whether their menu is open (REQ-024-30)
+  const [areaKind, setAreaKind] = useState<AreaKind>("ignore");
+  const [areasOpen, setAreasOpen] = useState(false);
+  // what to do once unsaved areas are saved or dropped (REQ-024-34)
+  const [pendingLeave, setPendingLeave] = useState<() => void>();
 
   const [isDiffShown, setIsDiffShown] = useState(false);
 
   // accessibility report of this run, shared by the side panel and the overlay
   const aiStatus = useAiStatus();
+  // bugs filed from the comparison for this check, on any device (025)
+  const { user } = useUserState();
+  const { projectList, selectedProjectId } = useProjectState();
+  const project = projectList.find((item) => item.id === selectedProjectId);
+  const jiraSet = !!project?.jiraUrl;
+  const jiraReady =
+    jiraSet && (!!user?.jiraTokenSet || !!project?.jiraTokenSet);
+  const [bugDialog, setBugDialog] = useState<{ marks?: BugMark[] } | null>(
+    null,
+  );
+  const [bugs, setBugs] = useState<VisualBug[]>([]);
+  const [showBugMarks, setShowBugMarks] = useState(true);
+  const announce = useDecisionSnackbar(enqueueSnackbar);
   const [a11yReport, setA11yReport] = useState<A11yReport | null | undefined>();
   const [a11yOverlay, setA11yOverlay] = useState(true);
   const [highlightedViolation, setHighlightedViolation] = useState<string>();
@@ -247,94 +318,355 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
   }, [loadStructure, testRun.diffName, testRun.diffPercent, testRun.status]);
   useEffect(() => setStructure(undefined), [testRun.id]);
 
-  // picking an element on the screenshot to make a rule for it
+  // selecting elements on the screenshots to make rules for them (spec 024)
+  const canEdit = user?.role === "admin" || user?.role === "editor";
   const [pickMode, setPickMode] = useState(false);
-  const [hoveredElement, setHoveredElement] = useState<PickableElement>();
+  const [hovered, setHovered] = useState<{
+    side: Side;
+    element: PickableElement;
+  }>();
+  const [selection, setSelection] = useState<Selection>();
+  // opens the full rule form in the panel (REQ-024-10)
   const [pickedElement, setPickedElement] = useState<PickableElement>();
   // chosen in the rule dialog's list, outlined while the dialog is open
   const [previewElement, setPreviewElement] = useState<PickableElement>();
-  const elementAt = (point: { x: number; y: number } | null) =>
-    point
-      ? (structure?.elements ?? [])
-          .filter(
-            ({ bounds: b }) =>
-              point.x >= b.x &&
-              point.x < b.x + b.width &&
-              point.y >= b.y &&
-              point.y < b.y + b.height,
-          )
-          // the smallest element under the pointer is the one meant
-          .sort(
-            (a, b) =>
-              a.bounds.width * a.bounds.height -
-              b.bounds.width * b.bounds.height,
-          )[0]
+  // a rule or an area the pointer is over in the panel (REQ-024-24)
+  const [previewMark, setPreviewMark] = useState<string>();
+  const [ruleBusy, setRuleBusy] = useState(false);
+  const [noTreeAnchor, setNoTreeAnchor] = useState<HTMLElement | null>(null);
+  const [showRules, setShowRules] = useState(readShowRules);
+  const toggleShowRules = () =>
+    setShowRules((shown) => {
+      writeShowRules(!shown);
+      return !shown;
+    });
+  const selectButton = React.useRef<HTMLButtonElement>(null);
+  const elementsOf = (side: Side) =>
+    (side === "baseline" ? structure?.baselineElements : structure?.elements) ??
+    [];
+  const loadBugs = React.useCallback(() => {
+    if (!jiraSet) return;
+    insightsService
+      .visualBugs(testRun.id)
+      .then(setBugs)
+      .catch(() => setBugs([]));
+  }, [testRun.id, jiraSet]);
+  useEffect(() => {
+    setBugs([]);
+    loadBugs();
+  }, [loadBugs]);
+
+  const reportBugFrom = (region?: {
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+  }) => setBugDialog(region ? { marks: [{ n: 1, ...region }] } : {});
+
+  const onBugFiled = (result: VisualBugResult, rejected: boolean) => {
+    const open = result.jiraUrl
+      ? {
+          label: t("reportBug.openInJira"),
+          testId: "openFiledBug",
+          onClick: () => window.open(result.jiraUrl ?? "", "_blank"),
+        }
       : undefined;
+    result.warnings.forEach((warning) =>
+      enqueueSnackbar(`${result.jiraKey}: ${warning}`, { variant: "warning" }),
+    );
+    loadBugs();
+    if (!rejected) {
+      announce("reject", 1, undefined, {
+        message: t("reportBug.filed", { key: result.jiraKey }),
+        action: open,
+      });
+      return;
+    }
+    // the same reject as the button, so its journal and Undo work (REQ-025-30)
+    handleDecide();
+    testRunService
+      .rejectBulk([testRun.id])
+      .then((decision) => {
+        announce("reject", 1, decision, {
+          message: t("reportBug.filedRejected", { key: result.jiraKey }),
+          action: open,
+        });
+        settleDecision(true);
+      })
+      .catch((error) => {
+        enqueueSnackbar(
+          t("reportBug.rejectFailed", {
+            key: result.jiraKey,
+            error: String(error),
+          }),
+          { variant: "warning" },
+        );
+        settleDecision(false);
+      });
+  };
+
   useEffect(() => {
     setPickMode(false);
-    setHoveredElement(undefined);
+    setHovered(undefined);
+    setSelection(undefined);
     setPickedElement(undefined);
     setPreviewElement(undefined);
+    setPreviewMark(undefined);
     setPreviewViolation(undefined);
     setPreviewRegion(undefined);
+    setNoTreeAnchor(null);
   }, [testRun.id]);
+  const selectionRef = React.useRef(selection);
+  selectionRef.current = selection;
   useEffect(() => {
     if (!pickMode) return;
-    // Esc leaves picking instead of closing the review
+    // Esc closes what is open next to an element, then leaves selecting,
+    // instead of closing the review (REQ-024-08)
     const onKey = (event: KeyboardEvent) => {
       if (event.key !== "Escape") return;
       event.stopPropagation();
+      if (selectionRef.current) {
+        setSelection(undefined);
+        return;
+      }
       setPickMode(false);
-      setHoveredElement(undefined);
+      setHovered(undefined);
     };
     window.addEventListener("keydown", onKey, true);
     return () => window.removeEventListener("keydown", onKey, true);
   }, [pickMode]);
-  const pickRects: OverlayRect[] = [
-    hoveredElement,
-    previewElement,
-    pickedElement,
-  ]
-    .filter((element): element is PickableElement => !!element)
-    .slice(0, 1)
-    .map((element) => ({
-      id: "picked",
-      ...element.bounds,
-      color: canvas.brand,
-      label:
-        element.element.length > 40
-          ? `${element.element.slice(0, 39)}…`
-          : element.element,
-    }));
 
-  const ruleRects: OverlayRect[] = React.useMemo(
-    () =>
-      a11yOverlay && structure
-        ? [
-            ...structure.systemBars.map((rect, i) => ({
-              id: `bar-${i}`,
+  const pick =
+    (side: Side) =>
+    (
+      point: { x: number; y: number },
+      click: { shiftKey: boolean; clientX: number; clientY: number },
+    ) => {
+      const element = elementAt(point, elementsOf(side));
+      if (!element) return;
+      setSelection((current) => {
+        const additive = click.shiftKey && current?.side === side;
+        const selected = toggleSelection(
+          additive ? current.selected : [],
+          element,
+          additive,
+        );
+        if (!selected.length) return undefined;
+        const last = selected[selected.length - 1];
+        return {
+          side,
+          picked: { element: last, trail: [] },
+          selected,
+          anchor: { x: click.clientX, y: click.clientY },
+        };
+      });
+    };
+  const stepSelection = (move: (picked: Picked) => Picked | null) =>
+    setSelection((current) => {
+      const next = current && move(current.picked);
+      return current && next
+        ? { ...current, picked: next, selected: [next.element] }
+        : current;
+    });
+
+  const showRuleSnack = useRuleSnackbar(enqueueSnackbar);
+  const act = async (action: ElementRuleAction, scope: RuleScope) => {
+    if (!selection) return;
+    const selectors = Array.from(
+      new Set(selection.selected.map((element) => element.selector)),
+    );
+    setRuleBusy(true);
+    try {
+      const added: ElementRule[] = [];
+      // one rule per element, one after another: each compares the run again
+      for (const selector of selectors) {
+        added.push(
+          await insightsService.addElementRule(testRun.id, {
+            scope,
+            selector,
+            action,
+            ...(action === "tolerate" ? { maxDiffPercent: ALLOW_PERCENT } : {}),
+          }),
+        );
+      }
+      setSelection(undefined);
+      loadStructure();
+      showRuleSnack(t("select.added", { count: added.length }), () =>
+        Promise.all(
+          added.map((rule) =>
+            insightsService.removeElementRule(testRun.id, scope, rule.id),
+          ),
+        ).then(loadStructure),
+      );
+    } catch (error) {
+      enqueueSnackbar(String(error), { variant: "error" });
+    } finally {
+      setRuleBusy(false);
+    }
+  };
+  const removeRule = async (rule: ScreenRule) => {
+    setRuleBusy(true);
+    try {
+      await insightsService.removeElementRule(testRun.id, rule.scope, rule.id);
+      setSelection(undefined);
+      loadStructure();
+      enqueueSnackbar(t("select.removed"), { variant: "success" });
+    } catch (error) {
+      enqueueSnackbar(String(error), { variant: "error" });
+    } finally {
+      setRuleBusy(false);
+    }
+  };
+  // a saved area that stands for one element becomes a rule for it (REQ-024-51)
+  const useElementForArea = async (areaId: string) => {
+    const suggestion = structure?.areaSuggestions?.find(
+      (item) => item.areaId === areaId,
+    );
+    if (!suggestion) return;
+    setRuleBusy(true);
+    try {
+      const { rule, area } = await insightsService.replaceAreaWithElement(
+        testRun.id,
+        areaId,
+        suggestion.selector,
+      );
+      loadStructure();
+      showRuleSnack(
+        t("areas.replaced", { element: suggestion.element }),
+        async () => {
+          await insightsService.removeElementRule(
+            testRun.id,
+            "screen",
+            rule.id,
+          );
+          await testRunService.addIgnoreAreas({
+            ids: [testRun.id],
+            ignoreAreas: [area],
+          });
+          loadStructure();
+        },
+      );
+    } catch (error) {
+      enqueueSnackbar(String(error), { variant: "error" });
+    } finally {
+      setRuleBusy(false);
+    }
+  };
+
+  const toggleSelecting = () => {
+    if (!withUiTree || structure?.hasUiTree === false) {
+      setNoTreeAnchor(selectButton.current);
+      return;
+    }
+    leaveAreasThen(() => {
+      setPickMode((on) => !on);
+      setSelection(undefined);
+      setHovered(undefined);
+    });
+  };
+  useHotkeys("e", () => canEdit && toggleSelecting(), [
+    canEdit,
+    withUiTree,
+    structure,
+    areasOpen,
+    touched,
+  ]);
+
+  // what the rules do, drawn on each screenshot (REQ-024-20)
+  const ruleMarks = (side: Side): OverlayRect[] =>
+    showRules && structure
+      ? [
+          ...(side === "current"
+            ? structure.systemBars.map((rect, i) => ({
+                id: `bar-${i}`,
+                ...rect,
+                color: canvas.a11yExisting,
+                dashed: true,
+              }))
+            : []),
+          ...structure.rules.flatMap((rule) =>
+            (rule.found?.[side] ?? []).map((rect, i) => ({
+              id: `${ruleMarkId(rule.id)}:${i}`,
               ...rect,
-              color: canvas.a11yExisting,
-              dashed: true,
+              color:
+                rule.action === "ignore"
+                  ? canvas.status.neutral.fg
+                  : rule.action === "compare"
+                    ? canvas.brand
+                    : canvas.status.new.fg,
+              hatched: rule.action === "ignore",
+              dashed: rule.action === "tolerate",
+              label:
+                rule.action === "tolerate"
+                  ? `±${rule.maxDiffPercent ?? 5}%`
+                  : rule.selector,
+              labelOnHighlight: rule.action !== "tolerate",
             })),
-            ...structure.ignoredAreas.map((rect, i) => ({
-              id: `ignored-${i}`,
-              ...rect,
-              color: canvas.textMuted,
-              dashed: true,
-              label: "ignored",
-            })),
-            ...structure.toleratedAreas.map((rect, i) => ({
-              id: `tolerated-${i}`,
-              ...rect,
-              color: canvas.status.new.fg,
-              dashed: true,
-              label: `±${rect.maxDiffPercent}%`,
-            })),
-          ]
-        : [],
-    [a11yOverlay, structure, canvas],
-  );
+          ),
+          ...(side === "current" && previewMark?.startsWith("area:")
+            ? ignoreAreas
+                .filter((area) => areaMarkId(area.id) === previewMark)
+                .map((area) => ({
+                  ...area,
+                  id: previewMark,
+                  color: canvas.textMuted,
+                }))
+            : []),
+        ]
+      : [];
+  // a check that names its elements dims the rest (REQ-015-30)
+  const dimOutside = (side: Side) => {
+    const compareOnly = structure?.compareOnly;
+    if (!showRules || !compareOnly?.active) return undefined;
+    const rects =
+      side === "current"
+        ? compareOnly.keep
+        : (structure?.rules ?? [])
+            .filter((rule) => rule.action === "compare")
+            .flatMap((rule) => rule.found?.baseline ?? []);
+    return { rects, color: canvas.scrim };
+  };
+  const label = (element: PickableElement) =>
+    element.element.length > 40
+      ? `${element.element.slice(0, 39)}…`
+      : element.element;
+  const pickMarks = (side: Side): OverlayRect[] => {
+    const marks: OverlayRect[] = [];
+    if (hovered?.side === side) {
+      marks.push({
+        id: "hover",
+        ...hovered.element.bounds,
+        color: canvas.brand,
+        dashed: true,
+        label: label(hovered.element),
+      });
+    }
+    if (selection) {
+      // the same elements on the other screenshot are outlined too
+      const selectors = new Set(selection.selected.map((e) => e.selector));
+      const elements =
+        selection.side === side
+          ? selection.selected
+          : elementsOf(side).filter((e) => selectors.has(e.selector));
+      elements.forEach((element, i) =>
+        marks.push({
+          id: `picked:${i}`,
+          ...element.bounds,
+          color: canvas.brand,
+        }),
+      );
+    }
+    if (side === "current" && previewElement) {
+      marks.push({
+        id: "picked:preview",
+        ...previewElement.bounds,
+        color: canvas.brand,
+        label: label(previewElement),
+      });
+    }
+    return marks;
+  };
+  const selectingNow = pickMode || !!selection || !!previewElement;
 
   const overlayRects: OverlayRect[] = React.useMemo(
     () =>
@@ -484,6 +816,7 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
     setOverlayOpacity(1);
     setBlendDifference(false);
     setIsDrawMode(false);
+    setAreasOpen(false);
     setSelectedRectId(undefined);
   }, [testRun.id, testRun.diffName]);
 
@@ -497,6 +830,13 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
   }, [baselineImage, currentImage]);
 
   useHotkeys("right", goNext, [currentRunIndex, handleNext]);
+  useHotkeys(
+    "b",
+    () => {
+      if (jiraReady && !bugDialog) setBugDialog({});
+    },
+    [jiraReady, bugDialog],
+  );
   useHotkeys("left", goPrevious, [currentRunIndex, handlePrevious]);
 
   const isImageSizeDiffer = React.useMemo(
@@ -549,7 +889,7 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
   };
 
   const saveIgnoreAreasOrCompareArea = () => {
-    if (valueOfIgnoreOrCompare.includes("Ignore")) {
+    if (areaKind === "ignore") {
       saveTestRun(ignoreAreas, t("review.ignoreSaved"));
     } else if (currentImage) {
       const invertedIgnoreAreas = invertIgnoreArea(
@@ -568,12 +908,28 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
     });
   };
 
-  const onIgnoreOrCompareSelectChange = (value: string) => {
-    if (value.includes("Compare")) {
-      setValueOfIgnoreOrCompare("Compare Area");
-    } else {
-      setValueOfIgnoreOrCompare("Ignore Areas");
+  // leaving areas with unsaved changes asks first (REQ-024-34)
+  const leaveAreasThen = (next: () => void) => {
+    if (areasOpen && touched) {
+      setPendingLeave(() => next);
+      return;
     }
+    setAreasOpen(false);
+    setIsDrawMode(false);
+    next();
+  };
+  const discardAreas = () => {
+    handleIgnoreAreaChange(JSON.parse(testRun.ignoreAreas));
+    setSelectedRectId(undefined);
+  };
+  const toggleAreas = () => {
+    if (areasOpen) {
+      leaveAreasThen(() => undefined);
+      return;
+    }
+    setPickMode(false);
+    setSelection(undefined);
+    setAreasOpen(true);
   };
 
   const setOriginalSize = () => {
@@ -640,96 +996,99 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
     );
   };
 
-  const ignoreAreasToolbar = () => (
-    <React.Fragment>
-      <Grid container alignItems="center" spacing={2}>
-        <Grid item>
-          <Select
-            variant="standard"
-            id="area-select"
-            labelId="areaSelect"
-            // a standard select underlines itself, which reads as a text field
-            // among the buttons it now sits with
+  // elements first, areas behind one button, rule marks on or off (REQ-024-01, 30, 21)
+  const comparisonTools = () => (
+    <Box display="flex" alignItems="center" gap={1}>
+      {canEdit && (
+        <Button
+          ref={selectButton}
+          variant="outlined"
+          onClick={toggleSelecting}
+          data-testid="selectElements"
+          aria-pressed={pickMode}
+          // pressed like Draw in the areas menu: a solid green bar shouted over the screenshot
+          sx={{
+            height: 34,
+            px: 1.25,
+            gap: 1,
+            fontSize: 13.5,
+            fontWeight: 600,
+            color: pickMode ? tokens.brandDark : tokens.text,
+            borderColor: pickMode ? tokens.brand : tokens.border,
+            bgcolor: pickMode ? tokens.brandSoft : tokens.surface,
+            "&:hover": {
+              borderColor: tokens.brand,
+              bgcolor: pickMode ? tokens.brandSoft : tokens.subtle,
+            },
+          }}
+        >
+          {pickMode ? t("select.selecting") : t("select.button")}
+          {/* a child, not endIcon: MUI sizes the first child of an icon slot to 20px */}
+          <Box
+            component="kbd"
+            aria-hidden="true"
             sx={{
-              "&:before, &:after, &:hover:not(.Mui-disabled):before": {
-                borderBottom: "none",
-              },
-            }}
-            value={valueOfIgnoreOrCompare}
-            onChange={(event: SelectChangeEvent<HTMLInputElement>) =>
-              onIgnoreOrCompareSelectChange(event.target.value as string)
-            }
-          >
-            {["Ignore Areas", "Compare Area"].map((eachItem) => (
-              <MenuItem key={eachItem} value={eachItem}>
-                {t(
-                  eachItem === "Ignore Areas"
-                    ? "review.ignoreAreas"
-                    : "review.compareArea",
-                )}
-              </MenuItem>
-            ))}
-          </Select>
-        </Grid>
-        <Grid item>
-          <ToggleButton
-            value={"drawMode"}
-            selected={isDrawMode}
-            size="small"
-            onClick={() => {
-              setIsDrawMode(!isDrawMode);
-            }}
-            style={{
-              padding: 4,
+              font: `500 11px/16px ${tokens.mono}`,
+              minWidth: 18,
+              px: 0.5,
+              textAlign: "center",
+              borderRadius: "4px",
+              border: `1px solid ${tokens.border}`,
+              borderBottomWidth: 2,
+              bgcolor: tokens.subtle,
+              color: tokens.textMuted,
             }}
           >
-            <Add />
-          </ToggleButton>
-        </Grid>
-        <Grid item>
-          <IconButton
-            size="small"
-            disabled={!selectedRectId || ignoreAreas.length === 0}
-            onClick={() => selectedRectId && deleteIgnoreArea(selectedRectId)}
-          >
-            <Delete />
-          </IconButton>
-        </Grid>
-        <Tooltip title={t("review.clearIgnore")} aria-label="reject">
-          <Grid item>
-            <IconButton
-              size="small"
-              disabled={ignoreAreas.length === 0}
-              onClick={() => {
-                handleIgnoreAreaChange([]);
-              }}
-            >
-              <LayersClear />
-            </IconButton>
-          </Grid>
-        </Tooltip>
-        <Tooltip title={applyIgnoreAreaText} aria-label="apply ignore area">
-          <Grid item>
-            <IconButton
-              size="small"
-              disabled={!selectedRectId || ignoreAreas.length === 0}
-              onClick={() => toggleApplyIgnoreDialogOpen()}
-            >
-              <Collections />
-            </IconButton>
-          </Grid>
-        </Tooltip>
-        <Grid item>
-          <IconButton
-            size="small"
-            disabled={!touched}
-            onClick={() => saveIgnoreAreasOrCompareArea()}
-          >
-            <Save />
-          </IconButton>
-        </Grid>
-      </Grid>
-    </React.Fragment>
+            {pickMode ? "Esc" : "E"}
+          </Box>
+        </Button>
+      )}
+      <AreasMenu
+        open={areasOpen}
+        onToggle={toggleAreas}
+        canEdit={canEdit}
+        kind={areaKind}
+        onKind={setAreaKind}
+        drawing={isDrawMode}
+        onDraw={() => setIsDrawMode(!isDrawMode)}
+        selectedId={selectedRectId}
+        onSelect={setSelectedRectId}
+        onDelete={() => selectedRectId && deleteIgnoreArea(selectedRectId)}
+        onClear={() => handleIgnoreAreaChange([])}
+        onApplyToBuild={toggleApplyIgnoreDialogOpen}
+        areas={ignoreAreas}
+        testAreas={JSON.parse(testRun.tempIgnoreAreas)}
+        suggestions={Object.fromEntries(
+          (structure?.areaSuggestions ?? []).map((item) => [item.areaId, item]),
+        )}
+        onUseElement={useElementForArea}
+        dirty={touched}
+        onSave={saveIgnoreAreasOrCompareArea}
+        onDiscard={discardAreas}
+      />
+      <Tooltip title={showRules ? t("rules.hide") : t("rules.show")}>
+        <IconButton
+          size="small"
+          onClick={toggleShowRules}
+          aria-pressed={showRules}
+          aria-label={showRules ? t("rules.hide") : t("rules.show")}
+          data-testid="toggleRules"
+          sx={{
+            width: 34,
+            height: 34,
+            borderRadius: "8px",
+            color: showRules ? tokens.brand : tokens.textSecondary,
+            bgcolor: showRules ? tokens.brandSoft : "transparent",
+          }}
+        >
+          {showRules ? (
+            <Visibility fontSize="small" />
+          ) : (
+            <VisibilityOff fontSize="small" />
+          )}
+        </IconButton>
+      </Tooltip>
+    </Box>
   );
 
   const baselinePanel = () => (
@@ -784,6 +1143,15 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
           stageInitPosState={[stageInitPos, setStageInitPos]}
           stageOffsetState={[stageOffset, setStageOffset]}
           drawModeState={[false, setIsDrawMode]}
+          overlayRects={[...ruleMarks("baseline"), ...pickMarks("baseline")]}
+          highlightedOverlayId={selectingNow ? "picked" : previewMark}
+          dimOutside={dimOutside("baseline")}
+          pickMode={pickMode}
+          onPickHover={(point) => {
+            const element = elementAt(point, elementsOf("baseline"));
+            setHovered(element ? { side: "baseline", element } : undefined);
+          }}
+          onPick={pick("baseline")}
         />
       </Grid>
     </Grid>
@@ -843,30 +1211,44 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
         stageOffsetState={[stageOffset, setStageOffset]}
         drawModeState={[isDrawMode, setIsDrawMode]}
         overlayRects={[
-          ...ruleRects,
-          ...(pickMode || pickedElement || previewElement
-            ? pickRects
-            : overlayRects),
+          ...ruleMarks("current"),
+          ...(selectingNow ? pickMarks("current") : overlayRects),
           ...(previewRegion
             ? [{ id: "changedArea", ...previewRegion, color: canvas.diff }]
             : []),
+          // a bug's marks are in its device's pixels: shown on that device only
+          ...(showBugMarks
+            ? bugs
+                .filter((bug) => bug.sameDevice)
+                .flatMap((bug) =>
+                  bug.marks.map((mark) => ({
+                    id: `bug-${bug.id}-${mark.n}`,
+                    x: mark.x,
+                    y: mark.y,
+                    width: mark.width,
+                    height: mark.height,
+                    color: canvas.status.new.fg,
+                    dashed: true,
+                    label: bug.jiraKey,
+                  })),
+                )
+            : []),
         ]}
         highlightedOverlayId={
-          pickMode || pickedElement || previewElement
+          selectingNow
             ? "picked"
-            : previewRegion
-              ? "changedArea"
-              : (previewViolation ?? highlightedViolation)
+            : (previewMark ??
+              (previewRegion
+                ? "changedArea"
+                : (previewViolation ?? highlightedViolation)))
         }
+        dimOutside={dimOutside("current")}
         pickMode={pickMode}
-        onPickHover={(point) => setHoveredElement(elementAt(point))}
-        onPick={(point) => {
-          const element = elementAt(point);
-          if (!element) return;
-          setPickMode(false);
-          setHoveredElement(undefined);
-          setPickedElement(element);
+        onPickHover={(point) => {
+          const element = elementAt(point, elementsOf("current"));
+          setHovered(element ? { side: "current", element } : undefined);
         }}
+        onPick={pick("current")}
       />
     </Grid>
   );
@@ -907,6 +1289,28 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
         <Grid item>
           <TestStatusChip status={testRun.status} />
         </Grid>
+        {bugs.slice(0, 3).map((bug) => (
+          <Grid item key={bug.id}>
+            <Tooltip title={bug.summary}>
+              <Chip
+                size="small"
+                variant="outlined"
+                icon={<BugReport sx={{ fontSize: 16 }} />}
+                label={bug.jiraKey}
+                component="a"
+                href={bug.jiraUrl ?? undefined}
+                target="_blank"
+                rel="noreferrer"
+                clickable
+                data-testid="visualBugChip"
+                sx={{
+                  fontFamily: tokens.mono,
+                  "& .MuiChip-icon": { color: tokens.status.failed.fg },
+                }}
+              />
+            </Tooltip>
+          </Grid>
+        ))}
         <Grid item>
           <StepDots statuses={stepStatuses} currentIndex={currentRunIndex} />
         </Grid>
@@ -1017,7 +1421,7 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
         <Grid item style={{ marginLeft: "auto" }}>
           {compareControls()}
         </Grid>
-        <Grid item>{ignoreAreasToolbar()}</Grid>
+        <Grid item>{comparisonTools()}</Grid>
         <Grid item>
           <CommentsPopper
             text={testRun.comment}
@@ -1056,6 +1460,45 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
         className={classes.drawAreaContainer}
         display="flex"
       >
+        {pickMode && (
+          <Box
+            role="status"
+            data-testid="selectingBar"
+            sx={{
+              position: "absolute",
+              top: 8,
+              left: "calc(50% - 190px)",
+              transform: "translateX(-50%)",
+              zIndex: 2,
+              display: "flex",
+              alignItems: "center",
+              gap: 1.5,
+              pl: 1.75,
+              pr: 1,
+              py: 0.75,
+              borderRadius: "10px",
+              bgcolor: tokens.text,
+              color: tokens.surface,
+              boxShadow: tokens.shadowPop,
+              fontSize: 13,
+            }}
+          >
+            {t("select.hint")}
+            <Button
+              size="small"
+              onClick={toggleSelecting}
+              sx={{
+                color: "inherit",
+                bgcolor: "rgba(255,255,255,.14)",
+                minWidth: 0,
+                px: 1.25,
+                fontWeight: 600,
+              }}
+            >
+              {t("select.done")}
+            </Button>
+          </Box>
+        )}
         <Box
           flex={1}
           minWidth={0}
@@ -1098,16 +1541,22 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
           aiEnabled={!!aiStatus?.enabled}
           structure={structure}
           onStructureChanged={loadStructure}
-          pickMode={pickMode}
-          onPickModeChange={(on) => {
-            setPickMode(on);
-            setHoveredElement(undefined);
-          }}
           pickedElement={pickedElement}
+          onPreviewMark={setPreviewMark}
+          onUseElement={useElementForArea}
+          onOpenArea={(areaId) => {
+            if (!areasOpen) toggleAreas();
+            if (areaId) setSelectedRectId(areaId);
+          }}
+          ruleBusy={ruleBusy}
           onPickedDone={() => setPickedElement(undefined)}
           onPreviewElement={setPreviewElement}
           onPreviewViolation={setPreviewViolation}
           onPreviewRegion={setPreviewRegion}
+          onReportBug={jiraReady ? reportBugFrom : undefined}
+          bugs={bugs}
+          bugMarks={showBugMarks}
+          onBugMarksChange={setShowBugMarks}
         />
       </Box>
       <Grid container className={classes.footer}>
@@ -1165,6 +1614,7 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
               afterApprove={() => settleDecision(true, APPROVED_TICK_MS)}
               afterReject={() => settleDecision(true)}
               afterFail={() => settleDecision(false)}
+              onReportBug={jiraReady ? () => reportBugFrom() : undefined}
             />
           )}
           <Tooltip title={t("review.hotkeyRight")}>
@@ -1204,8 +1654,58 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
               </Typography>
             }
           />
+          {jiraSet && (
+            <>
+              <Divider
+                orientation="vertical"
+                flexItem
+                sx={{ mx: 1.5, my: 1.5 }}
+              />
+              <Tooltip
+                title={
+                  jiraReady ? t("reportBug.openHelp") : t("reportBug.needToken")
+                }
+              >
+                <span>
+                  <Button
+                    variant="outlined"
+                    startIcon={<BugReport />}
+                    onClick={() => reportBugFrom()}
+                    disabled={!jiraReady}
+                    data-testid="reportBug"
+                    sx={{ whiteSpace: "nowrap" }}
+                  >
+                    {t("reportBug.open")}
+                    <Box
+                      component="kbd"
+                      sx={{
+                        ml: 1,
+                        fontFamily: tokens.mono,
+                        fontSize: 10.5,
+                        border: "1px solid currentColor",
+                        borderRadius: 0.5,
+                        px: 0.5,
+                        opacity: 0.75,
+                      }}
+                    >
+                      B
+                    </Box>
+                  </Button>
+                </span>
+              </Tooltip>
+            </>
+          )}
         </Grid>
       </Grid>
+      {bugDialog && (
+        <ReportBugDialog
+          testRun={testRun}
+          structure={structure ?? null}
+          initialMarks={bugDialog.marks}
+          onClose={() => setBugDialog(null)}
+          onFiled={onBugFiled}
+        />
+      )}
       <BaseModal
         open={applyIgnoreDialogOpen}
         title={applyIgnoreAreaText}
@@ -1217,6 +1717,125 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
           applyIgnoreArea();
         }}
       />
+      {selection && structure && (
+        <ElementPopover
+          key={`${selection.side}:${selection.picked.element.selector}:${selection.picked.element.bounds.x},${selection.picked.element.bounds.y}`}
+          anchor={selection.anchor}
+          element={selection.picked.element}
+          selectedCount={selection.selected.length}
+          sameSelector={countBySelector(
+            selection.picked.element.selector,
+            elementsOf(selection.side),
+          )}
+          rule={
+            selection.selected.length === 1
+              ? ruleFor(
+                  selection.picked.element,
+                  structure.rules,
+                  selection.side,
+                )
+              : undefined
+          }
+          canGoUp={!!stepUp(selection.picked, elementsOf(selection.side))}
+          canGoDown={!!stepDown(selection.picked)}
+          busy={ruleBusy}
+          onUp={() =>
+            stepSelection((picked) =>
+              stepUp(picked, elementsOf(selection.side)),
+            )
+          }
+          onDown={() => stepSelection(stepDown)}
+          onMore={() => {
+            setPickedElement(selection.picked.element);
+            setSelection(undefined);
+          }}
+          onAct={act}
+          onRemove={removeRule}
+          onClose={() => setSelection(undefined)}
+        />
+      )}
+      <Popover
+        open={!!noTreeAnchor}
+        anchorEl={noTreeAnchor}
+        onClose={() => setNoTreeAnchor(null)}
+        anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
+        transformOrigin={{ vertical: "top", horizontal: "right" }}
+        slotProps={{
+          paper: { sx: { mt: 1, p: 2, width: 260, borderRadius: "14px" } },
+        }}
+      >
+        <Box
+          data-testid="noTree"
+          display="flex"
+          flexDirection="column"
+          gap={1.5}
+        >
+          <Typography sx={{ fontSize: 14.5, fontWeight: 600 }}>
+            {t("select.noTree")}
+          </Typography>
+          <Box
+            display="flex"
+            justifyContent="flex-end"
+            alignItems="center"
+            gap={1}
+          >
+            <Tooltip title={t("select.whyText")}>
+              <Button size="small">{t("select.why")}</Button>
+            </Tooltip>
+            <Button
+              size="small"
+              variant="contained"
+              data-testid="drawAreaInstead"
+              onClick={() => {
+                setNoTreeAnchor(null);
+                setAreasOpen(true);
+                setIsDrawMode(true);
+              }}
+            >
+              {t("select.drawArea")}
+            </Button>
+          </Box>
+        </Box>
+      </Popover>
+      <Dialog
+        open={!!pendingLeave}
+        onClose={() => setPendingLeave(undefined)}
+        maxWidth="xs"
+        fullWidth
+      >
+        <DialogTitle>{t("areas.unsavedTitle")}</DialogTitle>
+        <DialogContent>
+          <Typography variant="body2">{t("areas.unsavedText")}</Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button
+            data-testid="areasDiscard"
+            onClick={() => {
+              const next = pendingLeave;
+              setPendingLeave(undefined);
+              discardAreas();
+              setAreasOpen(false);
+              setIsDrawMode(false);
+              next?.();
+            }}
+          >
+            {t("areas.discard")}
+          </Button>
+          <Button
+            variant="contained"
+            onClick={() => {
+              const next = pendingLeave;
+              setPendingLeave(undefined);
+              saveIgnoreAreasOrCompareArea();
+              setAreasOpen(false);
+              setIsDrawMode(false);
+              next?.();
+            }}
+          >
+            {t("areas.save")}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </>
   );
 };

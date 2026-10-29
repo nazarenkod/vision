@@ -80,7 +80,11 @@ const saveIgnoreAreas = async (page: Page) => {
   await page.route(`${API_URL}/test-runs/ignoreAreas/update`, (route) =>
     route.fulfill({ status: 200, body: "{}" }),
   );
-  await page.locator('[data-testid="SaveIcon"]').click();
+  // the area tools are behind the Areas button (REQ-024-30)
+  if (!(await page.getByTestId("areasMenu").isVisible())) {
+    await page.getByTestId("areasButton").click();
+  }
+  await page.getByTestId("areasSave").click();
   return (await request).postDataJSON().ignoreAreas as IgnoreArea[];
 };
 
@@ -142,7 +146,8 @@ test("keeps an area drawn at the edge of the image inside it", async ({
 }) => {
   const toPage = await openRunWith(page, openProjectPage, []);
 
-  await page.locator('button[value="drawMode"]').click();
+  await page.getByTestId("areasButton").click();
+  await page.getByTestId("areaDraw").click();
   // just inside the bottom-right corner, where the smallest area there is
   // already reaches past the border
   const corner = toPage(IMAGE.width - 1, IMAGE.height - 1);
@@ -181,4 +186,83 @@ test("lets an area under the compared run's areas be selected and moved", async 
   const [saved] = await saveIgnoreAreas(page);
   expect(saved.x).toBeCloseTo(area.x + 100, -1);
   expect(saved.y).toBeCloseTo(area.y + 50, -1);
+});
+
+// Spec 024: areas stay, behind one button.
+
+test("keeps area tools behind the Areas button", async ({
+  openProjectPage,
+  page,
+}) => {
+  await openRunWith(page, openProjectPage, []);
+  await expect(page.getByTestId("areaDraw")).toHaveCount(0);
+  await expect(page.locator('[data-testid="SaveIcon"]')).toHaveCount(0);
+
+  await page.getByTestId("areasButton").click();
+  const menu = page.getByTestId("areasMenu");
+  for (const name of [
+    "Draw",
+    "Delete",
+    "Clear",
+    "To whole build",
+    "Save areas",
+  ]) {
+    await expect(menu.getByRole("button", { name })).toBeVisible();
+  }
+  await expect(menu.getByRole("button", { name: "Ignore" })).toHaveAttribute(
+    "aria-pressed",
+    "true",
+  );
+});
+
+test("shows saved and test areas as before", async ({
+  openProjectPage,
+  page,
+}) => {
+  await openRunWith(
+    page,
+    openProjectPage,
+    [{ id: "own", x: 40, y: 40, width: 200, height: 100 }],
+    [{ x: 600, y: 400, width: 300, height: 200 }],
+  );
+  await page.getByTestId("areasButton").click();
+  const rows = page.getByTestId("areaRow");
+  await expect(rows).toHaveCount(2);
+  await expect(rows.first()).toHaveText("Area 200 × 100");
+  await expect(rows.last()).toContainText("Area 300 × 200");
+  // the test's own areas sit under one heading, after the drawn ones
+  await expect(page.getByTestId("testAreasTitle")).toContainText(
+    "Sent by the test",
+  );
+});
+
+test("counts areas on the Areas button", async ({ openProjectPage, page }) => {
+  await openRunWith(
+    page,
+    openProjectPage,
+    [
+      { id: "a", x: 40, y: 40, width: 200, height: 100 },
+      { id: "b", x: 40, y: 200, width: 200, height: 100 },
+    ],
+    [{ x: 600, y: 400, width: 300, height: 200 }],
+  );
+  await expect(page.getByTestId("areasCount")).toHaveText("3");
+});
+
+test("asks about unsaved areas when leaving them", async ({
+  openProjectPage,
+  page,
+}) => {
+  const toPage = await openRunWith(page, openProjectPage, []);
+  await page.getByTestId("areasButton").click();
+  await page.getByTestId("areaDraw").click();
+  await drag(page, toPage(100, 100), toPage(300, 250));
+
+  // closing the menu with an area not saved asks first
+  await page.getByTestId("areasButton").click();
+  const ask = page.getByRole("dialog", { name: "Save the areas?" });
+  await expect(ask).toBeVisible();
+  await ask.getByRole("button", { name: "Discard" }).click();
+  await expect(page.getByTestId("areasMenu")).toBeHidden();
+  await expect(page.getByTestId("areasCount")).toHaveCount(0);
 });

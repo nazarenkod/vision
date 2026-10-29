@@ -42,14 +42,13 @@ describe("dictionaries", () => {
 
 describe("translate", () => {
   it("puts parameters in and picks the plural form of the language", () => {
-    const classes = (language: "en" | "uk", count: number) =>
-      translate(dictionaries, language, "settings.meta.classes", { count });
-    expect(classes("en", 1)).toBe("1 class");
-    expect(classes("en", 3)).toBe("3 classes");
-    expect(classes("uk", 1)).toBe("1 клас");
-    expect(classes("uk", 3)).toBe("3 класи");
-    expect(classes("uk", 5)).toBe("5 класів");
-    expect(classes("uk", 21)).toBe("21 клас");
+    const deleted = (language: "en" | "uk", count: number) =>
+      translate(dictionaries, language, "builds.deletedMany", { count });
+    expect(deleted("en", 3)).toBe("3 build(s) deleted");
+    expect(deleted("uk", 1)).toBe("Видалено 1 збірку");
+    expect(deleted("uk", 3)).toBe("Видалено 3 збірки");
+    expect(deleted("uk", 5)).toBe("Видалено 5 збірок");
+    expect(deleted("uk", 21)).toBe("Видалено 21 збірку");
     expect(
       translate(dictionaries, "uk", "projectList.createdToast", {
         name: "AOS",

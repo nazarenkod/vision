@@ -1,5 +1,6 @@
 import { A11yIssuesService } from './a11y-issues.service';
 import { facetsOf } from './a11y-problems';
+import { parseUiTreeSettings } from '../ui-tree/comparison-inputs';
 import { A11yReport } from './a11y.types';
 
 // Filing and looking up bugs against a fake Jira (fetch) and a Prisma mock
@@ -274,15 +275,20 @@ describe('A11yIssuesService: unlinking', () => {
   });
 });
 
-describe('A11yIssuesService: settings that split a problem', () => {
+describe('A11yIssuesService: problems decided under another grouping', () => {
   it('forgets only the part that is unlinked; the rest keeps the bug', async () => {
     const { service, rows, decisions } = setup(fakeJira());
-    const other = { ...report.violations[0], id: 'touch-target|id:Інша#PbButton', nodeKey: 'id:Інша#PbButton' };
-    // one problem filed for two occurrences of PbButton
+    const other = {
+      ...report.violations[0],
+      id: 'touch-target|id:Інша#PbButton',
+      nodeKey: 'id:Інша#PbButton',
+      details: { widthDp: 38, heightDp: 40 },
+    };
+    // one problem filed for PbButton of any size, as an "any values" mode of old saw it
     rows.push({
       id: 'p',
       projectId: 'p',
-      key: KEY,
+      key: 'touch-target|c:PbButton|',
       code: 'a11y-aaaaaaaa',
       status: 'reported',
       jiraKey: 'MOB-3',
@@ -291,15 +297,67 @@ describe('A11yIssuesService: settings that split a problem', () => {
       updatedAt: new Date(),
       facets: [facetsOf(report.violations[0], 'Адреси'), facetsOf(other, 'Платежі')],
     });
-    // the project now tells problems apart per screen
-    (service as unknown as { settingsFor: () => unknown }).settingsFor = async () => ({
-      screenTitle: ['id:Appbar#Title'],
-      a11yDuplicates: { 'touch-target': 'screen' },
-      a11yClasses: [],
-    });
+    // 38 × 38 and 38 × 40 are two problems now: unlinking the first leaves the second with the bug
     await service.reset('run', [report.violations[0].id]);
     expect(rows).toHaveLength(1);
     expect((rows[0].facets as Array<{ screen: string }>).map((item) => item.screen)).toEqual(['Платежі']);
     expect(decisions[0]).toMatchObject({ action: 'unlinked', jiraKey: 'MOB-3' });
+  });
+
+  it('groups by the fixed rule whatever grouping the project saved before', async () => {
+    const { service, rows } = setup(fakeJira());
+    // a project that once told tap areas apart per screen and ignored every PbButton
+    const saved = parseUiTreeSettings(
+      JSON.stringify({
+        a11yDuplicates: { 'touch-target': 'screen' },
+        a11yClasses: [{ id: 'c', name: 'Buttons', match: '*#PbButton', action: 'ignore' }],
+      })
+    );
+    (service as unknown as { settingsFor: () => unknown }).settingsFor = async () => saved;
+
+    const reviewed = await service.getReviewedReport('run');
+    expect(reviewed.violations.map((v) => v.group)).toEqual([KEY]);
+    expect(reviewed.ignored).toEqual([]);
+    expect(reviewed.summary).toMatchObject({ new: 1, ignored: 0 });
+
+    // what the class ignored is filed as any other problem
+    const filed = await service.fileBug('run', [report.violations[0].id], { parentKey: 'MOB-1' });
+    expect(filed).toMatchObject({ jiraKey: 'MOB-77', alreadyFiled: false });
+    expect(rows[0]).toMatchObject({ key: KEY, jiraKey: 'MOB-77' });
+  });
+});
+
+describe("A11yIssuesService: the project's norms", () => {
+  // the team agreed on 38 dp: the 38 × 38 button received at 48 dp passes now
+  const at38 = { jiraUrl: 'https://jira', jiraToken: 't', uiTreeSettings: '{"a11yNorms":{"touchTargetAndroid":38}}' };
+
+  const prismaOf = (service: A11yIssuesService) =>
+    (service as unknown as { prismaService: Record<string, Record<string, jest.Mock>> }).prismaService;
+
+  it("reviews a received report by the project's current norms", async () => {
+    const { service } = setup(fakeJira());
+    expect((await service.getReviewedReport('run')).violations).toHaveLength(1);
+
+    prismaOf(service).project.findUnique = jest.fn().mockResolvedValue(at38);
+    const reviewed = await service.getReviewedReport('run');
+    expect(reviewed.violations).toHaveLength(0);
+    expect(reviewed.summary).toMatchObject({ new: 0, total: 0 });
+  });
+
+  it('recounts the latest builds after the settings change', async () => {
+    const { service } = setup(fakeJira());
+    const prisma = prismaOf(service);
+    prisma.project.findUnique = jest.fn().mockResolvedValue(at38);
+    prisma.build = { findMany: jest.fn().mockResolvedValue([{ id: 'b' }]) };
+    prisma.testRun.findMany = jest.fn().mockResolvedValue([{ ...run, a11yNewCount: 1, a11yTotalCount: 1 }]);
+    prisma.testRun.update = jest.fn().mockResolvedValue(run);
+
+    await service.recountLatestBuilds('p');
+
+    expect(prisma.build.findMany).toHaveBeenCalledWith(expect.objectContaining({ where: { projectId: 'p' }, take: 5 }));
+    expect(prisma.testRun.update).toHaveBeenCalledWith({
+      where: { id: 'run' },
+      data: { a11yNewCount: 0, a11yTotalCount: 0 },
+    });
   });
 });

@@ -134,3 +134,41 @@ describe('computePixelmatchDiff with thumbnails', () => {
     expect(diffJob(blank, blank, false, true).imageThumbnail).toBeUndefined();
   });
 });
+
+describe('computePixelmatchDiff with measure areas', () => {
+  const job = (image: Buffer, extra = {}) =>
+    computePixelmatchDiff({
+      kind: 'diff',
+      baseline: blank,
+      image,
+      ignoreAreas: [],
+      threshold: 0.1,
+      includeAA: true,
+      allowDiffDimensions: false,
+      diffTolerancePercent: 0,
+      saveDiff: false,
+      ...extra,
+    });
+  // the red block covers 12 × 12 at 24, 24; the compared element is 24 × 24 around it
+  const element = { x: 18, y: 18, width: 24, height: 24 };
+  const outside = [
+    { x: 0, y: 0, width: WIDTH, height: 18 },
+    { x: 0, y: 42, width: WIDTH, height: 18 },
+    { x: 0, y: 18, width: 18, height: 24 },
+    { x: 42, y: 18, width: 18, height: 24 },
+  ];
+
+  it('measures the difference against the whole screenshot without them', () => {
+    expect(job(block(24, 24, RED)).diffPercent).toBeCloseTo((144 * 100) / 3600);
+  });
+
+  it('measures it against the areas, each pixel once', () => {
+    expect(job(block(24, 24, RED), { measureAreas: [element, element] }).diffPercent).toBe(25);
+  });
+
+  it('counts no change outside the compared elements', () => {
+    const result = job(block(0, 0, RED), { ignoreAreas: outside, measureAreas: [element] });
+    expect(result.pixelMisMatchCount).toBe(0);
+    expect(result.diffPercent).toBe(0);
+  });
+});

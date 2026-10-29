@@ -11,6 +11,8 @@ export interface User {
   // personal Jira credentials: the token itself never comes back from the server
   jiraTokenSet?: boolean;
   jiraEmail?: string | null;
+  // a personal Gemini key for drafting bugs with AI (025): only whether one is set
+  geminiKeySet?: boolean;
 }
 
 export enum Role {

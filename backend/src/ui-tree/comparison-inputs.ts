@@ -1,6 +1,8 @@
 import { Rect, UiNode, UiTree } from './ui-tree.types';
+import { A11yNorms, DEFAULT_A11Y_NORMS, parseA11yNorms } from '../a11y/a11y-norms';
 
-export type ElementRuleAction = 'ignore' | 'tolerate';
+// compare: only the elements the check's compare rules match are compared (spec 015)
+export type ElementRuleAction = 'ignore' | 'tolerate' | 'compare';
 
 /**
  * A rule about elements, kept on the project (every screen) or on one screen.
@@ -31,12 +33,11 @@ export interface UiTreeSettings {
   elementRules: ElementRule[];
   // rules for one check (its name and custom tags), on every device and branch
   checkRules: Record<string, ElementRule[]>;
-  // where the screen's title is in the UI tree, first match wins (id:Appbar#Title)
+  // where the screen's title is in the UI tree, first match wins (id:Appbar#Title);
+  // no longer in the settings page (026), selectors saved before keep working
   screenTitle: string[];
-  // when two accessibility issues are the same problem, per rule (a11y-problems DuplicateMode)
-  a11yDuplicates: Record<string, string>;
-  // the project's problem classes (a11y-problems ProblemClass), first match wins
-  a11yClasses: Array<Record<string, unknown>>;
+  // what the team agreed an accessible screen is: tap area, contrast, rules on (026)
+  a11yNorms: A11yNorms;
 }
 
 /** A check is what the test named: its name plus custom tags. Devices are runs of it. */
@@ -52,8 +53,7 @@ export const DEFAULT_UI_TREE_SETTINGS: UiTreeSettings = {
   elementRules: [],
   checkRules: {},
   screenTitle: ['id:Appbar#Title'],
-  a11yDuplicates: {},
-  a11yClasses: [],
+  a11yNorms: DEFAULT_A11Y_NORMS,
 };
 
 export function parseJsonArray<T>(value: string | null | undefined): T[] {
@@ -82,21 +82,7 @@ export function parseUiTreeSettings(value: string | null | undefined): UiTreeSet
         Array.isArray(parsed.screenTitle) && parsed.screenTitle.length
           ? parsed.screenTitle.filter((item: unknown) => typeof item === 'string' && item.trim())
           : DEFAULT_UI_TREE_SETTINGS.screenTitle,
-      a11yDuplicates:
-        parsed.a11yDuplicates && typeof parsed.a11yDuplicates === 'object' && !Array.isArray(parsed.a11yDuplicates)
-          ? parsed.a11yDuplicates
-          : {},
-      a11yClasses: Array.isArray(parsed.a11yClasses)
-        ? parsed.a11yClasses.filter((item: unknown) => {
-            const value = item as { match?: unknown; when?: unknown } | null;
-            // classes take issues by conditions (when), or by one element pattern as first written (match)
-            return (
-              !!value &&
-              typeof value === 'object' &&
-              (typeof value.match === 'string' || (!!value.when && typeof value.when === 'object'))
-            );
-          })
-        : [],
+      a11yNorms: parseA11yNorms(parsed.a11yNorms),
     };
   } catch {
     return { ...DEFAULT_UI_TREE_SETTINGS };
@@ -158,33 +144,37 @@ export interface ResolvedRules {
   tolerate: Array<Rect & { maxDiffPercent: number }>;
   // how many elements each rule matched, for the UI
   matches: Record<string, number>;
+  // per rule, what it matched on each side, for drawing it on both screenshots
+  found: Record<string, { current: Rect[]; baseline: Rect[] }>;
 }
 
 /**
- * Areas the rules cover, taken from both trees: an element that moved is
- * covered where it was and where it is.
+ * Areas the rules cover, taken from both trees (current first, then the
+ * baseline): an element that moved is covered where it was and where it is.
+ * Compare-only rules cover nothing here; planCompareOnly works them out.
  */
 export function resolveRules(rules: ElementRule[], trees: Array<UiTree | null>): ResolvedRules {
-  const result: ResolvedRules = { ignore: [], tolerate: [], matches: {} };
+  const result: ResolvedRules = { ignore: [], tolerate: [], matches: {}, found: {} };
   for (const rule of rules) {
     const selector = parseSelector(rule.selector);
     if (!selector) continue;
-    // the same element is usually in both trees, so the count is the larger of the two
-    let count = 0;
+    const sides: Rect[][] = [];
     for (const tree of trees) {
-      let inTree = 0;
+      const bounds: Rect[] = [];
       for (const node of tree?.nodes ?? []) {
         if (!node.visible || !node.bounds.width || !node.bounds.height || !matchesSelector(node, selector)) continue;
-        inTree++;
+        bounds.push(node.bounds);
         if (rule.action === 'ignore') {
           result.ignore.push(pad(node.bounds, RULE_PADDING_PX));
-        } else {
+        } else if (rule.action === 'tolerate') {
           result.tolerate.push({ ...node.bounds, maxDiffPercent: rule.maxDiffPercent ?? 5 });
         }
       }
-      count = Math.max(count, inTree);
+      sides.push(bounds);
     }
-    result.matches[rule.id] = count;
+    // the same element is usually in both trees, so the count is the larger of the two
+    result.matches[rule.id] = Math.max(0, ...sides.map((bounds) => bounds.length));
+    result.found[rule.id] = { current: sides[0] ?? [], baseline: sides[1] ?? [] };
   }
   return result;
 }

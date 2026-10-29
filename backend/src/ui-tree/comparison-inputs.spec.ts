@@ -65,6 +65,33 @@ describe('resolveRules', () => {
   });
 });
 
+describe('resolveRules: compare only', () => {
+  it('reads compare-only rules with every kind of selector', () => {
+    const tree = parse(xml);
+    const settings = parseUiTreeSettings(
+      JSON.stringify({
+        checkRules: {
+          '["Payment",""]': [
+            { id: 'a', selector: 'id:btn_pay', action: 'compare' },
+            { id: 'b', selector: 'class:ImageButton', action: 'compare' },
+            { id: 'c', selector: 'text:Next', action: 'compare' },
+            { id: 'd', selector: 'text:/^commission \\d+/i', action: 'compare' },
+          ],
+        },
+      })
+    );
+    const rules = settings.checkRules['["Payment",""]'];
+    const resolved = resolveRules(rules, [tree, tree]);
+
+    // compare-only rules hide nothing by themselves
+    expect(resolved.ignore).toEqual([]);
+    expect(resolved.tolerate).toEqual([]);
+    expect(resolved.matches).toEqual({ a: 1, b: 4, c: 2, d: 1 });
+    expect(resolved.found.a.current).toEqual([{ x: 42, y: 2200, width: 996, height: 126 }]);
+    expect(resolved.found.a.baseline).toEqual(resolved.found.a.current);
+  });
+});
+
 describe('findSystemBars', () => {
   it('uses the status and navigation bar views when the tree has them', () => {
     const withBars = xml.replace(
@@ -196,20 +223,27 @@ describe('parseUiTreeSettings', () => {
     expect(parseUiTreeSettings('{"excludeSystemBars": false}').excludeSystemBars).toBe(false);
     expect(parseUiTreeSettings('nope').compensateMoves).toBe(false);
   });
+
+  it('looks for the screen title in Appbar#Title when the project saved none', () => {
+    expect(parseUiTreeSettings(null).screenTitle).toEqual(['id:Appbar#Title']);
+    expect(parseUiTreeSettings('{"screenTitle": []}').screenTitle).toEqual(['id:Appbar#Title']);
+    expect(parseUiTreeSettings('{"screenTitle": ["id:toolbar_title"]}').screenTitle).toEqual(['id:toolbar_title']);
+  });
+
+  it("reads the project's accessibility norms, defaults for the rest", () => {
+    const { a11yNorms } = parseUiTreeSettings('{"a11yNorms": {"touchTargetAndroid": 40}}');
+    expect(a11yNorms).toMatchObject({ touchTargetAndroid: 40, touchTargetIos: 44, contrast: 4.5 });
+    expect(parseUiTreeSettings(null).a11yNorms.touchTargetAndroid).toBe(48);
+  });
 });
 
-describe('parseUiTreeSettings: problem classes', () => {
-  it('keeps classes with conditions and classes with one element pattern, drops anything else', () => {
-    const settings = parseUiTreeSettings(
-      JSON.stringify({
-        a11yClasses: [
-          { id: 'a', name: 'A', when: { element: ['*#PbButton'], screen: ['Онбординг*'] } },
-          { id: 'b', name: 'B', match: '*decor_*' },
-          { id: 'c', name: 'C' },
-          null,
-        ],
-      })
-    );
-    expect(settings.a11yClasses.map((item) => item.id)).toEqual(['a', 'b']);
+describe('parseUiTreeSettings: settings no longer read', () => {
+  it('keeps the grouping modes and problem classes of old as they were, so a save does not erase them', () => {
+    const old = {
+      a11yDuplicates: { 'touch-target': 'screen' },
+      a11yClasses: [{ id: 'b', name: 'B', match: '*decor_*' }],
+    };
+    const settings = parseUiTreeSettings(JSON.stringify(old));
+    expect(JSON.parse(JSON.stringify(settings))).toMatchObject(old);
   });
 });

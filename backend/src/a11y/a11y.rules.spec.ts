@@ -4,6 +4,7 @@ import { parseUiTree } from '../ui-tree/ui-tree.parser';
 import { buildReport, findViolations } from './a11y.rules';
 import { RgbaImage } from './a11y.types';
 import { contrastRatio, estimateContrast } from './contrast';
+import { DEFAULT_A11Y_NORMS } from './a11y-norms';
 
 const fixture = (name: string) => readFileSync(path.join(__dirname, '../ui-tree/__fixtures__', name), 'utf8');
 
@@ -81,6 +82,52 @@ describe('findViolations', () => {
 
     expect(contrast.map((v) => v.nodeKey)).toEqual(['id:com.bank.app:id/tv_fee']);
     expect(contrast[0].details).toMatchObject({ required: 4.5, foreground: '#c8c8c8', background: '#ffffff' });
+  });
+
+  it("checks the touch target against the project's norm", () => {
+    const tree = parseUiTree(fixture('android-payment.xml'), { imageWidth: 1080, imageHeight: 2400, densityDpi: 420 });
+    // btn_help is 35.8 dp, btn_scan_qr 34.3 dp; half a dp of slack
+    const found = findViolations(tree, undefined, { ...DEFAULT_A11Y_NORMS, touchTargetAndroid: 35 }).filter(
+      (v) => v.rule === 'touch-target'
+    );
+    expect(found.map((v) => v.nodeKey)).toEqual(['id:com.bank.app:id/btn_scan_qr']);
+    expect(found[0].details).toMatchObject({ min: 35, unit: 'dp' });
+    expect(found[0].message).toContain('minimum is 35 × 35 dp');
+  });
+
+  it('keeps 48 dp and 44 pt when the project has no norm of its own', () => {
+    const android = parseUiTree(fixture('android-payment.xml'), {
+      imageWidth: 1080,
+      imageHeight: 2400,
+      densityDpi: 420,
+    });
+    const ios = parseUiTree(fixture('ios-payment.xml'), { imageWidth: 1170, imageHeight: 2532 });
+    const min = (tree: typeof android) => findViolations(tree).find((v) => v.rule === 'touch-target').details.min;
+    expect(min(android)).toBe(48);
+    expect(min(ios)).toBe(44);
+  });
+
+  it("checks contrast against the project's norm", () => {
+    const tree = parseUiTree(fixture('android-payment.xml'), { imageWidth: 1080, imageHeight: 2400, densityDpi: 420 });
+    const image = solidImage(1080, 2400, [255, 255, 255]);
+    // light grey on white is about 1.7 : 1
+    fillRect(image, 50, 1010, 300, 25, [200, 200, 200]);
+    const contrast = (norm: number) =>
+      findViolations(tree, image, { ...DEFAULT_A11Y_NORMS, contrast: norm }).filter((v) => v.rule === 'low-contrast');
+    expect(contrast(1.5)).toEqual([]);
+    expect(contrast(3)[0].details).toMatchObject({ required: 3, large: false });
+    expect(contrast(3)[0].message).toContain('needs 3 : 1');
+  });
+
+  it('skips the rules the project turned off', () => {
+    const tree = parseUiTree(fixture('android-payment.xml'), { imageWidth: 1080, imageHeight: 2400, densityDpi: 420 });
+    const rules = findViolations(tree, undefined, {
+      ...DEFAULT_A11Y_NORMS,
+      disabledRules: ['redundant-role', 'duplicate-label'],
+    }).map((v) => v.rule);
+    expect(rules).not.toContain('redundant-role');
+    expect(rules).not.toContain('duplicate-label');
+    expect(rules).toContain('touch-target');
   });
 });
 

@@ -20,7 +20,7 @@ import { CreateUserDto } from './dto/user-create.dto';
 import { JwtAuthGuard } from '../auth/guards/auth.guard';
 import { UserDto } from './dto/user.dto';
 import { UpdateUserDto } from './dto/user-update.dto';
-import { UserJiraDto } from './dto/user-jira.dto';
+import { UserGeminiDto, UserJiraDto } from './dto/user-jira.dto';
 import { UserLoginRequestDto } from './dto/user-login-request.dto';
 import { CurrentUser } from '../shared/current-user.decorator';
 import { Role, User } from '@prisma/client';
@@ -189,6 +189,19 @@ export class UsersController {
     const updated = await this.prismaService.user.update({
       where: { id: user.id },
       data: { jiraToken: value(dto.jiraToken), jiraEmail: value(dto.jiraEmail) },
+    });
+    return new UserDto(updated);
+  }
+
+  @Put('gemini')
+  @ApiOkResponse({ type: UserDto })
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  async setGemini(@CurrentUser() user: User, @Body() dto: UserGeminiDto): Promise<UserDto> {
+    if (dto.geminiApiKey === undefined) return new UserDto(user);
+    const updated = await this.prismaService.user.update({
+      where: { id: user.id },
+      data: { geminiApiKey: dto.geminiApiKey.trim() || null },
     });
     return new UserDto(updated);
   }

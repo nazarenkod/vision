@@ -144,6 +144,7 @@ sequenceDiagram
 | REQ-024-22 | `frontend/src/_helpers/whatsCompared.helper.test.ts › sums up what is compared` |
 | REQ-024-23 | `frontend/src/_helpers/whatsCompared.helper.test.ts › groups rules by what they do` |
 | REQ-024-24 | `frontend/integration_tests/test/elementSelection.spec.ts › highlights a rule's elements on hover` |
+| REQ-024-25 | `frontend/integration_tests/test/elementRules.spec.ts › opens an area of the summary in the Areas menu`; `frontend/integration_tests/test/ignoreAreas.spec.ts › shows saved and test areas as before` |
 | REQ-024-30 | `frontend/integration_tests/test/ignoreAreas.spec.ts › keeps area tools behind the Areas button` |
 | REQ-024-31 | `frontend/integration_tests/test/ignoreAreas.spec.ts › shows saved and test areas as before` |
 | REQ-024-32 | `frontend/integration_tests/test/ignoreAreas.spec.ts › counts areas on the Areas button` |

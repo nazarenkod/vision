@@ -164,6 +164,8 @@ test("asks the server for a backup and saves the schedule", async ({
   await expect(page.getByTestId("backupRequested")).toBeVisible();
   await expect(page.getByTestId("backupNow")).toBeDisabled();
 
+  // nothing to save until the schedule changes
+  await expect(page.getByTestId("saveBackupSettings")).toBeDisabled();
   await page.getByTestId("backupTime").fill("02:30");
   await page.getByTestId("backupKeep").fill("10");
   const [request] = await Promise.all([

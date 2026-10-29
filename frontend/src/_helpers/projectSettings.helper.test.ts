@@ -130,6 +130,16 @@ describe("project settings", () => {
     expect(changedSections(project, { ...project, jiraToken: "" })).toEqual([
       "Jira",
     ]);
+    // the accessibility norms are the Accessibility section's (REQ-026-17)
+    expect(
+      changedSections(project, {
+        ...project,
+        uiTreeSettings: JSON.stringify({
+          ...tree,
+          a11yNorms: { touchTargetAndroid: 40 },
+        }),
+      }),
+    ).toEqual(["Accessibility"]);
     // only the order of keys changed: nothing to save
     expect(
       changedSections(project, {

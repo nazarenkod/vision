@@ -8,7 +8,6 @@ export const BASELINE_FILE = 'baseline.png';
 
 const MAX_SUMMARY = 250;
 const MAX_FEATURE = 60;
-const ALL_DEVICES = 'UI-проблеми відтворюються на всіх девайсах.';
 
 /** One marked area of the checkpoint, numbered as the person marked it. */
 export interface BugMark {
@@ -44,25 +43,21 @@ export function bugSummary(feature: string, essence: string): string {
  * Where it was found, from what the run knows, and the team's note that a UI
  * problem shows on every device: the person may still change it.
  */
-export function environmentText(
-  run: {
-    os?: string | null;
-    device?: string | null;
-    browser?: string | null;
-    viewport?: string | null;
-    branchName?: string | null;
-  },
-  build: { number?: number | null; branchName?: string | null } | null
-): string {
-  const device = [run.os, run.device || run.browser, run.device ? null : run.viewport].filter(Boolean).join(' · ');
-  const branch = run.branchName || build?.branchName;
-  const where = [
-    device,
-    build?.number ? `build #${build.number}${branch ? ` (${branch})` : ''}` : branch ? `branch ${branch}` : '',
-  ]
-    .filter(Boolean)
-    .join(', ');
-  return [where ? `${where}.` : '', ALL_DEVICES].filter(Boolean).join(' ');
+export function environmentText(run: {
+  os?: string | null;
+  device?: string | null;
+  browser?: string | null;
+  viewport?: string | null;
+}): string {
+  // the device the problem was seen on, its OS beside it; the build is in the
+  // description's own line and the link back, not here
+  const os = run.os?.trim();
+  const osLabel = os && /^\d/.test(os) ? `OS ${os}` : os;
+  const what = run.device || [run.browser, run.viewport].filter(Boolean).join(', ');
+  const where = what ? `${what}${osLabel ? ` (${osLabel})` : ''}` : osLabel;
+  return where
+    ? `Проблема виявлена на ${where} і потенційно відтворюється на всіх девайсах.`
+    : 'Проблема потенційно відтворюється на всіх девайсах.';
 }
 
 /** The description as Jira wiki markup, in the team's order of sections. */

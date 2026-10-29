@@ -55,7 +55,7 @@ const preparation = {
   feature: "Checkout",
   prefix: "[Automation] [Checkout]",
   environment:
-    "AOS 14 · PIXEL_4_XL, build #128. UI-проблеми відтворюються на всіх девайсах.",
+    "Проблема виявлена на PIXEL_4_XL (AOS 14) і потенційно відтворюється на всіх девайсах.",
   hasBaseline: true,
   inputs: [
     {

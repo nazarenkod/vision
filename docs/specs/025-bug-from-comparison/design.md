@@ -170,7 +170,7 @@ sequenceDiagram
 | REQ-025-12 | `backend/src/visual-bugs/visual-bugs.service.spec.ts › attaches the marked checkpoint and the plain baseline`; `backend/src/visual-bugs/mark-image.spec.ts › draws a numbered frame and leaves the rest alone` |
 | REQ-025-13 | `backend/src/visual-bugs/visual-bug.spec.ts › puts the checkpoint into the actual result and the baseline into the expected one`; manual: на тестовій Jira зображення видно в розділах опису |
 | REQ-025-20 | `backend/src/visual-bugs/visual-bug.spec.ts › keeps the Automation prefix whole in a long summary` |
-| REQ-025-21 | `backend/src/visual-bugs/visual-bug.spec.ts › writes OS, device, build and branch and notes every device` |
+| REQ-025-21 | `backend/src/visual-bugs/visual-bug.spec.ts › names the device the problem was seen on, its OS beside it, and no build` |
 | REQ-025-22 | `frontend/src/_helpers/bugReport.helper.test.ts › lists empty steps, actual and expected as missing` |
 | REQ-025-28 | `backend/src/visual-bugs/visual-bug.spec.ts › orders the sections: environment, steps, actual, expected, then the service lines` |
 | REQ-025-23 | `backend/src/a11y/jira-bug.spec.ts › leaves severity empty and required when none is given`; `backend/src/visual-bugs/visual-bugs.service.spec.ts › refuses to file while severity is not chosen` |

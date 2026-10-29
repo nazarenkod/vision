@@ -2,7 +2,7 @@ import { bugDescription, bugSummary, environmentText, featureOf, normalizeMarks 
 
 const description = (extra: Partial<Parameters<typeof bugDescription>[0]> = {}) =>
   bugDescription({
-    environment: 'AOS 14 · PIXEL_4_XL, build #128 (release/7.4). UI-проблеми відтворюються на всіх девайсах.',
+    environment: 'Проблема виявлена на PIXEL_4_XL (AOS 14) і потенційно відтворюється на всіх девайсах.',
     steps: '1. Додати товар у кошик\n2. Відкрити Checkout → Payment sheet',
     actual: 'Кнопка «Pay» обрізана знизу.',
     expected: 'Кнопка «Pay» повністю видна.',
@@ -43,19 +43,21 @@ describe('bugSummary', () => {
 });
 
 describe('environmentText', () => {
-  it('writes OS, device, build and branch and notes every device', () => {
-    expect(
-      environmentText(
-        { os: 'AOS 14', device: 'PIXEL_4_XL', branchName: 'release/7.4' },
-        { number: 128, branchName: 'x' }
-      )
-    ).toBe('AOS 14 · PIXEL_4_XL, build #128 (release/7.4). UI-проблеми відтворюються на всіх девайсах.');
+  it('names the device the problem was seen on, its OS beside it, and no build', () => {
+    expect(environmentText({ os: 'AOS 14', device: 'PIXEL_4_XL' })).toBe(
+      'Проблема виявлена на PIXEL_4_XL (AOS 14) і потенційно відтворюється на всіх девайсах.'
+    );
+    // a bare version reads as a number of something without a name
+    expect(environmentText({ os: '15', device: 'PIXEL_4_XL' })).toBe(
+      'Проблема виявлена на PIXEL_4_XL (OS 15) і потенційно відтворюється на всіх девайсах.'
+    );
   });
 
   it('falls back to the browser and viewport and leaves out what it does not know', () => {
-    expect(environmentText({ browser: 'chromium', viewport: '1800x1600' }, null)).toBe(
-      'chromium · 1800x1600. UI-проблеми відтворюються на всіх девайсах.'
+    expect(environmentText({ browser: 'chromium', viewport: '1800x1600' })).toBe(
+      'Проблема виявлена на chromium, 1800x1600 і потенційно відтворюється на всіх девайсах.'
     );
+    expect(environmentText({})).toBe('Проблема потенційно відтворюється на всіх девайсах.');
   });
 });
 

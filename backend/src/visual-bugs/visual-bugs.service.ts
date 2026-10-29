@@ -99,7 +99,6 @@ export class VisualBugsService {
   /** The task, its issue and link types, and what the dialog asks for and fills in. */
   async prepare(testRunId: string, body: PrepareVisualBug, userId?: string) {
     const run = await this.loadRun(testRunId);
-    const build = run.buildId ? await this.prismaService.build.findUnique({ where: { id: run.buildId } }) : null;
     const {
       jira,
       issueType: configuredType,
@@ -138,7 +137,7 @@ export class VisualBugsService {
         linkType: defaultLink?.name ?? null,
         feature,
         prefix: bugSummary(feature, ''),
-        environment: environmentText(run, build),
+        environment: environmentText(run),
         hasBaseline: !!run.baselineName,
         inputs: bug.inputs,
         filled: bug.filled,
@@ -175,7 +174,7 @@ export class VisualBugsService {
         issueType: chosen,
         summary,
         description: bugDescription({
-          environment: body.environment?.trim() || environmentText(run, build),
+          environment: body.environment?.trim() || environmentText(run),
           steps: body.steps,
           actual: body.actual,
           expected: body.expected,

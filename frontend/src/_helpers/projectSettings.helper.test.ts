@@ -3,7 +3,6 @@ import {
   deleteConfirmed,
   loadedSettings,
   matchSettings,
-  ruleSelectorError,
 } from "./projectSettings.helper";
 import { TEST_PROJECT } from "../_test/test.data.helper";
 import { Project } from "../types";
@@ -28,7 +27,9 @@ describe("project settings", () => {
     });
     expect(matchSettings("JIRA").sections).toEqual(["jira"]);
     expect(matchSettings("tolerance").sections).toEqual(["comparison"]);
-    expect(matchSettings("").sections).toHaveLength(8);
+    expect(matchSettings("").sections).toHaveLength(7);
+    // element rules live on the review screen only (REQ-019-01)
+    expect(matchSettings("element rule").sections).toEqual([]);
     expect(matchSettings("nothing like this")).toEqual({
       sections: [],
       labels: [],
@@ -48,7 +49,7 @@ describe("project settings", () => {
           elementRules: [{ id: "1", selector: "id:clock", action: "ignore" }],
         }),
       }),
-    ).toEqual(["General", "Mobile screenshots", "Element rules"]);
+    ).toEqual(["General", "Mobile screenshots"]);
     // a token typed in counts though none is ever shown
     expect(changedSections(project, { ...project, jiraToken: "" })).toEqual([
       "Jira",
@@ -64,17 +65,6 @@ describe("project settings", () => {
         }),
       }),
     ).toEqual([]);
-  });
-
-  it("refuses an element rule without id:, class: or text:", () => {
-    expect(ruleSelectorError("id:clock")).toBeNull();
-    expect(ruleSelectorError("class:MapView")).toBeNull();
-    expect(ruleSelectorError("text:/\\d+:\\d+/")).toBeNull();
-    expect(ruleSelectorError("")).toBeNull();
-    expect(ruleSelectorError("clock")).toMatch(
-      /Start with id:, class: or text:/,
-    );
-    expect(ruleSelectorError("id:")).toMatch(/Start with/);
   });
 
   it("deletes only after the exact project name", () => {

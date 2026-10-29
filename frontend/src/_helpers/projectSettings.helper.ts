@@ -62,11 +62,6 @@ export const SETTINGS_SECTIONS = [
     ],
   },
   {
-    id: "rules",
-    title: "Element rules",
-    labels: ["Element rules for every screen", "Element", "Ignore", "Tolerate"],
-  },
-  {
     id: "a11y",
     title: "Accessibility problems",
     labels: [
@@ -141,7 +136,6 @@ const TREE_SECTION: Record<string, SectionId> = {
   detectLoading: "mobile",
   detectScreenMismatch: "mobile",
   referenceDevice: "mobile",
-  elementRules: "rules",
   screenTitle: "a11y",
   a11yDuplicates: "a11y",
   a11yClasses: "a11y",
@@ -191,15 +185,6 @@ export function loadedSettings(project: Project): Record<string, unknown> {
   return Object.fromEntries(
     fields.map((field) => [field, project[field as keyof Project] ?? null]),
   );
-}
-
-/** Why an element rule cannot be added as typed, or null (REQ-018-51). */
-export function ruleSelectorError(text: string): string | null {
-  const value = text.trim();
-  if (!value) return null;
-  return /^(id|class|text):.+/.test(value)
-    ? null
-    : "Start with id:, class: or text:, for example id:banner";
 }
 
 /** Deleting a project needs its exact name typed (REQ-018-49). */

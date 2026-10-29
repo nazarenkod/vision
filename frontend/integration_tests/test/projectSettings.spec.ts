@@ -14,7 +14,7 @@ const project = {
     excludeSystemBars: true,
     compensateMoves: false,
     detectLoading: true,
-    elementRules: [],
+    elementRules: [{ id: "clock", selector: "id:clock", action: "ignore" }],
     a11yClasses: [
       {
         id: "tabs",
@@ -93,7 +93,6 @@ test("lists the sections and highlights the one in view", async ({
     "Review",
     "Image comparison",
     "Mobile screenshots",
-    "Element rules",
     "Accessibility problems",
     "Jira",
     "Danger zone",
@@ -214,31 +213,40 @@ test("shows a dependent field only when its switch is on", async ({
   await page.getByLabel("Compare moved elements at their new place").check();
   await expect(maxMove).toBeVisible();
 
-  // a percentage only for a rule that tolerates
-  const rules = page.getByTestId("section-rules");
-  await expect(rules.getByLabel("%")).toHaveCount(0);
-  await rules.getByRole("combobox").click();
-  await page.getByRole("option", { name: "Tolerate" }).click();
-  await expect(rules.getByLabel("%")).toBeVisible();
-
   // the grouping axis drives the test list too, so it is always there
   await expect(page.getByLabel("Group variations by")).toBeVisible();
 });
 
-test("refuses an element rule without a prefix and adds one with it", async ({
+test("has no element rules section", async ({
   page,
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   authUser,
 }) => {
   await open(page);
-  const selector = page.getByTestId("ruleSelector");
-  await selector.fill("clock");
-  await expect(page.getByText("Start with id:, class: or text:")).toBeVisible();
-  await expect(page.getByTestId("addRule")).toBeDisabled();
-  await selector.fill("id:clock");
-  await page.getByTestId("addRule").click();
-  await expect(page.getByTestId("section-rules")).toContainText("id:clock");
-  await expect(page.getByTestId("saveBar")).toContainText("Element rules");
+  // rules are added on the review screen, where the element is picked (019)
+  await expect(page.getByTestId("section-rules")).toHaveCount(0);
+  await expect(page.getByTestId("nav-rules")).toHaveCount(0);
+  await expect(page.getByText("Element rules")).toHaveCount(0);
+  await page.getByTestId("settingsSearch").fill("element rule");
+  await expect(page.getByText("Nothing matches")).toBeVisible();
+});
+
+test("keeps the project's element rules when saving", async ({
+  page,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  authUser,
+}) => {
+  await mockSaveProject(page);
+  await open(page);
+  await page.getByLabel("Warn about loading states").uncheck();
+  const [request] = await Promise.all([
+    putRequest(page),
+    page.getByTestId("saveSettings").click(),
+  ]);
+  expect(JSON.parse(request.postDataJSON().uiTreeSettings)).toMatchObject({
+    detectLoading: false,
+    elementRules: [{ id: "clock", selector: "id:clock", action: "ignore" }],
+  });
 });
 
 test("numbers problem classes and moves one up", async ({

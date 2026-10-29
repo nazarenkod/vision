@@ -1,6 +1,5 @@
 import {
   Box,
-  Button,
   ButtonBase,
   Divider,
   TextField,
@@ -30,14 +29,12 @@ import { VlmConfigForm } from "./VlmConfigForm";
 import { getDefaultConfig } from "./utils";
 import {
   DeviceProfile,
-  ElementRule,
   UiTreeSettings,
   parseUiTreeSettings,
 } from "../../types/insights";
 import { insightsService } from "../../services";
 import { A11yProblemSettings } from "./A11yProblemSettings";
 import { deviceLabel } from "../../_helpers/device.helper";
-import { ruleSelectorError } from "../../_helpers/projectSettings.helper";
 import { SecretField } from "./SecretField";
 
 const profileLabel = (profile: DeviceProfile) => deviceLabel(profile);
@@ -564,20 +561,16 @@ const TOGGLES: Array<[keyof UiTreeSettings, string, string]> = [
 ];
 
 /**
- * UI tree comparison settings and rules for every screen of the project. The
- * settings page shows the two parts as sections of their own, under its own
- * headings (`bare`).
+ * UI tree comparison settings. The settings page shows them as a section of
+ * its own, under its own heading (`bare`). Element rules are added on the
+ * review screen, where the element can be picked on the screenshot (019).
  */
 export const MobileSettings: React.FunctionComponent<{
-  show?: "all" | "mobile" | "rules";
   bare?: boolean;
-}> = ({ show = "all", bare = false }) => {
+}> = ({ bare = false }) => {
   const { projectEditState: project } = useProjectState();
   const projectDispatch = useProjectDispatch();
   const settings = parseUiTreeSettings(project.uiTreeSettings);
-  const [selector, setSelector] = React.useState("");
-  const [action, setAction] = React.useState<ElementRule["action"]>("ignore");
-  const [percent, setPercent] = React.useState(5);
   const [devices, setDevices] = React.useState<
     Array<DeviceProfile & { checks: number }>
   >([]);
@@ -600,19 +593,6 @@ export const MobileSettings: React.FunctionComponent<{
       uiTreeSettings: JSON.stringify(next),
     });
 
-  const addRule = () => {
-    const rule: ElementRule = {
-      id: crypto.randomUUID ? crypto.randomUUID() : String(Date.now()),
-      selector: selector.trim(),
-      action,
-      ...(action === "tolerate" ? { maxDiffPercent: percent } : {}),
-    };
-    save({ ...settings, elementRules: [...settings.elementRules, rule] });
-    setSelector("");
-  };
-
-  const selectorError = ruleSelectorError(selector);
-
   return (
     <Box
       sx={{
@@ -628,183 +608,84 @@ export const MobileSettings: React.FunctionComponent<{
           Mobile screenshots (UI tree)
         </Typography>
       )}
-      {show !== "rules" && (
-        <>
-          {!bare && (
-            <Typography variant="body2" color="textSecondary">
-              Applies to screenshots sent with an Appium page source.
-            </Typography>
-          )}
-          {TOGGLES.map(([key, label, help]) => (
-            <FormControlLabel
-              key={key}
-              control={
-                <Switch
-                  checked={!!settings[key]}
-                  onChange={(_, checked) =>
-                    save({ ...settings, [key]: checked })
-                  }
-                  name={key}
-                />
-              }
-              label={
-                <Box>
-                  <Typography variant="body2">{label}</Typography>
-                  <Typography variant="caption" color="textSecondary">
-                    {help}
-                  </Typography>
-                </Box>
-              }
-              sx={{
-                alignItems: "flex-start",
-                "& .MuiSwitch-root": { mt: -0.5 },
-              }}
-            />
-          ))}
-          <TextField
-            id="referenceDevice"
-            select
-            size="small"
-            label="Reference device"
-            value={reference ? profileKey(reference) : ""}
-            onChange={(event) => {
-              const picked = deviceOptions.find(
-                (d) => profileKey(d) === event.target.value,
-              );
-              save({
-                ...settings,
-                referenceDevice: picked
-                  ? {
-                      os: picked.os,
-                      device: picked.device,
-                      browser: picked.browser,
-                      viewport: picked.viewport,
-                    }
-                  : null,
-              });
-            }}
-            helperText="Other devices of a check are compared with it element by element, for information; it never changes a status."
-            sx={{ maxWidth: 520, mt: 1 }}
-          >
-            <MenuItem value="">None</MenuItem>
-            {deviceOptions.map((device) => (
-              <MenuItem key={profileKey(device)} value={profileKey(device)}>
-                {profileLabel(device)}
-                {device.checks ? ` (${device.checks} checks)` : ""}
-              </MenuItem>
-            ))}
-          </TextField>
-          {settings.compensateMoves && (
-            <TextField
-              id="maxMoveDp"
-              size="small"
-              type="number"
-              label="Only moves up to, dp (empty for any)"
-              value={settings.maxMoveDp ?? ""}
-              onChange={(event) =>
-                save({
-                  ...settings,
-                  maxMoveDp:
-                    event.target.value === ""
-                      ? null
-                      : Number(event.target.value),
-                })
-              }
-              sx={{ maxWidth: 280 }}
-            />
-          )}
-        </>
+      {!bare && (
+        <Typography variant="body2" color="textSecondary">
+          Applies to screenshots sent with an Appium page source.
+        </Typography>
       )}
-      {show !== "mobile" && (
-        <>
-          {!bare && (
-            <Typography variant="body2" sx={{ fontWeight: 600, mt: 1 }}>
-              Element rules for every screen
-            </Typography>
-          )}
-          {settings.elementRules.map((rule) => (
-            <Box
-              key={rule.id}
-              sx={{ display: "flex", alignItems: "center", gap: 1 }}
-            >
-              <code style={{ fontSize: 12.5 }}>{rule.selector}</code>
-              <Typography variant="body2" color="textSecondary">
-                {rule.action === "ignore"
-                  ? "ignored"
-                  : `±${rule.maxDiffPercent}%`}
-              </Typography>
-              <Button
-                size="small"
-                sx={{ ml: "auto" }}
-                onClick={() =>
-                  save({
-                    ...settings,
-                    elementRules: settings.elementRules.filter(
-                      (item) => item.id !== rule.id,
-                    ),
-                  })
-                }
-              >
-                Remove
-              </Button>
-            </Box>
-          ))}
-          <Box
-            sx={{
-              display: "flex",
-              gap: 1,
-              alignItems: "flex-start",
-              flexWrap: "wrap",
-            }}
-          >
-            <TextField
-              id="ruleSelector"
-              size="small"
-              label="Element"
-              placeholder="id:clock or class:MapView"
-              value={selector}
-              onChange={(event) => setSelector(event.target.value)}
-              error={!!selectorError}
-              helperText={
-                selectorError ?? "id:, class: or text: (text takes a /regex/)"
-              }
-              inputProps={{ "data-testid": "ruleSelector" }}
-              sx={{ flex: "1 1 200px" }}
+      {TOGGLES.map(([key, label, help]) => (
+        <FormControlLabel
+          key={key}
+          control={
+            <Switch
+              checked={!!settings[key]}
+              onChange={(_, checked) => save({ ...settings, [key]: checked })}
+              name={key}
             />
-            <TextField
-              id="ruleAction"
-              size="small"
-              select
-              value={action}
-              onChange={(event) =>
-                setAction(event.target.value as ElementRule["action"])
-              }
-              sx={{ width: 130 }}
-            >
-              <MenuItem value="ignore">Ignore</MenuItem>
-              <MenuItem value="tolerate">Tolerate</MenuItem>
-            </TextField>
-            {action === "tolerate" && (
-              <TextField
-                id="rulePercent"
-                size="small"
-                type="number"
-                label="%"
-                value={percent}
-                onChange={(event) => setPercent(Number(event.target.value))}
-                sx={{ width: 80 }}
-              />
-            )}
-            <Button
-              variant="outlined"
-              disabled={!selector.trim() || !!selectorError}
-              onClick={addRule}
-              data-testid="addRule"
-            >
-              Add
-            </Button>
-          </Box>
-        </>
+          }
+          label={
+            <Box>
+              <Typography variant="body2">{label}</Typography>
+              <Typography variant="caption" color="textSecondary">
+                {help}
+              </Typography>
+            </Box>
+          }
+          sx={{
+            alignItems: "flex-start",
+            "& .MuiSwitch-root": { mt: -0.5 },
+          }}
+        />
+      ))}
+      <TextField
+        id="referenceDevice"
+        select
+        size="small"
+        label="Reference device"
+        value={reference ? profileKey(reference) : ""}
+        onChange={(event) => {
+          const picked = deviceOptions.find(
+            (d) => profileKey(d) === event.target.value,
+          );
+          save({
+            ...settings,
+            referenceDevice: picked
+              ? {
+                  os: picked.os,
+                  device: picked.device,
+                  browser: picked.browser,
+                  viewport: picked.viewport,
+                }
+              : null,
+          });
+        }}
+        helperText="Other devices of a check are compared with it element by element, for information; it never changes a status."
+        sx={{ maxWidth: 520, mt: 1 }}
+      >
+        <MenuItem value="">None</MenuItem>
+        {deviceOptions.map((device) => (
+          <MenuItem key={profileKey(device)} value={profileKey(device)}>
+            {profileLabel(device)}
+            {device.checks ? ` (${device.checks} checks)` : ""}
+          </MenuItem>
+        ))}
+      </TextField>
+      {settings.compensateMoves && (
+        <TextField
+          id="maxMoveDp"
+          size="small"
+          type="number"
+          label="Only moves up to, dp (empty for any)"
+          value={settings.maxMoveDp ?? ""}
+          onChange={(event) =>
+            save({
+              ...settings,
+              maxMoveDp:
+                event.target.value === "" ? null : Number(event.target.value),
+            })
+          }
+          sx={{ maxWidth: 280 }}
+        />
       )}
     </Box>
   );

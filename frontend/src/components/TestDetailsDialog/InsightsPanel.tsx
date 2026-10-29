@@ -130,6 +130,10 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
   const [submitting, setSubmitting] = React.useState(false);
   const [ignoreFor, setIgnoreFor] = React.useState<string[] | null>(null);
   const [ignoreComment, setIgnoreComment] = React.useState("");
+  // a rule for every screen waiting for the confirmation to remove it (REQ-019-05)
+  const [removing, setRemoving] = React.useState<
+    StructureInfo["rules"][number] | null
+  >(null);
 
   React.useEffect(() => {
     setLabels({});
@@ -766,6 +770,19 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
     if (ruleOpen && chosenElement) onPreviewElement?.(chosenElement);
   }, [ruleOpen, chosenElement, onPreviewElement]);
 
+  const removeRule = async (rule: StructureInfo["rules"][number]) => {
+    if (
+      await run(
+        () =>
+          insightsService.removeElementRule(testRun.id, rule.scope, rule.id),
+        "Rule removed; compared again",
+      )
+    ) {
+      setRemoving(null);
+      onStructureChanged();
+    }
+  };
+
   const saveRule = async () => {
     if (!ruleDraft) return;
     const ok = await run(
@@ -987,6 +1004,7 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
             {structure.rules.map((rule) => (
               <Box
                 key={rule.id}
+                data-testid="elementRule"
                 sx={{
                   display: "flex",
                   alignItems: "center",
@@ -1013,20 +1031,13 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
                   <Button
                     size="small"
                     sx={{ ml: "auto", minWidth: 0 }}
-                    onClick={async () => {
-                      if (
-                        await run(
-                          () =>
-                            insightsService.removeElementRule(
-                              testRun.id,
-                              rule.scope,
-                              rule.id,
-                            ),
-                          "Rule removed; compared again",
-                        )
-                      )
-                        onStructureChanged();
-                    }}
+                    disabled={submitting}
+                    // a rule for every screen is asked about: it changes the whole project
+                    onClick={() =>
+                      rule.scope === "project"
+                        ? setRemoving(rule)
+                        : removeRule(rule)
+                    }
                   >
                     Remove
                   </Button>
@@ -1215,6 +1226,34 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
             }}
           >
             Mark as false positive
+          </Button>
+        </DialogActions>
+      </Dialog>
+      <Dialog
+        open={!!removing}
+        onClose={() => setRemoving(null)}
+        fullWidth
+        maxWidth="xs"
+      >
+        <DialogTitle>Remove a rule for every screen?</DialogTitle>
+        <DialogContent>
+          <Typography variant="body2">
+            <Box component="code" sx={{ font: `500 12px ${tokens.mono}` }}>
+              {removing?.selector}
+            </Box>{" "}
+            applies to every screen of the project. Without it, this screenshot
+            and the rest of the build are compared again.
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setRemoving(null)}>Cancel</Button>
+          <Button
+            color="error"
+            variant="contained"
+            disabled={submitting}
+            onClick={() => removing && removeRule(removing)}
+          >
+            Remove rule
           </Button>
         </DialogActions>
       </Dialog>

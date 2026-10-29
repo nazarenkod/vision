@@ -51,8 +51,6 @@ const DESCRIPTION: Partial<Record<SectionId, string>> = {
   comparison:
     "How a checkpoint is compared with its baseline. Below the engines: the settings of the one you pick.",
   mobile: "Applies to screenshots sent with an Appium page source.",
-  rules:
-    "For every screen of the project. A rule names an element by id, class or text; text takes a /regex/.",
   a11y: "One bug per problem. A problem has an id (a11y-…) that goes into the Jira bug's summary and labels; Vision checks its own records and Jira for it before filing.",
   jira: "Lets reviewers file accessibility bugs from the review screen. Each person adds their own Jira token in their profile, so bugs are filed as them. A shared token here is used for people who have not added one.",
 };
@@ -75,8 +73,6 @@ function sectionMeta(id: SectionId, project: ProjectDto): string {
       ].filter(Boolean).length;
       return `${on} of 5 on`;
     }
-    case "rules":
-      return String(tree.elementRules.length);
     case "a11y": {
       const classes = tree.a11yClasses?.length ?? 0;
       return `${classes} ${classes === 1 ? "class" : "classes"}`;
@@ -484,8 +480,7 @@ const ProjectSettingsPage: React.FunctionComponent = () => {
             {section("general", <GeneralFields />)}
             {section("review", <ReviewFields />)}
             {section("comparison", <ComparisonFields />)}
-            {section("mobile", <MobileSettings show="mobile" bare />)}
-            {section("rules", <MobileSettings show="rules" bare />)}
+            {section("mobile", <MobileSettings bare />)}
             {section("a11y", <A11yProblemSettings bare />)}
             {section("jira", <JiraSettings bare />)}
             {section(

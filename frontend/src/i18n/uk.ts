@@ -485,7 +485,7 @@ export const uk: Messages = {
   "review.toggleDiff": "Показати чи сховати різницю. Клавіша: D",
   "review.toggleDiffLabel": "Показати різницю",
   "review.step": "Крок {current}/{total}: ",
-  "review.overlay": "Накладання",
+  "review.overlay": "Позначки доступності",
   "review.fadeHelp":
     "Зробити знімок прозорим, щоб крізь нього було видно еталон",
   "review.fade": "Злиття",

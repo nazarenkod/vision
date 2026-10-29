@@ -444,7 +444,7 @@ export const en = {
   "review.toggleDiff": "Toggle diff. Hotkey: D",
   "review.toggleDiffLabel": "Toggle diff",
   "review.step": "Step {current}/{total}: ",
-  "review.overlay": "Overlay",
+  "review.overlay": "Accessibility marks",
   "review.fadeHelp": "Fade the checkpoint out to see the baseline through it",
   "review.fade": "Fade",
   "review.fadeLabel": "Fade to the baseline",

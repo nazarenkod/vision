@@ -283,6 +283,13 @@ test("shows actions next to a clicked element", async ({
   await page.mouse.click(beside.x, beside.y);
   await expect(popover).toHaveCount(0);
   await expect(page.getByTestId("selectingBar")).toBeVisible();
+  // with nothing open, the next one ends selecting, as Esc does
+  await page.mouse.click(beside.x, beside.y);
+  await expect(page.getByTestId("selectingBar")).toBeHidden();
+  await expect(page.getByTestId("selectElements")).toHaveAttribute(
+    "aria-pressed",
+    "false",
+  );
 });
 
 test("ignores a clicked element and compares again", async ({

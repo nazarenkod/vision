@@ -432,9 +432,14 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
       click: { shiftKey: boolean; clientX: number; clientY: number },
     ) => {
       const element = elementAt(point, elementsOf(side));
-      // a click beside every element puts the actions away; selecting stays on (REQ-024-11)
+      // a click beside every element puts the actions away, and with none
+      // open ends selecting, as Esc does (REQ-024-11)
       if (!element) {
-        setSelection(undefined);
+        if (selectionRef.current) setSelection(undefined);
+        else {
+          setPickMode(false);
+          setHovered(undefined);
+        }
         return;
       }
       setSelection((current) => {

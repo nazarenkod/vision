@@ -66,18 +66,7 @@ export const SETTINGS_SECTIONS = [
   {
     id: "a11y",
     title: "section.a11y",
-    labels: [
-      "a11y.screenTitle",
-      "a11y.sameProblem",
-      "a11y.classes",
-      "a11y.rule.touchTarget",
-      "a11y.rule.lowContrast",
-      "a11y.rule.missingLabel",
-      "a11y.rule.inputWithoutLabel",
-      "a11y.rule.duplicateLabel",
-      "a11y.rule.redundantRole",
-      "a11y.rule.notAccessible",
-    ],
+    labels: ["a11y.screenTitle"],
   },
   {
     id: "jira",
@@ -159,8 +148,6 @@ const TREE_SECTION: Record<string, SectionId> = {
   detectScreenMismatch: "mobile",
   referenceDevice: "mobile",
   screenTitle: "a11y",
-  a11yDuplicates: "a11y",
-  a11yClasses: "a11y",
 };
 
 const FIELD_SECTION: Partial<Record<keyof ProjectDto, SectionId>> = {

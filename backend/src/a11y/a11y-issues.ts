@@ -1,14 +1,6 @@
 import { A11yIssueState, A11yProblem } from '@prisma/client';
 import { A11yReport } from './a11y.types';
-import {
-  classOf,
-  facetsFromKey,
-  facetsOf,
-  problemCode,
-  problemKeyOf,
-  ProblemFacets,
-  ProblemSettings,
-} from './a11y-problems';
+import { facetsFromKey, facetsOf, problemCode, problemKeyOf, ProblemFacets } from './a11y-problems';
 
 export type A11yIssueStatus = 'reported' | 'ignored';
 // a bug for the problem is being created right now
@@ -22,22 +14,18 @@ export interface A11yIssueInfo {
   // set when it was decided on another check: a component's problem holds on every screen
   screenName?: string;
   screenTitle?: string | null;
-  // ignored by the project's problem class of this name, not by a decision
-  byClass?: string;
-  // other bugs of the same problem, when the settings now see several problems as one
+  // other bugs of the same problem, when problems decided apart are now one
   related?: Array<{ code: string; jiraKey: string | null; jiraUrl: string | null }>;
 }
 
 type ReportViolation = A11yReport['violations'][number] & {
   issue?: A11yIssueInfo;
-  // the problem it is under the current settings, and its id as people see it
+  // the problem it is, and its id as people see it
   group: string;
   problemCode: string;
-  // the project's problem class that took it
-  problemClass?: string;
 };
 
-/** Stored problems by what they are under the current settings. */
+/** Stored problems by what they are now. */
 export type ProblemIndex = Map<string, A11yProblem[]>;
 
 /** The facts a stored problem was decided for; read from its key when it predates facts. */
@@ -47,14 +35,14 @@ export function storedFacets(problem: Pick<A11yProblem, 'key' | 'facets'>): Prob
 }
 
 /**
- * Indexes stored problems by what each of their occurrences is under the
- * given settings. Settings that now see two problems as one put both under
- * one key; settings that split one put it under several.
+ * Indexes stored problems by what each of their occurrences is now. Problems
+ * decided apart that are now one go under one key; a problem decided as one
+ * that is now several goes under each.
  */
-export function indexProblems(problems: A11yProblem[], settings: ProblemSettings = {}): ProblemIndex {
+export function indexProblems(problems: A11yProblem[]): ProblemIndex {
   const index: ProblemIndex = new Map();
   for (const problem of problems) {
-    for (const key of new Set(storedFacets(problem).map((facets) => problemKeyOf(facets, settings)))) {
+    for (const key of new Set(storedFacets(problem).map((facets) => problemKeyOf(facets)))) {
       index.set(key, [...(index.get(key) ?? []), problem]);
     }
   }
@@ -70,17 +58,16 @@ export function decidingProblem(matching: A11yProblem[], screenName: string): A1
   )[0];
 }
 
-/** Where a report is reviewed: the screen, the project's settings and decisions. */
+/** Where a report is reviewed: the screen and the project's decisions. */
 export interface ReviewContext {
   projectId: string;
   // the check's name, where decisions of old were kept
   screenName: string;
   // the screen's identity for problems that are not about a component: its title, else the check's name
   screen: string;
-  settings?: ProblemSettings;
   // decisions of old, per issue of this screen
   states?: A11yIssueState[];
-  // the project's problems, indexed under the current settings (built from problems when absent)
+  // the project's problems, indexed (built from problems when absent)
   index?: ProblemIndex;
   problems?: A11yProblem[];
 }
@@ -126,35 +113,29 @@ const fromProblem = (problem: A11yProblem, others: A11yProblem[], screenName: st
 
 /**
  * Applies the team's decisions to a stored report. Each issue is matched
- * with the project's problems under the current settings; a problem filed or
- * marked as a false positive anywhere covers it on every screen it shows on,
- * and keeps its id whatever the settings become. Decisions of old, kept per
+ * with the project's problems; a problem filed or marked as a false positive
+ * anywhere covers it on every screen it shows on, and keeps its id whatever
+ * problems are later told apart by. Decisions of old, kept per
  * issue, still apply on their screen.
  */
 export function reviewReport(report: A11yReport, context: ReviewContext): ReviewedA11yReport {
   const byId = new Map((context.states ?? []).map((state) => [state.violationId, state]));
-  const index = context.index ?? indexProblems(context.problems ?? [], context.settings);
+  const index = context.index ?? indexProblems(context.problems ?? []);
   const violations: ReportViolation[] = [];
   const ignored: ReportViolation[] = [];
   const matched = new Set<string>();
   for (const violation of report.violations) {
     const facets = facetsOf(violation, context.screen);
-    const key = problemKeyOf(facets, context.settings);
+    const key = problemKeyOf(facets);
     const own = byId.get(violation.id);
     const matching = index.get(key) ?? [];
     const problem = decidingProblem(matching, context.screenName);
     matching.forEach((item) => matched.add(item.id));
-    const taken = classOf(facets, context.settings?.classes);
-    const byClass: A11yIssueInfo | undefined =
-      taken?.problemClass.action === 'ignore'
-        ? { status: 'ignored', comment: `Class “${taken.problemClass.name}”`, byClass: taken.problemClass.name }
-        : undefined;
-    const issue = own ? fromState(own) : problem ? fromProblem(problem, matching, context.screenName) : byClass;
+    const issue = own ? fromState(own) : problem ? fromProblem(problem, matching, context.screenName) : undefined;
     const item: ReportViolation = {
       ...violation,
       group: key,
       problemCode: problem?.code ?? problemCode(context.projectId, key),
-      ...(taken ? { problemClass: taken.problemClass.name } : {}),
       ...(issue ? { issue } : {}),
     };
     (issue?.status === 'ignored' ? ignored : violations).push(item);

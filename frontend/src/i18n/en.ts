@@ -97,7 +97,6 @@ export const en = {
   "settings.dangerTitle": "Delete this project.",
   "settings.deleteProject": "Delete project",
   "settings.meta.mobileOn": "{count} of 5 on",
-  "settings.meta.classes": { one: "{count} class", other: "{count} classes" },
   "settings.meta.set": "set",
   "settings.meta.notSet": "not set",
 
@@ -222,14 +221,8 @@ export const en = {
   "a11y.screenTitle": "Screen title in the UI tree",
   "a11y.screenTitleHelp":
     "One selector per line, first match wins: id:Appbar#Title, id:toolbar_title, class:…, text:/regex/. Without a match, the check's name is the screen.",
-  "a11y.sameProblem": "Same problem when",
-  "a11y.sameProblemIntro":
-    "Per rule, for elements with an id. A component's problem holds on every screen with it: filed once, covered everywhere. Elements without an id are always a problem of their own screen.",
-  "a11y.sameProblemFor": "Same problem when: {rule}",
-  "a11y.mode.componentValue": "Same component and values",
-  "a11y.mode.component": "Same component, any values",
-  "a11y.mode.screen": "Each screen on its own",
-  "a11y.mode.class": "Everything this class takes",
+  "a11y.grouping":
+    "One problem is the same component with the same tap area or contrast, on any screen; the same component, for the other rules; the same label on several controls, on one screen. An element without an id is a problem of its own screen.",
   "a11y.rule.touchTarget": "Touch target too small",
   "a11y.rule.lowContrast": "Low text contrast",
   "a11y.rule.missingLabel": "Control has no label",
@@ -237,28 +230,6 @@ export const en = {
   "a11y.rule.duplicateLabel": "Same label on several controls",
   "a11y.rule.redundantRole": "Label repeats the role",
   "a11y.rule.notAccessible": "Control hidden from VoiceOver",
-  "a11y.classes": "Problem classes",
-  "a11y.howMatching": "How matching works",
-  "a11y.howMatchingText":
-    "First match wins. A class takes an issue when every field filled in matches; within a field, one pattern per line, any may match. Patterns are globs with * and ?, or /regex/; a group in an element id regex becomes the component, so {example} makes tab_0…tab_3 one problem. “Everything this class takes” makes all of it one problem; “Ignore” lists it with the false positives and never files it. Problem ids never change with these settings: what is one problem is worked out again from what each problem was filed for.",
-  "a11y.checkedAt": "Checked {position}",
-  "a11y.everyRule": "every rule",
-  "a11y.ignored": "ignored",
-  "a11y.rulesSetting": "rule's setting",
-  "a11y.up": "Up",
-  "a11y.field.element": "Element id",
-  "a11y.field.screen": "Screen",
-  "a11y.field.className": "Element class",
-  "a11y.field.label": "Element label",
-  "a11y.className": "Name",
-  "a11y.patternHelp": "One pattern per line",
-  "a11y.required": "Required",
-  "a11y.classRules": "Rules",
-  "a11y.classRulesHelp": "Empty for every rule",
-  "a11y.classRuleSetting": "Rule's setting",
-  "a11y.classAction": "Then",
-  "a11y.fileBugs": "File bugs",
-  "a11y.addClass": "Add class",
 
   "jira.title": "Jira",
   "jira.intro":

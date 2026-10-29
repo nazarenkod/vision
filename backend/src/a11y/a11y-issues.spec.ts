@@ -393,53 +393,43 @@ describe('reviewReport with problems decided on other screens', () => {
     expect(reviewed.summary).toMatchObject({ new: 0, reported: 1, ignored: 1 });
   });
 
-  it('keeps ids and bugs when the settings change what is one problem', () => {
-    // two bugs filed under the default settings, one per tab
-    const facts = (index: number) => [facetsOf(touch(`id:com.bank:id/tab_${index}`, 38), 'Оплата')];
-    const tab0 = problem('touch-target|c:tab_0|38x38', {
-      id: 'p0',
+  it('keeps ids and bugs of problems decided under another grouping', () => {
+    // a class of old made the whole tab bar one problem, filed as MOB-1
+    const tabBar = problem('touch-target|k:t|', {
+      id: 'bar',
       code: 'a11y-00000000',
       jiraKey: 'MOB-1',
-      facets: facts(0) as never,
+      facets: [0, 1].map((index) => facetsOf(touch(`id:com.bank:id/tab_${index}`, 38), 'Оплата')) as never,
     });
-    const tab1 = problem('touch-target|c:tab_1|38x38', {
-      id: 'p1',
+    const tabs = report([touch('id:com.bank:id/tab_0', 38), touch('id:com.bank:id/tab_1', 38)]);
+    const split = reviewReport(tabs, ctx([], [tabBar]));
+    // now one problem per tab, each with the id and the bug of old
+    expect(split.violations.map((v) => v.group)).toEqual(['touch-target|c:tab_0|38x38', 'touch-target|c:tab_1|38x38']);
+    expect(split.violations.map((v) => [v.problemCode, v.issue?.jiraKey])).toEqual([
+      ['a11y-00000000', 'MOB-1'],
+      ['a11y-00000000', 'MOB-1'],
+    ]);
+
+    // a per-screen mode of old filed the same button twice, on two screens
+    const here = problem('touch-target|s:Оплата|c:PbButton|38x38', {
+      id: 'here',
       code: 'a11y-11111111',
       jiraKey: 'MOB-2',
-      facets: facts(1) as never,
+      screenName: 'Payment',
+      facets: [facetsOf(touch('id:A#PbButton', 38), 'Оплата')] as never,
       createdAt: new Date(Date.now() + 1000),
     });
-    const stored = report([touch('id:com.bank:id/tab_0', 38), touch('id:com.bank:id/tab_1', 38)]);
-
-    const before = reviewReport(stored, { ...ctx([], [tab0, tab1]) });
-    expect(before.violations.map((v) => v.problemCode)).toEqual(['a11y-00000000', 'a11y-11111111']);
-
-    // a class now sees the whole tab bar as one problem: the ids stay, both bugs are shown
-    const tabs = {
-      id: 't',
-      name: 'Tab bar',
-      when: { element: ['/^.*:id\\/(tab)_\\d+$/'] },
-      groupBy: 'component' as const,
-    };
-    const after = reviewReport(stored, { ...ctx([], [tab0, tab1]), settings: { classes: [tabs] } });
-    expect(after.violations.map((v) => v.group)).toEqual(['touch-target|c:tab|', 'touch-target|c:tab|']);
-    expect(after.violations[0]).toMatchObject({ problemCode: 'a11y-00000000', issue: { jiraKey: 'MOB-1' } });
-    expect(after.violations[0].issue.related).toEqual([{ code: 'a11y-11111111', jiraKey: 'MOB-2', jiraUrl: 'u' }]);
-    expect(after.summary).toMatchObject({ new: 0, reported: 2 });
-  });
-
-  it('lists what a project class ignores with the false positives, never counted', () => {
-    const stored = report([touch('id:com.bank:id/decor_1', 30)]);
-    const reviewed = reviewReport(stored, {
-      ...ctx(),
-      settings: { classes: [{ id: 'c', name: 'Decor', match: '*decor_*', action: 'ignore' as const }] },
+    const there = problem('touch-target|s:Адреси|c:PbButton|38x38', {
+      id: 'there',
+      code: 'a11y-22222222',
+      jiraKey: 'MOB-3',
+      facets: [facetsOf(touch('id:B#PbButton', 38), 'Адреси')] as never,
     });
-    expect(reviewed.violations).toEqual([]);
-    expect(reviewed.ignored[0]).toMatchObject({
-      problemClass: 'Decor',
-      issue: { status: 'ignored', byClass: 'Decor' },
-    });
-    expect(reviewed.summary).toMatchObject({ new: 0, total: 0, ignored: 1 });
+    const merged = reviewReport(report([touch('id:A#PbButton', 38)]), ctx([], [here, there]));
+    // now one problem: this screen's decides, the other bug is listed beside it
+    expect(merged.violations[0]).toMatchObject({ problemCode: 'a11y-11111111', issue: { jiraKey: 'MOB-2' } });
+    expect(merged.violations[0].issue.related).toEqual([{ code: 'a11y-22222222', jiraKey: 'MOB-3', jiraUrl: 'u' }]);
+    expect(merged.summary).toMatchObject({ new: 0, reported: 1 });
   });
 
   it('lists a problem filed from this screen that the screen no longer has as resolved', () => {

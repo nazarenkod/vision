@@ -8,7 +8,7 @@
 |---|---|---|
 | `src/ui-tree/` | розбір Appium page source, налаштування порівняння, правила елементів, приховані зміни, «знято зарано», «не той екран», групи компонентів, довідкове порівняння пристроїв | [002](../docs/specs/002-ui-tree-analysis/spec.md), [007](../docs/specs/007-cross-device-reference/spec.md) |
 | `src/a11y/a11y.rules.ts` | правила доступності | [003](../docs/specs/003-accessibility-checks/spec.md) |
-| `src/a11y/a11y-problems.ts`, `a11y-issues*.ts` | проблеми, їхні ID і факти, класи, маркери, рішення, пошук у Jira | [004](../docs/specs/004-a11y-problems/spec.md) |
+| `src/a11y/a11y-problems.ts`, `a11y-issues*.ts` | проблеми, їхні ID і факти, групування, маркери, рішення, пошук у Jira | [004](../docs/specs/004-a11y-problems/spec.md), [021](../docs/specs/021-fixed-a11y-grouping/spec.md) |
 | `src/a11y/jira*.ts` | клієнт Jira, поля й текст бага | [005](../docs/specs/005-jira-bugs/spec.md) |
 | `src/test-runs/change-groups.service.ts` | групи змін збірки | [006](../docs/specs/006-change-groups/spec.md) |
 | `src/test-runs/decision-undo*.ts` | журнал Approve і Reject та Undo з нього ([ADR-0014](../docs/decisions/0014-undo-through-decision-journal.md)); тест відновлення ганяє справжній upstream approve | [018](../docs/specs/018-ui-redesign/spec.md) |

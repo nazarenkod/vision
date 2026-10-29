@@ -265,32 +265,37 @@ test("keeps the project's element rules when saving", async ({
   });
 });
 
-test("numbers problem classes and moves one up", async ({
+test("shows only the screen title under Accessibility problems", async ({
   page,
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   authUser,
 }) => {
+  await mockSaveProject(page);
+  // the project saved problem classes before grouping was fixed (021)
   await open(page);
-  const classes = page.getByTestId("a11yProblemClass");
-  await expect(classes).toHaveCount(2);
-  await expect(classes.nth(0).getByTestId("a11yProblemClassNumber")).toHaveText(
-    "1",
+  const section = page.getByTestId("a11yProblemSettings");
+  await expect(section.getByRole("textbox")).toHaveCount(1);
+  await expect(section.getByRole("combobox")).toHaveCount(0);
+  await expect(section.getByTestId("a11yGrouping")).toContainText(
+    "An element without an id is a problem of its own screen.",
   );
-  await expect(classes.nth(0)).toContainText("Tabs");
-  await expect(classes.nth(1).getByTestId("a11yProblemClassNumber")).toHaveText(
-    "2",
-  );
+  await expect(page.getByText("Problem classes")).toHaveCount(0);
+  await expect(page.getByText("Same problem when")).toHaveCount(0);
+  await page.getByTestId("settingsSearch").fill("class");
+  await expect(page.getByTestId("section-a11y")).toBeHidden();
+  await page.getByTestId("settingsSearch").fill("");
 
-  await classes.nth(1).getByRole("button", { name: "Up" }).click();
-  await expect(classes.nth(0)).toContainText("Map controls");
-  await expect(classes.nth(0).getByTestId("a11yProblemClassNumber")).toHaveText(
-    "1",
-  );
-  // the long explanation waits behind a toggle
-  await expect(page.getByTestId("howMatchingWorks")).not.toHaveAttribute(
-    "open",
-    "",
-  );
+  await page.locator("#screenTitleSelectors").fill("id:toolbar_title");
+  await page.locator("#screenTitleSelectors").blur();
+  const [request] = await Promise.all([
+    putRequest(page),
+    page.getByTestId("saveSettings").click(),
+  ]);
+  // what is no longer read is kept as it was
+  expect(JSON.parse(request.postDataJSON().uiTreeSettings)).toMatchObject({
+    screenTitle: ["id:toolbar_title"],
+    a11yClasses: [{ id: "tabs" }, { id: "maps" }],
+  });
 });
 
 test("asks before leaving with unsaved changes", async ({

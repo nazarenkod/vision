@@ -23,9 +23,7 @@ export interface A11yIssueInfo {
   // set when it was decided on another check: a component's problem holds on every screen
   screenName?: string;
   screenTitle?: string | null;
-  // ignored by the project's problem class of this name, not by a decision
-  byClass?: string;
-  // other bugs of the same problem, when the settings now see several problems as one
+  // other bugs of the same problem, when problems decided apart are now one
   related?: Array<{
     code: string;
     jiraKey: string | null;
@@ -51,8 +49,6 @@ export interface A11yViolation {
   group: string;
   // the problem's id, as in the Jira bug's summary and labels (a11y-3f9c2a1b)
   problemCode: string;
-  // the project's problem class that took it
-  problemClass?: string;
 }
 
 export interface A11yReport {
@@ -122,37 +118,6 @@ export interface UiTreeSettings {
   referenceDevice?: DeviceProfile | null;
   // where the screen's title is in the UI tree, first match wins
   screenTitle?: string[];
-  // when two accessibility issues are the same problem, per rule
-  a11yDuplicates?: Partial<Record<A11yRule, DuplicateMode>>;
-  // the project's problem classes, first match wins
-  a11yClasses?: ProblemClass[];
-}
-
-export type GroupBy = DuplicateMode | "class";
-
-/**
- * Conditions of a class on the facts of an issue: every field given must
- * match (and), any pattern of a field may (or). Globs with * and ?, or
- * /regex/; a group in an element pattern is the component id.
- */
-export interface ClassConditions {
-  element?: string[];
-  screen?: string[];
-  className?: string[];
-  label?: string[];
-}
-
-/** Which issues are one problem and what is done with them. */
-export interface ProblemClass {
-  id: string;
-  name: string;
-  rules?: A11yRule[];
-  when?: ClassConditions;
-  // as classes were first written: one element pattern, and the grouping
-  match?: string;
-  mode?: DuplicateMode;
-  groupBy?: GroupBy;
-  action?: "report" | "ignore";
 }
 
 /** What a decision answers: the problems it touched, and what did not work out in Jira. */
@@ -160,19 +125,6 @@ export interface A11yDecisionResult {
   problems?: string[];
   warnings?: string[];
 }
-
-export type DuplicateMode = "component-value" | "component" | "screen";
-
-// as the server defaults them (a11y-problems.ts)
-export const DEFAULT_DUPLICATE_MODES: Record<A11yRule, DuplicateMode> = {
-  "touch-target": "component-value",
-  "low-contrast": "component-value",
-  "missing-label": "component",
-  "input-without-label": "component",
-  "redundant-role": "component",
-  "not-accessible": "component",
-  "duplicate-label": "screen",
-};
 
 export interface DeviceProfile {
   os: string;

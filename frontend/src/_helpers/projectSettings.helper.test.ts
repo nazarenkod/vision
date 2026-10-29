@@ -42,6 +42,18 @@ describe("project settings", () => {
     });
   });
 
+  it("finds nothing about grouping or problem classes", () => {
+    // what is one problem is fixed (REQ-021-01): only the screen title is set
+    for (const query of ["same problem", "class", "touch target", "клас"]) {
+      expect(matchSettings(query).sections).not.toContain("a11y");
+      expect(matchSettings(query, ukrainian).sections).not.toContain("a11y");
+    }
+    expect(matchSettings("screen title")).toEqual({
+      sections: ["a11y"],
+      labels: ["Screen title in the UI tree"],
+    });
+  });
+
   it("finds a setting by its Ukrainian or English name", () => {
     expect(matchSettings("завантаження", ukrainian)).toEqual({
       sections: ["mobile"],

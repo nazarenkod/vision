@@ -1,7 +1,5 @@
 import { parseUiTree } from '../ui-tree/ui-tree.parser';
 import {
-  classOf,
-  compilePattern,
   componentOf,
   facetsFromKey,
   facetsOf,
@@ -10,7 +8,6 @@ import {
   problemComponent,
   problemKeyOf,
   problemMarkers,
-  ProblemClass,
   screenTitle,
 } from './a11y-problems';
 
@@ -30,7 +27,7 @@ describe('componentOf and facetsOf', () => {
     expect(componentOf('Button:Далі')).toBeNull();
   });
 
-  it('keeps the facts of an issue that no setting changes', () => {
+  it('keeps the facts of an issue, whatever problems are told apart by', () => {
     expect(touch('id:Адреса#PbButton#1', 38.2)).toEqual({
       rule: 'touch-target',
       element: 'Адреса#PbButton',
@@ -57,97 +54,45 @@ describe('problemKeyOf', () => {
     expect(problemKeyOf(touch('Button:Далі', 38, 'Платежі'))).not.toBe(problemKeyOf(touch('Button:Далі', 38)));
   });
 
-  it('follows the per-rule settings', () => {
-    const anySize = { duplicateModes: { 'touch-target': 'component' as const } };
-    expect(problemKeyOf(touch('id:A#PbButton', 38), anySize)).toBe(problemKeyOf(touch('id:A#PbButton', 44), anySize));
-    const perScreen = { duplicateModes: { 'touch-target': 'screen' as const } };
-    expect(problemKeyOf(touch('id:A#PbButton', 38), perScreen)).toBe('touch-target|s:Адреси|c:PbButton|38x38');
+  it('is one problem for the same component on any screen when the rule measures nothing', () => {
     expect(problemKeyOf(rule('missing-label', 'id:x:id/scan'))).toBe('missing-label|c:scan|');
-    expect(problemKeyOf(rule('duplicate-label', 'id:x:id/scan'))).toBe('duplicate-label|s:a|c:scan|');
-  });
-});
-
-describe('problem classes', () => {
-  const tabs: ProblemClass = {
-    id: 't',
-    name: 'Tab bar',
-    when: { element: ['/^.*:id\\/(tab)_\\d+$/'] },
-    groupBy: 'component',
-  };
-
-  it('compiles globs over the whole value, case-insensitive, and regexes as written', () => {
-    expect(compilePattern('*:id/decor_*').test('com.bank:id/DECOR_1')).toBe(true);
-    expect(compilePattern('*:id/decor_*').test('com.bank:id/decor')).toBe(false);
-    expect(compilePattern('/PbButton$/').test('Адреса#PbButton')).toBe(true);
-    expect(compilePattern('/(/')).toBeNull();
+    expect(problemKeyOf(rule('missing-label', 'id:y:id/scan', 'b'))).toBe('missing-label|c:scan|');
+    expect(problemKeyOf(rule('not-accessible', 'id:A#PbIcon', 'b'))).toBe('not-accessible|c:PbIcon|');
   });
 
-  it('takes an issue when every field given matches, any pattern of a field may', () => {
-    const onboarding: ProblemClass = {
-      id: 'o',
-      name: 'Onboarding buttons',
-      rules: ['touch-target'],
-      when: { element: ['*#PbButton', '*#PbLink'], screen: ['Онбординг*'] },
-    };
-    expect(classOf(touch('id:Далі#PbLink', 38, 'Онбординг 2'), [onboarding])?.problemClass).toBe(onboarding);
-    // the element matches, the screen does not
-    expect(classOf(touch('id:Далі#PbLink', 38, 'Платежі'), [onboarding])).toBeNull();
-    // the rule is not the class's
-    expect(classOf(rule('missing-label', 'id:Далі#PbLink', 'Онбординг'), [onboarding])).toBeNull();
-    // label and class name conditions
-    expect(
-      classOf(touch('id:x', 38), [{ id: 'l', name: 'L', when: { label: ['x'], className: ['*Button'] } }])
-    ).not.toBeNull();
-    // a class without any condition takes nothing
-    expect(classOf(touch('id:x', 38), [{ id: 'e', name: 'Empty', when: {} }])).toBeNull();
-  });
-
-  it('reads classes written with a single element pattern', () => {
-    expect(
-      classOf(touch('id:com.bank:id/decor_1', 38), [{ id: 'd', name: 'D', match: '*decor_*' }])?.problemClass.id
-    ).toBe('d');
-  });
-
-  it('lets a regex group be the component, and a class be one problem for all it takes', () => {
-    const settings = { classes: [tabs] };
-    expect(problemKeyOf(touch('id:com.bank:id/tab_0', 38), settings)).toBe('touch-target|c:tab|');
-    expect(problemKeyOf(touch('id:com.bank:id/tab_3', 44, 'b'), settings)).toBe('touch-target|c:tab|');
-    const icons: ProblemClass = {
-      id: 'i',
-      name: 'Status icons',
-      when: { element: ['*:id/status_*'] },
-      groupBy: 'class',
-    };
-    expect(problemKeyOf(touch('id:x:id/status_wifi', 20), { classes: [icons] })).toBe(
-      problemKeyOf(touch('id:x:id/status_battery', 24, 'b'), { classes: [icons] })
+  it('keeps the same label a problem of its own screen', () => {
+    expect(problemKeyOf(rule('duplicate-label', 'id:x:id/edit'))).toBe('duplicate-label|s:a|c:edit|');
+    expect(problemKeyOf(rule('duplicate-label', 'id:x:id/edit', 'b'))).not.toBe(
+      problemKeyOf(rule('duplicate-label', 'id:x:id/edit'))
     );
   });
 });
 
 describe('Jira markers', () => {
-  it('labels a bug with its id, rule, component, values and class', () => {
+  it('labels a bug with its id, rule, component and values', () => {
     expect(problemMarkers('a11y-3f9c2a1b', touch('id:A#PbButton', 38))).toEqual([
       'a11y-3f9c2a1b',
       'a11y-touch-target',
       'a11y-component-PbButton',
       'a11y-value-38x38',
     ]);
-    const tabs: ProblemClass = { id: 't', name: 'Tab bar', when: { element: ['/(tab)_\\d+$/'] }, groupBy: 'component' };
-    expect(problemMarkers('a11y-1', touch('id:x:id/tab_0', 38), { classes: [tabs] })).toContain('a11y-class-Tab_bar');
+    expect(problemMarkers('a11y-1', touch('Button:Далі', 38))).toEqual([
+      'a11y-1',
+      'a11y-touch-target',
+      'a11y-value-38x38',
+    ]);
   });
 
-  it('searches by the markers the current settings tell problems apart with', () => {
+  it('searches by the markers problems are told apart with', () => {
     expect(markerQuery(touch('id:A#PbButton', 38))).toEqual([
       'a11y-touch-target',
       'a11y-component-PbButton',
       'a11y-value-38x38',
     ]);
-    expect(markerQuery(touch('id:A#PbButton', 38), { duplicateModes: { 'touch-target': 'component' } })).toEqual([
-      'a11y-touch-target',
-      'a11y-component-PbButton',
-    ]);
+    expect(markerQuery(rule('missing-label', 'id:x:id/scan'))).toEqual(['a11y-missing-label', 'a11y-component-scan']);
     // one screen's problem is found by its id only
     expect(markerQuery(touch('Button:Далі', 38))).toBeNull();
+    expect(markerQuery(rule('duplicate-label', 'id:x:id/edit'))).toBeNull();
   });
 });
 

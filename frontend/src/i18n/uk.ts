@@ -91,12 +91,6 @@ export const uk: Messages = {
   "settings.dangerTitle": "Видалити цей проєкт.",
   "settings.deleteProject": "Видалити проєкт",
   "settings.meta.mobileOn": "{count} з 5",
-  "settings.meta.classes": {
-    one: "{count} клас",
-    few: "{count} класи",
-    many: "{count} класів",
-    other: "{count} класу",
-  },
   "settings.meta.set": "задано",
   "settings.meta.notSet": "не задано",
 
@@ -223,14 +217,8 @@ export const uk: Messages = {
   "a11y.screenTitle": "Назва екрана в UI-дереві",
   "a11y.screenTitleHelp":
     "По одному селектору в рядку, перший збіг виграє: id:Appbar#Title, id:toolbar_title, class:…, text:/regex/. Без збігу екраном вважається назва перевірки.",
-  "a11y.sameProblem": "Одна проблема, коли",
-  "a11y.sameProblemIntro":
-    "Для кожного правила, для елементів з id. Проблема компонента стосується кожного екрана з ним: заведена раз, покриває всі. Елементи без id — завжди проблема свого екрана.",
-  "a11y.sameProblemFor": "Одна проблема, коли: {rule}",
-  "a11y.mode.componentValue": "Той самий компонент і значення",
-  "a11y.mode.component": "Той самий компонент, будь-які значення",
-  "a11y.mode.screen": "Кожен екран окремо",
-  "a11y.mode.class": "Усе, що потрапляє в клас",
+  "a11y.grouping":
+    "Одна проблема — це той самий компонент з тією самою областю дотику чи контрастом, на будь-якому екрані; той самий компонент — для решти правил; однаковий підпис у кількох елементів — у межах одного екрана. Елемент без id — проблема лише свого екрана.",
   "a11y.rule.touchTarget": "Замала область дотику",
   "a11y.rule.lowContrast": "Низький контраст тексту",
   "a11y.rule.missingLabel": "Елемент керування без підпису",
@@ -238,28 +226,6 @@ export const uk: Messages = {
   "a11y.rule.duplicateLabel": "Однаковий підпис у кількох елементів",
   "a11y.rule.redundantRole": "Підпис повторює роль",
   "a11y.rule.notAccessible": "Елемент прихований від VoiceOver",
-  "a11y.classes": "Класи проблем",
-  "a11y.howMatching": "Як працює зіставлення",
-  "a11y.howMatchingText":
-    "Перший збіг виграє. Знахідка потрапляє в клас, коли збігаються всі заповнені поля; у полі — по одному шаблону в рядку, досить збігу будь-якого. Шаблони — це маски з * і ? або /regex/; група в regex id елемента стає компонентом, тож {example} робить tab_0…tab_3 однією проблемою. «Усе, що потрапляє в клас» робить усе це однією проблемою; «Ігнорувати» показує його серед хибних результатів і ніколи не заводить. Id проблем від цих налаштувань не змінюються: що є однією проблемою, щоразу визначається з того, для чого кожну проблему заведено.",
-  "a11y.checkedAt": "Перевіряється {position}",
-  "a11y.everyRule": "усі правила",
-  "a11y.ignored": "ігнорується",
-  "a11y.rulesSetting": "як у правилі",
-  "a11y.up": "Вище",
-  "a11y.field.element": "Id елемента",
-  "a11y.field.screen": "Екран",
-  "a11y.field.className": "Клас елемента",
-  "a11y.field.label": "Підпис елемента",
-  "a11y.className": "Назва",
-  "a11y.patternHelp": "По одному шаблону в рядку",
-  "a11y.required": "Обов’язкове поле",
-  "a11y.classRules": "Правила",
-  "a11y.classRulesHelp": "Порожньо — усі правила",
-  "a11y.classRuleSetting": "Як у правилі",
-  "a11y.classAction": "Тоді",
-  "a11y.fileBugs": "Заводити баги",
-  "a11y.addClass": "Додати клас",
 
   "jira.title": "Jira",
   "jira.intro":

@@ -37,7 +37,14 @@
 
 ## Як перевіряємо
 
-`a11y-issues.spec.ts › keeps ids and bugs when the settings change what is one problem`.
+`a11y-issues.spec.ts › keeps ids and bugs of problems decided under another grouping`.
+
+## Оновлення
+
+[021](../specs/021-fixed-a11y-grouping/spec.md) прибрала налаштування групування: правило тепер
+одне для всіх проєктів, і `problemKeyOf` бере лише факти. Рішення лишається чинним: проблеми,
+вирішені за старими налаштуваннями, розкладаються за фактами й тримають ID і баги. Той самий
+механізм знадобиться для поправок групування з картки в рев'ю.
 
 ## Варіанти: за і проти
 

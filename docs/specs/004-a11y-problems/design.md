@@ -79,20 +79,20 @@ sequenceDiagram
 | Вимога | Перевірка |
 |---|---|
 | REQ-004-01 | `backend/src/a11y/a11y-problems.spec.ts › is one problem for the same component and tap area on any screen` |
-| REQ-004-02 | `backend/src/a11y/a11y-problems.spec.ts › follows the per-rule settings` |
+| REQ-004-02 | `backend/src/a11y/a11y-problems.spec.ts › is one problem for the same component on any screen when the rule measures nothing`; `backend/src/a11y/a11y-problems.spec.ts › keeps the same label a problem of its own screen` (з [021](../021-fixed-a11y-grouping/spec.md) типове групування — єдине) |
 | REQ-004-03 | `backend/src/a11y/a11y-problems.spec.ts › keeps ids apart and makes an element without an id a problem of its screen only` |
 | REQ-004-04 | `backend/src/a11y/a11y-problems.spec.ts › reads the title by the project selectors, first match wins` |
-| REQ-004-05 | `backend/src/a11y/a11y-issues.spec.ts › keeps ids and bugs when the settings change what is one problem` |
-| REQ-004-06 | `backend/src/a11y/a11y-issues.spec.ts › keeps ids and bugs when the settings change what is one problem` |
-| REQ-004-07 | `backend/src/a11y/a11y-issues.spec.ts › keeps ids and bugs when the settings change what is one problem` (поле `related`) |
-| REQ-004-10 | `backend/src/a11y/a11y-problems.spec.ts › takes an issue when every field given matches, any pattern of a field may` |
-| REQ-004-11 | `backend/src/a11y/a11y-problems.spec.ts › compiles globs over the whole value, case-insensitive, and regexes as written` |
-| REQ-004-16 | `backend/src/a11y/a11y-problems.spec.ts › compiles globs over the whole value…` (null для `/(/`); manual: помилка під полем у налаштуваннях, «Add class» неактивна |
-| REQ-004-12 | `backend/src/a11y/a11y-problems.spec.ts › lets a regex group be the component, and a class be one problem for all it takes` |
-| REQ-004-13 | `backend/src/a11y/a11y-problems.spec.ts › lets a regex group be the component, and a class be one problem for all it takes` |
-| REQ-004-14 | `backend/src/a11y/a11y-issues.spec.ts › lists what a project class ignores with the false positives, never counted` |
-| REQ-004-17 | manual: знахідка, яку ігнорує клас → `POST …/a11y/jira` повертає 400 |
-| REQ-004-15 | `backend/src/a11y/a11y-problems.spec.ts › takes an issue when every field given matches…` (клас без умов) |
+| REQ-004-05 | `backend/src/a11y/a11y-issues.spec.ts › keeps ids and bugs of problems decided under another grouping` |
+| REQ-004-06 | `backend/src/a11y/a11y-issues.spec.ts › keeps ids and bugs of problems decided under another grouping` |
+| REQ-004-07 | `backend/src/a11y/a11y-issues.spec.ts › keeps ids and bugs of problems decided under another grouping` (поле `related`) |
+| REQ-004-10 | manual: знято [021](../021-fixed-a11y-grouping/spec.md), класів проблем більше немає |
+| REQ-004-11 | manual: знято [021](../021-fixed-a11y-grouping/spec.md), класів проблем більше немає |
+| REQ-004-16 | manual: знято [021](../021-fixed-a11y-grouping/spec.md), класів проблем більше немає |
+| REQ-004-12 | manual: знято [021](../021-fixed-a11y-grouping/spec.md), класів проблем більше немає |
+| REQ-004-13 | manual: знято [021](../021-fixed-a11y-grouping/spec.md), класів проблем більше немає |
+| REQ-004-14 | manual: знято [021](../021-fixed-a11y-grouping/spec.md), класів проблем більше немає |
+| REQ-004-17 | manual: знято [021](../021-fixed-a11y-grouping/spec.md), класів проблем більше немає |
+| REQ-004-15 | manual: знято [021](../021-fixed-a11y-grouping/spec.md), класів проблем більше немає |
 | REQ-004-20 | `backend/src/a11y/a11y-problems.service.spec.ts › links instead of filing when someone filed the problem already` |
 | REQ-004-21 | `backend/src/a11y/a11y-problems.service.spec.ts › links instead of filing when someone filed the problem already` |
 | REQ-004-22 | `backend/src/a11y/a11y-problems.service.spec.ts › refuses while a colleague is filing the same problem` |
@@ -104,7 +104,7 @@ sequenceDiagram
 | REQ-004-28 | `backend/src/a11y/a11y-problems.service.spec.ts › marks a problem filed in Jira under its id as filed, once per while` (другий запит не йде) |
 | REQ-004-29 | manual: Jira URL на хост, що не відповідає → рев'ю відкривається; у лозі `Jira lookup … failed` |
 | REQ-004-30 | `backend/src/a11y/a11y-issues.spec.ts › covers the same component problem with the bug filed on another screen` |
-| REQ-004-31 | `backend/src/a11y/a11y-problems.spec.ts › labels a bug with its id, rule, component, values and class`; `backend/src/a11y/a11y-problems.service.spec.ts › files one bug per problem, with its id, and records it for the project` |
+| REQ-004-31 | `backend/src/a11y/a11y-problems.spec.ts › labels a bug with its id, rule, component and values` (мітки класу немає з [021](../021-fixed-a11y-grouping/spec.md)); `backend/src/a11y/a11y-problems.service.spec.ts › files one bug per problem, with its id, and records it for the project` |
 | REQ-004-32 | manual: Link existing → у Jira з'явились маркери, зникла `a11y-unlinked-…` |
 | REQ-004-33 | `backend/src/a11y/a11y-problems.service.spec.ts › takes Vision` |
 | REQ-004-38 | `backend/src/a11y/a11y-problems.service.spec.ts › takes Vision` (рев'ю після Unlink не прив'язує) |
@@ -115,4 +115,4 @@ sequenceDiagram
 | REQ-004-40 | `frontend/integration_tests/test/a11yProblems.spec.ts › shows one problem for the same issue on elements of one component` |
 | REQ-004-41 | `frontend/integration_tests/test/a11yProblems.spec.ts › shows a problem filed on another screen as covered` |
 | REQ-004-42 | manual: «Create Jira bugs for all N open problems» → N багів |
-| REQ-004-43 | manual: Projects → карандаш → Accessibility problems |
+| REQ-004-43 | manual: Projects → олівець → Accessibility problems (з [021](../021-fixed-a11y-grouping/spec.md) — лише заголовок екрана) |

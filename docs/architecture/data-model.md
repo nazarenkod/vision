@@ -10,13 +10,15 @@ upstream VRT, а згодом зможе працювати й на живій.
 |---|---|---|
 | `TestRun` | `uiTreeName`, `baselineUiTreeName`, `uiTreeOptions`, `a11yReportName`, `a11yNewCount`, `a11yTotalCount`, `diffRegions`, `changeSignature`, `imageThumbnailName`, `diffThumbnailName`, `captureWarnings`, `semanticChangeCount`, `componentChanges` | результати аналізу дерева: файли й лічильники |
 | `TestVariation`, `Baseline` | `baselineUiTreeName` / `uiTreeName` | дерево еталона йде разом із картинкою |
-| `Project` | `jiraUrl`, `jiraToken` (спільний, необов'язковий), `jiraEmail`, `jiraIssueType`, `jiraLinkType`, `uiTreeSettings` (JSON) | Jira і налаштування мобільного порівняння, класи проблем |
+| `Project` | `jiraUrl`, `jiraToken` (спільний, необов'язковий), `jiraEmail`, `jiraIssueType`, `jiraLinkType`, `uiTreeSettings` (JSON) | Jira і налаштування мобільного порівняння, заголовок екрана |
 | `User` | `jiraToken`, `jiraEmail`, `lastSignInAt` | особистий токен Jira ([ADR-0010](../decisions/0010-personal-jira-tokens.md)); останній вхід в інтерфейс паролем чи SSO, для сторінки Users ([018](../specs/018-ui-redesign/spec.md)) |
 
 `uiTreeSettings` — JSON, який читає `parseUiTreeSettings` (`ui-tree/comparison-inputs.ts`):
 системні бари, зсуви, приховані зміни, «знято зарано», «не той екран», правила елементів,
-еталонний пристрій, `screenTitle` (селектори заголовка), `a11yDuplicates` (режим дублів за
-правилом), `a11yClasses` (класи проблем). Невідомі або биті записи парсер відкидає.
+еталонний пристрій, `screenTitle` (селектори заголовка). Биті записи парсер відкидає, а поля,
+яких він не знає, лишає як є: так `a11yDuplicates` і `a11yClasses`, які до
+[021](../specs/021-fixed-a11y-grouping/spec.md) задавали групування проблем, переживають збереження,
+але ніхто їх не читає.
 
 ## Нові таблиці
 

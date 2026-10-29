@@ -14,7 +14,7 @@
 | `src/i18n/` | мови інтерфейсу: словники `en.ts`/`uk.ts`, `useT()`, перемикач EN/UK у шапці |
 | `src/constants/brand.ts` | назва продукту (Vision) і слоган — лише тут |
 | `src/components/TestDetailsDialog/` | ревю скриншота: `InsightsPanel` (доступність, зміни, пристрої), `JiraBugDialog`, `DeviceStrip`, `CrossDevicePanel` |
-| `src/components/ProjectForm/` | налаштування проєкту, зокрема `A11yProblemSettings` (класи проблем) |
+| `src/components/ProjectForm/` | налаштування проєкту, зокрема `A11yProblemSettings` (заголовок екрана для проблем доступності) |
 | `src/pages/InsightsPage.tsx` | Insights |
 | `src/services/*.service.ts` | виклики API: `fetch` + `authHeader()` + `handleResponse` |
 | `src/types/` | типи; `insights.ts` дзеркалить відповіді бекенду для Vision-фіч |

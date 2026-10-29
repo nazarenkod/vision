@@ -198,18 +198,13 @@ describe('parseUiTreeSettings', () => {
   });
 });
 
-describe('parseUiTreeSettings: problem classes', () => {
-  it('keeps classes with conditions and classes with one element pattern, drops anything else', () => {
-    const settings = parseUiTreeSettings(
-      JSON.stringify({
-        a11yClasses: [
-          { id: 'a', name: 'A', when: { element: ['*#PbButton'], screen: ['Онбординг*'] } },
-          { id: 'b', name: 'B', match: '*decor_*' },
-          { id: 'c', name: 'C' },
-          null,
-        ],
-      })
-    );
-    expect(settings.a11yClasses.map((item) => item.id)).toEqual(['a', 'b']);
+describe('parseUiTreeSettings: settings no longer read', () => {
+  it('keeps the grouping modes and problem classes of old as they were, so a save does not erase them', () => {
+    const old = {
+      a11yDuplicates: { 'touch-target': 'screen' },
+      a11yClasses: [{ id: 'b', name: 'B', match: '*decor_*' }],
+    };
+    const settings = parseUiTreeSettings(JSON.stringify(old));
+    expect(JSON.parse(JSON.stringify(settings))).toMatchObject(old);
   });
 });

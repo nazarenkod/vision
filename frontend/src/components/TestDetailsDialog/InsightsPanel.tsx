@@ -431,9 +431,6 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
             />
           )}
           {filing && <StatusPill tone="changed" label={t("panel.filing")} />}
-          {violation.problemClass && (
-            <StatusPill tone="neutral" label={violation.problemClass} />
-          )}
           <Tooltip title={t("panel.codeHelp")}>
             <Box
               component="code"
@@ -722,7 +719,7 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
                       })
                     : ""}
                 </span>
-                {canEdit && !violation.issue?.byClass && (
+                {canEdit && (
                   <Button
                     size="small"
                     onClick={() =>

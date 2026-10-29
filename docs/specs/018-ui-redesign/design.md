@@ -218,7 +218,7 @@ Undo на сервері дозволене до 30 s після рішення:
 | REQ-018-43 | `frontend/src/_helpers/projectSettings.helper.test.ts › finds settings by section or field name` |
 | REQ-018-44 | `frontend/integration_tests/test/projectSettings.spec.ts › shows only the chosen engine's settings` |
 | REQ-018-45 | `frontend/integration_tests/test/projectSettings.spec.ts › shows a dependent field only when its switch is on` |
-| REQ-018-46 | `frontend/integration_tests/test/projectSettings.spec.ts › numbers problem classes and moves one up` |
+| REQ-018-46 | manual: знято [021](../021-fixed-a11y-grouping/spec.md), класів проблем більше немає |
 | REQ-018-47 | `frontend/src/_helpers/projectSettings.helper.test.ts › names the sections with unsaved changes` |
 | REQ-018-48 | `frontend/integration_tests/test/projectSettings.spec.ts › asks before leaving with unsaved changes` |
 | REQ-018-49 | `frontend/src/_helpers/projectSettings.helper.test.ts › deletes only after the exact project name` |

@@ -73,10 +73,6 @@ function sectionMeta(id: SectionId, project: ProjectDto, t: Text): string {
       ].filter(Boolean).length;
       return t("settings.meta.mobileOn", { count: on });
     }
-    case "a11y":
-      return t("settings.meta.classes", {
-        count: tree.a11yClasses?.length ?? 0,
-      });
     case "jira":
       return t(project.jiraUrl ? "settings.meta.set" : "settings.meta.notSet");
     default:

@@ -83,6 +83,7 @@ docs/specs/NNN-коротка-назва/
 | [021](021-fixed-a11y-grouping/spec.md) | Фіксоване групування проблем доступності | Implemented |
 | [022](022-remove-variation-groups/spec.md) | Без груп варіацій | Implemented |
 | [023](023-ukrainian-ui/spec.md) | Українська мова інтерфейсу | Implemented |
+| [026](026-a11y-rules-settings/spec.md) | Прості налаштування доступності і норми проєкту | Draft |
 
 Статусу `Verified` поки немає в жодної: інтеграцію з реальною Jira Cloud і прогони на сервері
 команда ще не підтвердила.

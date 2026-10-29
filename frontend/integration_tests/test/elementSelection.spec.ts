@@ -546,7 +546,7 @@ test("offers element actions on a changed area", async ({
 
   const form = page.getByRole("dialog", { name: "Compare only" });
   await expect(form).toBeVisible();
-  await expect(form.getByLabel("Element")).toHaveValue("Pay");
+  await expect(form.getByLabel("Element", { exact: true })).toHaveValue("Pay");
 });
 
 // Spec 027: elements with no name of their own, found by a path from a stable one.

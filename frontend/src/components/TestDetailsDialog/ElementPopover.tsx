@@ -410,7 +410,7 @@ export const ElementPopover: React.FunctionComponent<ElementPopoverProps> = ({
           <>
             <Box sx={{ p: 0.75 }}>
               {actionButton("ignore", t("select.ignore"), "I")}
-              {actionButton("compare", t("select.compare"), "C")}
+              {actionButton("compare", t("select.compareSelected"), "C")}
               {actionButton(
                 "tolerate",
                 t("select.allow", { percent: ALLOW_PERCENT }),

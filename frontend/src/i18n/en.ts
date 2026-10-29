@@ -1100,12 +1100,13 @@ export const en = {
   "select.child": "Back to the inner element",
   "select.more": "Match differently",
   "select.ignore": "Ignore",
-  "select.compare": "Compare only",
+  "select.compare": "Compare only this element",
+  "select.compareSelected": "Only selected",
   "select.allow": "Allow {percent}%",
   "select.thisScreen": "This screen",
   "select.allScreens": "All screens",
   "select.compareOneScreen":
-    "Compare only is for one screen: each check names its own elements",
+    "Only selected is for one screen: each check names its own elements",
   "select.onScreen": "{count} on this screen",
   "select.textAnchor":
     "Found through a text: the rule stops working when the text changes",

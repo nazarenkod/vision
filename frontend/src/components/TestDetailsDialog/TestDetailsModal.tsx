@@ -1491,7 +1491,11 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
               onClick={toggleSelecting}
               sx={{
                 color: "inherit",
-                bgcolor: "rgba(255,255,255,.14)",
+                // tinted by its own text: the bar is inverted, dark on light and light on dark
+                bgcolor: "color-mix(in srgb, currentColor 16%, transparent)",
+                "&:hover": {
+                  bgcolor: "color-mix(in srgb, currentColor 26%, transparent)",
+                },
                 minWidth: 0,
                 px: 1.25,
                 fontWeight: 600,

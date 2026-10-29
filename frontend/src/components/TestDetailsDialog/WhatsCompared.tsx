@@ -28,8 +28,11 @@ interface WhatsComparedProps {
   // drawn on this screenshot, and sent by the test with it
   areas: IgnoreArea[];
   testAreas: IgnoreArea[];
-  // opens the Areas menu, with the area chosen when it can be edited there
-  onOpenArea: (areaId: string | undefined) => void;
+  // opens the Areas menu with this drawn area chosen in it
+  onOpenArea: (areaId: string) => void;
+  // an area the test sent, lit on the screenshot until clicked again
+  pinnedMark?: string;
+  onPinMark: (id: string) => void;
   canEdit: boolean;
   busy: boolean;
   onRemove: (rule: ScreenRule) => void;
@@ -40,6 +43,8 @@ interface WhatsComparedProps {
 
 export const ruleMarkId = (ruleId: string) => `rule:${ruleId}`;
 export const areaMarkId = (areaId: string) => `area:${areaId}`;
+// the test's areas come without ids: their place in the list names them
+export const testAreaMarkId = (index: number) => `testArea:${index}`;
 
 const swatch = (action: ElementRuleAction | "area") => {
   const base = {
@@ -109,6 +114,8 @@ export const WhatsCompared: React.FunctionComponent<WhatsComparedProps> = ({
   areas,
   testAreas,
   onOpenArea,
+  pinnedMark,
+  onPinMark,
   canEdit,
   busy,
   onRemove,
@@ -127,6 +134,23 @@ export const WhatsCompared: React.FunctionComponent<WhatsComparedProps> = ({
       : summary.kind === "except"
         ? t("compared.except", { count: summary.elements })
         : t("compared.whole");
+
+  const areaRowSx = {
+    display: "flex",
+    alignItems: "center",
+    gap: 1.25,
+    fontSize: 13.5,
+    mx: -0.75,
+    px: 0.75,
+    minHeight: 28,
+    borderRadius: "6px",
+    color: tokens.text,
+  } as const;
+  const areaName = (area: IgnoreArea) =>
+    t("areas.area", {
+      width: Math.round(area.width),
+      height: Math.round(area.height),
+    });
 
   const ruleRow = (rule: ScreenRule) => {
     const found = foundOn(rule);
@@ -254,40 +278,27 @@ export const WhatsCompared: React.FunctionComponent<WhatsComparedProps> = ({
         </Alert>
       ))}
       {groupRules(structure.rules).flatMap((group) => group.rules.map(ruleRow))}
-      {[
-        ...areas.map((area) => ({ area, fromTest: false })),
-        ...testAreas.map((area) => ({ area, fromTest: true })),
-      ].map(({ area, fromTest }) => {
-        const suggestion = fromTest
-          ? undefined
-          : suggestions.get(String(area.id));
+      {areas.map((area) => {
+        const suggestion = suggestions.get(String(area.id));
         return (
           // an area is left out like an ignored element; a click opens it in the Areas menu
           <Box
-            key={`${fromTest ? "test" : "own"}-${area.id}`}
+            key={`own-${area.id}`}
             data-testid="comparedArea"
             role="button"
             tabIndex={0}
-            onClick={() => onOpenArea(fromTest ? undefined : String(area.id))}
+            onClick={() => onOpenArea(String(area.id))}
             onKeyDown={(event) => {
               if (event.key === "Enter" || event.key === " ") {
                 event.preventDefault();
-                onOpenArea(fromTest ? undefined : String(area.id));
+                onOpenArea(String(area.id));
               }
             }}
             onMouseEnter={() => onPreview(areaMarkId(area.id))}
             onMouseLeave={() => onPreview(undefined)}
             sx={{
-              display: "flex",
-              alignItems: "center",
-              gap: 1.25,
-              fontSize: 13.5,
-              mx: -0.75,
-              px: 0.75,
-              minHeight: 28,
-              borderRadius: "6px",
+              ...areaRowSx,
               cursor: "pointer",
-              color: tokens.text,
               "&:hover": { bgcolor: tokens.subtle },
               "&:focus-visible": {
                 outline: `2px solid ${tokens.brand}`,
@@ -296,20 +307,7 @@ export const WhatsCompared: React.FunctionComponent<WhatsComparedProps> = ({
             }}
           >
             <Box sx={swatch("ignore")} />
-            <span>
-              {t("areas.area", {
-                width: Math.round(area.width),
-                height: Math.round(area.height),
-              })}
-            </span>
-            {fromTest && (
-              <Box
-                component="span"
-                sx={{ ml: "auto", fontSize: 12, color: tokens.textMuted }}
-              >
-                {t("areas.fromTest")}
-              </Box>
-            )}
+            <span>{areaName(area)}</span>
             {suggestion && canEdit && (
               <Tooltip
                 title={t("areas.useElementHelp", {
@@ -332,6 +330,57 @@ export const WhatsCompared: React.FunctionComponent<WhatsComparedProps> = ({
           </Box>
         );
       })}
+      {testAreas.length > 0 && (
+        // a heading and nothing more; a click shows the area on the screenshot
+        <Box data-testid="comparedTestAreas">
+          <Box
+            sx={{
+              mt: areas.length || structure.rules.length ? 0.75 : 0,
+              fontSize: 12,
+              lineHeight: 1.6,
+              fontWeight: 600,
+              color: tokens.textSecondary,
+            }}
+          >
+            {t("areas.fromTest")}
+          </Box>
+          {testAreas.map((area, index) => {
+            const mark = testAreaMarkId(index);
+            const pinned = pinnedMark === mark;
+            return (
+              <Box
+                key={mark}
+                data-testid="comparedTestArea"
+                role="button"
+                tabIndex={0}
+                aria-pressed={pinned}
+                onClick={() => onPinMark(mark)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter" || event.key === " ") {
+                    event.preventDefault();
+                    onPinMark(mark);
+                  }
+                }}
+                onMouseEnter={() => onPreview(mark)}
+                onMouseLeave={() => onPreview(undefined)}
+                sx={{
+                  ...areaRowSx,
+                  cursor: "pointer",
+                  bgcolor: pinned ? tokens.subtle : "transparent",
+                  "&:hover": { bgcolor: tokens.subtle },
+                  "&:focus-visible": {
+                    outline: `2px solid ${tokens.brand}`,
+                    outlineOffset: -2,
+                  },
+                }}
+              >
+                <Box sx={swatch("ignore")} />
+                <span>{areaName(area)}</span>
+              </Box>
+            );
+          })}
+        </Box>
+      )}
     </Box>
   );
 };

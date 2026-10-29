@@ -1140,7 +1140,6 @@ export const en = {
   "areas.useElementHelp":
     "Replace with a rule for {element}: it follows the element when the layout moves",
   "areas.fromTest": "Sent by the test",
-  "areas.fromTestHelp": "change them in the test code",
   "areas.area": "Area {width} × {height}",
   "areas.save": "Save areas",
   "areas.discard": "Discard",

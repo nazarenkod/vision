@@ -88,7 +88,7 @@ import {
 } from "../../_helpers/elementPicking.helper";
 import { ALLOW_PERCENT, ElementPopover } from "./ElementPopover";
 import { AreaKind, AreasMenu } from "./AreasMenu";
-import { areaMarkId, ruleMarkId } from "./WhatsCompared";
+import { areaMarkId, ruleMarkId, testAreaMarkId } from "./WhatsCompared";
 import { useRuleSnackbar } from "../useRuleSnackbar";
 import { motion, tokens } from "../../theme";
 import { StepDots } from "./StepDots";
@@ -332,6 +332,19 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
   const [previewElement, setPreviewElement] = useState<PickableElement>();
   // a rule or an area the pointer is over in the panel (REQ-024-24)
   const [previewMark, setPreviewMark] = useState<string>();
+  // a test area clicked in the summary or the Areas menu stays lit until clicked again
+  const [pinnedMark, setPinnedMark] = useState<string>();
+  const pinMark = (id: string) =>
+    setPinnedMark((current) => (current === id ? undefined : id));
+  const testAreaMarks = (): OverlayRect[] =>
+    (JSON.parse(testRun.tempIgnoreAreas ?? "[]") as IgnoreArea[]).flatMap(
+      (area, index) => {
+        const id = testAreaMarkId(index);
+        return id === previewMark || id === pinnedMark
+          ? [{ ...area, id, color: canvas.textMuted, hatched: true }]
+          : [];
+      },
+    );
   const [ruleBusy, setRuleBusy] = useState(false);
   const [noTreeAnchor, setNoTreeAnchor] = useState<HTMLElement | null>(null);
   const [showRules, setShowRules] = useState(readShowRules);
@@ -412,6 +425,7 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
     setPickedElement(undefined);
     setPreviewElement(undefined);
     setPreviewMark(undefined);
+    setPinnedMark(undefined);
     setPreviewViolation(undefined);
     setPreviewRegion(undefined);
     setNoTreeAnchor(null);
@@ -1058,6 +1072,8 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
         onApplyToBuild={toggleApplyIgnoreDialogOpen}
         areas={ignoreAreas}
         testAreas={JSON.parse(testRun.tempIgnoreAreas)}
+        pinnedMark={pinnedMark}
+        onPinMark={pinMark}
         suggestions={Object.fromEntries(
           (structure?.areaSuggestions ?? []).map((item) => [item.areaId, item]),
         )}
@@ -1212,6 +1228,7 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
         drawModeState={[isDrawMode, setIsDrawMode]}
         overlayRects={[
           ...ruleMarks("current"),
+          ...testAreaMarks(),
           ...(selectingNow ? pickMarks("current") : overlayRects),
           ...(previewRegion
             ? [{ id: "changedArea", ...previewRegion, color: canvas.diff }]
@@ -1238,6 +1255,7 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
           selectingNow
             ? "picked"
             : (previewMark ??
+              pinnedMark ??
               (previewRegion
                 ? "changedArea"
                 : (previewViolation ?? highlightedViolation)))
@@ -1546,8 +1564,10 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
           onUseElement={useElementForArea}
           onOpenArea={(areaId) => {
             if (!areasOpen) toggleAreas();
-            if (areaId) setSelectedRectId(areaId);
+            setSelectedRectId(areaId);
           }}
+          pinnedMark={pinnedMark}
+          onPinMark={pinMark}
           ruleBusy={ruleBusy}
           onPickedDone={() => setPickedElement(undefined)}
           onPreviewElement={setPreviewElement}

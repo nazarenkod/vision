@@ -99,18 +99,50 @@ test("lists the rules for this screen and for every screen", async ({
   );
 });
 
+test("lights an area the test sent on the screenshot until clicked again", async ({
+  openProjectPage,
+  page,
+}) => {
+  await openProjectPage(project.id, build.id, testRun.id);
+  // a heading and nothing more
+  await expect(page.getByTestId("comparedTestAreas")).toContainText(
+    "Sent by the test",
+  );
+  await expect(page.getByTestId("comparedTestAreas")).not.toContainText(
+    "test code",
+  );
+  const area = page.getByTestId("comparedTestArea");
+  await area.click();
+  await expect(area).toHaveAttribute("aria-pressed", "true");
+  // it shows where the area is; it opens nothing and starts no selecting
+  await expect(page.getByTestId("areasMenu")).toHaveCount(0);
+  await expect(page.getByTestId("selectElements")).toHaveAttribute(
+    "aria-pressed",
+    "false",
+  );
+  // the Areas menu lights the same one
+  await page.getByTestId("areasButton").click();
+  const inMenu = page.getByTestId("areaRow").filter({ hasText: "600 × 700" });
+  await expect(inMenu).toHaveAttribute("aria-pressed", "true");
+  // a second click there puts the light out, in both places
+  await inMenu.click();
+  await expect(inMenu).toHaveAttribute("aria-pressed", "false");
+  await expect(area).toHaveAttribute("aria-pressed", "false");
+});
+
 test("opens an area of the summary in the Areas menu", async ({
   openProjectPage,
   page,
 }) => {
   await openProjectPage(project.id, build.id, testRun.id);
-  const areas = page.getByTestId("comparedArea");
-  await expect(areas).toHaveCount(2);
-  await expect(areas.last()).toContainText("Sent by the test");
-  await areas.first().click();
+  // a drawn area opens in the Areas menu, chosen there, ready to delete or move
+  await page.getByTestId("comparedArea").click();
   await expect(page.getByTestId("areasMenu")).toBeVisible();
-  // the drawn area is chosen there, ready to delete or move
   await expect(page.getByTestId("areaDelete")).toBeEnabled();
+  await expect(page.getByTestId("selectElements")).toHaveAttribute(
+    "aria-pressed",
+    "false",
+  );
 });
 
 test("removes a rule for this screen at once", async ({

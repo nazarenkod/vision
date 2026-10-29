@@ -12,6 +12,7 @@ import { Add, ExpandLess, ExpandMore } from "@mui/icons-material";
 import { IgnoreArea } from "../../types/ignoreArea";
 import { tokens } from "../../theme";
 import { useT } from "../../i18n";
+import { testAreaMarkId } from "./WhatsCompared";
 
 export type AreaKind = "ignore" | "compare";
 
@@ -32,6 +33,9 @@ interface AreasMenuProps {
   areas: IgnoreArea[];
   // sent by the test with the screenshot: applied, never edited here
   testAreas: IgnoreArea[];
+  // a test area clicked here or in the summary, lit on the screenshot
+  pinnedMark?: string;
+  onPinMark: (id: string) => void;
   suggestions: Record<string, { selector: string; element: string }>;
   onUseElement: (areaId: string) => void;
   dirty: boolean;
@@ -74,6 +78,8 @@ export const AreasMenu: React.FunctionComponent<AreasMenuProps> = ({
   onApplyToBuild,
   areas,
   testAreas,
+  pinnedMark,
+  onPinMark,
   suggestions,
   onUseElement,
   dirty,
@@ -133,13 +139,17 @@ export const AreasMenu: React.FunctionComponent<AreasMenuProps> = ({
     </ButtonBase>
   );
 
-  const row = (area: IgnoreArea, fromTest: boolean) => {
+  const row = (area: IgnoreArea, fromTest: boolean, index: number) => {
     const suggestion = fromTest ? undefined : suggestions[area.id];
+    const mark = testAreaMarkId(index);
+    // the test's areas have no id: only a pinned one is lit, never all of them
+    const lit = fromTest ? pinnedMark === mark : selectedId === area.id;
     return (
       <Box
-        key={`${fromTest ? "test" : "own"}-${area.id}`}
+        key={fromTest ? mark : `own-${area.id}`}
         data-testid="areaRow"
-        onClick={() => !fromTest && onSelect(area.id)}
+        aria-pressed={fromTest ? lit : undefined}
+        onClick={() => (fromTest ? onPinMark(mark) : onSelect(area.id))}
         sx={{
           display: "flex",
           alignItems: "center",
@@ -149,9 +159,9 @@ export const AreasMenu: React.FunctionComponent<AreasMenuProps> = ({
           px: 0.75,
           py: 0.5,
           borderRadius: "6px",
-          cursor: fromTest ? "default" : "pointer",
-          color: fromTest ? tokens.textMuted : tokens.text,
-          bgcolor: selectedId === area.id ? tokens.subtle : "transparent",
+          cursor: "pointer",
+          color: fromTest ? tokens.textSecondary : tokens.text,
+          bgcolor: lit ? tokens.subtle : "transparent",
         }}
       >
         <span>
@@ -269,9 +279,9 @@ export const AreasMenu: React.FunctionComponent<AreasMenuProps> = ({
             </Box>
             {count > 0 && (
               <Box sx={{ display: "flex", flexDirection: "column" }}>
-                {areas.map((area) => row(area, false))}
+                {areas.map((area, index) => row(area, false, index))}
                 {testAreas.length > 0 && (
-                  // one heading for the group: a lock on every row read as an error
+                  // one heading for the group, nothing more
                   <Box
                     data-testid="testAreasTitle"
                     sx={{
@@ -290,12 +300,9 @@ export const AreasMenu: React.FunctionComponent<AreasMenuProps> = ({
                     >
                       {t("areas.fromTest")}
                     </Box>
-                    <Box component="span" sx={{ color: tokens.textMuted }}>
-                      {t("areas.fromTestHelp")}
-                    </Box>
                   </Box>
                 )}
-                {testAreas.map((area) => row(area, true))}
+                {testAreas.map((area, index) => row(area, true, index))}
               </Box>
             )}
           </Box>

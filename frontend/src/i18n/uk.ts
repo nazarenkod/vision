@@ -1221,7 +1221,6 @@ export const uk: Messages = {
   "areas.useElementHelp":
     "Замінити правилом для {element}: воно йде за елементом, коли розкладка зсувається",
   "areas.fromTest": "Передані тестом",
-  "areas.fromTestHelp": "змінюються в коді тесту",
   "areas.area": "Область {width} × {height}",
   "areas.save": "Зберегти області",
   "areas.discard": "Відкинути",

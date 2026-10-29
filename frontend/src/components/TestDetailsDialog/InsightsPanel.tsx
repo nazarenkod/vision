@@ -83,7 +83,9 @@ interface Props {
   onPreviewMark?: (id: string | undefined) => void;
   // replaces a saved area with a rule for the element it covers (REQ-024-51)
   onUseElement: (areaId: string) => void;
-  onOpenArea: (areaId: string | undefined) => void;
+  onOpenArea: (areaId: string) => void;
+  pinnedMark?: string;
+  onPinMark: (id: string) => void;
   // the dialog is adding or removing a rule
   ruleBusy?: boolean;
   /** opens the bug dialog, with a changed area already marked (REQ-025-03) */
@@ -132,6 +134,8 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
   onPreviewMark,
   onUseElement,
   onOpenArea,
+  pinnedMark,
+  onPinMark,
   ruleBusy,
   onReportBug,
   bugs = [],
@@ -1086,6 +1090,8 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
             JSON.parse(testRun.tempIgnoreAreas ?? "[]") as IgnoreArea[]
           }
           onOpenArea={onOpenArea}
+          pinnedMark={pinnedMark}
+          onPinMark={onPinMark}
           canEdit={canEdit}
           busy={submitting || !!ruleBusy}
           onRemove={(rule) =>

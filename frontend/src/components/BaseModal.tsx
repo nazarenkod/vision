@@ -7,6 +7,7 @@ import {
   Button,
 } from "@mui/material";
 import { ValidatorForm } from "react-material-ui-form-validator";
+import { useT } from "../i18n";
 
 interface IProps {
   open: boolean;
@@ -27,30 +28,33 @@ export const BaseModal: React.FunctionComponent<IProps> = ({
   onSubmit,
   onCancel,
   submitDisabled = false,
-}) => (
-  <Dialog
-    open={open}
-    onClose={onCancel}
-    aria-labelledby="form-dialog-title"
-    fullWidth
-  >
-    <DialogTitle id="form-dialog-title">{title}</DialogTitle>
-    <ValidatorForm onSubmit={onSubmit} instantValidate>
-      <DialogContent>{content}</DialogContent>
-      <DialogActions>
-        <Button onClick={onCancel} color="primary">
-          Cancel
-        </Button>
-        <Button
-          type="submit"
-          color="primary"
-          variant="contained"
-          data-testid="submitButton"
-          disabled={submitDisabled}
-        >
-          {submitButtonText}
-        </Button>
-      </DialogActions>
-    </ValidatorForm>
-  </Dialog>
-);
+}) => {
+  const { t } = useT();
+  return (
+    <Dialog
+      open={open}
+      onClose={onCancel}
+      aria-labelledby="form-dialog-title"
+      fullWidth
+    >
+      <DialogTitle id="form-dialog-title">{title}</DialogTitle>
+      <ValidatorForm onSubmit={onSubmit} instantValidate>
+        <DialogContent>{content}</DialogContent>
+        <DialogActions>
+          <Button onClick={onCancel} color="primary">
+            {t("common.cancel")}
+          </Button>
+          <Button
+            type="submit"
+            color="primary"
+            variant="contained"
+            data-testid="submitButton"
+            disabled={submitDisabled}
+          >
+            {submitButtonText}
+          </Button>
+        </DialogActions>
+      </ValidatorForm>
+    </Dialog>
+  );
+};

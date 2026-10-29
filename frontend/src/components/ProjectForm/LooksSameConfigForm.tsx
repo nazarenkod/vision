@@ -3,14 +3,16 @@ import React from "react";
 import { TextValidator } from "react-material-ui-form-validator";
 import { LooksSameConfig } from "../../types/imageComparison";
 import { useConfigHook } from "./useConfigHook";
+import { useT } from "../../i18n";
 
 export const LooksSameConfigForm: React.FunctionComponent = () => {
   const [config, updateConfig] = useConfigHook<LooksSameConfig>();
+  const { t } = useT();
 
   return (
     <React.Fragment>
       <FormControlLabel
-        label="Strict"
+        label={t("comparison.strict")}
         control={
           <Switch
             checked={config.strict}
@@ -23,7 +25,7 @@ export const LooksSameConfigForm: React.FunctionComponent = () => {
       <TextValidator
         name="tolerance"
         validators={["minNumber:0"]}
-        errorMessages={["Enter greater than 0"]}
+        errorMessages={[t("validation.greaterThan", { min: 0 })]}
         InputProps={{
           inputProps: {
             min: 0,
@@ -32,10 +34,10 @@ export const LooksSameConfigForm: React.FunctionComponent = () => {
         }}
         margin="dense"
         id="tolerance"
-        label="Tolerance"
+        label={t("comparison.tolerance")}
         type="number"
         fullWidth
-        helperText="Default tolerance in non-strict mode is 2.3 which is enough for the most cases. Setting tolerance to 0 will produce the same result as strict: true, but strict mode is faster. Attempt to set tolerance in strict mode will produce an error."
+        helperText={t("comparison.toleranceHelp")}
         value={config.tolerance}
         onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
           const { value } = event.target;
@@ -43,7 +45,7 @@ export const LooksSameConfigForm: React.FunctionComponent = () => {
         }}
       />
       <FormControlLabel
-        label="Ignore anti-alliasing"
+        label={t("comparison.ignoreAntialiasingLooksSame")}
         control={
           <Switch
             checked={config.ignoreAntialiasing}
@@ -58,7 +60,7 @@ export const LooksSameConfigForm: React.FunctionComponent = () => {
       <TextValidator
         name="antialiasingTolerance"
         validators={["minNumber:0"]}
-        errorMessages={["Enter greater than 0"]}
+        errorMessages={[t("validation.greaterThan", { min: 0 })]}
         InputProps={{
           inputProps: {
             min: 0,
@@ -67,10 +69,10 @@ export const LooksSameConfigForm: React.FunctionComponent = () => {
         }}
         margin="dense"
         id="antialiasingTolerance"
-        label="Antialiasing tolerance"
+        label={t("comparison.antialiasingTolerance")}
         type="number"
         fullWidth
-        helperText="Minimum difference in brightness (zero by default) between the darkest/lightest pixel (which is adjacent to the antialiasing pixel) and theirs adjacent pixels."
+        helperText={t("comparison.antialiasingToleranceHelp")}
         value={config.antialiasingTolerance}
         onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
           const { value } = event.target;
@@ -78,7 +80,7 @@ export const LooksSameConfigForm: React.FunctionComponent = () => {
         }}
       />
       <FormControlLabel
-        label="Ignore carret"
+        label={t("comparison.ignoreCaret")}
         control={
           <Switch
             checked={config.ignoreCaret}
@@ -89,7 +91,7 @@ export const LooksSameConfigForm: React.FunctionComponent = () => {
         }
       />
       <FormControlLabel
-        label="Allow diff dimensions"
+        label={t("comparison.allowDiffDimensions")}
         control={
           <Switch
             checked={config.allowDiffDimensions}

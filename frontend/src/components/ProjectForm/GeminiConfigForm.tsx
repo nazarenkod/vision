@@ -11,9 +11,11 @@ import {
   VlmTemperatureField,
   VlmUseThinkingField,
 } from "./VlmSharedFields";
+import { useT } from "../../i18n";
 
 export const GeminiConfigForm: React.FunctionComponent = () => {
   const [config, updateConfig] = useConfigHook<GeminiVlmConfig>();
+  const { t } = useT();
   const { projectEditState } = useProjectState();
   // the edit state is the project as loaded: the flag rides along with it
   const keySaved = !!(projectEditState as { geminiApiKeySet?: boolean })
@@ -21,15 +23,15 @@ export const GeminiConfigForm: React.FunctionComponent = () => {
 
   return (
     <React.Fragment>
-      <Tooltip title="The Google Gemini model to use for image comparison.">
+      <Tooltip title={t("comparison.geminiModelHelp")}>
         <div>
           <TextValidator
             name="model"
             validators={["required"]}
-            errorMessages={["Model is required"]}
+            errorMessages={[t("comparison.modelRequired")]}
             margin="dense"
             id="model"
-            label="Gemini Model"
+            label={t("comparison.geminiModel")}
             type="text"
             fullWidth
             required
@@ -39,14 +41,14 @@ export const GeminiConfigForm: React.FunctionComponent = () => {
             }}
             helperText={
               <span>
-                Gemini model name.{" "}
+                {t("comparison.geminiModelName")}{" "}
                 <Link
                   href="https://ai.google.dev/models/gemini"
                   target="_blank"
                   rel="noopener noreferrer"
                   onClick={(e) => e.stopPropagation()}
                 >
-                  View all available models
+                  {t("comparison.geminiModels")}
                 </Link>
               </span>
             }
@@ -57,21 +59,21 @@ export const GeminiConfigForm: React.FunctionComponent = () => {
         // the key never comes back from the server: only that one is saved
         <SecretField
           id="apiKey"
-          label="Gemini API key"
+          label={t("comparison.geminiKey")}
           saved
           value={config.apiKey}
           onChange={(apiKey) => updateConfig("apiKey", apiKey)}
         />
       ) : (
-        <Tooltip title="Your Google Gemini API key. Get one from https://makersuite.google.com/app/apikey">
+        <Tooltip title={t("comparison.geminiKeyHelp")}>
           <div>
             <TextValidator
               name="apiKey"
               validators={["required"]}
-              errorMessages={["API key is required"]}
+              errorMessages={[t("comparison.geminiKeyRequired")]}
               margin="dense"
               id="apiKey"
-              label="Gemini API Key"
+              label={t("comparison.geminiKeyNew")}
               type="password"
               fullWidth
               required
@@ -79,7 +81,7 @@ export const GeminiConfigForm: React.FunctionComponent = () => {
               onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
                 updateConfig("apiKey", event.target.value);
               }}
-              helperText="Enter your Google Gemini API key"
+              helperText={t("comparison.geminiKeyEnter")}
             />
           </div>
         </Tooltip>

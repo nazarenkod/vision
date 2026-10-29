@@ -19,6 +19,7 @@ import {
   useThemeMode,
 } from "./contexts";
 import Router from "./Router";
+import { LanguageProvider, useT } from "./i18n";
 
 // Top bar, left rail for signed-in users, and the page filling the rest.
 const Shell: React.FunctionComponent = () => {
@@ -85,6 +86,24 @@ const globalStyles = {
   },
 };
 
+// a component of its own: the snackbar's action is a render function, not one
+const DismissButton: React.FunctionComponent<{ onClick: () => void }> = ({
+  onClick,
+}) => {
+  const { t } = useT();
+  return (
+    <IconButton
+      size="small"
+      color="inherit"
+      aria-label={t("common.dismissNotification")}
+      onClick={onClick}
+      data-testid="dismissNotification"
+    >
+      <Close fontSize="small" />
+    </IconButton>
+  );
+};
+
 const ThemedApp: React.FunctionComponent<{ children: React.ReactNode }> = ({
   children,
 }) => {
@@ -100,43 +119,37 @@ const ThemedApp: React.FunctionComponent<{ children: React.ReactNode }> = ({
 
 function App() {
   return (
-    <StyledEngineProvider injectFirst>
-      <ThemeModeProvider>
-        <ThemedApp>
-          <SnackbarProvider
-            maxSnack={3}
-            // the build list pagination sits bottom left and the test run
-            // pagination bottom right, so toasts go between the two
-            anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
-            action={(key) => (
-              <IconButton
-                size="small"
-                color="inherit"
-                aria-label="Dismiss notification"
-                onClick={() => closeSnackbar(key)}
-                data-testid="dismissNotification"
-              >
-                <Close fontSize="small" />
-              </IconButton>
-            )}
-          >
-            <UserProvider>
-              <ProjectProvider>
-                <BuildProvider>
-                  <TestRunProvider>
-                    <SocketProvider>
-                      <HelpProvider>
-                        <Shell />
-                      </HelpProvider>
-                    </SocketProvider>
-                  </TestRunProvider>
-                </BuildProvider>
-              </ProjectProvider>
-            </UserProvider>
-          </SnackbarProvider>
-        </ThemedApp>
-      </ThemeModeProvider>
-    </StyledEngineProvider>
+    <LanguageProvider>
+      <StyledEngineProvider injectFirst>
+        <ThemeModeProvider>
+          <ThemedApp>
+            <SnackbarProvider
+              maxSnack={3}
+              // the build list pagination sits bottom left and the test run
+              // pagination bottom right, so toasts go between the two
+              anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+              action={(key) => (
+                <DismissButton onClick={() => closeSnackbar(key)} />
+              )}
+            >
+              <UserProvider>
+                <ProjectProvider>
+                  <BuildProvider>
+                    <TestRunProvider>
+                      <SocketProvider>
+                        <HelpProvider>
+                          <Shell />
+                        </HelpProvider>
+                      </SocketProvider>
+                    </TestRunProvider>
+                  </BuildProvider>
+                </ProjectProvider>
+              </UserProvider>
+            </SnackbarProvider>
+          </ThemedApp>
+        </ThemeModeProvider>
+      </StyledEngineProvider>
+    </LanguageProvider>
   );
 }
 

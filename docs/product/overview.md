@@ -40,6 +40,8 @@ Vision додає до знімка **UI-дерево** (Appium page source) і 
 | Java SDK | upstream + `uiTree` | [012](../specs/012-java-sdk/spec.md) |
 | Бекапи | щоночі в Google Drive без паролів і токенів; сторінка Backups: вхід у Drive кодом, розклад, «Back up now»; відновлення з майстер-логіном | [013](../specs/013-backups-and-secrets/spec.md), [017](../specs/017-backup-settings-ui/spec.md) |
 
+Затверджено, перекладається поетапно: [019 — українська мова інтерфейсу](../specs/019-ukrainian-ui/spec.md).
+
 У роботі (Draft): [014](../specs/014-element-order-changes/spec.md), [015](../specs/015-compare-selected-elements/spec.md), [016 — робоча конфігурація й переїзд з VRT](../specs/016-production-and-cutover/spec.md).
 
 ## Чого Vision свідомо не робить
@@ -47,4 +49,4 @@ Vision додає до знімка **UI-дерево** (Appium page source) і 
 - Не змінює статус знімка за порівнянням між різними пристроями ([ADR-0006](../decisions/0006-cross-device-is-informational.md)).
 - Не викликає LLM під час прийому знімків ([ADR-0007](../decisions/0007-deterministic-first-ai-on-demand.md)).
 - Не пише в базу й файли робочого VRT ([ADR-0002](../decisions/0002-production-is-read-only.md)).
-- Не перекладає інтерфейс: UI англійською.
+- Не перекладає дані й CLI: інтерфейс англійською або українською на вибір ([019](../specs/019-ukrainian-ui/spec.md)), а назви, id, повідомлення сервера й `vision.py` — як є.

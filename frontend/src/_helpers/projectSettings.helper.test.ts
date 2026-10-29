@@ -6,6 +6,12 @@ import {
 } from "./projectSettings.helper";
 import { TEST_PROJECT } from "../_test/test.data.helper";
 import { Project } from "../types";
+import { DICTIONARIES } from "../i18n/dictionaries";
+import { translate } from "../i18n/translate";
+import type { Text } from "../i18n";
+
+const ukrainian: Text = (key, params) =>
+  translate(DICTIONARIES, "uk", key, params);
 
 const project = {
   ...TEST_PROJECT,
@@ -34,6 +40,22 @@ describe("project settings", () => {
       sections: [],
       labels: [],
     });
+  });
+
+  it("finds a setting by its Ukrainian or English name", () => {
+    expect(matchSettings("завантаження", ukrainian)).toEqual({
+      sections: ["mobile"],
+      labels: ["Попереджати про завантаження"],
+    });
+    // the English name still finds it in a Ukrainian interface
+    expect(matchSettings("loading", ukrainian).sections).toEqual(["mobile"]);
+    expect(matchSettings("odiff", ukrainian).sections).toEqual(["comparison"]);
+    expect(
+      changedSections(project, { ...project, jiraToken: "" }, ukrainian),
+    ).toEqual(["Jira"]);
+    expect(
+      changedSections(project, { ...project, maxBuildAllowed: 5 }, ukrainian),
+    ).toEqual(["Загальне"]);
   });
 
   it("names the sections with unsaved changes", () => {

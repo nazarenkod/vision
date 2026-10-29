@@ -11,6 +11,7 @@
 | `src/components/BrandMark.tsx` | знак «Гніздо» і словесний знак; favicon — `public/favicon.svg`, PNG — `scripts/render-favicon.mjs` |
 | `src/components/motion/` | `useCountUp`, `staggered(i)` (каскад), `GrowFromPointer` (діалоги ростуть з точки кліку), `SlidingToggleGroup` (замість `ToggleButtonGroup`: підсвітка переїжджає) |
 | `src/pages/ProjectSettingsPage.tsx` | налаштування проєкту окремою сторінкою; розділи — у `components/ProjectForm/` |
+| `src/i18n/` | мови інтерфейсу: словники `en.ts`/`uk.ts`, `useT()`, перемикач EN/UK у шапці |
 | `src/constants/brand.ts` | назва продукту (Vision) і слоган — лише тут |
 | `src/components/TestDetailsDialog/` | ревю скриншота: `InsightsPanel` (доступність, зміни, пристрої), `JiraBugDialog`, `DeviceStrip`, `CrossDevicePanel` |
 | `src/components/ProjectForm/` | налаштування проєкту, зокрема `A11yProblemSettings` (класи проблем) |
@@ -36,7 +37,10 @@ npx playwright test <spec>             # функціональні тести, 
 - Колір у `src/components` і `src/pages` — лише `tokens.*` або `useTokens()`: шістнадцятковий
   літерал там забороняє ESLint, бо він працює лише в одній темі.
 - Рух — з `motion` у `theme.ts`; знімки в порівнянні після появи не рухаються (REQ-018-25).
-- Інтерфейс англійською, тексти короткі й конкретні.
+- Тексти інтерфейсу — через `useT()` і ключі в `src/i18n/en.ts` + `uk.ts`
+  ([ADR-0016](../docs/decisions/0016-interface-in-two-languages.md)): пропущений переклад —
+  помилка `tsc`. Англійська — основна; тексти короткі й конкретні; дані (назви, id, повідомлення
+  сервера) не перекладаємо. Чистий хелпер, що повертає текст, приймає `text` (типово `english`).
 - Нові елементи, які шукають тести, отримують `data-testid`.
 - Скриншот-тести (`toHaveScreenshot`) на macOS не збігаються ніколи. Еталони генеруємо лише в
   Docker і лише тоді, коли змінився знятий екран. Перед заміною еталона переглядаємо отриманий

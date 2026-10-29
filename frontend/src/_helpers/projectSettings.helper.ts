@@ -1,100 +1,120 @@
 import { Project, ProjectDto } from "../types";
+import { english, MessageKey, Text } from "../i18n";
+import { DICTIONARIES } from "../i18n/dictionaries";
 
-/** The sections of the settings page, in order, with what each one holds. */
+/**
+ * The sections of the settings page, in order, with what each one holds: the
+ * dictionary keys of the section title and of its settings' labels.
+ */
 export const SETTINGS_SECTIONS = [
   {
     id: "general",
-    title: "General",
+    title: "section.general",
     labels: [
-      "Project name",
-      "Main branch",
-      "Number of builds to keep",
-      "Max branch lifetime (days)",
+      "general.name",
+      "general.mainBranch",
+      "general.buildCount",
+      "general.branchLifetime",
     ],
   },
   {
     id: "review",
-    title: "Review",
-    labels: [
-      "Auto approve feature",
-      "Bulk approve/reject variations",
-      "Group variations by",
-    ],
+    title: "section.review",
+    labels: ["review.autoApprove", "review.bulkApprove", "review.groupBy"],
   },
   {
     id: "comparison",
-    title: "Image comparison",
+    title: "section.comparison",
     labels: [
+      // the engines' own names are the same in every language
       "pixelmatch",
       "looks-same",
       "odiff",
       "VLM",
-      "Pixel diff threshold",
-      "Ignore anti-aliasing",
-      "Allow diff dimensions",
-      "Strict",
-      "Tolerance",
-      "Antialiasing tolerance",
-      "Ignore caret",
-      "Fail on layout diff",
-      "Output diff mask",
-      "VLM provider",
-      "Gemini API key",
-      "Gemini model",
+      "comparison.threshold",
+      "comparison.ignoreAntialiasing",
+      "comparison.allowDiffDimensions",
+      "comparison.strict",
+      "comparison.tolerance",
+      "comparison.antialiasingTolerance",
+      "comparison.ignoreCaret",
+      "comparison.failOnLayoutDiff",
+      "comparison.outputDiffMask",
+      "comparison.provider",
+      "comparison.geminiKey",
+      "comparison.geminiModel",
       "Ollama",
-      "Model",
-      "Prompt",
-      "Temperature",
-      "Use thinking",
+      "comparison.model",
+      "comparison.prompt",
+      "comparison.temperature",
+      "comparison.useThinking",
     ],
   },
   {
     id: "mobile",
-    title: "Mobile screenshots",
+    title: "section.mobile",
     labels: [
-      "Leave out status and navigation bars",
-      "Compare moved elements at their new place",
-      "Only moves up to, dp",
-      "Send hidden changes to review",
-      "Warn about loading states",
-      "Warn about wrong screens",
-      "Reference device",
+      "mobile.systemBars",
+      "mobile.moves",
+      "mobile.maxMove",
+      "mobile.hidden",
+      "mobile.loading",
+      "mobile.wrongScreen",
+      "mobile.reference",
     ],
   },
   {
     id: "a11y",
-    title: "Accessibility problems",
+    title: "section.a11y",
     labels: [
-      "Screen title in the UI tree",
-      "Same problem when",
-      "Problem classes",
-      "Touch target too small",
-      "Low text contrast",
-      "Control has no label",
-      "Input has no label or hint",
-      "Same label on several controls",
-      "Label repeats the role",
-      "Control hidden from VoiceOver",
+      "a11y.screenTitle",
+      "a11y.sameProblem",
+      "a11y.classes",
+      "a11y.rule.touchTarget",
+      "a11y.rule.lowContrast",
+      "a11y.rule.missingLabel",
+      "a11y.rule.inputWithoutLabel",
+      "a11y.rule.duplicateLabel",
+      "a11y.rule.redundantRole",
+      "a11y.rule.notAccessible",
     ],
   },
   {
     id: "jira",
-    title: "Jira",
+    title: "section.jira",
     labels: [
-      "Jira URL",
-      "Shared token",
-      "Shared token's account email",
-      "Issue type",
-      "Link type",
+      "jira.url",
+      "jira.token",
+      "jira.email",
+      "jira.issueType",
+      "jira.linkType",
     ],
   },
-  { id: "danger", title: "Danger zone", labels: ["Delete project"] },
-] as const;
+  {
+    id: "danger",
+    title: "section.danger",
+    labels: ["settings.deleteProject"],
+  },
+] as const satisfies ReadonlyArray<{
+  id: string;
+  title: MessageKey;
+  labels: ReadonlyArray<MessageKey | string>;
+}>;
 
 export type SectionId = (typeof SETTINGS_SECTIONS)[number]["id"];
 
-/** Sections whose title or settings hold the text, and the settings that do (REQ-018-43). */
-export function matchSettings(query: string): {
+// a label that is no key is a name every language shares
+const textOf = (text: Text, key: string) =>
+  key in DICTIONARIES.en ? text(key as MessageKey) : key;
+
+/**
+ * Sections whose title or settings hold the text, and the settings that do
+ * (REQ-018-43), in the interface's language or in English (REQ-019-12).
+ */
+export function matchSettings(
+  query: string,
+  text: Text = english,
+): {
   sections: SectionId[];
   labels: string[];
 } {
@@ -102,15 +122,17 @@ export function matchSettings(query: string): {
   if (!wanted) {
     return { sections: SETTINGS_SECTIONS.map((s) => s.id), labels: [] };
   }
+  const holds = (key: string) =>
+    [textOf(text, key), textOf(english, key)].some((label) =>
+      label.toLowerCase().includes(wanted),
+    );
   const sections: SectionId[] = [];
   const labels: string[] = [];
   for (const section of SETTINGS_SECTIONS) {
-    const hits = section.labels.filter((label) =>
-      label.toLowerCase().includes(wanted),
-    );
-    if (hits.length || section.title.toLowerCase().includes(wanted)) {
+    const hits = (section.labels as ReadonlyArray<string>).filter(holds);
+    if (hits.length || holds(section.title)) {
       sections.push(section.id);
-      labels.push(...hits);
+      labels.push(...hits.map((key) => textOf(text, key)));
     }
   }
   return { sections, labels };
@@ -161,6 +183,7 @@ const FIELD_SECTION: Partial<Record<keyof ProjectDto, SectionId>> = {
 export function changedSections(
   saved: Project | ProjectDto,
   edited: ProjectDto,
+  text: Text = english,
 ): string[] {
   const changed = new Set<SectionId>();
   for (const [field, section] of Object.entries(FIELD_SECTION)) {
@@ -176,7 +199,9 @@ export function changedSections(
     const section = TREE_SECTION[key];
     if (section && !same(before[key], after[key])) changed.add(section);
   }
-  return SETTINGS_SECTIONS.filter((s) => changed.has(s.id)).map((s) => s.title);
+  return SETTINGS_SECTIONS.filter((s) => changed.has(s.id)).map((s) =>
+    text(s.title),
+  );
 }
 
 /** The settings a save is checked against: what the page loaded (REQ-018-53). */

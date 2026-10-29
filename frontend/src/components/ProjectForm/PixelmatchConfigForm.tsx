@@ -4,15 +4,17 @@ import { TextValidator } from "react-material-ui-form-validator";
 import { PixelmatchConfig } from "../../types/imageComparison";
 import { Tooltip } from "../Tooltip";
 import { useConfigHook } from "./useConfigHook";
+import { useT } from "../../i18n";
 
 export const PixelmatchConfigForm: React.FunctionComponent = () => {
   const [config, updateConfig] = useConfigHook<PixelmatchConfig>();
+  const { t } = useT();
 
   return (
     <React.Fragment>
-      <Tooltip title="Enable comparison of images with different sizes.">
+      <Tooltip title={t("comparison.allowDiffDimensionsHelp")}>
         <FormControlLabel
-          label="Allow diff dimensions"
+          label={t("comparison.allowDiffDimensions")}
           control={
             <Switch
               checked={config.allowDiffDimensions}
@@ -25,9 +27,9 @@ export const PixelmatchConfigForm: React.FunctionComponent = () => {
           }
         />
       </Tooltip>
-      <Tooltip title="Ignore detecting and ignoring anti-aliased pixels.">
+      <Tooltip title={t("comparison.ignoreAntialiasingHelp")}>
         <FormControlLabel
-          label="Ignore anti-aliasing"
+          label={t("comparison.ignoreAntialiasing")}
           control={
             <Switch
               checked={config.ignoreAntialiasing}
@@ -43,7 +45,10 @@ export const PixelmatchConfigForm: React.FunctionComponent = () => {
       <TextValidator
         name="threshold"
         validators={["minNumber:0", "maxNumber:1"]}
-        errorMessages={["Enter greater than 0", "Enter less than 1"]}
+        errorMessages={[
+          t("validation.greaterThan", { min: 0 }),
+          t("validation.lessThan", { max: 1 }),
+        ]}
         InputProps={{
           inputProps: {
             min: 0,
@@ -53,8 +58,8 @@ export const PixelmatchConfigForm: React.FunctionComponent = () => {
         }}
         margin="dense"
         id="threshold"
-        label="Pixel diff threshold"
-        helperText="The threshold of how much a pixel can deviate until it is detected as change (0-1)."
+        label={t("comparison.threshold")}
+        helperText={t("comparison.thresholdHelp")}
         type="number"
         fullWidth
         required

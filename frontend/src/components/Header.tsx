@@ -23,6 +23,7 @@ import GuidedTour from "./GuidedTour";
 import { BRAND } from "../constants/brand";
 import { BrandLockup } from "./BrandMark";
 import { ManualChecksDialog } from "./ManualChecksDialog";
+import { LanguageSwitch, useT } from "../i18n";
 import {
   HEADER_HELP_MENU_ID,
   HEADER_AVATAR_MENU_ID,
@@ -66,7 +67,10 @@ const Header: FunctionComponent = () => {
 
   const { loggedIn, user } = useUserState();
   const { mode, toggle } = useThemeMode();
-  const themeLabel = mode === "dark" ? "Light theme" : "Dark theme";
+  const { t } = useT();
+  const themeLabel = t(
+    mode === "dark" ? "header.lightTheme" : "header.darkTheme",
+  );
   const [manualChecksOpen, setManualChecksOpen] = React.useState(false);
   const authDispatch = useUserDispatch();
 
@@ -106,12 +110,12 @@ const Header: FunctionComponent = () => {
         sx={itemSx}
       >
         <PhoneAndroid />
-        Manual checks (CLI)
+        {t("header.manualChecks")}
       </MenuItem>
       {BRAND.supportUrl && (
         <MenuItem onClick={closeMenuAndOpenLink} sx={itemSx}>
           <FlagOutlined />
-          Report a problem
+          {t("header.reportProblem")}
         </MenuItem>
       )}
       <Divider sx={{ my: 0.75 }} />
@@ -143,7 +147,9 @@ const Header: FunctionComponent = () => {
         </Typography>
         <Typography variant="caption" sx={{ color: tokens.textMuted }}>
           {user?.email}
-          {user?.role ? ` · ${user.role[0].toUpperCase()}${user.role.slice(1)}` : ""}
+          {user?.role
+            ? ` · ${user.role[0].toUpperCase()}${user.role.slice(1)}`
+            : ""}
         </Typography>
       </Box>
       <Divider sx={{ mb: 0.75 }} />
@@ -154,7 +160,7 @@ const Header: FunctionComponent = () => {
         sx={itemSx}
       >
         <PersonOutline />
-        Profile
+        {t("header.profile")}
       </MenuItem>
       <MenuItem
         component={Link}
@@ -163,7 +169,7 @@ const Header: FunctionComponent = () => {
         sx={itemSx}
       >
         <FolderOutlined />
-        Projects
+        {t("header.projects")}
       </MenuItem>
       {user?.role === "admin" && (
         <MenuItem
@@ -173,7 +179,7 @@ const Header: FunctionComponent = () => {
           sx={itemSx}
         >
           <PeopleOutline />
-          Users
+          {t("header.users")}
         </MenuItem>
       )}
       {user?.role === "admin" && (
@@ -185,7 +191,7 @@ const Header: FunctionComponent = () => {
           data-testid="backupsMenuItem"
         >
           <BackupOutlined />
-          Backups
+          {t("header.backups")}
         </MenuItem>
       )}
       <MenuItem
@@ -200,7 +206,12 @@ const Header: FunctionComponent = () => {
         {themeLabel}
         <Box
           component="kbd"
-          sx={{ ml: "auto", fontFamily: tokens.mono, fontSize: 11, color: tokens.textMuted }}
+          sx={{
+            ml: "auto",
+            fontFamily: tokens.mono,
+            fontSize: 11,
+            color: tokens.textMuted,
+          }}
         >
           ⇧D
         </Box>
@@ -215,7 +226,7 @@ const Header: FunctionComponent = () => {
         sx={itemSx}
       >
         <Logout />
-        Logout
+        {t("header.logout")}
       </MenuItem>
     </Menu>
   );
@@ -226,7 +237,7 @@ const Header: FunctionComponent = () => {
         <Toolbar variant="dense" sx={{ minHeight: 56, gap: 0.5 }}>
           <Link
             to="/"
-            aria-label={`${BRAND.name} home`}
+            aria-label={t("header.home", { brand: BRAND.name })}
             style={{
               display: "flex",
               alignItems: "center",
@@ -237,6 +248,7 @@ const Header: FunctionComponent = () => {
             <BrandLockup markSize={28} wordSize={19} />
           </Link>
           <Box sx={{ flex: 1 }} />
+          <LanguageSwitch />
           <Tooltip title={`${themeLabel} (⇧D)`}>
             <IconButton
               onClick={(event) => toggle(event.currentTarget)}
@@ -257,7 +269,7 @@ const Header: FunctionComponent = () => {
             onClick={(event: React.MouseEvent<HTMLElement>) =>
               setHelpMenuRef(event.currentTarget)
             }
-            aria-label="Help"
+            aria-label={t("header.help")}
             data-testid={HEADER_HELP_MENU_BUTTON_TEST_ID}
             sx={{ color: tokens.textMuted }}
           >
@@ -268,7 +280,7 @@ const Header: FunctionComponent = () => {
               onClick={(event: React.MouseEvent<HTMLElement>) =>
                 setAvatarMenuRef(event.currentTarget)
               }
-              aria-label="Account"
+              aria-label={t("header.account")}
               data-testid={HEADER_AVATAR_BUTTON_TEST_ID}
             >
               <Avatar

@@ -46,19 +46,19 @@ import {
 } from "../components/ProjectForm";
 import { A11yProblemSettings } from "../components/ProjectForm/A11yProblemSettings";
 import { EmptyState } from "../components/EmptyState";
+import { MessageKey, Text, useT } from "../i18n";
 
-const DESCRIPTION: Partial<Record<SectionId, string>> = {
-  comparison:
-    "How a checkpoint is compared with its baseline. Below the engines: the settings of the one you pick.",
-  mobile: "Applies to screenshots sent with an Appium page source.",
-  a11y: "One bug per problem. A problem has an id (a11y-…) that goes into the Jira bug's summary and labels; Vision checks its own records and Jira for it before filing.",
-  jira: "Lets reviewers file accessibility bugs from the review screen. Each person adds their own Jira token in their profile, so bugs are filed as them. A shared token here is used for people who have not added one.",
+const DESCRIPTION: Partial<Record<SectionId, MessageKey>> = {
+  comparison: "section.comparisonIntro",
+  mobile: "section.mobileIntro",
+  a11y: "section.a11yIntro",
+  jira: "section.jiraIntro",
 };
 
 const asDto = (project: Project): ProjectDto => ({ ...project });
 
 /** A short status beside each section in the contents. */
-function sectionMeta(id: SectionId, project: ProjectDto): string {
+function sectionMeta(id: SectionId, project: ProjectDto, t: Text): string {
   const tree = parseUiTreeSettings(project.uiTreeSettings);
   switch (id) {
     case "comparison":
@@ -71,14 +71,14 @@ function sectionMeta(id: SectionId, project: ProjectDto): string {
         tree.detectLoading,
         tree.detectScreenMismatch,
       ].filter(Boolean).length;
-      return `${on} of 5 on`;
+      return t("settings.meta.mobileOn", { count: on });
     }
-    case "a11y": {
-      const classes = tree.a11yClasses?.length ?? 0;
-      return `${classes} ${classes === 1 ? "class" : "classes"}`;
-    }
+    case "a11y":
+      return t("settings.meta.classes", {
+        count: tree.a11yClasses?.length ?? 0,
+      });
     case "jira":
-      return project.jiraUrl ? "set" : "not set";
+      return t(project.jiraUrl ? "settings.meta.set" : "settings.meta.notSet");
     default:
       return "";
   }
@@ -93,6 +93,7 @@ const ProjectSettingsPage: React.FunctionComponent = () => {
   const { projectId = "" } = useParams<{ projectId: string }>();
   const navigate = useNavigate();
   const { enqueueSnackbar } = useSnackbar();
+  const { t, tx, language } = useT();
   const { projectList, projectEditState: edited } = useProjectState();
   const projectDispatch = useProjectDispatch();
   const saved = projectList.find((project) => project.id === projectId);
@@ -108,7 +109,7 @@ const ProjectSettingsPage: React.FunctionComponent = () => {
   }, [saved, loaded?.id, projectDispatch]);
 
   const ready = !!loaded && edited.id === loaded.id;
-  const changed = ready ? changedSections(loaded, edited) : [];
+  const changed = ready ? changedSections(loaded, edited, t) : [];
   const dirty = changed.length > 0;
 
   // ---- leaving with unsaved changes (REQ-018-48)
@@ -128,7 +129,7 @@ const ProjectSettingsPage: React.FunctionComponent = () => {
 
   // ---- search (REQ-018-43)
   const [query, setQuery] = React.useState("");
-  const match = matchSettings(query);
+  const match = matchSettings(query, t);
   const sectionsRef = React.useRef<HTMLDivElement>(null);
   React.useEffect(() => {
     const root = sectionsRef.current;
@@ -150,7 +151,8 @@ const ProjectSettingsPage: React.FunctionComponent = () => {
           .toLowerCase();
         if (own.includes(wanted)) el.classList.add("v-hit");
       });
-  }, [query, ready]);
+    // the labels are new text in another language
+  }, [query, ready, language]);
 
   // ---- contents follow the scroll (REQ-018-41)
   const [active, setActive] = React.useState<SectionId>("general");
@@ -232,7 +234,9 @@ const ProjectSettingsPage: React.FunctionComponent = () => {
     discard();
     return deleteProject(projectDispatch, projectId)
       .then((project) => {
-        enqueueSnackbar(`${project.name} deleted`, { variant: "success" });
+        enqueueSnackbar(t("projectList.deletedToast", { name: project.name }), {
+          variant: "success",
+        });
         setLoaded(undefined);
         navigate(routes.PROJECT_LIST_PAGE);
       })
@@ -241,7 +245,9 @@ const ProjectSettingsPage: React.FunctionComponent = () => {
 
   if (!saved && projectList.length) {
     return (
-      <EmptyState title="No such project">It may have been deleted.</EmptyState>
+      <EmptyState title={t("settings.noSuchProject")}>
+        {t("settings.maybeDeleted")}
+      </EmptyState>
     );
   }
   if (!ready) {
@@ -286,7 +292,7 @@ const ProjectSettingsPage: React.FunctionComponent = () => {
       >
         <Box>
           <Typography id={`section-${id}-title`} variant="h6" component="h2">
-            {meta?.title}
+            {meta && t(meta.title)}
           </Typography>
           {DESCRIPTION[id] && (
             <Typography
@@ -294,7 +300,7 @@ const ProjectSettingsPage: React.FunctionComponent = () => {
               color="textSecondary"
               sx={{ maxWidth: "70ch" }}
             >
-              {DESCRIPTION[id]}
+              {t(DESCRIPTION[id] as MessageKey)}
             </Typography>
           )}
         </Box>
@@ -316,7 +322,7 @@ const ProjectSettingsPage: React.FunctionComponent = () => {
             onClick={() => navigate(routes.PROJECT_LIST_PAGE)}
             sx={{ alignSelf: "flex-start", color: tokens.textSecondary, px: 1 }}
           >
-            Projects
+            {t("settings.backToProjects")}
           </Button>
           <Box
             sx={{
@@ -327,7 +333,7 @@ const ProjectSettingsPage: React.FunctionComponent = () => {
             }}
           >
             <Typography variant="h4" component="h1">
-              Settings
+              {t("settings.title")}
             </Typography>
             <Typography color="textSecondary">{loaded.name}</Typography>
           </Box>
@@ -343,7 +349,7 @@ const ProjectSettingsPage: React.FunctionComponent = () => {
         >
           <Box
             component="nav"
-            aria-label="Settings sections"
+            aria-label={t("settings.sections")}
             sx={{
               position: { md: "sticky" },
               top: 16,
@@ -354,11 +360,11 @@ const ProjectSettingsPage: React.FunctionComponent = () => {
           >
             <TextField
               size="small"
-              placeholder="Find a setting"
+              placeholder={t("settings.find")}
               value={query}
               onChange={(event) => setQuery(event.target.value)}
               inputProps={{
-                "aria-label": "Find a setting",
+                "aria-label": t("settings.find"),
                 "data-testid": "settingsSearch",
               }}
               InputProps={{
@@ -393,7 +399,7 @@ const ProjectSettingsPage: React.FunctionComponent = () => {
               />
               {SETTINGS_SECTIONS.map(({ id, title }) => {
                 const found = match.sections.includes(id);
-                const isChanged = changed.includes(title);
+                const isChanged = changed.includes(t(title));
                 return (
                   <ButtonBase
                     key={id}
@@ -422,11 +428,11 @@ const ProjectSettingsPage: React.FunctionComponent = () => {
                     }}
                   >
                     <span>
-                      {title}
+                      {t(title)}
                       {isChanged && (
                         <Box
                           component="span"
-                          aria-label="unsaved changes"
+                          aria-label={t("settings.unsavedMark")}
                           sx={{
                             display: "inline-block",
                             width: 6,
@@ -449,7 +455,7 @@ const ProjectSettingsPage: React.FunctionComponent = () => {
                         flexShrink: 0,
                       }}
                     >
-                      {sectionMeta(id, edited)}
+                      {sectionMeta(id, edited, t)}
                     </Typography>
                   </ButtonBase>
                 );
@@ -473,8 +479,8 @@ const ProjectSettingsPage: React.FunctionComponent = () => {
             }}
           >
             {match.sections.length === 0 && (
-              <EmptyState title={`Nothing matches “${query}”`}>
-                Try another word, or clear the search to see every section.
+              <EmptyState title={t("settings.nothingMatches", { query })}>
+                {t("settings.nothingMatchesHint")}
               </EmptyState>
             )}
             {section("general", <GeneralFields />)}
@@ -494,8 +500,9 @@ const ProjectSettingsPage: React.FunctionComponent = () => {
                 }}
               >
                 <Typography variant="body2" sx={{ flex: 1, minWidth: 240 }}>
-                  <b>Delete this project.</b> All builds, baselines and their
-                  history go with it. This cannot be undone.
+                  {tx("settings.dangerText", {
+                    title: <b>{t("settings.dangerTitle")}</b>,
+                  })}
                 </Typography>
                 <Button
                   variant="outlined"
@@ -503,7 +510,7 @@ const ProjectSettingsPage: React.FunctionComponent = () => {
                   onClick={() => setDeleteOpen(true)}
                   data-testid="deleteProject"
                 >
-                  Delete project
+                  {t("settings.deleteProject")}
                 </Button>
               </Box>,
             )}
@@ -540,11 +547,13 @@ const ProjectSettingsPage: React.FunctionComponent = () => {
               >
                 {justSaved ? (
                   <>
-                    <Check fontSize="small" /> Saved
+                    <Check fontSize="small" /> {t("settings.saved")}
                   </>
                 ) : (
                   <span>
-                    Unsaved changes in <b>{changed.join(", ")}</b>
+                    {tx("settings.unsavedIn", {
+                      sections: <b>{changed.join(", ")}</b>,
+                    })}
                   </span>
                 )}
               </Typography>
@@ -560,7 +569,7 @@ const ProjectSettingsPage: React.FunctionComponent = () => {
                   opacity: 0.85,
                 }}
               >
-                Discard
+                {t("settings.discard")}
               </Button>
               <Button
                 size="small"
@@ -572,7 +581,7 @@ const ProjectSettingsPage: React.FunctionComponent = () => {
                 {saving ? (
                   <CircularProgress size={16} color="inherit" />
                 ) : (
-                  "Save changes"
+                  t("settings.save")
                 )}
               </Button>
             </Box>
@@ -585,26 +594,25 @@ const ProjectSettingsPage: React.FunctionComponent = () => {
         onClose={() => setConflict(null)}
         data-testid="settingsConflict"
       >
-        <DialogTitle>
-          Someone saved these settings after you opened the page
-        </DialogTitle>
+        <DialogTitle>{t("settings.conflictTitle")}</DialogTitle>
         <DialogContent>
           <Typography gutterBottom>
-            Changed since: {conflict?.join(", ")}.
+            {t("settings.conflictChanged", {
+              sections: conflict?.join(", ") ?? "",
+            })}
           </Typography>
           <Typography variant="body2" color="textSecondary">
-            Reload to see their version and lose your changes, or save yours
-            over theirs.
+            {t("settings.conflictHint")}
           </Typography>
         </DialogContent>
         <DialogActions>
-          <Button onClick={reload}>Reload settings</Button>
+          <Button onClick={reload}>{t("settings.reload")}</Button>
           <Button
             variant="contained"
             onClick={() => save(true)}
             data-testid="saveOver"
           >
-            Save over
+            {t("settings.saveOver")}
           </Button>
         </DialogActions>
       </Dialog>
@@ -614,20 +622,22 @@ const ProjectSettingsPage: React.FunctionComponent = () => {
         onClose={() => blocker.reset?.()}
         data-testid="leaveSettings"
       >
-        <DialogTitle>Leave without saving?</DialogTitle>
+        <DialogTitle>{t("settings.leaveTitle")}</DialogTitle>
         <DialogContent>
           <Typography>
-            Unsaved changes in {changed.join(", ")} will be lost.
+            {t("settings.leaveText", { sections: changed.join(", ") })}
           </Typography>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => blocker.reset?.()}>Stay</Button>
+          <Button onClick={() => blocker.reset?.()}>
+            {t("settings.stay")}
+          </Button>
           <Button
             color="error"
             onClick={() => blocker.proceed?.()}
             data-testid="leaveAnyway"
           >
-            Leave
+            {t("settings.leave")}
           </Button>
         </DialogActions>
       </Dialog>
@@ -637,26 +647,29 @@ const ProjectSettingsPage: React.FunctionComponent = () => {
         onClose={() => setDeleteOpen(false)}
         data-testid="deleteProjectDialog"
       >
-        <DialogTitle>Delete {loaded.name}?</DialogTitle>
+        <DialogTitle>
+          {t("deleteProject.title", { name: loaded.name })}
+        </DialogTitle>
         <DialogContent
           sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}
         >
           <Typography>
-            All builds, baselines and their history go with it. Type{" "}
-            <b>{loaded.name}</b> to confirm.
+            {tx("deleteProject.confirm", { name: <b>{loaded.name}</b> })}
           </Typography>
           <TextField
             size="small"
             value={typedName}
             onChange={(event) => setTypedName(event.target.value)}
             inputProps={{
-              "aria-label": "Project name to confirm",
+              "aria-label": t("deleteProject.nameLabel"),
               "data-testid": "deleteConfirmName",
             }}
           />
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setDeleteOpen(false)}>Cancel</Button>
+          <Button onClick={() => setDeleteOpen(false)}>
+            {t("common.cancel")}
+          </Button>
           <Button
             color="error"
             variant="contained"
@@ -664,7 +677,7 @@ const ProjectSettingsPage: React.FunctionComponent = () => {
             onClick={remove}
             data-testid="deleteForever"
           >
-            Delete forever
+            {t("deleteProject.submit")}
           </Button>
         </DialogActions>
       </Dialog>

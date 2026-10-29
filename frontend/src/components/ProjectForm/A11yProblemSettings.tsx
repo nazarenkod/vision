@@ -23,27 +23,28 @@ import {
   parseUiTreeSettings,
 } from "../../types/insights";
 import { tokens } from "../../theme";
+import { MessageKey, Text, useT } from "../../i18n";
 
-const RULES: Array<[A11yRule, string]> = [
-  ["touch-target", "Touch target too small"],
-  ["low-contrast", "Low text contrast"],
-  ["missing-label", "Control has no label"],
-  ["input-without-label", "Input has no label or hint"],
-  ["duplicate-label", "Same label on several controls"],
-  ["redundant-role", "Label repeats the role"],
-  ["not-accessible", "Control hidden from VoiceOver"],
+const RULES: Array<[A11yRule, MessageKey]> = [
+  ["touch-target", "a11y.rule.touchTarget"],
+  ["low-contrast", "a11y.rule.lowContrast"],
+  ["missing-label", "a11y.rule.missingLabel"],
+  ["input-without-label", "a11y.rule.inputWithoutLabel"],
+  ["duplicate-label", "a11y.rule.duplicateLabel"],
+  ["redundant-role", "a11y.rule.redundantRole"],
+  ["not-accessible", "a11y.rule.notAccessible"],
 ];
 
-const MODES: Array<[DuplicateMode, string]> = [
-  ["component-value", "Same component and values"],
-  ["component", "Same component, any values"],
-  ["screen", "Each screen on its own"],
+const MODES: Array<[DuplicateMode, MessageKey]> = [
+  ["component-value", "a11y.mode.componentValue"],
+  ["component", "a11y.mode.component"],
+  ["screen", "a11y.mode.screen"],
 ];
 
 /** The same check as the server's: a /regex/ must compile; a glob always does. */
-const patternError = (pattern: string): string | null => {
+const patternError = (pattern: string, t: Text): string | null => {
   const regex = /^\/(.+)\/([a-z]*)$/s.exec(pattern.trim());
-  if (!pattern.trim()) return "Required";
+  if (!pattern.trim()) return t("a11y.required");
   if (!regex) return null;
   try {
     new RegExp(regex[1], regex[2].replace(/[^imsu]/g, ""));
@@ -55,20 +56,23 @@ const patternError = (pattern: string): string | null => {
 
 type Field = keyof ClassConditions;
 
-const FIELDS: Array<[Field, string, string]> = [
-  ["element", "Element id", "*#PbButton or /^.*:id\\/(tab)_\\d+$/"],
-  ["screen", "Screen", "Онбординг*"],
-  ["className", "Element class", "*ImageButton"],
-  ["label", "Element label", "/^Закрити$/"],
+// the placeholders are patterns, the same in every language
+const FIELDS: Array<[Field, MessageKey, string]> = [
+  ["element", "a11y.field.element", "*#PbButton or /^.*:id\\/(tab)_\\d+$/"],
+  ["screen", "a11y.field.screen", "Онбординг*"],
+  ["className", "a11y.field.className", "*ImageButton"],
+  ["label", "a11y.field.label", "/^Закрити$/"],
 ];
 
-const GROUPINGS: Array<[GroupBy, string]> = [
+const GROUPINGS: Array<[GroupBy, MessageKey]> = [
   ...MODES,
-  ["class", "Everything this class takes"],
+  ["class", "a11y.mode.class"],
 ];
 
-const groupingLabel = (groupBy: GroupBy) =>
-  GROUPINGS.find(([value]) => value === groupBy)?.[1] ?? groupBy;
+const groupingLabel = (groupBy: GroupBy, t: Text) => {
+  const key = GROUPINGS.find(([value]) => value === groupBy)?.[1];
+  return key ? t(key) : groupBy;
+};
 
 /** The conditions of a class, reading classes written with a single element pattern too. */
 const conditionsOf = (item: ProblemClass): ClassConditions => ({
@@ -111,6 +115,7 @@ export const A11yProblemSettings: React.FunctionComponent<{
 }> = ({ bare = false }) => {
   const { projectEditState: project } = useProjectState();
   const projectDispatch = useProjectDispatch();
+  const { t, tx, formatOrdinal } = useT();
   const settings = parseUiTreeSettings(project.uiTreeSettings);
   const classes = settings.a11yClasses ?? [];
   const [titleText, setTitleText] = React.useState(
@@ -119,7 +124,7 @@ export const A11yProblemSettings: React.FunctionComponent<{
   const [draft, setDraft] = React.useState(emptyDraft);
   const draftErrors = FIELDS.map(([field]) =>
     lines(draft.conditions[field])
-      .map(patternError)
+      .map((pattern) => patternError(pattern, t))
       .find((error) => error),
   );
   const hasCondition = FIELDS.some(
@@ -170,14 +175,10 @@ export const A11yProblemSettings: React.FunctionComponent<{
       data-testid="a11yProblemSettings"
     >
       {!bare && <Divider />}
-      {!bare && (
-        <Typography variant="subtitle1">Accessibility problems</Typography>
-      )}
+      {!bare && <Typography variant="subtitle1">{t("a11y.title")}</Typography>}
       {!bare && (
         <Typography variant="body2" color="textSecondary">
-          One bug per problem. A problem has an id (a11y-…) that goes into the
-          Jira bug&apos;s summary and labels; Vision checks its own records and
-          Jira for it before filing, and marks problems found in Jira as filed.
+          {t("a11y.intro")}
         </Typography>
       )}
 
@@ -186,7 +187,7 @@ export const A11yProblemSettings: React.FunctionComponent<{
         size="small"
         multiline
         minRows={2}
-        label="Screen title in the UI tree"
+        label={t("a11y.screenTitle")}
         value={titleText}
         onChange={(event) => setTitleText(event.target.value)}
         onBlur={() => {
@@ -199,17 +200,15 @@ export const A11yProblemSettings: React.FunctionComponent<{
             screenTitle: selectors.length ? selectors : ["id:Appbar#Title"],
           });
         }}
-        helperText="One selector per line, first match wins: id:Appbar#Title, id:toolbar_title, class:…, text:/regex/. Without a match, the check's name is the screen."
+        helperText={t("a11y.screenTitleHelp")}
         sx={{ maxWidth: 520 }}
       />
 
       <Typography variant="body2" sx={{ fontWeight: 600, mt: 1 }}>
-        Same problem when
+        {t("a11y.sameProblem")}
       </Typography>
       <Typography variant="caption" color="textSecondary">
-        Per rule, for elements with an id. A component&apos;s problem holds on
-        every screen with it: filed once, covered everywhere. Elements without
-        an id are always a problem of their own screen.
+        {t("a11y.sameProblemIntro")}
       </Typography>
       <Box
         sx={{
@@ -222,11 +221,13 @@ export const A11yProblemSettings: React.FunctionComponent<{
       >
         {RULES.map(([rule, title]) => (
           <React.Fragment key={rule}>
-            <Typography variant="body2">{title}</Typography>
+            <Typography variant="body2">{t(title)}</Typography>
             <TextField
               select
               size="small"
-              inputProps={{ "aria-label": `Same problem when: ${title}` }}
+              inputProps={{
+                "aria-label": t("a11y.sameProblemFor", { rule: t(title) }),
+              }}
               value={
                 settings.a11yDuplicates?.[rule] ?? DEFAULT_DUPLICATE_MODES[rule]
               }
@@ -242,7 +243,7 @@ export const A11yProblemSettings: React.FunctionComponent<{
             >
               {MODES.map(([value, label]) => (
                 <MenuItem key={value} value={value}>
-                  {label}
+                  {t(label)}
                 </MenuItem>
               ))}
             </TextField>
@@ -251,7 +252,7 @@ export const A11yProblemSettings: React.FunctionComponent<{
       </Box>
 
       <Typography variant="body2" sx={{ fontWeight: 600, mt: 1 }}>
-        Problem classes
+        {t("a11y.classes")}
       </Typography>
       {/* the full explanation is long and read once: it waits behind a toggle */}
       <Box
@@ -268,16 +269,11 @@ export const A11yProblemSettings: React.FunctionComponent<{
           },
         }}
       >
-        <summary>How matching works</summary>
+        <summary>{t("a11y.howMatching")}</summary>
         <Typography variant="caption" component="p" color="textSecondary">
-          First match wins. A class takes an issue when every field filled in
-          matches; within a field, one pattern per line, any may match. Patterns
-          are globs with * and ?, or /regex/; a group in an element id regex
-          becomes the component, so <code>/^.*:id\/(tab)_\d+$/</code> makes
-          tab_0…tab_3 one problem. “Everything this class takes” makes all of it
-          one problem; “Ignore” lists it with the false positives and never
-          files it. Problem ids never change with these settings: what is one
-          problem is worked out again from what each problem was filed for.
+          {tx("a11y.howMatchingText", {
+            example: <code>{"/^.*:id\\/(tab)_\\d+$/"}</code>,
+          })}
         </Typography>
       </Box>
       {classes.map((item, index) => {
@@ -297,7 +293,9 @@ export const A11yProblemSettings: React.FunctionComponent<{
             }}
           >
             <Box
-              aria-label={`Checked ${index + 1}${index === 0 ? "st" : index === 1 ? "nd" : index === 2 ? "rd" : "th"}`}
+              aria-label={t("a11y.checkedAt", {
+                position: formatOrdinal(index + 1),
+              })}
               data-testid="a11yProblemClassNumber"
               sx={{
                 width: 24,
@@ -327,7 +325,7 @@ export const A11yProblemSettings: React.FunctionComponent<{
                     color="textSecondary"
                     component="div"
                   >
-                    {label}:{" "}
+                    {t(label)}:{" "}
                     <code style={{ fontSize: 12 }}>
                       {when[field]?.join("  |  ")}
                     </code>
@@ -335,12 +333,15 @@ export const A11yProblemSettings: React.FunctionComponent<{
                 ),
               )}
               <Typography variant="caption" color="textSecondary">
-                {item.rules?.length ? item.rules.join(", ") : "every rule"} ·{" "}
+                {item.rules?.length
+                  ? item.rules.join(", ")
+                  : t("a11y.everyRule")}{" "}
+                ·{" "}
                 {item.action === "ignore"
-                  ? "ignored"
+                  ? t("a11y.ignored")
                   : groupBy
-                    ? groupingLabel(groupBy)
-                    : "rule's setting"}
+                    ? groupingLabel(groupBy, t)
+                    : t("a11y.rulesSetting")}
               </Typography>
             </Box>
             <Box sx={{ display: "flex" }}>
@@ -349,7 +350,7 @@ export const A11yProblemSettings: React.FunctionComponent<{
                 disabled={index === 0}
                 onClick={() => move(index, -1)}
               >
-                Up
+                {t("a11y.up")}
               </Button>
               <Button
                 size="small"
@@ -362,7 +363,7 @@ export const A11yProblemSettings: React.FunctionComponent<{
                   })
                 }
               >
-                Remove
+                {t("common.remove")}
               </Button>
             </Box>
           </Box>
@@ -379,7 +380,7 @@ export const A11yProblemSettings: React.FunctionComponent<{
         <TextField
           id="problemClassName"
           size="small"
-          label="Name"
+          label={t("a11y.className")}
           value={draft.name}
           onChange={(event) => setDraft({ ...draft, name: event.target.value })}
         />
@@ -389,7 +390,7 @@ export const A11yProblemSettings: React.FunctionComponent<{
             id={`problemClass-${field}`}
             size="small"
             multiline
-            label={label}
+            label={t(label)}
             placeholder={placeholder}
             value={draft.conditions[field]}
             onChange={(event) =>
@@ -402,14 +403,14 @@ export const A11yProblemSettings: React.FunctionComponent<{
               })
             }
             error={!!draftErrors[index]}
-            helperText={draftErrors[index] ?? "One pattern per line"}
+            helperText={draftErrors[index] ?? t("a11y.patternHelp")}
           />
         ))}
         <TextField
           id="problemClassRules"
           size="small"
           select
-          label="Rules"
+          label={t("a11y.classRules")}
           SelectProps={{
             multiple: true,
             renderValue: (value) => (value as string[]).join(", "),
@@ -423,11 +424,11 @@ export const A11yProblemSettings: React.FunctionComponent<{
               ) as A11yRule[],
             })
           }
-          helperText="Empty for every rule"
+          helperText={t("a11y.classRulesHelp")}
         >
           {RULES.map(([rule, title]) => (
             <MenuItem key={rule} value={rule}>
-              {title}
+              {t(title)}
             </MenuItem>
           ))}
         </TextField>
@@ -435,16 +436,16 @@ export const A11yProblemSettings: React.FunctionComponent<{
           id="problemClassGroupBy"
           size="small"
           select
-          label="Same problem when"
+          label={t("a11y.sameProblem")}
           value={draft.groupBy}
           onChange={(event) =>
             setDraft({ ...draft, groupBy: event.target.value as GroupBy | "" })
           }
         >
-          <MenuItem value="">Rule&apos;s setting</MenuItem>
+          <MenuItem value="">{t("a11y.classRuleSetting")}</MenuItem>
           {GROUPINGS.map(([value, label]) => (
             <MenuItem key={value} value={value}>
-              {label}
+              {t(label)}
             </MenuItem>
           ))}
         </TextField>
@@ -452,7 +453,7 @@ export const A11yProblemSettings: React.FunctionComponent<{
           id="problemClassAction"
           size="small"
           select
-          label="Then"
+          label={t("a11y.classAction")}
           value={draft.action}
           onChange={(event) =>
             setDraft({
@@ -461,8 +462,8 @@ export const A11yProblemSettings: React.FunctionComponent<{
             })
           }
         >
-          <MenuItem value="report">File bugs</MenuItem>
-          <MenuItem value="ignore">Ignore</MenuItem>
+          <MenuItem value="report">{t("a11y.fileBugs")}</MenuItem>
+          <MenuItem value="ignore">{t("common.ignore")}</MenuItem>
         </TextField>
         <Button
           variant="outlined"
@@ -470,7 +471,7 @@ export const A11yProblemSettings: React.FunctionComponent<{
           onClick={addClass}
           sx={{ alignSelf: "start", mt: 0.25 }}
         >
-          Add class
+          {t("a11y.addClass")}
         </Button>
       </Box>
     </Box>

@@ -20,10 +20,12 @@ import {
   VlmTemperatureField,
   VlmUseThinkingField,
 } from "./VlmSharedFields";
+import { useT } from "../../i18n";
 
 export const OllamaConfigForm: React.FunctionComponent = () => {
   const { enqueueSnackbar } = useSnackbar();
   const [config, updateConfig] = useConfigHook<OllamaVlmConfig>();
+  const { t } = useT();
   const [models, setModels] = useState<OllamaModel[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
 
@@ -71,16 +73,16 @@ export const OllamaConfigForm: React.FunctionComponent = () => {
         <TextValidator
           name="model"
           validators={["required"]}
-          errorMessages={["Model is required"]}
+          errorMessages={[t("comparison.modelRequired")]}
           margin="dense"
           id="model"
-          label="Model"
+          label={t("comparison.model")}
           type="text"
           fullWidth
           required
           value={config.model || ""}
           disabled
-          helperText="Loading models..."
+          helperText={t("comparison.loadingModels")}
         />
       );
     }
@@ -90,15 +92,15 @@ export const OllamaConfigForm: React.FunctionComponent = () => {
         <TextValidator
           name="model"
           validators={["required"]}
-          errorMessages={["Model is required"]}
+          errorMessages={[t("comparison.modelRequired")]}
           margin="dense"
           id="model"
-          label="Model"
+          label={t("comparison.model")}
           type="text"
           fullWidth
           required
           value={config.model || ""}
-          helperText="No models available. Enter model name manually."
+          helperText={t("comparison.noModels")}
           onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
             updateConfig("model", event.target.value);
           }}
@@ -114,7 +116,7 @@ export const OllamaConfigForm: React.FunctionComponent = () => {
         error={hasError}
         required
       >
-        <InputLabel id="model-select-label">Model</InputLabel>
+        <InputLabel id="model-select-label">{t("comparison.model")}</InputLabel>
         <Select
           labelId="model-select-label"
           id="model-select"
@@ -129,9 +131,7 @@ export const OllamaConfigForm: React.FunctionComponent = () => {
           ))}
         </Select>
         {hasError && (
-          <FormHelperText>
-            Selected model is not in the available list.
-          </FormHelperText>
+          <FormHelperText>{t("comparison.unknownModel")}</FormHelperText>
         )}
       </FormControl>
     );
@@ -139,13 +139,13 @@ export const OllamaConfigForm: React.FunctionComponent = () => {
 
   return (
     <React.Fragment>
-      <Tooltip title="The Ollama model name to use for image comparison. Models are fetched from the Ollama service.">
+      <Tooltip title={t("comparison.ollamaModelHelp")}>
         <div>
           {renderModelField()}
           <TextValidator
             name="model"
             validators={["required"]}
-            errorMessages={["Model is required"]}
+            errorMessages={[t("comparison.modelRequired")]}
             value={config.model || ""}
             style={{ display: "none" }}
           />
@@ -167,4 +167,3 @@ export const OllamaConfigForm: React.FunctionComponent = () => {
     </React.Fragment>
   );
 };
-

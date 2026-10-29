@@ -2,6 +2,7 @@ import React from "react";
 import { Box, Button, TextField, Typography } from "@mui/material";
 import { Check } from "@mui/icons-material";
 import { tokens } from "../../theme";
+import { useT } from "../../i18n";
 
 /**
  * A write-only secret (REQ-018-50): once saved it is never shown, only that it
@@ -17,6 +18,7 @@ export const SecretField: React.FunctionComponent<{
   helperText?: string;
 }> = ({ id, label, saved, value, onChange, helperText }) => {
   const [replacing, setReplacing] = React.useState(false);
+  const { t } = useT();
 
   if (saved && !replacing && value === undefined) {
     return (
@@ -43,13 +45,13 @@ export const SecretField: React.FunctionComponent<{
             bgcolor: tokens.status.passed.bg,
           }}
         >
-          <Check sx={{ fontSize: 14 }} /> Saved
+          <Check sx={{ fontSize: 14 }} /> {t("common.saved")}
         </Box>
         <Button size="small" onClick={() => setReplacing(true)}>
-          Replace
+          {t("secret.replace")}
         </Button>
         <Button size="small" onClick={() => onChange("")}>
-          Remove
+          {t("common.remove")}
         </Button>
       </Box>
     );
@@ -62,10 +64,10 @@ export const SecretField: React.FunctionComponent<{
           {label}
         </Typography>
         <Typography variant="body2" color="textSecondary">
-          Removed on save
+          {t("secret.removedOnSave")}
         </Typography>
         <Button size="small" onClick={() => onChange(undefined)}>
-          Undo
+          {t("secret.undo")}
         </Button>
       </Box>
     );
@@ -80,9 +82,7 @@ export const SecretField: React.FunctionComponent<{
       autoComplete="new-password"
       value={value ?? ""}
       onChange={(event) => onChange(event.target.value || undefined)}
-      helperText={
-        helperText ?? (saved ? "Leave empty to keep the saved one" : " ")
-      }
+      helperText={helperText ?? (saved ? t("secret.keepSaved") : " ")}
     />
   );
 };

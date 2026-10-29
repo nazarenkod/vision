@@ -2,21 +2,23 @@ import React from "react";
 import { FormControlLabel, Switch } from "@mui/material";
 import { TextValidator } from "react-material-ui-form-validator";
 import { Tooltip } from "../Tooltip";
+import { useT } from "../../i18n";
 
 export const VlmPromptField: React.FunctionComponent<{
   value: string;
   onChange: (value: string) => void;
 }> = ({ value, onChange }) => {
+  const { t } = useT();
   return (
-    <Tooltip title="The prompt text that will be sent to the VLM to analyze image differences.">
+    <Tooltip title={t("comparison.promptHelp")}>
       <div>
         <TextValidator
           name="prompt"
           validators={["required"]}
-          errorMessages={["Prompt is required"]}
+          errorMessages={[t("comparison.promptRequired")]}
           margin="dense"
           id="prompt"
-          label="Prompt"
+          label={t("comparison.prompt")}
           type="text"
           multiline
           rows={4}
@@ -36,15 +38,16 @@ export const VlmTemperatureField: React.FunctionComponent<{
   value: number;
   onChange: (value: number) => void;
 }> = ({ value, onChange }) => {
+  const { t } = useT();
   return (
-    <Tooltip title="Controls the randomness of the VLM response. Lower values (0-0.3) produce more consistent results, higher values (0.7-1) produce more creative responses.">
+    <Tooltip title={t("comparison.temperatureHelp")}>
       <div>
         <TextValidator
           name="temperature"
           validators={["minNumber:0", "maxNumber:1"]}
           errorMessages={[
-            "Enter greater than or equal to 0",
-            "Enter less than or equal to 1",
+            t("validation.atLeast", { min: 0 }),
+            t("validation.atMost", { max: 1 }),
           ]}
           InputProps={{
             inputProps: {
@@ -55,8 +58,8 @@ export const VlmTemperatureField: React.FunctionComponent<{
           }}
           margin="dense"
           id="temperature"
-          label="Temperature"
-          helperText="Controls response randomness (0-1). Lower values are more consistent."
+          label={t("comparison.temperature")}
+          helperText={t("comparison.temperatureShortHelp")}
           type="number"
           fullWidth
           required
@@ -75,10 +78,11 @@ export const VlmUseThinkingField: React.FunctionComponent<{
   value: boolean;
   onChange: (value: boolean) => void;
 }> = ({ value, onChange }) => {
+  const { t } = useT();
   return (
-    <Tooltip title="Enable thinking mode for the VLM model.">
+    <Tooltip title={t("comparison.useThinkingHelp")}>
       <FormControlLabel
-        label="Use Thinking"
+        label={t("comparison.useThinking")}
         control={
           <Switch
             checked={value || false}

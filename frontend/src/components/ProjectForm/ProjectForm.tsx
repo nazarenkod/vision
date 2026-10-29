@@ -36,6 +36,7 @@ import { insightsService } from "../../services";
 import { A11yProblemSettings } from "./A11yProblemSettings";
 import { deviceLabel } from "../../_helpers/device.helper";
 import { SecretField } from "./SecretField";
+import { MessageKey, useT } from "../../i18n";
 
 const profileLabel = (profile: DeviceProfile) => deviceLabel(profile);
 const profileKey = (profile: DeviceProfile) =>
@@ -47,23 +48,11 @@ const profileKey = (profile: DeviceProfile) =>
   ]);
 
 // what each engine is for, in one sentence (REQ-018-44)
-const ENGINES: Array<[ImageComparison, string]> = [
-  [
-    ImageComparison.pixelmatch,
-    "Pixel by pixel. Fast and predictable; the default.",
-  ],
-  [
-    ImageComparison.lookSame,
-    "Forgives anti-aliasing and the text caret. Good for text-heavy screens.",
-  ],
-  [
-    ImageComparison.odiff,
-    "The fastest on big screenshots. Can fail on any layout change.",
-  ],
-  [
-    ImageComparison.vlm,
-    "Asks a vision model whether a change matters. Slower; needs a provider.",
-  ],
+const ENGINES: Array<[ImageComparison, MessageKey]> = [
+  [ImageComparison.pixelmatch, "comparison.pixelmatchHelp"],
+  [ImageComparison.lookSame, "comparison.lookSameHelp"],
+  [ImageComparison.odiff, "comparison.odiffHelp"],
+  [ImageComparison.vlm, "comparison.vlmHelp"],
 ];
 
 const useEditedProject = () => {
@@ -75,15 +64,16 @@ const useEditedProject = () => {
 /** Name, main branch and how long builds are kept. */
 export const GeneralFields: React.FunctionComponent = () => {
   const { project, projectDispatch } = useEditedProject();
+  const { t } = useT();
   return (
     <React.Fragment>
       <TextValidator
         name="projectName"
         validators={["minStringLength:2"]}
-        errorMessages={["Enter at least two characters."]}
+        errorMessages={[t("validation.twoCharacters")]}
         margin="dense"
         id="name"
-        label="Project name"
+        label={t("general.name")}
         type="text"
         fullWidth
         required
@@ -98,10 +88,10 @@ export const GeneralFields: React.FunctionComponent = () => {
       <TextValidator
         name="mainBranchName"
         validators={["minStringLength:2"]}
-        errorMessages={["Enter at least two characters."]}
+        errorMessages={[t("validation.twoCharacters")]}
         margin="dense"
         id="branchName"
-        label="Main branch"
+        label={t("general.mainBranch")}
         type="text"
         fullWidth
         required
@@ -116,7 +106,7 @@ export const GeneralFields: React.FunctionComponent = () => {
       <TextValidator
         name="buildCount"
         validators={["minNumber:1"]}
-        errorMessages={["Enter greater than 1"]}
+        errorMessages={[t("validation.greaterThan", { min: 1 })]}
         InputProps={{
           inputProps: {
             min: 1,
@@ -125,7 +115,7 @@ export const GeneralFields: React.FunctionComponent = () => {
         }}
         margin="dense"
         id="buildCount"
-        label="Number of builds to keep"
+        label={t("general.buildCount")}
         type="number"
         fullWidth
         required
@@ -142,7 +132,7 @@ export const GeneralFields: React.FunctionComponent = () => {
       <TextValidator
         name="maxBranchLifetime"
         validators={["minNumber:1"]}
-        errorMessages={["Enter greater than 1"]}
+        errorMessages={[t("validation.greaterThan", { min: 1 })]}
         InputProps={{
           inputProps: {
             min: 1,
@@ -151,7 +141,7 @@ export const GeneralFields: React.FunctionComponent = () => {
         }}
         margin="dense"
         id="maxBranchLifetime"
-        label="Max branch lifetime (days)"
+        label={t("general.branchLifetime")}
         type="number"
         fullWidth
         required
@@ -172,10 +162,11 @@ export const GeneralFields: React.FunctionComponent = () => {
 /** Auto approve and reviewing a screen's variations together. */
 export const ReviewFields: React.FunctionComponent = () => {
   const { project, projectDispatch } = useEditedProject();
+  const { t } = useT();
   return (
     <React.Fragment>
       <FormControlLabel
-        label="Auto approve feature"
+        label={t("review.autoApprove")}
         control={
           <Switch
             checked={project.autoApproveFeature}
@@ -190,9 +181,9 @@ export const ReviewFields: React.FunctionComponent = () => {
           />
         }
       />
-      <Tooltip title="Review and bulk approve or reject a screen's variations (e.g. all locales) in one dialog. Only variations with the same change are pre-selected; different ones are left for manual review.">
+      <Tooltip title={t("review.bulkApproveHelp")}>
         <FormControlLabel
-          label="Bulk approve/reject variations"
+          label={t("review.bulkApprove")}
           control={
             <Switch
               checked={project.bulkApproveVariations}
@@ -211,10 +202,10 @@ export const ReviewFields: React.FunctionComponent = () => {
       {/* not tied to the switch above: the axis also decides what the test run
           list groups into one card, which it does whether or not variations can
           be bulk approved */}
-      <Tooltip title="Which test-variation axis differs within a group. Screens that match on everything except this axis are grouped in the test run list and reviewed together — e.g. customTags for per-locale screenshots.">
+      <Tooltip title={t("review.groupByHelp")}>
         <FormControl variant="standard" fullWidth>
           <InputLabel id="bulkApproveGroupBySelect">
-            Group variations by
+            {t("review.groupBy")}
           </InputLabel>
           <Select
             variant="standard"
@@ -247,6 +238,7 @@ export const ComparisonFields: React.FunctionComponent<{
   withConfig?: boolean;
 }> = ({ as = "cards", withConfig = true }) => {
   const { project, projectDispatch } = useEditedProject();
+  const { t } = useT();
   const pick = (imageComparison: ImageComparison) =>
     setProjectEditState(projectDispatch, {
       ...project,
@@ -281,7 +273,7 @@ export const ComparisonFields: React.FunctionComponent<{
       <React.Fragment>
         <FormControl variant="standard" fullWidth>
           <InputLabel id="imageComparisonSelect">
-            Image comparison library
+            {t("comparison.library")}
           </InputLabel>
           <Select
             variant="standard"
@@ -324,7 +316,7 @@ export const ComparisonFields: React.FunctionComponent<{
     <React.Fragment>
       <Box
         role="radiogroup"
-        aria-label="Image comparison"
+        aria-label={t("comparison.engines")}
         data-testid="engineCards"
         sx={{
           display: "grid",
@@ -381,7 +373,7 @@ export const ComparisonFields: React.FunctionComponent<{
                 color="textSecondary"
                 sx={{ lineHeight: 1.4 }}
               >
-                {description}
+                {t(description)}
               </Typography>
             </ButtonBase>
           );
@@ -397,15 +389,16 @@ export const ComparisonFields: React.FunctionComponent<{
 /** Creating a project: three fields; the rest is set on its settings page. */
 export const NewProjectFields: React.FunctionComponent = () => {
   const { project, projectDispatch } = useEditedProject();
+  const { t } = useT();
   return (
     <React.Fragment>
       <TextValidator
         name="projectName"
         validators={["minStringLength:2"]}
-        errorMessages={["Enter at least two characters."]}
+        errorMessages={[t("validation.twoCharacters")]}
         margin="dense"
         id="name"
-        label="Project name"
+        label={t("general.name")}
         type="text"
         fullWidth
         required
@@ -420,10 +413,10 @@ export const NewProjectFields: React.FunctionComponent = () => {
       <TextValidator
         name="mainBranchName"
         validators={["minStringLength:2"]}
-        errorMessages={["Enter at least two characters."]}
+        errorMessages={[t("validation.twoCharacters")]}
         margin="dense"
         id="branchName"
-        label="Main branch"
+        label={t("general.mainBranch")}
         type="text"
         fullWidth
         required
@@ -437,8 +430,7 @@ export const NewProjectFields: React.FunctionComponent = () => {
       />
       <ComparisonFields as="select" withConfig={false} />
       <Typography variant="body2" color="textSecondary" sx={{ mt: 1.5 }}>
-        Mobile screenshots, accessibility and Jira are set up in the
-        project&apos;s settings, which open right after it is created.
+        {t("general.newProjectHint")}
       </Typography>
     </React.Fragment>
   );
@@ -462,6 +454,7 @@ export const JiraSettings: React.FunctionComponent<{ bare?: boolean }> = ({
 }) => {
   const { projectEditState: project } = useProjectState();
   const projectDispatch = useProjectDispatch();
+  const { t } = useT();
   // the API never returns the token, only whether one is saved
   const tokenSaved = !!(project as { jiraTokenSet?: boolean }).jiraTokenSet;
   const update = (patch: Partial<typeof project>) =>
@@ -477,18 +470,15 @@ export const JiraSettings: React.FunctionComponent<{ bare?: boolean }> = ({
       }}
     >
       {!bare && <Divider />}
-      {!bare && <Typography variant="subtitle1">Jira</Typography>}
+      {!bare && <Typography variant="subtitle1">{t("jira.title")}</Typography>}
       {!bare && (
         <Typography variant="body2" color="textSecondary">
-          Lets reviewers file accessibility bugs from the review screen. Each
-          person adds their own Jira token in their profile, so bugs are filed
-          as them. A shared token here is optional: it is used for people who
-          have not added one.
+          {t("jira.intro")}
         </Typography>
       )}
       <TextField
         id="jiraUrl"
-        label="Jira URL"
+        label={t("jira.url")}
         placeholder="https://jira.example.com"
         size="small"
         value={project.jiraUrl ?? ""}
@@ -496,14 +486,14 @@ export const JiraSettings: React.FunctionComponent<{ bare?: boolean }> = ({
       />
       <SecretField
         id="jiraToken"
-        label="Shared token (optional)"
+        label={t("jira.token")}
         saved={tokenSaved}
         value={project.jiraToken}
         onChange={(jiraToken) => update({ jiraToken })}
       />
       <TextField
         id="jiraEmail"
-        label="Shared token's account email (Jira Cloud only)"
+        label={t("jira.email")}
         size="small"
         value={project.jiraEmail ?? ""}
         onChange={(event) => update({ jiraEmail: event.target.value })}
@@ -511,7 +501,7 @@ export const JiraSettings: React.FunctionComponent<{ bare?: boolean }> = ({
       <Box sx={{ display: "flex", gap: 1.5 }}>
         <TextField
           id="jiraIssueType"
-          label="Issue type"
+          label={t("jira.issueType")}
           placeholder="Bug"
           size="small"
           fullWidth
@@ -520,7 +510,7 @@ export const JiraSettings: React.FunctionComponent<{ bare?: boolean }> = ({
         />
         <TextField
           id="jiraLinkType"
-          label="Link type"
+          label={t("jira.linkType")}
           placeholder="Relates"
           size="small"
           fullWidth
@@ -532,32 +522,12 @@ export const JiraSettings: React.FunctionComponent<{ bare?: boolean }> = ({
   );
 };
 
-const TOGGLES: Array<[keyof UiTreeSettings, string, string]> = [
-  [
-    "excludeSystemBars",
-    "Leave out status and navigation bars",
-    "Clock, battery and signal change on every run.",
-  ],
-  [
-    "compensateMoves",
-    "Compare moved elements at their new place",
-    "An element that only moved (a banner pushed the list down) is not a difference; a change inside it still is.",
-  ],
-  [
-    "detectSemanticChanges",
-    "Send hidden changes to review",
-    "A new label, a disabled or unclickable control, an invisible button: changes the pixels do not show.",
-  ],
-  [
-    "detectLoading",
-    "Warn about loading states",
-    "Spinners, skeletons and toasts mean the screenshot was taken too early.",
-  ],
-  [
-    "detectScreenMismatch",
-    "Warn about wrong screens",
-    "The UI tree looks like another screen than the baseline.",
-  ],
+const TOGGLES: Array<[keyof UiTreeSettings, MessageKey, MessageKey]> = [
+  ["excludeSystemBars", "mobile.systemBars", "mobile.systemBarsHelp"],
+  ["compensateMoves", "mobile.moves", "mobile.movesHelp"],
+  ["detectSemanticChanges", "mobile.hidden", "mobile.hiddenHelp"],
+  ["detectLoading", "mobile.loading", "mobile.loadingHelp"],
+  ["detectScreenMismatch", "mobile.wrongScreen", "mobile.wrongScreenHelp"],
 ];
 
 /**
@@ -570,6 +540,7 @@ export const MobileSettings: React.FunctionComponent<{
 }> = ({ bare = false }) => {
   const { projectEditState: project } = useProjectState();
   const projectDispatch = useProjectDispatch();
+  const { t } = useT();
   const settings = parseUiTreeSettings(project.uiTreeSettings);
   const [devices, setDevices] = React.useState<
     Array<DeviceProfile & { checks: number }>
@@ -604,13 +575,11 @@ export const MobileSettings: React.FunctionComponent<{
     >
       {!bare && <Divider />}
       {!bare && (
-        <Typography variant="subtitle1">
-          Mobile screenshots (UI tree)
-        </Typography>
+        <Typography variant="subtitle1">{t("mobile.title")}</Typography>
       )}
       {!bare && (
         <Typography variant="body2" color="textSecondary">
-          Applies to screenshots sent with an Appium page source.
+          {t("section.mobileIntro")}
         </Typography>
       )}
       {TOGGLES.map(([key, label, help]) => (
@@ -625,9 +594,9 @@ export const MobileSettings: React.FunctionComponent<{
           }
           label={
             <Box>
-              <Typography variant="body2">{label}</Typography>
+              <Typography variant="body2">{t(label)}</Typography>
               <Typography variant="caption" color="textSecondary">
-                {help}
+                {t(help)}
               </Typography>
             </Box>
           }
@@ -641,7 +610,7 @@ export const MobileSettings: React.FunctionComponent<{
         id="referenceDevice"
         select
         size="small"
-        label="Reference device"
+        label={t("mobile.reference")}
         value={reference ? profileKey(reference) : ""}
         onChange={(event) => {
           const picked = deviceOptions.find(
@@ -659,14 +628,16 @@ export const MobileSettings: React.FunctionComponent<{
               : null,
           });
         }}
-        helperText="Other devices of a check are compared with it element by element, for information; it never changes a status."
+        helperText={t("mobile.referenceHelp")}
         sx={{ maxWidth: 520, mt: 1 }}
       >
-        <MenuItem value="">None</MenuItem>
+        <MenuItem value="">{t("mobile.noReference")}</MenuItem>
         {deviceOptions.map((device) => (
           <MenuItem key={profileKey(device)} value={profileKey(device)}>
             {profileLabel(device)}
-            {device.checks ? ` (${device.checks} checks)` : ""}
+            {device.checks
+              ? ` ${t("mobile.checks", { count: device.checks })}`
+              : ""}
           </MenuItem>
         ))}
       </TextField>
@@ -675,7 +646,7 @@ export const MobileSettings: React.FunctionComponent<{
           id="maxMoveDp"
           size="small"
           type="number"
-          label="Only moves up to, dp (empty for any)"
+          label={t("mobile.maxMove")}
           value={settings.maxMoveDp ?? ""}
           onChange={(event) =>
             save({

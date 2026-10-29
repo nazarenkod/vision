@@ -15,11 +15,13 @@ import {
 } from "../../contexts";
 import { GeminiConfigForm } from "./GeminiConfigForm";
 import { OllamaConfigForm } from "./OllamaConfigForm";
+import { useT } from "../../i18n";
 
 export const VlmConfigForm: React.FunctionComponent = () => {
   const [config] = useConfigHook<VlmConfig>();
   const { projectEditState: project } = useProjectState();
   const projectDispatch = useProjectDispatch();
+  const { t } = useT();
 
   // Determine current provider (default to ollama if not set)
   const currentProvider = useMemo(() => {
@@ -65,7 +67,9 @@ export const VlmConfigForm: React.FunctionComponent = () => {
   return (
     <React.Fragment>
       <FormControl variant="standard" fullWidth margin="dense" required>
-        <InputLabel id="provider-select-label">VLM Provider</InputLabel>
+        <InputLabel id="provider-select-label">
+          {t("comparison.provider")}
+        </InputLabel>
         <Select
           labelId="provider-select-label"
           id="provider-select"

@@ -109,7 +109,7 @@ const textOf = (text: Text, key: string) =>
 
 /**
  * Sections whose title or settings hold the text, and the settings that do
- * (REQ-018-43), in the interface's language or in English (REQ-019-12).
+ * (REQ-018-43), in the interface's language or in English (REQ-023-12).
  */
 export function matchSettings(
   query: string,

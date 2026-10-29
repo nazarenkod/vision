@@ -798,7 +798,7 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
       await run(
         () =>
           insightsService.removeElementRule(testRun.id, rule.scope, rule.id),
-        "Rule removed; compared again",
+        t("panel.ruleRemoved"),
       )
     ) {
       setRemoving(null);
@@ -1268,25 +1268,27 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
         fullWidth
         maxWidth="xs"
       >
-        <DialogTitle>Remove a rule for every screen?</DialogTitle>
+        <DialogTitle>{t("panel.removeProjectRuleTitle")}</DialogTitle>
         <DialogContent>
           <Typography variant="body2">
-            <Box component="code" sx={{ font: `500 12px ${tokens.mono}` }}>
-              {removing?.selector}
-            </Box>{" "}
-            applies to every screen of the project. Without it, this screenshot
-            and the rest of the build are compared again.
+            {tx("panel.removeProjectRuleText", {
+              selector: (
+                <Box component="code" sx={{ font: `500 12px ${tokens.mono}` }}>
+                  {removing?.selector}
+                </Box>
+              ),
+            })}
           </Typography>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setRemoving(null)}>Cancel</Button>
+          <Button onClick={() => setRemoving(null)}>{t("panel.cancel")}</Button>
           <Button
             color="error"
             variant="contained"
             disabled={submitting}
             onClick={() => removing && removeRule(removing)}
           >
-            Remove rule
+            {t("panel.removeRule")}
           </Button>
         </DialogActions>
       </Dialog>

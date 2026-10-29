@@ -55,7 +55,7 @@ Vision — внутрішній форк [Visual Regression Tracker](https://git
   someone filed the problem already».
 - `prettier` і `eslint` — лише по змінених файлах; чужий код не переформатовуємо.
 - Інтерфейс двома мовами: кожен текст — ключ словника з англійським і українським перекладом
-  ([ADR-0016](docs/decisions/0016-interface-in-two-languages.md)). Документація для команди
+  ([ADR-0017](docs/decisions/0017-interface-in-two-languages.md)). Документація для команди
   українською, ідентифікатори англійською.
 
 ## Коміти

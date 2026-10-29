@@ -31,4 +31,4 @@ Architecture Decision Record фіксує важливе рішення: кон�
 | [ADR-0013](0013-ui-drives-host-scripts-through-files.md) | Інтерфейс керує скриптами хоста через файли | Accepted | 2026-10-27 |
 | [ADR-0014](0014-undo-through-decision-journal.md) | Undo рішень — через журнал на сервері | Accepted | 2026-10-29 |
 | [ADR-0015](0015-theme-tokens-as-css-variables.md) | Кольори — CSS-змінні, рух — токени теми | Accepted | 2026-10-29 |
-| [ADR-0016](0016-interface-in-two-languages.md) | Інтерфейс двома мовами через власний словник | Accepted | 2026-10-29 |
+| [ADR-0017](0017-interface-in-two-languages.md) | Інтерфейс двома мовами через власний словник | Accepted | 2026-10-29 |

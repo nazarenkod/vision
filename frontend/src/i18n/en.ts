@@ -3,7 +3,7 @@ import { Message } from "./translate";
 
 /**
  * The interface's texts in English. The keys are the dictionary: uk.ts has
- * to have every one of them (ADR-0016). {name} is replaced by a parameter; a
+ * to have every one of them (ADR-0017). {name} is replaced by a parameter; a
  * plural object picks its form by {count}.
  */
 export const en = {
@@ -11,7 +11,6 @@ export const en = {
 
   "common.cancel": "Cancel",
   "common.remove": "Remove",
-  "common.add": "Add",
   "common.ignore": "Ignore",
   "common.saved": "Saved",
   "common.dismissNotification": "Dismiss notification",
@@ -106,7 +105,6 @@ export const en = {
   "section.review": "Review",
   "section.comparison": "Image comparison",
   "section.mobile": "Mobile screenshots",
-  "section.rules": "Element rules",
   "section.a11y": "Accessibility problems",
   "section.jira": "Jira",
   "section.danger": "Danger zone",
@@ -114,8 +112,6 @@ export const en = {
     "How a checkpoint is compared with its baseline. Below the engines: the settings of the one you pick.",
   "section.mobileIntro":
     "Applies to screenshots sent with an Appium page source.",
-  "section.rulesIntro":
-    "For every screen of the project. A rule names an element by id, class or text; text takes a /regex/.",
   "section.a11yIntro":
     "One bug per problem. A problem has an id (a11y-…) that goes into the Jira bug's summary and labels; Vision checks its own records and Jira for it before filing.",
   "section.jiraIntro":
@@ -219,15 +215,6 @@ export const en = {
   "mobile.noReference": "None",
   "mobile.checks": { one: "({count} check)", other: "({count} checks)" },
   "mobile.maxMove": "Only moves up to, dp (empty for any)",
-
-  "rules.title": "Element rules for every screen",
-  "rules.ignored": "ignored",
-  "rules.element": "Element",
-  "rules.elementPlaceholder": "id:clock or class:MapView",
-  "rules.elementHelp": "id:, class: or text: (text takes a /regex/)",
-  "rules.selectorError":
-    "Start with id:, class: or text:, for example id:banner",
-  "rules.tolerate": "Tolerate",
 
   "a11y.title": "Accessibility problems",
   "a11y.intro":
@@ -1212,6 +1199,12 @@ export const en = {
   "severity.error": "error",
   "severity.warning": "warning",
   "severity.info": "info",
+
+  // panel
+  "panel.removeProjectRuleTitle": "Remove a rule for every screen?",
+  "panel.removeProjectRuleText":
+    "{selector} applies to every screen of the project. Without it, this screenshot and the rest of the build are compared again.",
+  "panel.removeRule": "Remove rule",
 } satisfies Record<string, Message>;
 
 export type MessageKey = keyof typeof en;

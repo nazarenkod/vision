@@ -1,12 +1,11 @@
 import { Messages } from "./en";
 
-/** Тексти інтерфейсу українською: тип Messages вимагає кожен ключ en.ts (ADR-0016). */
+/** Тексти інтерфейсу українською: тип Messages вимагає кожен ключ en.ts (ADR-0017). */
 export const uk: Messages = {
   "language.label": "Мова інтерфейсу",
 
   "common.cancel": "Скасувати",
   "common.remove": "Прибрати",
-  "common.add": "Додати",
   "common.ignore": "Ігнорувати",
   "common.saved": "Збережено",
   "common.dismissNotification": "Закрити сповіщення",
@@ -105,15 +104,12 @@ export const uk: Messages = {
   "section.review": "Перегляд",
   "section.comparison": "Порівняння",
   "section.mobile": "Мобільні знімки",
-  "section.rules": "Правила елементів",
   "section.a11y": "Проблеми доступності",
   "section.jira": "Jira",
   "section.danger": "Небезпечна зона",
   "section.comparisonIntro":
     "Як знімок порівнюється з еталоном. Під способами порівняння — параметри того, який ви виберете.",
   "section.mobileIntro": "Для знімків, надісланих з Appium page source.",
-  "section.rulesIntro":
-    "Для всіх екранів проєкту. Правило називає елемент за id, класом чи текстом; для тексту можна /regex/.",
   "section.a11yIntro":
     "Одна проблема — один баг. Проблема має id (a11y-…), який іде в заголовок і мітки бага в Jira; перед створенням бага Vision шукає його у своїх записах і в Jira.",
   "section.jiraIntro":
@@ -220,14 +216,6 @@ export const uk: Messages = {
     other: "({count} перевірки)",
   },
   "mobile.maxMove": "Найбільший зсув, dp (порожньо — будь-який)",
-
-  "rules.title": "Правила елементів для всіх екранів",
-  "rules.ignored": "ігнорується",
-  "rules.element": "Елемент",
-  "rules.elementPlaceholder": "id:clock або class:MapView",
-  "rules.elementHelp": "id:, class: або text: (для тексту можна /regex/)",
-  "rules.selectorError": "Почніть з id:, class: або text:, наприклад id:banner",
-  "rules.tolerate": "Допускати",
 
   "a11y.title": "Проблеми доступності",
   "a11y.intro":
@@ -1305,4 +1293,10 @@ export const uk: Messages = {
   "severity.error": "помилка",
   "severity.warning": "увага",
   "severity.info": "порада",
+
+  // panel
+  "panel.removeProjectRuleTitle": "Прибрати правило для всіх екранів?",
+  "panel.removeProjectRuleText":
+    "{selector} діє на всіх екранах проєкту. Без нього цей знімок і решту збірки буде порівняно заново.",
+  "panel.removeRule": "Прибрати правило",
 };

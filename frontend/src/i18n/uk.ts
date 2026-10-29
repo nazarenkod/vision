@@ -1174,7 +1174,7 @@ export const uk: Messages = {
   // вибір елементів на знімках (специфікація 024)
   "select.button": "Обрати елементи",
   "select.selecting": "Вибір…",
-  "select.hint": "Клацніть елемент",
+  "select.hint": "Натисніть на елемент",
   "select.done": "Готово",
   "select.parent": "Обрати елемент навколо",
   "select.child": "Назад до внутрішнього елемента",

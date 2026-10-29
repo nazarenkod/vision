@@ -1,4 +1,4 @@
-import { Controller, Get, UseGuards, Body, Post, Param, ParseUUIDPipe, Delete, Put } from '@nestjs/common';
+import { Controller, Get, UseGuards, Body, Post, Param, ParseUUIDPipe, Delete, Put, Logger } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiOkResponse, ApiParam } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/guards/auth.guard';
 import { ProjectsService, toPublicProject } from './projects.service';
@@ -8,11 +8,17 @@ import { ProjectDto } from './dto/project.dto';
 import { UpdateProjectDto } from './dto/update-project.dto';
 import { RoleGuard } from '../auth/guards/role.guard';
 import { Roles } from '../shared/roles.decorator';
+import { A11yIssuesService } from '../a11y/a11y-issues.service';
 
 @Controller('projects')
 @ApiTags('projects')
 export class ProjectsController {
-  constructor(private projectsService: ProjectsService) {}
+  private readonly logger = new Logger(ProjectsController.name);
+
+  constructor(
+    private projectsService: ProjectsService,
+    private a11yIssuesService: A11yIssuesService
+  ) {}
 
   @Get()
   @ApiBearerAuth()
@@ -37,7 +43,14 @@ export class ProjectsController {
   @Roles(Role.admin, Role.editor)
   @ApiOkResponse({ type: ProjectDto })
   async update(@Body() projectDto: UpdateProjectDto) {
-    return toPublicProject(await this.projectsService.update(projectDto));
+    const project = await this.projectsService.update(projectDto);
+    if (projectDto.uiTreeSettings) {
+      // accessibility norms may have changed: recount the latest builds without holding up the save
+      this.a11yIssuesService.recountLatestBuilds(project.id).catch((error) => {
+        this.logger.warn(`Accessibility recount for ${project.id} failed: ${error}`);
+      });
+    }
+    return toPublicProject(project);
   }
 
   @Get(':id/devices')

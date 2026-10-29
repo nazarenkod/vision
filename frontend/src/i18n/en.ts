@@ -104,7 +104,7 @@ export const en = {
   "section.review": "Review",
   "section.comparison": "Image comparison",
   "section.mobile": "Mobile screenshots",
-  "section.a11y": "Accessibility problems",
+  "section.a11y": "Accessibility",
   "section.jira": "Jira",
   "section.danger": "Danger zone",
   "section.comparisonIntro":
@@ -112,7 +112,7 @@ export const en = {
   "section.mobileIntro":
     "Applies to screenshots sent with an Appium page source.",
   "section.a11yIntro":
-    "One bug per problem. A problem has an id (a11y-…) that goes into the Jira bug's summary and labels; Vision checks its own records and Jira for it before filing.",
+    "What Vision checks on every screenshot sent with a UI tree, by your team's norms.",
   "section.jiraIntro":
     "Lets reviewers file accessibility bugs from the review screen. Each person adds their own Jira token in their profile, so bugs are filed as them. A shared token here is used for people who have not added one.",
 
@@ -209,14 +209,20 @@ export const en = {
   "mobile.checks": { one: "({count} check)", other: "({count} checks)" },
   "mobile.maxMove": "Only moves up to, dp (empty for any)",
 
-  "a11y.title": "Accessibility problems",
-  "a11y.intro":
-    "One bug per problem. A problem has an id (a11y-…) that goes into the Jira bug's summary and labels; Vision checks its own records and Jira for it before filing, and marks problems found in Jira as filed.",
-  "a11y.screenTitle": "Screen title in the UI tree",
-  "a11y.screenTitleHelp":
-    "One selector per line, first match wins: id:Appbar#Title, id:toolbar_title, class:…, text:/regex/. Without a match, the check's name is the screen.",
-  "a11y.grouping":
-    "One problem is the same component with the same tap area or contrast, on any screen; the same component, for the other rules; the same label on several controls, on one screen. An element without an id is a problem of its own screen.",
+  "a11y.norm.touchTarget": "Minimum touch target",
+  "a11y.norm.contrast": "Minimum contrast",
+  "a11y.norm.android": "Android",
+  "a11y.norm.ios": "iOS",
+  "a11y.norm.text": "Text",
+  "a11y.norm.large": "Large text",
+  "a11y.norm.default": "Default {value}",
+  "a11y.norm.reset": "Reset",
+  "a11y.norm.whole": "A whole number from {min} to {max}",
+  "a11y.norm.range": "From {min} to {max}, one decimal",
+  "a11y.norm.iosOnly": "iOS only",
+  "a11y.norm.advice": "advice, not counted",
+  "a11y.norm.applies":
+    "A looser norm also hides issues on screenshots already received; a stricter one finds new issues from the next screenshots.",
   "a11y.rule.touchTarget": "Touch target too small",
   "a11y.rule.lowContrast": "Low text contrast",
   "a11y.rule.missingLabel": "Control has no label",

@@ -66,7 +66,17 @@ export const SETTINGS_SECTIONS = [
   {
     id: "a11y",
     title: "section.a11y",
-    labels: ["a11y.screenTitle"],
+    labels: [
+      "a11y.norm.touchTarget",
+      "a11y.norm.contrast",
+      "a11y.rule.touchTarget",
+      "a11y.rule.lowContrast",
+      "a11y.rule.missingLabel",
+      "a11y.rule.inputWithoutLabel",
+      "a11y.rule.duplicateLabel",
+      "a11y.rule.notAccessible",
+      "a11y.rule.redundantRole",
+    ],
   },
   {
     id: "jira",

@@ -116,8 +116,80 @@ export interface UiTreeSettings {
   elementRules: ElementRule[];
   // the device other devices are compared with, for information
   referenceDevice?: DeviceProfile | null;
-  // where the screen's title is in the UI tree, first match wins
+  // where the screen's title is in the UI tree, first match wins; not on the
+  // settings page since 026, but kept so a save does not erase it
   screenTitle?: string[];
+  // what the team agreed an accessible screen is (026)
+  a11yNorms?: Partial<A11yNorms>;
+}
+
+/** Every accessibility rule, in the order the settings page lists them. */
+export const A11Y_RULES: A11yRule[] = [
+  "touch-target",
+  "low-contrast",
+  "missing-label",
+  "input-without-label",
+  "duplicate-label",
+  "not-accessible",
+  "redundant-role",
+];
+
+export interface A11yNorms {
+  // minimum tap area: dp on Android, pt on iOS
+  touchTargetAndroid: number;
+  touchTargetIos: number;
+  // minimum contrast ratio for body text and for large text
+  contrast: number;
+  contrastLarge: number;
+  disabledRules: A11yRule[];
+}
+
+export const DEFAULT_A11Y_NORMS: A11yNorms = {
+  touchTargetAndroid: 48,
+  touchTargetIos: 44,
+  contrast: 4.5,
+  contrastLarge: 3,
+  disabledRules: [],
+};
+
+export type A11yNormField = Exclude<keyof A11yNorms, "disabledRules">;
+
+// the same limits the server reads them by
+export const A11Y_NORM_LIMITS: Record<
+  A11yNormField,
+  { min: number; max: number; integer: boolean }
+> = {
+  touchTargetAndroid: { min: 24, max: 96, integer: true },
+  touchTargetIos: { min: 24, max: 96, integer: true },
+  contrast: { min: 1.5, max: 7, integer: false },
+  contrastLarge: { min: 1.5, max: 7, integer: false },
+};
+
+/** A typed norm, or null when it is not a number within the limits. */
+export function parseNorm(field: A11yNormField, text: string): number | null {
+  const value = Number(text.trim().replace(",", "."));
+  const { min, max, integer } = A11Y_NORM_LIMITS[field];
+  if (!text.trim() || !Number.isFinite(value) || value < min || value > max)
+    return null;
+  // contrast to one decimal: 1.1 * 10 is not exactly 11 in floating point
+  const step = integer ? 1 : 10;
+  if (Math.abs(Math.round(value * step) - value * step) > 1e-9) return null;
+  return value;
+}
+
+/** The project's norms, the default for whatever it has not set. */
+export function a11yNormsOf(settings: UiTreeSettings): A11yNorms {
+  const saved = settings.a11yNorms ?? {};
+  const norms = { ...DEFAULT_A11Y_NORMS };
+  (Object.keys(A11Y_NORM_LIMITS) as A11yNormField[]).forEach((field) => {
+    const value = saved[field];
+    if (typeof value === "number" && parseNorm(field, String(value)) !== null)
+      norms[field] = value;
+  });
+  norms.disabledRules = Array.isArray(saved.disabledRules)
+    ? A11Y_RULES.filter((rule) => saved.disabledRules?.includes(rule))
+    : [];
+  return norms;
 }
 
 /** What a decision answers: the problems it touched, and what did not work out in Jira. */

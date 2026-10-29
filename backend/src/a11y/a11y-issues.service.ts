@@ -13,6 +13,7 @@ import { StaticService } from '../static/static.service';
 import { EventsGateway } from '../shared/events/events.gateway';
 import { UiTreeService } from '../ui-tree/ui-tree.service';
 import { A11yReport, A11yViolation } from './a11y.types';
+import { applyNorms } from './a11y-norms';
 import {
   A11yIssueStatus,
   decidingProblem,
@@ -156,6 +157,21 @@ export class A11yIssuesService implements OnModuleInit {
   }
 
   /**
+   * A run's report as the project's current norms see it (026): what a norm
+   * changed since the snapshot lets pass, or a rule turned off, is not shown,
+   * counted or filed.
+   */
+  private async reportOf(
+    testRun: Pick<TestRun, 'projectId' | 'a11yReportName'>,
+    settings?: UiTreeSettings
+  ): Promise<A11yReport | null> {
+    const report = await this.uiTreeService.loadReport(testRun.a11yReportName);
+    if (!report) return null;
+    const { a11yNorms } = settings ?? (await this.settingsFor(testRun.projectId));
+    return applyNorms(report, a11yNorms);
+  }
+
+  /**
    * The project's problems indexed. Rebuilt when a problem changes; checking
    * that is one small query.
    */
@@ -233,7 +249,7 @@ export class A11yIssuesService implements OnModuleInit {
 
   async getReviewedReport(testRunId: string, userId?: string): Promise<ReviewedA11yReport | null> {
     const testRun = await this.loadRun(testRunId);
-    const report = await this.uiTreeService.loadReport(testRun.a11yReportName);
+    const report = await this.reportOf(testRun);
     if (!report) return null;
     const reviewed = await this.review(testRun, report);
     const found = await this.lookUpInJira(testRun, report, reviewed, userId).catch((error) => {
@@ -393,17 +409,34 @@ export class A11yIssuesService implements OnModuleInit {
   }
 
   /**
+   * After the project's settings are saved: the counts of its latest builds by
+   * the norms saved. Older builds keep theirs until a decision in their review
+   * recounts them; the review itself always shows the current norms.
+   */
+  async recountLatestBuilds(projectId: string, builds = 5): Promise<void> {
+    const latest = await this.prismaService.build.findMany({
+      where: { projectId },
+      orderBy: { createdAt: 'desc' },
+      take: builds,
+      select: { id: true },
+    });
+    for (const build of latest) {
+      await this.refreshCounts({ projectId, buildId: build.id });
+    }
+  }
+
+  /**
    * Refreshes the counts of the build's runs after a decision changed. A
    * problem decided on one screen is decided on the others too, so every
    * screen of the build is looked at.
    */
-  private async refreshCounts(testRun: TestRun): Promise<void> {
+  private async refreshCounts(testRun: Pick<TestRun, 'projectId' | 'buildId'>): Promise<void> {
     const runs = await this.prismaService.testRun.findMany({
       where: { buildId: testRun.buildId, a11yReportName: { not: null } },
     });
     const settings = await this.settingsFor(testRun.projectId);
     for (const run of runs) {
-      const report = await this.uiTreeService.loadReport(run.a11yReportName);
+      const report = await this.reportOf(run, settings);
       if (!report) continue;
       const { summary } = reviewReport(report, await this.contextFor(run, report, settings));
       if (summary.new === run.a11yNewCount && summary.total === run.a11yTotalCount) continue;
@@ -422,7 +455,7 @@ export class A11yIssuesService implements OnModuleInit {
   ): Promise<{ problems: RunProblem[]; title: string | null }> {
     const ids = [...new Set(violationIds)];
     if (!ids.length) throw new BadRequestException('No accessibility issue given');
-    const report = await this.uiTreeService.loadReport(testRun.a11yReportName);
+    const report = await this.reportOf(testRun);
     const violations = ids.map((id) => report?.violations.find((v) => v.id === id));
     if (!report || violations.some((v) => !v)) {
       throw new BadRequestException('This accessibility issue is not on this test run');

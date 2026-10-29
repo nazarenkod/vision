@@ -40,16 +40,27 @@ describe("project settings", () => {
     });
   });
 
-  it("finds nothing about grouping or problem classes", () => {
-    // what is one problem is fixed (REQ-021-01): only the screen title is set
-    for (const query of ["same problem", "class", "touch target", "клас"]) {
+  it("finds nothing about grouping, problem classes or the screen title", () => {
+    // what is one problem is fixed (REQ-021-01); the screen title is not set here (REQ-026-12)
+    for (const query of ["same problem", "class", "клас", "screen title"]) {
       expect(matchSettings(query).sections).not.toContain("a11y");
       expect(matchSettings(query, ukrainian).sections).not.toContain("a11y");
     }
-    expect(matchSettings("screen title")).toEqual({
-      sections: ["a11y"],
-      labels: ["Screen title in the UI tree"],
-    });
+    expect(matchSettings("назва екрана", ukrainian).sections).not.toContain(
+      "a11y",
+    );
+  });
+
+  it("finds the accessibility norms by tap, touch, contrast and accessibility", () => {
+    for (const query of ["тап", "контраст", "доступність"]) {
+      expect(matchSettings(query, ukrainian).sections).toEqual(["a11y"]);
+    }
+    for (const query of ["touch", "contrast", "accessibility"]) {
+      expect(matchSettings(query).sections).toEqual(["a11y"]);
+    }
+    expect(matchSettings("тап", ukrainian).labels).toEqual([
+      "Мінімальна зона тапу",
+    ]);
   });
 
   // the bulk review of a screen's variations was removed (REQ-022-01)

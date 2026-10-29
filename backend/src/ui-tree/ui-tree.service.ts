@@ -271,8 +271,11 @@ export class UiTreeService {
       : [null, undefined];
     const checkTree = baselineTree ?? otherTree;
 
-    const current = findViolations(tree, image);
-    const baseline = checkTree ? findViolations(checkTree, baselineTree ? baselineImage : otherImage) : null;
+    // the baseline by the same norms, so a changed norm alone fixes nothing
+    const current = findViolations(tree, image, settings.a11yNorms);
+    const baseline = checkTree
+      ? findViolations(checkTree, baselineTree ? baselineImage : otherImage, settings.a11yNorms)
+      : null;
     const report = {
       ...buildReport(tree, current, baseline),
       // problems that are not a component's are told apart by screen

@@ -44,7 +44,7 @@ import {
   MobileSettings,
   ReviewFields,
 } from "../components/ProjectForm";
-import { A11yProblemSettings } from "../components/ProjectForm/A11yProblemSettings";
+import { A11yRulesSettings } from "../components/ProjectForm/A11yRulesSettings";
 import { EmptyState } from "../components/EmptyState";
 import { MessageKey, Text, useT } from "../i18n";
 
@@ -483,7 +483,7 @@ const ProjectSettingsPage: React.FunctionComponent = () => {
             {section("review", <ReviewFields />)}
             {section("comparison", <ComparisonFields />)}
             {section("mobile", <MobileSettings bare />)}
-            {section("a11y", <A11yProblemSettings bare />)}
+            {section("a11y", <A11yRulesSettings bare />)}
             {section("jira", <JiraSettings bare />)}
             {section(
               "danger",

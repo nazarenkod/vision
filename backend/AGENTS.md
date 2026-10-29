@@ -8,6 +8,7 @@
 |---|---|---|
 | `src/ui-tree/` | розбір Appium page source, налаштування порівняння, правила елементів, приховані зміни, «знято зарано», «не той екран», групи компонентів, довідкове порівняння пристроїв | [002](../docs/specs/002-ui-tree-analysis/spec.md), [007](../docs/specs/007-cross-device-reference/spec.md) |
 | `src/a11y/a11y.rules.ts` | правила доступності | [003](../docs/specs/003-accessibility-checks/spec.md) |
+| `src/a11y/a11y-norms.ts` | норми проєкту (зона тапу, контраст, вимкнені правила); `applyNorms` — звіт за поточними нормами всюди, де його показують чи рахують | [026](../docs/specs/026-a11y-rules-settings/spec.md) |
 | `src/a11y/a11y-problems.ts`, `a11y-issues*.ts` | проблеми, їхні ID і факти, групування, маркери, рішення, пошук у Jira | [004](../docs/specs/004-a11y-problems/spec.md), [021](../docs/specs/021-fixed-a11y-grouping/spec.md) |
 | `src/a11y/jira*.ts` | клієнт Jira, поля й текст бага | [005](../docs/specs/005-jira-bugs/spec.md) |
 | `src/test-runs/change-groups.service.ts` | групи змін збірки | [006](../docs/specs/006-change-groups/spec.md) |

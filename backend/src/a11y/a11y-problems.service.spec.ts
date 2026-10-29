@@ -326,3 +326,38 @@ describe('A11yIssuesService: problems decided under another grouping', () => {
     expect(rows[0]).toMatchObject({ key: KEY, jiraKey: 'MOB-77' });
   });
 });
+
+describe("A11yIssuesService: the project's norms", () => {
+  // the team agreed on 38 dp: the 38 × 38 button received at 48 dp passes now
+  const at38 = { jiraUrl: 'https://jira', jiraToken: 't', uiTreeSettings: '{"a11yNorms":{"touchTargetAndroid":38}}' };
+
+  const prismaOf = (service: A11yIssuesService) =>
+    (service as unknown as { prismaService: Record<string, Record<string, jest.Mock>> }).prismaService;
+
+  it("reviews a received report by the project's current norms", async () => {
+    const { service } = setup(fakeJira());
+    expect((await service.getReviewedReport('run')).violations).toHaveLength(1);
+
+    prismaOf(service).project.findUnique = jest.fn().mockResolvedValue(at38);
+    const reviewed = await service.getReviewedReport('run');
+    expect(reviewed.violations).toHaveLength(0);
+    expect(reviewed.summary).toMatchObject({ new: 0, total: 0 });
+  });
+
+  it('recounts the latest builds after the settings change', async () => {
+    const { service } = setup(fakeJira());
+    const prisma = prismaOf(service);
+    prisma.project.findUnique = jest.fn().mockResolvedValue(at38);
+    prisma.build = { findMany: jest.fn().mockResolvedValue([{ id: 'b' }]) };
+    prisma.testRun.findMany = jest.fn().mockResolvedValue([{ ...run, a11yNewCount: 1, a11yTotalCount: 1 }]);
+    prisma.testRun.update = jest.fn().mockResolvedValue(run);
+
+    await service.recountLatestBuilds('p');
+
+    expect(prisma.build.findMany).toHaveBeenCalledWith(expect.objectContaining({ where: { projectId: 'p' }, take: 5 }));
+    expect(prisma.testRun.update).toHaveBeenCalledWith({
+      where: { id: 'run' },
+      data: { a11yNewCount: 0, a11yTotalCount: 0 },
+    });
+  });
+});

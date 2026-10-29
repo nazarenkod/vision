@@ -73,7 +73,7 @@
 | Компонент | Шлях | Роль |
 |---|---|---|
 | Сторінка | `frontend/src/pages/ProjectSettingsPage.tsx` | маршрут, зміст, пошук, панель збереження, `useBlocker`, конфлікт |
-| Розділи | `frontend/src/components/ProjectForm/ProjectForm.tsx`, `frontend/src/components/ProjectForm/A11yProblemSettings.tsx` | старий діалог розкладено на `GeneralFields`, `ReviewFields`, `ComparisonFields` (картки движків і параметри лише обраного), `MobileSettings` (`show="mobile"` / `"rules"`, `bare`), `A11yProblemSettings` (нумерація класів, «How matching works»), `JiraSettings`; поля й їхня логіка ті самі |
+| Розділи | `frontend/src/components/ProjectForm/ProjectForm.tsx`, `A11yProblemSettings` (з [026](../026-a11y-rules-settings/spec.md) — `frontend/src/components/ProjectForm/A11yRulesSettings.tsx`) | старий діалог розкладено на `GeneralFields`, `ReviewFields`, `ComparisonFields` (картки движків і параметри лише обраного), `MobileSettings` (`show="mobile"` / `"rules"`, `bare`), `A11yProblemSettings` (нумерація класів, «How matching works»), `JiraSettings`; поля й їхня логіка ті самі |
 | Секрети | `frontend/src/components/ProjectForm/SecretField.tsx`, `frontend/src/components/ProjectForm/GeminiConfigForm.tsx` | «Saved» з Replace і Remove для спільного токена Jira і ключа Gemini |
 | Чисті функції | `frontend/src/_helpers/projectSettings.helper.ts` | `matchSettings(rows, query)`, `changedSections(saved, edited)`, `ruleSelectorError(text)`, `deleteConfirmed(name, typed)` |
 | Новий проєкт | `frontend/src/components/ProjectForm/ProjectForm.tsx` (`NewProjectFields`), `frontend/src/components/BaseModal.tsx` | три поля → створити → перейти на налаштування; `submitDisabled` для підтвердження назвою |

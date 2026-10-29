@@ -32,7 +32,7 @@ import {
   parseUiTreeSettings,
 } from "../../types/insights";
 import { insightsService } from "../../services";
-import { A11yProblemSettings } from "./A11yProblemSettings";
+import { A11yRulesSettings } from "./A11yRulesSettings";
 import { deviceLabel } from "../../_helpers/device.helper";
 import { SecretField } from "./SecretField";
 import { MessageKey, Text, useT } from "../../i18n";
@@ -397,7 +397,7 @@ export const ProjectForm: React.FunctionComponent = () => (
     <ReviewFields />
     <ComparisonFields as="select" />
     <MobileSettings />
-    <A11yProblemSettings />
+    <A11yRulesSettings />
     <JiraSettings />
   </React.Fragment>
 );

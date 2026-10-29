@@ -24,6 +24,22 @@ const EXPECTED: Record<A11yRule, string> = {
   'not-accessible': 'Інтерактивний елемент доступний для скрінрідера.',
 };
 
+/**
+ * What should be, by the norm the issue was found by: the team's own tap area
+ * or contrast when the project set one (026), else the platform's.
+ */
+function expected(violation: A11yViolation): string {
+  const details = violation.details ?? {};
+  if (violation.rule === 'touch-target' && typeof details.min === 'number') {
+    const unit = details.unit === 'pt' ? 'pt' : 'dp';
+    return `Область натискання не менше ${details.min} × ${details.min} ${unit}.`;
+  }
+  if (violation.rule === 'low-contrast' && typeof details.required === 'number') {
+    return `Контраст тексту з фоном не менше ${details.required} : 1.`;
+  }
+  return EXPECTED[violation.rule] ?? 'Елемент відповідає вимогам доступності.';
+}
+
 const escapeWiki = (value: string) => value.replace(/\|/g, '/').replace(/[{}]/g, '');
 
 /** Summary and description of the bug, following the team's bug template. */
@@ -76,7 +92,7 @@ export function bugText(input: {
     ...actual,
     '',
     'h3. Очікуваний результат',
-    EXPECTED[first.rule] ?? 'Елемент відповідає вимогам доступності.',
+    expected(first),
     '',
     ...rows.map(([key, value]) => `||${key}|${escapeWiki(value)}|`),
     ...(details.length ? ['', '*Деталі*', ...details] : []),

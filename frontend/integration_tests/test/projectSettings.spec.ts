@@ -107,7 +107,7 @@ test("lists the sections and highlights the one in view", async ({
     "Review",
     "Image comparison",
     "Mobile screenshots",
-    "Accessibility problems",
+    "Accessibility",
     "Jira",
     "Danger zone",
   ];
@@ -271,33 +271,105 @@ test("keeps the project's element rules when saving", async ({
   });
 });
 
-test("shows only the screen title under Accessibility problems", async ({
+test("shows only the rules under Accessibility", async ({
+  page,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  authUser,
+}) => {
+  // the project saved problem classes before grouping was fixed (021)
+  await open(page);
+  const section = page.getByTestId("a11yRules");
+  await expect(section.getByRole("checkbox")).toHaveCount(7);
+  // norms only for the tap area and contrast: two fields each
+  await expect(section.getByRole("textbox")).toHaveCount(4);
+  await expect(page.locator("#screenTitleSelectors")).toHaveCount(0);
+  await expect(page.getByText("Screen title")).toHaveCount(0);
+  await expect(page.getByText("Problem classes")).toHaveCount(0);
+  await expect(section.getByText("a11y-")).toHaveCount(0);
+  await page.getByTestId("settingsSearch").fill("class");
+  await expect(page.getByTestId("section-a11y")).toBeHidden();
+});
+
+test("sets the project's touch target and turns a rule off", async ({
   page,
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   authUser,
 }) => {
   await mockSaveProject(page);
-  // the project saved problem classes before grouping was fixed (021)
   await open(page);
-  const section = page.getByTestId("a11yProblemSettings");
-  await expect(section.getByRole("textbox")).toHaveCount(1);
-  await expect(section.getByRole("combobox")).toHaveCount(0);
-  await expect(section.getByTestId("a11yGrouping")).toContainText(
-    "An element without an id is a problem of its own screen.",
-  );
-  await expect(page.getByText("Problem classes")).toHaveCount(0);
-  await expect(page.getByText("Same problem when")).toHaveCount(0);
-  await page.getByTestId("settingsSearch").fill("class");
-  await expect(page.getByTestId("section-a11y")).toBeHidden();
-  await page.getByTestId("settingsSearch").fill("");
+  const android = page.locator("#norm-touchTargetAndroid");
+  await expect(android).toHaveValue("48");
+  await expect(page.getByTestId("reset-touchTargetAndroid")).toHaveCount(0);
 
-  await page.locator("#screenTitleSelectors").fill("id:toolbar_title");
-  await page.locator("#screenTitleSelectors").blur();
+  await android.fill("40");
+  await expect(page.getByText("Default 48")).toBeVisible();
+  await expect(page.getByTestId("reset-touchTargetAndroid")).toBeVisible();
+  await page
+    .getByTestId("a11yRule-redundant-role")
+    .getByRole("checkbox")
+    .uncheck();
+
   const [request] = await Promise.all([
     putRequest(page),
     page.getByTestId("saveSettings").click(),
   ]);
-  // what is no longer read is kept as it was
+  expect(
+    JSON.parse(request.postDataJSON().uiTreeSettings).a11yNorms,
+  ).toMatchObject({
+    touchTargetAndroid: 40,
+    touchTargetIos: 44,
+    disabledRules: ["redundant-role"],
+  });
+
+  await page.getByTestId("reset-touchTargetAndroid").click();
+  await expect(android).toHaveValue("48");
+});
+
+test("does not save a norm out of range", async ({
+  page,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  authUser,
+}) => {
+  await mockSaveProject(page);
+  await open(page);
+  await page.locator("#norm-touchTargetAndroid").fill("100");
+  await expect(page.getByText("A whole number from 24 to 96")).toBeVisible();
+  await page.locator("#norm-contrast").fill("8");
+  await expect(page.getByText("From 1.5 to 7, one decimal")).toBeVisible();
+  await page.locator("#norm-touchTargetIos").fill("40");
+
+  const [request] = await Promise.all([
+    putRequest(page),
+    page.getByTestId("saveSettings").click(),
+  ]);
+  expect(
+    JSON.parse(request.postDataJSON().uiTreeSettings).a11yNorms,
+  ).toMatchObject({
+    touchTargetAndroid: 48,
+    touchTargetIos: 40,
+    contrast: 4.5,
+  });
+});
+
+test("keeps the screen title selectors the project saved", async ({
+  page,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  authUser,
+}) => {
+  await mockSaveProject(page);
+  await open(page, {
+    uiTreeSettings: JSON.stringify({
+      ...JSON.parse(project.uiTreeSettings),
+      screenTitle: ["id:toolbar_title"],
+    }),
+  });
+  await page.locator("#norm-touchTargetAndroid").fill("40");
+
+  const [request] = await Promise.all([
+    putRequest(page),
+    page.getByTestId("saveSettings").click(),
+  ]);
+  // what is no longer on the page is kept as it was
   expect(JSON.parse(request.postDataJSON().uiTreeSettings)).toMatchObject({
     screenTitle: ["id:toolbar_title"],
     a11yClasses: [{ id: "tabs" }, { id: "maps" }],

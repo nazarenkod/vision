@@ -23,7 +23,7 @@
 | Jira | `backend/src/a11y/jira.client.ts` | `search` (Cloud `search/jql`, інакше класичний `search`), `editLabels` |
 | Налаштування | `backend/src/ui-tree/comparison-inputs.ts` | `screenTitle`, `a11yDuplicates`, `a11yClasses` у `uiTreeSettings` проєкту; парсер відкидає биті записи |
 | Картки | `frontend/src/components/TestDetailsDialog/InsightsPanel.tsx` | групування за `group` + станом, `a11yElsewhere`, `a11yRelated`, ID проблеми |
-| Налаштування UI | `frontend/src/components/ProjectForm/A11yProblemSettings.tsx` | селектори заголовка, режими за правилом, класи (умови по полях, групування, дія, порядок) |
+| Налаштування UI | `A11yProblemSettings` (з [026](../026-a11y-rules-settings/spec.md) — `frontend/src/components/ProjectForm/A11yRulesSettings.tsx`, без селекторів заголовка) | селектори заголовка, режими за правилом, класи (умови по полях, групування, дія, порядок) |
 
 ## Дані
 

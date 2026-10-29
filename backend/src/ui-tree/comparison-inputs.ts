@@ -1,4 +1,5 @@
 import { Rect, UiNode, UiTree } from './ui-tree.types';
+import { A11yNorms, DEFAULT_A11Y_NORMS, parseA11yNorms } from '../a11y/a11y-norms';
 
 export type ElementRuleAction = 'ignore' | 'tolerate';
 
@@ -37,8 +38,11 @@ export interface UiTreeSettings {
   checkRules: Record<string, ElementRule[]>;
   // the device other devices are compared with, for information
   referenceDevice: DeviceProfile | null;
-  // where the screen's title is in the UI tree, first match wins (id:Appbar#Title)
+  // where the screen's title is in the UI tree, first match wins (id:Appbar#Title);
+  // no longer in the settings page (026), selectors saved before keep working
   screenTitle: string[];
+  // what the team agreed an accessible screen is: tap area, contrast, rules on (026)
+  a11yNorms: A11yNorms;
 }
 
 /** What a run was taken on; the parts of the old VRT key that are not the check's name. */
@@ -69,6 +73,7 @@ export const DEFAULT_UI_TREE_SETTINGS: UiTreeSettings = {
   checkRules: {},
   referenceDevice: null,
   screenTitle: ['id:Appbar#Title'],
+  a11yNorms: DEFAULT_A11Y_NORMS,
 };
 
 export function parseJsonArray<T>(value: string | null | undefined): T[] {
@@ -97,6 +102,7 @@ export function parseUiTreeSettings(value: string | null | undefined): UiTreeSet
         Array.isArray(parsed.screenTitle) && parsed.screenTitle.length
           ? parsed.screenTitle.filter((item: unknown) => typeof item === 'string' && item.trim())
           : DEFAULT_UI_TREE_SETTINGS.screenTitle,
+      a11yNorms: parseA11yNorms(parsed.a11yNorms),
       referenceDevice:
         parsed.referenceDevice && typeof parsed.referenceDevice === 'object'
           ? {

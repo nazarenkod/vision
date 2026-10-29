@@ -49,6 +49,23 @@ describe('functionalBlock', () => {
 });
 
 describe('bugText', () => {
+  it('expects the norm the issue was found by', () => {
+    const at40 = { ...violation, details: { widthDp: 347, heightDp: 38, min: 40, unit: 'dp' } };
+    const text = bugText({ violations: [at40], testName: 'Login', title: null, device: '', url: '', problem });
+    expect(text.description).toContain('h3. Очікуваний результат\nОбласть натискання не менше 40 × 40 dp.');
+
+    const contrast = { ...violation, rule: 'low-contrast' as const, details: { ratio: 2.1, required: 3.5 } };
+    const contrastText = bugText({
+      violations: [contrast],
+      testName: 'Login',
+      title: null,
+      device: '',
+      url: '',
+      problem,
+    });
+    expect(contrastText.description).toContain('Контраст тексту з фоном не менше 3.5 : 1.');
+  });
+
   it('fills the template: service, screen, actual and expected result', () => {
     const text = bugText({
       violations: [violation],

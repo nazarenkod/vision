@@ -196,6 +196,18 @@ describe('parseUiTreeSettings', () => {
     expect(parseUiTreeSettings('{"excludeSystemBars": false}').excludeSystemBars).toBe(false);
     expect(parseUiTreeSettings('nope').compensateMoves).toBe(false);
   });
+
+  it('looks for the screen title in Appbar#Title when the project saved none', () => {
+    expect(parseUiTreeSettings(null).screenTitle).toEqual(['id:Appbar#Title']);
+    expect(parseUiTreeSettings('{"screenTitle": []}').screenTitle).toEqual(['id:Appbar#Title']);
+    expect(parseUiTreeSettings('{"screenTitle": ["id:toolbar_title"]}').screenTitle).toEqual(['id:toolbar_title']);
+  });
+
+  it("reads the project's accessibility norms, defaults for the rest", () => {
+    const { a11yNorms } = parseUiTreeSettings('{"a11yNorms": {"touchTargetAndroid": 40}}');
+    expect(a11yNorms).toMatchObject({ touchTargetAndroid: 40, touchTargetIos: 44, contrast: 4.5 });
+    expect(parseUiTreeSettings(null).a11yNorms.touchTargetAndroid).toBe(48);
+  });
 });
 
 describe('parseUiTreeSettings: settings no longer read', () => {

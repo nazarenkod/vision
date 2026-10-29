@@ -2,6 +2,8 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { UiTreeService } from '../ui-tree/ui-tree.service';
 import { computeInsights, Insights, VariationRow } from './insights';
+import { applyNorms } from '../a11y/a11y-norms';
+import { parseUiTreeSettings } from '../ui-tree/comparison-inputs';
 
 const DAY = 24 * 60 * 60 * 1000;
 // runs of the window read at most; enough for months of a busy project
@@ -82,9 +84,11 @@ export class AnalyticsService {
     ]);
 
     const a11yRules: Record<string, number> = {};
+    // by the project's current norms, as in the review (026)
+    const { a11yNorms } = parseUiTreeSettings(project.uiTreeSettings);
     for (const row of reportRows) {
       const report = await this.uiTreeService.loadReport(row.a11yReportName).catch(() => null);
-      for (const violation of report?.violations ?? []) {
+      for (const violation of report ? applyNorms(report, a11yNorms).violations : []) {
         a11yRules[violation.title] = (a11yRules[violation.title] ?? 0) + 1;
       }
     }

@@ -38,7 +38,7 @@
 | Застосування рішень | `backend/src/a11y/a11y-issues.ts` | `indexProblems`, `reviewReport` без налаштувань; без `byClass` і `problemClass` |
 | Сервіс проблем | `backend/src/a11y/a11y-issues.service.ts` | не читає режими й класи; без відмови «клас ігнорує»; JQL і пошук бага без налаштувань |
 | Налаштування дерева | `backend/src/ui-tree/comparison-inputs.ts` | тип і парсер без `a11yDuplicates`, `a11yClasses` |
-| Розділ налаштувань | `frontend/src/components/ProjectForm/A11yProblemSettings.tsx` | лише заголовок екрана й пояснення |
+| Розділ налаштувань | `A11yProblemSettings` (з [026](../026-a11y-rules-settings/spec.md) — `frontend/src/components/ProjectForm/A11yRulesSettings.tsx`) | лише заголовок екрана й пояснення; з 026 — лише правила з нормами |
 | Пошук і зміст | `frontend/src/_helpers/projectSettings.helper.ts`, `frontend/src/pages/ProjectSettingsPage.tsx` | мітки розділу й підпис у змісті |
 | Типи | `frontend/src/types/insights.ts` | без `ProblemClass`, `DuplicateMode`, `GroupBy`, `byClass`, `problemClass` |
 | Панель доступності | `frontend/src/components/TestDetailsDialog/InsightsPanel.tsx` | без плашки класу й умови `byClass` |
@@ -71,8 +71,8 @@
 
 | Вимога | Перевірка |
 |---|---|
-| REQ-021-01 | `frontend/integration_tests/test/projectSettings.spec.ts › shows only the screen title under Accessibility problems`; `frontend/src/_helpers/projectSettings.helper.test.ts › finds nothing about grouping or problem classes` |
-| REQ-021-02 | `frontend/integration_tests/test/projectSettings.spec.ts › shows only the screen title under Accessibility problems` |
+| REQ-021-01 | `frontend/integration_tests/test/projectSettings.spec.ts › shows only the rules under Accessibility`; `frontend/src/_helpers/projectSettings.helper.test.ts › finds nothing about grouping, problem classes or the screen title` |
+| REQ-021-02 | змінено в [026](../026-a11y-rules-settings/spec.md): `frontend/integration_tests/test/projectSettings.spec.ts › shows only the rules under Accessibility` |
 | REQ-021-03 | `backend/src/a11y/a11y-problems.spec.ts › is one problem for the same component and tap area on any screen` |
 | REQ-021-04 | `backend/src/a11y/a11y-problems.spec.ts › is one problem for the same component on any screen when the rule measures nothing` |
 | REQ-021-05 | `backend/src/a11y/a11y-problems.spec.ts › keeps the same label a problem of its own screen` |

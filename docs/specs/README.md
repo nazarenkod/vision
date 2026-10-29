@@ -83,6 +83,7 @@ docs/specs/NNN-коротка-назва/
 | [021](021-fixed-a11y-grouping/spec.md) | Фіксоване групування проблем доступності | Implemented |
 | [022](022-remove-variation-groups/spec.md) | Без груп варіацій | Implemented |
 | [023](023-ukrainian-ui/spec.md) | Українська мова інтерфейсу | Implemented |
+| [024](024-elements-instead-of-areas/spec.md) | Елементи замість областей: ігнорувати й порівнювати те, що на екрані | Draft |
 
 Статусу `Verified` поки немає в жодної: інтеграцію з реальною Jira Cloud і прогони на сервері
 команда ще не підтвердила.

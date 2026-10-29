@@ -1002,28 +1002,45 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
       {canEdit && (
         <Button
           ref={selectButton}
-          variant={pickMode ? "contained" : "outlined"}
+          variant="outlined"
           onClick={toggleSelecting}
           data-testid="selectElements"
           aria-pressed={pickMode}
-          sx={{ height: 34, px: 1.25, fontSize: 13.5, fontWeight: 600 }}
-          endIcon={
-            <Box
-              component="span"
-              sx={{
-                fontSize: 11,
-                lineHeight: "16px",
-                px: 0.6,
-                borderRadius: "4px",
-                border: "1px solid currentColor",
-                opacity: 0.7,
-              }}
-            >
-              {pickMode ? "Esc" : "E"}
-            </Box>
-          }
+          // pressed like Draw in the areas menu: a solid green bar shouted over the screenshot
+          sx={{
+            height: 34,
+            px: 1.25,
+            gap: 1,
+            fontSize: 13.5,
+            fontWeight: 600,
+            color: pickMode ? tokens.brandDark : tokens.text,
+            borderColor: pickMode ? tokens.brand : tokens.border,
+            bgcolor: pickMode ? tokens.brandSoft : tokens.surface,
+            "&:hover": {
+              borderColor: tokens.brand,
+              bgcolor: pickMode ? tokens.brandSoft : tokens.subtle,
+            },
+          }}
         >
           {pickMode ? t("select.selecting") : t("select.button")}
+          {/* a child, not endIcon: MUI sizes the first child of an icon slot to 20px */}
+          <Box
+            component="kbd"
+            aria-hidden="true"
+            sx={{
+              font: `500 11px/16px ${tokens.mono}`,
+              minWidth: 18,
+              px: 0.5,
+              textAlign: "center",
+              borderRadius: "4px",
+              border: `1px solid ${tokens.border}`,
+              borderBottomWidth: 2,
+              bgcolor: tokens.subtle,
+              color: tokens.textMuted,
+            }}
+          >
+            {pickMode ? "Esc" : "E"}
+          </Box>
         </Button>
       )}
       <AreasMenu
@@ -1527,6 +1544,10 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
           pickedElement={pickedElement}
           onPreviewMark={setPreviewMark}
           onUseElement={useElementForArea}
+          onOpenArea={(areaId) => {
+            if (!areasOpen) toggleAreas();
+            if (areaId) setSelectedRectId(areaId);
+          }}
           ruleBusy={ruleBusy}
           onPickedDone={() => setPickedElement(undefined)}
           onPreviewElement={setPreviewElement}

@@ -25,7 +25,11 @@ import { Text, useT } from "../../i18n";
 
 interface WhatsComparedProps {
   structure: StructureInfo;
+  // drawn on this screenshot, and sent by the test with it
   areas: IgnoreArea[];
+  testAreas: IgnoreArea[];
+  // opens the Areas menu, with the area chosen when it can be edited there
+  onOpenArea: (areaId: string | undefined) => void;
   canEdit: boolean;
   busy: boolean;
   onRemove: (rule: ScreenRule) => void;
@@ -103,6 +107,8 @@ function ruleName(rule: ScreenRule, structure: StructureInfo): string {
 export const WhatsCompared: React.FunctionComponent<WhatsComparedProps> = ({
   structure,
   areas,
+  testAreas,
+  onOpenArea,
   canEdit,
   busy,
   onRemove,
@@ -110,7 +116,7 @@ export const WhatsCompared: React.FunctionComponent<WhatsComparedProps> = ({
   onPreview,
 }) => {
   const { t } = useT();
-  const summary = summarize(structure, areas.length);
+  const summary = summarize(structure, areas.length + testAreas.length);
   const suggestions = new Map(
     (structure.areaSuggestions ?? []).map((item) => [item.areaId, item]),
   );
@@ -248,11 +254,27 @@ export const WhatsCompared: React.FunctionComponent<WhatsComparedProps> = ({
         </Alert>
       ))}
       {groupRules(structure.rules).flatMap((group) => group.rules.map(ruleRow))}
-      {areas.map((area) => {
-        const suggestion = suggestions.get(String(area.id));
+      {[
+        ...areas.map((area) => ({ area, fromTest: false })),
+        ...testAreas.map((area) => ({ area, fromTest: true })),
+      ].map(({ area, fromTest }) => {
+        const suggestion = fromTest
+          ? undefined
+          : suggestions.get(String(area.id));
         return (
+          // an area is left out like an ignored element; a click opens it in the Areas menu
           <Box
-            key={area.id}
+            key={`${fromTest ? "test" : "own"}-${area.id}`}
+            data-testid="comparedArea"
+            role="button"
+            tabIndex={0}
+            onClick={() => onOpenArea(fromTest ? undefined : String(area.id))}
+            onKeyDown={(event) => {
+              if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault();
+                onOpenArea(fromTest ? undefined : String(area.id));
+              }
+            }}
             onMouseEnter={() => onPreview(areaMarkId(area.id))}
             onMouseLeave={() => onPreview(undefined)}
             sx={{
@@ -260,17 +282,34 @@ export const WhatsCompared: React.FunctionComponent<WhatsComparedProps> = ({
               alignItems: "center",
               gap: 1.25,
               fontSize: 13.5,
+              mx: -0.75,
+              px: 0.75,
               minHeight: 28,
-              color: tokens.textSecondary,
+              borderRadius: "6px",
+              cursor: "pointer",
+              color: tokens.text,
+              "&:hover": { bgcolor: tokens.subtle },
+              "&:focus-visible": {
+                outline: `2px solid ${tokens.brand}`,
+                outlineOffset: -2,
+              },
             }}
           >
-            <Box sx={swatch("area")} />
+            <Box sx={swatch("ignore")} />
             <span>
               {t("areas.area", {
                 width: Math.round(area.width),
                 height: Math.round(area.height),
               })}
             </span>
+            {fromTest && (
+              <Box
+                component="span"
+                sx={{ ml: "auto", fontSize: 12, color: tokens.textMuted }}
+              >
+                {t("areas.fromTest")}
+              </Box>
+            )}
             {suggestion && canEdit && (
               <Tooltip
                 title={t("areas.useElementHelp", {
@@ -281,7 +320,10 @@ export const WhatsCompared: React.FunctionComponent<WhatsComparedProps> = ({
                   size="small"
                   disabled={busy}
                   sx={{ ml: "auto", minWidth: 0, p: 0, fontSize: 12.5 }}
-                  onClick={() => onUseElement(String(area.id))}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    onUseElement(String(area.id));
+                  }}
                 >
                   {t("areas.useElement")}
                 </Button>

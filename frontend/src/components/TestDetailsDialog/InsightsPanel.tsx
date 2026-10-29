@@ -84,6 +84,7 @@ interface Props {
   onPreviewMark?: (id: string | undefined) => void;
   // replaces a saved area with a rule for the element it covers (REQ-024-51)
   onUseElement: (areaId: string) => void;
+  onOpenArea: (areaId: string | undefined) => void;
   // the dialog is adding or removing a rule
   ruleBusy?: boolean;
   /** opens the bug dialog, with a changed area already marked (REQ-025-03) */
@@ -131,6 +132,7 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
   onPreviewRegion,
   onPreviewMark,
   onUseElement,
+  onOpenArea,
   ruleBusy,
   onReportBug,
   bugs = [],
@@ -1081,12 +1083,11 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
         )}
         <WhatsCompared
           structure={structure}
-          areas={
-            [
-              ...JSON.parse(testRun.ignoreAreas ?? "[]"),
-              ...JSON.parse(testRun.tempIgnoreAreas ?? "[]"),
-            ] as IgnoreArea[]
+          areas={JSON.parse(testRun.ignoreAreas ?? "[]") as IgnoreArea[]}
+          testAreas={
+            JSON.parse(testRun.tempIgnoreAreas ?? "[]") as IgnoreArea[]
           }
+          onOpenArea={onOpenArea}
           canEdit={canEdit}
           busy={submitting || !!ruleBusy}
           onRemove={(rule) =>

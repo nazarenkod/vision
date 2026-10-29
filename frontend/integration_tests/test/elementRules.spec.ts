@@ -96,8 +96,22 @@ test("lists the rules for this screen and for every screen", async ({
   );
   // a rule that found nothing changes nothing in the summary; the run's saved and test areas count
   await expect(page.getByTestId("comparedSummary")).toHaveText(
-    "Whole screen · 2 areas",
+    "Whole screen · without 2 areas",
   );
+});
+
+test("opens an area of the summary in the Areas menu", async ({
+  openProjectPage,
+  page,
+}) => {
+  await openProjectPage(project.id, build.id, testRun.id);
+  const areas = page.getByTestId("comparedArea");
+  await expect(areas).toHaveCount(2);
+  await expect(areas.last()).toContainText("Sent by the test");
+  await areas.first().click();
+  await expect(page.getByTestId("areasMenu")).toBeVisible();
+  // the drawn area is chosen there, ready to delete or move
+  await expect(page.getByTestId("areaDelete")).toBeEnabled();
 });
 
 test("removes a rule for this screen at once", async ({

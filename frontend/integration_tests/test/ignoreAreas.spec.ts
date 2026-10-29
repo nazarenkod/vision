@@ -230,7 +230,10 @@ test("shows saved and test areas as before", async ({
   await expect(rows).toHaveCount(2);
   await expect(rows.first()).toHaveText("Area 200 × 100");
   await expect(rows.last()).toContainText("Area 300 × 200");
-  await expect(rows.last()).toContainText("from test");
+  // the test's own areas sit under one heading, after the drawn ones
+  await expect(page.getByTestId("testAreasTitle")).toContainText(
+    "Sent by the test",
+  );
 });
 
 test("counts areas on the Areas button", async ({ openProjectPage, page }) => {

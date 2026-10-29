@@ -484,7 +484,7 @@ test("dims the screenshot outside the compared elements", async ({
   await openChanges(page);
   // the run's saved and test areas still count
   await expect(page.getByTestId("comparedSummary")).toHaveText(
-    "Only 1 element · 2 areas",
+    "Only 1 element · without 2 areas",
   );
 });
 

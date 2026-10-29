@@ -8,7 +8,7 @@ import {
   Tooltip,
   Typography,
 } from "@mui/material";
-import { Add, ExpandLess, ExpandMore, Lock } from "@mui/icons-material";
+import { Add, ExpandLess, ExpandMore } from "@mui/icons-material";
 import { IgnoreArea } from "../../types/ignoreArea";
 import { tokens } from "../../theme";
 import { useT } from "../../i18n";
@@ -160,39 +160,22 @@ export const AreasMenu: React.FunctionComponent<AreasMenuProps> = ({
             height: Math.round(area.height),
           })}
         </span>
-        {fromTest ? (
-          <Box
-            component="span"
-            sx={{
-              ml: "auto",
-              fontSize: 12,
-              display: "flex",
-              alignItems: "center",
-              gap: 0.5,
-            }}
+        {!fromTest && suggestion && canEdit && (
+          <Tooltip
+            title={t("areas.useElementHelp", { element: suggestion.element })}
           >
-            <Lock sx={{ fontSize: 13 }} />
-            {t("areas.fromTest")}
-          </Box>
-        ) : (
-          suggestion &&
-          canEdit && (
-            <Tooltip
-              title={t("areas.useElementHelp", { element: suggestion.element })}
+            <Button
+              size="small"
+              sx={{ ml: "auto", minWidth: 0, p: 0, fontSize: 12.5 }}
+              data-testid="useElement"
+              onClick={(event) => {
+                event.stopPropagation();
+                onUseElement(area.id);
+              }}
             >
-              <Button
-                size="small"
-                sx={{ ml: "auto", minWidth: 0, p: 0, fontSize: 12.5 }}
-                data-testid="useElement"
-                onClick={(event) => {
-                  event.stopPropagation();
-                  onUseElement(area.id);
-                }}
-              >
-                {t("areas.useElement")}
-              </Button>
-            </Tooltip>
-          )
+              {t("areas.useElement")}
+            </Button>
+          </Tooltip>
         )}
       </Box>
     );
@@ -287,6 +270,31 @@ export const AreasMenu: React.FunctionComponent<AreasMenuProps> = ({
             {count > 0 && (
               <Box sx={{ display: "flex", flexDirection: "column" }}>
                 {areas.map((area) => row(area, false))}
+                {testAreas.length > 0 && (
+                  // one heading for the group: a lock on every row read as an error
+                  <Box
+                    data-testid="testAreasTitle"
+                    sx={{
+                      mt: areas.length ? 1.25 : 0,
+                      mb: 0.25,
+                      display: "flex",
+                      flexWrap: "wrap",
+                      columnGap: 0.75,
+                      fontSize: 12,
+                      lineHeight: 1.5,
+                    }}
+                  >
+                    <Box
+                      component="span"
+                      sx={{ fontWeight: 600, color: tokens.textSecondary }}
+                    >
+                      {t("areas.fromTest")}
+                    </Box>
+                    <Box component="span" sx={{ color: tokens.textMuted }}>
+                      {t("areas.fromTestHelp")}
+                    </Box>
+                  </Box>
+                )}
                 {testAreas.map((area) => row(area, true))}
               </Box>
             )}

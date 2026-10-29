@@ -60,19 +60,29 @@ export const chosenVariant = (
   element.variants?.find((variant) => variant.selector === element.selector) ??
   element.variants?.[0];
 
-/** "ImageView · no name · in offers_list" for an element found by a path (REQ-027-03). */
+/** What the element is to its anchor, briefly: "нащадок offers_list", "батько cashback_label". */
+export const relationTo = (
+  variant: SelectorVariant,
+  text: Text = english,
+): string =>
+  text(
+    variant.direction === "down"
+      ? "select.relation.inside"
+      : (variant.levels ?? 1) > 1
+        ? "select.relation.ancestor"
+        : "select.relation.parent",
+    { anchor: variant.anchor },
+  );
+
+/** "ImageView · inside offers_list" for an element found by a path (REQ-027-03). */
 export function elementLabel(
   element: PickableElement,
   text: Text = english,
 ): string {
   const variant = element.nameless ? chosenVariant(element) : undefined;
-  if (!variant) return element.element;
-  return text(
-    variant.direction === "down"
-      ? "select.namelessInside"
-      : "select.namelessAround",
-    { element: element.element, anchor: variant.anchor },
-  );
+  return variant
+    ? `${element.element} · ${relationTo(variant, text)}`
+    : element.element;
 }
 
 /** How many elements a rule with this selector would take on the screenshot. */

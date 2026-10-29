@@ -1107,13 +1107,12 @@ export const en = {
   "select.compareOneScreen":
     "Compare only is for one screen: each check names its own elements",
   "select.onScreen": "{count} on this screen",
-  "select.namelessInside": "{element} · no name · in {anchor}",
-  "select.namelessAround": "{element} · no name · around {anchor}",
   "select.textAnchor":
     "Found through a text: the rule stops working when the text changes",
   "select.foundBy": "How to find it",
-  "select.variantInside": "Inside {anchor}",
-  "select.variantAround": "Around {anchor}",
+  "select.relation.inside": "inside {anchor}",
+  "select.relation.parent": "parent of {anchor}",
+  "select.relation.ancestor": "ancestor of {anchor}",
   "select.found": "{count} found",
   "panel.matchCount": "{baseline} on baseline · {current} on screenshot",
   "panel.selectorProblem.prefix": "Start with id:, class:, text: or xpath:",

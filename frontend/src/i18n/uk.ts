@@ -1186,13 +1186,12 @@ export const uk: Messages = {
   "select.compareOneScreen":
     "«Порівнювати лише» діє на один екран: кожна перевірка називає свої елементи",
   "select.onScreen": "{count} на цьому екрані",
-  "select.namelessInside": "{element} · без назви · у {anchor}",
-  "select.namelessAround": "{element} · без назви · навколо {anchor}",
   "select.textAnchor":
     "Знайдено через текст: правило перестане діяти, щойно текст зміниться",
   "select.foundBy": "Як знаходити",
-  "select.variantInside": "Усередині {anchor}",
-  "select.variantAround": "Навколо {anchor}",
+  "select.relation.inside": "нащадок {anchor}",
+  "select.relation.parent": "батько {anchor}",
+  "select.relation.ancestor": "предок {anchor}",
   "select.found": "знайдено {count}",
   "panel.matchCount": "{baseline} на еталоні · {current} на знімку",
   "panel.selectorProblem.prefix": "Почніть з id:, class:, text: або xpath:",

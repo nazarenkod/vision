@@ -20,6 +20,7 @@ import {
 import {
   chosenVariant,
   elementLabel,
+  relationTo,
 } from "../../_helpers/elementPicking.helper";
 import { tokens } from "../../theme";
 import { useT } from "../../i18n";
@@ -360,12 +361,7 @@ export const ElementPopover: React.FunctionComponent<ElementPopoverProps> = ({
                       whiteSpace: "nowrap",
                     }}
                   >
-                    {t(
-                      item.direction === "down"
-                        ? "select.variantInside"
-                        : "select.variantAround",
-                      { anchor: item.anchor },
-                    )}
+                    {relationTo(item, t)}
                   </Box>
                   <Box
                     component="span"

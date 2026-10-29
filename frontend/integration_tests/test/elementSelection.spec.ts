@@ -612,15 +612,13 @@ test("warns when a nameless element hangs on a text", async ({
   await clickElement(page, timer);
 
   const popover = page.getByTestId("elementPopover");
-  await expect(popover).toContainText(
-    "ViewGroup · no name · in Balance 120 UAH",
-  );
+  await expect(popover).toContainText("ViewGroup · inside Balance 120 UAH");
   await expect(popover.getByTestId("elementTextAnchor")).toBeVisible();
 
   // found through an id, nothing to warn about
   await page.keyboard.press("Escape");
   await clickElement(page, plus);
-  await expect(popover).toContainText("ImageView · no name · in card");
+  await expect(popover).toContainText("ImageView · inside card");
   await expect(popover.getByTestId("elementTextAnchor")).toHaveCount(0);
 });
 
@@ -642,7 +640,7 @@ test("ignores a nameless element with the chosen selector", async ({
     "aria-checked",
     "true",
   );
-  await expect(popover).toContainText("ImageView · no name · around plus_icon");
+  await expect(popover).toContainText("ImageView · parent of plus_icon");
   await page.keyboard.press("i");
 
   await expect

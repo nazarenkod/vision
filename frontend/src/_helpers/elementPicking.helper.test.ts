@@ -111,11 +111,15 @@ describe("elementPicking", () => {
     const withPlus = [...elements, plus];
 
     it("names a nameless element by class and anchor", () => {
-      expect(elementLabel(plus)).toBe("ImageView · no name · in card");
+      expect(elementLabel(plus)).toBe("ImageView · inside card");
       const around = { ...plus, selector: plus.variants![1].selector };
-      expect(elementLabel(around)).toBe(
-        "ImageView · no name · around plus_icon",
-      );
+      expect(elementLabel(around)).toBe("ImageView · parent of plus_icon");
+      // two or more levels up is an ancestor, not a parent
+      const higher = {
+        ...around,
+        variants: [plus.variants![0], { ...plus.variants![1], levels: 2 }],
+      };
+      expect(elementLabel(higher)).toBe("ImageView · ancestor of plus_icon");
       // a named element keeps its own name
       expect(elementLabel(amount)).toBe("Balance amount");
     });

@@ -10,6 +10,8 @@ export interface SelectorVariant {
   // the stable element, as people read it: its id without the package, or its text
   anchor: string;
   anchorKind: 'id' | 'text';
+  // how many levels apart the element and the anchor are: 1 is a child or a parent
+  levels: number;
   // how many elements the selector takes on this screenshot
   count: number;
 }
@@ -95,7 +97,7 @@ function stepTo(tree: UiTree, node: UiNode): string {
  */
 export function selectorVariants(tree: UiTree, node: UiNode): SelectorVariant[] {
   const variants: SelectorVariant[] = [];
-  const add = (anchor: UiNode, expression: string, direction: SelectorVariant['direction']) => {
+  const add = (anchor: UiNode, expression: string, direction: SelectorVariant['direction'], levels: number) => {
     const selector = `${XPATH_PREFIX}${expression}`;
     const found = findBySelector(tree, selector) ?? [];
     if (!found.includes(node)) return;
@@ -104,6 +106,7 @@ export function selectorVariants(tree: UiTree, node: UiNode): SelectorVariant[] 
       direction,
       anchor: anchorName(anchor),
       anchorKind: stableKind(anchor),
+      levels,
       count: found.length,
     });
   };
@@ -112,14 +115,14 @@ export function selectorVariants(tree: UiTree, node: UiNode): SelectorVariant[] 
   if (above) {
     const path: string[] = [];
     for (let at = node; at.index !== above.node.index; at = tree.nodes[at.parent]) path.unshift(stepTo(tree, at));
-    add(above.node, above.step + path.join(''), 'down');
+    add(above.node, above.step + path.join(''), 'down', path.length);
   }
 
   const below = pickAnchor(tree, descendants(tree, node));
   if (below) {
     let hops = 0;
     for (let at = below.node; at.index !== node.index; at = tree.nodes[at.parent]) hops++;
-    add(below.node, below.step + '/..'.repeat(hops), 'up');
+    add(below.node, below.step + '/..'.repeat(hops), 'up', hops);
   }
 
   const rank = (variant: SelectorVariant) => (variant.anchorKind === 'id' ? (variant.count === 1 ? 0 : 1) : 2);

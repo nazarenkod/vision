@@ -77,8 +77,9 @@
 
 **Фронтенд.**
 
-- `ElementPopover` для безіменного елемента складає підпис за REQ-027-03 з ключів `select.noName`,
-  `select.inside` і `select.around`. Під назвою — попередження `select.textAnchor` для опори-тексту
+- `ElementPopover` для безіменного елемента складає підпис за REQ-027-03: клас і `relationTo` —
+  `select.relation.inside`, `.parent` або `.ancestor` за напрямом і `levels` варіанта.
+  Під назвою — попередження `select.textAnchor` для опори-тексту
   (REQ-027-12). Якщо варіантів два, видно перемикач між ними з опорою й кількістю (REQ-027-15,
   REQ-027-16).
 - Обраний варіант іде в дію: `onAct(action, scope, selector)`. Кількість на знімку для

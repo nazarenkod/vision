@@ -32,6 +32,7 @@ describe('selectorVariants', () => {
         direction: 'down',
         anchor: 'offers_list',
         anchorKind: 'id',
+        levels: 2,
         count: 1,
       },
     ]);
@@ -56,6 +57,7 @@ describe('selectorVariants', () => {
       direction: 'up',
       anchor: 'cashback_label',
       anchorKind: 'id',
+      levels: 1,
       count: 2,
     });
   });

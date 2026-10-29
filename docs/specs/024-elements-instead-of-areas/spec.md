@@ -6,7 +6,7 @@
 | Власник | Дмитро Назаренко |
 | Оновлено | 2026-10-30 |
 | Дизайн | [design.md](design.md), [tasks.md](tasks.md), [макет екрана порівняння](https://claude.ai/artifact/J6iTa3meUu4nCQgkibs871) |
-| Пов'язане | спирається на [015](../015-compare-selected-elements/spec.md) (як порівнюються лише обрані елементи), [019](../019-element-rules-in-review/spec.md) (правила лише в порівнянні), [002](../002-ui-tree-analysis/spec.md) REQ-002-12, REQ-002-13, REQ-002-15 (правила елементів); змінює [018](../018-ui-redesign/spec.md) (рядок інструментів порівняння) |
+| Пов'язане | вибір кількох елементів (REQ-024-05, REQ-024-07) змінює [028](../028-several-elements/spec.md) (Draft); спирається на [015](../015-compare-selected-elements/spec.md) (як порівнюються лише обрані елементи), [019](../019-element-rules-in-review/spec.md) (правила лише в порівнянні), [002](../002-ui-tree-analysis/spec.md) REQ-002-12, REQ-002-13, REQ-002-15 (правила елементів); змінює [018](../018-ui-redesign/spec.md) (рядок інструментів порівняння) |
 
 ## Контекст і проблема
 

@@ -618,6 +618,7 @@ export const uk: Messages = {
   "panel.ignoreArea": "Ігнорувати область",
   "panel.nothingChanged": "Порівняно з еталоном нічого не змінилося.",
   "panel.changedAreas": "Змінені області",
+  "panel.spots": "Змінено в {count} місцях",
   "panel.areaAt": "{width} × {height} px у точці {x}, {y}",
   "panel.fromTree": "За UI-деревом",
   "panel.moved": "Порівняно на новому місці",

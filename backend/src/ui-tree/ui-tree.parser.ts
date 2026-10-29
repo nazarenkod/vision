@@ -262,9 +262,19 @@ export function parseUiTree(xml: string, options: ParseOptions): UiTree {
 /** Text a screen reader would announce for the node itself. */
 export const ownSpeakableText = (node: UiNode): string => (node.label || node.text || node.hint).trim();
 
+// the XML parser decodes only the named entities; UiAutomator writes emoji as `&#128241;`
+const decodeCharRefs = (text: string): string =>
+  text.replace(/&#(x[0-9a-f]+|\d+);/gi, (ref, code: string) => {
+    const point = code[0].toLowerCase() === 'x' ? parseInt(code.slice(1), 16) : Number(code);
+    return point <= 0x10ffff ? String.fromCodePoint(point) : ref;
+  });
+
 /** Short human name for a node in messages: `Button "Pay" (id/btn_pay)`. */
 export function describeNode(node: UiNode): string {
-  const name = ownSpeakableText(node);
+  // decoded only for people to read: keys and checks keep the text as the tree has it
+  const name = Array.from(decodeCharRefs(ownSpeakableText(node)))
+    .slice(0, 40)
+    .join('');
   const id = node.resourceId ? ` (${node.resourceId.replace(/^.*:id\//, 'id/')})` : '';
-  return `${shortClass(node.className)}${name ? ` "${name.slice(0, 40)}"` : ''}${id}`;
+  return `${shortClass(node.className)}${name ? ` "${name}"` : ''}${id}`;
 }

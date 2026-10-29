@@ -19,7 +19,7 @@ import {
   Tooltip,
   Typography,
 } from "@mui/material";
-import { MoreHoriz } from "@mui/icons-material";
+import { MoreHoriz, VisibilityOffOutlined } from "@mui/icons-material";
 import { useSnackbar } from "notistack";
 import { v4 as uuid } from "uuid";
 import { useProjectState, useUserState } from "../../contexts";
@@ -39,6 +39,7 @@ import { JiraBugDialog } from "./JiraBugDialog";
 import { tokens } from "../../theme";
 import { labelOf, useT } from "../../i18n";
 import { WhatsCompared } from "./WhatsCompared";
+import { groupAreas, splitElement } from "./changedAreas";
 import { IgnoreArea } from "../../types/ignoreArea";
 
 type JiraDialog = { mode: "link"; violationIds: string[] } | null;
@@ -856,19 +857,26 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
     anchor: HTMLElement;
     resourceId: string;
   } | null>(null);
+  // quiet icons: a text button on every row drowned the elements out
+  const quietIcon = {
+    width: 28,
+    height: 28,
+    color: tokens.textMuted,
+    "&:hover, &:focus-visible": { color: tokens.brand },
+  } as const;
   const elementActions = (resourceId: string | null) =>
     canEdit && resourceId ? (
-      <Box
-        component="span"
-        sx={{ display: "inline-flex", gap: 0.25, ml: "auto", flexShrink: 0 }}
-      >
-        <Button
-          size="small"
-          sx={{ minWidth: 0, px: 0.75 }}
-          onClick={() => openRule(resourceId, "ignore")}
-        >
-          {t("panel.ignore")}
-        </Button>
+      <>
+        <Tooltip title={t("panel.ignoreElement")}>
+          <IconButton
+            size="small"
+            aria-label={t("panel.ignore")}
+            onClick={() => openRule(resourceId, "ignore")}
+            sx={quietIcon}
+          >
+            <VisibilityOffOutlined sx={{ fontSize: 18 }} />
+          </IconButton>
+        </Tooltip>
         <IconButton
           size="small"
           aria-label={t("compared.more")}
@@ -876,12 +884,82 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
           onClick={(event) =>
             setActionsFor({ anchor: event.currentTarget, resourceId })
           }
-          sx={{ width: 26, height: 26 }}
+          sx={quietIcon}
         >
-          <MoreHoriz fontSize="small" />
+          <MoreHoriz sx={{ fontSize: 18 }} />
         </IconButton>
-      </Box>
+      </>
     ) : null;
+
+  const rowSx = {
+    display: "grid",
+    gridTemplateColumns: "minmax(0, 1fr) auto",
+    alignItems: "center",
+    columnGap: 1,
+    py: 0.5,
+    px: 1,
+    mx: -1,
+    borderRadius: 1,
+    "&:hover": { bgcolor: tokens.subtle },
+  } as const;
+
+  const sectionTitle = (title: string, count: number) => (
+    <Typography variant="subtitle2" sx={{ mb: 0.25 }}>
+      {title}
+      <Box component="span" sx={{ color: tokens.textMuted, ml: 0.75 }}>
+        {count}
+      </Box>
+    </Typography>
+  );
+
+  const actionsCell = (children: React.ReactNode) => (
+    <Box sx={{ display: "flex", alignItems: "center", gap: 0.25 }}>
+      {children}
+    </Box>
+  );
+
+  // the name leads; the type and the id follow quietly, so twenty rows stay scannable
+  const elementCell = (element: string) => {
+    const { type, name, id } = splitElement(element);
+    return (
+      <Box sx={{ minWidth: 0 }}>
+        <Box
+          sx={{
+            fontSize: 14,
+            lineHeight: 1.35,
+            color: tokens.text,
+            overflowWrap: "anywhere",
+            display: "-webkit-box",
+            WebkitLineClamp: 2,
+            WebkitBoxOrient: "vertical",
+            overflow: "hidden",
+          }}
+          title={name ?? undefined}
+        >
+          {name ?? type}
+        </Box>
+        <Box
+          sx={{
+            fontSize: 12,
+            lineHeight: 1.4,
+            color: tokens.textMuted,
+            whiteSpace: "nowrap",
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+          }}
+          title={id ?? undefined}
+        >
+          {name ? type : null}
+          {name && id ? " · " : null}
+          {id && (
+            <Box component="span" sx={{ font: `400 12px ${tokens.mono}` }}>
+              {id}
+            </Box>
+          )}
+        </Box>
+      </Box>
+    );
+  };
 
   const changesTab = () => {
     if (structure === undefined)
@@ -974,55 +1052,70 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
           </Typography>
         )}
         {structure.regions.length > 0 && (
-          <Box sx={{ display: "flex", flexDirection: "column", gap: 0.5 }}>
-            <Typography variant="subtitle2">
-              {t("panel.changedAreas")}
-            </Typography>
-            {structure.regions.map((area, index) => (
+          <Box sx={{ display: "flex", flexDirection: "column" }}>
+            {sectionTitle(t("panel.changedAreas"), structure.regions.length)}
+            {groupAreas(structure.regions).map((group, index) => (
               <Box
-                key={index}
+                key={group.element ?? `area-${index}`}
                 data-testid="changedArea"
-                onMouseEnter={() => onPreviewRegion?.(area.region)}
+                onMouseEnter={() => onPreviewRegion?.(group.bounds)}
                 onMouseLeave={() => onPreviewRegion?.(undefined)}
-                sx={{
-                  borderRadius: 1,
-                  px: 0.5,
-                  mx: -0.5,
-                  "&:hover": { bgcolor: tokens.subtle },
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 1,
-                  fontSize: 14,
-                }}
+                sx={rowSx}
               >
-                <span
-                  style={{
-                    color: area.element ? tokens.text : tokens.textSecondary,
-                  }}
-                >
-                  {index + 1}.{" "}
-                  {area.element ?? t("panel.areaAt", { ...area.region })}
-                </span>
-                {elementActions(area.resourceId)}
+                {group.element ? (
+                  elementCell(group.element)
+                ) : (
+                  <Box sx={{ fontSize: 14, color: tokens.textSecondary }}>
+                    {t("panel.areaAt", { ...group.regions[0] })}
+                  </Box>
+                )}
+                {actionsCell(
+                  <>
+                    {group.regions.length > 1 && (
+                      <Tooltip
+                        title={t("panel.spots", {
+                          count: group.regions.length,
+                        })}
+                      >
+                        <Box
+                          component="span"
+                          sx={{
+                            font: `600 11px ${tokens.mono}`,
+                            color: tokens.textSecondary,
+                            bgcolor: tokens.subtle,
+                            border: `1px solid ${tokens.border}`,
+                            borderRadius: 1,
+                            px: 0.5,
+                            mr: 0.25,
+                          }}
+                        >
+                          ×{group.regions.length}
+                        </Box>
+                      </Tooltip>
+                    )}
+                    {elementActions(group.resourceId)}
+                  </>,
+                )}
               </Box>
             ))}
           </Box>
         )}
         {visibleChanges.length > 0 && (
-          <Box sx={{ display: "flex", flexDirection: "column", gap: 0.5 }}>
-            <Typography variant="subtitle2">{t("panel.fromTree")}</Typography>
+          <Box sx={{ display: "flex", flexDirection: "column" }}>
+            {sectionTitle(t("panel.fromTree"), visibleChanges.length)}
             {visibleChanges.map((change) => (
-              <Box
-                key={`${change.kind}:${change.key}`}
-                sx={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 1,
-                  fontSize: 14,
-                }}
-              >
-                <span>{describeChange(change, t)}</span>
-                {elementActions(change.resourceId || null)}
+              <Box key={`${change.kind}:${change.key}`} sx={rowSx}>
+                <Box
+                  sx={{
+                    fontSize: 14,
+                    lineHeight: 1.35,
+                    minWidth: 0,
+                    overflowWrap: "anywhere",
+                  }}
+                >
+                  {describeChange(change, t)}
+                </Box>
+                {actionsCell(elementActions(change.resourceId || null))}
               </Box>
             ))}
           </Box>

@@ -569,6 +569,7 @@ export const en = {
   "panel.ignoreArea": "Ignore area",
   "panel.nothingChanged": "Nothing changed against the baseline.",
   "panel.changedAreas": "Changed areas",
+  "panel.spots": "Changed in {count} spots",
   "panel.areaAt": "{width} × {height} px at {x}, {y}",
   "panel.fromTree": "From the UI tree",
   "panel.moved": "Compared at their new place",

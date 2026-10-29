@@ -53,6 +53,11 @@ export interface PixelmatchJobInput {
    * is not counted (images, maps, charts that re-render slightly).
    */
   toleranceAreas?: Array<AreaRect & { maxDiffPercent: number }>;
+  /**
+   * When only some elements are compared (spec 015), the difference is a share
+   * of their pixels rather than of the whole screenshot (ADR-0018).
+   */
+  measureAreas?: AreaRect[];
 }
 
 export interface AreaRect {
@@ -85,6 +90,27 @@ function clonePng(source: PNG): PNG {
   const copy = new PNG({ width: source.width, height: source.height });
   source.data.copy(copy.data);
   return copy;
+}
+
+/** Pixels the areas cover, each counted once however the areas overlap. */
+export function coveredPixels(areas: AreaRect[], width: number, height: number): number {
+  const mask = new Uint8Array(width * height);
+  let count = 0;
+  for (const area of areas) {
+    const x0 = Math.max(0, Math.floor(area.x));
+    const y0 = Math.max(0, Math.floor(area.y));
+    const x1 = Math.min(width, Math.ceil(area.x + area.width));
+    const y1 = Math.min(height, Math.ceil(area.y + area.height));
+    for (let y = y0; y < y1; y++) {
+      for (let x = x0; x < x1; x++) {
+        if (!mask[y * width + x]) {
+          mask[y * width + x] = 1;
+          count++;
+        }
+      }
+    }
+  }
+  return count;
 }
 
 /** The baseline with every moved element copied to where it is now. */
@@ -179,7 +205,8 @@ export function computePixelmatchDiff(input: PixelmatchJobInput): PixelmatchJobO
   });
   const toleratedPixels = input.toleranceAreas?.length ? applyTolerance(diff, input.toleranceAreas) : 0;
   const pixelMisMatchCount = rawMisMatchCount - toleratedPixels;
-  const diffPercent = (pixelMisMatchCount * 100) / (scaledImage.width * scaledImage.height);
+  const measured = input.measureAreas?.length ? coveredPixels(input.measureAreas, maxWidth, maxHeight) : 0;
+  const diffPercent = (pixelMisMatchCount * 100) / (measured || scaledImage.width * scaledImage.height);
 
   // A build is mostly runs that pass, so anything produced for a diff that is
   // about to be thrown away is work nobody ever sees the result of.

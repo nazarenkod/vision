@@ -195,3 +195,69 @@ describe('UiTreeService, a device without its own baseline', () => {
     ]);
   });
 });
+
+describe('UiTreeService, compare only', () => {
+  const compareSettings = (selector = 'id:btn_pay') =>
+    JSON.stringify({ checkRules: { '["Payment",""]': [{ id: 'c1', selector, action: 'compare' }] } });
+  function compareService(trees: Record<string, unknown>, settings = compareSettings()) {
+    const prisma = {
+      project: { findUnique: jest.fn().mockResolvedValue({ uiTreeSettings: settings }) },
+      testVariation: { findMany: jest.fn().mockResolvedValue([]) },
+    };
+    const instance = new UiTreeService({ getImageBuffer: async () => null } as never, prisma as never);
+    jest.spyOn(instance, 'load').mockImplementation(async (name) => (name ? ((trees[name] as never) ?? null) : null));
+    return instance;
+  }
+
+  it("applies a check's compare-only rule on every device and branch", async () => {
+    const instance = compareService({ 'here.json.gz': tree, 'base.json.gz': tree });
+    for (const fields of [
+      { device: 'Galaxy S23', branchName: 'feature' },
+      { device: 'Pixel 7', os: 'Android 15', branchName: 'master' },
+    ]) {
+      const inputs = await instance.comparisonInputs(run({ ...fields, baselineUiTreeName: 'base.json.gz' }));
+      expect(inputs.compareOnly.active).toBe(true);
+      expect(inputs.compareOnly.keep).toEqual([{ x: 42, y: 2200, width: 996, height: 126 }]);
+    }
+  });
+
+  it('never passes a compare-only run without a UI tree', async () => {
+    const inputs = await compareService({}).comparisonInputs(run({ uiTreeName: null }));
+    expect(inputs.compareOnly.problems).toEqual([{ kind: 'no-tree' }]);
+    // without a tree nothing can be left out of the comparison either
+    expect(inputs.ignoreAreas).toEqual([]);
+  });
+
+  it('reports no hidden change outside the compared elements', async () => {
+    // the pay button got disabled; only the fee is compared
+    const instance = compareService({ 'here.json.gz': disabled, 'base.json.gz': tree }, compareSettings('id:tv_fee'));
+    const structure = await instance.structure(run({ baselineUiTreeName: 'base.json.gz' }));
+    expect(structure.changes).toEqual([]);
+    expect(structure.invisible).toEqual([]);
+
+    const payOnly = compareService({ 'here.json.gz': disabled, 'base.json.gz': tree });
+    const compared = await payOnly.structure(run({ baselineUiTreeName: 'base.json.gz' }));
+    expect(compared.changes.length).toBeGreaterThan(0);
+  });
+
+  it('offers to ignore the element under a noise hint', async () => {
+    const instance = compareService({ 'here.json.gz': tree }, JSON.stringify({}));
+    jest.spyOn(instance, 'comparisonInputs').mockResolvedValue({
+      ignoreAreas: [],
+      toleranceAreas: [],
+      moves: [],
+      systemBars: [],
+      rules: { ignore: [], tolerate: [], matches: {}, found: {} },
+      settings: null,
+      compareOnly: { active: false, moves: [], keep: [], ignoreOutside: [], problems: [] },
+    });
+    // the fee text changed on its own: a dynamic text hint over it
+    const structure = await instance.structure(
+      run({ diffRegions: JSON.stringify([{ x: 42, y: 1000, width: 458, height: 50 }]), diffPercent: 1 })
+    );
+    const withElement = structure.hints.filter((hint) => 'element' in hint);
+    expect(withElement).toContainEqual(
+      expect.objectContaining({ element: expect.objectContaining({ selector: 'id:tv_fee' }) })
+    );
+  });
+});

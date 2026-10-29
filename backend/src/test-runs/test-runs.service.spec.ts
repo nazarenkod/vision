@@ -106,8 +106,9 @@ const initService = async ({
             toleranceAreas: [],
             moves: [],
             systemBars: [],
-            rules: { ignore: [], tolerate: [], matches: {} },
+            rules: { ignore: [], tolerate: [], matches: {}, found: {} },
             settings: null,
+            compareOnly: { active: false, moves: [], keep: [], ignoreOutside: [], problems: [] },
           }),
           deleteFiles: jest.fn().mockResolvedValue(undefined),
           recheck: jest.fn().mockResolvedValue({ components: [], invisible: [] }),
@@ -385,6 +386,41 @@ describe('TestRunsService', () => {
     expect(service.saveDiffResult).toHaveBeenCalledWith(testRun.id, diffResult);
   });
 
+  it('sends a run whose compared element is gone to review', async () => {
+    const testRun = generateTestRun({ uiTreeName: 'tree.json.gz' });
+    const passed = { ...testRun, status: TestStatus.ok };
+    const testRunUpdateMock = jest.fn().mockImplementation(({ data }) => Promise.resolve({ ...passed, ...data }));
+    const compareGetDiffMock = jest.fn().mockResolvedValueOnce({ status: TestStatus.ok });
+    service = await initService({ testRunUpdateMock, compareGetDiffMock });
+    service.saveDiffResult = jest.fn().mockResolvedValueOnce(passed);
+    const keep = [{ x: 42, y: 2200, width: 996, height: 126 }];
+    service['uiTreeService'].comparisonInputs = jest.fn().mockResolvedValueOnce({
+      ignoreAreas: [],
+      toleranceAreas: [],
+      moves: [],
+      systemBars: [],
+      rules: { ignore: [], tolerate: [], matches: {}, found: {} },
+      settings: null,
+      compareOnly: {
+        active: true,
+        moves: [],
+        keep,
+        ignoreOutside: [],
+        problems: [{ kind: 'disappeared', ruleId: 'c1', selector: 'id:btn_pay', element: 'Button “Pay”' }],
+      },
+    });
+
+    const result = await service.calculateDiff('projectId', testRun);
+
+    // the difference is measured against the compared element (ADR-0018)
+    expect(compareGetDiffMock.mock.calls[0][0].data.measureAreas).toEqual(keep);
+    expect(testRunUpdateMock).toHaveBeenCalledWith({
+      where: { id: testRun.id },
+      data: { status: TestStatus.unresolved },
+    });
+    expect(result.status).toBe(TestStatus.unresolved);
+  });
+
   describe('element rules', () => {
     it('keeps a rule for this screen by check, so every device and branch gets it', async () => {
       const testRun = generateTestRun({ name: 'Payment', customTags: '', uiTreeName: 'tree.json.gz' });
@@ -419,6 +455,46 @@ describe('TestRunsService', () => {
       // the other devices of the check in the build are compared again
       expect(testRunFindManyMock.mock.calls[0][0].where).toMatchObject({ name: 'Payment', customTags: '' });
       expect(testRunFindManyMock.mock.calls[0][0].where.testVariationId).toBeUndefined();
+    });
+  });
+
+  describe('compare only and areas', () => {
+    it('refuses a compare-only rule for every screen', async () => {
+      service = await initService({});
+      service.findOne = jest.fn();
+      await expect(
+        service.addElementRule('run', { scope: 'project', selector: 'id:btn_pay', action: 'compare' })
+      ).rejects.toThrow('Compare only applies to one screen');
+      expect(service.findOne).not.toHaveBeenCalled();
+    });
+
+    it('replaces an area with an ignore rule and compares once', async () => {
+      const banner = { id: 'a1', x: 0, y: 200, width: 1080, height: 300 };
+      const other = { id: 'a2', x: 0, y: 0, width: 10, height: 10 };
+      const testRun = generateTestRun({
+        name: 'Payment',
+        customTags: '',
+        ignoreAreas: JSON.stringify([banner, other]),
+      });
+      const projectUpdateMock = jest.fn().mockResolvedValue({});
+      service = await initService({
+        projectFindUniqueMock: jest.fn().mockResolvedValue({ uiTreeSettings: null }),
+      });
+      service.findOne = jest.fn().mockResolvedValue(testRun);
+      service.calculateDiff = jest.fn();
+      service.updateIgnoreAreas = jest.fn().mockResolvedValue(testRun);
+      service['prismaService'].project['update'] = projectUpdateMock;
+      service['prismaService'].testVariation['updateMany'] = jest.fn().mockResolvedValue({ count: 0 });
+      service['uiTreeService'].checkRules = jest.fn().mockResolvedValue([]);
+
+      const { rule, area } = await service.replaceAreaWithElement(testRun.id, { areaId: 'a1', selector: 'id:banner' });
+
+      expect(area).toEqual(banner);
+      const settings = JSON.parse(projectUpdateMock.mock.calls[0][0].data.uiTreeSettings);
+      expect(settings.checkRules['["Payment",""]']).toEqual([{ id: rule.id, selector: 'id:banner', action: 'ignore' }]);
+      expect(service.updateIgnoreAreas).toHaveBeenCalledWith(testRun.id, [other]);
+      // updateIgnoreAreas compares the run; nothing else does
+      expect(service.calculateDiff).not.toHaveBeenCalled();
     });
   });
 

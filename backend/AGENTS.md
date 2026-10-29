@@ -15,7 +15,8 @@
 | `src/test-runs/decision-undo*.ts` | журнал Approve і Reject та Undo з нього ([ADR-0014](../docs/decisions/0014-undo-through-decision-journal.md)); тест відновлення ганяє справжній upstream approve | [018](../docs/specs/018-ui-redesign/spec.md) |
 | `src/projects/settings-conflict.ts`, `project-secrets.ts` | збереження налаштувань поверх чужих змін (409), ключ Gemini лише на запис | [018](../docs/specs/018-ui-redesign/spec.md) |
 | `src/analytics/` | Insights | [008](../docs/specs/008-insights/spec.md) |
-| `src/ai/` | AI на вимогу, кеш, ліміт | [010](../docs/specs/010-ai-assist/spec.md) |
+| `src/ai/` | AI на вимогу, кеш, ліміт; чернетка бага на особистому ключі Gemini (`personalGeminiKey`) | [010](../docs/specs/010-ai-assist/spec.md), [025](../docs/specs/025-bug-from-comparison/spec.md) |
+| `src/visual-bugs/` | баг із порівняння: назва, опис із розділами, позначки на знімку, баги перевірки | [025](../docs/specs/025-bug-from-comparison/spec.md) |
 | `src/compare/` | піксельне порівняння (upstream + області змін, пул воркерів) | — |
 | `src/backups/` | сторінка Backups: стан бекапу, вхід у Google Drive кодом, розклад і запит на бекап у файлах для `scripts/vision-backup.sh` (ADR-0013) | [013](../docs/specs/013-backups-and-secrets/spec.md), [017](../docs/specs/017-backup-settings-ui/spec.md) |
 

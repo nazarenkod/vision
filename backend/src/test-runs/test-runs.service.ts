@@ -416,6 +416,7 @@ export class TestRunsService {
         baselineName: testVariation.baselineName,
         baselineUiTreeName: testVariation.baselineUiTreeName,
         uiTreeName,
+        featureName: createTestRequestDto.featureName?.trim() || null,
         uiTreeOptions:
           createTestRequestDto.excludeSystemBars !== undefined
             ? JSON.stringify({ excludeSystemBars: createTestRequestDto.excludeSystemBars })

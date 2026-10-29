@@ -918,6 +918,20 @@ export const en = {
     "Not set: Jira works only where the project has a shared token.",
   "profile.save": "Save",
   "profile.removeToken": "Remove token",
+  "profile.geminiIntro":
+    "Your own key from Google AI Studio: AI drafts bugs from the comparison on it, so what it costs is yours to decide.",
+  "profile.geminiGetKey": "Get a key",
+  "profile.geminiKey": "Gemini API key",
+  "profile.newKey": "New key",
+  "profile.geminiKeySaved": "A key is saved. It is never shown again.",
+  "profile.geminiKeyNotSet":
+    "Not set: you fill bugs from the comparison in yourself.",
+  "profile.geminiSaved": "Gemini key saved",
+  "profile.geminiRemoved": "Gemini key removed",
+  "profile.removeKey": "Remove key",
+  "reportBug.needGeminiKey":
+    "Add your Gemini API key in your profile to let AI fill these.",
+  "reportBug.openProfile": "Open profile",
   "profile.appearance": "Appearance",
   "profile.appearanceHelp":
     "Follows the system until you choose. Remembered in this browser.",
@@ -1202,6 +1216,66 @@ export const en = {
   "compared.problem.count":
     "{selector}: {baseline} on the baseline, {current} now",
   "compared.problem.resized": "{element} changed size",
+  "reportBug.title": "Report bug",
+  "reportBug.open": "Report bug",
+  "reportBug.openHelp": "File a Jira bug about this screen. Hotkey: B",
+  "reportBug.needToken":
+    "Add your Jira token in your profile to file bugs from here.",
+  "reportBug.checkpoint": "Checkpoint",
+  "reportBug.baseline": "Baseline",
+  "reportBug.markArea": "Mark area",
+  "reportBug.pickElement": "Pick element",
+  "reportBug.areaAt": "{width} × {height} px at {x}, {y}",
+  "reportBug.removeMark": "Remove mark",
+  "reportBug.markHint":
+    "Drag on the screenshot or pick an element to show where the problem is.",
+  "reportBug.marksOnCheckpoint": "Marks go on the checkpoint.",
+  "reportBug.note": "What is wrong? In your words, for AI",
+  "reportBug.notePlaceholder":
+    "e.g. the Pay button is cut off at the bottom; “Total due” is intended",
+  "reportBug.add": "Add:",
+  "reportBug.quick.cutOff": "Cut off",
+  "reportBug.quick.overlaps": "Overlaps",
+  "reportBug.quick.unchanged": "Should not have changed",
+  "reportBug.quick.wrongText": "Wrong text",
+  "reportBug.quick.missing": "Missing",
+  "reportBug.quick.misaligned": "Not aligned",
+  "reportBug.changesItLooksAt": "Changes it looks at",
+  "reportBug.aiGets":
+    "Gemini gets your note, the baseline and checkpoint cut around {areas} area(s), {changes} ticked change(s) and the check’s name. Not the whole screenshots, not your tokens.",
+  "reportBug.fillWithAi": "Fill with AI",
+  "reportBug.askAgain": "Ask again",
+  "reportBug.drafting": "Drafting…",
+  "reportBug.aiFailed":
+    "AI did not fill the bug: {error}. Your note and fields are kept; fill in the rest yourself.",
+  "reportBug.aiTag": "AI",
+  "reportBug.field.essence": "Summary",
+  "reportBug.field.environment": "Environment",
+  "reportBug.field.steps": "Steps",
+  "reportBug.field.actual": "Actual result",
+  "reportBug.field.expected": "Expected result",
+  "reportBug.stepsPlaceholder": "1. …\n2. Open the screen of the feature",
+  "reportBug.screenshots":
+    "The marked checkpoint goes into the actual result, the baseline into the expected one.",
+  "reportBug.screenshotsNoBaseline":
+    "The marked checkpoint goes into the actual result; this check has no baseline yet.",
+  "reportBug.visionAdds":
+    "Vision adds the check, the build and a link back to this review, labels the bug “vision” and copies the customer from the task.",
+  "reportBug.alsoReject": "Also reject the checkpoint",
+  "reportBug.missing": {
+    one: "1 required field left: {fields}",
+    other: "{count} required fields left: {fields}",
+  },
+  "reportBug.creating": "Creating…",
+  "reportBug.filed": "Filed {key}",
+  "reportBug.filedRejected": "Filed {key} · checkpoint rejected",
+  "reportBug.openInJira": "Open in Jira",
+  "reportBug.rejectFailed":
+    "{key} is filed, but the checkpoint was not rejected: {error}",
+  "reportBug.bugsForScreen": "Bugs for this screen",
+  "reportBug.filedFrom": "Filed {date}",
+  "reportBug.bugMarks": "Bug marks",
+  "reportBug.fromChange": "Report bug",
 } satisfies Record<string, Message>;
 
 export type MessageKey = keyof typeof en;

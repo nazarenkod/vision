@@ -8,10 +8,10 @@ upstream VRT, а згодом зможе працювати й на живій.
 
 | Таблиця | Що додано | Навіщо |
 |---|---|---|
-| `TestRun` | `uiTreeName`, `baselineUiTreeName`, `uiTreeOptions`, `a11yReportName`, `a11yNewCount`, `a11yTotalCount`, `diffRegions`, `changeSignature`, `imageThumbnailName`, `diffThumbnailName`, `captureWarnings`, `semanticChangeCount`, `componentChanges` | результати аналізу дерева: файли й лічильники |
+| `TestRun` | `uiTreeName`, `baselineUiTreeName`, `uiTreeOptions`, `a11yReportName`, `a11yNewCount`, `a11yTotalCount`, `diffRegions`, `changeSignature`, `imageThumbnailName`, `diffThumbnailName`, `captureWarnings`, `semanticChangeCount`, `componentChanges`, `featureName` | результати аналізу дерева: файли й лічильники; назва фічі з SDK для назви бага, поза ключем варіації ([ADR-0019](../decisions/0019-sdk-upstream-plus-ui-tree-and-feature.md)) |
 | `TestVariation`, `Baseline` | `baselineUiTreeName` / `uiTreeName` | дерево еталона йде разом із картинкою |
 | `Project` | `jiraUrl`, `jiraToken` (спільний, необов'язковий), `jiraEmail`, `jiraIssueType`, `jiraLinkType`, `uiTreeSettings` (JSON); `bulkApproveVariations`, `bulkApproveGroupBy` — від прибраних груп варіацій ([022](../specs/022-remove-variation-groups/spec.md)), лишаються в рядку, але не читаються й не віддаються API | Jira і налаштування мобільного порівняння, заголовок екрана |
-| `User` | `jiraToken`, `jiraEmail`, `lastSignInAt` | особистий токен Jira ([ADR-0010](../decisions/0010-personal-jira-tokens.md)); останній вхід в інтерфейс паролем чи SSO, для сторінки Users ([018](../specs/018-ui-redesign/spec.md)) |
+| `User` | `jiraToken`, `jiraEmail`, `geminiApiKey`, `lastSignInAt` | особистий токен Jira ([ADR-0010](../decisions/0010-personal-jira-tokens.md)); особистий ключ Gemini для чернеток багів, лише записується ([ADR-0020](../decisions/0020-personal-gemini-keys.md)); останній вхід в інтерфейс паролем чи SSO, для сторінки Users ([018](../specs/018-ui-redesign/spec.md)) |
 
 `uiTreeSettings` — JSON, який читає `parseUiTreeSettings` (`ui-tree/comparison-inputs.ts`):
 системні бари, зсуви, приховані зміни, «знято зарано», «не той екран», правила елементів,
@@ -32,6 +32,7 @@ upstream VRT, а згодом зможе працювати й на живій.
 | `A11yIssueState` | рішення старого формату (по елементу на екрані). При старті API переносяться в `A11yProblem`; ті, чиє порушення вже не знайдено, діють як раніше на своєму екрані |
 | `CrossDeviceCheck` | що показало довідкове порівняння пристроїв і що вирішив рев'юер ([007](../specs/007-cross-device-reference/spec.md)) |
 | `AiResult` | кеш відповідей AI за хешем вмісту ([010](../specs/010-ai-assist/spec.md)) |
+| `VisualBug` | баг, заведений з порівняння: перевірка (`checkName` + `customTags`), прогін і профіль пристрою, з якого заведено, ключ і посилання Jira, назва, позначки (`marks`, JSON у пікселях знімка), хто й коли. Без зовнішніх ключів ([025](../specs/025-bug-from-comparison/spec.md)) |
 | `ReviewDecision` | журнал Approve і Reject для Undo: хто, що (`kind`), стан кожного прогону до й після (`items`, JSON), коли скасовано (`undoneAt`). Без зовнішніх ключів; записи старші за 7 днів видаляються при наступному записі ([ADR-0014](../decisions/0014-undo-through-decision-journal.md)) |
 
 ## Файли (`imageUploads` або S3)
@@ -66,3 +67,5 @@ upstream VRT, а згодом зможе працювати й на живій.
 | `20261026110000_add_a11y_problem_facts_and_decisions` | факти проблем, `A11yDecision` |
 | `20261029100000_add_user_last_sign_in` | `User.lastSignInAt` |
 | `20261029110000_add_review_decisions` | `ReviewDecision` |
+| `20261029200000_add_visual_bugs` | `TestRun.featureName`, `VisualBug` |
+| `20261029210000_add_user_gemini_key` | `User.geminiApiKey` |

@@ -282,8 +282,8 @@ decisions to problems»).
 изменений работают. Новый SDK нужен только для отправки XML-дерева экрана: доступность,
 изменения по элементам, правила по элементам.
 
-Новый SDK — это upstream 4.3.1 плюс одно необязательное поле `uiTree`. Пакет и классы те же,
-работает на Java 11+. Готовый jar лежит в репозитории: `dist/sdk-java/sdk-java-4.3.1-vision.1.jar`
+Новый SDK — это upstream 4.3.1 плюс два необязательных поля: `uiTree` и `featureName`. Пакет и классы те же,
+работает на Java 11+. Готовый jar лежит в репозитории: `dist/sdk-java/sdk-java-4.3.1-vision.2.jar`
 (рядом его pom). Пересобрать: `./scripts/build-sdk-jar.sh` (JDK 11–17, Gradle 7).
 
 ### Вариант А: установить в локальный Maven (рекомендую)
@@ -291,7 +291,7 @@ decisions to problems»).
 Один раз на каждой машине, где собираются тесты (ноутбук, агенты CI):
 
 ```bash
-mvn install:install-file -Dfile=dist/sdk-java/sdk-java-4.3.1-vision.1.jar -DpomFile=dist/sdk-java/sdk-java-4.3.1-vision.1.pom
+mvn install:install-file -Dfile=dist/sdk-java/sdk-java-4.3.1-vision.2.jar -DpomFile=dist/sdk-java/sdk-java-4.3.1-vision.2.pom
 ```
 
 В pom.xml меняется только версия:
@@ -300,7 +300,7 @@ mvn install:install-file -Dfile=dist/sdk-java/sdk-java-4.3.1-vision.1.jar -DpomF
 <dependency>
     <groupId>com.github.Visual-Regression-Tracker</groupId>
     <artifactId>sdk-java</artifactId>
-    <version>4.3.1-vision.1</version>
+    <version>4.3.1-vision.2</version>
 </dependency>
 ```
 
@@ -314,9 +314,9 @@ mvn install:install-file -Dfile=dist/sdk-java/sdk-java-4.3.1-vision.1.jar -DpomF
 <dependency>
     <groupId>com.github.Visual-Regression-Tracker</groupId>
     <artifactId>sdk-java</artifactId>
-    <version>4.3.1-vision.1</version>
+    <version>4.3.1-vision.2</version>
     <scope>system</scope>
-    <systemPath>${project.basedir}/libs/sdk-java-4.3.1-vision.1.jar</systemPath>
+    <systemPath>${project.basedir}/libs/sdk-java-4.3.1-vision.2.jar</systemPath>
 </dependency>
 <!-- jar из файла не приносит своих зависимостей; если они уже есть в проекте, эти две не нужны -->
 <dependency>
@@ -374,6 +374,7 @@ vrt.track(
         .device("Pixel 7 emulator")
         .os("Android 15")
         .uiTree(WebDriverRunner.getWebDriver().getPageSource())
+        .featureName("Checkout")   // необязательно: фича для названия бага
         .build()
 );
 ```
@@ -388,12 +389,14 @@ vrt.track(
         .device("Pixel 7 emulator")
         .os("Android 15")
         .uiTree(WebDriverRunner.getWebDriver().pageSource)
+        .featureName("Checkout")   // необязательно: фича для названия бага
         .build()
 )
 ```
 
 Если у вас обёртка над `vrt.track`, правка одна, в ней. Без `.uiTree(...)` всё работает как
-раньше.
+раньше. `featureName` попадает в название бага из сравнения (`[Automation] [Checkout] …`); без него
+Vision берёт часть названия проверки до первой точки. Эталоны от него не зависят.
 
 ### 8.3. Правила, о которых стоит помнить
 

@@ -85,6 +85,28 @@ function update({
     });
 }
 
+/** A personal Gemini API key; an empty string removes it. Write-only. */
+function setGemini(geminiApiKey: string): Promise<User> {
+  const requestOptions = {
+    method: "PUT",
+    headers: {
+      ...DEFAULT_HEADERS,
+      ...authHeader(),
+    },
+    body: JSON.stringify({ geminiApiKey }),
+  };
+
+  return fetch(`${API_URL}${ENDPOINT_URL}/gemini`, requestOptions)
+    .then(handleResponse)
+    .then((updated: User) => {
+      // the answer carries no session token: keep the stored one
+      const stored = JSON.parse(localStorage.getItem("user") ?? "{}");
+      const user = { ...stored, ...updated };
+      setUserInLocalStorage(user);
+      return user;
+    });
+}
+
 /** Personal Jira token and email; undefined keeps a value, an empty string removes it. */
 function setJira(values: {
   jiraToken?: string;
@@ -257,6 +279,7 @@ export const usersService = {
   register,
   update,
   setJira,
+  setGemini,
   changePassword,
   setPassword,
   getAll,

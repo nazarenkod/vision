@@ -118,6 +118,7 @@ export const generateTestRun = (testRun?: Partial<TestRun>): TestRun => {
     a11yTotalCount: null,
     diffRegions: null,
     uiTreeOptions: null,
+    featureName: null,
     captureWarnings: null,
     semanticChangeCount: null,
     componentChanges: null,

@@ -26,6 +26,7 @@ import {
 } from './a11y-issues';
 import { JiraAttachment, JiraClient, JiraError, JiraFoundIssue } from './jira.client';
 import { bugText, buildBugFields, defaultIssueType } from './jira-bug';
+import { JiraAccess, jiraAccess } from './jira-access';
 import {
   facetsFromKey,
   facetsOf,
@@ -651,30 +652,8 @@ export class A11yIssuesService implements OnModuleInit {
    * Jira as the person acting: their own token from their profile, else the
    * project's shared token when it has one. The Jira URL is the project's.
    */
-  private async jiraFor(
-    projectId: string,
-    userId?: string
-  ): Promise<{ jira: JiraClient; issueType: string | null; linkType: string | null }> {
-    const [project, user] = await Promise.all([
-      this.prismaService.project.findUnique({ where: { id: projectId } }),
-      userId ? this.prismaService.user.findUnique({ where: { id: userId } }) : null,
-    ]);
-    if (!project?.jiraUrl) {
-      throw new BadRequestException('Jira is not set up for this project: add its URL in project settings');
-    }
-    const credentials = user?.jiraToken
-      ? { token: user.jiraToken, email: user.jiraEmail }
-      : project.jiraToken
-        ? { token: project.jiraToken, email: project.jiraEmail }
-        : null;
-    if (!credentials) {
-      throw new BadRequestException('Add your Jira token in your profile to work with Jira from Vision');
-    }
-    return {
-      jira: new JiraClient({ url: project.jiraUrl, ...credentials }),
-      issueType: project.jiraIssueType,
-      linkType: project.jiraLinkType,
-    };
+  private jiraFor(projectId: string, userId?: string): Promise<JiraAccess> {
+    return jiraAccess(this.prismaService, projectId, userId);
   }
 
   /** Records a Jira issue that already exists for the problem, and puts the problem's markers on it. */

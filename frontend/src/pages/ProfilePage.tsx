@@ -30,6 +30,7 @@ import { Role } from "../types";
 import PasswordField from "../components/PasswordField";
 import { useOidcEnabled } from "../_helpers/useOidcEnabled";
 import { JiraTokenCard } from "../components/JiraTokenCard";
+import { GeminiKeyCard } from "../components/GeminiKeyCard";
 import { ApiKeyCard, maskKey } from "../components/ApiKeyCard";
 import { AppearanceCard } from "../components/AppearanceCard";
 import { labelOf, useT } from "../i18n";
@@ -253,6 +254,9 @@ const ProfilePage = () => {
           <Grid container spacing={1}>
             <Grid item xs={12}>
               <JiraTokenCard />
+            </Grid>
+            <Grid item xs={12}>
+              <GeminiKeyCard />
             </Grid>
             <Grid item xs={12}>
               <ApiKeyCard

@@ -135,6 +135,15 @@ function setJira(
   });
 }
 
+function setGemini(dispatch: Dispatch, geminiApiKey: string) {
+  return usersService.setGemini(geminiApiKey).then((user) => {
+    dispatch({
+      type: "success",
+      payload: user,
+    });
+  });
+}
+
 function logout(dispatch: Dispatch) {
   usersService.logout();
   usersService.markOidcLoggedOut();
@@ -151,4 +160,5 @@ export {
   logout,
   update,
   setJira,
+  setGemini,
 };

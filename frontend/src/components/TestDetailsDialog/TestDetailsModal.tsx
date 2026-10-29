@@ -19,9 +19,10 @@ import {
   DialogContent,
   DialogTitle,
   Tooltip as MuiTooltip,
+  Chip,
 } from "@mui/material";
 import { useHotkeys } from "react-hotkeys-hook";
-import { TestRun } from "../../types";
+import { TestRun, VisualBug, VisualBugResult } from "../../types";
 import { testRunService, staticService } from "../../services";
 import { TestStatus } from "../../types/testStatus";
 import { IgnoreArea, UpdateIgnoreAreaDto } from "../../types/ignoreArea";
@@ -39,11 +40,20 @@ import {
   FullscreenExit,
   NavigateNext,
   NavigateBefore,
+  BugReport,
 } from "@mui/icons-material";
 import { TestRunDetails } from "./TestRunDetails";
 import useImage from "use-image";
 import { routes, GO_TO_NEXT_KEY } from "../../constants";
-import { useTestRunDispatch, useTokens, useUserState } from "../../contexts";
+import {
+  useProjectState,
+  useTestRunDispatch,
+  useTokens,
+  useUserState,
+} from "../../contexts";
+import { ReportBugDialog } from "./ReportBugDialog";
+import { BugMark } from "../../_helpers/bugReport.helper";
+import { useDecisionSnackbar } from "../useDecisionSnackbar";
 import { DrawArea, ImageStateLoad } from "./DrawArea";
 import { CommentsPopper } from "../CommentsPopper";
 import { useDialogSnackbar } from "./useDialogSnackbar";
@@ -232,6 +242,19 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
 
   // accessibility report of this run, shared by the side panel and the overlay
   const aiStatus = useAiStatus();
+  // bugs filed from the comparison for this check, on any device (025)
+  const { user } = useUserState();
+  const { projectList, selectedProjectId } = useProjectState();
+  const project = projectList.find((item) => item.id === selectedProjectId);
+  const jiraSet = !!project?.jiraUrl;
+  const jiraReady =
+    jiraSet && (!!user?.jiraTokenSet || !!project?.jiraTokenSet);
+  const [bugDialog, setBugDialog] = useState<{ marks?: BugMark[] } | null>(
+    null,
+  );
+  const [bugs, setBugs] = useState<VisualBug[]>([]);
+  const [showBugMarks, setShowBugMarks] = useState(true);
+  const announce = useDecisionSnackbar(enqueueSnackbar);
   const [a11yReport, setA11yReport] = useState<A11yReport | null | undefined>();
   const [a11yOverlay, setA11yOverlay] = useState(true);
   const [highlightedViolation, setHighlightedViolation] = useState<string>();
@@ -296,7 +319,6 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
   useEffect(() => setStructure(undefined), [testRun.id]);
 
   // selecting elements on the screenshots to make rules for them (spec 024)
-  const { user } = useUserState();
   const canEdit = user?.role === "admin" || user?.role === "editor";
   const [pickMode, setPickMode] = useState(false);
   const [hovered, setHovered] = useState<{
@@ -322,6 +344,67 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
   const elementsOf = (side: Side) =>
     (side === "baseline" ? structure?.baselineElements : structure?.elements) ??
     [];
+  const loadBugs = React.useCallback(() => {
+    if (!jiraSet) return;
+    insightsService
+      .visualBugs(testRun.id)
+      .then(setBugs)
+      .catch(() => setBugs([]));
+  }, [testRun.id, jiraSet]);
+  useEffect(() => {
+    setBugs([]);
+    loadBugs();
+  }, [loadBugs]);
+
+  const reportBugFrom = (region?: {
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+  }) => setBugDialog(region ? { marks: [{ n: 1, ...region }] } : {});
+
+  const onBugFiled = (result: VisualBugResult, rejected: boolean) => {
+    const open = result.jiraUrl
+      ? {
+          label: t("reportBug.openInJira"),
+          testId: "openFiledBug",
+          onClick: () => window.open(result.jiraUrl ?? "", "_blank"),
+        }
+      : undefined;
+    result.warnings.forEach((warning) =>
+      enqueueSnackbar(`${result.jiraKey}: ${warning}`, { variant: "warning" }),
+    );
+    loadBugs();
+    if (!rejected) {
+      announce("reject", 1, undefined, {
+        message: t("reportBug.filed", { key: result.jiraKey }),
+        action: open,
+      });
+      return;
+    }
+    // the same reject as the button, so its journal and Undo work (REQ-025-30)
+    handleDecide();
+    testRunService
+      .rejectBulk([testRun.id])
+      .then((decision) => {
+        announce("reject", 1, decision, {
+          message: t("reportBug.filedRejected", { key: result.jiraKey }),
+          action: open,
+        });
+        settleDecision(true);
+      })
+      .catch((error) => {
+        enqueueSnackbar(
+          t("reportBug.rejectFailed", {
+            key: result.jiraKey,
+            error: String(error),
+          }),
+          { variant: "warning" },
+        );
+        settleDecision(false);
+      });
+  };
+
   useEffect(() => {
     setPickMode(false);
     setHovered(undefined);
@@ -747,6 +830,13 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
   }, [baselineImage, currentImage]);
 
   useHotkeys("right", goNext, [currentRunIndex, handleNext]);
+  useHotkeys(
+    "b",
+    () => {
+      if (jiraReady && !bugDialog) setBugDialog({});
+    },
+    [jiraReady, bugDialog],
+  );
   useHotkeys("left", goPrevious, [currentRunIndex, handlePrevious]);
 
   const isImageSizeDiffer = React.useMemo(
@@ -1109,6 +1199,23 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
           ...(previewRegion
             ? [{ id: "changedArea", ...previewRegion, color: canvas.diff }]
             : []),
+          // a bug's marks are in its device's pixels: shown on that device only
+          ...(showBugMarks
+            ? bugs
+                .filter((bug) => bug.sameDevice)
+                .flatMap((bug) =>
+                  bug.marks.map((mark) => ({
+                    id: `bug-${bug.id}-${mark.n}`,
+                    x: mark.x,
+                    y: mark.y,
+                    width: mark.width,
+                    height: mark.height,
+                    color: canvas.status.new.fg,
+                    dashed: true,
+                    label: bug.jiraKey,
+                  })),
+                )
+            : []),
         ]}
         highlightedOverlayId={
           selectingNow
@@ -1165,6 +1272,28 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
         <Grid item>
           <TestStatusChip status={testRun.status} />
         </Grid>
+        {bugs.slice(0, 3).map((bug) => (
+          <Grid item key={bug.id}>
+            <Tooltip title={bug.summary}>
+              <Chip
+                size="small"
+                variant="outlined"
+                icon={<BugReport sx={{ fontSize: 16 }} />}
+                label={bug.jiraKey}
+                component="a"
+                href={bug.jiraUrl ?? undefined}
+                target="_blank"
+                rel="noreferrer"
+                clickable
+                data-testid="visualBugChip"
+                sx={{
+                  fontFamily: tokens.mono,
+                  "& .MuiChip-icon": { color: tokens.status.failed.fg },
+                }}
+              />
+            </Tooltip>
+          </Grid>
+        ))}
         <Grid item>
           <StepDots statuses={stepStatuses} currentIndex={currentRunIndex} />
         </Grid>
@@ -1403,6 +1532,10 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
           onPreviewElement={setPreviewElement}
           onPreviewViolation={setPreviewViolation}
           onPreviewRegion={setPreviewRegion}
+          onReportBug={jiraReady ? reportBugFrom : undefined}
+          bugs={bugs}
+          bugMarks={showBugMarks}
+          onBugMarksChange={setShowBugMarks}
         />
       </Box>
       <Grid container className={classes.footer}>
@@ -1460,6 +1593,7 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
               afterApprove={() => settleDecision(true, APPROVED_TICK_MS)}
               afterReject={() => settleDecision(true)}
               afterFail={() => settleDecision(false)}
+              onReportBug={jiraReady ? () => reportBugFrom() : undefined}
             />
           )}
           <Tooltip title={t("review.hotkeyRight")}>
@@ -1499,8 +1633,58 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
               </Typography>
             }
           />
+          {jiraSet && (
+            <>
+              <Divider
+                orientation="vertical"
+                flexItem
+                sx={{ mx: 1.5, my: 1.5 }}
+              />
+              <Tooltip
+                title={
+                  jiraReady ? t("reportBug.openHelp") : t("reportBug.needToken")
+                }
+              >
+                <span>
+                  <Button
+                    variant="outlined"
+                    startIcon={<BugReport />}
+                    onClick={() => reportBugFrom()}
+                    disabled={!jiraReady}
+                    data-testid="reportBug"
+                    sx={{ whiteSpace: "nowrap" }}
+                  >
+                    {t("reportBug.open")}
+                    <Box
+                      component="kbd"
+                      sx={{
+                        ml: 1,
+                        fontFamily: tokens.mono,
+                        fontSize: 10.5,
+                        border: "1px solid currentColor",
+                        borderRadius: 0.5,
+                        px: 0.5,
+                        opacity: 0.75,
+                      }}
+                    >
+                      B
+                    </Box>
+                  </Button>
+                </span>
+              </Tooltip>
+            </>
+          )}
         </Grid>
       </Grid>
+      {bugDialog && (
+        <ReportBugDialog
+          testRun={testRun}
+          structure={structure ?? null}
+          initialMarks={bugDialog.marks}
+          onClose={() => setBugDialog(null)}
+          onFiled={onBugFiled}
+        />
+      )}
       <BaseModal
         open={applyIgnoreDialogOpen}
         title={applyIgnoreAreaText}

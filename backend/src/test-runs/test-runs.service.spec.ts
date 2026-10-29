@@ -316,6 +316,7 @@ describe('TestRunsService', () => {
         baselineName: testVariation.baselineName,
         baselineUiTreeName: testVariation.baselineUiTreeName,
         uiTreeName: undefined,
+        featureName: null,
         uiTreeOptions: null,
         ignoreAreas: testVariation.ignoreAreas,
         tempIgnoreAreas: JSON.stringify(createTestRequestDto.ignoreAreas),

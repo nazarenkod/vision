@@ -9,17 +9,23 @@ import {
   DialogContent,
   DialogTitle,
   IconButton,
+  FormControlLabel,
   Link,
   Menu,
   MenuItem,
   Skeleton,
+  Switch,
   Tab,
   Tabs,
   TextField,
   Tooltip,
   Typography,
 } from "@mui/material";
-import { MoreHoriz, VisibilityOffOutlined } from "@mui/icons-material";
+import {
+  BugReport,
+  MoreHoriz,
+  VisibilityOffOutlined,
+} from "@mui/icons-material";
 import { useSnackbar } from "notistack";
 import { v4 as uuid } from "uuid";
 import { useProjectState, useUserState } from "../../contexts";
@@ -30,6 +36,7 @@ import {
   PickableElement,
   StructureInfo,
   TestRun,
+  VisualBug,
   hasUiTree,
 } from "../../types";
 import { StatusPill } from "../StatusPill";
@@ -79,6 +86,17 @@ interface Props {
   onUseElement: (areaId: string) => void;
   // the dialog is adding or removing a rule
   ruleBusy?: boolean;
+  /** opens the bug dialog, with a changed area already marked (REQ-025-03) */
+  onReportBug?: (region?: {
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+  }) => void;
+  // bugs filed from the comparison for this check (REQ-025-60)
+  bugs?: VisualBug[];
+  bugMarks?: boolean;
+  onBugMarksChange?: (on: boolean) => void;
 }
 
 type RuleDraft = {
@@ -114,6 +132,10 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
   onPreviewMark,
   onUseElement,
   ruleBusy,
+  onReportBug,
+  bugs = [],
+  bugMarks = true,
+  onBugMarksChange,
 }) => {
   const { enqueueSnackbar } = useSnackbar();
   const { t, tx } = useT();
@@ -982,6 +1004,81 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
       !structure.warnings.length;
     return (
       <>
+        {bugs.length > 0 && (
+          <Box
+            sx={{ display: "flex", flexDirection: "column", gap: 0.75 }}
+            data-testid="screenBugs"
+          >
+            <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+              <Typography variant="subtitle2" sx={{ flex: 1 }}>
+                {t("reportBug.bugsForScreen")}
+              </Typography>
+              {onBugMarksChange && bugs.some((bug) => bug.sameDevice) && (
+                <FormControlLabel
+                  sx={{ mr: 0 }}
+                  control={
+                    <Switch
+                      size="small"
+                      checked={bugMarks}
+                      onChange={(event) =>
+                        onBugMarksChange(event.target.checked)
+                      }
+                    />
+                  }
+                  label={
+                    <Typography variant="caption" color="textSecondary">
+                      {t("reportBug.bugMarks")}
+                    </Typography>
+                  }
+                />
+              )}
+            </Box>
+            {bugs.map((bug) => (
+              <Box
+                key={bug.id}
+                sx={{
+                  border: `1px solid ${tokens.border}`,
+                  borderRadius: 2,
+                  px: 1.25,
+                  py: 1,
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: 0.25,
+                }}
+              >
+                <Box sx={{ display: "flex", alignItems: "center", gap: 0.75 }}>
+                  <BugReport
+                    sx={{ fontSize: 16, color: tokens.status.failed.fg }}
+                  />
+                  {bug.jiraUrl ? (
+                    <Link
+                      href={bug.jiraUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      sx={{
+                        fontFamily: tokens.mono,
+                        fontSize: 13,
+                        fontWeight: 600,
+                      }}
+                    >
+                      {bug.jiraKey}
+                    </Link>
+                  ) : (
+                    <Typography sx={{ fontFamily: tokens.mono, fontSize: 13 }}>
+                      {bug.jiraKey}
+                    </Typography>
+                  )}
+                </Box>
+                <Typography variant="body2">{bug.summary}</Typography>
+                <Typography variant="caption" color="textSecondary">
+                  {t("reportBug.filedFrom", {
+                    date: new Date(bug.createdAt).toLocaleDateString(),
+                  })}
+                </Typography>
+              </Box>
+            ))}
+          </Box>
+        )}
         <WhatsCompared
           structure={structure}
           areas={
@@ -1091,6 +1188,19 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
                         >
                           ×{group.regions.length}
                         </Box>
+                      </Tooltip>
+                    )}
+                    {onReportBug && (
+                      <Tooltip title={t("reportBug.fromChange")}>
+                        <IconButton
+                          size="small"
+                          aria-label={t("reportBug.fromChange")}
+                          onClick={() => onReportBug(group.bounds)}
+                          data-testid="reportBugFromArea"
+                          sx={quietIcon}
+                        >
+                          <BugReport sx={{ fontSize: 18 }} />
+                        </IconButton>
                       </Tooltip>
                     )}
                     {elementActions(group.resourceId)}

@@ -25,52 +25,17 @@ import { ChosenValue, JiraFieldInput } from "./JiraFieldInput";
 import { tokens } from "../../theme";
 import { useT } from "../../i18n";
 
-const JIRA_KEY = /^[A-Za-z][A-Za-z0-9_]*-\d+$/;
-
-// Remembered in the browser: the task per screen, and how often each issue and
-// link type was used, so the most frequent one is offered first.
-const parentKeyFor = (projectId: string, screen: string) =>
-  `vision.jira.parent.${projectId}.${screen}`;
-const lastParentKey = (projectId: string) => `vision.jira.parent.${projectId}`;
-const usageKey = (projectId: string, kind: "issueType" | "linkType") =>
-  `vision.jira.${kind}.${projectId}`;
-// field values chosen last time (customer, severity…), by Jira field id
-const fieldsKey = (projectId: string) => `vision.jira.fields.${projectId}`;
-
-const read = (key: string): string | null => {
-  try {
-    return localStorage.getItem(key);
-  } catch {
-    return null;
-  }
-};
-const write = (key: string, value: string) => {
-  try {
-    localStorage.setItem(key, value);
-  } catch {
-    // a convenience only
-  }
-};
-const usage = (key: string): Record<string, number> => {
-  try {
-    return JSON.parse(read(key) ?? "{}") ?? {};
-  } catch {
-    return {};
-  }
-};
-const countUse = (key: string, value: string) =>
-  write(
-    key,
-    JSON.stringify({ ...usage(key), [value]: (usage(key)[value] ?? 0) + 1 }),
-  );
-const mostUsed = (key: string, options: string[]): string | null => {
-  const counts = usage(key);
-  return (
-    options
-      .filter((option) => counts[option])
-      .sort((a, b) => counts[b] - counts[a])[0] ?? null
-  );
-};
+import {
+  JIRA_KEY,
+  countUse,
+  fieldsKey,
+  lastParentKey,
+  mostUsed,
+  parentKeyFor,
+  read,
+  usageKey,
+  write,
+} from "../../_helpers/jiraMemory";
 
 /**
  * Files Jira bugs for one problem or for every open one of the screenshot, one

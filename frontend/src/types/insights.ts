@@ -508,6 +508,8 @@ export interface JiraBugInput {
   required: boolean;
   type: "user" | "option" | "options" | "text" | "number";
   options?: Array<{ id: string; label: string }>;
+  // severity and customer are found by name; a bug from the comparison treats them apart
+  role?: "severity" | "customer";
   value?: unknown;
   display?: string;
 }
@@ -517,4 +519,76 @@ export interface JiraUser {
   name?: string;
   key?: string;
   displayName?: string;
+}
+
+/** What the bug-from-comparison dialog shows and fills in (025). */
+export interface VisualBugPreparation {
+  parent: {
+    key: string;
+    summary: string;
+    projectKey: string;
+    assignee: string | null;
+  };
+  issueTypes: Array<{ id: string; name: string; subtask: boolean }>;
+  issueTypeId: string;
+  linkTypes: string[];
+  linkType: string | null;
+  feature: string;
+  // "[Automation] [feature]": Vision puts it before the essence
+  prefix: string;
+  environment: string;
+  hasBaseline: boolean;
+  inputs: JiraBugInput[];
+  filled: Array<{ field: string; value: string; source: "task" | "vision" }>;
+  missing: string[];
+}
+
+export interface VisualBugMark {
+  n: number;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  element?: string;
+}
+
+export interface VisualBugFiling {
+  parentKey: string;
+  issueTypeId?: string;
+  linkType?: string;
+  fieldValues?: Record<string, unknown>;
+  essence: string;
+  environment: string;
+  steps: string;
+  actual: string;
+  expected: string;
+  marks: Array<Omit<VisualBugMark, "n">>;
+}
+
+export interface VisualBugResult {
+  jiraKey: string;
+  jiraUrl: string | null;
+  summary: string;
+  warnings: string[];
+}
+
+/** A bug filed from the comparison for this check, on any device or build. */
+export interface VisualBug {
+  id: string;
+  jiraKey: string;
+  jiraUrl: string | null;
+  summary: string;
+  marks: VisualBugMark[];
+  // marks are in the pixels of the device the bug was filed from
+  sameDevice: boolean;
+  testRunId: string;
+  createdAt: string;
+}
+
+export interface BugDraft {
+  essence: string;
+  steps: string;
+  actual: string;
+  expected: string;
+  cached: boolean;
 }

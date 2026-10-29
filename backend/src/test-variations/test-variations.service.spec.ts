@@ -172,6 +172,32 @@ describe('TestVariationsService', () => {
       expect(result).toBe(variationMock);
     });
 
+    it('compares with the same baseline whether a feature is sent or not', async () => {
+      const request: CreateTestRequestDto = {
+        buildId: 'buildId',
+        projectId: projectMock.id,
+        name: 'Checkout. Payment sheet',
+        os: 'OS',
+        browser: 'browser',
+        viewport: 'viewport',
+        device: 'device',
+        customTags: '',
+        branchName: projectMock.mainBranchName,
+      };
+      const lookUps = [];
+      for (const featureName of [undefined, 'Оплата']) {
+        service = await initModule({ projectFindUniqueMock: jest.fn().mockReturnValue(projectMock) });
+        service.findUnique = jest.fn().mockResolvedValue(undefined);
+        // the whole request goes in, as postTestRun passes it
+        const withFeature: CreateTestRequestDto = { ...request, featureName };
+        await service.find(withFeature);
+        lookUps.push((service.findUnique as jest.Mock).mock.calls);
+      }
+
+      expect(lookUps[1]).toEqual(lookUps[0]);
+      expect(JSON.stringify(lookUps[1])).not.toContain('Оплата');
+    });
+
     it('can find by current branch', async () => {
       const createRequest: CreateTestRequestDto = {
         buildId: 'buildId',

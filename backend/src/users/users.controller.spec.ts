@@ -25,6 +25,7 @@ describe('Users Controller', () => {
     isActive: true,
     jiraToken: null,
     jiraEmail: null,
+    geminiApiKey: null,
     lastSignInAt: null,
     role: Role.editor,
     updatedAt: new Date(),
@@ -59,6 +60,21 @@ describe('Users Controller', () => {
     const result = controller.me(user);
     expect(result).toBeInstanceOf(UserDto);
     expect(result.email).toBe('test@example.com');
+  });
+
+  it('stores a personal Gemini key and answers only whether one is set', async () => {
+    const update = jest.fn(async ({ data }) => ({ ...user, ...data }));
+    const prisma = { user: { update } };
+    const withPrisma = new UsersController(usersService as never, prisma as never, { get: jest.fn() } as never);
+
+    const saved = await withPrisma.setGemini(user, { geminiApiKey: ' key-1 ' });
+    expect(update).toHaveBeenCalledWith({ where: { id: '1' }, data: { geminiApiKey: 'key-1' } });
+    expect(saved.geminiKeySet).toBe(true);
+    expect(JSON.stringify(saved)).not.toContain('key-1');
+
+    const removed = await withPrisma.setGemini(user, { geminiApiKey: '' });
+    expect(update).toHaveBeenLastCalledWith({ where: { id: '1' }, data: { geminiApiKey: null } });
+    expect(removed.geminiKeySet).toBe(false);
   });
 
   it('reports whether OIDC is enabled', () => {

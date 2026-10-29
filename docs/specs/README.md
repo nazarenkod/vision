@@ -84,6 +84,7 @@ docs/specs/NNN-коротка-назва/
 | [022](022-remove-variation-groups/spec.md) | Без груп варіацій | Implemented |
 | [023](023-ukrainian-ui/spec.md) | Українська мова інтерфейсу | Implemented |
 | [024](024-elements-instead-of-areas/spec.md) | Елементи замість областей: ігнорувати й порівнювати те, що на екрані | Implemented |
+| [025](025-bug-from-comparison/spec.md) | Баг із порівняння: вручну або з AI | Implemented |
 | [026](026-a11y-rules-settings/spec.md) | Норми доступності проєкту | Implemented |
 
 Статусу `Verified` поки немає в жодної: інтеграцію з реальною Jira Cloud і прогони на сервері

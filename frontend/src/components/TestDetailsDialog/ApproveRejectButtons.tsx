@@ -49,7 +49,16 @@ export const ApproveRejectButtons: React.FunctionComponent<{
   afterReject?: () => void;
   /** the server refused the decision */
   afterFail?: () => void;
-}> = ({ testRun, onDecide, afterApprove, afterReject, afterFail }) => {
+  /** offered in the reject notification: a rejected screen is often a bug (REQ-025-04) */
+  onReportBug?: () => void;
+}> = ({
+  testRun,
+  onDecide,
+  afterApprove,
+  afterReject,
+  afterFail,
+  onReportBug,
+}) => {
   const { enqueueSnackbar } = useDialogSnackbar();
   // the dialog's own placement and one-at-a-time rule, with Undo for 8 s
   const announce = useDecisionSnackbar(enqueueSnackbar);
@@ -88,7 +97,20 @@ export const ApproveRejectButtons: React.FunctionComponent<{
     testRunService
       .rejectBulk([testRun.id])
       .then((decision) => {
-        announce("reject", 1, decision);
+        announce(
+          "reject",
+          1,
+          decision,
+          onReportBug
+            ? {
+                action: {
+                  label: t("reportBug.open"),
+                  testId: "reportBugAfterReject",
+                  onClick: onReportBug,
+                },
+              }
+            : undefined,
+        );
         afterReject?.();
       })
       .catch((err) => {

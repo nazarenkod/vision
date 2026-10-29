@@ -93,9 +93,15 @@ export class AiService {
     prompt: string;
     images?: Buffer[];
     cacheParts?: unknown;
+    // a person's own Gemini key (025): Gemini whatever the instance runs, and
+    // their own quota, so the instance's daily limit does not apply
+    personalGeminiKey?: string;
   }): Promise<AiAnswer<T>> {
-    const provider = this.provider;
-    const model = this.model;
+    const personal = input.personalGeminiKey;
+    const provider: AiProviderName = personal ? 'gemini' : this.provider;
+    const model = personal
+      ? (this.provider === 'gemini' && this.configService.get<string>('AI_MODEL')) || DEFAULT_MODEL.gemini
+      : this.model;
     if (provider === 'none' || !model) {
       throw new HttpException('AI is not configured on this instance', HttpStatus.SERVICE_UNAVAILABLE);
     }
@@ -109,7 +115,7 @@ export class AiService {
     if (cached) {
       return { result: input.schema.parse(JSON.parse(cached.payload)), cached: true, model: cached.model ?? model };
     }
-    if ((await this.usedToday()) >= this.dailyLimit) {
+    if (!personal && (await this.usedToday()) >= this.dailyLimit) {
       throw new HttpException(`Daily AI limit of ${this.dailyLimit} calls reached`, HttpStatus.TOO_MANY_REQUESTS);
     }
 
@@ -118,7 +124,7 @@ export class AiService {
         ? {
             provider: 'gemini',
             model,
-            apiKey: this.configService.get<string>('GEMINI_API_KEY'),
+            apiKey: personal ?? this.configService.get<string>('GEMINI_API_KEY'),
             prompt: input.prompt,
             temperature: 0.1,
           }

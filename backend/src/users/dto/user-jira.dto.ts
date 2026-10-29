@@ -15,3 +15,12 @@ export class UserJiraDto {
   @MaxLength(320)
   jiraEmail?: string;
 }
+
+/** A personal Gemini API key; an empty string removes it. Write-only. */
+export class UserGeminiDto {
+  @ApiPropertyOptional({ description: 'Gemini API key from Google AI Studio; write-only' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  geminiApiKey?: string;
+}

@@ -174,6 +174,8 @@ export interface BugInput {
   required: boolean;
   type: 'user' | 'option' | 'options' | 'text' | 'number';
   options?: Array<{ id: string; label: string }>;
+  // severity and customer are found by name; the dialog treats them apart
+  role?: 'severity' | 'customer';
   // current value in the form the create call takes, and how to show it
   value?: unknown;
   display?: string;
@@ -214,7 +216,8 @@ export function buildBugFields(input: {
   summary: string;
   description: string;
   labels: string[];
-  severity: string;
+  // set for the person when given (S4 for accessibility); without it they must choose one
+  severity?: string;
   // values the person chose in the dialog, by field id, in create form
   overrides?: Record<string, unknown>;
 }): BugFields {
@@ -245,7 +248,7 @@ export function buildBugFields(input: {
 
   for (const field of meta) {
     if (HANDLED.has(field.id) || fields[field.id] !== undefined) continue;
-    if (SEVERITY_FIELD.test(field.name)) {
+    if (SEVERITY_FIELD.test(field.name) && input.severity !== undefined) {
       const wanted = input.severity.toLowerCase();
       const option =
         field.allowedValues?.find((item) => display(item).trim().toLowerCase() === wanted) ??
@@ -294,11 +297,18 @@ export function buildBugFields(input: {
     .filter((entry): entry is { field: JiraField; type: BugInput['type'] } => entry.type !== null)
     .map(({ field, type }) => {
       const automatic = filled.find((item) => item.field === field.name);
+      const role = SEVERITY_FIELD.test(field.name)
+        ? 'severity'
+        : CUSTOMER_FIELD.test(field.name)
+          ? 'customer'
+          : undefined;
       return {
         id: field.id,
         name: field.name,
-        required: field.required && !field.hasDefaultValue,
+        // no severity given means the person picks one, even where Jira would take none
+        required: (field.required && !field.hasDefaultValue) || (role === 'severity' && input.severity === undefined),
         type,
+        ...(role ? { role } : {}),
         ...(field.allowedValues?.length
           ? { options: field.allowedValues.map((item) => ({ id: String(item.id), label: display(item) })) }
           : {}),

@@ -155,6 +155,7 @@ public class VisualRegressionTracker {
                 .diffTollerancePercent(testRunOptions.getDiffTollerancePercent())
                 .ignoreAreas(testRunOptions.getIgnoreAreas())
                 .uiTree(encodeUiTree(testRunOptions.getUiTree()))
+                .featureName(testRunOptions.getFeatureName())
                 .build();
 
         HttpRequest.BodyPublisher body = HttpRequest.BodyPublishers.ofString(gson.toJson(newTestRun));

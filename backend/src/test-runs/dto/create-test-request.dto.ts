@@ -11,6 +11,7 @@ import {
   IsIn,
   IsInt,
   Min,
+  MaxLength,
 } from 'class-validator';
 import { BaselineDataDto } from '../../shared/dto/baseline-data.dto';
 import { IgnoreAreaDto } from './ignore-area.dto';
@@ -71,4 +72,13 @@ export class CreateTestRequestDto extends BaselineDataDto {
   @IsOptional()
   @IsBoolean()
   excludeSystemBars?: boolean;
+
+  @ApiPropertyOptional({
+    description:
+      'Feature the screen belongs to; names bugs filed from the review. Not part of the check: baselines stay',
+  })
+  @IsOptional()
+  @IsString()
+  @MaxLength(200)
+  featureName?: string;
 }

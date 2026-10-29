@@ -145,3 +145,92 @@ describe('cropPng', () => {
     expect([crop.width, crop.height]).toEqual([350, 200]);
   });
 });
+
+describe('AiFeaturesService: bug drafts', () => {
+  const draft = { essence: 'кнопка обрізана', steps: ['Відкрити Checkout'], actual: 'Обрізана.', expected: 'Видна.' };
+  const run = {
+    id: 'run',
+    name: 'Checkout. Payment sheet',
+    featureName: null,
+    imageName: 'i',
+    baselineName: 'b',
+    diffRegions: null,
+  };
+
+  function drafts(
+    env: Record<string, string>,
+    options: { key?: string | null; usedToday?: number; generate?: jest.Mock } = {}
+  ) {
+    const { service: aiService, geminiService, ollamaService } = setup(env, {}, options.usedToday ?? 0);
+    if (options.generate) geminiService.generate = options.generate;
+    else geminiService.generate.mockResolvedValue({ content: JSON.stringify(draft) });
+    const image = new PNG({ width: 100, height: 200 });
+    const key = options.key === undefined ? 'personal-key' : options.key;
+    const service = new AiFeaturesService(
+      aiService,
+      {
+        testRun: { findUnique: jest.fn().mockResolvedValue(run) },
+        user: { findUnique: jest.fn().mockResolvedValue({ geminiApiKey: key }) },
+      } as never,
+      { getImage: jest.fn().mockResolvedValue(image) } as never,
+      {} as never,
+      {} as never,
+      {} as never
+    );
+    return { service, geminiService, ollamaService };
+  }
+  const request = {
+    testRunId: 'run',
+    note: 'кнопка оплати обрізана',
+    marks: [{ x: 0, y: 150, width: 100, height: 40 }],
+  };
+
+  it('refuses a bug draft without the person’s own Gemini key', async () => {
+    const { service, geminiService } = drafts({ AI_PROVIDER: 'gemini', GEMINI_API_KEY: 'instance' }, { key: null });
+    await expect(service.draftBug(request, 'u1')).rejects.toThrow('Add your Gemini API key');
+    expect(geminiService.generate).not.toHaveBeenCalled();
+  });
+
+  it('drafts on the person’s own key whatever the instance runs, outside its daily limit', async () => {
+    const { service, geminiService, ollamaService } = drafts(
+      { AI_PROVIDER: 'ollama', OLLAMA_BASE_URL: 'http://ollama' },
+      { usedToday: 9999 }
+    );
+    await service.draftBug(request, 'u1');
+    expect(ollamaService.generate).not.toHaveBeenCalled();
+    expect(geminiService.generate.mock.calls[0][0]).toMatchObject({ provider: 'gemini', apiKey: 'personal-key' });
+  });
+
+  it('asks again instead of answering from the cache on a new attempt', async () => {
+    const { service, geminiService } = drafts({});
+
+    const first = await service.draftBug({ ...request, attempt: 1 }, 'u1');
+    await service.draftBug({ ...request, attempt: 1 }, 'u1');
+    await service.draftBug({ ...request, attempt: 2 }, 'u1');
+
+    expect(first).toEqual({
+      essence: 'кнопка обрізана',
+      steps: '1. Відкрити Checkout',
+      actual: 'Обрізана.',
+      expected: 'Видна.',
+      cached: false,
+    });
+    expect(geminiService.generate).toHaveBeenCalledTimes(2);
+    // a baseline and a checkpoint crop of the one mark, not the whole screenshots
+    const images = geminiService.generate.mock.calls[0][1];
+    expect(images).toHaveLength(2);
+  });
+
+  it('gives up on a bug draft after 30 seconds', async () => {
+    jest.useFakeTimers();
+    try {
+      const { service } = drafts({}, { generate: jest.fn(() => new Promise(() => undefined)) });
+      const answer = service.draftBug(request, 'u1');
+      const settled = expect(answer).rejects.toThrow('did not answer in 30 s');
+      await jest.advanceTimersByTimeAsync(30_000);
+      await settled;
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+});

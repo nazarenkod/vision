@@ -62,7 +62,7 @@ publishing {
         sdk(MavenPublication) {
             groupId = findProperty('publishGroup') ?: 'com.github.Visual-Regression-Tracker'
             artifactId = 'sdk-java'
-            version = findProperty('publishVersion') ?: "${project.version}-vision.1"
+            version = findProperty('publishVersion') ?: "${project.version}-vision.2"
             from components.java
         }
     }

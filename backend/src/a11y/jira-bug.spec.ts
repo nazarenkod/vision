@@ -295,6 +295,35 @@ describe('buildBugFields', () => {
     expect(after.missing).toEqual(['Epic']);
   });
 
+  it('leaves severity empty and required when none is given', () => {
+    const meta = [
+      field('customfield_1', 'Серйозність помилки', {
+        schema: { type: 'option' },
+        allowedValues: ['S1', 'S4'].map((value, i) => ({ id: String(i), value })),
+      }),
+    ];
+    const { severity, ...withoutSeverity } = base;
+    const bug = buildBugFields({ ...withoutSeverity, meta, parent: parent(), issueType: subtask });
+    expect(severity).toBe('S4');
+    expect(bug.fields.customfield_1).toBeUndefined();
+    expect(bug.inputs).toEqual([expect.objectContaining({ id: 'customfield_1', role: 'severity', required: true })]);
+    expect(bug.inputs[0].value).toBeUndefined();
+  });
+
+  it('marks the customer input so the dialog can hide it', () => {
+    const meta = [field('customfield_2', 'Замовник', { required: true, schema: { type: 'user' } })];
+    const bug = buildBugFields({
+      ...base,
+      meta,
+      parent: parent({ customfield_2: { accountId: 'olena', displayName: 'Олена Коваль' } }),
+      issueType: subtask,
+    });
+    expect(bug.fields.customfield_2).toEqual({ accountId: 'olena' });
+    expect(bug.inputs).toEqual([
+      expect.objectContaining({ id: 'customfield_2', role: 'customer', display: 'Олена Коваль' }),
+    ]);
+  });
+
   it('sends only fields on the create screen', () => {
     const bug = buildBugFields({ ...base, meta: [field('summary', 'Summary')], parent: parent(), issueType: bugType });
     expect(bug.fields.labels).toBeUndefined();

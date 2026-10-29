@@ -1,7 +1,7 @@
 # Vision Java SDK, ready-made jar
 
-`sdk-java-4.3.1-vision.1.jar` is upstream sdk-java 4.3.1 plus one optional field,
-`TestRunOptions.uiTree`. Same package and classes, runs on Java 11+. Rebuild with
+`sdk-java-4.3.1-vision.2.jar` is upstream sdk-java 4.3.1 plus two optional fields,
+`TestRunOptions.uiTree` and `featureName`. Same package and classes, runs on Java 11+. Rebuild with
 `./scripts/build-sdk-jar.sh` (JDK 11–17, Gradle 7).
 
 Add it to a Maven project in one of two ways.
@@ -11,14 +11,14 @@ Add it to a Maven project in one of two ways.
 Keeps the dependencies (gson, slf4j) that the pom lists, so only `<version>` changes in your pom:
 
 ```bash
-mvn install:install-file -Dfile=sdk-java-4.3.1-vision.1.jar -DpomFile=sdk-java-4.3.1-vision.1.pom
+mvn install:install-file -Dfile=sdk-java-4.3.1-vision.2.jar -DpomFile=sdk-java-4.3.1-vision.2.pom
 ```
 
 ```xml
 <dependency>
     <groupId>com.github.Visual-Regression-Tracker</groupId>
     <artifactId>sdk-java</artifactId>
-    <version>4.3.1-vision.1</version>
+    <version>4.3.1-vision.2</version>
 </dependency>
 ```
 
@@ -32,9 +32,9 @@ Put the jar into e.g. `libs/` of the test project and commit it. Then:
 <dependency>
     <groupId>com.github.Visual-Regression-Tracker</groupId>
     <artifactId>sdk-java</artifactId>
-    <version>4.3.1-vision.1</version>
+    <version>4.3.1-vision.2</version>
     <scope>system</scope>
-    <systemPath>${project.basedir}/libs/sdk-java-4.3.1-vision.1.jar</systemPath>
+    <systemPath>${project.basedir}/libs/sdk-java-4.3.1-vision.2.jar</systemPath>
 </dependency>
 <!-- a system jar brings no dependencies of its own -->
 <dependency>

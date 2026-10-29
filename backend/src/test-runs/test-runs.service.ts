@@ -5,8 +5,9 @@ import {
   checkKey,
   ElementRule,
   parseJsonArray,
-  parseSelector,
+  findBySelector,
   parseUiTreeSettings,
+  selectorProblem,
 } from '../ui-tree/comparison-inputs';
 import { CreateTestRequestDto } from './dto/create-test-request.dto';
 import { IgnoreAreaDto } from './dto/ignore-area.dto';
@@ -466,15 +467,37 @@ export class TestRunsService {
     return testRun ? this.uiTreeService.structure(testRun) : null;
   }
 
+  private assertSelector(selector: string) {
+    const problem = selectorProblem(selector);
+    if (problem === 'prefix') throw new BadRequestException('Selector must start with id:, class:, text: or xpath:');
+    // the rule form shows the reason in the person's language; this is for the API
+    if (problem) throw new BadRequestException(`This xpath is not a path from a stable element (${problem})`);
+  }
+
+  /** What a selector finds on the run's baseline and screenshot, before it is saved (REQ-027-32). */
+  async selectorMatches(
+    id: string,
+    selector: string
+  ): Promise<{ current: number; baseline: number; problem: ReturnType<typeof selectorProblem> }> {
+    const problem = selectorProblem(selector ?? '');
+    if (problem) return { current: 0, baseline: 0, problem };
+    const testRun = await this.findOne(id);
+    if (!testRun) throw new NotFoundException('Test run not found');
+    const [tree, baselineTree] = await Promise.all([
+      this.uiTreeService.load(testRun.uiTreeName),
+      this.uiTreeService.load(testRun.baselineUiTreeName),
+    ]);
+    const count = (side: typeof tree) => (side ? findBySelector(side, selector).length : 0);
+    return { current: count(tree), baseline: count(baselineTree), problem: null };
+  }
+
   /**
    * Adds an element rule to the run's screen or to the whole project, then
    * compares the run again; other runs of the build it applies to are
    * compared again in the background.
    */
   async addElementRule(id: string, dto: AddElementRuleDto): Promise<ElementRule> {
-    if (!parseSelector(dto.selector)) {
-      throw new BadRequestException('Selector must start with id:, class: or text:');
-    }
+    this.assertSelector(dto.selector);
     // each check names its own elements; "compare only these" for every screen would compare nothing elsewhere
     if (dto.action === 'compare' && dto.scope === 'project') {
       throw new BadRequestException('Compare only applies to one screen');
@@ -502,9 +525,7 @@ export class TestRunsService {
     id: string,
     dto: ReplaceAreaWithElementDto
   ): Promise<{ rule: ElementRule; area: IgnoreAreaDto }> {
-    if (!parseSelector(dto.selector)) {
-      throw new BadRequestException('Selector must start with id:, class: or text:');
-    }
+    this.assertSelector(dto.selector);
     const testRun = await this.findOne(id);
     if (!testRun) throw new NotFoundException('Test run not found');
     // areas drawn in the UI carry an id; the DTO only describes the rectangle

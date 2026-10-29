@@ -15,8 +15,9 @@
 | Метод і шлях | Призначення |
 |---|---|
 | `GET /test-runs/groups?buildId=` | групи змін збірки |
-| `GET /test-runs/:id/structure` | зміни елементів, правила (з тим, що кожне знайшло на обох знімках), шум, `compareOnly` (що порівнюється і проблеми), елементи обох знімків, пропозиції замінити область елементом |
-| `POST /test-runs/:id/element-rules`, `…/element-rules/remove` | правило елемента для перевірки або проєкту: `action` — `ignore`, `tolerate` або `compare` («порівнювати лише», лише `scope: screen`, інакше `400`) ([015](../specs/015-compare-selected-elements/spec.md)) |
+| `GET /test-runs/:id/structure` | зміни елементів, правила (з тим, що кожне знайшло на обох знімках), шум, `compareOnly` (що порівнюється і проблеми), елементи обох знімків (безіменні — з `nameless` і `variants`, [027](../specs/027-nameless-elements/spec.md)), пропозиції замінити область елементом |
+| `POST /test-runs/:id/element-rules`, `…/element-rules/remove` | правило елемента для перевірки або проєкту: `action` — `ignore`, `tolerate` або `compare` («порівнювати лише», лише `scope: screen`, інакше `400`) ([015](../specs/015-compare-selected-elements/spec.md)); селектор `id:`, `class:`, `text:` або `xpath:` — шлях від стабільного елемента, інакше `400` ([027](../specs/027-nameless-elements/spec.md)) |
+| `GET /test-runs/:id/selector-matches?selector=…` | скільки елементів селектор знаходить на еталоні й на знімку (`current`, `baseline`) або чому його не можна вжити (`problem`: `prefix`, `syntax`, `anchor`, `attribute`, `axis`, `function`, `or`, `mixed`); лише читає ([027](../specs/027-nameless-elements/spec.md)) |
 | `POST /test-runs/:id/ignore-areas/replace-with-element` | `{ areaId, selector }`: прибрати збережену область і додати правило «ігнорувати» для елемента, порівняти знімок один раз; відповідь `{ rule, area }` для Undo ([024](../specs/024-elements-instead-of-areas/spec.md)) |
 | `GET /test-runs/:id/a11y` | звіт доступності з рішеннями; заодно шукає в Jira незаведені проблеми (від імені того, хто дивиться) |
 | `POST /test-runs/approve`, `POST /test-runs/reject` | як в upstream, але відповідь тепер `{ decisionId }`: запис журналу для Undo ([018](../specs/018-ui-redesign/spec.md)) |

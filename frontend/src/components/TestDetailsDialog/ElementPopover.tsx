@@ -15,7 +15,12 @@ import {
   PickableElement,
   RuleScope,
   ScreenRule,
+  SelectorVariant,
 } from "../../types/insights";
+import {
+  chosenVariant,
+  elementLabel,
+} from "../../_helpers/elementPicking.helper";
 import { tokens } from "../../theme";
 import { useT } from "../../i18n";
 
@@ -39,6 +44,8 @@ interface ElementPopoverProps {
   onDown: () => void;
   onMore: () => void;
   onAct: (action: ElementRuleAction, scope: RuleScope) => void;
+  // a nameless element can be found another way (REQ-027-15)
+  onChooseVariant?: (variant: SelectorVariant) => void;
   onRemove: (rule: ScreenRule) => void;
   onClose: () => void;
 }
@@ -82,6 +89,7 @@ export const ElementPopover: React.FunctionComponent<ElementPopoverProps> = ({
   onAct,
   onRemove,
   onClose,
+  onChooseVariant,
 }) => {
   const { t } = useT();
   const [scope, setScope] = React.useState<RuleScope>("screen");
@@ -131,6 +139,10 @@ export const ElementPopover: React.FunctionComponent<ElementPopoverProps> = ({
     window.addEventListener("keydown", onKey, true);
     return () => window.removeEventListener("keydown", onKey, true);
   }, []);
+
+  const name = elementLabel(element, t);
+  const variant = chosenVariant(element);
+  const variants = element.variants ?? [];
 
   const ruleLabel = rule
     ? rule.action === "ignore"
@@ -218,7 +230,7 @@ export const ElementPopover: React.FunctionComponent<ElementPopoverProps> = ({
     >
       <Paper
         role="dialog"
-        aria-label={element.element}
+        aria-label={name}
         data-testid="elementPopover"
         sx={{
           width: 256,
@@ -244,7 +256,7 @@ export const ElementPopover: React.FunctionComponent<ElementPopoverProps> = ({
               sx={{ fontSize: 14.5, fontWeight: 600 }}
               title={element.selector}
             >
-              {element.element}
+              {name}
             </Typography>
             {(selectedCount > 1 || sameSelector > 1) && (
               <Typography sx={{ fontSize: 12, color: tokens.textMuted }}>
@@ -292,6 +304,80 @@ export const ElementPopover: React.FunctionComponent<ElementPopoverProps> = ({
             </IconButton>
           </Tooltip>
         </Box>
+        {variant?.anchorKind === "text" && (
+          <Typography
+            data-testid="elementTextAnchor"
+            sx={{
+              px: 1.75,
+              py: 1,
+              fontSize: 12,
+              color: tokens.status.changed.fg,
+              bgcolor: tokens.status.changed.bg,
+              borderBottom: `1px solid ${tokens.border}`,
+            }}
+          >
+            {t("select.textAnchor")}
+          </Typography>
+        )}
+        {!rule && variants.length > 1 && (
+          <Box
+            role="radiogroup"
+            aria-label={t("select.foundBy")}
+            sx={{ p: 0.75, borderBottom: `1px solid ${tokens.border}` }}
+          >
+            {variants.map((item) => {
+              const chosen = item.selector === variant?.selector;
+              return (
+                <ButtonBase
+                  key={item.selector}
+                  role="radio"
+                  aria-checked={chosen}
+                  title={item.selector}
+                  onClick={() => onChooseVariant?.(item)}
+                  data-testid={`elementVariant-${item.direction}`}
+                  sx={{
+                    display: "flex",
+                    gap: 1,
+                    width: "100%",
+                    borderRadius: "8px",
+                    px: 1.25,
+                    py: 0.75,
+                    font: "inherit",
+                    fontSize: 13,
+                    fontWeight: chosen ? 600 : 500,
+                    color: chosen ? tokens.text : tokens.textSecondary,
+                    bgcolor: chosen ? tokens.subtle : "transparent",
+                    "&:hover, &.Mui-focusVisible": { bgcolor: tokens.subtle },
+                  }}
+                >
+                  <Box
+                    component="span"
+                    sx={{
+                      flexGrow: 1,
+                      textAlign: "left",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    {t(
+                      item.direction === "down"
+                        ? "select.variantInside"
+                        : "select.variantAround",
+                      { anchor: item.anchor },
+                    )}
+                  </Box>
+                  <Box
+                    component="span"
+                    sx={{ fontSize: 11, color: tokens.textMuted }}
+                  >
+                    {t("select.found", { count: item.count })}
+                  </Box>
+                </ButtonBase>
+              );
+            })}
+          </Box>
+        )}
         {rule ? (
           <Box
             sx={{ p: 1.5, display: "flex", flexDirection: "column", gap: 1 }}

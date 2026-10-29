@@ -74,9 +74,12 @@ import {
   ElementRuleAction,
   RuleScope,
   ScreenRule,
+  SelectorVariant,
 } from "../../types/insights";
 import {
+  chosenVariant,
   elementAt,
+  elementLabel,
   countBySelector,
   Picked,
   ruleFor,
@@ -467,6 +470,20 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
         : current;
     });
 
+  // the chosen way to find a nameless element is the selector its rule gets (REQ-027-16)
+  const chooseVariant = (variant: SelectorVariant) =>
+    setSelection((current) => {
+      if (!current) return current;
+      const element = { ...current.picked.element, selector: variant.selector };
+      return {
+        ...current,
+        picked: { ...current.picked, element },
+        selected: current.selected.map((item) =>
+          item === current.picked.element ? element : item,
+        ),
+      };
+    });
+
   const showRuleSnack = useRuleSnackbar(enqueueSnackbar);
   const act = async (action: ElementRuleAction, scope: RuleScope) => {
     if (!selection) return;
@@ -624,10 +641,10 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
             .flatMap((rule) => rule.found?.baseline ?? []);
     return { rects, color: canvas.scrim };
   };
-  const label = (element: PickableElement) =>
-    element.element.length > 40
-      ? `${element.element.slice(0, 39)}…`
-      : element.element;
+  const label = (element: PickableElement) => {
+    const name = elementLabel(element, t);
+    return name.length > 40 ? `${name.slice(0, 39)}…` : name;
+  };
   const pickMarks = (side: Side): OverlayRect[] => {
     const marks: OverlayRect[] = [];
     if (hovered?.side === side) {
@@ -1705,14 +1722,18 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
       />
       {selection && structure && (
         <ElementPopover
-          key={`${selection.side}:${selection.picked.element.selector}:${selection.picked.element.bounds.x},${selection.picked.element.bounds.y}`}
+          // the element, not its selector: choosing another way to find it keeps the popover
+          key={`${selection.side}:${selection.picked.element.index ?? selection.picked.element.selector}:${selection.picked.element.bounds.x},${selection.picked.element.bounds.y}`}
           anchor={selection.anchor}
           element={selection.picked.element}
           selectedCount={selection.selected.length}
-          sameSelector={countBySelector(
-            selection.picked.element.selector,
-            elementsOf(selection.side),
-          )}
+          sameSelector={
+            chosenVariant(selection.picked.element)?.count ??
+            countBySelector(
+              selection.picked.element.selector,
+              elementsOf(selection.side),
+            )
+          }
           rule={
             selection.selected.length === 1
               ? ruleFor(
@@ -1736,6 +1757,7 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
             setSelection(undefined);
           }}
           onAct={act}
+          onChooseVariant={chooseVariant}
           onRemove={removeRule}
           onClose={() => setSelection(undefined)}
         />

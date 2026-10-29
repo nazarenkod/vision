@@ -47,6 +47,8 @@ import { labelOf, useT } from "../../i18n";
 import { WhatsCompared } from "./WhatsCompared";
 import { groupAreas, splitElement } from "./changedAreas";
 import { IgnoreArea } from "../../types/ignoreArea";
+import { SelectorMatches } from "../../types/insights";
+import { elementLabel } from "../../_helpers/elementPicking.helper";
 
 type JiraDialog = { mode: "link"; violationIds: string[] } | null;
 
@@ -158,6 +160,8 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
   );
   const [ruleDraft, setRuleDraft] = React.useState<RuleDraft | null>(null);
   const [advancedSelector, setAdvancedSelector] = React.useState(false);
+  const [selectorMatches, setSelectorMatches] =
+    React.useState<SelectorMatches | null>(null);
   const [labels, setLabels] = React.useState<Record<string, string>>({});
   const [labelsLoading, setLabelsLoading] = React.useState(false);
   const [jiraDialog, setJiraDialog] = React.useState<JiraDialog>(null);
@@ -844,6 +848,32 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
     if (ruleOpen && chosenElement) onPreviewElement?.(chosenElement);
   }, [ruleOpen, chosenElement, onPreviewElement]);
 
+  // what the typed selector finds, a moment after typing stops (REQ-027-31, REQ-027-32)
+  const draftSelector = ruleDraft?.selector.trim() ?? "";
+  React.useEffect(() => {
+    setSelectorMatches(null);
+    if (!ruleOpen || !draftSelector) return;
+    let current = true;
+    const timer = setTimeout(() => {
+      insightsService
+        .selectorMatches(testRun.id, draftSelector)
+        .then((matches) => current && setSelectorMatches(matches))
+        .catch(() => undefined);
+    }, 300);
+    return () => {
+      current = false;
+      clearTimeout(timer);
+    };
+  }, [ruleOpen, draftSelector, testRun.id]);
+  const selectorNote = selectorMatches?.problem
+    ? t(`panel.selectorProblem.${selectorMatches.problem}`)
+    : selectorMatches
+      ? t("panel.matchCount", {
+          baseline: selectorMatches.baseline,
+          current: selectorMatches.current,
+        })
+      : null;
+
   const removeRule = async (rule: StructureInfo["rules"][number]) => {
     if (
       await run(
@@ -1505,7 +1535,7 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
             id="rule-element"
             options={elementOptions}
             value={chosenElement}
-            getOptionLabel={(item) => item.element}
+            getOptionLabel={(item) => elementLabel(item, t)}
             isOptionEqualToValue={(a, b) => a.selector === b.selector}
             onChange={(_, item) => {
               if (!ruleDraft) return;
@@ -1519,7 +1549,9 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
             renderOption={(props, item) => (
               <li {...props} key={item.selector}>
                 <Box>
-                  <Typography variant="body2">{item.element}</Typography>
+                  <Typography variant="body2">
+                    {elementLabel(item, t)}
+                  </Typography>
                   <Typography variant="caption" color="textSecondary">
                     {item.selector}
                   </Typography>
@@ -1570,7 +1602,8 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
                   element: undefined,
                 })
               }
-              helperText={t("panel.selectorHelp")}
+              error={!!selectorMatches?.problem}
+              helperText={selectorNote ?? t("panel.selectorHelp")}
             />
           )}
           <TextField
@@ -1638,7 +1671,8 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
             variant="contained"
             disabled={
               submitting ||
-              !/^(id|class|text):.+/.test(ruleDraft?.selector.trim() ?? "")
+              !/^(id|class|text|xpath):.+/.test(draftSelector) ||
+              !!selectorMatches?.problem
             }
             onClick={saveRule}
           >

@@ -13,6 +13,7 @@ import {
   JiraUser,
   ProjectInsights,
   Rect,
+  SelectorMatches,
   StructureInfo,
   BugDraft,
   VisualBug,
@@ -107,6 +108,11 @@ export const insightsService = {
       maxDiffPercent?: number;
     },
   ) => post<ElementRule>(`/test-runs/${testRunId}/element-rules`, rule),
+  // what a selector would find, before the rule is saved (REQ-027-32)
+  selectorMatches: (testRunId: string, selector: string) =>
+    get<SelectorMatches>(
+      `/test-runs/${testRunId}/selector-matches?selector=${encodeURIComponent(selector)}`,
+    ),
   replaceAreaWithElement: (
     testRunId: string,
     areaId: string,

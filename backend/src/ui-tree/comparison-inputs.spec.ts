@@ -41,7 +41,40 @@ describe('element selectors', () => {
   });
 });
 
+const offers = readFileSync(path.join(__dirname, '__fixtures__', 'android-offers.xml'), 'utf8');
+// a banner above the list pushes it and everything in it 100 px down
+const offersMovedDown = offers.replace(/bounds="\[(\d+),(\d+)\]\[(\d+),(\d+)\]"/g, (all, x1, y1, x2, y2) =>
+  Number(y1) >= 840 && Number(y2) <= 1540 ? `bounds="[${x1},${Number(y1) + 100}][${x2},${Number(y2) + 100}]"` : all
+);
+const plusOnFirstCard =
+  "xpath://*[@resource-id='com.bank.app:id/offers_list']/android.view.ViewGroup[1]/android.widget.ImageView[1]";
+
 describe('resolveRules', () => {
+  it('applies an xpath rule where the element was and where it is', () => {
+    const resolved = resolveRules(
+      [{ id: 'plus', selector: plusOnFirstCard, action: 'ignore' }],
+      [parse(offersMovedDown), parse(offers)]
+    );
+    expect(resolved.found.plus).toEqual({
+      current: [{ x: 925, y: 1025, width: 80, height: 75 }],
+      baseline: [{ x: 925, y: 925, width: 80, height: 75 }],
+    });
+    expect(resolved.ignore).toEqual([
+      { x: 923, y: 1023, width: 84, height: 79 },
+      { x: 923, y: 923, width: 84, height: 79 },
+    ]);
+    expect(resolved.matches.plus).toBe(1);
+  });
+
+  it('skips a rule whose xpath goes beyond a path from a stable element', () => {
+    const resolved = resolveRules(
+      [{ id: 'wide', selector: "xpath://*[contains(@text,'Pay')]", action: 'ignore' }],
+      [parse(offers), parse(offers)]
+    );
+    expect(resolved.ignore).toEqual([]);
+    expect(resolved.matches.wide).toBeUndefined();
+  });
+
   it('covers an element where it was and where it is now', () => {
     const baseline = parse(xml);
     const current = parse(xml.replace('bounds="[42,1000][500,1050]"', 'bounds="[42,1100][500,1150]"'));

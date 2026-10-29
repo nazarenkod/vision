@@ -1,4 +1,4 @@
-import { ElementMove, ElementRule, matchesSelector, parseSelector } from './comparison-inputs';
+import { ElementMove, ElementRule, findBySelector } from './comparison-inputs';
 import { describeNode } from './ui-tree.parser';
 import { Rect, UiNode, UiTree } from './ui-tree.types';
 
@@ -32,11 +32,9 @@ const sameSize = (a: Rect, b: Rect) =>
 
 /** Elements in screen order, so the n-th match on each side is the same element (REQ-015-14). */
 function matchesOf(tree: UiTree, rule: ElementRule): UiNode[] {
-  const selector = parseSelector(rule.selector);
-  if (!selector) return [];
-  return tree.nodes
-    .filter((node) => node.visible && node.bounds.width && node.bounds.height && matchesSelector(node, selector))
-    .sort((a, b) => a.bounds.y - b.bounds.y || a.bounds.x - b.bounds.x);
+  return [...(findBySelector(tree, rule.selector) ?? [])].sort(
+    (a, b) => a.bounds.y - b.bounds.y || a.bounds.x - b.bounds.x
+  );
 }
 
 /**

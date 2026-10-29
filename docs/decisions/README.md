@@ -36,3 +36,4 @@ Architecture Decision Record фіксує важливе рішення: кон�
 | [ADR-0018](0018-compare-only-measures-compared-elements.md) | «Порівнювати лише»: вирівняти елемент, різницю рахувати від його площі | Accepted | 2026-10-29 |
 | [ADR-0019](0019-sdk-upstream-plus-ui-tree-and-feature.md) | SDK — upstream плюс UI-дерево й назва фічі | Accepted | 2026-10-29 |
 | [ADR-0020](0020-personal-gemini-keys.md) | Особисті ключі Gemini для чернеток багів | Accepted | 2026-10-29 |
+| [ADR-0021](0021-xpath-selectors-from-stable-elements.md) | Селектори `xpath:` — шлях від стабільного елемента на розібраному дереві | Accepted | 2026-10-30 |

@@ -532,3 +532,158 @@ test("offers element actions on a changed area", async ({
   await expect(form).toBeVisible();
   await expect(form.getByLabel("Element")).toHaveValue("Pay");
 });
+
+// Spec 027: elements with no name of their own, found by a path from a stable one.
+
+const plusDown =
+  "xpath://*[@resource-id='app:id/card']/android.widget.ImageView[1]";
+const plusUp = "xpath://*[@resource-id='app:id/plus_icon']/..";
+const plus: PickableElement = {
+  index: 5,
+  parent: 1,
+  selector: plusDown,
+  element: "ImageView",
+  bounds: { x: 1140, y: 50, width: 40, height: 40 },
+  nameless: true,
+  variants: [
+    {
+      selector: plusDown,
+      direction: "down",
+      anchor: "card",
+      anchorKind: "id",
+      count: 1,
+    },
+    {
+      selector: plusUp,
+      direction: "up",
+      anchor: "plus_icon",
+      anchorKind: "id",
+      count: 3,
+    },
+  ],
+};
+const timer: PickableElement = {
+  index: 6,
+  parent: 1,
+  selector:
+    "xpath://*[@content-desc='Balance 120 UAH']/android.view.ViewGroup[1]",
+  element: "ViewGroup",
+  bounds: { x: 1040, y: 180, width: 120, height: 40 },
+  nameless: true,
+  variants: [
+    {
+      selector:
+        "xpath://*[@content-desc='Balance 120 UAH']/android.view.ViewGroup[1]",
+      direction: "down",
+      anchor: "Balance 120 UAH",
+      anchorKind: "text",
+      count: 1,
+    },
+  ],
+};
+const withNameless: StructureInfo = {
+  ...baseStructure,
+  elements: [...elements, plus, timer],
+  baselineElements: [...elements, plus, timer],
+};
+
+test("warns when a nameless element hangs on a text", async ({
+  openProjectPage,
+  page,
+}) => {
+  await openReview(page, openProjectPage, withNameless);
+  await startSelecting(page);
+  await clickElement(page, timer);
+
+  const popover = page.getByTestId("elementPopover");
+  await expect(popover).toContainText(
+    "ViewGroup · no name · in Balance 120 UAH",
+  );
+  await expect(popover.getByTestId("elementTextAnchor")).toBeVisible();
+
+  // found through an id, nothing to warn about
+  await page.keyboard.press("Escape");
+  await clickElement(page, plus);
+  await expect(popover).toContainText("ImageView · no name · in card");
+  await expect(popover.getByTestId("elementTextAnchor")).toHaveCount(0);
+});
+
+test("ignores a nameless element with the chosen selector", async ({
+  openProjectPage,
+  page,
+}) => {
+  const calls = await openReview(page, openProjectPage, withNameless);
+  await startSelecting(page);
+  await clickElement(page, plus);
+
+  const popover = page.getByTestId("elementPopover");
+  await expect(popover.getByTestId("elementVariant-down")).toHaveAttribute(
+    "aria-checked",
+    "true",
+  );
+  await popover.getByTestId("elementVariant-up").click();
+  await expect(popover.getByTestId("elementVariant-up")).toHaveAttribute(
+    "aria-checked",
+    "true",
+  );
+  await expect(popover).toContainText("ImageView · no name · around plus_icon");
+  await page.keyboard.press("i");
+
+  await expect
+    .poll(() => calls.added)
+    .toEqual([{ scope: "screen", selector: plusUp, action: "ignore" }]);
+});
+
+test("counts what a nameless element's selector finds", async ({
+  openProjectPage,
+  page,
+}) => {
+  await openReview(page, openProjectPage, withNameless);
+  await startSelecting(page);
+  await clickElement(page, plus);
+
+  const popover = page.getByTestId("elementPopover");
+  await expect(popover).not.toContainText("on this screen");
+  await popover.getByTestId("elementVariant-up").click();
+  await expect(popover).toContainText("3 on this screen");
+});
+
+test("shows what a typed selector finds and why it cannot be saved", async ({
+  openProjectPage,
+  page,
+}) => {
+  const run = { ...TEST_UNRESOLVED, uiTreeName: "tree.json.gz" };
+  const asked: string[] = [];
+  await page.route(
+    `${API_URL}/test-runs/${run.id}/selector-matches?**`,
+    (route) => {
+      const selector = new URL(route.request().url()).searchParams.get(
+        "selector",
+      );
+      asked.push(selector);
+      return route.fulfill({
+        body: JSON.stringify(
+          selector.includes("following-sibling")
+            ? { current: 0, baseline: 0, problem: "axis" }
+            : { current: 1, baseline: 2, problem: null },
+        ),
+      });
+    },
+  );
+  await openReview(page, openProjectPage, withNameless, run);
+  await startSelecting(page);
+  await clickElement(page, plus);
+  await page.getByTestId("elementMore").click();
+
+  const form = page.getByRole("dialog", { name: "Ignore element" });
+  await form.getByRole("button", { name: "Match differently" }).click();
+  const selector = form.getByLabel("Selector");
+  await selector.fill("xpath://*[@resource-id='app:id/card']//*[2]");
+  await expect(form).toContainText("2 on baseline · 1 on screenshot");
+  await expect(form.getByRole("button", { name: "Add rule" })).toBeEnabled();
+
+  await selector.fill("xpath://*[@text='Pay']/following-sibling::*[1]");
+  await expect(form).toContainText("no siblings or other axes");
+  await expect(form.getByRole("button", { name: "Add rule" })).toBeDisabled();
+  expect(asked).toContain("xpath://*[@text='Pay']/following-sibling::*[1]");
+});

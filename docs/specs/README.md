@@ -87,6 +87,7 @@ docs/specs/NNN-коротка-назва/
 | [024](024-elements-instead-of-areas/spec.md) | Елементи замість областей: ігнорувати й порівнювати те, що на екрані | Implemented |
 | [025](025-bug-from-comparison/spec.md) | Баг із порівняння: вручну або з AI | Implemented |
 | [026](026-a11y-rules-settings/spec.md) | Норми доступності проєкту | Implemented |
+| [027](027-nameless-elements/spec.md) | Безіменні елементи й XPath (експеримент) | Implemented |
 
 Статусу `Verified` поки немає в жодної: інтеграцію з реальною Jira Cloud і прогони на сервері
 команда ще не підтвердила.

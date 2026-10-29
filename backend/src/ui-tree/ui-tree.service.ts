@@ -13,6 +13,7 @@ import { ComponentChange, componentChanges, invisibleChanges } from './screen-ch
 import { PrismaService } from '../prisma/prisma.service';
 import { CompareOnlyPlan, insideCompared, planCompareOnly } from './compare-only';
 import { elementForArea } from './area-elements';
+import { addsSomething, selectorVariants, SelectorVariant } from './selector-variants';
 import {
   checkKey,
   computeMoves,
@@ -101,6 +102,9 @@ export interface PickableElement {
   selector: string;
   element: string;
   bounds: Rect;
+  // no id or text of its own: found by a path from a stable element, best first (spec 027)
+  nameless?: boolean;
+  variants?: SelectorVariant[];
 }
 
 // an element covering nearly the whole screen is a container, not something to pick
@@ -119,10 +123,16 @@ export function selectorForNode(node: UiNode): string | null {
 /** Visible elements with a selector, for picking on the screenshot. */
 export function pickableElements(tree: UiTree): PickableElement[] {
   const screen = tree.width * tree.height;
-  const selectors = tree.nodes.map((node) => {
+  const fits = (node: UiNode) => {
     const area = node.bounds.width * node.bounds.height;
-    return node.visible && area > 0 && area / screen <= MAX_PICKABLE_SCREEN_SHARE ? selectorForNode(node) : null;
-  });
+    return node.visible && area > 0 && area / screen <= MAX_PICKABLE_SCREEN_SHARE;
+  };
+  const named = tree.nodes.map((node) => (fits(node) ? selectorForNode(node) : null));
+  // what has no name is found through something stable around it (REQ-027-01, REQ-027-02, REQ-027-17)
+  const variants = tree.nodes.map((node, i) =>
+    !named[i] && fits(node) && addsSomething(tree, node, (index) => !!named[index]) ? selectorVariants(tree, node) : []
+  );
+  const selectors = tree.nodes.map((_, i) => named[i] ?? variants[i][0]?.selector ?? null);
   const pickableParent = (index: number): number | null => {
     let parent = tree.nodes[index].parent;
     while (parent !== null && !selectors[parent]) parent = tree.nodes[parent].parent;
@@ -137,6 +147,7 @@ export function pickableElements(tree: UiTree): PickableElement[] {
             selector: selectors[i],
             element: describeNode(node),
             bounds: node.bounds,
+            ...(named[i] ? {} : { nameless: true, variants: variants[i] }),
           },
         ]
       : []

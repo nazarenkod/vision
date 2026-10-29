@@ -83,6 +83,25 @@ describe('planCompareOnly', () => {
     ]);
   });
 
+  it('compares only the element an xpath rule finds', () => {
+    const offers = readFileSync(path.join(__dirname, '__fixtures__', 'android-offers.xml'), 'utf8');
+    const badge = "xpath://*[@text='кешбек до 3%']/..";
+    const current = parse(
+      offers
+        .replace('bounds="[810,1270][995,1310]"', 'bounds="[810,1290][995,1330]"')
+        .replace('bounds="[815,1275][990,1305]"', 'bounds="[815,1295][990,1325]"')
+    );
+    const plan = planCompareOnly([compare(badge)], parse(offers), current);
+    expect(plan.keep).toEqual([{ x: 810, y: 1290, width: 185, height: 40 }]);
+    expect(plan.moves).toEqual([
+      expect.objectContaining({
+        from: { x: 810, y: 1270, width: 185, height: 40 },
+        to: { x: 810, y: 1290, width: 185, height: 40 },
+      }),
+    ]);
+    expect(plan.problems).toEqual([]);
+  });
+
   it('reports a rule that found nothing', () => {
     expect(planCompareOnly([compare('id:btn_typo', 'r1')], baseline, baseline).problems).toEqual([
       { kind: 'nothing-found', ruleId: 'r1', selector: 'id:btn_typo' },

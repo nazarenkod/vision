@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<AppiumAUT>
+  <XCUIElementTypeApplication type="XCUIElementTypeApplication" name="Bank" label="Bank" enabled="true" visible="true" accessible="false" x="0" y="0" width="390" height="844" index="0">
+    <XCUIElementTypeWindow type="XCUIElementTypeWindow" enabled="true" visible="true" accessible="false" x="0" y="0" width="390" height="844" index="0">
+      <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="0" y="0" width="390" height="844" index="0">
+        <XCUIElementTypeCollectionView type="XCUIElementTypeCollectionView" name="offersList" label="" enabled="true" visible="true" accessible="false" x="0" y="300" width="390" height="260" index="0">
+          <XCUIElementTypeCell type="XCUIElementTypeCell" name="-211 днів Побутова техніка" label="-211 днів Побутова техніка" enabled="true" visible="true" accessible="true" x="16" y="320" width="340" height="220" index="0">
+            <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="16" y="320" width="340" height="120" index="0"/>
+            <XCUIElementTypeButton type="XCUIElementTypeButton" enabled="true" visible="true" accessible="true" x="316" y="328" width="32" height="32" index="1"/>
+            <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="280" y="450" width="70" height="20" index="2">
+              <XCUIElementTypeStaticText type="XCUIElementTypeStaticText" name="cashbackLabel" label="кешбек до 3%" value="кешбек до 3%" enabled="true" visible="true" accessible="true" x="282" y="452" width="66" height="16" index="0"/>
+            </XCUIElementTypeOther>
+          </XCUIElementTypeCell>
+        </XCUIElementTypeCollectionView>
+      </XCUIElementTypeOther>
+    </XCUIElementTypeWindow>
+  </XCUIElementTypeApplication>
+</AppiumAUT>

@@ -648,7 +648,7 @@ export const uk: Messages = {
   "panel.matchDifferently": "Інший спосіб пошуку",
   "panel.selector": "Селектор",
   "panel.selectorHelp":
-    "Для цілого типу елементів або шаблону: class:ImageButton, text:/\\d+:\\d+/ (будь-який час), id:banner",
+    "Для цілого типу елементів або шаблону: class:ImageButton, text:/\\d+:\\d+/ (будь-який час), id:banner; для безіменного — шлях від стабільного: xpath://*[@resource-id='…']/android.view.View[2]",
   "panel.whatToDo": "Що робити",
   "panel.ignoreAnywhere": "Ігнорувати, де б він не був",
   "panel.allowInside": "Дозволити дрібні зміни всередині",
@@ -1187,6 +1187,28 @@ export const uk: Messages = {
   "select.compareOneScreen":
     "«Порівнювати лише» діє на один екран: кожна перевірка називає свої елементи",
   "select.onScreen": "{count} на цьому екрані",
+  "select.namelessInside": "{element} · без назви · у {anchor}",
+  "select.namelessAround": "{element} · без назви · навколо {anchor}",
+  "select.textAnchor":
+    "Знайдено через текст: правило перестане діяти, щойно текст зміниться",
+  "select.foundBy": "Як знаходити",
+  "select.variantInside": "Усередині {anchor}",
+  "select.variantAround": "Навколо {anchor}",
+  "select.found": "знайдено {count}",
+  "panel.matchCount": "{baseline} на еталоні · {current} на знімку",
+  "panel.selectorProblem.prefix": "Почніть з id:, class:, text: або xpath:",
+  "panel.selectorProblem.syntax": "Цей XPath не розбирається",
+  "panel.selectorProblem.anchor":
+    "Почніть з одного стабільного елемента: //*[@resource-id='…'] або //*[@text='…']",
+  "panel.selectorProblem.attribute":
+    "Шукайте стабільний елемент за resource-id, text, content-desc, name або label",
+  "panel.selectorProblem.axis":
+    "Лише шлях униз до нащадків або вгору до предків: без сусідів та інших осей",
+  "panel.selectorProblem.function":
+    "Функції на кшталт contains() не підтримуються",
+  "panel.selectorProblem.or": "Один елемент за раз: без «or» і без «|»",
+  "panel.selectorProblem.mixed":
+    "Ідіть від стабільного елемента або вниз, або вгору, не в обидва боки",
   "select.selected": "Обрано: {count}",
   "select.ruleIgnore": "Ігнорується",
   "select.ruleTolerate": "Допуск ±{percent}%",

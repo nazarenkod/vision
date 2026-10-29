@@ -604,7 +604,7 @@ export const en = {
   "panel.matchDifferently": "Match differently",
   "panel.selector": "Selector",
   "panel.selectorHelp":
-    "For a whole kind of element or a pattern: class:ImageButton, text:/\\d+:\\d+/ (any time), id:banner",
+    "For a whole kind of element or a pattern: class:ImageButton, text:/\\d+:\\d+/ (any time), id:banner; for one with no name, a path from a stable one: xpath://*[@resource-id='…']/android.view.View[2]",
   "panel.whatToDo": "What to do",
   "panel.ignoreAnywhere": "Ignore it wherever it is",
   "panel.allowInside": "Allow small changes inside it",
@@ -1108,6 +1108,28 @@ export const en = {
   "select.compareOneScreen":
     "Compare only is for one screen: each check names its own elements",
   "select.onScreen": "{count} on this screen",
+  "select.namelessInside": "{element} · no name · in {anchor}",
+  "select.namelessAround": "{element} · no name · around {anchor}",
+  "select.textAnchor":
+    "Found through a text: the rule stops working when the text changes",
+  "select.foundBy": "How to find it",
+  "select.variantInside": "Inside {anchor}",
+  "select.variantAround": "Around {anchor}",
+  "select.found": "{count} found",
+  "panel.matchCount": "{baseline} on baseline · {current} on screenshot",
+  "panel.selectorProblem.prefix": "Start with id:, class:, text: or xpath:",
+  "panel.selectorProblem.syntax": "This XPath does not parse",
+  "panel.selectorProblem.anchor":
+    "Start from one stable element: //*[@resource-id='…'] or //*[@text='…']",
+  "panel.selectorProblem.attribute":
+    "Find the stable element by resource-id, text, content-desc, name or label",
+  "panel.selectorProblem.axis":
+    "Only a path down to descendants or up to ancestors: no siblings or other axes",
+  "panel.selectorProblem.function":
+    "Functions such as contains() are not supported",
+  "panel.selectorProblem.or": "One element at a time: no “or” and no “|”",
+  "panel.selectorProblem.mixed":
+    "Go either down or up from the stable element, not both",
   "select.selected": "{count} selected",
   "select.ruleIgnore": "Ignored",
   "select.ruleTolerate": "Allowed ±{percent}%",

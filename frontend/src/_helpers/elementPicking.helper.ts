@@ -1,4 +1,10 @@
-import { PickableElement, Rect, ScreenRule } from "../types/insights";
+import { english, Text } from "../i18n";
+import {
+  PickableElement,
+  Rect,
+  ScreenRule,
+  SelectorVariant,
+} from "../types/insights";
 
 export type Point = { x: number; y: number };
 
@@ -47,6 +53,28 @@ export function stepDown(picked: Picked): Picked | null {
   return down ? { element: down, trail: rest } : null;
 }
 
+/** The variant an element is now found by: the first unless another was chosen (REQ-027-16). */
+export const chosenVariant = (
+  element: PickableElement,
+): SelectorVariant | undefined =>
+  element.variants?.find((variant) => variant.selector === element.selector) ??
+  element.variants?.[0];
+
+/** "ImageView · no name · in offers_list" for an element found by a path (REQ-027-03). */
+export function elementLabel(
+  element: PickableElement,
+  text: Text = english,
+): string {
+  const variant = element.nameless ? chosenVariant(element) : undefined;
+  if (!variant) return element.element;
+  return text(
+    variant.direction === "down"
+      ? "select.namelessInside"
+      : "select.namelessAround",
+    { element: element.element, anchor: variant.anchor },
+  );
+}
+
 /** How many elements a rule with this selector would take on the screenshot. */
 export function countBySelector(
   selector: string,
@@ -81,9 +109,14 @@ export function ruleFor(
   rules: ScreenRule[],
   side: "current" | "baseline",
 ): ScreenRule | undefined {
+  // a nameless element is under a rule made with any of its selectors
+  const selectors = [
+    element.selector,
+    ...(element.variants ?? []).map((variant) => variant.selector),
+  ];
   return rules.find(
     (rule) =>
-      rule.selector === element.selector ||
+      selectors.includes(rule.selector) ||
       (rule.found?.[side] ?? []).some((rect) => sameRect(rect, element.bounds)),
   );
 }

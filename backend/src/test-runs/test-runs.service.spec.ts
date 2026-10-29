@@ -20,6 +20,9 @@ import { CompareService } from '../compare/compare.service';
 import { UpdateTestRunDto } from './dto/update-test.dto';
 import { UiTreeService } from '../ui-tree/ui-tree.service';
 import { A11yIssuesService } from '../a11y/a11y-issues.service';
+import { readFileSync } from 'fs';
+import path from 'path';
+import { parseUiTree } from '../ui-tree/ui-tree.parser';
 
 jest.mock('pixelmatch');
 jest.mock('./dto/testRunResult.dto');
@@ -508,6 +511,61 @@ describe('TestRunsService', () => {
       expect(service.updateIgnoreAreas).toHaveBeenCalledWith(testRun.id, [other]);
       // updateIgnoreAreas compares the run; nothing else does
       expect(service.calculateDiff).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('xpath selectors (spec 027)', () => {
+    const offers = readFileSync(path.join(__dirname, '..', 'ui-tree', '__fixtures__', 'android-offers.xml'), 'utf8');
+    const tree = (source: string) => parseUiTree(source, { imageWidth: 1080, imageHeight: 2400, densityDpi: 420 });
+    const badges = "xpath://*[@resource-id='com.bank.app:id/cashback_label']/..";
+
+    it('counts what a selector finds on the baseline and the screenshot', async () => {
+      service = await initService({});
+      service.findOne = jest
+        .fn()
+        .mockResolvedValue(generateTestRun({ uiTreeName: 'current.json.gz', baselineUiTreeName: 'baseline.json.gz' }));
+      // the second card is gone from the screenshot
+      const current = tree(
+        offers.replace(
+          /<android\.view\.ViewGroup [^>]*content-desc="-211 днів Кешбек[\s\S]*?\n<\/android\.view\.ViewGroup>\n<\/androidx/,
+          '</androidx'
+        )
+      );
+      service['uiTreeService'].load = jest.fn((name: string) =>
+        Promise.resolve(name === 'current.json.gz' ? current : tree(offers))
+      );
+
+      expect(await service.selectorMatches('run', badges)).toEqual({ current: 1, baseline: 2, problem: null });
+      expect(await service.selectorMatches('run', 'id:cashback_label')).toEqual({
+        current: 1,
+        baseline: 2,
+        problem: null,
+      });
+    });
+
+    it('says why a selector cannot be used, without loading the trees', async () => {
+      service = await initService({});
+      service.findOne = jest.fn();
+      expect(await service.selectorMatches('run', "xpath://*[@text='a']/following-sibling::*[1]")).toEqual({
+        current: 0,
+        baseline: 0,
+        problem: 'axis',
+      });
+      expect(await service.selectorMatches('run', 'btn_pay')).toEqual({ current: 0, baseline: 0, problem: 'prefix' });
+      expect(service.findOne).not.toHaveBeenCalled();
+    });
+
+    it('refuses to save an xpath that is not a path from a stable element', async () => {
+      service = await initService({});
+      service.findOne = jest.fn();
+      await expect(
+        service.addElementRule('run', {
+          scope: 'screen',
+          selector: "xpath://*[contains(@text,'Pay')]",
+          action: 'ignore',
+        } as never)
+      ).rejects.toThrow('not a path from a stable element (function)');
+      expect(service.findOne).not.toHaveBeenCalled();
     });
   });
 

@@ -1,5 +1,6 @@
 import { Rect, UiNode, UiTree } from './ui-tree.types';
 import { A11yNorms, DEFAULT_A11Y_NORMS, parseA11yNorms } from '../a11y/a11y-norms';
+import { evaluateXpath, isXpathSelector, parseXpath, XPATH_PREFIX, XpathProblem, xpathProblem } from './xpath-selector';
 
 // compare: only the elements the check's compare rules match are compared (spec 015)
 export type ElementRuleAction = 'ignore' | 'tolerate' | 'compare';
@@ -10,6 +11,8 @@ export type ElementRuleAction = 'ignore' | 'tolerate' | 'compare';
  *   id:btn_pay        resource id (Android, with or without "package:id/") or iOS accessibility identifier
  *   class:ImageView   class name or its last segment; XCUIElementType prefix optional
  *   text:12:30        exact text or label; text:/\d+:\d+/ for a regular expression
+ *   xpath://*[@resource-id='app:id/list']/android.view.ViewGroup[1]
+ *                     a path down or up from a stable element, for elements with no name (spec 027)
  */
 export interface ElementRule {
   id: string;
@@ -129,6 +132,27 @@ export function matchesSelector(node: UiNode, selector: Selector): boolean {
   }
 }
 
+const shown = (node: UiNode) => node.visible && !!node.bounds.width && !!node.bounds.height;
+
+/**
+ * The visible elements a rule's selector takes on a tree, in tree order, or
+ * null when the selector cannot be read.
+ */
+export function findBySelector(tree: UiTree, selector: string): UiNode[] | null {
+  if (isXpathSelector(selector)) {
+    const parsed = parseXpath(selector.trim().slice(XPATH_PREFIX.length));
+    return parsed.ok ? evaluateXpath(tree, parsed.xpath).filter(shown) : null;
+  }
+  const parsed = parseSelector(selector);
+  return parsed ? tree.nodes.filter((node) => shown(node) && matchesSelector(node, parsed)) : null;
+}
+
+/** Why a selector cannot be saved: no known prefix, or what its XPath may not do (REQ-027-31). */
+export function selectorProblem(selector: string): 'prefix' | XpathProblem | null {
+  if (isXpathSelector(selector)) return xpathProblem(selector);
+  return parseSelector(selector) ? null : 'prefix';
+}
+
 // Anti-aliased edges around an element differ by a pixel or two when it is redrawn.
 const RULE_PADDING_PX = 2;
 
@@ -156,13 +180,11 @@ export interface ResolvedRules {
 export function resolveRules(rules: ElementRule[], trees: Array<UiTree | null>): ResolvedRules {
   const result: ResolvedRules = { ignore: [], tolerate: [], matches: {}, found: {} };
   for (const rule of rules) {
-    const selector = parseSelector(rule.selector);
-    if (!selector) continue;
+    if (selectorProblem(rule.selector)) continue;
     const sides: Rect[][] = [];
     for (const tree of trees) {
       const bounds: Rect[] = [];
-      for (const node of tree?.nodes ?? []) {
-        if (!node.visible || !node.bounds.width || !node.bounds.height || !matchesSelector(node, selector)) continue;
+      for (const node of tree ? findBySelector(tree, rule.selector) : []) {
         bounds.push(node.bounds);
         if (rule.action === 'ignore') {
           result.ignore.push(pad(node.bounds, RULE_PADDING_PX));

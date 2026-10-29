@@ -8,7 +8,7 @@ import { PickableElement, TestRun } from "../../types";
 import { tokens } from "../../theme";
 import { useTokens } from "../../contexts/themeMode.context";
 import { addMark, BugMark, removeMark } from "../../_helpers/bugReport.helper";
-import { elementAt } from "../../_helpers/elementPicking.helper";
+import { elementAt, elementLabel } from "../../_helpers/elementPicking.helper";
 import { SlidingToggleGroup } from "../motion/SlidingToggleGroup";
 import { useT } from "../../i18n";
 
@@ -180,7 +180,7 @@ export const BugEvidence: React.FunctionComponent<{
                 addMark(marks, {
                   ...picked.bounds,
                   element: picked.selector,
-                  label: picked.element,
+                  label: elementLabel(picked, t),
                 }),
               );
           }}

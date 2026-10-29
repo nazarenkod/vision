@@ -6,7 +6,7 @@
 
 | Модуль | Відповідає за | Специфікація |
 |---|---|---|
-| `src/ui-tree/` | розбір Appium page source, налаштування порівняння, правила елементів, приховані зміни, групи компонентів | [002](../docs/specs/002-ui-tree-analysis/spec.md), [020](../docs/specs/020-remove-reference-device/spec.md) |
+| `src/ui-tree/` | розбір Appium page source, налаштування порівняння, правила елементів, приховані зміни, групи компонентів; селектори `xpath:` для безіменних елементів (`xpath-selector.ts`, `selector-variants.ts`) | [002](../docs/specs/002-ui-tree-analysis/spec.md), [020](../docs/specs/020-remove-reference-device/spec.md), [027](../docs/specs/027-nameless-elements/spec.md) |
 | `src/a11y/a11y.rules.ts` | правила доступності | [003](../docs/specs/003-accessibility-checks/spec.md) |
 | `src/a11y/a11y-norms.ts` | норми проєкту (зона тапу, контраст, вимкнені правила); `applyNorms` — звіт за поточними нормами всюди, де його показують чи рахують | [026](../docs/specs/026-a11y-rules-settings/spec.md) |
 | `src/a11y/a11y-problems.ts`, `a11y-issues*.ts` | проблеми, їхні ID і факти, групування, маркери, рішення, пошук у Jira | [004](../docs/specs/004-a11y-problems/spec.md), [021](../docs/specs/021-fixed-a11y-grouping/spec.md) |

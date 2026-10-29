@@ -214,6 +214,15 @@ export class TestRunsController {
     return this.testRunsService.replaceAreaWithElement(id, body);
   }
 
+  @Get(':id/selector-matches')
+  @ApiOkResponse({ description: 'How many elements a selector finds on the baseline and the screenshot' })
+  @ApiQuery({ name: 'selector', required: true })
+  @ApiBearerAuth()
+  @UseGuards(MixedGuard)
+  selectorMatches(@Param('id', new ParseUUIDPipe()) id: string, @Query('selector') selector: string) {
+    return this.testRunsService.selectorMatches(id, selector);
+  }
+
   @Get(':id/structure')
   @ApiOkResponse({ description: 'Element-level changes, elements under changed areas and noise hints' })
   @ApiBearerAuth()

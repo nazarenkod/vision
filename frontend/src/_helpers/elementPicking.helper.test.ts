@@ -1,12 +1,13 @@
 import {
   countBySelector,
   elementAt,
+  elementLabel,
   ruleFor,
   stepDown,
   stepUp,
   toggleSelection,
 } from "./elementPicking.helper";
-import { PickableElement } from "../types/insights";
+import { PickableElement, ScreenRule } from "../types/insights";
 
 const card: PickableElement = {
   index: 1,
@@ -78,5 +79,68 @@ describe("elementPicking", () => {
     expect(ruleFor(amount, [rule], "current")).toBe(rule);
     expect(ruleFor(amount, [rule], "baseline")).toBeUndefined();
     expect(ruleFor(card, [rule], "current")).toBeUndefined();
+  });
+
+  describe("nameless elements (spec 027)", () => {
+    const plus: PickableElement = {
+      index: 3,
+      parent: 1,
+      selector:
+        "xpath://*[@resource-id='app:id/card']/android.widget.ImageView[1]",
+      element: "ImageView",
+      bounds: { x: 260, y: 8, width: 32, height: 32 },
+      nameless: true,
+      variants: [
+        {
+          selector:
+            "xpath://*[@resource-id='app:id/card']/android.widget.ImageView[1]",
+          direction: "down",
+          anchor: "card",
+          anchorKind: "id",
+          count: 1,
+        },
+        {
+          selector: "xpath://*[@resource-id='app:id/plus_icon']/..",
+          direction: "up",
+          anchor: "plus_icon",
+          anchorKind: "id",
+          count: 3,
+        },
+      ],
+    };
+    const withPlus = [...elements, plus];
+
+    it("names a nameless element by class and anchor", () => {
+      expect(elementLabel(plus)).toBe("ImageView · no name · in card");
+      const around = { ...plus, selector: plus.variants![1].selector };
+      expect(elementLabel(around)).toBe(
+        "ImageView · no name · around plus_icon",
+      );
+      // a named element keeps its own name
+      expect(elementLabel(amount)).toBe("Balance amount");
+    });
+
+    it("steps up from a nameless element to its named parent and back", () => {
+      const up = stepUp({ element: plus, trail: [] }, withPlus);
+      expect(up?.element).toBe(card);
+      expect(stepDown(up!)?.element).toBe(plus);
+    });
+
+    it("takes the nameless element under the pointer, not the card around it", () => {
+      // bug marks pick with the same helper (REQ-025-10)
+      expect(elementAt({ x: 270, y: 20 }, withPlus)).toBe(plus);
+    });
+
+    it("finds the rule made with any of a nameless element's selectors", () => {
+      const rule: ScreenRule = {
+        id: "r",
+        selector: plus.variants![1].selector,
+        action: "ignore",
+        scope: "screen",
+        matches: 3,
+        found: { current: [], baseline: [] },
+      };
+      expect(ruleFor(plus, [rule], "current")).toBe(rule);
+    });
   });
 });

@@ -322,6 +322,37 @@ export interface PickableElement {
   selector: string;
   element: string;
   bounds: Rect;
+  // no id or text of its own: found by a path from a stable element (spec 027)
+  nameless?: boolean;
+  variants?: SelectorVariant[];
+}
+
+/** A way to find a nameless element: down from a stable ancestor or up from a stable descendant. */
+export interface SelectorVariant {
+  selector: string;
+  direction: "down" | "up";
+  // the stable element: its id without the package, or its text
+  anchor: string;
+  anchorKind: "id" | "text";
+  // how many elements the selector takes on this screenshot
+  count: number;
+}
+
+// why a selector cannot be used; the rule form says it in the person's language
+export type SelectorProblem =
+  | "prefix"
+  | "syntax"
+  | "anchor"
+  | "attribute"
+  | "axis"
+  | "function"
+  | "or"
+  | "mixed";
+
+export interface SelectorMatches {
+  current: number;
+  baseline: number;
+  problem: SelectorProblem | null;
 }
 
 export interface ProjectInsights {

@@ -433,8 +433,6 @@ export const en = {
   "filters.selectProject": "Select project",
 
   // review
-  "review.ignoreAreas": "Ignore Areas",
-  "review.compareArea": "Compare Area",
   "review.applyIgnoreArea":
     "Apply selected ignore area to all images in this build.",
   "review.ignoreSaved": "Ignore areas are updated.",
@@ -566,12 +564,7 @@ export const en = {
     "Rule added for every screen; the build is compared again",
   "panel.ruleAdded": "Rule added; the screenshot is compared again",
   "panel.ignore": "Ignore",
-  "panel.tolerance": "Tolerance",
   "panel.noDetails": "No details about this change.",
-  "panel.cancelPicking": "Cancel picking",
-  "panel.pick": "Pick element on screenshot",
-  "panel.pickHelp":
-    "Point at an element on the right image and click it to ignore it or allow small changes in it. Esc cancels.",
   "panel.invisible": "Changes the screenshot does not show",
   "panel.ignoreArea": "Ignore area",
   "panel.nothingChanged": "Nothing changed against the baseline.",
@@ -585,15 +578,9 @@ export const en = {
   "panel.up": "up {count} dp",
   "panel.right": "right {count} dp",
   "panel.left": "left {count} dp",
-  "panel.rules": "Rules for this screen",
   "panel.systemBars":
     "Status and navigation bars are left out (project setting).",
-  "panel.allScreens": "All screens",
-  "panel.thisScreen": "This screen",
-  "panel.ignored": "ignored",
-  "panel.found": "· {count} found",
   "panel.ruleRemoved": "Rule removed; compared again",
-  "panel.remove": "Remove",
   "panel.addRuleButton": "Add element rule",
   "panel.details": "Review details",
   "panel.accessibility": "Accessibility",
@@ -617,7 +604,6 @@ export const en = {
   "panel.elementPlaceholder": "Type to search: Pay, balance, toolbar…",
   "panel.foundBy": "Found by {by}, outlined on the screenshot",
   "panel.noElements": "This screenshot has no elements to choose from",
-  "panel.pickOnScreenshot": "Pick on the screenshot",
   "panel.hideSelector": "Hide selector",
   "panel.matchDifferently": "Match differently",
   "panel.selector": "Selector",
@@ -1129,6 +1115,86 @@ export const en = {
   "panel.removeProjectRuleText":
     "{selector} applies to every screen of the project. Without it, this screenshot and the rest of the build are compared again.",
   "panel.removeRule": "Remove rule",
+
+  // selecting elements on the screenshots (spec 024)
+  "select.button": "Select elements",
+  "select.selecting": "Selecting…",
+  "select.hint": "Click an element",
+  "select.done": "Done",
+  "select.parent": "Select the element around it",
+  "select.child": "Back to the inner element",
+  "select.more": "Match differently",
+  "select.ignore": "Ignore",
+  "select.compare": "Compare only",
+  "select.allow": "Allow {percent}%",
+  "select.thisScreen": "This screen",
+  "select.allScreens": "All screens",
+  "select.compareOneScreen":
+    "Compare only is for one screen: each check names its own elements",
+  "select.onScreen": "{count} on this screen",
+  "select.selected": "{count} selected",
+  "select.ruleIgnore": "Ignored",
+  "select.ruleTolerate": "Allowed ±{percent}%",
+  "select.ruleCompare": "Compared only",
+  "select.remove": "Remove rule",
+  "select.confirmRemove": "Remove on every screen",
+  "select.noTree": "No UI tree on this screenshot",
+  "select.why": "Why?",
+  "select.whyText":
+    "The test sent the screenshot without the page source, so there are no elements to pick. Tests send it with uiTree in the SDK.",
+  "select.drawArea": "Draw an area",
+  "select.added": {
+    one: "Rule added; compared again",
+    other: "{count} rules added; compared again",
+  },
+  "select.removed": "Rule removed; compared again",
+  "rules.show": "Show rules on screenshots",
+  "rules.hide": "Hide rules on screenshots",
+
+  // pixel areas, behind one button (spec 024)
+  "areas.button": "Areas",
+  "areas.title": "Pixel areas",
+  "areas.ignore": "Ignore",
+  "areas.compare": "Compare",
+  "areas.draw": "Draw",
+  "areas.delete": "Delete",
+  "areas.clear": "Clear",
+  "areas.toBuild": "To whole build",
+  "areas.useElement": "Use element",
+  "areas.useElementHelp":
+    "Replace with a rule for {element}: it follows the element when the layout moves",
+  "areas.fromTest": "from test",
+  "areas.area": "Area {width} × {height}",
+  "areas.save": "Save areas",
+  "areas.discard": "Discard",
+  "areas.unsavedTitle": "Save the areas?",
+  "areas.unsavedText":
+    "Areas on this screenshot changed and are not saved yet.",
+  "areas.replaced": "Area replaced with a rule for {element}; compared again",
+
+  // what is compared (spec 024)
+  "compared.whole": "Whole screen",
+  "compared.except": "Whole screen except {count}",
+  "compared.only": {
+    one: "Only {count} element",
+    other: "Only {count} elements",
+  },
+  "compared.areas": {
+    one: "· {count} area",
+    other: "· {count} areas",
+  },
+  "compared.allScreens": "all screens",
+  "compared.found":
+    "{selector} · {current} found here, {baseline} on the baseline",
+  "compared.more": "More actions",
+  "compared.problem.noTree":
+    "No UI tree: only the named elements could not be compared",
+  "compared.problem.nothingFound": "{selector} found nothing",
+  "compared.problem.disappeared": "{element} disappeared",
+  "compared.problem.appeared": "{element} appeared",
+  "compared.problem.count":
+    "{selector}: {baseline} on the baseline, {current} now",
+  "compared.problem.resized": "{element} changed size",
 } satisfies Record<string, Message>;
 
 export type MessageKey = keyof typeof en;

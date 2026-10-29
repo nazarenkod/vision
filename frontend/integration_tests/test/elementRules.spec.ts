@@ -86,10 +86,18 @@ test("lists the rules for this screen and for every screen", async ({
 }) => {
   await openProjectPage(project.id, build.id, testRun.id);
   await expect(page.getByTestId("elementRule")).toHaveCount(2);
-  await expect(rule(page, "id:balance")).toContainText("This screen");
-  await expect(rule(page, "id:balance")).toContainText("±5% · 1 found");
-  await expect(rule(page, "id:clock")).toContainText("All screens");
-  await expect(rule(page, "id:clock")).toContainText("ignored · 0 found");
+  await expect(rule(page, "id:balance")).toContainText("±5%");
+  await expect(rule(page, "id:balance")).not.toContainText("all screens");
+  await expect(rule(page, "id:clock")).toContainText("all screens");
+  // the selector and what it found are in the row's tooltip (REQ-019-02)
+  await rule(page, "id:clock").hover();
+  await expect(page.getByRole("tooltip")).toHaveText(
+    "id:clock · 0 found here, 0 on the baseline",
+  );
+  // a rule that found nothing changes nothing in the summary; the run's saved and test areas count
+  await expect(page.getByTestId("comparedSummary")).toHaveText(
+    "Whole screen · 2 areas",
+  );
 });
 
 test("removes a rule for this screen at once", async ({
@@ -97,8 +105,9 @@ test("removes a rule for this screen at once", async ({
   page,
 }) => {
   await openProjectPage(project.id, build.id, testRun.id);
+  await rule(page, "id:balance").hover();
   await rule(page, "id:balance")
-    .getByRole("button", { name: "Remove" })
+    .getByRole("button", { name: "Remove rule" })
     .click();
   await expect(page.getByText("Rule removed; compared again")).toBeVisible();
   expect(removed).toEqual([{ scope: "screen", ruleId: "balance" }]);
@@ -113,8 +122,9 @@ test("asks before removing a rule for every screen", async ({
 }) => {
   await openProjectPage(project.id, build.id, testRun.id);
   const remove = rule(page, "id:clock").getByRole("button", {
-    name: "Remove",
+    name: "Remove rule",
   });
+  await rule(page, "id:clock").hover();
   const confirm = page.getByRole("dialog", {
     name: "Remove a rule for every screen?",
   });

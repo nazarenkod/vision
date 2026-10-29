@@ -1,6 +1,15 @@
 /* eslint-disable jsx-a11y/no-static-element-interactions */
 import React, { FunctionComponent, useCallback } from "react";
-import { Stage, Layer, Image, Rect, Label, Tag, Text } from "react-konva";
+import {
+  Stage,
+  Layer,
+  Image,
+  Rect,
+  Label,
+  Tag,
+  Text,
+  Shape,
+} from "react-konva";
 import Rectangle, { MIN_RECT_SIDE_PIXEL } from "../Rectangle";
 import { IgnoreArea } from "../../types/ignoreArea";
 import { Grid, CircularProgress, type Theme } from "@mui/material";
@@ -74,10 +83,15 @@ interface IDrawArea {
   /** Boxes drawn over the image in image pixels (accessibility issues), not editable. */
   overlayRects?: OverlayRect[];
   highlightedOverlayId?: string;
+  dimOutside?: DimOutside;
   /** Picking an element: the pointer reports where it is instead of panning or drawing. */
   pickMode?: boolean;
   onPickHover?: (point: { x: number; y: number } | null) => void;
-  onPick?: (point: { x: number; y: number }) => void;
+  onPick?: (
+    point: { x: number; y: number },
+    // Shift adds to the selection; the window position anchors what opens next to the element
+    click: { shiftKey: boolean; clientX: number; clientY: number },
+  ) => void;
 }
 
 export interface OverlayRect {
@@ -89,7 +103,24 @@ export interface OverlayRect {
   color: string;
   label?: string;
   dashed?: boolean;
+  // ignored by a rule: hatched, so what is not compared reads at a glance (REQ-024-20)
+  hatched?: boolean;
+  // the label only while the rect is highlighted: rule marks stay quiet otherwise
+  labelOnHighlight?: boolean;
 }
+
+/** Everything outside these is dimmed: what a compare-only check leaves out (REQ-015-30). */
+export interface DimOutside {
+  rects: Array<{ x: number; y: number; width: number; height: number }>;
+  color: string;
+}
+
+// spacing of the hatching, in screen pixels
+const HATCH_STEP = 8;
+
+// the canvas behind Konva's wrapper, for what the wrapper does not offer (even-odd fill)
+const nativeContext = (context: Konva.Context) =>
+  (context as unknown as { _context: CanvasRenderingContext2D })._context;
 
 export const DrawArea: FunctionComponent<IDrawArea> = ({
   imageName,
@@ -112,6 +143,7 @@ export const DrawArea: FunctionComponent<IDrawArea> = ({
   drawModeState,
   overlayRects,
   highlightedOverlayId,
+  dimOutside,
   pickMode,
   onPickHover,
   onPick,
@@ -394,7 +426,14 @@ export const DrawArea: FunctionComponent<IDrawArea> = ({
             // as they did
             onMouseDown={(event) => {
               if (pickMode) {
-                onPick?.({ x: event.evt.offsetX, y: event.evt.offsetY });
+                onPick?.(
+                  { x: event.evt.offsetX, y: event.evt.offsetY },
+                  {
+                    shiftKey: event.evt.shiftKey,
+                    clientX: event.evt.clientX,
+                    clientY: event.evt.clientY,
+                  },
+                );
                 return;
               }
               onStageClick(event);
@@ -500,15 +539,59 @@ export const DrawArea: FunctionComponent<IDrawArea> = ({
                 />
               ))}
             </Layer>
-            {!!overlayRects?.length && (
+            {(!!overlayRects?.length || !!dimOutside) && (
               // never takes the pointer: panning and drawing ignore areas work through it
               <Layer listening={false}>
-                {overlayRects.map((rect) => {
-                  const highlighted = rect.id === highlightedOverlayId;
+                {dimOutside && (
+                  <Shape
+                    sceneFunc={(context) => {
+                      const ctx = nativeContext(context);
+                      ctx.beginPath();
+                      ctx.rect(0, 0, stageWidth, stageHeight);
+                      dimOutside.rects.forEach((r) =>
+                        ctx.rect(r.x, r.y, r.width, r.height),
+                      );
+                      ctx.fillStyle = dimOutside.color;
+                      ctx.fill("evenodd");
+                    }}
+                  />
+                )}
+                {(overlayRects ?? []).map((rect) => {
+                  // a rule lights up every rect it found: rule:<id> highlights rule:<id>:<n>
+                  const highlighted =
+                    !!highlightedOverlayId &&
+                    (rect.id === highlightedOverlayId ||
+                      rect.id.startsWith(`${highlightedOverlayId}:`));
                   // the stage is scaled by CSS, so line widths are divided by the scale to stay crisp
                   const px = (value: number) => value / stageScale;
                   return (
                     <React.Fragment key={rect.id}>
+                      {rect.hatched && (
+                        <Shape
+                          sceneFunc={(context) => {
+                            const ctx = nativeContext(context);
+                            const step = px(HATCH_STEP);
+                            ctx.save();
+                            ctx.beginPath();
+                            ctx.rect(rect.x, rect.y, rect.width, rect.height);
+                            ctx.clip();
+                            ctx.beginPath();
+                            for (
+                              let d = -rect.height;
+                              d < rect.width;
+                              d += step
+                            ) {
+                              ctx.moveTo(rect.x + d, rect.y + rect.height);
+                              ctx.lineTo(rect.x + d + rect.height, rect.y);
+                            }
+                            ctx.strokeStyle = rect.color;
+                            ctx.globalAlpha = highlighted ? 0.7 : 0.45;
+                            ctx.lineWidth = px(2);
+                            ctx.stroke();
+                            ctx.restore();
+                          }}
+                        />
+                      )}
                       <Rect
                         x={rect.x}
                         y={rect.y}
@@ -520,18 +603,19 @@ export const DrawArea: FunctionComponent<IDrawArea> = ({
                         fill={highlighted ? `${rect.color}22` : undefined}
                         cornerRadius={px(3)}
                       />
-                      {rect.label && (
-                        <Label x={rect.x} y={rect.y - px(20)}>
-                          <Tag fill={rect.color} cornerRadius={px(4)} />
-                          <Text
-                            text={rect.label}
-                            fontSize={px(12)}
-                            fontStyle="bold"
-                            padding={px(4)}
-                            fill={TAG_TEXT}
-                          />
-                        </Label>
-                      )}
+                      {rect.label &&
+                        (!rect.labelOnHighlight || highlighted) && (
+                          <Label x={rect.x} y={rect.y - px(20)}>
+                            <Tag fill={rect.color} cornerRadius={px(4)} />
+                            <Text
+                              text={rect.label}
+                              fontSize={px(12)}
+                              fontStyle="bold"
+                              padding={px(4)}
+                              fill={TAG_TEXT}
+                            />
+                          </Label>
+                        )}
                     </React.Fragment>
                   );
                 })}

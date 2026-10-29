@@ -27,38 +27,38 @@
   - Залежить від: T2, T4.
   - Готово, коли: тести `test-runs.service.spec.ts` зелені; `npm test`, `tsc`, `eslint` по
     змінених файлах чисті.
-- [ ] **T6** [P] (REQ-024-02…05, REQ-024-22, REQ-024-23, REQ-015-31) Типи й чисті хелпери фронтенду.
+- [x] **T6** [P] (REQ-024-02…05, REQ-024-22, REQ-024-23, REQ-015-31) Типи й чисті хелпери фронтенду.
   - Файли: `frontend/src/types/insights.ts`, `frontend/src/services/insights.service.ts`, нові `frontend/src/_helpers/elementPicking.helper.ts` і `whatsCompared.helper.ts` з тестами.
   - Готово, коли: `CI=true npx jest` зелений.
-- [ ] **T7** [P] (REQ-024-20, REQ-015-30) Полотно: штриховка, пунктир, затемнення поза областями.
+- [x] **T7** [P] (REQ-024-20, REQ-015-30) Полотно: штриховка, пунктир, затемнення поза областями.
   - Файли: `frontend/src/components/TestDetailsDialog/DrawArea.tsx`.
   - Кольори беремо з `useTokens()`: сірий для ignore, `status.new` для допуску, `brand` для
     compare only.
-- [ ] **T8** (REQ-024-01, REQ-024-03, REQ-024-05…10, REQ-024-15, REQ-024-16, REQ-024-21,
+- [x] **T8** (REQ-024-01, REQ-024-03, REQ-024-05…10, REQ-024-15, REQ-024-16, REQ-024-21,
   REQ-024-33) Рядок інструментів і режим вибору.
   - Що: «Select elements» (E), `ElementPopover` (I / C / T, ↑ / ↓, «⋯» → наявна форма правила),
     Shift, Esc, `useRuleSnackbar` з Undo, перемикач позначок у `localStorage`.
   - Файли: `TestDetailsModal.tsx`, новий `ElementPopover.tsx`, новий `frontend/src/components/useRuleSnackbar.tsx`, `frontend/src/i18n/en.ts`, `uk.ts`.
   - Залежить від: T6, T7.
-- [ ] **T9** (REQ-024-30…34, REQ-024-50, REQ-024-51) `AreasMenu`.
+- [x] **T9** (REQ-024-30…34, REQ-024-50, REQ-024-51) `AreasMenu`.
   - Що: колишні інструменти з підписами, лічильник, «Use element», питання про незбережене.
   - Файли: новий `AreasMenu.tsx`, `TestDetailsModal.tsx` (прибрати `ignoreAreasToolbar`), i18n.
   - Залежить від: T8 (той самий файл, після нього).
-- [ ] **T10** (REQ-024-22…24, REQ-024-40, REQ-024-41, REQ-015-20…22, REQ-015-31) Панель.
+- [x] **T10** (REQ-024-22…24, REQ-024-40, REQ-024-41, REQ-015-20…22, REQ-015-31) Панель.
   - Що: `WhatsCompared` замість «Rules for this screen» і «Pick element»; «Ignore» у підказці
     про шум; Ignore + «⋯» у рядку зміненої області.
   - Файли: новий `WhatsCompared.tsx`, `InsightsPanel.tsx`, i18n.
   - Залежить від: T6.
-- [ ] **T11** Playwright.
+- [x] **T11** Playwright.
   - Що: новий `frontend/integration_tests/test/elementSelection.spec.ts` (моки `structure` з
     деревом і без); `ignoreAreas.spec.ts` через «Areas»; `elementRules.spec.ts` під новий блок.
   - Еталони скриншотів `projec.spec.ts` (рядок інструментів змінився) перезнімаємо лише в
     Docker, переглянувши знімок.
   - Залежить від: T8–T10.
-- [ ] **T12** Документація.
-  - Статуси 015 і 024 → `Implemented`; ADR-0018 → `Accepted` після згоди.
+- [x] **T12** Документація.
+  - Статуси 015 і 024 → `Implemented`, коли код злито в `main`; ADR-0018 → `Accepted` після згоди.
   - `DEMO.md`: як показати вибір елементів.
   - [018](../018-ui-redesign/spec.md): посилання на 024 біля вимог до рядка інструментів.
   - [019](../019-element-rules-in-review/spec.md): «Rules for this screen» тепер «What's compared».
-- [ ] **T13** `/verify`: тести, типи, лінт, еталони скриншотів, `python3 -I scripts/check-docs.py`,
+- [x] **T13** `/verify`: тести, типи, лінт, еталони скриншотів, `python3 -I scripts/check-docs.py`,
   сценарії приймання 015 і 024 на демо-даних.

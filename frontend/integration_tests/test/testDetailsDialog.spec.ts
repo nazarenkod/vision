@@ -134,15 +134,18 @@ test("leaves draw mode behind when moving to another run", async ({
   page,
 }) => {
   await openProjectPage(project.id, build.id, TEST_UNRESOLVED.id);
-  // the toggle is an icon with no label, so it is located by the value MUI
-  // puts on the button element
-  const drawMode = page.locator('button[value="drawMode"]');
+  // drawing is in the Areas menu (REQ-024-30)
+  const drawMode = page.getByTestId("areaDraw");
 
+  await page.getByTestId("areasButton").click();
   await drawMode.click();
   await expect(drawMode).toHaveAttribute("aria-pressed", "true");
   await page.keyboard.press("ArrowRight");
 
   await expect(page).toHaveURL(new RegExp(`testId=${TEST_RUN_NEW.id}$`));
+  // the menu closed with the screen it belonged to; opened again, it does not draw
+  await expect(page.getByTestId("areasMenu")).toBeHidden();
+  await page.getByTestId("areasButton").click();
   await expect(drawMode).toHaveAttribute("aria-pressed", "false");
 });
 

@@ -94,7 +94,17 @@ export const BugEvidence: React.FunctionComponent<{
       sx={{ display: "flex", flexDirection: "column", gap: 1.5, minHeight: 0 }}
       data-testid="bugEvidence"
     >
-      <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+      {/* short labels that never wrap: the column is narrow, and "Mark area"
+          broke into two lines; the hint under the screenshot says what to do */}
+      <Box
+        sx={{
+          display: "flex",
+          alignItems: "center",
+          flexWrap: "wrap",
+          gap: 1,
+          "& .MuiToggleButton-root": { whiteSpace: "nowrap" },
+        }}
+      >
         <SlidingToggleGroup
           size="small"
           exclusive

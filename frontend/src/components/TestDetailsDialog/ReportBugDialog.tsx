@@ -12,6 +12,7 @@ import {
   LinearProgress,
   MenuItem,
   TextField,
+  Tooltip,
   Typography,
 } from "@mui/material";
 import {
@@ -777,7 +778,8 @@ export const ReportBugDialog: React.FunctionComponent<{
           px: 2,
           borderTop: `1px solid ${tokens.border}`,
           flexShrink: 0,
-          flexWrap: "wrap",
+          // one line: Create bug used to drop under the list of missing fields
+          "& > *": { flexShrink: 0 },
         }}
       >
         {canReject && (
@@ -797,19 +799,32 @@ export const ReportBugDialog: React.FunctionComponent<{
             }
           />
         )}
-        <Box sx={{ flex: 1 }} />
-        {prep && missingNames.length > 0 && (
-          <Typography
-            variant="body2"
-            sx={{ color: tokens.status.failed.fg }}
-            data-testid="bugMissing"
-          >
-            {t("reportBug.missing", {
-              count: missingNames.length,
-              fields: missingNames.join(", "),
-            })}
-          </Typography>
-        )}
+        {/* what is left to fill in, quietly: in red before anything was typed it
+            read as an error; the full list is in the tooltip when cut short */}
+        <Box
+          sx={{
+            flex: "1 1 0 !important",
+            minWidth: 0,
+            display: "flex",
+            justifyContent: "flex-end",
+          }}
+        >
+          {prep && missingNames.length > 0 && (
+            <Tooltip title={missingNames.join(", ")}>
+              <Typography
+                variant="body2"
+                noWrap
+                sx={{ color: tokens.textSecondary }}
+                data-testid="bugMissing"
+              >
+                {t("reportBug.missing", {
+                  count: missingNames.length,
+                  fields: missingNames.join(", "),
+                })}
+              </Typography>
+            </Tooltip>
+          )}
+        </Box>
         <Button onClick={onClose} disabled={creating}>
           {t("common.cancel")}
         </Button>

@@ -1179,8 +1179,8 @@ export const en = {
     "Add your Jira token in your profile to file bugs from here.",
   "reportBug.checkpoint": "Checkpoint",
   "reportBug.baseline": "Baseline",
-  "reportBug.markArea": "Mark area",
-  "reportBug.pickElement": "Pick element",
+  "reportBug.markArea": "Area",
+  "reportBug.pickElement": "Element",
   "reportBug.areaAt": "{width} × {height} px at {x}, {y}",
   "reportBug.removeMark": "Remove mark",
   "reportBug.markHint":

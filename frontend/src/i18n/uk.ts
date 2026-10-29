@@ -1262,8 +1262,8 @@ export const uk: Messages = {
     "Додайте свій токен Jira в профілі, щоб заводити баги звідси.",
   "reportBug.checkpoint": "Знімок",
   "reportBug.baseline": "Еталон",
-  "reportBug.markArea": "Обвести",
-  "reportBug.pickElement": "Вибрати елемент",
+  "reportBug.markArea": "Область",
+  "reportBug.pickElement": "Елемент",
   "reportBug.areaAt": "{width} × {height} px у {x}, {y}",
   "reportBug.removeMark": "Прибрати позначку",
   "reportBug.markHint":

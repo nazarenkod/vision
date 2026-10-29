@@ -49,8 +49,8 @@ npm run test:e2e / test:acceptance         # потрібні запущені P
 ## Пастки
 
 - `npx jest` без `--projects src` запускає ще e2e й acceptance, і вони падають без бази.
-  Unit-тест «asks for the siblings signatures at once» інколи падає під навантаженням, окремо
-  проходить.
+  Один файл — `npm test -- --testPathPattern <шлях>`: голий шлях після `--projects src` jest
+  вважає ще одним проєктом і падає з «jest is not defined».
 - `parseUiTreeSettings` відкидає записи, яких не розуміє. Додаючи поле в налаштування проєкту,
   онови й парсер, і його тест (`comparison-inputs.spec.ts`).
 - Approve upstream змінить щось нове (поле варіації, ще одну таблицю) — онови `decision-undo.ts`;

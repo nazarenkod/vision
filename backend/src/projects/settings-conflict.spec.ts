@@ -27,6 +27,15 @@ describe('settingsConflict', () => {
     expect(settingsConflict(stored, changed)).toEqual(['uiTreeSettings']);
   });
 
+  // a page opened before 022 still sends what it loaded of the removed variation
+  // groups; the columns keep their old values, so comparing would be a conflict
+  // with no field on the page to resolve it
+  it('ignores the variation settings an old page loaded', () => {
+    const loaded = { ...stored, bulkApproveVariations: false, bulkApproveGroupBy: 'customTags' };
+    const now = { ...stored, bulkApproveVariations: true, bulkApproveGroupBy: 'os' };
+    expect(settingsConflict(loaded, now)).toEqual([]);
+  });
+
   it('only compares what the page loaded', () => {
     expect(settingsConflict({ name: 'Mobile Shop' }, { ...stored, maxBuildAllowed: 1 })).toEqual([]);
   });

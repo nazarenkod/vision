@@ -7,16 +7,9 @@ import { useDecisionSnackbar } from "../useDecisionSnackbar";
 import { useHotkeys } from "react-hotkeys-hook";
 import React from "react";
 import { testRunService } from "../../services";
-import { useProjectState, useTestRunState } from "../../contexts";
 import { TestRun } from "../../types";
-import { TestStatus } from "../../types/testStatus";
 import { Tooltip } from "../Tooltip";
 import { makeStyles } from "@mui/styles";
-import { MatchingVariationsMode } from "./MatchingVariationsDialog";
-import {
-  isSibling,
-  resolveGroupByAxis,
-} from "../../_helpers/testRunGroup.helper";
 import { useT } from "../../i18n";
 
 // The key on the button as a small keycap. Generated content, so the button's
@@ -46,10 +39,6 @@ const useStyles = makeStyles(() => ({
     marginLeft: 4,
     marginRight: 4,
   },
-  wideActionButton: {
-    marginLeft: 4,
-    marginRight: 4,
-  },
 }));
 
 export const ApproveRejectButtons: React.FunctionComponent<{
@@ -60,38 +49,12 @@ export const ApproveRejectButtons: React.FunctionComponent<{
   afterReject?: () => void;
   /** the server refused the decision */
   afterFail?: () => void;
-  onOpenVariations: (mode: MatchingVariationsMode) => void;
-}> = ({
-  testRun,
-  onDecide,
-  afterApprove,
-  afterReject,
-  afterFail,
-  onOpenVariations,
-}) => {
+}> = ({ testRun, onDecide, afterApprove, afterReject, afterFail }) => {
   const { enqueueSnackbar } = useDialogSnackbar();
   // the dialog's own placement and one-at-a-time rule, with Undo for 8 s
   const announce = useDecisionSnackbar(enqueueSnackbar);
   const classes = useStyles();
   const { t } = useT();
-  const { selectedProjectId, projectList } = useProjectState();
-  const { testRuns } = useTestRunState();
-  const project = projectList.find((item) => item.id === selectedProjectId);
-  // Only worth showing when there is at least one true sibling still to review —
-  // same screen and same on every axis except the group-by one (e.g. locale).
-  // A run that merely shares the name but differs on a fixed axis (e.g. another
-  // device) is NOT a sibling, so "variations" would be a single approve/reject.
-  const groupBy = resolveGroupByAxis(project?.bulkApproveGroupBy);
-  const hasSiblingsToReview = testRuns.some(
-    (run) =>
-      run.id !== testRun.id &&
-      isSibling(run, testRun, groupBy) &&
-      (run.status === TestStatus.unresolved || run.status === TestStatus.new),
-  );
-  const variationsEnabled =
-    !!project?.bulkApproveVariations &&
-    testRun.status === TestStatus.unresolved &&
-    hasSiblingsToReview;
 
   const [ticked, setTicked] = React.useState(false);
   const untick = React.useRef<ReturnType<typeof setTimeout>>();
@@ -193,29 +156,6 @@ export const ApproveRejectButtons: React.FunctionComponent<{
           {t("review.approve")}
         </Button>
       </Tooltip>
-      {variationsEnabled && (
-        <Tooltip title={t("review.approveVariationsHelp")}>
-          <Button
-            onClick={() => onOpenVariations("approve")}
-            variant="outlined"
-            className={classes.wideActionButton}
-          >
-            {t("review.approveVariations")}
-          </Button>
-        </Tooltip>
-      )}
-      {variationsEnabled && (
-        <Tooltip title={t("review.rejectVariationsHelp")}>
-          <Button
-            color="secondary"
-            onClick={() => onOpenVariations("reject")}
-            variant="outlined"
-            className={classes.wideActionButton}
-          >
-            {t("review.rejectVariations")}
-          </Button>
-        </Tooltip>
-      )}
       <Tooltip title={t("review.hotkey", { key: REVIEW_KEYS.reject })}>
         <Button
           color="secondary"

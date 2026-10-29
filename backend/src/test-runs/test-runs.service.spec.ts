@@ -1,6 +1,7 @@
 import { mocked } from 'jest-mock';
 import { Test, TestingModule } from '@nestjs/testing';
-import { SIGNATURE_CONCURRENCY, TestRunsService } from './test-runs.service';
+import { mapWithConcurrency, SIGNATURE_CONCURRENCY, TestRunsService } from './test-runs.service';
+import { DEFAULT_CONFIG } from '../compare/libs/pixelmatch/pixelmatch.service';
 import { SIGNATURE_LENGTH } from '../compare/libs/pixelmatch/signature.core';
 import { PrismaService } from '../prisma/prisma.service';
 import { StaticService } from '../static/static.service';
@@ -934,280 +935,121 @@ describe('TestRunsService', () => {
     });
   });
 
-  describe('getMatchingVariations', () => {
-    // Full-length histograms, because a stored one is only reused when its shape
-    // matches what this build produces. Orthogonal, so they never match.
+  // Change groups (006) compare these signatures across a build, so what makes
+  // one trustworthy and cheap is checked here, on the method itself.
+  describe('getChangeSignature', () => {
     const histogram = (hot: number): number[] =>
       Array.from({ length: SIGNATURE_LENGTH }, (_unused, index) => (index === hot ? 1 : 0));
-    const SAME_PALETTE = histogram(0);
-    const OTHER_PALETTE = histogram(SIGNATURE_LENGTH - 1);
+    const PALETTE = histogram(0);
+    const stamped = (signature: unknown, threshold = DEFAULT_CONFIG.threshold, includeAA = true) =>
+      JSON.stringify({ threshold, includeAA, signature });
 
-    // A sibling of the reviewed screen. imageName doubles as the run's identity
-    // in the signature mocks below, which see buffers rather than runs.
-    const sibling = (id: string, overrides: Partial<TestRun> = {}): TestRun =>
+    const changedRun = (overrides: Partial<TestRun> = {}): TestRun =>
       generateTestRun({
-        id,
-        status: TestStatus.unresolved,
-        name: 'Screen A',
-        baselineName: `${id}.baseline.png`,
-        baselineUiTreeName: null,
-        imageName: `${id}.screenshot.png`,
-        customTags: id,
-        diffPercent: 12,
+        baselineName: 'screen.baseline.png',
+        imageName: 'screen.screenshot.png',
+        changeSignature: null,
         ...overrides,
       });
 
-    // The pool takes PNG bytes, so the fake static service hands back the image
-    // name as its own content and the signature mock reads the name back out.
-    const initMatchingService = async ({
-      testRun,
-      siblings,
-      signatureOf,
-    }: {
-      testRun: TestRun;
-      siblings: TestRun[];
-      signatureOf: (imageName: string) => Promise<number[] | null> | number[] | null;
-    }) => {
-      const compareGetChangeSignatureMock = jest.fn().mockImplementation(async (input) => ({
-        signature: await signatureOf(input.image.toString()),
-      }));
-      const built = await initService({
-        testRunFindUniqueMock: jest.fn().mockResolvedValue({ ...testRun, testVariation: generateTestVariation() }),
-        testRunFindManyMock: jest.fn().mockResolvedValue(siblings),
-        projectFindUniqueMock: jest
-          .fn()
-          .mockResolvedValue({ bulkApproveVariations: true, bulkApproveGroupBy: 'customTags' }),
+    const initSigningService = async () => {
+      const compareGetChangeSignatureMock = jest.fn().mockResolvedValue({ signature: PALETTE });
+      const service = await initService({
         getImageBufferMock: jest.fn().mockImplementation(async (name: string) => Buffer.from(name)),
         compareGetChangeSignatureMock,
       });
-      return { service: built, compareGetChangeSignatureMock };
+      return { service, compareGetChangeSignatureMock };
     };
 
-    it('matches same-palette, same-size siblings and skips different pattern / far larger change', async () => {
-      const testRun = sibling('target', { customTags: '' });
-      const matching = sibling('locale-a');
-      const bigger = sibling('locale-b', { diffPercent: 30 });
-      const different = sibling('locale-c');
-
-      const built = await initMatchingService({
-        testRun,
-        siblings: [matching, bigger, different],
-        signatureOf: (imageName) => (imageName.startsWith('locale-c') ? OTHER_PALETTE : SAME_PALETTE),
-      });
-
-      const result = await built.service.getMatchingVariations(testRun.id);
-
-      expect(result.variations.map((variation) => variation.id)).toEqual([testRun.id, matching.id]);
-      expect(result.skipped.map((item) => ({ id: item.id, reason: item.reason }))).toEqual([
-        { id: bigger.id, reason: 'different change size' },
-        { id: different.id, reason: 'different change pattern' },
-      ]);
-    });
-
     // The whole point of storing it: a build's screenshots are fetched and
-    // decoded once at ingest, never again to group a screen at review time.
-    it('groups from the signatures stored at ingest, without decoding anything', async () => {
-      const signed = (id: string, signature: number[], overrides = {}) =>
-        sibling(id, {
-          changeSignature: JSON.stringify({ threshold: 0.1, includeAA: true, signature }),
-          ...overrides,
-        });
-      const testRun = signed('target', SAME_PALETTE, { customTags: '' });
-      const matching = signed('locale-a', SAME_PALETTE);
-      const different = signed('locale-c', OTHER_PALETTE);
+    // decoded once at ingest, never again to group them at review time.
+    it('uses the signature stored at ingest without decoding anything', async () => {
+      const { service, compareGetChangeSignatureMock } = await initSigningService();
 
-      const built = await initMatchingService({
-        testRun,
-        siblings: [matching, different],
-        signatureOf: () => {
-          throw new Error('should not be computing a signature');
-        },
-      });
+      const signature = await service.getChangeSignature(
+        changedRun({ changeSignature: stamped(PALETTE) }),
+        DEFAULT_CONFIG
+      );
 
-      const result = await built.service.getMatchingVariations(testRun.id);
-
-      expect(built.compareGetChangeSignatureMock).not.toHaveBeenCalled();
-      expect(result.variations.map((variation) => variation.id)).toEqual([testRun.id, matching.id]);
-      expect(result.skipped.map((item) => item.reason)).toEqual(['different change pattern']);
+      expect(signature).toEqual(PALETTE);
+      expect(compareGetChangeSignatureMock).not.toHaveBeenCalled();
     });
 
-    // A signature only means anything under the threshold it was computed with.
-    // The in-memory memo has always keyed on that; the stored one has to too,
-    // or changing a project's comparison config silently mixes signatures from
-    // two different settings and grouping quietly gets worse.
+    // A signature only means anything under the threshold it was computed with;
+    // reusing one after the project's config moved on would mix two settings.
     it('recomputes when the project config has moved on since ingest', async () => {
-      const stale = JSON.stringify({ threshold: 0.9, includeAA: false, signature: SAME_PALETTE });
-      const testRun = sibling('target', { customTags: '', changeSignature: stale });
-      const matching = sibling('locale-a', { changeSignature: stale });
+      const { service, compareGetChangeSignatureMock } = await initSigningService();
 
-      const built = await initMatchingService({
-        testRun,
-        siblings: [matching],
-        signatureOf: () => SAME_PALETTE,
-      });
+      await service.getChangeSignature(changedRun({ changeSignature: stamped(PALETTE, 0.9, false) }), DEFAULT_CONFIG);
 
-      const result = await built.service.getMatchingVariations(testRun.id);
-
-      const asked = built.compareGetChangeSignatureMock.mock.calls.map(([input]) => input.image.toString());
-      expect(asked.sort()).toEqual([testRun.imageName, matching.imageName].sort());
-      expect(result.variations.map((variation) => variation.id)).toEqual([testRun.id, matching.id]);
+      expect(compareGetChangeSignatureMock).toHaveBeenCalledTimes(1);
     });
 
-    // A signature is a fixed-length histogram. One of the wrong length compared
-    // against one of the right length gives a similarity score computed over
-    // undefined entries — a number, silently meaningless. The same self-
-    // invalidating guard as the config stamp: if the shape moves on, recompute.
+    // A signature is a fixed-length histogram. One of the wrong shape compared
+    // against a current one gives a score that looks fine and means nothing.
     it.each([
       ['the wrong length', [1, 0]],
       ['values that are not numbers', new Array(SIGNATURE_LENGTH).fill('nope')],
     ])('recomputes a stored signature with %s', async (_case, signature) => {
-      const stored = JSON.stringify({ threshold: 0.1, includeAA: true, signature });
-      const testRun = sibling('target', { customTags: '', changeSignature: stored });
+      const { service, compareGetChangeSignatureMock } = await initSigningService();
 
-      const built = await initMatchingService({
-        testRun,
-        siblings: [],
-        signatureOf: () => SAME_PALETTE,
-      });
+      await service.getChangeSignature(changedRun({ changeSignature: stamped(signature) }), DEFAULT_CONFIG);
 
-      await built.service.getMatchingVariations(testRun.id);
-
-      expect(built.compareGetChangeSignatureMock).toHaveBeenCalled();
+      expect(compareGetChangeSignatureMock).toHaveBeenCalledTimes(1);
     });
 
     // builds ingested before the column existed, and runs compared by something
     // other than pixelmatch, still have to group
-    it('falls back to computing for a run with nothing stored', async () => {
-      const testRun = sibling('target', {
-        customTags: '',
-        changeSignature: JSON.stringify({ threshold: 0.1, includeAA: true, signature: SAME_PALETTE }),
-      });
-      const unsigned = sibling('locale-a');
+    it('computes a signature for a run with nothing stored', async () => {
+      const { service, compareGetChangeSignatureMock } = await initSigningService();
+      const run = changedRun();
 
-      const built = await initMatchingService({
-        testRun,
-        siblings: [unsigned],
-        signatureOf: () => SAME_PALETTE,
-      });
+      const signature = await service.getChangeSignature(run, DEFAULT_CONFIG);
 
-      const result = await built.service.getMatchingVariations(testRun.id);
-
-      const asked = built.compareGetChangeSignatureMock.mock.calls.map(([input]) => input.image.toString());
-      expect(asked).toEqual([unsigned.imageName]);
-      expect(result.variations.map((variation) => variation.id)).toEqual([testRun.id, unsigned.id]);
+      expect(signature).toEqual(PALETTE);
+      expect(compareGetChangeSignatureMock.mock.calls[0][0].image.toString()).toBe(run.imageName);
     });
 
-    it('skips a far larger change without paying for its signature', async () => {
-      const testRun = sibling('target', { customTags: '' });
-      const bigger = sibling('locale-b', { diffPercent: 30 });
+    it('reuses the signature it already computed for the same pair', async () => {
+      const { service, compareGetChangeSignatureMock } = await initSigningService();
+      const run = changedRun();
 
-      const built = await initMatchingService({
-        testRun,
-        siblings: [bigger],
-        signatureOf: () => SAME_PALETTE,
-      });
+      await service.getChangeSignature(run, DEFAULT_CONFIG);
+      await service.getChangeSignature(run, DEFAULT_CONFIG);
 
-      await built.service.getMatchingVariations(testRun.id);
-
-      const asked = built.compareGetChangeSignatureMock.mock.calls.map(([input]) => input.image.toString());
-      expect(asked).toEqual([testRun.imageName]);
-    });
-
-    it('says a sibling has no diff rather than blaming its change size', async () => {
-      const testRun = sibling('target', { customTags: '' });
-      const unchanged = sibling('locale-b', { diffPercent: 0 });
-
-      const built = await initMatchingService({
-        testRun,
-        siblings: [unchanged],
-        signatureOf: () => SAME_PALETTE,
-      });
-
-      const result = await built.service.getMatchingVariations(testRun.id);
-
-      expect(result.skipped.map((item) => item.reason)).toEqual(['no diff to match']);
-    });
-
-    it('asks for the siblings signatures at once rather than one after another', async () => {
-      const testRun = sibling('target', { customTags: '' });
-      const siblings = ['locale-a', 'locale-b', 'locale-c'].map((id) => sibling(id));
-
-      let inFlight = 0;
-      let peakInFlight = 0;
-      const built = await initMatchingService({
-        testRun,
-        siblings,
-        signatureOf: async () => {
-          inFlight += 1;
-          peakInFlight = Math.max(peakInFlight, inFlight);
-          await new Promise((resolve) => setTimeout(resolve, 0));
-          inFlight -= 1;
-          return SAME_PALETTE;
-        },
-      });
-
-      await built.service.getMatchingVariations(testRun.id);
-
-      expect(peakInFlight).toBe(siblings.length + 1);
-    });
-
-    it('keeps the number of images being decoded at once bounded', async () => {
-      const testRun = sibling('target', { customTags: '' });
-      const siblings = Array.from({ length: SIGNATURE_CONCURRENCY * 3 }, (_, index) => sibling(`locale-${index}`));
-
-      let inFlight = 0;
-      let peakInFlight = 0;
-      const built = await initMatchingService({
-        testRun,
-        siblings,
-        signatureOf: async () => {
-          inFlight += 1;
-          peakInFlight = Math.max(peakInFlight, inFlight);
-          await new Promise((resolve) => setTimeout(resolve, 0));
-          inFlight -= 1;
-          return SAME_PALETTE;
-        },
-      });
-
-      await built.service.getMatchingVariations(testRun.id);
-
-      expect(peakInFlight).toBe(SIGNATURE_CONCURRENCY);
-    });
-
-    it('reuses the signatures it already computed when the dialog is reopened', async () => {
-      const testRun = sibling('target', { customTags: '' });
-      const matching = sibling('locale-a');
-
-      const built = await initMatchingService({
-        testRun,
-        siblings: [matching],
-        signatureOf: () => SAME_PALETTE,
-      });
-
-      await built.service.getMatchingVariations(testRun.id);
-      const afterFirst = built.compareGetChangeSignatureMock.mock.calls.length;
-      const second = await built.service.getMatchingVariations(testRun.id);
-
-      expect(afterFirst).toBe(2);
-      expect(built.compareGetChangeSignatureMock).toHaveBeenCalledTimes(2);
-      expect(second.variations.map((variation) => variation.id)).toEqual([testRun.id, matching.id]);
+      expect(compareGetChangeSignatureMock).toHaveBeenCalledTimes(1);
     });
 
     it('recomputes a signature once the run gained an ignore area', async () => {
-      const testRun = sibling('target', { customTags: '' });
-      const matching = sibling('locale-a');
+      const { service, compareGetChangeSignatureMock } = await initSigningService();
+      const run = changedRun();
 
-      const built = await initMatchingService({
-        testRun,
-        siblings: [matching],
-        signatureOf: () => SAME_PALETTE,
+      await service.getChangeSignature(run, DEFAULT_CONFIG);
+      run.ignoreAreas = JSON.stringify([{ x: 0, y: 0, width: 10, height: 10 }]);
+      await service.getChangeSignature(run, DEFAULT_CONFIG);
+
+      expect(compareGetChangeSignatureMock).toHaveBeenCalledTimes(2);
+    });
+  });
+
+  // Every queued signature job holds two image buffers in a pool shared with
+  // ingestion, so a build with many screens must not hand it all at once.
+  describe('mapWithConcurrency', () => {
+    it('keeps at most the limit in flight and the results in order', async () => {
+      const items = Array.from({ length: SIGNATURE_CONCURRENCY * 3 }, (_, index) => index);
+      let inFlight = 0;
+      let peakInFlight = 0;
+
+      const results = await mapWithConcurrency(items, SIGNATURE_CONCURRENCY, async (item) => {
+        inFlight += 1;
+        peakInFlight = Math.max(peakInFlight, inFlight);
+        await new Promise((resolve) => setTimeout(resolve, item % 3));
+        inFlight -= 1;
+        return item * 2;
       });
 
-      await built.service.getMatchingVariations(testRun.id);
-      matching.ignoreAreas = JSON.stringify([{ x: 0, y: 0, width: 10, height: 10 }]);
-      await built.service.getMatchingVariations(testRun.id);
-
-      expect(built.compareGetChangeSignatureMock).toHaveBeenCalledTimes(3);
+      expect(peakInFlight).toBe(SIGNATURE_CONCURRENCY);
+      expect(results).toEqual(items.map((item) => item * 2));
     });
   });
 });

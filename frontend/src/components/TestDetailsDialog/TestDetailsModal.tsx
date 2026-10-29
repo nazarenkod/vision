@@ -44,15 +44,11 @@ import {
 import { TestRunDetails } from "./TestRunDetails";
 import useImage from "use-image";
 import { routes, GO_TO_NEXT_KEY } from "../../constants";
-import { useTestRunDispatch, useProjectState, useTokens } from "../../contexts";
+import { useTestRunDispatch, useTokens } from "../../contexts";
 import { DrawArea, ImageStateLoad } from "./DrawArea";
 import { CommentsPopper } from "../CommentsPopper";
 import { useDialogSnackbar } from "./useDialogSnackbar";
 import { APPROVED_TICK_MS, ApproveRejectButtons } from "./ApproveRejectButtons";
-import {
-  MatchingVariationsDialog,
-  MatchingVariationsMode,
-} from "./MatchingVariationsDialog";
 import { invertIgnoreArea } from "../../_helpers/ignoreArea.helper";
 import { InsightsPanel } from "./InsightsPanel";
 import { DeviceStrip } from "./DeviceStrip";
@@ -170,10 +166,6 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
   const classes = useStyles();
   const { enqueueSnackbar } = useDialogSnackbar();
   const testRunDispatch = useTestRunDispatch();
-  const { selectedProjectId, projectList } = useProjectState();
-  const project = projectList.find((item) => item.id === selectedProjectId);
-  const [variationsMode, setVariationsMode] =
-    useState<MatchingVariationsMode | null>(null);
 
   const stageScaleBy = 1.2;
   const [stageScale, setStageScale] = React.useState(1);
@@ -1173,7 +1165,6 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
               afterApprove={() => settleDecision(true, APPROVED_TICK_MS)}
               afterReject={() => settleDecision(true)}
               afterFail={() => settleDecision(false)}
-              onOpenVariations={setVariationsMode}
             />
           )}
           <Tooltip title={t("review.hotkeyRight")}>
@@ -1225,13 +1216,6 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
           toggleApplyIgnoreDialogOpen();
           applyIgnoreArea();
         }}
-      />
-      <MatchingVariationsDialog
-        key={testRun.id}
-        mode={variationsMode}
-        testRun={testRun}
-        groupBy={project?.bulkApproveGroupBy}
-        onClose={() => setVariationsMode(null)}
       />
     </>
   );

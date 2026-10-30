@@ -13,6 +13,7 @@ import {
   ValidationPipe,
   Logger,
   Patch,
+  Headers,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -30,6 +31,7 @@ import { Role, TestRun, TestStatus, User } from '@prisma/client';
 import { TestRunsService } from './test-runs.service';
 import { TestRunResultDto } from './dto/testRunResult.dto';
 import { ApiGuard } from '../auth/guards/api.guard';
+import { fromVisionCli } from '../projects/allowed-devices';
 import { MixedGuard } from '../auth/guards/mixed.guard';
 import { TestRunDto } from './dto/testRun.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
@@ -323,11 +325,15 @@ export class TestRunsController {
   @ApiOkResponse({ type: TestRunResultDto })
   @UseGuards(ApiGuard, RoleGuard)
   @Roles(Role.admin, Role.editor)
-  postTestRun(@Body() createTestRequestDto: CreateTestRequestBase64Dto): Promise<TestRunResultDto> {
+  postTestRun(
+    @Body() createTestRequestDto: CreateTestRequestBase64Dto,
+    @Headers('user-agent') userAgent?: string
+  ): Promise<TestRunResultDto> {
     const imageBuffer = Buffer.from(createTestRequestDto.imageBase64, 'base64');
     return this.testRunsService.postTestRun({
       createTestRequestDto,
       imageBuffer,
+      checkDevice: !fromVisionCli(userAgent),
     });
   }
 
@@ -340,8 +346,15 @@ export class TestRunsController {
   @Roles(Role.admin, Role.editor)
   @UseInterceptors(FileInterceptor('image'), FileToBodyInterceptor)
   @UsePipes(new ValidationPipe({ transform: true, forbidUnknownValues: true }))
-  postTestRunMultipart(@Body() createTestRequestDto: CreateTestRequestMultipartDto): Promise<TestRunResultDto> {
+  postTestRunMultipart(
+    @Body() createTestRequestDto: CreateTestRequestMultipartDto,
+    @Headers('user-agent') userAgent?: string
+  ): Promise<TestRunResultDto> {
     const imageBuffer = createTestRequestDto.image.buffer;
-    return this.testRunsService.postTestRun({ createTestRequestDto, imageBuffer });
+    return this.testRunsService.postTestRun({
+      createTestRequestDto,
+      imageBuffer,
+      checkDevice: !fromVisionCli(userAgent),
+    });
   }
 }

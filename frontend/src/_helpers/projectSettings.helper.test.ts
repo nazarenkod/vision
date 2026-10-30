@@ -31,7 +31,8 @@ describe("project settings", () => {
     });
     expect(matchSettings("JIRA").sections).toEqual(["jira"]);
     expect(matchSettings("tolerance").sections).toEqual(["comparison"]);
-    expect(matchSettings("").sections).toHaveLength(7);
+    expect(matchSettings("").sections).toHaveLength(8);
+    expect(matchSettings("OS version").sections).toEqual(["devices"]);
     // element rules live on the review screen only (REQ-019-01)
     expect(matchSettings("element rule").sections).toEqual([]);
     expect(matchSettings("nothing like this")).toEqual({

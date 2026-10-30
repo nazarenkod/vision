@@ -209,6 +209,10 @@ which element changed, and can ignore or tolerate changes by element. The
 format (Android or iOS) is recognised from the XML. Servers without UI tree
 support ignore the field.
 
+A Vision project may list the devices its tests run on. A snapshot from any
+other `device` / `os` is refused by the server, and `track` throws a
+`TestRunException` with the reason, soft assert or not; no baseline is made.
+
 
 ### Stop `VisualRegressionTracker`
 

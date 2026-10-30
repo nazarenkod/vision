@@ -89,6 +89,7 @@ docs/specs/NNN-коротка-назва/
 | [026](026-a11y-rules-settings/spec.md) | Норми доступності проєкту | Implemented |
 | [027](027-nameless-elements/spec.md) | Безіменні елементи й XPath (експеримент) | Implemented |
 | [028](028-several-elements/spec.md) | Кілька елементів одразу: до трьох, одна дія | Implemented |
+| [029](029-allowed-devices/spec.md) | Дозволені пристрої проєкту | Implemented |
 
 Статусу `Verified` поки немає в жодної: інтеграцію з реальною Jira Cloud і прогони на сервері
 команда ще не підтвердила.

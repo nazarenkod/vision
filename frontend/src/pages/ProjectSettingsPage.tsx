@@ -49,12 +49,15 @@ import {
   ReviewFields,
 } from "../components/ProjectForm";
 import { A11yRulesSettings } from "../components/ProjectForm/A11yRulesSettings";
+import { AllowedDevicesSettings } from "../components/ProjectForm/AllowedDevicesSettings";
+import { allowedDevicesOf } from "../_helpers/allowedDevices.helper";
 import { EmptyState } from "../components/EmptyState";
 import { MessageKey, Text, useT } from "../i18n";
 
 const DESCRIPTION: Partial<Record<SectionId, MessageKey>> = {
   comparison: "section.comparisonIntro",
   mobile: "section.mobileIntro",
+  devices: "section.devicesIntro",
   a11y: "section.a11yIntro",
   jira: "section.jiraIntro",
 };
@@ -74,6 +77,12 @@ function sectionMeta(id: SectionId, project: ProjectDto, t: Text): string {
         tree.detectSemanticChanges,
       ].filter(Boolean).length;
       return t("settings.meta.mobileOn", { count: on });
+    }
+    case "devices": {
+      const count = allowedDevicesOf(project.uiTreeSettings).length;
+      return count
+        ? t("settings.meta.devices", { count })
+        : t("settings.meta.anyDevice");
     }
     case "a11y":
       return t("settings.meta.rulesOn", {
@@ -517,6 +526,7 @@ const ProjectSettingsPage: React.FunctionComponent = () => {
             {section("review", <ReviewFields />)}
             {section("comparison", <ComparisonFields />)}
             {section("mobile", <MobileSettings bare />)}
+            {section("devices", <AllowedDevicesSettings />)}
             {section("a11y", <A11yRulesSettings bare />)}
             {section("jira", <JiraSettings bare />)}
             {section(

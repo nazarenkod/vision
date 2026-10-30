@@ -14,6 +14,7 @@ import { TestVariationsService } from '../test-variations/test-variations.servic
 import { TestRunDto } from '../test-runs/dto/testRun.dto';
 import { BuildsService } from '../builds/builds.service';
 import { generateBaseline, generateTestRun, generateTestVariation, TEST_PROJECT } from '../_data_';
+import { UnprocessableEntityException } from '@nestjs/common';
 import { getTestVariationUniqueData } from '../utils';
 import { BaselineDataDto } from '../shared/dto/baseline-data.dto';
 import { CompareService } from '../compare/compare.service';
@@ -870,6 +871,80 @@ describe('TestRunsService', () => {
     expect(service['tryAutoApproveByPastBaselines']).toHaveBeenCalledWith({ testVariation, testRun });
     expect(service['tryAutoApproveByNewBaselines']).toHaveBeenCalledWith({ testVariation, testRun });
     expect(mocked(TestRunResultDto)).toHaveBeenCalledWith(testRun, testVariation);
+  });
+
+  describe('allowed devices (029)', () => {
+    const project = {
+      ...TEST_PROJECT,
+      name: 'AOS',
+      uiTreeSettings: JSON.stringify({ allowedDevices: [{ device: 'Pixel 7', os: 'Android 15' }] }),
+    };
+    const snapshot = (device: string, os: string): CreateTestRequestDto => ({
+      buildId: 'buildId',
+      projectId: 'projectId',
+      name: 'Payment',
+      os,
+      device,
+      branchName: 'develop',
+    });
+    const setup = async () => {
+      const testRun: TestRun = generateTestRun();
+      const testVariationFindMock = jest.fn().mockResolvedValue({ id: 'variation' });
+      const testVariationCreateMock = jest.fn();
+      const testRunFindManyMock = jest.fn().mockResolvedValue([]);
+      const service = await initService({
+        projectFindUniqueMock: jest.fn().mockResolvedValue(project),
+        testVariationFindMock,
+        testVariationCreateMock,
+        testRunFindManyMock,
+      });
+      service.create = jest.fn().mockResolvedValue(testRun);
+      service.calculateDiff = jest.fn().mockResolvedValue(testRun);
+      service['tryAutoApproveByPastBaselines'] = jest.fn().mockResolvedValue(testRun);
+      service['tryAutoApproveByNewBaselines'] = jest.fn().mockResolvedValue(testRun);
+      return { service, testVariationFindMock, testVariationCreateMock, testRunFindManyMock };
+    };
+
+    it('rejects a device not allowed without creating a variation or run', async () => {
+      const { service, testVariationFindMock, testVariationCreateMock, testRunFindManyMock } = await setup();
+
+      const posting = service.postTestRun({
+        createTestRequestDto: snapshot('Pixel 6', 'Android 13'),
+        imageBuffer,
+        checkDevice: true,
+      });
+
+      await expect(posting).rejects.toThrow(UnprocessableEntityException);
+      await expect(posting).rejects.toThrow('Device not allowed in project "AOS"');
+      expect(testVariationFindMock).not.toHaveBeenCalled();
+      expect(testVariationCreateMock).not.toHaveBeenCalled();
+      expect(testRunFindManyMock).not.toHaveBeenCalled();
+      expect(service.create).not.toHaveBeenCalled();
+    });
+
+    it('accepts an allowed device in the same build after a rejection', async () => {
+      const { service } = await setup();
+
+      await expect(
+        service.postTestRun({ createTestRequestDto: snapshot('Pixel 6', 'Android 13'), imageBuffer, checkDevice: true })
+      ).rejects.toThrow(UnprocessableEntityException);
+      await service.postTestRun({
+        createTestRequestDto: snapshot(' pixel 7', 'Android 15'),
+        imageBuffer,
+        checkDevice: true,
+      });
+
+      expect(service.create).toHaveBeenCalledTimes(1);
+      expect((service.create as jest.Mock).mock.calls[0][0].createTestRequestDto.buildId).toBe('buildId');
+    });
+
+    it('takes any device when the snapshot is not checked', async () => {
+      const { service } = await setup();
+
+      await service.postTestRun({ createTestRequestDto: snapshot('Pixel 6', 'Android 13'), imageBuffer });
+
+      expect(service.create).toHaveBeenCalledTimes(1);
+    });
   });
 
   describe('tryAutoApproveByNewBaselines', () => {

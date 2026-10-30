@@ -94,6 +94,8 @@ export const uk: Messages = {
   "settings.meta.rulesOn": "{count} з {total}",
   "settings.meta.set": "задано",
   "settings.meta.notSet": "не задано",
+  "settings.meta.devices": "дозволено {count}",
+  "settings.meta.anyDevice": "будь-який",
 
   "section.general": "Загальне",
   "section.review": "Перегляд",
@@ -102,6 +104,9 @@ export const uk: Messages = {
   "section.a11y": "Доступність",
   "section.jira": "Jira",
   "section.danger": "Небезпечна зона",
+  "section.devices": "Пристрої",
+  "section.devicesIntro":
+    "Знімки, надіслані з SDK з іншого пристрою чи іншої версії OS, падають у тесті, тож еталони з'являються лише там, де ганяється CI. Ручні перевірки з CLI перелік не обмежує.",
   "section.comparisonIntro":
     "Як знімок порівнюється з еталоном. Під способами порівняння — параметри того, який ви виберете.",
   "section.mobileIntro": "Для знімків, надісланих з Appium page source.",
@@ -109,6 +114,22 @@ export const uk: Messages = {
     "Що Vision перевіряє на кожному знімку з UI-деревом, за нормами вашої команди.",
   "section.jiraIntro":
     "Дає заводити баги доступності просто з екрана перегляду. Кожен додає власний токен Jira у профілі, тож баги заводяться від його імені. Спільний токен тут — для тих, хто свого ще не додав.",
+
+  "devices.device": "Пристрій",
+  "devices.os": "Версія OS",
+  "devices.add": "Додати",
+  "devices.remove": "Прибрати",
+  "devices.none": "Переліку немає: приймаються знімки з будь-якого пристрою.",
+  "devices.osHint": "Точно, або 26.* для будь-якої 26.x",
+  "devices.missing": "Потрібні і пристрій, і OS",
+  "devices.wildcard": "* лише в кінці OS, як у 26.*",
+  "devices.duplicate": "Уже в переліку",
+  "devices.received": "Пристрої зі знімків",
+  "devices.receivedHint":
+    "Так, як їх надсилають тести. Спершу додайте ті, на яких ганяється CI.",
+  "devices.receivedNone": "Знімків ще немає.",
+  "devices.notInList": "не в переліку",
+  "devices.allowed": "дозволено",
 
   "general.name": "Назва проєкту",
   "general.mainBranch": "Основна гілка",

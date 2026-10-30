@@ -83,6 +83,20 @@ describe('ProjectsService', () => {
       expect(projectUpdateMock.mock.calls[0][0].data.uiTreeSettings).toBeUndefined();
     });
 
+    it('refuses to save allowed devices with an unsupported wildcard', async () => {
+      const projectUpdateMock = jest.fn().mockResolvedValue({});
+      service = await initService({ projectUpdateMock });
+
+      await expect(
+        service.update({
+          id: 'p1',
+          name: 'Mobile',
+          uiTreeSettings: JSON.stringify({ allowedDevices: [{ device: 'Pixel *', os: 'Android 15' }] }),
+        } as never)
+      ).rejects.toThrow('only supported at the end of the OS version');
+      expect(projectUpdateMock).not.toHaveBeenCalled();
+    });
+
     it('ignores the variation settings an old page still sends', async () => {
       const projectUpdateMock = jest.fn().mockResolvedValue({});
       service = await initService({ projectUpdateMock });

@@ -25,6 +25,13 @@ export interface Project {
   uiTreeSettings?: string | null;
 }
 
+/** A device SDK snapshots may come from: as the test sends `device` and `os` (029). */
+export interface AllowedDevice {
+  device: string;
+  // exact, or ending in ".*" for any version under it
+  os: string;
+}
+
 export type ProjectDto = Omit<
   Project,
   "updatedAt" | "createdAt" | "builds" | "jiraTokenSet" | "geminiApiKeySet"

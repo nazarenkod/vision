@@ -1180,12 +1180,12 @@ export const uk: Messages = {
   "select.more": "Знаходити інакше",
   "select.ignore": "Ігнорувати",
   "select.compare": "Порівнювати лише цей елемент",
-  "select.compareSelected": "Тільки виділене",
-  "select.allow": "Допуск {percent}%",
+  "select.compareSelected": "Порівнювати лише це",
+  "select.allow": "Дозволити {percent}%",
   "select.thisScreen": "Цей екран",
   "select.allScreens": "Усі екрани",
   "select.compareOneScreen":
-    "«Тільки виділене» діє на один екран: кожна перевірка називає свої елементи",
+    "«Порівнювати лише це» діє на один екран: кожна перевірка називає свої елементи",
   "select.onScreen": "{count} на цьому екрані",
   "select.textAnchor":
     "Знайдено через текст: правило перестане діяти, щойно текст зміниться",

@@ -45,8 +45,8 @@ import { JiraBugDialog } from "./JiraBugDialog";
 import { tokens } from "../../theme";
 import { labelOf, useT } from "../../i18n";
 import { WhatsCompared } from "./WhatsCompared";
+import { readAreas } from "../../_helpers/ignoreArea.helper";
 import { groupAreas, splitElement } from "./changedAreas";
-import { IgnoreArea } from "../../types/ignoreArea";
 import { SelectorMatches } from "../../types/insights";
 import { elementLabel } from "../../_helpers/elementPicking.helper";
 
@@ -1138,10 +1138,8 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
         )}
         <WhatsCompared
           structure={structure}
-          areas={JSON.parse(testRun.ignoreAreas ?? "[]") as IgnoreArea[]}
-          testAreas={
-            JSON.parse(testRun.tempIgnoreAreas ?? "[]") as IgnoreArea[]
-          }
+          areas={readAreas(testRun.ignoreAreas)}
+          testAreas={readAreas(testRun.tempIgnoreAreas)}
           onOpenArea={onOpenArea}
           pinnedMark={pinnedMark}
           onPinMark={onPinMark}

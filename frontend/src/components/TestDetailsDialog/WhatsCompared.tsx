@@ -130,7 +130,10 @@ export const WhatsCompared: React.FunctionComponent<WhatsComparedProps> = ({
 
   const headline =
     summary.kind === "only"
-      ? t("compared.only", { count: summary.elements })
+      ? // "Only 0 elements" read as a slip: none found means nothing is compared
+        summary.elements
+        ? t("compared.only", { count: summary.elements })
+        : t("compared.none")
       : summary.kind === "except"
         ? t("compared.except", { count: summary.elements })
         : t("compared.whole");

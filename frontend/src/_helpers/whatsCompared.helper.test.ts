@@ -1,4 +1,9 @@
-import { foundOn, groupRules, summarize } from "./whatsCompared.helper";
+import {
+  compareOnlyApplied,
+  foundOn,
+  groupRules,
+  summarize,
+} from "./whatsCompared.helper";
 import { ScreenRule } from "../types/insights";
 
 const box = { x: 0, y: 0, width: 10, height: 10 };
@@ -80,5 +85,37 @@ describe("whatsCompared", () => {
       current: 4,
       baseline: 4,
     });
+  });
+});
+
+describe("compareOnlyApplied", () => {
+  const plan = (
+    problems: Array<
+      | { kind: "no-tree" }
+      | { kind: "nothing-found"; ruleId: string; selector: string }
+    >,
+  ) => ({
+    active: true,
+    keep: [],
+    problems,
+  });
+
+  it("says the whole screen is compared when there is no UI tree", () => {
+    const compareOnly = plan([{ kind: "no-tree" }]);
+    expect(compareOnlyApplied(compareOnly)).toBe(false);
+    // not "Only 0 elements": the rule could not apply at all
+    expect(summarize({ rules: [], compareOnly }, 7)).toEqual({
+      kind: "whole",
+      elements: 0,
+      areas: 7,
+    });
+  });
+
+  it("keeps Only 0 elements when the tree is there and nothing matched", () => {
+    const compareOnly = plan([
+      { kind: "nothing-found", ruleId: "a", selector: "id:a" },
+    ]);
+    expect(compareOnlyApplied(compareOnly)).toBe(true);
+    expect(summarize({ rules: [], compareOnly }, 0).kind).toBe("only");
   });
 });

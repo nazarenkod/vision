@@ -1272,6 +1272,7 @@ export const uk: Messages = {
 
   // що порівнюється (специфікація 024)
   "compared.whole": "Увесь екран",
+  "compared.none": "Нічого не порівнюється",
   "compared.except": "Увесь екран, крім {count}",
   "compared.only": {
     one: "Лише {count} елемент",
@@ -1289,7 +1290,7 @@ export const uk: Messages = {
   "compared.found": "{selector} · тут знайдено {current}, в еталоні {baseline}",
   "compared.more": "Інші дії",
   "compared.problem.noTree":
-    "Немає UI-дерева: порівняти лише названі елементи не вдалося",
+    "Немає UI-дерева, тож «Порівнювати лише» не застосовано: порівнюється весь екран",
   "compared.problem.nothingFound": "{selector} нічого не знайшов",
   "compared.problem.disappeared": "{element} зник",
   "compared.problem.appeared": "{element} з'явився",

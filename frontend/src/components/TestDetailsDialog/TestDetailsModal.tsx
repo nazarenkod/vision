@@ -57,6 +57,7 @@ import { CommentsPopper } from "../CommentsPopper";
 import { useDialogSnackbar } from "./useDialogSnackbar";
 import { APPROVED_TICK_MS, ApproveRejectButtons } from "./ApproveRejectButtons";
 import { invertIgnoreArea, readAreas } from "../../_helpers/ignoreArea.helper";
+import { compareOnlyApplied } from "../../_helpers/whatsCompared.helper";
 import { InsightsPanel } from "./InsightsPanel";
 import { DeviceStrip } from "./DeviceStrip";
 import { RunFlags, useAiStatus } from "../ChangeGroups";
@@ -740,7 +741,8 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
   // a check that names its elements dims the rest (REQ-015-30)
   const dimOutside = (side: Side) => {
     const compareOnly = structure?.compareOnly;
-    if (!compareOnly?.active) return undefined;
+    // without a UI tree nothing is singled out: dimming would hide the whole screen
+    if (!compareOnly || !compareOnlyApplied(compareOnly)) return undefined;
     const rects =
       side === "current"
         ? compareOnly.keep

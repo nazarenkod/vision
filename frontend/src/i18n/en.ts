@@ -1186,6 +1186,7 @@ export const en = {
 
   // what is compared (spec 024)
   "compared.whole": "Whole screen",
+  "compared.none": "Nothing is compared",
   "compared.except": "Whole screen except {count}",
   "compared.only": {
     one: "Only {count} element",
@@ -1200,7 +1201,7 @@ export const en = {
     "{selector} · {current} found here, {baseline} on the baseline",
   "compared.more": "More actions",
   "compared.problem.noTree":
-    "No UI tree: only the named elements could not be compared",
+    "No UI tree, so Compare only did not apply: the whole screen is compared",
   "compared.problem.nothingFound": "{selector} found nothing",
   "compared.problem.disappeared": "{element} disappeared",
   "compared.problem.appeared": "{element} appeared",

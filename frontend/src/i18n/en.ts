@@ -1094,7 +1094,8 @@ export const en = {
 
   // selecting elements on the screenshots (spec 024)
   "select.button": "Select elements",
-  "select.hint": "Click an element",
+  "select.hint": "Click an element · Shift-click to add more",
+  "select.adding": "Click elements to add or take out",
   "select.done": "Done",
   "select.parent": "Select the element around it",
   "select.child": "Back to the inner element",
@@ -1128,7 +1129,7 @@ export const en = {
   "panel.selectorProblem.or": "One element at a time: no “or” and no “|”",
   "panel.selectorProblem.mixed":
     "Go either down or up from the stable element, not both",
-  "select.selected": "{count} selected",
+  "select.selected": "{count} elements selected",
   "select.ruleIgnore": "Ignored",
   "select.ruleTolerate": "Allowed ±{percent}%",
   "select.ruleCompare": "Compared only",
@@ -1144,6 +1145,20 @@ export const en = {
     other: "{count} rules added; compared again",
   },
   "select.removed": "Rule removed; compared again",
+  "select.addMore": "Add more elements",
+  "select.addMoreShift": "or Shift + click",
+  "selection.eachRule": "one rule each",
+  "selection.clear": "Clear",
+  "selection.unselect": "Take {element} out of the selection",
+  "selection.limit": "No more than {count} at a time",
+  "selection.skipped": {
+    one: "1 already has a rule and stays as is",
+    other: "{count} already have rules and stay as they are",
+  },
+  "selection.removeRules": "Remove {count} rules",
+  "selection.rulesRemoved": "{count} rules removed; compared again",
+  "selection.mixed": "Their rules differ: select one alone to remove its rule",
+  "selection.failed": "No rule for {element}: {error}",
 
   // pixel areas, behind one button (spec 024)
   "areas.button": "Areas",

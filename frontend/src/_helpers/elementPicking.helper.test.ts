@@ -2,10 +2,12 @@ import {
   countBySelector,
   elementAt,
   elementLabel,
+  addToSelection,
+  panelSide,
   ruleFor,
+  sortSelected,
   stepDown,
   stepUp,
-  toggleSelection,
 } from "./elementPicking.helper";
 import { PickableElement, ScreenRule } from "../types/insights";
 
@@ -53,13 +55,33 @@ describe("elementPicking", () => {
   });
 
   it("adds elements to the selection with Shift", () => {
-    let selected = toggleSelection([], amount, false);
-    selected = toggleSelection(selected, row(1), true);
+    let { selected } = addToSelection([], amount, false);
+    ({ selected } = addToSelection(selected, row(1), true));
     expect(selected).toEqual([amount, row(1)]);
-    // Shift on a selected one takes it back out
-    expect(toggleSelection(selected, amount, true)).toEqual([row(1)]);
     // a plain click starts over
-    expect(toggleSelection(selected, card, false)).toEqual([card]);
+    expect(addToSelection(selected, card, false).selected).toEqual([card]);
+  });
+
+  it("adds an element and takes a selected one back out", () => {
+    const { selected } = addToSelection([amount, row(1)], row(2), true);
+    expect(selected).toEqual([amount, row(1), row(2)]);
+    expect(addToSelection(selected, amount, true)).toEqual({
+      selected: [row(1), row(2)],
+      refused: false,
+    });
+  });
+
+  it("refuses a fourth element", () => {
+    const three = [amount, row(0), row(1)];
+    expect(addToSelection(three, row(2), true)).toEqual({
+      selected: three,
+      refused: true,
+    });
+    // taking one out is still allowed at the limit
+    expect(addToSelection(three, row(0), true).selected).toEqual([
+      amount,
+      row(1),
+    ]);
   });
 
   it("counts what a selector takes on the screenshot", () => {
@@ -79,6 +101,55 @@ describe("elementPicking", () => {
     expect(ruleFor(amount, [rule], "current")).toBe(rule);
     expect(ruleFor(amount, [rule], "baseline")).toBeUndefined();
     expect(ruleFor(card, [rule], "current")).toBeUndefined();
+  });
+
+  describe("several selected (spec 028)", () => {
+    const rule = (
+      element: PickableElement,
+      action: ScreenRule["action"],
+    ): ScreenRule => ({
+      id: `rule-${element.index}`,
+      selector: element.selector,
+      action,
+      scope: "screen",
+      matches: 1,
+    });
+
+    it("sorts out the selected elements that have a rule", () => {
+      const sorted = sortSelected(
+        [card, amount],
+        [rule(card, "ignore")],
+        "current",
+      );
+      expect(sorted.free).toEqual([amount]);
+      expect(sorted.ruled.map(({ element }) => element)).toEqual([card]);
+      expect(sorted.offer).toBe("act");
+      // the same rules on both: they come off together
+      expect(
+        sortSelected(
+          [card, amount],
+          [rule(card, "ignore"), rule(amount, "ignore")],
+          "current",
+        ).offer,
+      ).toBe("remove");
+    });
+
+    it("offers nothing to do when the rules differ", () => {
+      expect(
+        sortSelected(
+          [card, amount],
+          [rule(card, "ignore"), rule(amount, "compare")],
+          "current",
+        ).offer,
+      ).toBe("none");
+    });
+
+    it("moves the panel up when it would cover a selected element", () => {
+      const top = { y: 40, height: 100 };
+      const low = { y: 600, height: 60 };
+      expect(panelSide([top], 160, 700)).toBe("bottom");
+      expect(panelSide([top, low], 160, 700)).toBe("top");
+    });
   });
 
   describe("nameless elements (spec 027)", () => {

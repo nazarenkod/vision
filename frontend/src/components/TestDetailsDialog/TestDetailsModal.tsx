@@ -72,6 +72,7 @@ import { OverlayRect } from "./DrawArea";
 import {
   ElementRule,
   ElementRuleAction,
+  Rect,
   RuleScope,
   ScreenRule,
   SelectorVariant,
@@ -85,9 +86,14 @@ import {
   ruleFor,
   stepDown,
   stepUp,
-  toggleSelection,
+  addToSelection,
+  MAX_SELECTED,
+  panelSide,
+  sortSelected,
 } from "../../_helpers/elementPicking.helper";
-import { ALLOW_PERCENT, ElementPopover } from "./ElementPopover";
+import { ElementPopover } from "./ElementPopover";
+import { ALLOW_PERCENT } from "./ElementActions";
+import { SelectionPanel } from "./SelectionPanel";
 import { AreaKind, AreasMenu } from "./AreasMenu";
 import { areaMarkId, ruleMarkId, testAreaMarkId } from "./WhatsCompared";
 import { useRuleSnackbar } from "../useRuleSnackbar";
@@ -155,6 +161,9 @@ const useStyles = makeStyles(() => ({
   },
 }));
 
+// the height the selection panel takes at the bottom of the screenshots, with its margin
+const PANEL_ROOM = 190;
+
 const defaultStagePos = {
   x: 0,
   y: 0,
@@ -168,6 +177,10 @@ interface Selection {
   picked: Picked;
   selected: PickableElement[];
   anchor: { x: number; y: number };
+  // after Add more elements, a plain click adds (REQ-028-03)
+  adding?: boolean;
+  // the last click tried to add one past the limit (REQ-028-05)
+  refused?: boolean;
 }
 
 interface TestDetailsModalProps {
@@ -446,22 +459,66 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
         return;
       }
       setSelection((current) => {
-        const additive = click.shiftKey && current?.side === side;
-        const selected = toggleSelection(
+        // Shift, Add more elements or an open selection panel add, on the
+        // same screenshot only; elsewhere selecting starts over (REQ-028-04, 06)
+        const additive =
+          !!current &&
+          current.side === side &&
+          (click.shiftKey || !!current.adding || current.selected.length > 1);
+        const { selected, refused } = addToSelection(
           additive ? current.selected : [],
           element,
           additive,
         );
         if (!selected.length) return undefined;
         const last = selected[selected.length - 1];
+        const one = selected.length === 1;
         return {
           side,
           picked: { element: last, trail: [] },
           selected,
-          anchor: { x: click.clientX, y: click.clientY },
+          // with one left, its actions open next to it (REQ-028-13)
+          anchor:
+            one && additive
+              ? (anchorOf(side, last) ?? { x: click.clientX, y: click.clientY })
+              : { x: click.clientX, y: click.clientY },
+          adding: !!current?.adding && additive && one,
+          refused,
         };
       });
     };
+  // where an element is in the window: the stage is scaled by CSS
+  const onScreen = (side: Side, bounds: Rect) => {
+    const pane = (side === "baseline" ? leftItemRef : rightItemRef).current;
+    const stage = pane?.querySelector("canvas");
+    if (!stage || !stage.offsetWidth) return undefined;
+    const box = stage.getBoundingClientRect();
+    const ratio = box.width / stage.offsetWidth;
+    return {
+      x: box.left + bounds.x * ratio,
+      y: box.top + bounds.y * ratio,
+      width: bounds.width * ratio,
+      height: bounds.height * ratio,
+    };
+  };
+  const anchorOf = (side: Side, element: PickableElement) => {
+    const rect = onScreen(side, element.bounds);
+    return rect && { x: rect.x + rect.width, y: rect.y + rect.height / 2 };
+  };
+  const unselect = (element: PickableElement) =>
+    setSelection((current) => {
+      if (!current) return current;
+      const selected = current.selected.filter((item) => item !== element);
+      if (!selected.length) return undefined;
+      const last = selected[selected.length - 1];
+      return {
+        ...current,
+        picked: { element: last, trail: [] },
+        selected,
+        anchor: anchorOf(current.side, last) ?? current.anchor,
+        refused: false,
+      };
+    });
   const stepSelection = (move: (picked: Picked) => Picked | null) =>
     setSelection((current) => {
       const next = current && move(current.picked);
@@ -487,24 +544,59 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
   const showRuleSnack = useRuleSnackbar(enqueueSnackbar);
   const act = async (action: ElementRuleAction, scope: RuleScope) => {
     if (!selection) return;
-    const selectors = Array.from(
-      new Set(selection.selected.map((element) => element.selector)),
+    // those under a rule already keep it (REQ-028-30)
+    const { free } = sortSelected(
+      selection.selected,
+      structure?.rules ?? [],
+      selection.side,
+    );
+    const targets = free.filter(
+      (element, i) =>
+        free.findIndex((item) => item.selector === element.selector) === i,
     );
     setRuleBusy(true);
-    try {
-      const added: ElementRule[] = [];
-      // one rule per element, one after another: each compares the run again
-      for (const selector of selectors) {
+    const added: ElementRule[] = [];
+    let failed: { element: PickableElement; error: unknown } | undefined;
+    // one rule per element, one after another: each compares the run again
+    for (const element of targets) {
+      try {
         added.push(
           await insightsService.addElementRule(testRun.id, {
             scope,
-            selector,
+            selector: element.selector,
             action,
             ...(action === "tolerate" ? { maxDiffPercent: ALLOW_PERCENT } : {}),
           }),
         );
+      } catch (error) {
+        failed = { element, error };
+        break;
       }
-      setSelection(undefined);
+    }
+    if (failed) {
+      const { element, error } = failed;
+      enqueueSnackbar(
+        targets.length > 1
+          ? t("selection.failed", {
+              element: elementLabel(element, t),
+              error: String(error),
+            })
+          : String(error),
+        { variant: "error" },
+      );
+      // the one that failed stays selected, to try again (REQ-028-22)
+      setSelection((current) =>
+        current && targets.length > 1
+          ? {
+              side: current.side,
+              picked: { element, trail: [] },
+              selected: [element],
+              anchor: anchorOf(current.side, element) ?? current.anchor,
+            }
+          : current,
+      );
+    } else setSelection(undefined);
+    if (added.length) {
       loadStructure();
       showRuleSnack(t("select.added", { count: added.length }), () =>
         Promise.all(
@@ -513,9 +605,27 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
           ),
         ).then(loadStructure),
       );
+    }
+    setRuleBusy(false);
+  };
+  // the rules of every selected element come off together (REQ-028-31)
+  const removeRules = async (rules: ScreenRule[]) => {
+    setRuleBusy(true);
+    try {
+      for (const rule of rules)
+        await insightsService.removeElementRule(
+          testRun.id,
+          rule.scope,
+          rule.id,
+        );
+      setSelection(undefined);
+      enqueueSnackbar(t("selection.rulesRemoved", { count: rules.length }), {
+        variant: "success",
+      });
     } catch (error) {
       enqueueSnackbar(String(error), { variant: "error" });
     } finally {
+      loadStructure();
       setRuleBusy(false);
     }
   };
@@ -657,19 +767,23 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
       });
     }
     if (selection) {
-      // the same elements on the other screenshot are outlined too
-      const selectors = new Set(selection.selected.map((e) => e.selector));
-      const elements =
-        selection.side === side
-          ? selection.selected
-          : elementsOf(side).filter((e) => selectors.has(e.selector));
-      elements.forEach((element, i) =>
-        marks.push({
-          id: `picked:${i}`,
-          ...element.bounds,
-          color: canvas.brand,
-        }),
-      );
+      // the same elements on the other screenshot are outlined too, under the
+      // same number as in the selection panel (REQ-028-11)
+      const several = selection.selected.length > 1;
+      selection.selected.forEach((element, i) => {
+        const found =
+          selection.side === side
+            ? [element]
+            : elementsOf(side).filter((e) => e.selector === element.selector);
+        found.forEach((item, k) =>
+          marks.push({
+            id: `picked:${i}${selection.side === side ? "" : `:${k}`}`,
+            ...item.bounds,
+            color: canvas.brand,
+            badge: several ? String(i + 1) : undefined,
+          }),
+        );
+      });
     }
     if (side === "current" && previewElement) {
       marks.push({
@@ -682,6 +796,54 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
     return marks;
   };
   const selectingNow = pickMode || !!selection || !!previewElement;
+  // an element the pointer is over in the selection panel, or all selected
+  const [litPicked, setLitPicked] = useState<number | null>(null);
+  const pickedLit = litPicked === null ? "picked" : `picked:${litPicked}`;
+  const several = !!selection && selection.selected.length > 1;
+  useEffect(() => setLitPicked(null), [selection]);
+  // two or three selected act together from a panel (REQ-028-10)
+  const selectionPanel = () => {
+    if (!selection || !several || !structure) return null;
+    const { side } = selection;
+    const sorted = sortSelected(selection.selected, structure.rules, side);
+    const area = panesRef.current?.getBoundingClientRect();
+    // screenshots do not shrink for it, so it keeps off the selected elements (SC-028-03)
+    const rects = area
+      ? selection.selected.flatMap((element) => {
+          const rect = onScreen(side, element.bounds);
+          return rect ? [{ y: rect.y - area.top, height: rect.height }] : [];
+        })
+      : [];
+    return (
+      <SelectionPanel
+        side={area ? panelSide(rects, PANEL_ROOM, area.height) : "bottom"}
+        selected={selection.selected.map((element) => ({
+          element,
+          count:
+            chosenVariant(element)?.count ??
+            countBySelector(element.selector, elementsOf(side)),
+          rule: ruleFor(element, structure.rules, side),
+        }))}
+        offer={sorted.offer}
+        limit={selection.refused ? MAX_SELECTED : undefined}
+        busy={ruleBusy}
+        onAct={act}
+        onRemoveRules={() =>
+          removeRules(
+            sorted.ruled
+              .map(({ rule }) => rule)
+              .filter(
+                (rule, i, all) =>
+                  all.findIndex((item) => item.id === rule.id) === i,
+              ),
+          )
+        }
+        onUnselect={unselect}
+        onHover={setLitPicked}
+        onClear={() => setSelection(undefined)}
+      />
+    );
+  };
 
   const overlayRects: OverlayRect[] = React.useMemo(
     () =>
@@ -1144,7 +1306,7 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
           stageOffsetState={[stageOffset, setStageOffset]}
           drawModeState={[false, setIsDrawMode]}
           overlayRects={[...ruleMarks("baseline"), ...pickMarks("baseline")]}
-          highlightedOverlayId={selectingNow ? "picked" : previewMark}
+          highlightedOverlayId={selectingNow ? pickedLit : previewMark}
           dimOutside={dimOutside("baseline")}
           pickMode={pickMode}
           onPickHover={(point) => {
@@ -1237,7 +1399,7 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
         ]}
         highlightedOverlayId={
           selectingNow
-            ? "picked"
+            ? pickedLit
             : (previewMark ??
               pinnedMark ??
               (previewRegion
@@ -1462,7 +1624,7 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
         className={classes.drawAreaContainer}
         display="flex"
       >
-        {pickMode && (
+        {pickMode && !several && (
           <Box
             role="status"
             data-testid="selectingBar"
@@ -1485,7 +1647,7 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
               fontSize: 13,
             }}
           >
-            {t("select.hint")}
+            {selection?.adding ? t("select.adding") : t("select.hint")}
             <Button
               size="small"
               onClick={toggleSelecting}
@@ -1507,7 +1669,10 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
           height="100%"
           ref={panesRef}
           data-testid="reviewPanes"
+
+          position="relative"
         >
+          {selectionPanel()}
           <Grid
             container
             justifyContent="center"
@@ -1721,13 +1886,12 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
           applyIgnoreArea();
         }}
       />
-      {selection && structure && (
+      {selection && structure && !several && !selection.adding && (
         <ElementPopover
           // the element, not its selector: choosing another way to find it keeps the popover
           key={`${selection.side}:${selection.picked.element.index ?? selection.picked.element.selector}:${selection.picked.element.bounds.x},${selection.picked.element.bounds.y}`}
           anchor={selection.anchor}
           element={selection.picked.element}
-          selectedCount={selection.selected.length}
           sameSelector={
             chosenVariant(selection.picked.element)?.count ??
             countBySelector(
@@ -1735,15 +1899,11 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
               elementsOf(selection.side),
             )
           }
-          rule={
-            selection.selected.length === 1
-              ? ruleFor(
-                  selection.picked.element,
-                  structure.rules,
-                  selection.side,
-                )
-              : undefined
-          }
+          rule={ruleFor(
+            selection.picked.element,
+            structure.rules,
+            selection.side,
+          )}
           canGoUp={!!stepUp(selection.picked, elementsOf(selection.side))}
           canGoDown={!!stepDown(selection.picked)}
           busy={ruleBusy}
@@ -1761,6 +1921,9 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
           onChooseVariant={chooseVariant}
           onRemove={removeRule}
           onClose={() => setSelection(undefined)}
+          onAddMore={() =>
+            setSelection((current) => current && { ...current, adding: true })
+          }
         />
       )}
       <Popover

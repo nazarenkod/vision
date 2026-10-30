@@ -6,6 +6,7 @@ import {
   Image,
   Rect,
   Label,
+  Circle,
   Tag,
   Text,
   Shape,
@@ -107,6 +108,8 @@ export interface OverlayRect {
   hatched?: boolean;
   // the label only while the rect is highlighted: rule marks stay quiet otherwise
   labelOnHighlight?: boolean;
+  // a number in the corner: the element's place in the selection panel (REQ-028-11)
+  badge?: string;
 }
 
 /** Everything outside these is dimmed: what a compare-only check leaves out (REQ-015-30). */
@@ -603,6 +606,28 @@ export const DrawArea: FunctionComponent<IDrawArea> = ({
                         fill={highlighted ? `${rect.color}22` : undefined}
                         cornerRadius={px(3)}
                       />
+                      {rect.badge && (
+                        <>
+                          <Circle
+                            x={rect.x}
+                            y={rect.y}
+                            radius={px(10)}
+                            fill={rect.color}
+                          />
+                          <Text
+                            x={rect.x - px(10)}
+                            y={rect.y - px(10)}
+                            width={px(20)}
+                            height={px(20)}
+                            align="center"
+                            verticalAlign="middle"
+                            text={rect.badge}
+                            fontSize={px(12)}
+                            fontStyle="bold"
+                            fill={TAG_TEXT}
+                          />
+                        </>
+                      )}
                       {rect.label &&
                         (!rect.labelOnHighlight || highlighted) && (
                           <Label x={rect.x} y={rect.y - px(20)}>

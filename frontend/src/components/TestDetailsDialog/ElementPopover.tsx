@@ -24,16 +24,17 @@ import {
 } from "../../_helpers/elementPicking.helper";
 import { tokens } from "../../theme";
 import { useT } from "../../i18n";
-
-// what Allow takes here; another share goes through the full rule form
-export const ALLOW_PERCENT = 5;
+import {
+  ActionButtons,
+  ScopeToggle,
+  swatch,
+  useActionKeys,
+} from "./ElementActions";
 
 interface ElementPopoverProps {
   // where the element was clicked, in the window
   anchor: { x: number; y: number };
   element: PickableElement;
-  // Shift-clicked elements the action also applies to
-  selectedCount: number;
   // how many elements the element's selector takes on its screenshot
   sameSelector: number;
   // the rule the element is already under, if any (REQ-024-09)
@@ -49,26 +50,9 @@ interface ElementPopoverProps {
   onChooseVariant?: (variant: SelectorVariant) => void;
   onRemove: (rule: ScreenRule) => void;
   onClose: () => void;
+  // more elements join with the next clicks (REQ-028-01)
+  onAddMore: () => void;
 }
-
-const swatch = (action: ElementRuleAction) => {
-  const base = {
-    width: 16,
-    height: 16,
-    borderRadius: "4px",
-    boxSizing: "border-box",
-    flexShrink: 0,
-  } as const;
-  if (action === "ignore")
-    return {
-      ...base,
-      outline: `1.5px solid ${tokens.status.neutral.fg}`,
-      background: `repeating-linear-gradient(135deg, ${tokens.status.neutral.bar} 0 3px, transparent 3px 6px)`,
-    };
-  if (action === "compare")
-    return { ...base, border: `2px solid ${tokens.brand}` };
-  return { ...base, border: `1.5px dashed ${tokens.status.new.fg}` };
-};
 
 /**
  * What can be done with an element clicked on a screenshot, next to it
@@ -78,7 +62,6 @@ const swatch = (action: ElementRuleAction) => {
 export const ElementPopover: React.FunctionComponent<ElementPopoverProps> = ({
   anchor,
   element,
-  selectedCount,
   sameSelector,
   rule,
   canGoUp,
@@ -91,6 +74,7 @@ export const ElementPopover: React.FunctionComponent<ElementPopoverProps> = ({
   onRemove,
   onClose,
   onChooseVariant,
+  onAddMore,
 }) => {
   const { t } = useT();
   const [scope, setScope] = React.useState<RuleScope>("screen");
@@ -105,41 +89,7 @@ export const ElementPopover: React.FunctionComponent<ElementPopoverProps> = ({
     [anchor.x, anchor.y],
   );
 
-  const latest = React.useRef({ onAct, onUp, onDown, onClose, scope, busy });
-  latest.current = { onAct, onUp, onDown, onClose, scope, busy };
-  React.useEffect(() => {
-    const onKey = (event: KeyboardEvent) => {
-      const target = event.target as HTMLElement | null;
-      if (target?.closest("input, textarea, [contenteditable=true]")) return;
-      const { onAct, onUp, onDown, onClose, scope, busy } = latest.current;
-      const act: Record<string, ElementRuleAction> = {
-        i: "ignore",
-        c: "compare",
-        t: "tolerate",
-      };
-      const key = event.key.toLowerCase();
-      if (act[key] && !event.metaKey && !event.ctrlKey && !busy) {
-        if (act[key] === "compare" && scope === "project") return;
-        event.preventDefault();
-        event.stopPropagation();
-        onAct(act[key], scope);
-      } else if (event.key === "ArrowUp") {
-        event.preventDefault();
-        event.stopPropagation();
-        onUp();
-      } else if (event.key === "ArrowDown") {
-        event.preventDefault();
-        event.stopPropagation();
-        onDown();
-      } else if (event.key === "Escape") {
-        // the first Esc closes this; the next one leaves selecting
-        event.stopPropagation();
-        onClose();
-      }
-    };
-    window.addEventListener("keydown", onKey, true);
-    return () => window.removeEventListener("keydown", onKey, true);
-  }, []);
+  useActionKeys({ onAct, onUp, onDown, onClose, scope, busy });
 
   const name = elementLabel(element, t);
   const variant = chosenVariant(element);
@@ -152,74 +102,6 @@ export const ElementPopover: React.FunctionComponent<ElementPopoverProps> = ({
         ? t("select.ruleCompare")
         : t("select.ruleTolerate", { percent: rule.maxDiffPercent ?? 5 })
     : null;
-
-  const actionButton = (
-    action: ElementRuleAction,
-    label: string,
-    key: string,
-  ) => {
-    const blocked = action === "compare" && scope === "project";
-    const button = (
-      <ButtonBase
-        key={action}
-        disabled={busy || blocked}
-        onClick={() => onAct(action, scope)}
-        data-testid={`elementAction-${action}`}
-        sx={{
-          display: "flex",
-          gap: 1.25,
-          justifyContent: "flex-start",
-          width: "100%",
-          borderRadius: "8px",
-          px: 1.25,
-          py: 1,
-          font: "inherit",
-          fontSize: 14,
-          fontWeight: 600,
-          color: blocked ? tokens.textMuted : tokens.text,
-          "&:hover, &.Mui-focusVisible": { bgcolor: tokens.subtle },
-        }}
-      >
-        <Box sx={swatch(action)} />
-        <Box component="span" sx={{ flexGrow: 1, textAlign: "left" }}>
-          {label}
-        </Box>
-        <Box
-          component="span"
-          sx={{ fontSize: 11, fontWeight: 500, color: tokens.textMuted }}
-        >
-          {key}
-        </Box>
-      </ButtonBase>
-    );
-    return blocked ? (
-      <Tooltip key={action} title={t("select.compareOneScreen")}>
-        <span>{button}</span>
-      </Tooltip>
-    ) : (
-      button
-    );
-  };
-
-  const scopeButton = (value: RuleScope, label: string) => (
-    <ButtonBase
-      onClick={() => setScope(value)}
-      aria-pressed={scope === value}
-      sx={{
-        flex: 1,
-        borderRadius: "6px",
-        py: 0.5,
-        font: "inherit",
-        fontSize: 12.5,
-        fontWeight: scope === value ? 600 : 500,
-        color: scope === value ? tokens.text : tokens.textSecondary,
-        bgcolor: scope === value ? tokens.surface : "transparent",
-        boxShadow: scope === value ? tokens.shadowShot : "none",
-      }}
-    >
-      {label}
-    </ButtonBase>
-  );
 
   return (
     <Popper
@@ -259,11 +141,9 @@ export const ElementPopover: React.FunctionComponent<ElementPopoverProps> = ({
             >
               {name}
             </Typography>
-            {(selectedCount > 1 || sameSelector > 1) && (
+            {sameSelector > 1 && (
               <Typography sx={{ fontSize: 12, color: tokens.textMuted }}>
-                {selectedCount > 1
-                  ? t("select.selected", { count: selectedCount })
-                  : t("select.onScreen", { count: sameSelector })}
+                {t("select.onScreen", { count: sameSelector })}
               </Typography>
             )}
           </Box>
@@ -409,31 +289,48 @@ export const ElementPopover: React.FunctionComponent<ElementPopoverProps> = ({
         ) : (
           <>
             <Box sx={{ p: 0.75 }}>
-              {actionButton("ignore", t("select.ignore"), "I")}
-              {actionButton("compare", t("select.compare"), "C")}
-              {actionButton(
-                "tolerate",
-                t("select.allow", { percent: ALLOW_PERCENT }),
-                "T",
-              )}
+              <ActionButtons scope={scope} busy={busy} onAct={onAct} />
             </Box>
             <Box
               sx={{ p: 1.25, pt: 1, borderTop: `1px solid ${tokens.border}` }}
             >
-              <Box
-                sx={{
-                  display: "flex",
-                  bgcolor: tokens.subtle,
-                  borderRadius: "8px",
-                  p: "2px",
-                }}
-              >
-                {scopeButton("screen", t("select.thisScreen"))}
-                {scopeButton("project", t("select.allScreens"))}
-              </Box>
+              <ScopeToggle scope={scope} onScope={setScope} />
             </Box>
           </>
         )}
+        <Box sx={{ p: 1.25, pt: 0 }}>
+          <ButtonBase
+            onClick={onAddMore}
+            data-testid="elementAddMore"
+            sx={{
+              display: "flex",
+              gap: 1,
+              width: "100%",
+              borderRadius: "8px",
+              border: `1px dashed ${tokens.borderStrong}`,
+              px: 1.25,
+              py: 0.75,
+              font: "inherit",
+              fontSize: 13,
+              fontWeight: 600,
+              color: tokens.text,
+              "&:hover, &.Mui-focusVisible": {
+                borderColor: tokens.brand,
+                bgcolor: tokens.brandSoft,
+              },
+            }}
+          >
+            <Box component="span" sx={{ flexGrow: 1, textAlign: "left" }}>
+              {t("select.addMore")}
+            </Box>
+            <Box
+              component="span"
+              sx={{ fontSize: 11.5, fontWeight: 500, color: tokens.textMuted }}
+            >
+              {t("select.addMoreShift")}
+            </Box>
+          </ButtonBase>
+        </Box>
       </Paper>
     </Popper>
   );

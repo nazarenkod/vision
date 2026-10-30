@@ -212,6 +212,7 @@ Undo на сервері дозволене до 30 s після рішення:
 | REQ-018-34 | manual: у порівнянні → — пара знімків іде вліво, наступна заходить справа; ← — навпаки. Перевірено 2026-10-29 у Chromium: на → панелі посередині руху зсунуті вправо (+3 px), на ← — вліво (−6 px) |
 | REQ-018-35 | `frontend/integration_tests/test/testDetailsDialog.spec.ts › shows a check on Approve instead of a toast` |
 | REQ-018-36 | manual: навести на пункт Changed areas або на проблему доступності — на знімку обводиться її рамка. Перевірено 2026-10-29 для Changed areas: рамка з'являється на знімку й зникає, коли курсор іде; для проблем доступності не перевіряли |
+| REQ-018-37 | `frontend/src/_helpers/panelWidth.helper.test.ts › keeps a width between the minimum and half the window`; `frontend/integration_tests/test/elementRules.spec.ts › widens the side panel by its edge and remembers the width` |
 | REQ-018-40 | `frontend/integration_tests/test/projectSettings.spec.ts › opens the settings page from the pencil and by its address` |
 | REQ-018-41 | `frontend/integration_tests/test/projectSettings.spec.ts › lists the sections and highlights the one in view` |
 | REQ-018-42 | `frontend/integration_tests/test/projectSettings.spec.ts › saves every field the old dialog had` |

@@ -579,6 +579,7 @@ export const en = {
     "Status and navigation bars are left out (project setting).",
   "panel.ruleRemoved": "Rule removed; compared again",
   "panel.addRuleButton": "Add element rule",
+  "panel.resize": "Drag to resize the panel; double-click for the usual width",
   "panel.details": "Review details",
   "panel.accessibility": "Accessibility",
   "panel.changes": "Changes",

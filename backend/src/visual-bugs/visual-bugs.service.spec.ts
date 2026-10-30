@@ -106,7 +106,10 @@ describe('VisualBugsService', () => {
     const { service } = setup();
     const prep = await service.prepare('run', { parentKey: 'MOB-1' });
     expect(prep.prefix).toBe('[Automation] [Checkout]');
-    expect(prep.environment).toContain('AOS 14 · PIXEL_4_XL, build #128 (release/7.4).');
+    // the device and its OS, no build or branch (REQ-025-21)
+    expect(prep.environment).toBe(
+      'Проблема виявлена на PIXEL_4_XL (AOS 14) і потенційно відтворюється на всіх девайсах.'
+    );
     expect(prep.inputs).toEqual([expect.objectContaining({ role: 'severity', required: true })]);
     expect(prep.inputs[0].value).toBeUndefined();
   });

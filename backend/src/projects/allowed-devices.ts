@@ -73,7 +73,7 @@ export function deviceRejection(
   const list = allowed.map((entry) => `"${entry.device}" / "${entry.os}"`).join(', ');
   return (
     `Device not allowed in project "${projectName}": check "${check}" was sent ${sent}. ` +
-    `Allowed: ${list}. Run on an allowed device or add it in Project settings → Devices.`
+    `Allowed: ${list}. Run on an allowed device or add it in Project settings > Devices.`
   );
 }
 

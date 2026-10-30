@@ -432,7 +432,7 @@ Vision берёт часть названия проверки до первой
 версии OS отклоняется, и `track` падает (даже с soft assert):
 
 ```
-TestRunException: {"path":"/test-runs","name":"UnprocessableEntityException","message":"Device not allowed in project \"AOS\": check \"Payment\" was sent from device \"Pixel 6\", OS \"Android 13\". Allowed: \"Pixel 7 emulator\" / \"Android 15\". Run on an allowed device or add it in Project settings → Devices.", ...}
+TestRunException: {"path":"/test-runs","name":"UnprocessableEntityException","message":"Device not allowed in project \"AOS\": check \"Payment\" was sent from device \"Pixel 6\", OS \"Android 13\". Allowed: \"Pixel 7 emulator\" / \"Android 15\". Run on an allowed device or add it in Project settings > Devices.", ...}
 ```
 
 Порядок включения:

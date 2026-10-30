@@ -52,7 +52,7 @@ describe('allowed devices', () => {
     expect(deviceRejection(allowed, snapshot('Pixel 6', 'Android 13'), 'AOS')).toBe(
       'Device not allowed in project "AOS": check "Payment" was sent from device "Pixel 6", OS "Android 13". ' +
         'Allowed: "Pixel 7" / "Android 15", "iPhone 17" / "26.*". ' +
-        'Run on an allowed device or add it in Project settings → Devices.'
+        'Run on an allowed device or add it in Project settings > Devices.'
     );
     expect(deviceRejection(allowed, { ...snapshot('Pixel 6', 'Android 13'), customTags: 'dark' }, 'AOS')).toContain(
       'check "Payment [dark]"'

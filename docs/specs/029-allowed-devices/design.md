@@ -25,7 +25,7 @@
 
   ```
   Device not allowed in project "AOS": check "Payment" was sent from device "Pixel 6", OS "Android 13".
-  Allowed: "Pixel 7" / "Android 15", "iPhone 17" / "26.*". Run on an allowed device or add it in Project settings → Devices.
+  Allowed: "Pixel 7" / "Android 15", "iPhone 17" / "26.*". Run on an allowed device or add it in Project settings > Devices.
   ```
 
   Без пристрою чи OS: `... was sent without a device` (`without an OS`, `without a device and OS`).
@@ -95,6 +95,7 @@ sequenceDiagram
 | Ризик | Що робимо |
 |---|---|
 | CI на дозволених пристроях передає `device`/`os` інакше, ніж записано (`Pixel 7 emulator` проти `Pixel 7`), і падає весь прогін одразу | підказка «Пристрої зі знімків» показує саме ті значення, що вже приходять, і додає їх одним кліком; у DEPLOY.md — порядок увімкнення: спершу додати з підказки пристрої CI |
+| Консоль CI не в UTF-8 зіпсувала б «→», тож у тексті відмови лише ASCII-розділювач `>` |
 | Текст відмови губиться в JSON тіла помилки (фільтр додає `stack`) | SDK кладе тіло відповіді в текст винятку цілком, тож `message` видно одразу після `path` і `name`; ручна перевірка, що його видно в лозі тесту |
 | Хтось шле знімки з SDK, підробивши `User-Agent` | прийнятно: це запобіжник від помилки, не контроль доступу |
 | Правила запису розійдуться між фронтендом і бекендом | однакові назви тестів в обох; бекенд — джерело правди, а його 400 показується в розділі |
@@ -111,7 +112,7 @@ sequenceDiagram
 | REQ-029-05 | `backend/src/projects/allowed-devices.spec.ts › rejects a device or OS that matches no entry`; `backend/src/test-runs/test-runs.service.spec.ts › rejects a device not allowed without creating a variation or run` |
 | REQ-029-06 | `backend/src/projects/allowed-devices.spec.ts › rejects a snapshot without a device or OS` |
 | REQ-029-07 | `backend/src/projects/allowed-devices.spec.ts › names the check, what was sent, the allowed list and the project` |
-| REQ-029-08 | `sdk-java/src/test/java/io/visual_regression_tracker/sdk_java/VisualRegressionTrackerTest.java › handleRequestShouldThrowIfNotSuccess` (upstream; `handleResponse` не читає soft assert); manual: проєкт з переліком, тест з `enableSoftAssert(true)` на недозволеному пристрої → тест падає з `TestRunException`, у тексті — повідомлення сервера |
+| REQ-029-08 | `sdk-java/src/test/java/io/visual_regression_tracker/sdk_java/VisualRegressionTrackerTest.java › handleRequestShouldThrowIfNotSuccess` (upstream; `handleResponse` не читає soft assert); manual: проєкт з переліком, тест з `enableSoftAssert(true)` на недозволеному пристрої → тест падає з `TestRunException`, у тексті — повідомлення сервера (перевірено 2026-10-30 на `dist/sdk-java/sdk-java-4.3.1-vision.2.jar` проти сервера, що відповідає 422) |
 | REQ-029-09 | `backend/src/projects/allowed-devices.spec.ts › ignores case and surrounding spaces` |
 | REQ-029-10 | `backend/src/test-runs/test-runs.service.spec.ts › accepts an allowed device in the same build after a rejection` |
 | REQ-029-11 | `backend/src/projects/projects.controller.spec.ts › lists the devices the project received snapshots from`; `frontend/integration_tests/test/projectSettings.spec.ts › marks received devices outside the list and adds one in a click` |

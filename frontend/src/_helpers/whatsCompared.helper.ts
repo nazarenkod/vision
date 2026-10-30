@@ -15,11 +15,24 @@ export interface Summary {
   areas: number;
 }
 
+/**
+ * Whether compare-only rules shape this comparison. Without a UI tree they
+ * cannot (REQ-015-22): the whole screen is compared, so nothing is "only".
+ */
+export function compareOnlyApplied(
+  compareOnly: StructureInfo["compareOnly"] | null | undefined,
+): boolean {
+  return (
+    !!compareOnly?.active &&
+    !compareOnly.problems.some((problem) => problem.kind === "no-tree")
+  );
+}
+
 export function summarize(
   structure: Pick<StructureInfo, "rules" | "compareOnly"> | null | undefined,
   areas: number,
 ): Summary {
-  if (structure?.compareOnly?.active) {
+  if (structure?.compareOnly && compareOnlyApplied(structure.compareOnly)) {
     return { kind: "only", elements: structure.compareOnly.keep.length, areas };
   }
   const ignored = (structure?.rules ?? [])

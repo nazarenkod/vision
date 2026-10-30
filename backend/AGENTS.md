@@ -13,7 +13,7 @@
 | `src/a11y/jira*.ts` | клієнт Jira, поля й текст бага | [005](../docs/specs/005-jira-bugs/spec.md) |
 | `src/test-runs/change-groups.service.ts` | групи змін збірки | [006](../docs/specs/006-change-groups/spec.md) |
 | `src/test-runs/decision-undo*.ts` | журнал Approve і Reject та Undo з нього ([ADR-0014](../docs/decisions/0014-undo-through-decision-journal.md)); тест відновлення ганяє справжній upstream approve | [018](../docs/specs/018-ui-redesign/spec.md) |
-| `src/projects/allowed-devices.ts` | дозволені пристрої проєкту: збіг пристрою й OS (`26.*`), текст відмови 422 для SDK; CLI (`User-Agent: vision-cli/…`) не перевіряється | [028](../docs/specs/028-allowed-devices/spec.md) |
+| `src/projects/allowed-devices.ts` | дозволені пристрої проєкту: збіг пристрою й OS (`26.*`), текст відмови 422 для SDK; CLI (`User-Agent: vision-cli/…`) не перевіряється | [029](../docs/specs/029-allowed-devices/spec.md) |
 | `src/projects/settings-conflict.ts`, `project-secrets.ts` | збереження налаштувань поверх чужих змін (409), ключ Gemini лише на запис | [018](../docs/specs/018-ui-redesign/spec.md) |
 | `src/analytics/` | Insights | [008](../docs/specs/008-insights/spec.md) |
 | `src/ai/` | AI на вимогу, кеш, ліміт; чернетка бага на особистому ключі Gemini (`personalGeminiKey`) | [010](../docs/specs/010-ai-assist/spec.md), [025](../docs/specs/025-bug-from-comparison/spec.md) |

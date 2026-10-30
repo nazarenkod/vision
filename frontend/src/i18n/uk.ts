@@ -1196,7 +1196,8 @@ export const uk: Messages = {
 
   // вибір елементів на знімках (специфікація 024)
   "select.button": "Обрати елементи",
-  "select.hint": "Натисніть на елемент",
+  "select.hint": "Натисніть на елемент · із Shift — додати ще",
+  "select.adding": "Натискайте елементи, щоб додати чи прибрати",
   "select.done": "Готово",
   "select.parent": "Обрати елемент навколо",
   "select.child": "Назад до внутрішнього елемента",
@@ -1231,7 +1232,7 @@ export const uk: Messages = {
   "panel.selectorProblem.or": "Один елемент за раз: без «or» і без «|»",
   "panel.selectorProblem.mixed":
     "Ідіть від стабільного елемента або вниз, або вгору, не в обидва боки",
-  "select.selected": "Обрано: {count}",
+  "select.selected": "Обрано елементів: {count}",
   "select.ruleIgnore": "Ігнорується",
   "select.ruleTolerate": "Допуск ±{percent}%",
   "select.ruleCompare": "Лише він порівнюється",
@@ -1249,6 +1250,25 @@ export const uk: Messages = {
     other: "Додано {count} правила; знімок порівнюється заново",
   },
   "select.removed": "Правило прибрано; знімок порівнюється заново",
+  "select.addMore": "Додати ще елементи",
+  "select.addMoreShift": "або Shift + клік",
+  "selection.eachRule": "по правилу на кожен",
+  "selection.clear": "Очистити",
+  "selection.compareSelected": "Порівнювати лише їх",
+  "selection.unselect": "Прибрати {element} з обраних",
+  "selection.limit": "Не більше {count} за раз",
+  "selection.skipped": {
+    one: "{count} уже має правило й лишається як є",
+    few: "{count} уже мають правила й лишаються як є",
+    many: "{count} уже мають правила й лишаються як є",
+    other: "{count} уже мають правила й лишаються як є",
+  },
+  "selection.removeRules": "Прибрати правила: {count}",
+  "selection.rulesRemoved":
+    "Правил прибрано: {count}; знімок порівнюється заново",
+  "selection.mixed":
+    "У них різні правила: щоб прибрати правило, оберіть елемент один",
+  "selection.failed": "Правило для {element} не збереглося: {error}",
 
   // піксельні області за однією кнопкою (специфікація 024)
   "areas.button": "Області",
@@ -1273,6 +1293,7 @@ export const uk: Messages = {
 
   // що порівнюється (специфікація 024)
   "compared.whole": "Увесь екран",
+  "compared.none": "Нічого не порівнюється",
   "compared.except": "Увесь екран, крім {count}",
   "compared.only": {
     one: "Лише {count} елемент",
@@ -1290,7 +1311,7 @@ export const uk: Messages = {
   "compared.found": "{selector} · тут знайдено {current}, в еталоні {baseline}",
   "compared.more": "Інші дії",
   "compared.problem.noTree":
-    "Немає UI-дерева: порівняти лише названі елементи не вдалося",
+    "Немає UI-дерева, тож «Порівнювати лише» не застосовано: порівнюється весь екран",
   "compared.problem.nothingFound": "{selector} нічого не знайшов",
   "compared.problem.disappeared": "{element} зник",
   "compared.problem.appeared": "{element} з'явився",

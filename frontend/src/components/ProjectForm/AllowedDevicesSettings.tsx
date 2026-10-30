@@ -65,7 +65,7 @@ const DeviceFields: React.FunctionComponent<{
 };
 
 /**
- * The devices SDK snapshots may come from (028): the list the team agreed on,
+ * The devices SDK snapshots may come from (029): the list the team agreed on,
  * and the devices snapshots already came from, so CI's can be added as the
  * tests send them.
  */

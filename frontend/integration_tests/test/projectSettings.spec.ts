@@ -489,7 +489,7 @@ test("adds, edits and removes an allowed device", async ({
   await page.getByTestId("addDevice").click();
   await page.getByTestId("newDevice-device").fill("iPhone 17");
   await page.getByTestId("newDevice-os").fill("26*");
-  // a * anywhere but a trailing .* is not taken (REQ-028-15)
+  // a * anywhere but a trailing .* is not taken (REQ-029-15)
   await expect(section).toContainText(
     "* only at the end of the OS, as in 26.*",
   );

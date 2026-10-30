@@ -1,10 +1,10 @@
-# 028 — Дизайн
+# 029 — Дизайн
 
 ## Підхід
 
 Уся фіча — на сервері; SDK не змінюється ([ADR-0019](../../decisions/0019-sdk-upstream-plus-ui-tree-and-feature.md)):
 на будь-яку відповідь не 2xx `handleResponse` кидає `TestRunException` з тілом відповіді, і
-робить це до перевірки soft assert (REQ-028-08).
+робить це до перевірки soft assert (REQ-029-08).
 
 - **Чиста логіка** — новий `backend/src/projects/allowed-devices.ts`: розбір переліку, перевірка
   запису (шаблон лише `.*` у кінці OS), збіг пристрою й OS, текст відмови. Ті самі правила
@@ -15,13 +15,13 @@
   збереження з перевіркою конфлікту (409). Назва колонки історична; окремої колонки для одного
   списку не варто.
 - **Перевірка знімка** — на початку `TestRunsService.postTestRun`, до пошуку чи створення
-  варіації: відмова нічого не пише, тож збірка лишається як була (REQ-028-05, REQ-028-10).
+  варіації: відмова нічого не пише, тож збірка лишається як була (REQ-029-05, REQ-029-10).
   Обидва ендпоінти прийому (`POST /test-runs` і `/test-runs/multipart`) проходять через неї.
 - **Хто перевіряється** — контролер передає в сервіс `checkDevice`. CLI і MCP (`vision.py`)
-  надсилають `User-Agent: vision-cli/<версія>`; для них перевірки немає (REQ-028-12), для всіх
+  надсилають `User-Agent: vision-cli/<версія>`; для них перевірки немає (REQ-029-12), для всіх
   інших клієнтів (Java SDK, upstream SDK) — є. Це захист від помилки, а не від зловмисника:
   підробити заголовок можна, але для цього треба хотіти обійти правило.
-- **Відповідь** — `422 Unprocessable Entity`, `message` англійською (REQ-028-07):
+- **Відповідь** — `422 Unprocessable Entity`, `message` англійською (REQ-029-07):
 
   ```
   Device not allowed in project "AOS": check "Payment" was sent from device "Pixel 6", OS "Android 13".
@@ -31,7 +31,7 @@
   Без пристрою чи OS: `... was sent without a device` (`without an OS`, `without a device and OS`).
 - **UI** — новий розділ налаштувань «Пристрої» (`devices`) після «Мобільних»: таблиця записів
   (пристрій, OS, видалити), рядок додавання, під ним «Пристрої зі знімків» з позначкою «не в
-  переліку» і кнопкою «Додати» (REQ-028-11). Дані для підказки — новий `GET /projects/:id/devices`:
+  переліку» і кнопкою «Додати» (REQ-029-11). Дані для підказки — новий `GET /projects/:id/devices`:
   різні пари `device` + `os` з варіацій проєкту.
 
 Окремого ADR не пропоную: зберігання повторює 026, а розрізнення CLI за `User-Agent` — локальна
@@ -43,7 +43,7 @@
 |---|---|---|
 | Правила переліку | `backend/src/projects/allowed-devices.ts` | `parseAllowedDevices`, `invalidAllowedDevice`, `deviceAllowed`, `deviceRejection` — чисті функції |
 | Розбір налаштувань | `backend/src/ui-tree/comparison-inputs.ts` | `UiTreeSettings.allowedDevices`, `parseUiTreeSettings` читає поле через `parseAllowedDevices` |
-| Збереження | `backend/src/projects/projects.service.ts` | `normalizeUiTreeSettings`: недійсний запис → 400 з поясненням шаблону (REQ-028-15) |
+| Збереження | `backend/src/projects/projects.service.ts` | `normalizeUiTreeSettings`: недійсний запис → 400 з поясненням шаблону (REQ-029-15) |
 | Пристрої зі знімків | `backend/src/projects/projects.controller.ts`, `projects.service.ts` | `GET /projects/:id/devices` → `[{ device, os }]`, різні пари з `TestVariation` |
 | Прийом знімка | `backend/src/test-runs/test-runs.controller.ts` | читає `User-Agent`, передає `checkDevice` |
 | Перевірка знімка | `backend/src/test-runs/test-runs.service.ts` | `postTestRun`: відмова 422 до будь-якого запису |
@@ -61,10 +61,10 @@
 { "allowedDevices": [{ "device": "Pixel 7", "os": "Android 15" }, { "device": "iPhone 17", "os": "26.*" }] }
 ```
 
-Немає поля чи порожній масив → без обмежень (REQ-028-03); усі наявні проєкти поводяться як
+Немає поля чи порожній масив → без обмежень (REQ-029-03); усі наявні проєкти поводяться як
 раніше. Значення зберігаються так, як їх ввели (обрізані з країв); регістр враховується лише в
 показі. `parseAllowedDevices` відкидає записи без рядкових `device`/`os`, тож зіпсоване значення
-не ламає прийом; але недійсний шаблон на збереженні — 400, а не тихе відкидання (REQ-028-15).
+не ламає прийом; але недійсний шаблон на збереженні — 400, а не тихе відкидання (REQ-029-15).
 Дублікати (після нормалізації) зберігаються один раз.
 
 ## Потік
@@ -104,18 +104,18 @@ sequenceDiagram
 
 | Вимога | Перевірка |
 |---|---|
-| REQ-028-01 | `backend/src/projects/allowed-devices.spec.ts › reads the allowed devices from the project settings` |
-| REQ-028-02 | `frontend/integration_tests/test/projectSettings.spec.ts › adds, edits and removes an allowed device` |
-| REQ-028-03 | `backend/src/projects/allowed-devices.spec.ts › allows any device when the list is empty` |
-| REQ-028-04 | `backend/src/projects/allowed-devices.spec.ts › allows a device and OS that match an entry` |
-| REQ-028-05 | `backend/src/projects/allowed-devices.spec.ts › rejects a device or OS that matches no entry`; `backend/src/test-runs/test-runs.service.spec.ts › rejects a device not allowed without creating a variation or run` |
-| REQ-028-06 | `backend/src/projects/allowed-devices.spec.ts › rejects a snapshot without a device or OS` |
-| REQ-028-07 | `backend/src/projects/allowed-devices.spec.ts › names the check, what was sent, the allowed list and the project` |
-| REQ-028-08 | `sdk-java/src/test/java/io/visual_regression_tracker/sdk_java/VisualRegressionTrackerTest.java › handleRequestShouldThrowIfNotSuccess` (upstream; `handleResponse` не читає soft assert); manual: проєкт з переліком, тест з `enableSoftAssert(true)` на недозволеному пристрої → тест падає з `TestRunException`, у тексті — повідомлення сервера |
-| REQ-028-09 | `backend/src/projects/allowed-devices.spec.ts › ignores case and surrounding spaces` |
-| REQ-028-10 | `backend/src/test-runs/test-runs.service.spec.ts › accepts an allowed device in the same build after a rejection` |
-| REQ-028-11 | `backend/src/projects/projects.controller.spec.ts › lists the devices the project received snapshots from`; `frontend/integration_tests/test/projectSettings.spec.ts › marks received devices outside the list and adds one in a click` |
-| REQ-028-12 | `backend/src/test-runs/test-runs.controller.spec.ts › does not check devices for snapshots from the Vision CLI` |
-| REQ-028-13 | `backend/src/projects/allowed-devices.spec.ts › matches the OS exactly unless the entry ends in .*` |
-| REQ-028-14 | `backend/src/projects/allowed-devices.spec.ts › takes 26.* for 26, 26.1 and 26.2.1 but not 260 or 27.0` |
-| REQ-028-15 | `backend/src/projects/allowed-devices.spec.ts › refuses a * anywhere but a trailing .* of the OS`; `backend/src/projects/projects.service.spec.ts › refuses to save allowed devices with an unsupported wildcard`; `frontend/src/_helpers/allowedDevices.helper.test.ts › refuses a * anywhere but a trailing .* of the OS` |
+| REQ-029-01 | `backend/src/projects/allowed-devices.spec.ts › reads the allowed devices from the project settings` |
+| REQ-029-02 | `frontend/integration_tests/test/projectSettings.spec.ts › adds, edits and removes an allowed device` |
+| REQ-029-03 | `backend/src/projects/allowed-devices.spec.ts › allows any device when the list is empty` |
+| REQ-029-04 | `backend/src/projects/allowed-devices.spec.ts › allows a device and OS that match an entry` |
+| REQ-029-05 | `backend/src/projects/allowed-devices.spec.ts › rejects a device or OS that matches no entry`; `backend/src/test-runs/test-runs.service.spec.ts › rejects a device not allowed without creating a variation or run` |
+| REQ-029-06 | `backend/src/projects/allowed-devices.spec.ts › rejects a snapshot without a device or OS` |
+| REQ-029-07 | `backend/src/projects/allowed-devices.spec.ts › names the check, what was sent, the allowed list and the project` |
+| REQ-029-08 | `sdk-java/src/test/java/io/visual_regression_tracker/sdk_java/VisualRegressionTrackerTest.java › handleRequestShouldThrowIfNotSuccess` (upstream; `handleResponse` не читає soft assert); manual: проєкт з переліком, тест з `enableSoftAssert(true)` на недозволеному пристрої → тест падає з `TestRunException`, у тексті — повідомлення сервера |
+| REQ-029-09 | `backend/src/projects/allowed-devices.spec.ts › ignores case and surrounding spaces` |
+| REQ-029-10 | `backend/src/test-runs/test-runs.service.spec.ts › accepts an allowed device in the same build after a rejection` |
+| REQ-029-11 | `backend/src/projects/projects.controller.spec.ts › lists the devices the project received snapshots from`; `frontend/integration_tests/test/projectSettings.spec.ts › marks received devices outside the list and adds one in a click` |
+| REQ-029-12 | `backend/src/test-runs/test-runs.controller.spec.ts › does not check devices for snapshots from the Vision CLI` |
+| REQ-029-13 | `backend/src/projects/allowed-devices.spec.ts › matches the OS exactly unless the entry ends in .*` |
+| REQ-029-14 | `backend/src/projects/allowed-devices.spec.ts › takes 26.* for 26, 26.1 and 26.2.1 but not 260 or 27.0` |
+| REQ-029-15 | `backend/src/projects/allowed-devices.spec.ts › refuses a * anywhere but a trailing .* of the OS`; `backend/src/projects/projects.service.spec.ts › refuses to save allowed devices with an unsupported wildcard`; `frontend/src/_helpers/allowedDevices.helper.test.ts › refuses a * anywhere but a trailing .* of the OS` |

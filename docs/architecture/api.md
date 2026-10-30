@@ -8,7 +8,7 @@
 
 | Метод і шлях | Що нового |
 |---|---|
-| `POST /test-runs`, `POST /test-runs/multipart` | необов'язкові `uiTree` (gzip + base64 XML; у multipart — файл), `uiTreeFormat` (`appium-android` / `appium-ios`), `deviceDensity`. Якщо в проєкті є перелік дозволених пристроїв, а `device` + `os` у нього не входять, — `422` з текстом для лога тесту, нічого не створюється; запити з `User-Agent: vision-cli/…` не перевіряються ([028](../specs/028-allowed-devices/spec.md)) |
+| `POST /test-runs`, `POST /test-runs/multipart` | необов'язкові `uiTree` (gzip + base64 XML; у multipart — файл), `uiTreeFormat` (`appium-android` / `appium-ios`), `deviceDensity`. Якщо в проєкті є перелік дозволених пристроїв, а `device` + `os` у нього не входять, — `422` з текстом для лога тесту, нічого не створюється; запити з `User-Agent: vision-cli/…` не перевіряються ([029](../specs/029-allowed-devices/spec.md)) |
 
 ## Рев'ю знімка
 
@@ -49,7 +49,7 @@
 | Метод і шлях | Призначення |
 |---|---|
 | `GET /projects` | у налаштуваннях порівняння немає `apiKey` Gemini, є `geminiApiKeySet` (як `jiraTokenSet`) |
-| `GET /projects/:id/devices` | різні пари `{ device, os }` з варіацій проєкту — підказка для переліку дозволених пристроїв ([028](../specs/028-allowed-devices/spec.md)) |
+| `GET /projects/:id/devices` | різні пари `{ device, os }` з варіацій проєкту — підказка для переліку дозволених пристроїв ([029](../specs/029-allowed-devices/spec.md)) |
 | `PUT /projects` | необов'язкові `loadedSettings` (налаштування, як їх завантажила сторінка) і `force`. З `loadedSettings` збереження поверх чужих змін — `409` з `fields`; `force: true` зберігає попри це. `apiKey` Gemini: відсутній — лишити збережений, `""` — видалити. `uiTreeSettings.allowedDevices` із `*` деінде, ніж у кінці OS (`26.*`), — `400` |
 | `GET /analytics/:projectId?days=` | Insights за 7–730 днів (типово 90; UI пропонує 30, 90, 180, 365) |
 | `GET /ai/status`, `POST /ai/group-summary`, `POST /ai/a11y-labels` | AI на вимогу |

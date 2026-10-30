@@ -98,16 +98,28 @@ const sameElement = (a: PickableElement, b: PickableElement) =>
   a.bounds.x === b.bounds.x &&
   a.bounds.y === b.bounds.y;
 
-/** Shift adds an element or takes it back out; a plain click starts over (REQ-024-05). */
-export function toggleSelection(
+// each rule compares the run again, so a few at a time (REQ-028-05)
+export const MAX_SELECTED = 3;
+
+/**
+ * An added element joins the selection, a selected one is taken back out, and
+ * one past the limit is refused (REQ-028-03, REQ-028-05). A plain click starts
+ * over: pass `additive` false.
+ */
+export function addToSelection(
   selected: PickableElement[],
   element: PickableElement,
   additive: boolean,
-): PickableElement[] {
-  if (!additive) return [element];
-  return selected.some((item) => sameElement(item, element))
-    ? selected.filter((item) => !sameElement(item, element))
-    : [...selected, element];
+  limit = MAX_SELECTED,
+): { selected: PickableElement[]; refused: boolean } {
+  if (!additive) return { selected: [element], refused: false };
+  if (selected.some((item) => sameElement(item, element)))
+    return {
+      selected: selected.filter((item) => !sameElement(item, element)),
+      refused: false,
+    };
+  if (selected.length >= limit) return { selected, refused: true };
+  return { selected: [...selected, element], refused: false };
 }
 
 const sameRect = (a: Rect, b: Rect) =>
@@ -129,4 +141,50 @@ export function ruleFor(
       selectors.includes(rule.selector) ||
       (rule.found?.[side] ?? []).some((rect) => sameRect(rect, element.bounds)),
   );
+}
+
+/**
+ * What an action on several elements does with them: those under a rule stay
+ * as they are (REQ-028-30). When every one is under a rule there is nothing to
+ * add: their rules are removed together if they do the same, otherwise one is
+ * selected alone to remove its own (REQ-028-31, REQ-028-33).
+ */
+export function sortSelected(
+  selected: PickableElement[],
+  rules: ScreenRule[],
+  side: "current" | "baseline",
+): {
+  free: PickableElement[];
+  ruled: Array<{ element: PickableElement; rule: ScreenRule }>;
+  offer: "act" | "remove" | "none";
+} {
+  const free: PickableElement[] = [];
+  const ruled: Array<{ element: PickableElement; rule: ScreenRule }> = [];
+  selected.forEach((element) => {
+    const rule = ruleFor(element, rules, side);
+    if (rule) ruled.push({ element, rule });
+    else free.push(element);
+  });
+  const offer = free.length
+    ? "act"
+    : new Set(ruled.map(({ rule }) => rule.action)).size === 1
+      ? "remove"
+      : "none";
+  return { free, ruled, offer };
+}
+
+/**
+ * The selection panel sits at the bottom of the screenshots, and moves to the
+ * top when it would cover a selected element there (SC-028-03): screenshots do
+ * not shrink to make room for it.
+ */
+export function panelSide(
+  selected: Array<{ y: number; height: number }>,
+  panelHeight: number,
+  areaHeight: number,
+): "bottom" | "top" {
+  const panelTop = areaHeight - panelHeight;
+  return selected.some((rect) => rect.y + rect.height > panelTop)
+    ? "top"
+    : "bottom";
 }

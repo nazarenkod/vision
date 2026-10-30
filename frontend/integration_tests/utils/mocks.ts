@@ -20,7 +20,7 @@ export const mockGetProjects = async (page: Page, projects: Project[]) => {
   });
 };
 
-// device and OS pairs the project's snapshots came from (028)
+// device and OS pairs the project's snapshots came from (029)
 export const mockGetDevices = async (
   page: Page,
   projectId: string,

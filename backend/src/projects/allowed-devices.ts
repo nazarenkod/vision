@@ -1,4 +1,4 @@
-/** A device the team runs its tests on: as the test sends it in `device` and `os` (028). */
+/** A device the team runs its tests on: as the test sends it in `device` and `os` (029). */
 export interface AllowedDevice {
   device: string;
   // exact version, or a prefix and `.*` for any version under it: BrowserStack picks 26.1 or 26.2 itself
@@ -79,7 +79,7 @@ export function deviceRejection(
 
 /**
  * Manual checks from the Vision CLI and its MCP server are not held to the
- * list (REQ-028-12): they say who they are in the user agent. A guard against
+ * list (REQ-029-12): they say who they are in the user agent. A guard against
  * mistakes, not access control.
  */
 export const fromVisionCli = (userAgent: string | undefined): boolean => /^vision-cli\//i.test(userAgent ?? '');

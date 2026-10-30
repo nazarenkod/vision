@@ -16,7 +16,7 @@ async function getAll(): Promise<Project[]> {
   return handleResponse(response);
 }
 
-/** Device and OS pairs the project's snapshots came from (REQ-028-11). */
+/** Device and OS pairs the project's snapshots came from (REQ-029-11). */
 async function getDevices(projectId: string): Promise<AllowedDevice[]> {
   const response = await fetch(`${API_URL}/projects/${projectId}/devices`, {
     method: "GET",

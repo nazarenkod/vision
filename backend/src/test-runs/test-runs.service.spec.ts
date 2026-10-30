@@ -873,7 +873,7 @@ describe('TestRunsService', () => {
     expect(mocked(TestRunResultDto)).toHaveBeenCalledWith(testRun, testVariation);
   });
 
-  describe('allowed devices (028)', () => {
+  describe('allowed devices (029)', () => {
     const project = {
       ...TEST_PROJECT,
       name: 'AOS',

@@ -111,7 +111,7 @@ export class ProjectsService {
     });
   }
 
-  /** Device and OS pairs the project's snapshots came from, to build the allowed list from (028). */
+  /** Device and OS pairs the project's snapshots came from, to build the allowed list from (029). */
   async findDevices(projectId: string): Promise<AllowedDevice[]> {
     const rows = await this.prismaService.testVariation.findMany({
       where: { projectId },

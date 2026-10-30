@@ -42,7 +42,7 @@ export interface UiTreeSettings {
   screenTitle: string[];
   // what the team agreed an accessible screen is: tap area, contrast, rules on (026)
   a11yNorms: A11yNorms;
-  // devices SDK snapshots may come from; empty for any (028)
+  // devices SDK snapshots may come from; empty for any (029)
   allowedDevices: AllowedDevice[];
 }
 

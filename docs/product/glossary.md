@@ -20,7 +20,7 @@
 |---|---|
 | Перевірка (check) | те, що назвав тест: назва + `customTags`. Пристрої — прогони однієї перевірки ([001](../specs/001-check-identity/spec.md)) |
 | Профіль пристрою (device profile) | OS + пристрій + браузер + viewport прогону |
-| Дозволений пристрій (allowed device) | пристрій + версія OS з переліку проєкту; знімки з SDK з інших пристроїв сервер відхиляє, `26.*` — будь-яка 26.x ([028](../specs/028-allowed-devices/spec.md)) |
+| Дозволений пристрій (allowed device) | пристрій + версія OS з переліку проєкту; знімки з SDK з інших пристроїв сервер відхиляє, `26.*` — будь-яка 26.x ([029](../specs/029-allowed-devices/spec.md)) |
 | Еталонний пристрій (reference device) | колишнє налаштування: пристрій, з яким довідково порівнювались інші ([007](../specs/007-cross-device-reference/spec.md)); прибрано в [020](../specs/020-remove-reference-device/spec.md) |
 | UI-дерево (`uiTree`) | Appium page source (XML), надісланий разом зі скриншотом |
 | Елемент, ключ елемента (`nodeKey`) | `id:<resource-id або Compose tag>`, інакше `Class:текст` або `path:…`; повтори того ж id — `#1`, `#2` |

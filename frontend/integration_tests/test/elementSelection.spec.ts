@@ -349,22 +349,400 @@ test("keeps compare only to this screen", async ({ openProjectPage, page }) => {
   await expect(popover.getByTestId("elementAction-ignore")).toBeEnabled();
 });
 
+// Spec 028: two or three elements at once, from a panel under the screenshots.
+
+const panelOf = (page: Page) => page.getByTestId("selectionPanel");
+
+const selectTwo = async (page: Page) => {
+  await clickElement(page, pay);
+  await clickElement(page, clock, "current", { shift: true });
+  await expect(panelOf(page)).toBeVisible();
+};
+
+test("offers to add more elements next to one", async ({
+  openProjectPage,
+  page,
+}) => {
+  await openReview(page, openProjectPage);
+  await startSelecting(page);
+  await clickElement(page, pay);
+
+  const addMore = page.getByTestId("elementAddMore");
+  await expect(addMore).toContainText("Add more elements");
+  await expect(addMore).toContainText("or Shift + click");
+});
+
+test("tells about Shift while selecting", async ({ openProjectPage, page }) => {
+  await openReview(page, openProjectPage);
+  await startSelecting(page);
+
+  await expect(page.getByTestId("selectingBar")).toContainText(
+    "Shift-click to add more",
+  );
+});
+
+test("adds a second element with Add more elements", async ({
+  openProjectPage,
+  page,
+}) => {
+  await openReview(page, openProjectPage);
+  await startSelecting(page);
+  await clickElement(page, pay);
+  await page.getByTestId("elementAddMore").click();
+  // the actions step aside for the next click
+  await expect(page.getByTestId("elementPopover")).toHaveCount(0);
+  await expect(page.getByTestId("selectingBar")).toContainText(
+    "Click elements to add or take out",
+  );
+  await clickElement(page, clock);
+
+  await expect(panelOf(page).getByTestId("selectionItem-1")).toContainText(
+    "Pay",
+  );
+  await expect(panelOf(page).getByTestId("selectionItem-2")).toContainText(
+    "Clock",
+  );
+});
+
+test("adds with a plain click while the panel is open", async ({
+  openProjectPage,
+  page,
+}) => {
+  await openReview(page, openProjectPage);
+  await startSelecting(page);
+  await selectTwo(page);
+  await clickElement(page, amount);
+
+  await expect(panelOf(page).getByTestId("selectionItem-3")).toContainText(
+    "Balance amount",
+  );
+  // a plain click on a selected one takes it back out
+  await clickElement(page, amount);
+  await expect(panelOf(page).getByTestId("selectionItem-3")).toHaveCount(0);
+});
+
+test("says no more than three can be selected", async ({
+  openProjectPage,
+  page,
+}) => {
+  await openReview(page, openProjectPage);
+  await startSelecting(page);
+  await selectTwo(page);
+  await clickElement(page, amount);
+  await clickElement(page, card, "current", { shift: false });
+
+  await expect(panelOf(page).getByTestId("selectionLimit")).toContainText(
+    "No more than 3 at a time",
+  );
+  await expect(panelOf(page)).toContainText("3 elements selected");
+  await expect(panelOf(page)).not.toContainText("Balance card");
+});
+
+test("starts over on the other screenshot", async ({
+  openProjectPage,
+  page,
+}) => {
+  await openReview(page, openProjectPage);
+  await startSelecting(page);
+  await selectTwo(page);
+  await clickElement(page, amount, "baseline", { shift: true });
+
+  await expect(panelOf(page)).toHaveCount(0);
+  await expect(page.getByTestId("elementPopover")).toContainText(
+    "Balance amount",
+  );
+});
+
+test("shows the selection panel for two elements", async ({
+  openProjectPage,
+  page,
+}) => {
+  await openReview(page, openProjectPage);
+  await startSelecting(page);
+  await selectTwo(page);
+
+  const panel = panelOf(page);
+  await expect(page.getByTestId("elementPopover")).toHaveCount(0);
+  await expect(panel).toContainText("2 elements selected");
+  await expect(panel).toContainText("one rule each");
+  await expect(panel.getByTestId("elementAction-ignore")).toBeVisible();
+  await expect(panel.getByTestId("elementAction-compare")).toBeVisible();
+  await expect(panel.getByTestId("elementAction-tolerate")).toBeVisible();
+  await expect(
+    panel.getByRole("button", { name: "This screen" }),
+  ).toHaveAttribute("aria-pressed", "true");
+  await expect(panel.getByTestId("selectionClear")).toBeVisible();
+});
+
+// the middle of an element, clear of its frame and its number
+const coreOf = (element: PickableElement) => ({
+  x: element.bounds.x + element.bounds.width / 2 - 10,
+  y: element.bounds.y + element.bounds.height / 2 - 5,
+  width: 20,
+  height: 10,
+});
+// just outside an element's top left corner: only its number reaches there
+const cornerOf = (element: PickableElement) => ({
+  x: element.bounds.x - 8,
+  y: element.bounds.y - 8,
+  width: 4,
+  height: 4,
+});
+
+test("numbers the selected elements on both screenshots", async ({
+  openProjectPage,
+  page,
+}) => {
+  await openReview(page, openProjectPage);
+  await startSelecting(page);
+  await clickElement(page, pay);
+  await page.mouse.move(0, 0);
+  // one selected has no number
+  await expect.poll(() => overlayAlpha(page, "current", cornerOf(pay))).toBe(0);
+  await clickElement(page, clock, "current", { shift: true });
+  await page.mouse.move(0, 0);
+
+  for (const side of ["current", "baseline"] as const) {
+    await expect
+      .poll(() => overlayAlpha(page, side, cornerOf(pay)))
+      .toBeGreaterThan(200);
+    await expect
+      .poll(() => overlayAlpha(page, side, cornerOf(clock)))
+      .toBeGreaterThan(200);
+  }
+});
+
+test("lights only the element pointed at in the panel", async ({
+  openProjectPage,
+  page,
+}) => {
+  await openReview(page, openProjectPage);
+  await startSelecting(page);
+  await selectTwo(page);
+  await panelOf(page).getByTestId("selectionItem-2").hover();
+
+  for (const side of ["current", "baseline"] as const) {
+    await expect
+      .poll(() => overlayAlpha(page, side, coreOf(clock)))
+      .toBeGreaterThan(0);
+    await expect.poll(() => overlayAlpha(page, side, coreOf(pay))).toBe(0);
+  }
+});
+
+test("takes an element out of the selection", async ({
+  openProjectPage,
+  page,
+}) => {
+  await openReview(page, openProjectPage);
+  await startSelecting(page);
+  await selectTwo(page);
+  await clickElement(page, amount);
+  await panelOf(page).getByTestId("selectionRemove-2").click();
+
+  await expect(panelOf(page).getByTestId("selectionItem-2")).toContainText(
+    "Balance amount",
+  );
+  await expect(panelOf(page)).not.toContainText("Clock");
+  // with one left, its actions are next to it again
+  await panelOf(page).getByTestId("selectionRemove-1").click();
+  await expect(panelOf(page)).toHaveCount(0);
+  await expect(page.getByTestId("elementPopover")).toContainText(
+    "Balance amount",
+  );
+});
+
+test("clears the selection and keeps selecting", async ({
+  openProjectPage,
+  page,
+}) => {
+  await openReview(page, openProjectPage);
+  await startSelecting(page);
+  await selectTwo(page);
+  await panelOf(page).getByTestId("selectionClear").click();
+  await expect(panelOf(page)).toHaveCount(0);
+  await expect(page.getByTestId("selectingBar")).toBeVisible();
+
+  await selectTwo(page);
+  await page.keyboard.press("Escape");
+  await expect(panelOf(page)).toHaveCount(0);
+  await expect(page.getByTestId("selectingBar")).toBeVisible();
+});
+
+test("offers no parent or full form for several", async ({
+  openProjectPage,
+  page,
+}) => {
+  await openReview(page, openProjectPage);
+  await startSelecting(page);
+  // the actions open to the right of the click: the clock, left of it, stays clear
+  await clickElement(page, amount);
+  await clickElement(page, clock, "current", { shift: true });
+  await expect(panelOf(page)).toBeVisible();
+
+  await expect(page.getByTestId("elementParent")).toHaveCount(0);
+  await expect(page.getByTestId("elementMore")).toHaveCount(0);
+  await page.keyboard.press("ArrowUp");
+  await expect(panelOf(page)).toContainText("Balance amount");
+});
+
 test("adds one rule per selected element", async ({
   openProjectPage,
   page,
 }) => {
   const calls = await openReview(page, openProjectPage);
   await startSelecting(page);
-  // the popover opens to the right of the click: the clock, left of it, stays clear
-  await clickElement(page, pay);
-  await clickElement(page, clock, "current", { shift: true });
-  await expect(page.getByTestId("elementPopover")).toContainText("2 selected");
-  await page.getByTestId("elementAction-ignore").click();
+  await selectTwo(page);
+  await panelOf(page).getByTestId("elementAction-ignore").click();
 
   await expect
     .poll(() => calls.added.map((rule) => rule.selector))
     .toEqual(["id:btn_pay", "id:clock"]);
   await expect(page.getByText("2 rules added; compared again")).toBeVisible();
+});
+
+test("undoes all rules of one action at once", async ({
+  openProjectPage,
+  page,
+}) => {
+  const calls = await openReview(page, openProjectPage);
+  await startSelecting(page);
+  await selectTwo(page);
+  await page.keyboard.press("i");
+  await page.getByTestId("undoRule").click();
+
+  await expect
+    .poll(() => calls.removed)
+    .toEqual([
+      { scope: "screen", ruleId: "new-1" },
+      { scope: "screen", ruleId: "new-2" },
+    ]);
+});
+
+test("keeps the saved rules when one fails", async ({
+  openProjectPage,
+  page,
+}) => {
+  const calls = await openReview(page, openProjectPage);
+  // the clock's rule is refused; the last route registered answers first
+  await page.route(
+    `${API_URL}/test-runs/${TEST_UNRESOLVED.id}/element-rules`,
+    (route) =>
+      route.request().postDataJSON().selector === "id:clock"
+        ? route.fulfill({
+            status: 500,
+            body: JSON.stringify({ message: "Server error" }),
+          })
+        : route.fallback(),
+  );
+  await startSelecting(page);
+  await selectTwo(page);
+  await panelOf(page).getByTestId("elementAction-ignore").click();
+
+  await expect(page.getByText(/No rule for Clock/)).toBeVisible();
+  await expect(page.getByText("Rule added; compared again")).toBeVisible();
+  expect(calls.added.map((rule) => rule.selector)).toEqual(["id:btn_pay"]);
+  await expect(panelOf(page)).toHaveCount(0);
+  await expect(page.getByTestId("elementPopover")).toContainText("Clock");
+});
+
+test("clears the selection after an action", async ({
+  openProjectPage,
+  page,
+}) => {
+  await openReview(page, openProjectPage);
+  await startSelecting(page);
+  await selectTwo(page);
+  await panelOf(page).getByTestId("elementAction-tolerate").click();
+
+  await expect(panelOf(page)).toHaveCount(0);
+  await expect(page.getByTestId("elementPopover")).toHaveCount(0);
+  await expect(page.getByTestId("selectingBar")).toBeVisible();
+});
+
+test("keeps compare only to this screen for several", async ({
+  openProjectPage,
+  page,
+}) => {
+  await openReview(page, openProjectPage);
+  await startSelecting(page);
+  await selectTwo(page);
+  await panelOf(page).getByRole("button", { name: "All screens" }).click();
+
+  await expect(
+    panelOf(page).getByTestId("elementAction-compare"),
+  ).toBeDisabled();
+  await expect(panelOf(page).getByTestId("elementAction-ignore")).toBeEnabled();
+});
+
+test("skips a selected element that has a rule", async ({
+  openProjectPage,
+  page,
+}) => {
+  const calls = await openReview(page, openProjectPage, {
+    ...baseStructure,
+    rules: [ruleOn(clock, "ignore", { scope: "project" })],
+  });
+  await startSelecting(page);
+  await selectTwo(page);
+  await expect(panelOf(page).getByTestId("selectionSkipped")).toContainText(
+    "1 already has a rule and stays as is",
+  );
+  await panelOf(page).getByTestId("elementAction-compare").click();
+
+  await expect
+    .poll(() => calls.added)
+    .toEqual([{ scope: "screen", selector: "id:btn_pay", action: "compare" }]);
+});
+
+test("removes the rules of all selected elements", async ({
+  openProjectPage,
+  page,
+}) => {
+  const calls = await openReview(page, openProjectPage, {
+    ...baseStructure,
+    rules: [ruleOn(pay, "ignore"), ruleOn(clock, "ignore")],
+  });
+  await startSelecting(page);
+  await selectTwo(page);
+  await expect(panelOf(page).getByTestId("elementAction-ignore")).toHaveCount(
+    0,
+  );
+  await panelOf(page).getByTestId("selectionRemoveRules").click();
+
+  await expect
+    .poll(() => calls.removed)
+    .toEqual([
+      { scope: "screen", ruleId: "rule-3" },
+      { scope: "screen", ruleId: "rule-4" },
+    ]);
+  await expect(page.getByText("2 rules removed; compared again")).toBeVisible();
+});
+
+test("asks before removing a rule for every screen with others", async ({
+  openProjectPage,
+  page,
+}) => {
+  const calls = await openReview(page, openProjectPage, {
+    ...baseStructure,
+    rules: [
+      ruleOn(pay, "ignore"),
+      ruleOn(clock, "ignore", { scope: "project" }),
+    ],
+  });
+  await startSelecting(page);
+  await selectTwo(page);
+  const remove = panelOf(page).getByTestId("selectionRemoveRules");
+  await remove.click();
+  expect(calls.removed).toEqual([]);
+  await expect(remove).toContainText("Remove on every screen");
+  await remove.click();
+
+  await expect
+    .poll(() => calls.removed)
+    .toEqual([
+      { scope: "screen", ruleId: "rule-3" },
+      { scope: "project", ruleId: "rule-4" },
+    ]);
 });
 
 test("undoes a rule from the notice", async ({ openProjectPage, page }) => {

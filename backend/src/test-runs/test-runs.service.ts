@@ -82,7 +82,7 @@ export class TestRunsService {
   }: {
     createTestRequestDto: CreateTestRequestDto;
     imageBuffer: Buffer;
-    // hold the snapshot to the project's allowed devices (028); off for the Vision CLI
+    // hold the snapshot to the project's allowed devices (029); off for the Vision CLI
     checkDevice?: boolean;
   }): Promise<TestRunResultDto> {
     const project = await this.prismaService.project.findUnique({ where: { id: createTestRequestDto.projectId } });

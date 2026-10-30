@@ -289,7 +289,12 @@ export const ElementPopover: React.FunctionComponent<ElementPopoverProps> = ({
         ) : (
           <>
             <Box sx={{ p: 0.75 }}>
-              <ActionButtons scope={scope} busy={busy} onAct={onAct} />
+              <ActionButtons
+                scope={scope}
+                busy={busy}
+                onAct={onAct}
+                compareLabel={t("select.compareSelected")}
+              />
             </Box>
             <Box
               sx={{ p: 1.25, pt: 1, borderTop: `1px solid ${tokens.border}` }}

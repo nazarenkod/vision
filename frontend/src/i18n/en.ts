@@ -444,7 +444,6 @@ export const en = {
   "review.toggleDiff": "Toggle diff. Hotkey: D",
   "review.toggleDiffLabel": "Toggle diff",
   "review.step": "Step {current}/{total}: ",
-  "review.overlay": "Overlay",
   "review.fadeHelp": "Fade the checkpoint out to see the baseline through it",
   "review.fade": "Fade",
   "review.fadeLabel": "Fade to the baseline",
@@ -533,6 +532,7 @@ export const en = {
   "panel.noTree":
     "No UI tree came with this screenshot. Send the Appium page source with it (in the Java SDK: {code}), or check the screen with the Vision CLI, to check accessibility.",
   "panel.treeFailed": "The UI tree could not be checked.",
+  "panel.highlightOnScreenshot": "Highlight on screenshot",
   "panel.checkedFrom": "Checked from the {platform} UI tree.",
   "panel.newCount": "{count} new",
   "panel.compared":
@@ -1101,12 +1101,13 @@ export const en = {
   "select.child": "Back to the inner element",
   "select.more": "Match differently",
   "select.ignore": "Ignore",
-  "select.compare": "Compare only",
+  "select.compare": "Compare only this element",
+  "select.compareSelected": "Compare only this",
   "select.allow": "Allow {percent}%",
   "select.thisScreen": "This screen",
   "select.allScreens": "All screens",
   "select.compareOneScreen":
-    "Compare only is for one screen: each check names its own elements",
+    "Compare only this is for one screen: each check names its own elements",
   "select.onScreen": "{count} on this screen",
   "select.textAnchor":
     "Found through a text: the rule stops working when the text changes",
@@ -1149,6 +1150,7 @@ export const en = {
   "select.addMoreShift": "or Shift + click",
   "selection.eachRule": "one rule each",
   "selection.clear": "Clear",
+  "selection.compareSelected": "Compare only these",
   "selection.unselect": "Take {element} out of the selection",
   "selection.limit": "No more than {count} at a time",
   "selection.skipped": {

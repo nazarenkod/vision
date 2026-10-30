@@ -39,6 +39,8 @@ interface ActionButtonsProps {
   onAct: (action: ElementRuleAction, scope: RuleScope) => void;
   // in a row, as the selection panel has them, or one under another
   row?: boolean;
+  // "Compare only this" next to one element, "Compare only these" for several
+  compareLabel: string;
 }
 
 /** Ignore, Compare only, Allow: the same next to one element and for several. */
@@ -47,13 +49,14 @@ export const ActionButtons: React.FunctionComponent<ActionButtonsProps> = ({
   busy,
   onAct,
   row,
+  compareLabel,
 }) => {
   const { t } = useT();
   const label = (action: ElementRuleAction) =>
     action === "ignore"
       ? t("select.ignore")
       : action === "compare"
-        ? t("select.compare")
+        ? compareLabel
         : t("select.allow", { percent: ALLOW_PERCENT });
   return (
     <>

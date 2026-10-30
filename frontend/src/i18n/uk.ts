@@ -485,7 +485,6 @@ export const uk: Messages = {
   "review.toggleDiff": "Показати чи сховати різницю. Клавіша: D",
   "review.toggleDiffLabel": "Показати різницю",
   "review.step": "Крок {current}/{total}: ",
-  "review.overlay": "Накладання",
   "review.fadeHelp":
     "Зробити знімок прозорим, щоб крізь нього було видно еталон",
   "review.fade": "Злиття",
@@ -578,6 +577,7 @@ export const uk: Messages = {
   "panel.noTree":
     "Цей знімок надіслали без UI-дерева. Щоб перевірити доступність, надсилайте з ним Appium page source (у Java SDK: {code}) або перевірте екран через Vision CLI.",
   "panel.treeFailed": "UI-дерево не вдалося перевірити.",
+  "panel.highlightOnScreenshot": "Підсвічувати на знімку",
   "panel.checkedFrom": "Перевірено за UI-деревом {platform}.",
   "panel.newCount": "нових: {count}",
   "panel.compared":
@@ -1180,12 +1180,13 @@ export const uk: Messages = {
   "select.child": "Назад до внутрішнього елемента",
   "select.more": "Знаходити інакше",
   "select.ignore": "Ігнорувати",
-  "select.compare": "Порівнювати лише",
-  "select.allow": "Допуск {percent}%",
+  "select.compare": "Порівнювати лише цей елемент",
+  "select.compareSelected": "Порівнювати лише це",
+  "select.allow": "Дозволити {percent}%",
   "select.thisScreen": "Цей екран",
   "select.allScreens": "Усі екрани",
   "select.compareOneScreen":
-    "«Порівнювати лише» діє на один екран: кожна перевірка називає свої елементи",
+    "«Порівнювати лише це» діє на один екран: кожна перевірка називає свої елементи",
   "select.onScreen": "{count} на цьому екрані",
   "select.textAnchor":
     "Знайдено через текст: правило перестане діяти, щойно текст зміниться",
@@ -1230,6 +1231,7 @@ export const uk: Messages = {
   "select.addMoreShift": "або Shift + клік",
   "selection.eachRule": "по правилу на кожен",
   "selection.clear": "Очистити",
+  "selection.compareSelected": "Порівнювати лише їх",
   "selection.unselect": "Прибрати {element} з обраних",
   "selection.limit": "Не більше {count} за раз",
   "selection.skipped": {

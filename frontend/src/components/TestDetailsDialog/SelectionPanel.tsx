@@ -230,7 +230,13 @@ export const SelectionPanel: React.FunctionComponent<SelectionPanelProps> = ({
       >
         {offer === "act" && (
           <>
-            <ActionButtons scope={scope} busy={busy} onAct={onAct} row />
+            <ActionButtons
+              scope={scope}
+              busy={busy}
+              onAct={onAct}
+              row
+              compareLabel={t("selection.compareSelected")}
+            />
             <Box sx={{ ml: "auto", minWidth: 210 }}>
               <ScopeToggle scope={scope} onScope={setScope} />
             </Box>

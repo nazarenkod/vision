@@ -1,4 +1,4 @@
-import { expect, Request } from "@playwright/test";
+import { expect, Page, Request } from "@playwright/test";
 import { test } from "fixtures";
 import {
   TEST_BUILD_FAILED,
@@ -140,4 +140,61 @@ test("shows a problem filed on another screen as covered", async ({
   await expect(
     covered.getByRole("button", { name: "Unlink on every screen" }),
   ).toBeVisible();
+});
+
+// how opaque the frames drawn over the checkpoint are inside a box
+const frameAlpha = (
+  page: Page,
+  box: { x: number; y: number; width: number; height: number },
+) =>
+  page
+    .getByTestId("drawArea")
+    .nth(1)
+    .evaluate(
+      (pane, [area, width]) => {
+        const canvases = pane.querySelectorAll("canvas");
+        const overlay = canvases[canvases.length - 1];
+        const ratio = overlay.width / width;
+        try {
+          const data = overlay
+            .getContext("2d")
+            ?.getImageData(
+              Math.round(area.x * ratio),
+              Math.round(area.y * ratio),
+              Math.max(1, Math.round(area.width * ratio)),
+              Math.max(1, Math.round(area.height * ratio)),
+            ).data;
+          let max = 0;
+          for (let i = 3; i < (data?.length ?? 0); i += 4)
+            max = Math.max(max, data?.[i] ?? 0);
+          return max;
+        } catch {
+          return 0;
+        }
+      },
+      [box, 1280] as const,
+    );
+
+test("switches the frames on the screenshot from the Accessibility tab", async ({
+  openProjectPage,
+  page,
+}) => {
+  const framed = { x: 200, y: 200, width: 200, height: 100 };
+  await page.route(`${API_URL}/test-runs/${run.id}/a11y`, (route) =>
+    route.fulfill({
+      body: JSON.stringify({
+        ...report,
+        violations: [{ ...button("Pay"), bounds: framed }],
+      }),
+    }),
+  );
+  await openProjectPage(project.id, build.id, run.id);
+  const leftEdge = { x: framed.x - 2, y: framed.y + 20, width: 4, height: 60 };
+
+  const panel = page.getByRole("complementary");
+  await expect(panel.getByText("Highlight on screenshot")).toBeVisible();
+  await expect.poll(() => frameAlpha(page, leftEdge)).toBeGreaterThan(0);
+
+  await panel.getByTestId("a11yMarksSwitch").click();
+  await expect.poll(() => frameAlpha(page, leftEdge)).toBe(0);
 });

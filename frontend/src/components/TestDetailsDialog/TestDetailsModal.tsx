@@ -56,7 +56,7 @@ import { DrawArea, ImageStateLoad } from "./DrawArea";
 import { CommentsPopper } from "../CommentsPopper";
 import { useDialogSnackbar } from "./useDialogSnackbar";
 import { APPROVED_TICK_MS, ApproveRejectButtons } from "./ApproveRejectButtons";
-import { invertIgnoreArea } from "../../_helpers/ignoreArea.helper";
+import { invertIgnoreArea, readAreas } from "../../_helpers/ignoreArea.helper";
 import { InsightsPanel } from "./InsightsPanel";
 import { DeviceStrip } from "./DeviceStrip";
 import { RunFlags, useAiStatus } from "../ChangeGroups";
@@ -334,14 +334,12 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
   const pinMark = (id: string) =>
     setPinnedMark((current) => (current === id ? undefined : id));
   const testAreaMarks = (): OverlayRect[] =>
-    (JSON.parse(testRun.tempIgnoreAreas ?? "[]") as IgnoreArea[]).flatMap(
-      (area, index) => {
-        const id = testAreaMarkId(index);
-        return id === previewMark || id === pinnedMark
-          ? [{ ...area, id, color: canvas.textMuted, hatched: true }]
-          : [];
-      },
-    );
+    readAreas(testRun.tempIgnoreAreas).flatMap((area, index) => {
+      const id = testAreaMarkId(index);
+      return id === previewMark || id === pinnedMark
+        ? [{ ...area, id, color: canvas.textMuted, hatched: true }]
+        : [];
+    });
   const [ruleBusy, setRuleBusy] = useState(false);
   const [noTreeAnchor, setNoTreeAnchor] = useState<HTMLElement | null>(null);
   const selectButton = React.useRef<HTMLButtonElement>(null);
@@ -998,7 +996,7 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
   }, [testRun.id, testRun.diffName]);
 
   useEffect(() => {
-    setIgnoreAreas(JSON.parse(testRun.ignoreAreas));
+    setIgnoreAreas(readAreas(testRun.ignoreAreas));
   }, [testRun]);
 
   useEffect(() => {
@@ -1029,7 +1027,10 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
     setIgnoreAreas(ignoreAreas);
     testRunDispatch({
       type: "touched",
-      payload: testRun.ignoreAreas !== JSON.stringify(ignoreAreas),
+      // against what is shown: empty areas once saved are not an edit
+      payload:
+        JSON.stringify(readAreas(testRun.ignoreAreas)) !==
+        JSON.stringify(ignoreAreas),
     });
   };
 
@@ -1099,7 +1100,7 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
     next();
   };
   const discardAreas = () => {
-    handleIgnoreAreaChange(JSON.parse(testRun.ignoreAreas));
+    handleIgnoreAreaChange(readAreas(testRun.ignoreAreas));
     setSelectedRectId(undefined);
   };
   const toggleAreas = () => {
@@ -1239,7 +1240,7 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
         onClear={() => handleIgnoreAreaChange([])}
         onApplyToBuild={toggleApplyIgnoreDialogOpen}
         areas={ignoreAreas}
-        testAreas={JSON.parse(testRun.tempIgnoreAreas)}
+        testAreas={readAreas(testRun.tempIgnoreAreas)}
         pinnedMark={pinnedMark}
         onPinMark={pinMark}
         suggestions={Object.fromEntries(
@@ -1338,7 +1339,7 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
           branchName={branchName}
           imageName={imageName}
           image={image}
-          ignoreAreas={JSON.parse(testRun.tempIgnoreAreas)}
+          ignoreAreas={readAreas(testRun.tempIgnoreAreas)}
         />
         {testRun.diffName && (
           <Grid item>
@@ -1360,7 +1361,7 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
         overlayOpacity={overlayOpacity}
         blendDifference={blendDifference && !isDiffShown}
         ignoreAreas={ignoreAreas}
-        tempIgnoreAreas={JSON.parse(testRun.tempIgnoreAreas)}
+        tempIgnoreAreas={readAreas(testRun.tempIgnoreAreas)}
         setIgnoreAreas={handleIgnoreAreaChange}
         selectedRectId={selectedRectId}
         deleteIgnoreArea={deleteIgnoreArea}
@@ -1481,22 +1482,6 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
         <Grid item>
           <RunFlags run={testRun} />
         </Grid>
-        {withUiTree && (
-          <Grid item>
-            <FormControlLabel
-              control={
-                <Switch
-                  size="small"
-                  checked={a11yOverlay}
-                  onChange={(event) => setA11yOverlay(event.target.checked)}
-                />
-              }
-              label={
-                <Typography variant="body2">{t("review.overlay")}</Typography>
-              }
-            />
-          </Grid>
-        )}
         {deviceRuns.length > 1 && handleSelectRun && (
           <Grid item>
             <DeviceStrip
@@ -1653,7 +1638,11 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
               onClick={toggleSelecting}
               sx={{
                 color: "inherit",
-                bgcolor: "rgba(255,255,255,.14)",
+                // tinted by its own text: the bar is inverted, dark on light and light on dark
+                bgcolor: "color-mix(in srgb, currentColor 16%, transparent)",
+                "&:hover": {
+                  bgcolor: "color-mix(in srgb, currentColor 26%, transparent)",
+                },
                 minWidth: 0,
                 px: 1.25,
                 fontWeight: 600,
@@ -1726,6 +1715,8 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
           bugs={bugs}
           bugMarks={showBugMarks}
           onBugMarksChange={setShowBugMarks}
+          a11yMarks={a11yOverlay}
+          onA11yMarksChange={setA11yOverlay}
         />
       </Box>
       <Grid container className={classes.footer}>

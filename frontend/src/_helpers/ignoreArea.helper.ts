@@ -30,11 +30,14 @@ export const clampToImage = <T extends Box>(
 export const invertIgnoreArea = (
   imageWidth: number,
   imageHeight: number,
-  ignoreArea?: IgnoreArea,
+  drawn?: IgnoreArea,
 ): IgnoreArea[] => {
-  if (!ignoreArea) {
+  if (!drawn) {
     return [];
   }
+  // an area drawn past a border used to leave rectangles of zero or negative
+  // size around it; trimmed first, it leaves only the strips that exist
+  const ignoreArea = clampToImage(drawn, imageWidth, imageHeight);
 
   const ignoreArea1 = {
     x: 0,
@@ -109,5 +112,20 @@ export const invertIgnoreArea = (
     ignoreArea6,
     ignoreArea7,
     ignoreArea8,
-  ];
+  ].filter(hasSurface);
+};
+
+/// An area of zero or negative size leaves nothing out: comparing skips it,
+/// and listed it only reads as "Area 0 × 110"
+export const hasSurface = (area: Box): boolean =>
+  area.width > 0 && area.height > 0;
+
+/// A run's saved or test areas, without the ones that have no surface
+export const readAreas = (json?: string | null): IgnoreArea[] => {
+  try {
+    const areas = JSON.parse(json || "[]");
+    return Array.isArray(areas) ? areas.filter(hasSurface) : [];
+  } catch {
+    return [];
+  }
 };

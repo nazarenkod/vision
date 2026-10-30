@@ -2,9 +2,9 @@
 
 | | |
 |---|---|
-| Статус | Draft |
+| Статус | Approved |
 | Власник | Дмитро Назаренко |
-| Оновлено | 2026-10-29 |
+| Оновлено | 2026-10-30 |
 | Дизайн | design.md з'явиться після `Approved`; [макет](https://claude.ai/artifact/YBRAiZXPBb7WWeXrufc9tv) |
 | Пов'язане | змінює [024](../024-elements-instead-of-areas/spec.md): REQ-024-05 (Shift + клік), REQ-024-07 (одне Undo на всі правила); спирається на REQ-024-03, REQ-024-08, REQ-024-09, REQ-024-16, [019](../019-element-rules-in-review/spec.md) REQ-019-05, [027](../027-nameless-elements/spec.md) (безіменні елементи) |
 

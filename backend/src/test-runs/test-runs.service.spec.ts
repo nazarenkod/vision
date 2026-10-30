@@ -112,7 +112,7 @@ const initService = async ({
             systemBars: [],
             rules: { ignore: [], tolerate: [], matches: {}, found: {} },
             settings: null,
-            compareOnly: { active: false, moves: [], keep: [], ignoreOutside: [], problems: [] },
+            compareOnly: { active: false, moves: [], keep: [], compared: [], ignoreOutside: [], problems: [] },
           }),
           deleteFiles: jest.fn().mockResolvedValue(undefined),
           recheck: jest.fn().mockResolvedValue({ components: [], invisible: [] }),
@@ -435,6 +435,44 @@ describe('TestRunsService', () => {
       where: { id: testRun.id },
       data: { status: TestStatus.unresolved },
     });
+    expect(result.status).toBe(TestStatus.unresolved);
+  });
+
+  it('keeps a run compared by one tree in review', async () => {
+    // a baseline from before UI trees: the field is compared at its place, nothing changed there
+    const testRun = generateTestRun({ uiTreeName: 'tree.json.gz', baselineUiTreeName: null });
+    const passed = { ...testRun, status: TestStatus.ok };
+    const testRunUpdateMock = jest.fn().mockImplementation(({ data }) => Promise.resolve({ ...passed, ...data }));
+    const compareGetDiffMock = jest.fn().mockResolvedValueOnce({ status: TestStatus.ok });
+    service = await initService({ testRunUpdateMock, compareGetDiffMock });
+    service.saveDiffResult = jest.fn().mockResolvedValueOnce(passed);
+    const keep = [{ x: 0, y: 1300, width: 1440, height: 200 }];
+    const ignoreOutside = [
+      { x: 0, y: 0, width: 1440, height: 1300 },
+      { x: 0, y: 1500, width: 1440, height: 1620 },
+    ];
+    service['uiTreeService'].comparisonInputs = jest.fn().mockResolvedValueOnce({
+      ignoreAreas: ignoreOutside,
+      toleranceAreas: [],
+      moves: [],
+      systemBars: [],
+      systemBarsFrom: null,
+      rules: { ignore: [], tolerate: [], matches: {}, found: {} },
+      settings: null,
+      compareOnly: {
+        active: true,
+        moves: [],
+        keep,
+        compared: [],
+        ignoreOutside,
+        problems: [{ kind: 'one-tree', missing: 'baseline' }],
+      },
+    });
+
+    const result = await service.calculateDiff('projectId', testRun);
+
+    expect(compareGetDiffMock.mock.calls[0][0].data.measureAreas).toEqual(keep);
+    expect(compareGetDiffMock.mock.calls[0][0].data.ignoreAreas).toEqual(expect.arrayContaining(ignoreOutside));
     expect(result.status).toBe(TestStatus.unresolved);
   });
 

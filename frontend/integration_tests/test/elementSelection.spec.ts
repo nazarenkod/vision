@@ -871,9 +871,26 @@ test("dims the screenshot outside the compared elements", async ({
     await expect.poll(() => overlayAlpha(page, side, middleOf(pay))).toBe(0);
   }
   await openChanges(page);
-  // the run's saved and test areas still count
+  // the run's saved and test areas lie outside the button: only it is compared
   await expect(page.getByTestId("comparedSummary")).toHaveText(
-    "Only 1 element · without 2 areas",
+    "Only 1 element",
+  );
+});
+
+test("turns on element selection from the Changes tab", async ({
+  openProjectPage,
+  page,
+}) => {
+  await openReview(page, openProjectPage);
+  await openChanges(page);
+  await expect(page.getByTestId("selectElements")).toHaveAttribute(
+    "aria-pressed",
+    "false",
+  );
+  await page.getByTestId("selectElementsFromPanel").click();
+  await expect(page.getByTestId("selectElements")).toHaveAttribute(
+    "aria-pressed",
+    "true",
   );
 });
 

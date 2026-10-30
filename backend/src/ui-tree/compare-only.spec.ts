@@ -108,10 +108,44 @@ describe('planCompareOnly', () => {
     ]);
   });
 
-  it('cannot vouch for a run without both trees', () => {
-    expect(planCompareOnly([compare('id:btn_pay')], null, baseline)).toEqual(
-      expect.objectContaining({ active: true, problems: [{ kind: 'no-tree' }] })
+  it('compares the whole screen when neither side has a tree', () => {
+    expect(planCompareOnly([compare('id:btn_pay')], null, null)).toEqual(
+      expect.objectContaining({ active: true, keep: [], ignoreOutside: [], problems: [{ kind: 'no-tree' }] })
     );
+  });
+
+  it('compares the element at its place when only one side has a tree', () => {
+    const pay = { x: 42, y: 2200, width: 996, height: 126 };
+    for (const [before, after, missing] of [
+      [null, baseline, 'baseline'],
+      [baseline, null, 'current'],
+    ] as const) {
+      const plan = planCompareOnly([compare('id:btn_pay', 'r1'), compare('id:btn_typo', 'r2')], before, after);
+      expect(plan.keep).toEqual([pay]);
+      expect(plan.moves).toEqual([]);
+      expect(area(plan.keep) + area(plan.ignoreOutside)).toBe(1080 * 2400);
+      expect(plan.compared).toEqual([{ ruleId: 'r1', element: expect.stringContaining('Pay'), bounds: pay }]);
+      // the run cannot pass on its pixels, and the rule that found nothing still says so
+      expect(plan.problems).toEqual([
+        { kind: 'one-tree', missing },
+        { kind: 'nothing-found', ruleId: 'r2', selector: 'id:btn_typo' },
+      ]);
+    }
+  });
+
+  it('names each compared element and how far it moved', () => {
+    const current = parse(xml.replace('bounds="[42,2200][1038,2326]"', 'bounds="[42,2100][1038,2226]"'));
+    expect(
+      planCompareOnly([compare('id:btn_pay', 'r1'), compare('id:tv_fee', 'r2')], baseline, current).compared
+    ).toEqual([
+      {
+        ruleId: 'r1',
+        element: expect.stringContaining('Pay'),
+        bounds: { x: 42, y: 2100, width: 996, height: 126 },
+        shift: { dx: 0, dy: -100 },
+      },
+      { ruleId: 'r2', element: expect.any(String), bounds: expect.any(Object) },
+    ]);
   });
 });
 

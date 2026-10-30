@@ -53,9 +53,11 @@ const structure: StructureInfo = {
 };
 
 let removed: Array<{ scope: string; ruleId: string }>;
+let added: Array<Record<string, unknown>>;
 
 test.beforeEach(async ({ page }) => {
   removed = [];
+  added = [];
   await mockGetProjects(page, [project]);
   await mockGetBuilds(page, project.id, [build]);
   await mockGetBuildDetails(page, build);
@@ -74,6 +76,46 @@ test.beforeEach(async ({ page }) => {
       return route.fulfill({ status: 201, body: "" });
     },
   );
+  await page.route(
+    `${API_URL}/test-runs/${testRun.id}/element-rules`,
+    (route) => {
+      const body = route.request().postDataJSON();
+      added.push(body);
+      return route.fulfill({ body: JSON.stringify({ id: "again", ...body }) });
+    },
+  );
+});
+
+const withStructure = (page: Page, value: StructureInfo) =>
+  page.route(`${API_URL}/test-runs/${testRun.id}/structure`, (route) =>
+    route.fulfill({ body: JSON.stringify(value) }),
+  );
+
+// the pay button at the bottom; the run's drawn and test areas lie above it
+const pay = { x: 40, y: 2200, width: 1000, height: 120 };
+const compareOnly = (
+  problems: NonNullable<StructureInfo["compareOnly"]>["problems"] = [],
+): StructureInfo => ({
+  ...structure,
+  hasUiTree: true,
+  hasBaselineUiTree: true,
+  rules: [
+    {
+      id: "pay",
+      selector: "id:btn_pay",
+      action: "compare",
+      scope: "screen",
+      matches: 1,
+      found: { current: [pay], baseline: [pay] },
+    },
+  ],
+  compareOnly: {
+    active: true,
+    keep: [pay],
+    problems,
+    compared: [{ ruleId: "pay", element: 'Button "Pay"', bounds: pay }],
+  },
+  size: { width: 1080, height: 2400 },
 });
 
 const rule = (page: Page, selector: string) =>
@@ -84,10 +126,13 @@ test("lists the rules for this screen and for every screen", async ({
   page,
 }) => {
   await openProjectPage(project.id, build.id, testRun.id);
-  await expect(page.getByTestId("elementRule")).toHaveCount(2);
   await expect(rule(page, "id:balance")).toContainText("±5%");
-  await expect(rule(page, "id:balance")).not.toContainText("all screens");
+  await expect(rule(page, "id:balance")).toContainText("this screen");
+  // a rule for every screen that found nothing here is folded away (REQ-030-23)
+  await expect(page.getByTestId("elementRule")).toHaveCount(1);
+  await page.getByTestId("outsideToggle").click();
   await expect(rule(page, "id:clock")).toContainText("all screens");
+  await expect(rule(page, "id:clock")).toContainText("nothing found");
   // the selector and what it found are in the row's tooltip (REQ-019-02)
   await rule(page, "id:clock").hover();
   await expect(page.getByRole("tooltip")).toHaveText(
@@ -95,8 +140,150 @@ test("lists the rules for this screen and for every screen", async ({
   );
   // a rule that found nothing changes nothing in the summary; the run's saved and test areas count
   await expect(page.getByTestId("comparedSummary")).toHaveText(
-    "Whole screen · without 2 areas",
+    "Whole screen except 2 places",
   );
+});
+
+test("shows the result once, at the top of the Changes tab", async ({
+  openProjectPage,
+  page,
+}) => {
+  await openProjectPage(project.id, build.id, testRun.id);
+  // the run has a diff, but nothing the panel can name in it
+  await expect(page.getByTestId("verdictTitle")).toHaveText("Changed");
+  await expect(page.getByTestId("verdictReason")).toHaveText(
+    "No details about this change.",
+  );
+  await expect(
+    page.getByText("Nothing changed against the baseline."),
+  ).toHaveCount(0);
+  await expect(
+    page.getByText(/Status and navigation bars are left out/),
+  ).toHaveCount(0);
+  const top = async (testId: string) =>
+    (await page.getByTestId(testId).boundingBox())?.y ?? 0;
+  expect(await top("comparisonVerdict")).toBeLessThan(
+    await top("whatsCompared"),
+  );
+});
+
+test("lists every change under one heading with its count", async ({
+  openProjectPage,
+  page,
+}) => {
+  await withStructure(page, {
+    ...structure,
+    regions: [
+      {
+        region: { x: 0, y: 100, width: 50, height: 20 },
+        key: "a",
+        element: 'Button "Next"',
+        resourceId: null,
+      },
+      {
+        region: { x: 0, y: 130, width: 50, height: 20 },
+        key: "a",
+        element: 'Button "Next"',
+        resourceId: null,
+      },
+      {
+        region: { x: 0, y: 900, width: 80, height: 40 },
+        key: null,
+        element: null,
+        resourceId: null,
+      },
+    ],
+    changes: [
+      {
+        kind: "text",
+        key: "balance",
+        element: 'TextView "Balance"',
+        resourceId: "com.bank:id/balance",
+        before: "1 200",
+        after: "1 250",
+        bounds: { x: 0, y: 400, width: 300, height: 40 },
+      },
+    ],
+  });
+  await openProjectPage(project.id, build.id, testRun.id);
+  await expect(page.getByTestId("verdictTitle")).toHaveText("3 changes");
+  const list = page.getByTestId("whatChanged");
+  await expect(list).toContainText("What changed");
+  await expect(list).toContainText("3");
+  await expect(list.getByTestId("changedArea")).toHaveCount(2);
+  await expect(list).toContainText("1 250");
+});
+
+test("keeps rows outside the compared elements folded", async ({
+  openProjectPage,
+  page,
+}) => {
+  await withStructure(page, compareOnly());
+  await openProjectPage(project.id, build.id, testRun.id);
+  await expect(page.getByTestId("comparedSummary")).toHaveText(
+    "Only 1 element",
+  );
+  await expect(page.getByTestId("comparedElement")).toContainText(
+    'Button "Pay"',
+  );
+  // the run's drawn and test areas lie above the button: they change nothing
+  await expect(page.getByTestId("outsideToggle")).toContainText(
+    "No effect · 2",
+  );
+  await expect(page.getByTestId("comparedArea")).toHaveCount(0);
+  await expect(page.getByTestId("comparedTestArea")).toHaveCount(0);
+});
+
+test("explains why the folded rows do not count", async ({
+  openProjectPage,
+  page,
+}) => {
+  await withStructure(page, compareOnly());
+  await openProjectPage(project.id, build.id, testRun.id);
+  await page.getByTestId("outsideToggle").click();
+  await expect(page.getByTestId("outsideGroup")).toContainText(
+    "They lie outside the chosen elements, so they change nothing.",
+  );
+  await expect(page.getByTestId("comparedArea")).toHaveAttribute(
+    "data-effect",
+    "outside",
+  );
+  await expect(page.getByTestId("comparedTestArea")).toContainText(
+    "from the test",
+  );
+});
+
+test("removes a gone element from what is compared, with Undo", async ({
+  openProjectPage,
+  page,
+}) => {
+  await withStructure(
+    page,
+    compareOnly([
+      {
+        kind: "disappeared",
+        ruleId: "pay",
+        selector: "id:btn_pay",
+        element: 'Button "Pay"',
+      },
+    ]),
+  );
+  await openProjectPage(project.id, build.id, testRun.id);
+  await expect(page.getByTestId("verdictTitle")).toHaveText(
+    "One of the chosen elements is gone",
+  );
+  await expect(page.getByTestId("comparedState")).toHaveText("gone");
+
+  await page.getByTestId("removeFromCompared").click();
+  await expect(
+    page.getByText("Removed from what is compared; compared again"),
+  ).toBeVisible();
+  expect(removed).toEqual([{ scope: "screen", ruleId: "pay" }]);
+
+  await page.getByTestId("undoRule").click();
+  await expect
+    .poll(() => added)
+    .toEqual([{ scope: "screen", selector: "id:btn_pay", action: "compare" }]);
 });
 
 test("lights an area the test sent on the screenshot until clicked again", async ({
@@ -104,14 +291,10 @@ test("lights an area the test sent on the screenshot until clicked again", async
   page,
 }) => {
   await openProjectPage(project.id, build.id, testRun.id);
-  // a heading and nothing more
-  await expect(page.getByTestId("comparedTestAreas")).toContainText(
-    "Sent by the test",
-  );
-  await expect(page.getByTestId("comparedTestAreas")).not.toContainText(
-    "test code",
-  );
   const area = page.getByTestId("comparedTestArea");
+  // where it comes from, and nothing more
+  await expect(area).toContainText("from the test");
+  await expect(area).not.toContainText("test code");
   await area.click();
   await expect(area).toHaveAttribute("aria-pressed", "true");
   // it shows where the area is; it opens nothing and starts no selecting
@@ -166,6 +349,8 @@ test("asks before removing a rule for every screen", async ({
   page,
 }) => {
   await openProjectPage(project.id, build.id, testRun.id);
+  // it found nothing here, so it waits under "No effect"
+  await page.getByTestId("outsideToggle").click();
   const remove = rule(page, "id:clock").getByRole("button", {
     name: "Remove rule",
   });

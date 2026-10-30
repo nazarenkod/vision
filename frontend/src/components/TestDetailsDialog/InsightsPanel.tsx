@@ -45,6 +45,13 @@ import { JiraBugDialog } from "./JiraBugDialog";
 import { motion, tokens } from "../../theme";
 import { labelOf, useT } from "../../i18n";
 import { WhatsCompared } from "./WhatsCompared";
+import { ComparisonVerdict } from "./ComparisonVerdict";
+import {
+  countChanges,
+  overview,
+  verdict,
+} from "../../_helpers/whatsCompared.helper";
+import { useRuleSnackbar } from "../useRuleSnackbar";
 import { readAreas } from "../../_helpers/ignoreArea.helper";
 import {
   PANEL_WIDTH,
@@ -111,6 +118,8 @@ interface Props {
   // findings framed on the screenshot, switched beside them (REQ-003-14)
   a11yMarks?: boolean;
   onA11yMarksChange?: (on: boolean) => void;
+  // turns on selecting elements on the screenshots (REQ-030-51)
+  onSelectElements?: () => void;
 }
 
 type RuleDraft = {
@@ -155,8 +164,10 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
   onBugMarksChange,
   a11yMarks = true,
   onA11yMarksChange,
+  onSelectElements,
 }) => {
   const { enqueueSnackbar } = useSnackbar();
+  const showRuleSnack = useRuleSnackbar();
   const { t, tx } = useT();
   const { user } = useUserState();
   const { projectList, selectedProjectId } = useProjectState();
@@ -917,6 +928,28 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
     }
   };
 
+  // a chosen element that is gone or new comes off what is compared, with Undo (REQ-030-41)
+  const removeFromCompared = async (rule: StructureInfo["rules"][number]) => {
+    setSubmitting(true);
+    try {
+      await insightsService.removeElementRule(testRun.id, rule.scope, rule.id);
+      onStructureChanged();
+      showRuleSnack(t("compared.removedFromCompared"), () =>
+        insightsService
+          .addElementRule(testRun.id, {
+            scope: rule.scope,
+            selector: rule.selector,
+            action: rule.action,
+          })
+          .then(onStructureChanged),
+      );
+    } catch (error) {
+      enqueueSnackbar(`${error}`, { variant: "error" });
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   const saveRule = async () => {
     if (!ruleDraft) return;
     const ok = await run(
@@ -990,15 +1023,6 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
     "&:hover": { bgcolor: tokens.subtle },
   } as const;
 
-  const sectionTitle = (title: string, count: number) => (
-    <Typography variant="subtitle2" sx={{ mb: 0.25 }}>
-      {title}
-      <Box component="span" sx={{ color: tokens.textMuted, ml: 0.75 }}>
-        {count}
-      </Box>
-    </Typography>
-  );
-
   const actionsCell = (children: React.ReactNode) => (
     <Box sx={{ display: "flex", alignItems: "center", gap: 0.25 }}>
       {children}
@@ -1061,13 +1085,28 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
     const visibleChanges = structure.changes.filter(
       (change) => change.kind !== "moved",
     );
-    const nothing =
-      !visibleChanges.length &&
-      !structure.regions.length &&
-      !structure.hints.length &&
-      !structure.invisible.length;
+    const compared = overview(
+      structure,
+      readAreas(testRun.ignoreAreas),
+      readAreas(testRun.tempIgnoreAreas),
+    );
+    const changeCount = countChanges(structure);
     return (
       <>
+        {testRun.baselineName && (
+          <ComparisonVerdict
+            verdict={verdict(
+              {
+                problems: structure.compareOnly?.problems ?? [],
+                changes: changeCount,
+                hasDiff: !!testRun.diffName,
+                only: compared.only,
+              },
+              t,
+            )}
+            changes={changeCount}
+          />
+        )}
         {bugs.length > 0 && (
           <Box
             sx={{ display: "flex", flexDirection: "column", gap: 0.75 }}
@@ -1145,8 +1184,7 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
         )}
         <WhatsCompared
           structure={structure}
-          areas={readAreas(testRun.ignoreAreas)}
-          testAreas={readAreas(testRun.tempIgnoreAreas)}
+          overview={compared}
           onOpenArea={onOpenArea}
           pinnedMark={pinnedMark}
           onPinMark={onPinMark}
@@ -1156,6 +1194,7 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
             // a rule for every screen is asked about: it changes the whole project
             rule.scope === "project" ? setRemoving(rule) : removeRule(rule)
           }
+          onRemoveFromCompared={removeFromCompared}
           onUseElement={onUseElement}
           onPreview={(id) => onPreviewMark?.(id)}
         />
@@ -1199,16 +1238,26 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
             {hint.message}
           </Alert>
         ))}
-        {nothing && (
-          <Typography variant="body2" color="textSecondary">
-            {testRun.diffName
-              ? t("panel.noDetails")
-              : t("panel.nothingChanged")}
-          </Typography>
-        )}
-        {structure.regions.length > 0 && (
-          <Box sx={{ display: "flex", flexDirection: "column" }}>
-            {sectionTitle(t("panel.changedAreas"), structure.regions.length)}
+        {changeCount > 0 && (
+          // one list under one heading: spots by element, then what the tree shows (REQ-030-50)
+          <Box
+            data-testid="whatChanged"
+            sx={{ display: "flex", flexDirection: "column" }}
+          >
+            <Box
+              component="h3"
+              sx={{
+                m: 0,
+                mb: 0.5,
+                fontSize: 11.5,
+                fontWeight: 600,
+                letterSpacing: "0.05em",
+                textTransform: "uppercase",
+                color: tokens.textMuted,
+              }}
+            >
+              {t("changes.title")} · {changeCount}
+            </Box>
             {groupAreas(structure.regions).map((group, index) => (
               <Box
                 key={group.element ?? `area-${index}`}
@@ -1266,11 +1315,6 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
                 )}
               </Box>
             ))}
-          </Box>
-        )}
-        {visibleChanges.length > 0 && (
-          <Box sx={{ display: "flex", flexDirection: "column" }}>
-            {sectionTitle(t("panel.fromTree"), visibleChanges.length)}
             {visibleChanges.map((change) => (
               <Box key={`${change.kind}:${change.key}`} sx={rowSx}>
                 <Box
@@ -1312,19 +1356,50 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
             ))}
           </Box>
         )}
-        {structure.systemBars.length > 0 && (
-          <Typography variant="body2" color="textSecondary">
-            {t("panel.systemBars")}
-          </Typography>
-        )}
         {canEdit && withUiTree && (
-          <Button
-            size="small"
-            sx={{ alignSelf: "flex-start" }}
-            onClick={() => openRule(null)}
+          <Box
+            data-testid="changeWhatIsCompared"
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              flexWrap: "wrap",
+              columnGap: 1.25,
+              fontSize: 13,
+              color: tokens.textMuted,
+            }}
           >
-            {t("panel.addRuleButton")}
-          </Button>
+            <span>{t("compared.changeWhat")}</span>
+            {onSelectElements && (
+              <Button
+                size="small"
+                data-testid="selectElementsFromPanel"
+                onClick={onSelectElements}
+                sx={{ minWidth: 0, px: 0.5 }}
+              >
+                {t("select.button")}
+                <Box
+                  component="kbd"
+                  sx={{
+                    ml: 0.75,
+                    font: `500 11px ${tokens.mono}`,
+                    border: `1px solid ${tokens.borderStrong}`,
+                    borderRadius: "4px",
+                    px: 0.5,
+                    color: tokens.textSecondary,
+                  }}
+                >
+                  E
+                </Box>
+              </Button>
+            )}
+            <Button
+              size="small"
+              onClick={() => openRule(null)}
+              sx={{ minWidth: 0, px: 0.5 }}
+            >
+              {t("panel.addRuleButton")}
+            </Button>
+          </Box>
         )}
       </>
     );

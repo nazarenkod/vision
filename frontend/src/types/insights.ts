@@ -217,10 +217,16 @@ export interface StructureInfo {
     active: boolean;
     keep: Rect[];
     problems: CompareOnlyProblem[];
+    // each element a compare-only rule found (spec 030)
+    compared?: ComparedElement[];
   };
   ignoredAreas: Rect[];
   toleratedAreas: Array<Rect & { maxDiffPercent: number }>;
   systemBars: Rect[];
+  // who left the system bars out
+  systemBarsFrom?: "test" | "project" | null;
+  // of the checkpoint picture
+  size?: { width: number; height: number };
   moves: Array<{ key: string; element: string; dxDp: number; dyDp: number }>;
   // elements a rule can be made for by clicking them on the screenshot
   elements?: PickableElement[];
@@ -243,8 +249,18 @@ export type ScreenRule = ElementRule & {
   found?: { current: Rect[]; baseline: Rect[] };
 };
 
+export interface ComparedElement {
+  ruleId: string;
+  element: string;
+  bounds: Rect;
+  // how far it moved from its place in the baseline
+  shiftDp?: { dx: number; dy: number };
+}
+
 export type CompareOnlyProblem =
   | { kind: "no-tree" }
+  // compared at the element's place in the one tree there is (spec 030)
+  | { kind: "one-tree"; missing: "baseline" | "current" }
   | { kind: "nothing-found"; ruleId: string; selector: string }
   | {
       kind: "disappeared" | "appeared";

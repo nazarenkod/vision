@@ -1693,6 +1693,7 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
         </Box>
         <InsightsPanel
           testRun={testRun}
+          onSelectElements={canEdit ? toggleSelecting : undefined}
           report={a11yReport}
           onReportChanged={loadA11yReport}
           highlightedId={highlightedViolation}

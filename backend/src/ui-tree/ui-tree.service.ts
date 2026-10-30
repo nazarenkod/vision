@@ -11,7 +11,7 @@ import { diffTrees, elementsUnderRegions, RegionElement, StructuralChange } from
 import { findNoiseHints, NoiseHint } from './noise-hints';
 import { ComponentChange, componentChanges, invisibleChanges } from './screen-checks';
 import { PrismaService } from '../prisma/prisma.service';
-import { CompareOnlyPlan, insideCompared, planCompareOnly } from './compare-only';
+import { CompareOnlyPlan, ComparedElement, insideCompared, planCompareOnly } from './compare-only';
 import { elementForArea } from './area-elements';
 import { addsSomething, selectorVariants, SelectorVariant } from './selector-variants';
 import {
@@ -45,6 +45,8 @@ export interface ComparisonInputs {
   toleranceAreas: Array<Rect & { maxDiffPercent: number }>;
   moves: ElementMove[];
   systemBars: Rect[];
+  // who left the system bars out: the test that sent the screenshot, or the project
+  systemBarsFrom: 'test' | 'project' | null;
   rules: ResolvedRules;
   settings: UiTreeSettings | null;
   // only some elements are compared (spec 015); inactive otherwise
@@ -81,10 +83,15 @@ export interface StructureInfo {
     }
   >;
   // what is compared when the check names its elements, and what the pixels cannot vouch for
-  compareOnly: Pick<CompareOnlyPlan, 'active' | 'keep' | 'problems'>;
+  compareOnly: Pick<CompareOnlyPlan, 'active' | 'keep' | 'problems'> & {
+    compared: Array<Omit<ComparedElement, 'shift'> & { shiftDp?: { dx: number; dy: number } }>;
+  };
   ignoredAreas: Rect[];
   toleratedAreas: Array<Rect & { maxDiffPercent: number }>;
   systemBars: Rect[];
+  systemBarsFrom: 'test' | 'project' | null;
+  // of the checkpoint picture, for drawing what is compared to scale
+  size: { width: number; height: number };
   // compensated moves, in dp
   moves: Array<{ key: string; element: string; dxDp: number; dyDp: number }>;
   // elements a rule can be made for by clicking them on the screenshot
@@ -435,6 +442,8 @@ export class UiTreeService {
       ignoredAreas: inputs.rules.ignore,
       toleratedAreas: inputs.rules.tolerate,
       systemBars: inputs.systemBars,
+      systemBarsFrom: inputs.systemBarsFrom,
+      size,
       moves: inputs.moves.map((move) => {
         const node = nodesByKey.get(move.key);
         const ppd = tree?.pixelsPerDp || 1;
@@ -449,6 +458,12 @@ export class UiTreeService {
         active: inputs.compareOnly.active,
         keep: inputs.compareOnly.keep,
         problems: inputs.compareOnly.problems,
+        compared: inputs.compareOnly.compared.map(({ shift, ...element }) => {
+          const ppd = tree?.pixelsPerDp || 1;
+          return shift
+            ? { ...element, shiftDp: { dx: Math.round(shift.dx / ppd), dy: Math.round(shift.dy / ppd) } }
+            : element;
+        }),
       },
       elements,
       baselineElements: baselineTree ? pickableElements(baselineTree) : [],
@@ -502,6 +517,7 @@ export class UiTreeService {
       toleranceAreas: [],
       moves: [],
       systemBars: [],
+      systemBarsFrom: null,
       rules: { ignore: [], tolerate: [], matches: {}, found: {} },
       settings: null,
       compareOnly: planCompareOnly([], null, null),
@@ -519,12 +535,14 @@ export class UiTreeService {
         )
       : [];
     if (!tree) {
-      // a check that names its elements cannot be compared without a tree: it goes to review (REQ-015-22)
-      return { ...empty, compareOnly: planCompareOnly(checkRules, null, null) };
+      // the baseline's tree still names the compared elements; without either the run goes to review (REQ-030-30, 33)
+      const compareOnly = planCompareOnly(checkRules, baselineTree, null);
+      return { ...empty, ignoreAreas: compareOnly.ignoreOutside, compareOnly };
     }
 
     const options = parseUiTreeOptions(testRun.uiTreeOptions);
     const excludeSystemBars = options.excludeSystemBars ?? settings.excludeSystemBars;
+    const systemBarsFrom = options.excludeSystemBars !== undefined ? 'test' : 'project';
     const rules = [...settings.elementRules, ...checkRules];
     const resolved = resolveRules(rules, [tree, baselineTree]);
     const compareOnly = planCompareOnly(checkRules, baselineTree, tree);
@@ -550,6 +568,7 @@ export class UiTreeService {
       // a compared element is aligned with itself whether or not moves are compensated
       moves: [...compensated, ...compareOnly.moves],
       systemBars,
+      systemBarsFrom: systemBars.length ? systemBarsFrom : null,
       rules: resolved,
       settings,
       compareOnly,

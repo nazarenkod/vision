@@ -143,8 +143,8 @@ sequenceDiagram
 | REQ-024-17 | `backend/src/ui-tree/compare-only.spec.ts › keeps ignored elements and areas ignored inside a compared one` |
 | REQ-024-20 | `frontend/integration_tests/test/elementSelection.spec.ts › marks rules on both screenshots` |
 | REQ-024-21 | Знято 2026-10-30 |
-| REQ-024-22 | `frontend/src/_helpers/whatsCompared.helper.test.ts › sums up what is compared`; `frontend/src/_helpers/whatsCompared.helper.test.ts › says the whole screen is compared when there is no UI tree` |
-| REQ-024-23 | `frontend/src/_helpers/whatsCompared.helper.test.ts › groups rules by what they do` |
+| REQ-024-22 | замінено 030 (підсумок): `frontend/src/_helpers/whatsCompared.helper.test.ts › sums up what is compared in places`; `frontend/src/_helpers/whatsCompared.helper.test.ts › says the whole screen is compared when neither side has a tree` |
+| REQ-024-23 | замінено 030 (групи): `frontend/src/_helpers/whatsCompared.helper.test.ts › groups rows by what they do` |
 | REQ-024-24 | `frontend/integration_tests/test/elementSelection.spec.ts › highlights a rule's elements on hover` |
 | REQ-024-25 | `frontend/integration_tests/test/elementRules.spec.ts › opens an area of the summary in the Areas menu`; `frontend/integration_tests/test/elementRules.spec.ts › lights an area the test sent on the screenshot until clicked again`; `frontend/integration_tests/test/ignoreAreas.spec.ts › shows saved and test areas as before` |
 | REQ-024-30 | `frontend/integration_tests/test/ignoreAreas.spec.ts › keeps area tools behind the Areas button` |

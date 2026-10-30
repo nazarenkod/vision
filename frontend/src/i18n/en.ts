@@ -584,11 +584,8 @@ export const en = {
   "panel.noDetails": "No details about this change.",
   "panel.invisible": "Changes the screenshot does not show",
   "panel.ignoreArea": "Ignore area",
-  "panel.nothingChanged": "Nothing changed against the baseline.",
-  "panel.changedAreas": "Changed areas",
   "panel.spots": "Changed in {count} spots",
   "panel.areaAt": "{width} × {height} px at {x}, {y}",
-  "panel.fromTree": "From the UI tree",
   "panel.moved": "Compared at their new place",
   "panel.movedHelp":
     "These moved without changing, so the move alone is not counted:",
@@ -596,8 +593,6 @@ export const en = {
   "panel.up": "up {count} dp",
   "panel.right": "right {count} dp",
   "panel.left": "left {count} dp",
-  "panel.systemBars":
-    "Status and navigation bars are left out (project setting).",
   "panel.ruleRemoved": "Rule removed; compared again",
   "panel.addRuleButton": "Add element rule",
   "panel.resize": "Drag to resize the panel; double-click for the usual width",
@@ -1208,7 +1203,10 @@ export const en = {
   // what is compared (spec 024)
   "compared.whole": "Whole screen",
   "compared.none": "Nothing is compared",
-  "compared.except": "Whole screen except {count}",
+  "compared.except": {
+    one: "Whole screen except {count} place",
+    other: "Whole screen except {count} places",
+  },
   "compared.only": {
     one: "Only {count} element",
     other: "Only {count} elements",
@@ -1217,12 +1215,84 @@ export const en = {
     one: "· without {count} area",
     other: "· without {count} areas",
   },
-  "compared.allScreens": "all screens",
+  "compared.title": "What's compared",
+  "compared.onlyHelp":
+    "The rest of the screen does not count, whatever changes there.",
+  "compared.exceptHelp": "Everything else on the screen is compared.",
+  "compared.wholeHelp": "No rule or area leaves anything out.",
+  "compared.noneHelp": "None of the chosen elements was found.",
+  "compared.noTreeHelp":
+    "Without a UI tree the chosen elements cannot be found.",
+  "compared.group.compared": "Compared",
+  "compared.group.ignored": "Not counted",
+  "compared.group.tolerated": "Allows changes",
+  "compared.group.outside": "No effect",
+  "compared.outsideHint": "outside what is compared",
+  "compared.outsideHelp":
+    "They lie outside the chosen elements, so they change nothing. They apply again once Compare only is removed.",
+  "compared.nothingFoundHelp":
+    "These found nothing on this screenshot or the baseline.",
+  "compared.reason.nothingFound": "nothing found",
+  "compared.reason.noTree": "no UI tree",
+  "compared.source.screen": "this screen",
+  "compared.source.project": "all screens",
+  "compared.source.drawn": "drawn",
+  "compared.source.test": "from the test",
+  "compared.source.testSetting": "test",
+  "compared.source.projectSetting": "project",
+  "compared.systemBars": "Status and navigation bars",
+  "compared.foundBoth": "found on the baseline and the screenshot",
+  "compared.state.same": "unchanged",
+  "compared.state.changed": "changed",
+  "compared.state.disappeared": "gone",
+  "compared.state.appeared": "new",
+  "compared.state.resized": "resized",
+  "compared.state.nothingFound": "nothing found",
+  "compared.oneTree.baseline":
+    "The element was found only on the screenshot, so the same part of the baseline was compared. If it moved, that shows as a change. Once you accept this screenshot, the baseline gets the UI tree and the element is followed wherever it goes.",
+  "compared.oneTree.current":
+    "The element was found only on the baseline, so the same part of this screenshot was compared. If it moved, that shows as a change. The next screenshot with a UI tree compares it wherever it is.",
+  "compared.problemHelp":
+    "If this is a bug, reject the screenshot. If it is meant to be, remove it from what is compared and the screenshot is checked again.",
+  "compared.removeFromCompared": "Remove from what is compared",
+  "compared.removedFromCompared":
+    "Removed from what is compared; compared again",
+  "compared.map": "Screen map: {summary}",
+  "compared.changeWhat": "Change what is compared:",
+  "changes.title": "What changed",
+  "verdict.same": "No changes",
+  "verdict.sameWhy": "Everything that is compared matches the baseline.",
+  "verdict.sameOnlyWhy": "The chosen elements are the same as on the baseline.",
+  "verdict.changes": {
+    one: "{count} change",
+    other: "{count} changes",
+  },
+  "verdict.changesWhy":
+    "Everything else that is compared matches the baseline.",
+  "verdict.changed": "Changed",
+  "verdict.decide": "No changes found, but it needs your decision",
+  "verdict.noBaselineTree":
+    "The baseline has no UI tree, so Vision cannot confirm it is the same element.",
+  "verdict.noCurrentTree":
+    "This screenshot came without a UI tree, so Vision cannot confirm it is the same element.",
+  "verdict.notApplied": "Compare only did not apply",
+  "verdict.notAppliedWhy":
+    "Neither the screenshot nor the baseline has a UI tree, so the chosen elements cannot be found: the whole screen is compared.",
+  "verdict.nothingFound": "Nothing is compared",
+  "verdict.nothingFoundWhy":
+    "{selector} found nothing on the screenshot or the baseline.",
+  "verdict.disappeared": "One of the chosen elements is gone",
+  "verdict.disappearedWhy":
+    "{element} is not on the screenshot, so there is nothing to compare it with.",
+  "verdict.appeared": "A chosen element is new",
+  "verdict.appearedWhy":
+    "{element} is not on the baseline, so there is nothing to compare it with.",
+  "verdict.count": "The number of chosen elements changed",
+  "verdict.resized": "A chosen element changed size",
+  "verdict.resizedWhy": "{element} changed size, so it counts as changed.",
   "compared.found":
     "{selector} · {current} found here, {baseline} on the baseline",
   "compared.more": "More actions",
-  "compared.problem.noTree":
-    "No UI tree, so Compare only did not apply: the whole screen is compared",
   "compared.problem.nothingFound": "{selector} found nothing",
   "compared.problem.disappeared": "{element} disappeared",
   "compared.problem.appeared": "{element} appeared",

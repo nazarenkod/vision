@@ -76,7 +76,7 @@ function analyzing(prisma: Record<string, unknown>, trees: Record<string, unknow
   jest.spyOn(instance as never, 'decode').mockResolvedValue(undefined as never);
   jest.spyOn(instance, 'comparisonInputs').mockResolvedValue({
     ignoreAreas: [],
-    compareOnly: { active: false, moves: [], keep: [], ignoreOutside: [], problems: [] },
+    compareOnly: { active: false, moves: [], keep: [], compared: [], ignoreOutside: [], problems: [] },
   } as never);
   return { instance, load };
 }
@@ -179,6 +179,38 @@ describe('UiTreeService, compare only', () => {
     expect(inputs.ignoreAreas).toEqual([]);
   });
 
+  it('compares the element at its place when only one side has a tree', async () => {
+    const pay = { x: 42, y: 2200, width: 996, height: 126 };
+    const noBaselineTree = await compareService({ 'here.json.gz': tree }).comparisonInputs(run());
+    expect(noBaselineTree.compareOnly.problems).toEqual([{ kind: 'one-tree', missing: 'baseline' }]);
+    expect(noBaselineTree.compareOnly.keep).toEqual([pay]);
+    expect(noBaselineTree.ignoreAreas.length).toBeGreaterThan(0);
+
+    // a build that sent no tree: the baseline's tree names the element
+    const noTreeHere = await compareService({ 'base.json.gz': tree }).comparisonInputs(
+      run({ uiTreeName: null, baselineUiTreeName: 'base.json.gz' })
+    );
+    expect(noTreeHere.compareOnly.problems).toEqual([{ kind: 'one-tree', missing: 'current' }]);
+    expect(noTreeHere.compareOnly.keep).toEqual([pay]);
+    expect(noTreeHere.ignoreAreas).toEqual(noTreeHere.compareOnly.ignoreOutside);
+  });
+
+  it('says how far a compared element moved, in dp', async () => {
+    const moved = parseUiTree(xml.replace('bounds="[42,2200][1038,2326]"', 'bounds="[42,2095][1038,2221]"'), {
+      imageWidth: 1080,
+      imageHeight: 2400,
+      densityDpi: 420,
+    });
+    const structure = await compareService({ 'here.json.gz': moved, 'base.json.gz': tree }).structure(
+      run({ baselineUiTreeName: 'base.json.gz' })
+    );
+    // 105 px at 420 dpi is 40 dp
+    expect(structure.compareOnly.compared).toEqual([
+      expect.objectContaining({ ruleId: 'c1', shiftDp: { dx: 0, dy: -40 } }),
+    ]);
+    expect(structure.size).toEqual({ width: 1080, height: 2400 });
+  });
+
   it('reports no hidden change outside the compared elements', async () => {
     // the pay button got disabled; only the fee is compared
     const instance = compareService({ 'here.json.gz': disabled, 'base.json.gz': tree }, compareSettings('id:tv_fee'));
@@ -198,9 +230,10 @@ describe('UiTreeService, compare only', () => {
       toleranceAreas: [],
       moves: [],
       systemBars: [],
+      systemBarsFrom: null,
       rules: { ignore: [], tolerate: [], matches: {}, found: {} },
       settings: null,
-      compareOnly: { active: false, moves: [], keep: [], ignoreOutside: [], problems: [] },
+      compareOnly: { active: false, moves: [], keep: [], compared: [], ignoreOutside: [], problems: [] },
     });
     // the fee text changed on its own: a dynamic text hint over it
     const structure = await instance.structure(

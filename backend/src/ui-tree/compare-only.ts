@@ -5,10 +5,22 @@ import { Rect, UiNode, UiTree } from './ui-tree.types';
 /** Why a compare-only run cannot be trusted to its pixels (spec 015). */
 export type CompareOnlyProblem =
   | { kind: 'no-tree' }
+  // compared at the elements' place in the one tree there is, without following them (spec 030)
+  | { kind: 'one-tree'; missing: 'baseline' | 'current' }
   | { kind: 'nothing-found'; ruleId: string; selector: string }
   | { kind: 'disappeared' | 'appeared'; ruleId: string; selector: string; element: string }
   | { kind: 'count'; ruleId: string; selector: string; baseline: number; current: number }
   | { kind: 'resized'; ruleId: string; selector: string; element: string; before: Rect; after: Rect };
+
+/** One element a compare-only rule found, for naming it in the review (REQ-030-20, 24). */
+export interface ComparedElement {
+  ruleId: string;
+  element: string;
+  // on the checkpoint, or on the baseline for an element that is gone
+  bounds: Rect;
+  // how far it moved from its place in the baseline, in pixels
+  shift?: { dx: number; dy: number };
+}
 
 export interface CompareOnlyPlan {
   // the check has a compare-only rule
@@ -17,12 +29,20 @@ export interface CompareOnlyPlan {
   moves: ElementMove[];
   // what is compared, in checkpoint pixels; also what the difference is measured against
   keep: Rect[];
+  compared: ComparedElement[];
   // the rest of the screenshot, as ignore areas
   ignoreOutside: Rect[];
   problems: CompareOnlyProblem[];
 }
 
-const INACTIVE: CompareOnlyPlan = { active: false, moves: [], keep: [], ignoreOutside: [], problems: [] };
+const INACTIVE: CompareOnlyPlan = {
+  active: false,
+  moves: [],
+  keep: [],
+  compared: [],
+  ignoreOutside: [],
+  problems: [],
+};
 
 // a redrawn element can come out a pixel larger or smaller
 const SIZE_TOLERANCE_PX = 1;
@@ -51,10 +71,13 @@ export function planCompareOnly(
 ): CompareOnlyPlan {
   const compareRules = rules.filter((rule) => rule.action === 'compare');
   if (!compareRules.length) return INACTIVE;
-  if (!baseline || !current) return { ...INACTIVE, active: true, problems: [{ kind: 'no-tree' }] };
+  if (!baseline && !current) return { ...INACTIVE, active: true, problems: [{ kind: 'no-tree' }] };
+  if (!baseline || !current)
+    return planByOneTree(compareRules, (baseline ?? current) as UiTree, baseline ? 'current' : 'baseline');
 
   const moves: ElementMove[] = [];
   const keep: Rect[] = [];
+  const compared: ComparedElement[] = [];
   const problems: CompareOnlyProblem[] = [];
   // an element two rules match is compared once
   const taken = new Set<number>();
@@ -74,6 +97,7 @@ export function planCompareOnly(
       for (const node of before.length ? before : after) {
         problems.push({ kind, ...base, element: describeNode(node) });
         keep.push(node.bounds);
+        compared.push({ ruleId: rule.id, element: describeNode(node), bounds: node.bounds });
       }
       continue;
     }
@@ -84,6 +108,13 @@ export function planCompareOnly(
     after.forEach((node, i) => {
       keep.push(node.bounds);
       const old = before[i];
+      const moved = old && (old.bounds.x !== node.bounds.x || old.bounds.y !== node.bounds.y);
+      compared.push({
+        ruleId: rule.id,
+        element: describeNode(node),
+        bounds: node.bounds,
+        ...(moved ? { shift: { dx: node.bounds.x - old.bounds.x, dy: node.bounds.y - old.bounds.y } } : {}),
+      });
       if (!old) return;
       if (!sameSize(old.bounds, node.bounds)) {
         problems.push({
@@ -95,7 +126,7 @@ export function planCompareOnly(
         });
         return;
       }
-      if (old.bounds.x !== node.bounds.x || old.bounds.y !== node.bounds.y) {
+      if (moved) {
         moves.push({ from: old.bounds, to: node.bounds, key: node.key });
       }
     });
@@ -103,7 +134,40 @@ export function planCompareOnly(
 
   const width = Math.max(baseline.width, current.width);
   const height = Math.max(baseline.height, current.height);
-  return { active: true, moves, keep, ignoreOutside: complement(keep, width, height), problems };
+  return { active: true, moves, keep, compared, ignoreOutside: complement(keep, width, height), problems };
+}
+
+/**
+ * A baseline taken before Vision kept UI trees (or a build that sent none)
+ * still names the compared elements on the side that has a tree: they are
+ * compared at that place on both pictures, which cannot follow a move, so
+ * the run stays in review (REQ-030-30, 31).
+ */
+function planByOneTree(rules: ElementRule[], tree: UiTree, missing: 'baseline' | 'current'): CompareOnlyPlan {
+  const keep: Rect[] = [];
+  const compared: ComparedElement[] = [];
+  const problems: CompareOnlyProblem[] = [{ kind: 'one-tree', missing }];
+  const taken = new Set<number>();
+  for (const rule of rules) {
+    const found = matchesOf(tree, rule).filter((node) => !taken.has(node.index));
+    found.forEach((node) => taken.add(node.index));
+    if (!found.length) {
+      problems.push({ kind: 'nothing-found', ruleId: rule.id, selector: rule.selector });
+      continue;
+    }
+    for (const node of found) {
+      keep.push(node.bounds);
+      compared.push({ ruleId: rule.id, element: describeNode(node), bounds: node.bounds });
+    }
+  }
+  return {
+    active: true,
+    moves: [],
+    keep,
+    compared,
+    ignoreOutside: complement(keep, tree.width, tree.height),
+    problems,
+  };
 }
 
 /**

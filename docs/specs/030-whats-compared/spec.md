@@ -2,10 +2,10 @@
 
 | | |
 |---|---|
-| Статус | Approved |
+| Статус | Implemented |
 | Власник | Дмитро Назаренко |
 | Оновлено | 2026-10-30 |
-| Дизайн | з'являється після `Approved`; [макет](https://claude.ai/artifact/RmLEJ3ttdt79GQTUFB1hwD) |
+| Дизайн | [design.md](design.md), [tasks.md](tasks.md), [макет](https://claude.ai/artifact/RmLEJ3ttdt79GQTUFB1hwD) |
 | Пов'язане | змінює [024](../024-elements-instead-of-areas/spec.md) REQ-024-22, REQ-024-23 (підсумок і групи) і [015](../015-compare-selected-elements/spec.md) REQ-015-22 (знімок чи еталон без UI-дерева); спирається на [019](../019-element-rules-in-review/spec.md) REQ-019-02…05 (правила в порівнянні), [024](../024-elements-instead-of-areas/spec.md) REQ-024-07 (Undo), REQ-024-24, REQ-024-25 (наведення, клік по області) |
 
 ## Контекст і проблема

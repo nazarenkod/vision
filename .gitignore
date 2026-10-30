@@ -6,3 +6,6 @@ db
 # demo instance
 demo-data/
 .env.demo
+
+# Python bytecode from running the scripts and CLI tests
+__pycache__/

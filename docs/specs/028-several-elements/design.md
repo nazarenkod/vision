@@ -23,7 +23,7 @@
   (`reviewPanes`, без бічної панелі, тож по центру знімків), внизу або вгорі за `panelSide`. Поки панель відкрита, смуга-підказка «Click an element» прихована, бо
   Clear і Esc є в самій панелі.
 - **Спільне з підказкою біля елемента** виносимо в `ElementActions.tsx`: позначка дії (`swatch`),
-  кнопки Ignore / Compare only / Allow, перемикач This screen / All screens з вимкненим Compare
+  кнопки Ignore / Compare only this (на панелі — «Compare only these», `compareLabel`) / Allow, перемикач This screen / All screens з вимкненим Compare
   only для All screens (REQ-028-24) і клавіші I, C, T, Esc. `ElementPopover` і `SelectionPanel`
   беруть їх звідти, тому дії однакові в обох місцях. Клавіші ↑ / ↓ лишаються лише в
   `ElementPopover` (REQ-028-15).
@@ -52,7 +52,7 @@
 | Панель вибору | `frontend/src/components/TestDetailsDialog/SelectionPanel.tsx` | `selectionPanel`: заголовок із кількістю, «one rule each», Clear (`selectionClear`); елементи `selectionItem-N` з номером, назвою, «×K», якщо K > 1, позначкою правила й × (`selectionRemove-N`); рядок про пропущені (`selectionSkipped`) і про ліміт (`selectionLimit`); дії або «Remove N rules» (`selectionRemoveRules`), або пояснення (`selectionMixed`) |
 | Екран порівняння | `frontend/src/components/TestDetailsDialog/TestDetailsModal.tsx` | у `Selection` нове поле `adding` (після «Add more elements»); `pick` додає, коли є Shift, `adding` або обрано ≥ 2, і лише на тому самому знімку (REQ-028-03, 04, 06); `act` для кількох; `removeRules`; положення панелі; підказка з Shift у `selectingBar` (REQ-028-02) |
 | Рамки на знімку | `frontend/src/components/TestDetailsDialog/DrawArea.tsx` | `OverlayRect.badge`: номер у кружечку кольору рамки |
-| Тексти | `frontend/src/i18n/en.ts`, `frontend/src/i18n/uk.ts` | `select.hint` з Shift; `select.addMore`, `select.addMoreShift`; `selection.title`, `selection.eachRule`, `selection.clear`, `selection.limit`, `selection.skipped`, `selection.removeRules`, `selection.mixed`, `selection.failed`, `selection.unselect`, `selection.rulesRemoved`; `select.adding`; `select.selected` тепер заголовок панелі «N elements selected» |
+| Тексти | `frontend/src/i18n/en.ts`, `frontend/src/i18n/uk.ts` | `select.hint` з Shift; `select.addMore`, `select.addMoreShift`; `selection.eachRule`, `selection.compareSelected`, `selection.clear`, `selection.limit`, `selection.skipped`, `selection.removeRules`, `selection.mixed`, `selection.failed`, `selection.unselect`, `selection.rulesRemoved`; `select.adding`; `select.selected` тепер заголовок панелі «N elements selected» |
 
 ## Дані
 
@@ -88,7 +88,7 @@ stateDiagram-v2
 |---|---|
 | Мобільний знімок вписується у всю висоту поля, а масштаб після появи не змінюється ([018](../018-ui-redesign/spec.md)), тож панель лежить поверх знімка. | Панель стоїть унизу поля, а якщо під нею опинився б обраний елемент, угорі (`panelSide`). Так виконується SC-028-03 (рішення власника 2026-10-30). |
 | Три правила одне за одним — це три перепорівняння, тож дія займає кілька секунд. | Поки дія триває, кнопки дій недоступні (`ruleBusy`), як і зараз. Ліміт 3 обмежує час. |
-| Shift + клік на трекпаді macOS виділяє текст сторінки. | Панель і поле знімків мають `user-select: none`, поки ввімкнено вибір. |
+| Shift + клік на трекпаді macOS виділяє текст сторінки. | Панель і поле знімків (`reviewPanes`) мають `user-select: none`, поки ввімкнено вибір. |
 | Тест «adds one rule per selected element» (Shift + клік, 024) шукає «2 selected» у підказці біля елемента, а цього тексту більше не буде. | Тест переписуємо під панель; його назва лишається, тож трасування 024 не ламається. |
 
 ## Перевірка вимог

@@ -1658,8 +1658,9 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
           height="100%"
           ref={panesRef}
           data-testid="reviewPanes"
-
           position="relative"
+          // Shift + click on a trackpad would select the page's text instead
+          sx={pickMode ? { userSelect: "none" } : undefined}
         >
           {selectionPanel()}
           <Grid

@@ -1,4 +1,12 @@
-import { BadRequestException, forwardRef, Inject, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  forwardRef,
+  Inject,
+  Injectable,
+  Logger,
+  NotFoundException,
+  UnprocessableEntityException,
+} from '@nestjs/common';
 import { randomUUID } from 'crypto';
 import { AddElementRuleDto, RemoveElementRuleDto, ReplaceAreaWithElementDto } from './dto/element-rule.dto';
 import {
@@ -29,6 +37,7 @@ import { StructureInfo, UiTreeService } from '../ui-tree/ui-tree.service';
 import { UiTree } from '../ui-tree/ui-tree.types';
 import { A11yIssuesService } from '../a11y/a11y-issues.service';
 import { ReviewedA11yReport } from '../a11y/a11y-issues';
+import { deviceRejection } from '../projects/allowed-devices';
 
 @Injectable()
 export class TestRunsService {
@@ -69,11 +78,24 @@ export class TestRunsService {
   async postTestRun({
     createTestRequestDto,
     imageBuffer,
+    checkDevice = false,
   }: {
     createTestRequestDto: CreateTestRequestDto;
     imageBuffer: Buffer;
+    // hold the snapshot to the project's allowed devices (028); off for the Vision CLI
+    checkDevice?: boolean;
   }): Promise<TestRunResultDto> {
     const project = await this.prismaService.project.findUnique({ where: { id: createTestRequestDto.projectId } });
+
+    // before anything is written: a rejected snapshot leaves no variation, run or baseline behind
+    const rejection = checkDevice
+      ? deviceRejection(
+          parseUiTreeSettings(project?.uiTreeSettings).allowedDevices,
+          createTestRequestDto,
+          project?.name ?? createTestRequestDto.projectId
+        )
+      : null;
+    if (rejection) throw new UnprocessableEntityException(rejection);
 
     let testVariation = await this.testVariationService.find(createTestRequestDto);
     // creates variatioin if does not exist

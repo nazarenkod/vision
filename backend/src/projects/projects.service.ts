@@ -8,6 +8,7 @@ import uuidAPIKey from 'uuid-apikey';
 import { UpdateProjectDto } from './dto/update-project.dto';
 import { settingsConflict } from './settings-conflict';
 import { hideConfigSecrets, keepConfigSecrets } from './project-secrets';
+import { AllowedDevice, invalidAllowedDevice } from './allowed-devices';
 
 const blankToNull = (value: string | null | undefined) =>
   value === undefined ? undefined : value?.trim() ? value.trim() : null;
@@ -27,21 +28,29 @@ function jiraFields(dto: Partial<CreateProjectDto>) {
 
 function normalizeUiTreeSettings(value: string | null): string | null {
   if (!value) return null;
+  let parsed: unknown;
   try {
-    JSON.parse(value);
-    return value;
+    parsed = JSON.parse(value);
   } catch {
     throw new HttpException('uiTreeSettings must be JSON', HttpStatus.BAD_REQUEST);
   }
+  // a wildcard the server would read differently from what the person meant is refused, not dropped
+  const devices = (parsed as { allowedDevices?: unknown } | null)?.allowedDevices;
+  for (const entry of Array.isArray(devices) ? devices : []) {
+    const problem = invalidAllowedDevice(entry && typeof entry === 'object' ? entry : {});
+    if (problem) throw new HttpException(problem, HttpStatus.BAD_REQUEST);
+  }
+  return value;
 }
 
 /**
  * A project as the API returns it: the Jira token never leaves the server, and
  * the columns of the removed variation groups (022) stay in the row unread.
  */
-export function toPublicProject(
-  project: Project
-): Omit<Project, 'jiraToken' | 'bulkApproveVariations' | 'bulkApproveGroupBy'> & {
+export function toPublicProject(project: Project): Omit<
+  Project,
+  'jiraToken' | 'bulkApproveVariations' | 'bulkApproveGroupBy'
+> & {
   jiraTokenSet: boolean;
   geminiApiKeySet: boolean;
 } {
@@ -100,6 +109,20 @@ export class ProjectsService {
         ...jiraFields(projectDto),
       },
     });
+  }
+
+  /** Device and OS pairs the project's snapshots came from, to build the allowed list from (028). */
+  async findDevices(projectId: string): Promise<AllowedDevice[]> {
+    const rows = await this.prismaService.testVariation.findMany({
+      where: { projectId },
+      select: { device: true, os: true },
+      distinct: ['device', 'os'],
+      orderBy: [{ device: 'asc' }, { os: 'asc' }],
+    });
+    // a pair without a device or OS could never be allowed, so it is no suggestion
+    return rows
+      .filter((row) => row.device?.trim() && row.os?.trim())
+      .map((row) => ({ device: row.device, os: row.os }));
   }
 
   async update(projectDto: UpdateProjectDto): Promise<Project> {

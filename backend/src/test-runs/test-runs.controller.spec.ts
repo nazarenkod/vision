@@ -48,6 +48,19 @@ describe('TestRuns Controller', () => {
     expect(paths.filter((path: string) => path.includes('cross-device'))).toEqual([]);
   });
 
+  it('does not check devices for snapshots from the Vision CLI', async () => {
+    const postTestRun = jest.fn().mockResolvedValue({});
+    module.get(TestRunsService).postTestRun = postTestRun;
+    const dto = { imageBase64: Buffer.from('image').toString('base64') } as never;
+
+    await controller.postTestRun(dto, 'vision-cli/1.4.0');
+    await controller.postTestRun(dto, 'Java-http-client/17.0.2');
+    await controller.postTestRun(dto, undefined);
+    await controller.postTestRunMultipart({ image: { buffer: Buffer.from('image') } } as never, 'vision-cli/1.4.0');
+
+    expect(postTestRun.mock.calls.map(([call]) => call.checkDevice)).toEqual([false, true, true, false]);
+  });
+
   // the bulk review of a screen's variations was removed (022); a script or an
   // old tab asking for a group must get nothing back and change nothing
   it('has no route for a variation group', async () => {

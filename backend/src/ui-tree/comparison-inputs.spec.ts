@@ -268,6 +268,13 @@ describe('parseUiTreeSettings', () => {
     expect(a11yNorms).toMatchObject({ touchTargetAndroid: 40, touchTargetIos: 44, contrast: 4.5 });
     expect(parseUiTreeSettings(null).a11yNorms.touchTargetAndroid).toBe(48);
   });
+
+  it("reads the project's allowed devices, none when it saved none", () => {
+    const { allowedDevices } = parseUiTreeSettings('{"allowedDevices": [{"device": "Pixel 7", "os": "Android 15"}]}');
+    expect(allowedDevices).toEqual([{ device: 'Pixel 7', os: 'Android 15' }]);
+    expect(parseUiTreeSettings(null).allowedDevices).toEqual([]);
+    expect(parseUiTreeSettings('{"allowedDevices": "Pixel 7"}').allowedDevices).toEqual([]);
+  });
 });
 
 describe('parseUiTreeSettings: settings no longer read', () => {

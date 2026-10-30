@@ -100,6 +100,8 @@ export const en = {
   "settings.meta.rulesOn": "{count} of {total} on",
   "settings.meta.set": "set",
   "settings.meta.notSet": "not set",
+  "settings.meta.devices": "{count} allowed",
+  "settings.meta.anyDevice": "any device",
 
   "section.general": "General",
   "section.review": "Review",
@@ -108,6 +110,9 @@ export const en = {
   "section.a11y": "Accessibility",
   "section.jira": "Jira",
   "section.danger": "Danger zone",
+  "section.devices": "Devices",
+  "section.devicesIntro":
+    "Snapshots sent with the SDK from any other device or OS version fail in the test, so baselines are only made where CI runs. Manual checks from the CLI are not held to the list.",
   "section.comparisonIntro":
     "How a checkpoint is compared with its baseline. Below the engines: the settings of the one you pick.",
   "section.mobileIntro":
@@ -116,6 +121,22 @@ export const en = {
     "What Vision checks on every screenshot sent with a UI tree, by your team's norms.",
   "section.jiraIntro":
     "Lets reviewers file accessibility bugs from the review screen. Each person adds their own Jira token in their profile, so bugs are filed as them. A shared token here is used for people who have not added one.",
+
+  "devices.device": "Device",
+  "devices.os": "OS version",
+  "devices.add": "Add",
+  "devices.remove": "Remove",
+  "devices.none": "No list: snapshots from any device come in.",
+  "devices.osHint": "Exact, or 26.* for any 26.x",
+  "devices.missing": "Needs both a device and an OS",
+  "devices.wildcard": "* only at the end of the OS, as in 26.*",
+  "devices.duplicate": "Already in the list",
+  "devices.received": "Devices from snapshots",
+  "devices.receivedHint":
+    "As the tests send them. Add the ones CI runs on before anything else.",
+  "devices.receivedNone": "No snapshots yet.",
+  "devices.notInList": "not in the list",
+  "devices.allowed": "allowed",
 
   "general.name": "Project name",
   "general.mainBranch": "Main branch",

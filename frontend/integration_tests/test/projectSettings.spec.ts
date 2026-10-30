@@ -5,6 +5,7 @@ import { ImageComparison } from "~client/types/imageComparison";
 import {
   API_URL,
   inUkrainian,
+  mockGetDevices,
   mockGetProjects,
   mockSaveProject,
 } from "utils/mocks";
@@ -459,6 +460,87 @@ test("does not save a norm out of range", async ({
     touchTargetIos: 40,
     contrast: 4.5,
   });
+});
+
+const savedDevices = async (page: Page) => {
+  const [request] = await Promise.all([
+    putRequest(page),
+    page.getByTestId("saveSettings").click(),
+  ]);
+  return JSON.parse(request.postDataJSON().uiTreeSettings).allowedDevices;
+};
+
+test("adds, edits and removes an allowed device", async ({
+  page,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  authUser,
+}) => {
+  await mockSaveProject(page);
+  await mockGetDevices(page, project.id, []);
+  await open(page);
+  const section = page.getByTestId("allowedDevices");
+  await expect(section).toContainText(
+    "No list: snapshots from any device come in.",
+  );
+  await expect(page.getByTestId("nav-devices")).toContainText("any device");
+
+  await page.getByTestId("newDevice-device").fill("Pixel 7");
+  await page.getByTestId("newDevice-os").fill("Android 15");
+  await page.getByTestId("addDevice").click();
+  await page.getByTestId("newDevice-device").fill("iPhone 17");
+  await page.getByTestId("newDevice-os").fill("26*");
+  // a * anywhere but a trailing .* is not taken (REQ-028-15)
+  await expect(section).toContainText(
+    "* only at the end of the OS, as in 26.*",
+  );
+  await expect(page.getByTestId("addDevice")).toBeDisabled();
+  await page.getByTestId("newDevice-os").fill("26.*");
+  await page.getByTestId("addDevice").click();
+  await expect(page.getByTestId("nav-devices")).toContainText("2 allowed");
+  await expect(
+    page.getByTestId("nav-devices").getByLabel("unsaved changes"),
+  ).toBeVisible();
+  expect(await savedDevices(page)).toEqual([
+    { device: "Pixel 7", os: "Android 15" },
+    { device: "iPhone 17", os: "26.*" },
+  ]);
+
+  await page.getByTestId("allowedDevice-0-os").fill("Android 16");
+  await page.getByTestId("allowedDevice-1-remove").click();
+  expect(await savedDevices(page)).toEqual([
+    { device: "Pixel 7", os: "Android 16" },
+  ]);
+});
+
+test("marks received devices outside the list and adds one in a click", async ({
+  page,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  authUser,
+}) => {
+  await mockSaveProject(page);
+  await mockGetDevices(page, project.id, [
+    { device: "Pixel 7 emulator", os: "Android 15" },
+    { device: "iPhone 17", os: "26.2" },
+  ]);
+  await open(page, {
+    uiTreeSettings: JSON.stringify({
+      allowedDevices: [{ device: "iPhone 17", os: "26.*" }],
+    }),
+  });
+  const pixel = page.getByTestId(
+    "receivedDevice-Pixel 7 emulator / Android 15",
+  );
+  const iphone = page.getByTestId("receivedDevice-iPhone 17 / 26.2");
+  await expect(iphone).toContainText("allowed");
+  await expect(iphone.getByRole("button", { name: "Add" })).toHaveCount(0);
+  await expect(pixel).toContainText("not in the list");
+
+  await pixel.getByRole("button", { name: "Add" }).click();
+  await expect(pixel).toContainText("allowed");
+  expect(await savedDevices(page)).toEqual([
+    { device: "iPhone 17", os: "26.*" },
+    { device: "Pixel 7 emulator", os: "Android 15" },
+  ]);
 });
 
 test("keeps the screen title selectors the project saved", async ({

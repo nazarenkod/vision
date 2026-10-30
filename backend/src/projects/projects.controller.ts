@@ -28,6 +28,14 @@ export class ProjectsController {
     return (await this.projectsService.findAll()).map(toPublicProject);
   }
 
+  @Get(':id/devices')
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  @ApiParam({ name: 'id', required: true })
+  devices(@Param('id', new ParseUUIDPipe()) id: string) {
+    return this.projectsService.findDevices(id);
+  }
+
   @Post()
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard, RoleGuard)

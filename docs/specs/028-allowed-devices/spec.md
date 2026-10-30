@@ -2,10 +2,10 @@
 
 | | |
 |---|---|
-| Статус | Approved |
+| Статус | Implemented |
 | Власник | Дмитро Назаренко |
 | Оновлено | 2026-10-30 |
-| Дизайн | — (з'являється після `Approved`) |
+| Дизайн | [design.md](design.md), [tasks.md](tasks.md) |
 | Пов'язане | [001](../001-check-identity/spec.md) (еталон на кожен пристрій), [012](../012-java-sdk/spec.md), [ADR-0019](../../decisions/0019-sdk-upstream-plus-ui-tree-and-feature.md) (SDK не змінюється), [009](../009-manual-checks-cli-mcp/spec.md) (CLI і MCP не перевіряються) |
 
 ## Контекст і проблема

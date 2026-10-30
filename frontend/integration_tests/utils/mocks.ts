@@ -20,6 +20,16 @@ export const mockGetProjects = async (page: Page, projects: Project[]) => {
   });
 };
 
+// device and OS pairs the project's snapshots came from (028)
+export const mockGetDevices = async (
+  page: Page,
+  projectId: string,
+  devices: Array<{ device: string; os: string }>,
+) =>
+  page.route(`${API_URL}/projects/${projectId}/devices`, (route) =>
+    route.fulfill({ body: JSON.stringify(devices) }),
+  );
+
 // the API answers create and update with the project it saved
 export const mockSaveProject = async (page: Page) => {
   return page.route(`${API_URL}/projects`, (route, request) => {

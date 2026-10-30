@@ -1,5 +1,6 @@
 import { Rect, UiNode, UiTree } from './ui-tree.types';
 import { A11yNorms, DEFAULT_A11Y_NORMS, parseA11yNorms } from '../a11y/a11y-norms';
+import { AllowedDevice, parseAllowedDevices } from '../projects/allowed-devices';
 import { evaluateXpath, isXpathSelector, parseXpath, XPATH_PREFIX, XpathProblem, xpathProblem } from './xpath-selector';
 
 // compare: only the elements the check's compare rules match are compared (spec 015)
@@ -41,6 +42,8 @@ export interface UiTreeSettings {
   screenTitle: string[];
   // what the team agreed an accessible screen is: tap area, contrast, rules on (026)
   a11yNorms: A11yNorms;
+  // devices SDK snapshots may come from; empty for any (028)
+  allowedDevices: AllowedDevice[];
 }
 
 /** A check is what the test named: its name plus custom tags. Devices are runs of it. */
@@ -57,6 +60,7 @@ export const DEFAULT_UI_TREE_SETTINGS: UiTreeSettings = {
   checkRules: {},
   screenTitle: ['id:Appbar#Title'],
   a11yNorms: DEFAULT_A11Y_NORMS,
+  allowedDevices: [],
 };
 
 export function parseJsonArray<T>(value: string | null | undefined): T[] {
@@ -86,6 +90,7 @@ export function parseUiTreeSettings(value: string | null | undefined): UiTreeSet
           ? parsed.screenTitle.filter((item: unknown) => typeof item === 'string' && item.trim())
           : DEFAULT_UI_TREE_SETTINGS.screenTitle,
       a11yNorms: parseA11yNorms(parsed.a11yNorms),
+      allowedDevices: parseAllowedDevices(parsed.allowedDevices),
     };
   } catch {
     return { ...DEFAULT_UI_TREE_SETTINGS };

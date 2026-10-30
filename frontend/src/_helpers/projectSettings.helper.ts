@@ -61,6 +61,11 @@ export const SETTINGS_SECTIONS = [
     ],
   },
   {
+    id: "devices",
+    title: "section.devices",
+    labels: ["devices.device", "devices.os", "devices.received"],
+  },
+  {
     id: "a11y",
     title: "section.a11y",
     labels: [
@@ -153,6 +158,7 @@ const TREE_SECTION: Record<string, SectionId> = {
   detectSemanticChanges: "mobile",
   screenTitle: "a11y",
   a11yNorms: "a11y",
+  allowedDevices: "devices",
 };
 
 const FIELD_SECTION: Partial<Record<keyof ProjectDto, SectionId>> = {

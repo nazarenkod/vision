@@ -1,4 +1,4 @@
-import { Project } from "../types";
+import { AllowedDevice, Project } from "../types";
 import { handleResponse, authHeader } from "../_helpers/service.helpers";
 import { API_URL } from "../_config/env.config";
 
@@ -13,6 +13,15 @@ async function getAll(): Promise<Project[]> {
   };
 
   const response = await fetch(`${API_URL}/projects`, requestOptions);
+  return handleResponse(response);
+}
+
+/** Device and OS pairs the project's snapshots came from (REQ-028-11). */
+async function getDevices(projectId: string): Promise<AllowedDevice[]> {
+  const response = await fetch(`${API_URL}/projects/${projectId}/devices`, {
+    method: "GET",
+    headers: authHeader(),
+  });
   return handleResponse(response);
 }
 
@@ -95,6 +104,7 @@ async function updateSettings(
 export const projectsService = {
   updateSettings,
   getAll,
+  getDevices,
   remove,
   create,
   update,

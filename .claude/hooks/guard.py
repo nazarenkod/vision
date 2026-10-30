@@ -7,18 +7,42 @@ the ones whose breach cannot be undone (docs/decisions/0002, 0001, 0003):
 - docker compose only through ./scripts/vision.sh (the pinned "vision" project);
 - no pruning or removing Docker volumes, and no stopping or removing
   containers that are not Vision's: production runs on the same host;
-- git push only to the "vision" remote ("origin" is upstream VRT);
+- git push only to the "vision" remote ("origin" is upstream VRT), except a
+  feature branch to "origin" in a clone where origin is Vision's own
+  repository, as in cloud sessions: no main, no force, no deletes;
 - no database resets, drops or data-losing schema pushes.
 
 Reads the hook JSON on stdin; exits 2 with the reason on stderr to block,
 0 to let the normal permission flow decide.
 """
 import json
+import os
 import re
 import shlex
+import subprocess
 import sys
 
 SEGMENT = re.compile(r"\|\||&&|;|\||\n|\$\(|`")
+
+# Vision's own repository: in a cloud session's clone "origin" points here, not at upstream VRT
+VISION_REPO = re.compile(r"github\.com[:/]nazarenkod/vision(\.git)?/?$")
+PROTECTED_BRANCHES = {"main", "master", "HEAD"}
+# options that rewrite or delete remote history, or point git at another clone
+RISKY_PUSH_OPTIONS = {
+    "-f",
+    "--force",
+    "--force-with-lease",
+    "--force-if-includes",
+    "-d",
+    "--delete",
+    "--mirror",
+    "--all",
+    "--tags",
+    "--prune",
+    "--repo",
+    "-C",
+    "--git-dir",
+}
 
 
 def words(segment: str) -> list[str]:
@@ -51,7 +75,29 @@ def positional(tokens: list[str]) -> list[str]:
     return out
 
 
-def check_segment(segment: str):
+def origin_url(cwd: str) -> str:
+    try:
+        done = subprocess.run(
+            ["git", "remote", "get-url", "origin"], cwd=cwd or None, capture_output=True, text=True, timeout=5
+        )
+    except (OSError, subprocess.SubprocessError):
+        return ""
+    return done.stdout.strip() if done.returncode == 0 else ""
+
+
+def feature_branch_to_vision_origin(tokens: list[str], rest: list[str], cwd: str) -> bool:
+    """One feature branch pushed to origin, where origin is Vision's repository."""
+    if len(rest) != 2 or rest[0] != "origin":
+        return False
+    branch = rest[1]
+    if ":" in branch or branch.startswith("+") or branch in PROTECTED_BRANCHES:
+        return False
+    if any(token.split("=", 1)[0] in RISKY_PUSH_OPTIONS for token in tokens):
+        return False
+    return bool(VISION_REPO.search(origin_url(cwd)))
+
+
+def check_segment(segment: str, cwd: str = ""):
     tokens = after_env(words(segment.strip()))
     if not tokens:
         return None
@@ -71,6 +117,8 @@ def check_segment(segment: str):
                 return f"'docker {verb}' only on Vision's containers (names with 'vision'); refused for: {', '.join(foreign) or 'no container named'} (ADR-0002)."
     if program == "git" and "push" in args:
         rest = args[args.index("push") + 1:]
+        if feature_branch_to_vision_origin(tokens, rest, cwd):
+            return None
         if not rest or rest[0] != "vision":
             return "git push goes only to the 'vision' remote: git push vision mvp/demo:main ('origin' is upstream VRT, ADR-0001)."
     if program in {"npx", "prisma"} or "prisma" in tokens[:3]:
@@ -84,9 +132,9 @@ def check_segment(segment: str):
     return None
 
 
-def check(command: str):
+def check(command: str, cwd: str = ""):
     for segment in SEGMENT.split(command):
-        reason = check_segment(segment)
+        reason = check_segment(segment, cwd)
         if reason:
             return reason
     return None
@@ -99,7 +147,8 @@ def main() -> int:
         return 0
     if payload.get("tool_name") != "Bash":
         return 0
-    reason = check(payload.get("tool_input", {}).get("command", ""))
+    cwd = payload.get("cwd") or os.environ.get("CLAUDE_PROJECT_DIR", "")
+    reason = check(payload.get("tool_input", {}).get("command", ""), cwd)
     if reason:
         print(f"Blocked by .claude/hooks/guard.py: {reason}", file=sys.stderr)
         return 2

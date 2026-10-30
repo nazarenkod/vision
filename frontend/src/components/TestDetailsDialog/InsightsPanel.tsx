@@ -42,10 +42,17 @@ import {
 import { StatusPill } from "../StatusPill";
 import { describeChange } from "../ChangeGroups";
 import { JiraBugDialog } from "./JiraBugDialog";
-import { tokens } from "../../theme";
+import { motion, tokens } from "../../theme";
 import { labelOf, useT } from "../../i18n";
 import { WhatsCompared } from "./WhatsCompared";
 import { readAreas } from "../../_helpers/ignoreArea.helper";
+import {
+  PANEL_WIDTH,
+  clampPanelWidth,
+  readPanelWidth,
+} from "../../_helpers/panelWidth.helper";
+
+const PANEL_WIDTH_KEY = "vision.review.panelWidth";
 import { groupAreas, splitElement } from "./changedAreas";
 import { SelectorMatches } from "../../types/insights";
 import { elementLabel } from "../../_helpers/elementPicking.helper";
@@ -1325,12 +1332,54 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
 
   const newCount = report?.summary.new ?? testRun.a11yNewCount ?? 0;
 
+  // the reviewer drags the panel's left edge to fit long names (REQ-018-37)
+  const [panelWidth, setPanelWidth] = React.useState(() => {
+    try {
+      return readPanelWidth(
+        localStorage.getItem(PANEL_WIDTH_KEY),
+        window.innerWidth,
+      );
+    } catch {
+      return PANEL_WIDTH.default;
+    }
+  });
+  const keepPanelWidth = (width: number) => {
+    const next = clampPanelWidth(width, window.innerWidth);
+    setPanelWidth(next);
+    try {
+      localStorage.setItem(PANEL_WIDTH_KEY, String(next));
+    } catch {
+      // private windows refuse storage; the width then lasts the session
+    }
+  };
+  const startResize = (event: React.PointerEvent<HTMLElement>) => {
+    event.preventDefault();
+    const handle = event.currentTarget;
+    handle.setPointerCapture(event.pointerId);
+    const startX = event.clientX;
+    const startWidth = panelWidth;
+    // the panel grows to the left: moving the edge left widens it
+    const move = (moved: PointerEvent) =>
+      setPanelWidth(
+        clampPanelWidth(startWidth + startX - moved.clientX, window.innerWidth),
+      );
+    const stop = (stopped: PointerEvent) => {
+      handle.removeEventListener("pointermove", move);
+      handle.removeEventListener("pointerup", stop);
+      keepPanelWidth(startWidth + startX - stopped.clientX);
+    };
+    handle.addEventListener("pointermove", move);
+    handle.addEventListener("pointerup", stop);
+  };
+
   return (
     <Box
       component="aside"
       aria-label={t("panel.details")}
       sx={{
-        width: 380,
+        width: panelWidth,
+        boxSizing: "border-box",
+        position: "relative",
         flexShrink: 0,
         borderLeft: `1px solid ${tokens.border}`,
         bgcolor: tokens.surface,
@@ -1339,6 +1388,44 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
         minHeight: 0,
       }}
     >
+      <Box
+        role="separator"
+        aria-orientation="vertical"
+        aria-label={t("panel.resize")}
+        aria-valuenow={panelWidth}
+        tabIndex={0}
+        data-testid="panelResize"
+        onPointerDown={startResize}
+        onDoubleClick={() => keepPanelWidth(PANEL_WIDTH.default)}
+        onKeyDown={(event) => {
+          if (event.key === "ArrowLeft") keepPanelWidth(panelWidth + 16);
+          if (event.key === "ArrowRight") keepPanelWidth(panelWidth - 16);
+        }}
+        sx={{
+          position: "absolute",
+          left: -4,
+          top: 0,
+          bottom: 0,
+          width: 8,
+          zIndex: 2,
+          cursor: "col-resize",
+          touchAction: "none",
+          "&::after": {
+            content: '""',
+            position: "absolute",
+            left: 3,
+            top: 0,
+            bottom: 0,
+            width: 2,
+            bgcolor: "transparent",
+            transition: `background-color ${motion.fast}ms`,
+          },
+          "&:hover::after, &:focus-visible::after": {
+            bgcolor: tokens.brand,
+          },
+          outline: "none",
+        }}
+      />
       <Tabs
         value={tab}
         onChange={(_, value) => setTab(value)}

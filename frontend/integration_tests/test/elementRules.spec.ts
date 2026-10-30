@@ -186,3 +186,31 @@ test("asks before removing a rule for every screen", async ({
   await expect(page.getByText("Rule removed; compared again")).toBeVisible();
   expect(removed).toEqual([{ scope: "project", ruleId: "clock" }]);
 });
+
+test("widens the side panel by its edge and remembers the width", async ({
+  openProjectPage,
+  page,
+}) => {
+  await openProjectPage(project.id, build.id, testRun.id);
+  const panel = page.locator("aside").last();
+  const width = async () => (await panel.boundingBox())?.width ?? 0;
+  await expect.poll(width).toBe(420);
+
+  // the edge moves left, the panel grows by as much
+  const edge = await page.getByTestId("panelResize").boundingBox();
+  if (!edge) throw new Error("no edge");
+  const y = edge.y + edge.height / 2;
+  await page.mouse.move(edge.x + edge.width / 2, y);
+  await page.mouse.down();
+  await page.mouse.move(edge.x + edge.width / 2 - 120, y, { steps: 5 });
+  await page.mouse.up();
+  await expect.poll(width).toBe(540);
+
+  // this browser keeps it
+  await page.reload();
+  await expect.poll(width).toBe(540);
+
+  // a double click on the edge gives the usual width back
+  await page.getByTestId("panelResize").dblclick();
+  await expect.poll(width).toBe(420);
+});

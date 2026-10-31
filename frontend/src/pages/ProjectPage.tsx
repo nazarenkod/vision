@@ -16,6 +16,7 @@ import {
   useBuildOverview,
 } from "../components/BuildOverview";
 import { useBuildGroups } from "../components/BuildOverview/useBuildGroups";
+import { ReportDialog } from "../components/BuildReport/ReportDialog";
 import {
   useHelpDispatch,
   setHelpSteps,
@@ -54,6 +55,7 @@ const ProjectPage = () => {
   const { t } = useT();
   const groups = useBuildGroups(selectedBuild?.id, testRuns);
   const { overview, failed } = useBuildOverview(selectedBuild?.id);
+  const [reportOpen, setReportOpen] = React.useState(false);
 
   useEffect(() => {
     setHelpSteps(helpDispatch, PROJECT_PAGE_STEPS);
@@ -136,6 +138,7 @@ const ProjectPage = () => {
                     startIcon={<DescriptionOutlined />}
                     data-testid="openReport"
                     disabled={!overview}
+                    onClick={() => setReportOpen(true)}
                   >
                     {t("overview.report")}
                   </Button>
@@ -246,6 +249,14 @@ const ProjectPage = () => {
         </Box>
       </Box>
       <TestDetailsDialog groups={groups} />
+      {selectedBuild && overview && (
+        <ReportDialog
+          open={reportOpen}
+          buildId={selectedBuild.id}
+          overview={overview}
+          onClose={() => setReportOpen(false)}
+        />
+      )}
     </>
   );
 };

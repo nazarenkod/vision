@@ -62,6 +62,8 @@ export class ReportsController {
     const body = JSON.stringify(report);
     const etag = `"${createHash('sha1').update(body).digest('base64url')}"`;
     res.setHeader('ETag', etag);
+    // the page is served from another origin than the API: let it read the tag
+    res.setHeader('Access-Control-Expose-Headers', 'ETag');
     res.setHeader('Cache-Control', 'no-cache');
     if (ifNoneMatch === etag) {
       res.status(304).end();

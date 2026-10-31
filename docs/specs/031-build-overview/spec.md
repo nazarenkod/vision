@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| Статус | Approved |
+| Статус | Implemented |
 | Власник | Дмитро Назаренко |
 | Оновлено | 2026-10-31 |
 | Дизайн | [design.md](design.md), [задачі](tasks.md), [макет](https://claude.ai/artifact/3QvKdCVPvmojVmadmhKp2r) |

@@ -115,7 +115,8 @@ export function publicReport(
         needed: overview.progress.needed,
         people: overview.progress.people.map(({ name, approved, rejected }) => ({ name, approved, rejected })),
       },
-      devices: has('dev') ? overview.devices : [],
+      // kept whatever the sections: the header counts the devices
+      devices: overview.devices,
       features: has('feat') ? overview.features : [],
       quietFeatures: has('feat') ? overview.quietFeatures : { count: 0, screens: 0 },
       bugs: has('bugs')

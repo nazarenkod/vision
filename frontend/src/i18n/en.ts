@@ -1368,7 +1368,8 @@ export const en = {
   "overview.verdict.passed": "Passed",
   "overview.needDecision": "{waiting} of {total} need a decision",
   "overview.decidedSummary": "{passed} passed · {rejected} rejected",
-  "overview.vsPrevious": "vs #{number}: {changed} changed · {added} new · {gone} gone",
+  "overview.vsPrevious":
+    "vs #{number}: {changed} changed · {added} new · {gone} gone",
   "overview.firstBuild": "First build on this branch",
   "overview.decided": "Decided",
   "overview.someone": "Someone",
@@ -1433,6 +1434,7 @@ export const en = {
   "report.noLinks": "No public links yet",
   "report.editorsOnly": "Only editors and admins create public links",
   "report.buildReport": "Build report",
+  "report.devices": { one: "{count} device", other: "{count} devices" },
   "report.moreChanges": "+{count} more",
   "report.noChanges": "No changes",
   "report.madeBy": "Made by {name}",
@@ -1448,8 +1450,10 @@ export const en = {
   "report.baseline": "Baseline",
   "report.checkpoint": "Checkpoint",
   "report.textTitle": "{project} · #{number} · {branch}",
-  "report.textCounts": "{total} screens on {devices} devices: {passed} passed, {changed} changed, {new} new",
-  "report.textWaiting": "Waiting for a decision: {waiting} · rejected: {rejected}",
+  "report.textCounts":
+    "{total} screens on {devices} devices: {passed} passed, {changed} changed, {new} new",
+  "report.textWaiting":
+    "Waiting for a decision: {waiting} · rejected: {rejected}",
   "report.textA11y": "Accessibility: {count} new issues",
   "report.textBugs": "Jira: {keys}",
   "report.textOpen": "Open the report",

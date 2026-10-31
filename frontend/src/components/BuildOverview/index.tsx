@@ -15,10 +15,11 @@ import { useT } from "../../i18n";
 import type { MessageKey } from "../../i18n";
 import { useTestRunState } from "../../contexts";
 import { buildOverviewService } from "../../services";
-import { BuildOverview as Overview, Outcome } from "../../types/buildOverview";
+import { BuildOverview as Overview } from "../../types/buildOverview";
 import { ChangeGroup } from "../../types/insights";
 import { TestRun } from "../../types";
 import { StatusPill } from "../StatusPill";
+import { ResultBar } from "./ResultBar";
 import { EmptyState } from "../EmptyState";
 import { CountUp } from "../motion/useCountUp";
 import { staggered } from "../motion/Stagger";
@@ -195,36 +196,6 @@ const Num: React.FunctionComponent<{ value: number }> = ({ value }) => (
     }}
   >
     {value}
-  </Box>
-);
-
-export const ResultBar: React.FunctionComponent<{ outcome: Outcome }> = ({
-  outcome,
-}) => (
-  <Box
-    role="img"
-    aria-label={`${outcome.changed} / ${outcome.new} / ${outcome.rejected} / ${outcome.passed}`}
-    sx={{
-      display: "flex",
-      height: 6,
-      gap: "2px",
-      borderRadius: 999,
-      overflow: "hidden",
-      bgcolor: tokens.subtle,
-    }}
-  >
-    {(
-      [
-        [outcome.changed, tokens.status.changed.bar],
-        [outcome.new, tokens.status.new.bar],
-        [outcome.rejected, tokens.status.failed.bar],
-        [outcome.passed, tokens.status.passed.bar],
-      ] as const
-    )
-      .filter(([value]) => value > 0)
-      .map(([value, color], i) => (
-        <Box key={i} sx={{ flex: value, bgcolor: color }} />
-      ))}
   </Box>
 );
 

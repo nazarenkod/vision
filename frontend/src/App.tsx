@@ -18,12 +18,22 @@ import {
   ThemeModeProvider,
   useThemeMode,
 } from "./contexts";
+import { useLocation } from "react-router-dom";
 import Router from "./Router";
 import { LanguageProvider, useT } from "./i18n";
 
 // Top bar, left rail for signed-in users, and the page filling the rest.
 const Shell: React.FunctionComponent = () => {
   const { loggedIn } = useUserState();
+  // a report, by its link or to print, is the sheet alone (031)
+  const { pathname } = useLocation();
+  if (/^\/(r|report)\//.test(pathname)) {
+    return (
+      <Box component="main" sx={{ height: "100%", overflow: "auto" }}>
+        <Router />
+      </Box>
+    );
+  }
   return (
     <Box sx={{ height: "100%", display: "flex", flexDirection: "column" }}>
       <Header />

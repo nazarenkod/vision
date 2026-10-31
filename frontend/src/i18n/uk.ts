@@ -1458,7 +1458,8 @@ export const uk: Messages = {
   "overview.verdict.passed": "Пройдено",
   "overview.needDecision": "{waiting} з {total} чекають рішення",
   "overview.decidedSummary": "{passed} пройшли · {rejected} відхилено",
-  "overview.vsPrevious": "проти #{number}: змінилось {changed} · нових {added} · зникло {gone}",
+  "overview.vsPrevious":
+    "проти #{number}: змінилось {changed} · нових {added} · зникло {gone}",
   "overview.firstBuild": "Перша збірка цієї гілки",
   "overview.decided": "Вирішено",
   "overview.someone": "Хтось",
@@ -1521,8 +1522,15 @@ export const uk: Messages = {
   "report.linkUntil": "до {date} · {who}",
   "report.revoke": "Відкликати",
   "report.noLinks": "Публічних посилань ще немає",
-  "report.editorsOnly": "Публічні посилання створюють лише редактори й адміністратори",
+  "report.editorsOnly":
+    "Публічні посилання створюють лише редактори й адміністратори",
   "report.buildReport": "Звіт збірки",
+  "report.devices": {
+    one: "{count} пристрій",
+    few: "{count} пристрої",
+    many: "{count} пристроїв",
+    other: "{count} пристрою",
+  },
   "report.moreChanges": "ще {count}",
   "report.noChanges": "Змін немає",
   "report.madeBy": "Автор: {name}",
@@ -1538,7 +1546,8 @@ export const uk: Messages = {
   "report.baseline": "Еталон",
   "report.checkpoint": "Знімок",
   "report.textTitle": "{project} · #{number} · {branch}",
-  "report.textCounts": "{total} знімків на {devices} пристроях: {passed} пройшли, {changed} змінились, {new} нових",
+  "report.textCounts":
+    "{total} знімків на {devices} пристроях: {passed} пройшли, {changed} змінились, {new} нових",
   "report.textWaiting": "Чекають рішення: {waiting} · відхилено: {rejected}",
   "report.textA11y": "Доступність: нових проблем {count}",
   "report.textBugs": "Jira: {keys}",

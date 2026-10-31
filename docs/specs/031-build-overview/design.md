@@ -27,8 +27,6 @@
   отримує mrkdwn, Jira — простий список з URL: його однаково показують Jira Cloud і Server, а ключі
   Jira самі стають посиланнями.
 
-Нові файли, яких ще немає, названо без лапок: `check-docs.py` вимагає, щоб шляхи в лапках існували.
-Коли їх буде створено, вони отримають лапки.
 
 ## Компоненти
 
@@ -43,16 +41,16 @@
 | посилання (чисте) | `backend/src/reports/report-links.ts` | термін (7/30/90), чинність, обрізання до розділів, до 20 змін, люди лише на ім'я |
 | посилання (сервіс, маршрути) | `backend/src/reports/` | `GET /builds/:id/report` (повний звіт для діалогу й друку), `POST /builds/:id/report-links` (editor, admin), `GET /builds/:id/report-links`, `DELETE /report-links/:id` (автор або admin), `GET /public/reports/:token` без входу, з `ETag` |
 | типи | `frontend/src/types/` | `BuildOverview`, `ReportLink`, `PublicReport` |
-| сервіси | `frontend/src/services/` | `frontend/src/services/buildOverview.service.ts`, reports.service.ts (новий) |
+| сервіси | `frontend/src/services/` | `frontend/src/services/buildOverview.service.ts`, `frontend/src/services/reports.service.ts` |
 | вкладка Overview | `frontend/src/components/BuildOverview/` | вердикт, плитки, To decide, Devices, Features, Jira bugs |
 | вкладка в адресі | `frontend/src/pages/ProjectPage.tsx`, `frontend/src/_helpers/route.helpers.ts` | `tab` і `queue` у query; без `tab` — Overview |
 | черги (чисте) | `frontend/src/_helpers/reviewQueue.helper.ts` | ключ черги → впорядковані id; меню черг; наступна непорожня |
 | порівняння | `frontend/src/components/TestDetailsDialog/index.tsx` | крокує чергою, якщо вона є, інакше як зараз (список All tests) |
 | заголовок черги, підсумок | `frontend/src/components/TestDetailsDialog/QueueHeader.tsx`, `frontend/src/components/TestDetailsDialog/QueueDone.tsx` | назва черги, «N / M», меню; підсумок, Enter і Esc |
 | крапки кроків | `frontend/src/components/TestDetailsDialog/StepDots.tsx` | без змін; поруч «N / M» замість «Step N/M» |
-| звіт | frontend/src/components/BuildReport/ (новий) | `ReportDialog` (налаштування, поділитися, посилання), `ReportDocument` (спільний для діалогу, сторінки й друку) |
+| звіт | `frontend/src/components/BuildReport/` | `ReportDialog` (налаштування, поділитися, посилання), `ReportDocument` (спільний для діалогу, сторінки й друку) |
 | текст звіту (чисте) | `frontend/src/_helpers/reportText.helper.ts` | Slack і Jira, мовою звіту |
-| публічна сторінка | frontend/src/pages/PublicReportPage.tsx (новий), `frontend/src/Router.jsx` | `/r/:token` поза `PrivateRoute`; перепит кожні 8 с; друк |
+| сторінки звіту | `frontend/src/pages/ReportPage.tsx`, `frontend/src/Router.jsx`, `frontend/src/App.tsx` | `/r/:token` поза `PrivateRoute`, перепит кожні 8 с; `/report/:buildId` для друку (входу треба), друкує, щойно знімки завантажились; обидві — без шапки й навігації |
 | тексти | `frontend/src/i18n/en.ts`, `frontend/src/i18n/uk.ts` | ключі `overview.*`, `queue.*`, `report.*` |
 
 ## Дані
@@ -109,9 +107,6 @@ sequenceDiagram
 
 ## Перевірка вимог
 
-Тести ще не написано. Назви нижче — план; під час реалізації кожну буде записано у форматі
-`шлях › назва`, і `check-docs.py` перевірятиме, що тест існує.
-
 | Вимога | Перевірка |
 |---|---|
 | REQ-031-01 | `frontend/integration_tests/test/buildOverview.spec.ts › opens a build on the Overview tab` |
@@ -137,20 +132,20 @@ sequenceDiagram
 | REQ-031-27 | `frontend/src/_helpers/reviewQueue.helper.test.ts › skips runs someone else decided` |
 | REQ-031-28 | `frontend/integration_tests/test/buildOverview.spec.ts › Esc returns to where the review was opened, focus on the same row` |
 | REQ-031-29 | `frontend/src/_helpers/route.helpers.test.ts › keeps build, run and queue in the address` |
-| REQ-031-40 | план: frontend/integration_tests/test/buildReport.spec.ts — «previews the report as settings change» |
-| REQ-031-41 | план: frontend/src/components/BuildReport/ReportDocument.test.tsx — «Short has Summary, Changes and Jira bugs; Full adds the rest» |
-| REQ-031-42 | план: ReportDocument.test.tsx — «renders in the report language, not the interface one» |
-| REQ-031-43 | план: ReportDocument.test.tsx — «summary names the project, build, branch, time, devices and numbers» |
+| REQ-031-40 | `frontend/integration_tests/test/buildReport.spec.ts › previews the report as settings change` |
+| REQ-031-41 | `frontend/src/components/BuildReport/ReportDocument.test.tsx › Short has Summary, Changes and Jira bugs; Full adds the rest` |
+| REQ-031-42 | `frontend/src/components/BuildReport/ReportDocument.test.tsx › renders in the report language, not the interface one` |
+| REQ-031-43 | `frontend/src/components/BuildReport/ReportDocument.test.tsx › summary names the project, build, branch, time, devices and numbers` |
 | REQ-031-44 | `backend/src/reports/report-links.spec.ts › lists up to 20 changes and counts the rest` |
 | REQ-031-45 | `frontend/src/_helpers/reportText.helper.test.ts › writes Slack mrkdwn`; `frontend/src/_helpers/reportText.helper.test.ts › writes a Jira list with links` |
-| REQ-031-46 | manual: Report → PDF у Chrome і Safari → «Save as PDF» дає A4 з обраними розділами й мовою |
+| REQ-031-46 | `frontend/integration_tests/test/buildReport.spec.ts › prints the report on A4 pages with the chosen sections and language`; manual: Report → PDF у Chrome і Safari → «Save as PDF» дає A4 з обраними розділами й мовою |
 | REQ-031-47 | `frontend/src/_helpers/reportText.helper.test.ts › states the time of the state it shows` |
 | REQ-031-48 | `backend/src/builds/build-overview.service.spec.ts › builds the overview without calling AI` |
-| REQ-031-49 | manual: у коді звіту немає викликів Slack, Jira чи пошти; рев'ю диффу |
+| REQ-031-49 | manual: у коді звіту (`frontend/src/components/BuildReport/`, `frontend/src/pages/ReportPage.tsx`, `frontend/src/services/reports.service.ts`, `backend/src/reports/`) немає звернень ні до чого, крім API Vision; перевірено пошуком і рев'ю диффу 2026-10-31 |
 | REQ-031-60 | `backend/src/reports/reports.controller.spec.ts › creates a link with the chosen sections and language` |
 | REQ-031-61 | `backend/src/reports/report-links.spec.ts › expires after 7, 30 or 90 days, 30 by default` |
 | REQ-031-62 | `backend/src/reports/reports.controller.spec.ts › serves a report without signing in and nothing else` |
-| REQ-031-63 | план: frontend/integration_tests/test/publicReport.spec.ts — «updates the open page within 10 s» |
+| REQ-031-63 | `frontend/integration_tests/test/publicReport.spec.ts › updates the open page within 10 s` |
 | REQ-031-64 | `backend/src/reports/report-links.spec.ts › refuses an expired or revoked link without build data`; `backend/src/reports/reports.controller.spec.ts › says a link is expired and shows nothing of the build` |
 | REQ-031-65 | `backend/src/reports/reports.controller.spec.ts › says the build is gone when it was deleted` |
 | REQ-031-66 | `backend/src/reports/reports.controller.spec.ts › lets the author or an admin revoke a link` |

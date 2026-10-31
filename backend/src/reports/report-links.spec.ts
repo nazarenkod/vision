@@ -120,7 +120,6 @@ describe('report links', () => {
       sections: sectionsOf(['sum']),
     });
     expect(report.changes).toEqual([]);
-    expect(report.overview.devices).toEqual([]);
     expect(report.overview.bugs).toEqual([]);
     expect(report.a11y).toEqual([]);
   });

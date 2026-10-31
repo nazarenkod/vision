@@ -101,6 +101,7 @@ export interface ReportLink {
   sections: ReportSection[];
   language: "en" | "uk";
   createdBy: string | null;
+  createdById: string | null;
   createdAt: string;
   expiresAt: string;
 }

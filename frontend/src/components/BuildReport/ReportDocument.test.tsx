@@ -1,0 +1,148 @@
+import React from "react";
+import { render, screen } from "@testing-library/react";
+import { ReportDocument } from "./ReportDocument";
+import {
+  ALL_SECTIONS,
+  PublicReport,
+  SHORT_SECTIONS,
+} from "../../types/buildOverview";
+
+jest.mock("../../services", () => ({
+  staticService: { getImage: (name: string) => `/images/${name}` },
+}));
+
+const outcome = { total: 16, changed: 2, new: 0, rejected: 0, passed: 14 };
+const report: PublicReport = {
+  state: "ok",
+  createdBy: "Anna Petrenko",
+  overview: {
+    verdict: "waiting",
+    counts: {
+      total: 47,
+      changed: 4,
+      new: 1,
+      rejected: 0,
+      passed: 42,
+      waiting: 5,
+      a11yNew: 5,
+      bugs: 1,
+    },
+    progress: { decided: 1, needed: 6, people: [] },
+    devices: [
+      {
+        device: "PIXEL_4_XL",
+        os: "AOS 14",
+        browser: "",
+        viewport: "",
+        a11yNew: 3,
+        ...outcome,
+      },
+    ],
+    features: [{ name: "Checkout", bugs: 1, ...outcome }],
+    quietFeatures: { count: 4, screens: 26 },
+    bugs: [
+      {
+        kind: "visual",
+        jiraKey: "P24MOB-14231",
+        jiraUrl: null,
+        summary: "Error text wraps",
+        testRunId: "a",
+        isNew: true,
+      },
+    ],
+    previous: { number: 127, changed: 4, added: 1, gone: 0 },
+    build: {
+      id: "b",
+      number: 128,
+      branchName: "release/7.4",
+      ciBuildId: "android-nightly-4821",
+      projectId: "p",
+      projectName: "Mobile Shop",
+      createdAt: "2026-10-31T10:42:00Z",
+      updatedAt: "2026-10-31T10:48:00Z",
+    },
+    asOf: "2026-10-31T11:05:00Z",
+  },
+  changes: [
+    {
+      testRunId: "a",
+      name: "Login. Error state",
+      device: "iPhone 15",
+      os: "iOS 17",
+      status: "unresolved",
+      diffPercent: 6.4,
+      imageName: "a.png",
+      baselineName: "a-base.png",
+      diffName: "a-diff.png",
+    },
+  ],
+  moreChanges: 3,
+  a11y: [
+    {
+      testRunId: "a",
+      name: "Login. Error state",
+      device: "iPhone 15",
+      newCount: 2,
+    },
+  ],
+};
+
+const shown = () =>
+  screen
+    .queryAllByTestId(/^reportSection-/)
+    .map((section) => section.dataset.testid?.replace("reportSection-", ""));
+
+describe("ReportDocument", () => {
+  it("Short has Summary, Changes and Jira bugs; Full adds the rest", () => {
+    const { rerender } = render(
+      <ReportDocument
+        report={report}
+        sections={SHORT_SECTIONS}
+        language="en"
+      />,
+    );
+    expect(shown()).toEqual(["sum", "chg", "bugs"]);
+    rerender(
+      <ReportDocument report={report} sections={ALL_SECTIONS} language="en" />,
+    );
+    expect(shown()).toEqual(["sum", "chg", "bugs", "dev", "feat", "a11y"]);
+  });
+
+  it("renders in the report language, not the interface one", () => {
+    render(
+      <ReportDocument
+        report={report}
+        sections={SHORT_SECTIONS}
+        language="uk"
+      />,
+    );
+    expect(screen.getByText("Звіт збірки")).toBeInTheDocument();
+    expect(screen.getByText("Чекає на перегляд")).toBeInTheDocument();
+    expect(screen.getByText("ще 3")).toBeInTheDocument();
+    expect(screen.queryByText("Build report")).toBeNull();
+  });
+
+  it("summary names the project, build, branch, time, devices and numbers", () => {
+    render(<ReportDocument report={report} sections={["sum"]} language="en" />);
+    expect(
+      screen.getByRole("heading", { name: "Mobile Shop · #128 · release/7.4" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/1 device · android-nightly-4821$/),
+    ).toBeInTheDocument();
+    expect(screen.getByTestId("reportAsOf")).toHaveTextContent("As of");
+    const summary = screen.getByTestId("reportSection-sum");
+    for (const label of [
+      "47",
+      "Screens",
+      "5",
+      "Waiting",
+      "Rejected",
+      "New a11y",
+      "Jira bugs",
+    ]) {
+      expect(summary).toHaveTextContent(label);
+    }
+    expect(summary).toHaveTextContent("vs #127: 4 changed · 1 new · 0 gone");
+  });
+});

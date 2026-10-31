@@ -95,7 +95,7 @@ docs/specs/NNN-коротка-назва/
 | [027](027-nameless-elements/spec.md) | Безіменні елементи й XPath (експеримент) | Implemented |
 | [028](028-several-elements/spec.md) | Кілька елементів одразу: до трьох, одна дія | Implemented |
 | [029](029-allowed-devices/spec.md) | Дозволені пристрої проєкту | Implemented |
-| [031](031-build-overview/spec.md) | Огляд збірки і звіт | Approved |
+| [031](031-build-overview/spec.md) | Огляд збірки і звіт | Implemented |
 | [030](030-whats-compared/spec.md) | Зрозуміла вкладка «Зміни»: що вийшло, що порівнювали, що змінилось | Implemented |
 
 Статусу `Verified` поки немає в жодної: інтеграцію з реальною Jira Cloud і прогони на сервері

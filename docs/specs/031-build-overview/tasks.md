@@ -28,13 +28,13 @@
   полів, ролі.
   - Файли: backend/src/reports/.
   - Готово, коли: report-links.spec.ts і reports.controller.spec.ts зелені.
-- [ ] **T9** (REQ-031-40…47) Діалог звіту й `ReportDocument`, друк A4. Після T5, T6, T8.
+- [x] **T9** (REQ-031-40…47) Діалог звіту й `ReportDocument`, друк A4. Після T5, T6, T8.
   - Файли: frontend/src/components/BuildReport/.
   - Готово, коли: ReportDocument.test.tsx і buildReport.spec.ts зелені; PDF перевірено вручну.
-- [ ] **T10** (REQ-031-62…65) Публічна сторінка `/r/:token` поза входом, перепит кожні 8 с. Після T8, T9.
+- [x] **T10** (REQ-031-62…65) Публічна сторінка `/r/:token` поза входом, перепит кожні 8 с. Після T8, T9.
   - Файли: frontend/src/pages/PublicReportPage.tsx, `frontend/src/Router.jsx`.
   - Готово, коли: publicReport.spec.ts зелений.
-- [ ] **T11** Документація: у [018](../018-ui-redesign/spec.md) REQ-018-32 позначка «Замінено частково
+- [x] **T11** Документація: у [018](../018-ui-redesign/spec.md) REQ-018-32 позначка «Замінено частково
   [031] REQ-031-24»; трасування в design.md стає `шлях › назва`; таблиці модулів у
   `backend/AGENTS.md` і `frontend/AGENTS.md`; `DEMO.md`; статус → `Implemented`; ADR-0022 → `Accepted`.
 - [ ] **T12** `/verify`: тести, типи, лінт, еталони скриншотів (Docker), `scripts/check-docs.py`,

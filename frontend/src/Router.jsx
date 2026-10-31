@@ -14,6 +14,7 @@ import BackupsPage from "./pages/BackupsPage";
 import TestVariationDetailsPage from "./pages/TestVariationDetailsPage";
 import ProjectSettingsPage from "./pages/ProjectSettingsPage";
 import { useOidcEnabled } from "./_helpers/useOidcEnabled";
+import { PrintReportPage, PublicReportPage } from "./pages/ReportPage";
 
 function RegisterRoute() {
   const oidcEnabled = useOidcEnabled();
@@ -29,6 +30,12 @@ function Router() {
     <Routes>
       <Route path={routes.LOGIN} element={<LoginPage />} />
       <Route path={routes.REGISTER} element={<RegisterRoute />} />
+      {/* a build's report by its public link: no sign-in (031, ADR-0022) */}
+      <Route path={routes.PUBLIC_REPORT} element={<PublicReportPage />} />
+      <Route
+        path={routes.PRINT_REPORT}
+        element={<PrivateRoute component={PrintReportPage} />}
+      />
       <Route
         path={routes.PROFILE_PAGE}
         element={<PrivateRoute component={ProfilePage} />}

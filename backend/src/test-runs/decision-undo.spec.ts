@@ -186,6 +186,7 @@ function setup() {
       merge: false,
       status: TestStatus.unresolved,
       testVariationId: 'main-variation',
+      decidedById: null,
     });
   return { db, service, staticService, eventsGateway, run };
 }
@@ -228,6 +229,15 @@ describe('decision undo', () => {
     expect(db.tables().testRun[0].status).toBe(TestStatus.failed);
     await service.undo(decisionId, 'anna');
     expect(db.dump()).toEqual(before);
+  });
+
+  it('records who decided and forgets it on undo', async () => {
+    const { db, service, run } = setup();
+    run('a', 'main');
+    const { decisionId } = await service.reject(['a'], 'anna');
+    expect(db.tables().testRun[0].decidedById).toBe('anna');
+    await service.undo(decisionId, 'anna');
+    expect(db.tables().testRun[0].decidedById).toBeNull();
   });
 
   it('undoes a bulk decision all or nothing', async () => {

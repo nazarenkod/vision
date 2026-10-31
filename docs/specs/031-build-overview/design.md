@@ -34,7 +34,7 @@
 | маршрут | `backend/src/builds/builds.controller.ts` | `GET /builds/:id/overview` (JwtAuthGuard) |
 | назва фічі | `backend/src/visual-bugs/visual-bug.ts` | наявний `featureOf` — та сама фіча, що в назві бага |
 | баги доступності збірки | `backend/src/a11y/a11y-issues.service.ts` | новий метод: ключі Jira проблем, що трапились у прогонах збірки; читає лише прогони з `a11yTotalCount > 0`, кеш за збіркою й найпізнішим `updatedAt` |
-| журнал рішень | `backend/src/test-runs/decision-undo.service.ts` | пише `buildId` у `ReviewDecision` |
+| журнал рішень | `backend/src/test-runs/decision-undo.service.ts` | пише автора рішення в прогон (`decidedById`), Undo його стирає |
 | посилання (чисте) | backend/src/reports/report-links.ts (новий) | термін (7/30/90), чинність, обрізання до розділів, до 20 змін, люди лише на ім'я |
 | посилання (сервіс, маршрути) | backend/src/reports/ (новий модуль) | `POST /builds/:id/report-links` (editor, admin), `GET /builds/:id/report-links`, `DELETE /report-links/:id` (автор або admin), `GET /public/reports/:token` без входу, з `ETag` |
 | типи | `frontend/src/types/` | `BuildOverview`, `ReportLink`, `PublicReport` |
@@ -59,9 +59,10 @@
   `revokedAt?`. Індекси — `token` і `buildId`. **Без зовнішніх ключів на `Build` і `User`:** upstream
   видаляє збірки (ліміт збірок, гілки), і обмеження зламало б це видалення. Посилання на видалену
   збірку показує «збірки більше немає» (REQ-031-65).
-- **`ReviewDecision.buildId String?` + індекс.** Його пише новий журнал рішень. Прогрес (REQ-031-04)
-  читає рішення за `buildId`. Для рішень, ухвалених до міграції, автора approve беремо з
-  `Baseline.userId` за `testRunId`, а reject без автора рахується як «хтось».
+- **`TestRun.decidedById String?`.** Журнал рішень пише в нього того, хто прийняв чи відхилив прогон,
+  а Undo його стирає. Сам журнал (`ReviewDecision`) живе лише 7 днів, тож для прогресу (REQ-031-04)
+  він не підходить. Для рішень, ухвалених до міграції, автора approve беремо з `Baseline.userId`
+  за `testRunId`, а reject без автора рахується як «хтось».
 - Старі дані не змінюються.
 
 ## Потік

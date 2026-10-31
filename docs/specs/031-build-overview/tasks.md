@@ -1,7 +1,7 @@
 # 031 — Задачі
 
-- [ ] **T1** (REQ-031-04, REQ-031-60…69) Міграція: таблиця `ReportLink`, `ReviewDecision.buildId` з
-  індексом; `decision-undo.service.ts` пише `buildId`.
+- [x] **T1** (REQ-031-04, REQ-031-60…69) Міграція: таблиця `ReportLink`, `TestRun.decidedById`;
+  `decision-undo.service.ts` пише автора рішення, Undo стирає.
   - Файли: `backend/prisma/schema.prisma`, нова міграція, `backend/src/test-runs/decision-undo.service.ts`.
   - Готово, коли: `npx prisma generate`, `decision-undo.spec.ts` зелений, міграція лише додає.
 - [ ] **T2** (REQ-031-03…05, 08…12) Чиста `buildOverview` з тестами.

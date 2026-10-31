@@ -17,13 +17,13 @@
 
 | Компонент | Шлях | Роль |
 |---|---|---|
-| Ідентичність | `backend/src/a11y/a11y-problems.ts` | `facetsOf`, `componentOf`, `measurementOf`, `classOf`, `problemKeyOf`, `problemCode`, `problemMarkers`, `markerQuery`, `screenTitle`, `facetsFromKey` |
+| Ідентичність | `backend/src/a11y/a11y-problems.ts` | `facetsOf`, `componentOf`, `measurementOf`, `classOf` (видалено в [021](../021-fixed-a11y-grouping/spec.md)), `problemKeyOf`, `problemCode`, `problemMarkers`, `markerQuery`, `screenTitle`, `facetsFromKey` |
 | Рев'ю | `backend/src/a11y/a11y-issues.ts` | `indexProblems`, `decidingProblem`, `reviewReport`: рішення, `related`, `resolved`, лічильники |
 | Сервіс | `backend/src/a11y/a11y-issues.service.ts` | кеш індексу (версія = кількість + останній `updatedAt` + налаштування; скидається після кожного запису), `claim`, `fileBug`, `link`, `reset`, `lookUpInJira`, журнал, перенесення старих рішень при старті |
 | Jira | `backend/src/a11y/jira.client.ts` | `search` (Cloud `search/jql`, інакше класичний `search`), `editLabels` |
-| Налаштування | `backend/src/ui-tree/comparison-inputs.ts` | `screenTitle`, `a11yDuplicates`, `a11yClasses` у `uiTreeSettings` проєкту; парсер відкидає биті записи |
+| Налаштування | `backend/src/ui-tree/comparison-inputs.ts` | `screenTitle`, `a11yDuplicates` і `a11yClasses` (видалено в [021](../021-fixed-a11y-grouping/spec.md): збережені значення ігноруються) у `uiTreeSettings` проєкту; парсер відкидає биті записи |
 | Картки | `frontend/src/components/TestDetailsDialog/InsightsPanel.tsx` | групування за `group` + станом, `a11yElsewhere`, `a11yRelated`, ID проблеми |
-| Налаштування UI | `A11yProblemSettings` (з [026](../026-a11y-rules-settings/spec.md) — `frontend/src/components/ProjectForm/A11yRulesSettings.tsx`, без селекторів заголовка) | селектори заголовка, режими за правилом, класи (умови по полях, групування, дія, порядок) |
+| Налаштування UI | `A11yProblemSettings` (з [026](../026-a11y-rules-settings/spec.md) — `frontend/src/components/ProjectForm/A11yRulesSettings.tsx`, без селекторів заголовка) | селектори заголовка, режими за правилом, класи (умови по полях, групування, дія, порядок); режими й класи видалено в [021](../021-fixed-a11y-grouping/spec.md) |
 
 ## Дані
 
@@ -35,9 +35,9 @@
   `code`, `problemId`, `jiraKey`, `screenName`, `userId`, `comment`, `createdAt`.
 - Старі `A11yIssueState` переносяться при старті (`moveIssueStates`), проблемам без фактів
   відновлюються факти з ключа (`fillFacets`).
-- Ключі: `rule|c:<компонент>|<значення або порожньо>`, `rule|k:<id класу>|`,
+- Ключі: `rule|c:<компонент>|<значення або порожньо>`, `rule|k:<id класу>|` (видалено в [021](../021-fixed-a11y-grouping/spec.md)),
   `rule|s:<екран>|c:<компонент>|<значення>`, `rule|s:<екран>|e:<ключ елемента>`.
-- Мітки: `a11y-<8 hex>`, `a11y-<правило>`, `a11y-component-…`, `a11y-value-…`, `a11y-class-…`;
+- Мітки: `a11y-<8 hex>`, `a11y-<правило>`, `a11y-component-…`, `a11y-value-…`, `a11y-class-…` (видалено в [021](../021-fixed-a11y-grouping/spec.md));
   після відв'язування — `a11y-unlinked-<8 hex>`.
 
 ## Потік заведення

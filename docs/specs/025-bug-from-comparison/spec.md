@@ -6,7 +6,7 @@
 | Власник | Дмитро Назаренко |
 | Оновлено | 2026-10-29 |
 | Дизайн | [design.md](design.md) |
-| Пов'язане | [005](../005-jira-bugs/spec.md) (таска, тип задачі, токени), [010](../010-ai-assist/spec.md) (AI на вимогу), [ADR-0019](../../decisions/0019-sdk-upstream-plus-ui-tree-and-feature.md) (назва фічі в SDK), [ADR-0020](../../decisions/0020-personal-gemini-keys.md) (особистий ключ Gemini), [ADR-0007](../../decisions/0007-deterministic-first-ai-on-demand.md), макети: [Bug from comparison](https://claude.ai/artifact/GNZ2RJrnGWGgeKFxjsskf7) |
+| Пов'язане | змінює [012](../012-java-sdk/spec.md): REQ-012-01 (SDK приймає ще й назву фічі); змінює [010](../010-ai-assist/spec.md): REQ-010-01, REQ-010-06 (особистий ключ Gemini вмикає AI для бага без провайдера інстансу й поза денним лімітом); [005](../005-jira-bugs/spec.md) (таска, тип задачі, токени), [010](../010-ai-assist/spec.md) (AI на вимогу), [ADR-0019](../../decisions/0019-sdk-upstream-plus-ui-tree-and-feature.md) (назва фічі в SDK), [ADR-0020](../../decisions/0020-personal-gemini-keys.md) (особистий ключ Gemini), [ADR-0007](../../decisions/0007-deterministic-first-ai-on-demand.md), макети: [Bug from comparison](https://claude.ai/artifact/GNZ2RJrnGWGgeKFxjsskf7) |
 
 ## Контекст і проблема
 
@@ -33,9 +33,9 @@
   1. **Дано** знімок `Checkout. Payment sheet` на AOS 14 · PIXEL_4_XL і запам'ятовану таску,
      **коли** QA натискає B, обводить кнопку, заповнює суть, кроки, обидва описи й серйозність і
      натискає Create, **тоді** в Jira з'являється баг під таскою з назвою
-     `[Automation] [Checkout] <суть>`, з описом, де є оточення з пристроєм і збіркою, кроки,
-     фактичний результат зі знімком чекпоінта з обводкою й очікуваний зі знімком еталона, а знімок
-     у Vision відхилено.
+     `[Automation] [Checkout] <суть>`, з описом, де є оточення з пристроєм і OS (REQ-025-21), кроки,
+     фактичний результат зі знімком чекпоінта з обводкою й очікуваний зі знімком еталона, а в
+     службових рядках у кінці — збірка (REQ-025-27); знімок у Vision відхилено.
   2. **Дано** незаповнену серйозність, **коли** решту заповнено, **тоді** Create неактивна й
      діалог називає серйозність серед незаповнених полів.
 

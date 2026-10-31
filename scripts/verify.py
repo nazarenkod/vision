@@ -36,13 +36,25 @@ DESTRUCTIVE_SQL = re.compile(r"\bdrop\s|\brename\b|\balter\s+type\b|\bset\s+not\
 
 
 def tsc_errors(output: str) -> collections.Counter:
-    """Errors keyed without line numbers, so an edit above a known error does not make it new."""
+    """Errors keyed by file and code only: line numbers move with every edit above them, and
+    tsc prints the fields of a type in a different order from one generated Prisma client to
+    the next, so neither can tell a new error from a known one."""
     found = collections.Counter()
     for line in output.splitlines():
         match = TSC_ERROR.match(line.strip())
         if match:
-            found[f"{match['file']}: {match['code']}: {match['message']}"] += 1
+            found[f"{match['file']}: {match['code']}"] += 1
     return found
+
+
+def tsc_lines(output: str, keys):
+    """The full tsc lines behind the given keys, to show what the new error says."""
+    lines = []
+    for line in output.splitlines():
+        match = TSC_ERROR.match(line.strip())
+        if match and f"{match['file']}: {match['code']}" in keys:
+            lines.append(line.strip())
+    return lines
 
 
 def compare_with_baseline(current: collections.Counter, baseline: collections.Counter):
@@ -131,7 +143,7 @@ class Run:
         new, fixed = compare_with_baseline(current, read_baseline(package))
         notes = []
         if new:
-            notes.append("new errors:\n" + "\n".join(f"  {e}" for e in new))
+            notes.append(f"new errors ({', '.join(new)}):\n" + "\n".join(f"  {e}" for e in tsc_lines(output, set(new))))
         if fixed:
             notes.append("fixed known errors, run with --update-baselines:\n" + "\n".join(f"  {e}" for e in fixed))
         self.record(f"{package} tsc", not new, seconds, "\n".join(notes))

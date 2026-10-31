@@ -26,11 +26,11 @@ class TscBaselineTest(unittest.TestCase):
         moved = verify.tsc_errors(TSC.replace("(10,5)", "(14,5)"))
         self.assertEqual(verify.compare_with_baseline(moved, baseline), ([], []))
 
-    def test_reports_a_new_error_by_file_code_and_message(self):
+    def test_reports_a_new_error_by_file_and_code(self):
         baseline = verify.tsc_errors(TSC)
         current = verify.tsc_errors(TSC + "src/c.ts(1,1): error TS2304: Cannot find name 'x'.\n")
         new, fixed = verify.compare_with_baseline(current, baseline)
-        self.assertEqual(new, ["src/c.ts: TS2304: Cannot find name 'x'."])
+        self.assertEqual(new, ["src/c.ts: TS2304"])
         self.assertEqual(fixed, [])
 
     def test_one_more_copy_of_a_known_error_is_new(self):
@@ -38,7 +38,7 @@ class TscBaselineTest(unittest.TestCase):
         baseline = verify.tsc_errors(TSC)
         current = verify.tsc_errors(TSC + "src/a.ts(30,5): error TS2741: Property 'updatedAt' is missing in type 'X'.\n")
         new, _ = verify.compare_with_baseline(current, baseline)
-        self.assertEqual(new, ["src/a.ts: TS2741: Property 'updatedAt' is missing in type 'X'."])
+        self.assertEqual(new, ["src/a.ts: TS2741"])
 
     def test_reports_known_errors_that_were_fixed(self):
         baseline = verify.tsc_errors(TSC)
@@ -46,6 +46,15 @@ class TscBaselineTest(unittest.TestCase):
         new, fixed = verify.compare_with_baseline(current, baseline)
         self.assertEqual(new, [])
         self.assertEqual(len(fixed), 2)
+
+    def test_a_known_error_whose_type_prints_its_fields_in_another_order_is_not_new(self):
+        baseline = verify.tsc_errors("src/s.ts(1,1): error TS2345: Argument of type '{ a: string; b: Date }'.\n")
+        current = verify.tsc_errors("src/s.ts(1,1): error TS2345: Argument of type '{ b: Date; a: string }'.\n")
+        self.assertEqual(verify.compare_with_baseline(current, baseline), ([], []))
+
+    def test_shows_the_full_lines_of_new_errors(self):
+        lines = verify.tsc_lines(TSC, {"src/b.tsx: TS2322"})
+        self.assertEqual(lines, ["src/b.tsx(3,1): error TS2322: Type 'string' is not assignable to type 'number'."])
 
     def test_ignores_lines_that_are_not_errors(self):
         self.assertEqual(verify.tsc_errors("Found 3 errors in 2 files.\n"), collections.Counter())

@@ -24,7 +24,7 @@
   повернення й фокус. Після T4 і T6.
   - Файли: `frontend/src/components/TestDetailsDialog/index.tsx`, QueueHeader.tsx, QueueDone.tsx.
   - Готово, коли: сценарії US-2 у buildOverview.spec.ts зелені; без `queue` крокування як було.
-- [ ] **T8** (REQ-031-60…69) Модуль `reports`: посилання, публічний ендпоінт з `ETag`, білий список
+- [x] **T8** (REQ-031-60…69) Модуль `reports`: посилання, публічний ендпоінт з `ETag`, білий список
   полів, ролі.
   - Файли: backend/src/reports/.
   - Готово, коли: report-links.spec.ts і reports.controller.spec.ts зелені.

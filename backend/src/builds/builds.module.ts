@@ -20,6 +20,6 @@ import { BuildOverviewService } from './build-overview.service';
   ],
   providers: [BuildsService, BuildOverviewService],
   controllers: [BuildsController],
-  exports: [BuildsService],
+  exports: [BuildsService, BuildOverviewService],
 })
 export class BuildsModule {}

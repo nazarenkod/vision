@@ -4,6 +4,7 @@ import { AppService } from './app.service';
 import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
 import { BuildsModule } from './builds/builds.module';
+import { ReportsModule } from './reports/reports.module';
 import { ProjectsModule } from './projects/projects.module';
 import { TestRunsModule } from './test-runs/test-runs.module';
 import { TestVariationsModule } from './test-variations/test-variations.module';
@@ -27,6 +28,7 @@ import { VisualBugsModule } from './visual-bugs/visual-bugs.module';
     AuthModule,
     UsersModule,
     BuildsModule,
+    ReportsModule,
     ProjectsModule,
     TestRunsModule,
     TestVariationsModule,

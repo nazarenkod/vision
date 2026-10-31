@@ -40,8 +40,8 @@
 | назва фічі | `backend/src/visual-bugs/visual-bug.ts` | наявний `featureOf` — та сама фіча, що в назві бага |
 | баги доступності збірки | `backend/src/a11y/a11y-issues.service.ts` | новий метод: ключі Jira проблем, що трапились у прогонах збірки; читає лише прогони з `a11yTotalCount > 0`, кеш за збіркою й найпізнішим `updatedAt` |
 | журнал рішень | `backend/src/test-runs/decision-undo.service.ts` | пише автора рішення в прогон (`decidedById`), Undo його стирає |
-| посилання (чисте) | backend/src/reports/report-links.ts (новий) | термін (7/30/90), чинність, обрізання до розділів, до 20 змін, люди лише на ім'я |
-| посилання (сервіс, маршрути) | backend/src/reports/ (новий модуль) | `POST /builds/:id/report-links` (editor, admin), `GET /builds/:id/report-links`, `DELETE /report-links/:id` (автор або admin), `GET /public/reports/:token` без входу, з `ETag` |
+| посилання (чисте) | `backend/src/reports/report-links.ts` | термін (7/30/90), чинність, обрізання до розділів, до 20 змін, люди лише на ім'я |
+| посилання (сервіс, маршрути) | `backend/src/reports/` | `GET /builds/:id/report` (повний звіт для діалогу й друку), `POST /builds/:id/report-links` (editor, admin), `GET /builds/:id/report-links`, `DELETE /report-links/:id` (автор або admin), `GET /public/reports/:token` без входу, з `ETag` |
 | типи | `frontend/src/types/` | `BuildOverview`, `ReportLink`, `PublicReport` |
 | сервіси | `frontend/src/services/` | `frontend/src/services/buildOverview.service.ts`, reports.service.ts (новий) |
 | вкладка Overview | `frontend/src/components/BuildOverview/` | вердикт, плитки, To decide, Devices, Features, Jira bugs |
@@ -141,19 +141,19 @@ sequenceDiagram
 | REQ-031-41 | план: frontend/src/components/BuildReport/ReportDocument.test.tsx — «Short has Summary, Changes and Jira bugs; Full adds the rest» |
 | REQ-031-42 | план: ReportDocument.test.tsx — «renders in the report language, not the interface one» |
 | REQ-031-43 | план: ReportDocument.test.tsx — «summary names the project, build, branch, time, devices and numbers» |
-| REQ-031-44 | план: backend/src/reports/report-links.spec.ts — «lists up to 20 changes and counts the rest» |
+| REQ-031-44 | `backend/src/reports/report-links.spec.ts › lists up to 20 changes and counts the rest` |
 | REQ-031-45 | `frontend/src/_helpers/reportText.helper.test.ts › writes Slack mrkdwn`; `frontend/src/_helpers/reportText.helper.test.ts › writes a Jira list with links` |
 | REQ-031-46 | manual: Report → PDF у Chrome і Safari → «Save as PDF» дає A4 з обраними розділами й мовою |
 | REQ-031-47 | `frontend/src/_helpers/reportText.helper.test.ts › states the time of the state it shows` |
 | REQ-031-48 | `backend/src/builds/build-overview.service.spec.ts › builds the overview without calling AI` |
 | REQ-031-49 | manual: у коді звіту немає викликів Slack, Jira чи пошти; рев'ю диффу |
-| REQ-031-60 | план: backend/src/reports/reports.controller.spec.ts — «creates a link with the chosen sections and language» |
-| REQ-031-61 | план: report-links.spec.ts — «expires after 7, 30 or 90 days, 30 by default» |
-| REQ-031-62 | план: reports.controller.spec.ts — «serves a report without signing in and nothing else» |
+| REQ-031-60 | `backend/src/reports/reports.controller.spec.ts › creates a link with the chosen sections and language` |
+| REQ-031-61 | `backend/src/reports/report-links.spec.ts › expires after 7, 30 or 90 days, 30 by default` |
+| REQ-031-62 | `backend/src/reports/reports.controller.spec.ts › serves a report without signing in and nothing else` |
 | REQ-031-63 | план: frontend/integration_tests/test/publicReport.spec.ts — «updates the open page within 10 s» |
-| REQ-031-64 | план: report-links.spec.ts — «refuses an expired or revoked link without build data» |
-| REQ-031-65 | план: reports.controller.spec.ts — «says the build is gone when it was deleted» |
-| REQ-031-66 | план: reports.controller.spec.ts — «lets the author or an admin revoke a link» |
-| REQ-031-67 | план: report-links.spec.ts — «makes a 256-bit token unrelated to the build» |
-| REQ-031-68 | план: report-links.spec.ts — «keeps emails, keys and tokens out of a public report» |
-| REQ-031-69 | план: reports.controller.spec.ts — «lets editors and admins create links, not guests» |
+| REQ-031-64 | `backend/src/reports/report-links.spec.ts › refuses an expired or revoked link without build data`; `backend/src/reports/reports.controller.spec.ts › says a link is expired and shows nothing of the build` |
+| REQ-031-65 | `backend/src/reports/reports.controller.spec.ts › says the build is gone when it was deleted` |
+| REQ-031-66 | `backend/src/reports/reports.controller.spec.ts › lets the author or an admin revoke a link` |
+| REQ-031-67 | `backend/src/reports/report-links.spec.ts › makes a 256-bit token unrelated to the build` |
+| REQ-031-68 | `backend/src/reports/report-links.spec.ts › keeps emails, keys and tokens out of a public report` |
+| REQ-031-69 | `backend/src/reports/reports.controller.spec.ts › lets editors and admins create links, not guests` |

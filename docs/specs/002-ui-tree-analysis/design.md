@@ -14,7 +14,7 @@
 | Розбір | `backend/src/ui-tree/ui-tree.parser.ts` | формат, межі, щільність, ключі вузлів |
 | Входи порівняння | `backend/src/ui-tree/comparison-inputs.ts` | `parseUiTreeSettings`, селектори, `resolveRules`, `findSystemBars`, `computeMoves`, допуски |
 | Структурний діф | `backend/src/ui-tree/structure-diff.ts` | `diffTrees`, `elementsUnderRegions` |
-| Перевірки екрана | `backend/src/ui-tree/screen-checks.ts` | `detectLoading`, `invisibleChanges`, `screenSimilarity` (`MISMATCH_BELOW` 0,35), `componentChanges` |
+| Перевірки екрана | `backend/src/ui-tree/screen-checks.ts` | `detectLoading` (видалено в [020](../020-remove-reference-device/spec.md)), `invisibleChanges`, `screenSimilarity` (`MISMATCH_BELOW` 0,35; видалено в [020](../020-remove-reference-device/spec.md)), `componentChanges` |
 | Оркестрація | `backend/src/ui-tree/ui-tree.service.ts` | `store`, `analyze`, `comparisonInputs`, `recheck`, `structure` |
 | Статус | `backend/src/test-runs/test-runs.service.ts` | `analyzeUiTree`: прихована зміна → `unresolved` |
 | UI | `frontend/src/components/TestDetailsDialog/InsightsPanel.tsx` | вкладка Changes, вибір елемента на скриншоті |

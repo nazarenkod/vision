@@ -30,5 +30,5 @@
 | REQ-006-03 | `backend/src/test-runs/change-groups.service.spec.ts › groups one component changed the same way on several screens`; `backend/src/ui-tree/screen-checks.spec.ts › marks a component that holds only part of the changes` |
 | REQ-006-04 | `backend/src/test-runs/change-groups.service.spec.ts › groups runs of one screen with matching change signatures, and lists new screenshots last` |
 | REQ-006-05 | manual: Changes → «Approve all N» → діалог підтвердження → усі прийняті |
-| REQ-006-06 | `backend/src/test-runs/change-groups.service.spec.ts › marks a group whose members only changed in the status bar`; `backend/src/ui-tree/structure-diff.spec.ts › recognises text that holds an amount`; `backend/src/ui-tree/structure-diff.spec.ts › flags a handful of edge pixels as rendering noise` |
-| REQ-006-07 | manual: група шуму статус-бару → «Ignore status bar» |
+| REQ-006-06 | `backend/src/test-runs/change-groups.service.spec.ts › marks a group whose members only changed in the status bar`; `backend/src/ui-tree/structure-diff.spec.ts › recognises text that holds an amount`; `backend/src/ui-tree/structure-diff.spec.ts › flags a handful of edge pixels as rendering noise`; `backend/src/ui-tree/structure-diff.spec.ts › calls the whole iOS status bar band noise…` |
+| REQ-006-07 | manual: група шуму статус-бару → «Ignore status bar»; група згладжування — лише пояснення, без кнопки |

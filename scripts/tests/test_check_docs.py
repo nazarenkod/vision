@@ -76,6 +76,29 @@ class CheckDocsTest(unittest.TestCase):
         self.assertIn("unknown status 'Done'", found)
         self.assertIn("REQ-002-01 belongs to another spec", found)
 
+    def test_wants_a_requirement_changed_by_a_newer_spec_marked_in_its_own_row(self):
+        self.write("docs/specs/README.md", "| [001](001-a/spec.md) | A | Implemented |\n| [002](002-b/spec.md) | B | Implemented |\n")
+        self.write("docs/specs/001-a/spec.md", spec_md(reqs=("REQ-001-01", "REQ-001-02", "REQ-001-03")))
+        self.write("docs/specs/001-a/design.md", "REQ-001-01 REQ-001-02 REQ-001-03\n")
+        newer = spec_md(reqs=("REQ-002-01",)).replace("\n\n## Вимоги", "\n| Пов'язане | змінює [001](../001-a/spec.md) REQ-001-01…03 (нове) |\n\n## Вимоги", 1)
+        self.write("docs/specs/002-b/spec.md", newer.replace("# 001", "# 002"))
+        self.write("docs/specs/002-b/design.md", "REQ-002-01\n")
+        found = "\n".join(check_docs.check_replacements(self.root))
+        for req in ("REQ-001-01", "REQ-001-02", "REQ-001-03"):
+            self.assertIn(f"{req} is changed by 002", found)
+
+        marked = spec_md(reqs=("REQ-001-01", "REQ-001-02", "REQ-001-03")).replace(
+            "СИСТЕМА ПОВИННА … |", "СИСТЕМА ПОВИННА … Замінено 2026-10-30 [002](../002-b/spec.md) REQ-002-01. |"
+        )
+        self.write("docs/specs/001-a/spec.md", marked)
+        self.assertEqual(check_docs.check_replacements(self.root), [])
+
+    def test_a_draft_that_will_change_a_requirement_needs_no_mark_yet(self):
+        self.write("docs/specs/001-a/spec.md", spec_md())
+        draft = spec_md(status="Draft", reqs=("REQ-002-01",)).replace("\n\n## Вимоги", "\n| Пов'язане | знімає REQ-001-01 |\n\n## Вимоги", 1)
+        self.write("docs/specs/002-b/spec.md", draft)
+        self.assertEqual(check_docs.check_replacements(self.root), [])
+
     def test_lets_a_draft_go_without_a_design_and_name_files_still_to_be_written(self):
         self.write("docs/specs/README.md", "| [001](001-a/spec.md) | A | Draft |\n")
         self.write("docs/specs/001-a/spec.md", spec_md(status="Draft"))

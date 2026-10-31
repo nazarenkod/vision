@@ -224,6 +224,7 @@ Undo на сервері дозволене до 30 s після рішення:
 | REQ-018-48 | `frontend/integration_tests/test/projectSettings.spec.ts › asks before leaving with unsaved changes` |
 | REQ-018-49 | `frontend/src/_helpers/projectSettings.helper.test.ts › deletes only after the exact project name` |
 | REQ-018-50 | `frontend/integration_tests/test/projectSettings.spec.ts › shows saved secrets as Saved and never their value` |
+| REQ-018-51 | manual: знято [019](../019-element-rules-in-review/spec.md), правил елементів на сторінці налаштувань більше немає |
 | REQ-018-52 | `frontend/integration_tests/test/projectList.spec.ts › creates a project from three fields and opens its settings` |
 | REQ-018-53 | `backend/src/projects/settings-conflict.spec.ts › reports settings someone changed after the page was opened` |
 | REQ-018-60 | `frontend/integration_tests/test/testRunGrid.spec.ts › shows phone screenshots as portrait cards` |

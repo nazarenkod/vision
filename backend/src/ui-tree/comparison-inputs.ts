@@ -210,7 +210,7 @@ const STATUS_BAR_IDS = ['android:id/statusBarBackground', 'android:id/navigation
 // Fallbacks when the tree has no bar views: 24 dp on Android, the area above
 // the safe-area inset on iPhones with a notch or island.
 const ANDROID_STATUS_BAR_DP = 24;
-const IOS_STATUS_BAR_PT = 54;
+export const IOS_STATUS_BAR_PT = 54;
 
 /** Status and navigation bars: clock, battery and signal change on every run. */
 export function findSystemBars(tree: UiTree): Rect[] {

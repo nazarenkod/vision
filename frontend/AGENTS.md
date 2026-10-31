@@ -25,10 +25,10 @@
 
 ```bash
 CI=true npx jest                       # unit-тести
-npx tsc --noEmit -p .                  # базова лінія: 25 помилок апстріму; нових не додаємо
+npx tsc --noEmit -p .                  # відомі помилки апстріму — у scripts/baselines/; нових не додаємо
 npx eslint <змінені файли>
 npx prettier --write <змінені файли>   # НЕ `prettier --write src`: він переформатує чужі файли
-npx playwright test <spec>             # функціональні тести, локально
+npx playwright test <spec> --ignore-snapshots   # функціональні тести; у хмарі браузер дає hook сесії
 ./test-docker.sh --update-snapshots    # скриншот-еталони — лише в Docker (Linux)
 ```
 

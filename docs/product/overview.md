@@ -28,6 +28,7 @@ Vision додає до знімка **UI-дерево** (Appium page source) і 
 |---|---|---|
 | Ідентичність перевірки | перевірка = назва тесту (+ customTags), еталон — на кожен пристрій | [001](../specs/001-check-identity/spec.md) |
 | Аналіз UI-дерева | правила елементів, системні бари, зсуви, приховані зміни, групи компонентів | [002](../specs/002-ui-tree-analysis/spec.md) |
+| Порівнювати лише обрані елементи | правило «порівнювати лише»: зміни поза обраними елементами не враховуються | [015](../specs/015-compare-selected-elements/spec.md) |
 | Перевірки доступності | підписи, зона тапу, контраст, поля вводу, дубльовані підписи, VoiceOver; нове / наявне / виправлене відносно еталона | [003](../specs/003-accessibility-checks/spec.md) |
 | Проблеми без дублів | стабільний ID проблеми, факти, класи, маркери в Jira, «замок», журнал рішень | [004](../specs/004-a11y-problems/spec.md) |
 | Баги в Jira | підзадача під таскою, обов'язкові поля, S4, замовник, шаблон опису, скриншот з обводкою | [005](../specs/005-jira-bugs/spec.md) |
@@ -36,11 +37,11 @@ Vision додає до знімка **UI-дерево** (Appium page source) і 
 | Ручні перевірки | `vision.py`: adb, Appium, симулятор, файли; режим MCP | [009](../specs/009-manual-checks-cli-mcp/spec.md) |
 | Дешевий AI | підсумок групи, підписи для іконок; кеш і денний ліміт | [010](../specs/010-ai-assist/spec.md) |
 | Безпечне розгортання | поруч із продом на копії даних, лише через `vision.sh` | [011](../specs/011-deployment-safety/spec.md) |
-| Java SDK | upstream + `uiTree` | [012](../specs/012-java-sdk/spec.md) |
+| Java SDK | upstream + `uiTree` і `featureName` ([ADR-0019](../decisions/0019-sdk-upstream-plus-ui-tree-and-feature.md)) | [012](../specs/012-java-sdk/spec.md) |
 | Бекапи | щоночі в Google Drive без паролів і токенів; сторінка Backups: вхід у Drive кодом, розклад, «Back up now»; відновлення з майстер-логіном | [013](../specs/013-backups-and-secrets/spec.md), [017](../specs/017-backup-settings-ui/spec.md) |
 | Мова інтерфейсу | англійська за замовчуванням, українська — перемикачем EN/UK у шапці; дані не перекладаються | [023](../specs/023-ukrainian-ui/spec.md) |
 
-У роботі (Draft): [014](../specs/014-element-order-changes/spec.md), [015](../specs/015-compare-selected-elements/spec.md), [016 — робоча конфігурація й переїзд з VRT](../specs/016-production-and-cutover/spec.md).
+У роботі (Draft): [014](../specs/014-element-order-changes/spec.md), [016 — робоча конфігурація й переїзд з VRT](../specs/016-production-and-cutover/spec.md).
 
 ## Чого Vision свідомо не робить
 

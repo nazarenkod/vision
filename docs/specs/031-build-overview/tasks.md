@@ -37,5 +37,5 @@
 - [x] **T11** Документація: у [018](../018-ui-redesign/spec.md) REQ-018-32 позначка «Замінено частково
   [031] REQ-031-24»; трасування в design.md стає `шлях › назва`; таблиці модулів у
   `backend/AGENTS.md` і `frontend/AGENTS.md`; `DEMO.md`; статус → `Implemented`; ADR-0022 → `Accepted`.
-- [ ] **T12** `/verify`: тести, типи, лінт, еталони скриншотів (Docker), `scripts/check-docs.py`,
+- [x] **T12** `/verify`: тести, типи, лінт, еталони скриншотів (Docker), `scripts/check-docs.py`,
   сценарії приймання на копії даних.

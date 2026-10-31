@@ -13,10 +13,13 @@
 | `lib/vision-backup.sh` | спільне для бекапу: секретні колонки, дамп в одному знімку бази |
 | `build-sdk-jar.sh` | збирає jar SDK у `dist/sdk-java/` |
 | `upload-uitree-samples.py` | надсилає пари PNG + XML з папки як перевірки (для демо без пристрою) |
+| `verify.py` | усі перевірки зміни однією командою: unit-тести, Playwright без скриншотів, `tsc` проти `baselines/`, eslint, міграції, тести скриптів, `check-docs.py` — `python3 -I scripts/verify.py` |
+| `baselines/*-tsc.txt` | відомі помилки `tsc` upstream; оновлює `verify.py --update-baselines` |
 | `check-docs.py` | перевірка документації: посилання, статуси, вимоги ↔ тести, шляхи, ADR — `python3 -I scripts/check-docs.py` |
 | `tests/test_vision_cli.py` | тести CLI `frontend/public/cli/vision.py` (фейкові API й adb) |
 | `tests/test_agent_guard.py` | тести hook'а `.claude/hooks/guard.py` |
 | `tests/test_check_docs.py` | тести `check-docs.py` |
+| `tests/test_verify.py` | тести `verify.py`: відомі помилки `tsc`, міграції, змінені файли |
 | `tests/test_vision_backup.py` | бекап, відновлення й бекап перед копією проду на локальному Postgres (замінники `docker`, `rclone`) |
 
 Тести запускаються як `python3 -I scripts/tests/<файл>.py`.

@@ -1,0 +1,15 @@
+src/_test/test.data.helper.ts: TS2741: Property 'updatedAt' is missing in type '{ id: string; number: number; ciBuildId: string; projectId: string; projectName: string; branchName: string; status: BuildStatus.failed; createdAt: string; createdBy: string; testRuns: never[]; ... 4 more ...; merge: false; }' but required in type 'Build'.
+src/_test/test.data.helper.ts: TS2741: Property 'updatedAt' is missing in type '{ id: string; number: number; ciBuildId: string; projectId: string; projectName: string; branchName: string; status: BuildStatus.passed; createdAt: string; createdBy: string; testRuns: never[]; ... 4 more ...; merge: false; }' but required in type 'Build'.
+src/_test/test.data.helper.ts: TS2741: Property 'updatedAt' is missing in type '{ id: string; number: number; ciBuildId: string; projectId: string; projectName: string; branchName: string; status: BuildStatus.unresolved; createdAt: string; createdBy: string; testRuns: never[]; ... 4 more ...; merge: true; }' but required in type 'Build'.
+src/components/ProjectForm/ProjectForm.tsx: TS2322: Type 'ImageComparison' is not assignable to type '"" | HTMLInputElement | undefined'.
+src/components/ProjectSelect.tsx: TS2322: Type 'string' is not assignable to type '"" | HTMLInputElement | undefined'.
+src/components/RegisterForm.tsx: TS2339: Property 'value' does not exist on type 'EventTarget'.
+src/components/RegisterForm.tsx: TS2339: Property 'value' does not exist on type 'EventTarget'.
+src/components/RegisterForm.tsx: TS2339: Property 'value' does not exist on type 'EventTarget'.
+src/components/TestDetailsDialog/DrawArea.tsx: TS2345: Argument of type 'KeyboardEvent<HTMLDivElement>' is not assignable to parameter of type 'KeyboardEvent'.
+src/components/TestVariationMergeForm.tsx: TS2322: Type 'string' is not assignable to type '"" | HTMLInputElement | undefined'.
+src/components/TestVariationMergeForm.tsx: TS7006: Parameter 'a' implicitly has an 'any' type.
+src/components/UserList/ActionButtons.tsx: TS2345: Argument of type 'GridRowId[]' is not assignable to parameter of type 'string[] | number[]'.
+src/contexts/user.context.tsx: TS7031: Binding element 'email' implicitly has an 'any' type.
+src/contexts/user.context.tsx: TS7031: Binding element 'firstName' implicitly has an 'any' type.
+src/contexts/user.context.tsx: TS7031: Binding element 'lastName' implicitly has an 'any' type.

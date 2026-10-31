@@ -1,7 +1,10 @@
 # Тести і перевірка змін
 
 Інструкція: які є рівні тестів, як писати тести, як оновлювати скриншот-еталони і що перевірити
-перед комітом. Точні команди пакетів — у їхніх `AGENTS.md`. Повна перевірка — skill `/verify`.
+перед комітом. Точні команди пакетів — у їхніх `AGENTS.md`. Повна перевірка — skill `/verify`, тобто
+`python3 -I scripts/verify.py`: усі unit-тести, функціональні Playwright (без скриншотів), `tsc`
+проти відомих помилок, eslint по змінених файлах, міграції, тести скриптів і `check-docs.py`
+(~7 хв; `--skip-e2e` — без Playwright, ~1,5 хв).
 
 ## Рівні
 
@@ -33,7 +36,8 @@
 у чистій копії репозиторію, щоб Linux-залежності не потрапили у твій `node_modules`:
 
 ```bash
-rsync -a --delete --exclude node_modules --exclude test-results frontend/ /tmp/pwsnap/frontend/
+rm -rf /tmp/pwsnap && mkdir -p /tmp/pwsnap
+tar --exclude node_modules --exclude test-results -cf - frontend | tar -xf - -C /tmp/pwsnap
 cd /tmp/pwsnap/frontend && ./test-docker.sh <spec> --update-snapshots
 ```
 
@@ -42,12 +46,16 @@ cd /tmp/pwsnap/frontend && ./test-docker.sh <spec> --update-snapshots
 
 ## Базові лінії
 
-- `frontend`: `tsc` — 25 відомих помилок upstream. Нова — твоя.
-- `backend`: помилки `tsc` у `prisma/test/seed.spec.ts` — upstream.
-- Скриншот-тести на macOS падають завжди. Функціональні мусять проходити.
+- `tsc`: відомі помилки upstream — у `scripts/baselines/{backend,frontend}-tsc.txt`, `verify.py`
+  показує лише нові. Нова — твоя; виправив відому — `python3 -I scripts/verify.py --update-baselines`.
+- Скриншот-тести поза Docker падають завжди (macOS, хмарна сесія), тому `verify.py` запускає
+  Playwright з `--ignore-snapshots`. Функціональні мусять проходити.
+- У хмарній сесії hook `.claude/hooks/session-start.sh` ставить `node_modules` і задає
+  `PLAYWRIGHT_CHROMIUM_EXECUTABLE` — вбудований Chromium образу (`playwright install` не потрібен).
 
 ## Перед комітом
 
+- [ ] `python3 -I scripts/verify.py` — зелений.
 - [ ] Тести зміненого модуля зелені; нові вимоги мають тести й рядок у «Перевірці вимог».
 - [ ] Unit-тести бекенду й фронтенду зелені повністю.
 - [ ] Типи й лінт без нових помилок; `git status` не показує чужих файлів.

@@ -46,8 +46,8 @@ Vision — внутрішній форк [Visual Regression Tracker](https://git
 | `docs/` | специфікації, рішення, архітектура, гайди | [docs/README.md](docs/README.md) |
 | `DEPLOY.md`, `DEMO.md` | розгортання поруч із продом (рос.), демо (англ.) | — |
 
-Повна перевірка перед «готово» — `/verify`. Перелік команд для кожного пакета — у ньому й у
-[testing](docs/guides/testing.md).
+Повна перевірка перед «готово» — `/verify`: усе однією командою `python3 -I scripts/verify.py`.
+Команди кожного пакета — у його `AGENTS.md` і в [testing](docs/guides/testing.md).
 
 ## Стиль коду
 

@@ -29,8 +29,8 @@
 
 | Компонент | Шлях | Роль |
 |---|---|---|
-| зведення (чисте) | backend/src/builds/build-overview.ts (новий) | вердикт, числа, прогрес, пристрої, фічі, баги, порівняння з попередньою |
-| сервіс зведення | backend/src/builds/build-overview.service.ts (новий) | вантажить прогони збірки й попередньої, рішення, баги перевірки, баги доступності |
+| зведення (чисте) | `backend/src/builds/build-overview.ts` | вердикт, числа, прогрес, пристрої, фічі, баги, порівняння з попередньою |
+| сервіс зведення | `backend/src/builds/build-overview.service.ts` | вантажить прогони збірки й попередньої, рішення, баги перевірки, баги доступності |
 | маршрут | `backend/src/builds/builds.controller.ts` | `GET /builds/:id/overview` (JwtAuthGuard) |
 | назва фічі | `backend/src/visual-bugs/visual-bug.ts` | наявний `featureOf` — та сама фіча, що в назві бага |
 | баги доступності збірки | `backend/src/a11y/a11y-issues.service.ts` | новий метод: ключі Jira проблем, що трапились у прогонах збірки; читає лише прогони з `a11yTotalCount > 0`, кеш за збіркою й найпізнішим `updatedAt` |
@@ -111,16 +111,16 @@ sequenceDiagram
 |---|---|
 | REQ-031-01 | план: frontend/integration_tests/test/buildOverview.spec.ts — «opens a build on the Overview tab» |
 | REQ-031-02 | план: frontend/src/_helpers/route.helpers.test.ts — «keeps the build tab in the address» |
-| REQ-031-03 | план: backend/src/builds/build-overview.spec.ts — «says Running, Waiting for review, Reviewed or Passed» |
-| REQ-031-04 | план: build-overview.spec.ts — «counts decisions per person and leaves undone ones out» |
-| REQ-031-05 | план: build-overview.spec.ts — «counts screenshots, waiting, rejected, new a11y issues and bugs» |
+| REQ-031-03 | `backend/src/builds/build-overview.spec.ts › says Running, Waiting for review, Reviewed or Passed` |
+| REQ-031-04 | `backend/src/builds/build-overview.spec.ts › counts decisions per person and leaves undone ones out` |
+| REQ-031-05 | `backend/src/builds/build-overview.spec.ts › counts screenshots, waiting, rejected, new a11y issues and bugs` |
 | REQ-031-06 | план: buildOverview.spec.ts — «each number opens its tab or queue» |
 | REQ-031-07 | план: buildOverview.spec.ts — «lists the change groups in the order of the Changes tab, new last» |
-| REQ-031-08 | план: build-overview.spec.ts — «splits the result by device profile» |
-| REQ-031-09 | план: build-overview.spec.ts — «names a feature by featureName or the check up to the first dot»; «folds quiet features into one row» |
-| REQ-031-10 | план: build-overview.spec.ts — «marks bugs filed from this build New and older ones Known» |
-| REQ-031-11 | план: build-overview.spec.ts — «compares with the previous build of the branch» |
-| REQ-031-12 | план: build-overview.spec.ts — «says first build when the branch has no earlier one» |
+| REQ-031-08 | `backend/src/builds/build-overview.spec.ts › splits the result by device profile` |
+| REQ-031-09 | `backend/src/builds/build-overview.spec.ts › names a feature by featureName or the check up to the first dot`; `backend/src/builds/build-overview.spec.ts › folds quiet features into one row` |
+| REQ-031-10 | `backend/src/builds/build-overview.spec.ts › marks bugs filed from this build New and older ones Known` |
+| REQ-031-11 | `backend/src/builds/build-overview.spec.ts › compares with the previous build of the branch` |
+| REQ-031-12 | `backend/src/builds/build-overview.spec.ts › says first build when the branch has no earlier one` |
 | REQ-031-13 | план: buildOverview.spec.ts — «updates the numbers when a run of the build changes» |
 | REQ-031-20 | план: frontend/src/_helpers/reviewQueue.helper.test.ts — «puts all waiting in the order of the groups, new last» |
 | REQ-031-21 | план: reviewQueue.helper.test.ts — «keeps only the waiting runs of a group, device or feature» |
@@ -140,7 +140,7 @@ sequenceDiagram
 | REQ-031-45 | план: frontend/src/_helpers/reportText.helper.test.ts — «writes Slack mrkdwn»; «writes a Jira list with links» |
 | REQ-031-46 | manual: Report → PDF у Chrome і Safari → «Save as PDF» дає A4 з обраними розділами й мовою |
 | REQ-031-47 | план: reportText.helper.test.ts — «states the time of the state it shows» |
-| REQ-031-48 | план: build-overview.service.spec.ts — «builds the overview without calling AI» |
+| REQ-031-48 | `backend/src/builds/build-overview.service.spec.ts › builds the overview without calling AI` |
 | REQ-031-49 | manual: у коді звіту немає викликів Slack, Jira чи пошти; рев'ю диффу |
 | REQ-031-60 | план: backend/src/reports/reports.controller.spec.ts — «creates a link with the chosen sections and language» |
 | REQ-031-61 | план: report-links.spec.ts — «expires after 7, 30 or 90 days, 30 by default» |

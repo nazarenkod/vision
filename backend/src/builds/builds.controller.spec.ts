@@ -1,5 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { BuildsController } from './builds.controller';
+import { BuildOverviewService } from './build-overview.service';
 import { BuildsService } from './builds.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { ApiGuard } from '../auth/guards/api.guard';
@@ -38,6 +39,7 @@ const initController = async ({
         },
       },
       { provide: EventsGateway, useValue: { buildCreated: eventBuildCreatedMock } },
+      { provide: BuildOverviewService, useValue: {} },
       { provide: PrismaService, useValue: {} },
       { provide: ApiGuard, useValue: {} },
       { provide: JwtAuthGuard, useValue: {} },

@@ -236,6 +236,42 @@ export class A11yIssuesService implements OnModuleInit {
     return reviewReport(report, await this.contextFor(testRun, report));
   }
 
+  /**
+   * The Jira bugs of the problems still found on these runs (031), each once, on
+   * the first run it is found on. Reads only runs with counted issues: the rest
+   * have no report worth opening.
+   */
+  async jiraBugsOn(
+    runs: Array<Pick<TestRun, 'id' | 'projectId' | 'name' | 'uiTreeName' | 'a11yReportName' | 'a11yTotalCount'>>
+  ): Promise<
+    Array<{ jiraKey: string; jiraUrl: string | null; title: string; testRunId: string; problemCode: string }>
+  > {
+    const bugs = new Map<
+      string,
+      { jiraKey: string; jiraUrl: string | null; title: string; testRunId: string; problemCode: string }
+    >();
+    const withIssues = runs.filter((run) => run.a11yReportName && run.a11yTotalCount);
+    if (!withIssues.length) return [];
+    const settings = await this.settingsFor(withIssues[0].projectId);
+    for (const run of withIssues) {
+      const report = await this.reportOf(run, settings);
+      if (!report) continue;
+      const reviewed = await this.review(run, report);
+      for (const violation of reviewed.violations) {
+        const jiraKey = violation.issue?.jiraKey;
+        if (!jiraKey || bugs.has(jiraKey)) continue;
+        bugs.set(jiraKey, {
+          jiraKey,
+          jiraUrl: violation.issue.jiraUrl ?? null,
+          title: violation.title,
+          testRunId: run.id,
+          problemCode: violation.problemCode,
+        });
+      }
+    }
+    return [...bugs.values()];
+  }
+
   /** Counts to keep on the row: new issues nobody has acted on, and all counted issues. */
   async countsFor(testRun: Pick<TestRun, 'projectId' | 'name' | 'uiTreeName'>, report: A11yReport) {
     const reviewed = await this.review(testRun, report);

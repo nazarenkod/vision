@@ -4,10 +4,10 @@
   `decision-undo.service.ts` пише автора рішення, Undo стирає.
   - Файли: `backend/prisma/schema.prisma`, нова міграція, `backend/src/test-runs/decision-undo.service.ts`.
   - Готово, коли: `npx prisma generate`, `decision-undo.spec.ts` зелений, міграція лише додає.
-- [ ] **T2** (REQ-031-03…05, 08…12) Чиста `buildOverview` з тестами.
+- [x] **T2** (REQ-031-03…05, 08…12) Чиста `buildOverview` з тестами.
   - Файли: backend/src/builds/build-overview.ts, build-overview.spec.ts.
   - Готово, коли: тести з «Перевірки вимог» для цих REQ зелені.
-- [ ] **T3** (REQ-031-10, 48) Сервіс і маршрут `GET /builds/:id/overview`; баги доступності збірки з кешем.
+- [x] **T3** (REQ-031-10, 48) Сервіс і маршрут `GET /builds/:id/overview`; баги доступності збірки з кешем.
   - Файли: build-overview.service.ts, `backend/src/builds/builds.controller.ts`,
     `backend/src/a11y/a11y-issues.service.ts`.
   - Готово, коли: сервісний тест з моками Prisma зелений; 500 прогонів — ≤ 2 с на копії даних.

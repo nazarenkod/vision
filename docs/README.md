@@ -6,7 +6,7 @@
 | Рівень | Що | Коли читати |
 |---|---|---|
 | 0 | [AGENTS.md](../AGENTS.md) і `AGENTS.md` пакетів | завжди: правила, команди, куди далі |
-| 1 | цей файл, [огляд продукту](product/overview.md), [словник](product/glossary.md), [архітектура](architecture/overview.md) | щоб зорієнтуватися |
+| 1 | цей файл, [огляд продукту](product/overview.md), [словник](product/glossary.md), [беклог ідей](product/backlog.md), [архітектура](architecture/overview.md) | щоб зорієнтуватися |
 | 2 | [специфікації](specs/README.md), [рішення](decisions/README.md), [дані](architecture/data-model.md), [API](architecture/api.md), гайди | коли працюєш з конкретною темою |
 
 ## З чого почати під задачу

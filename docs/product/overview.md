@@ -42,6 +42,8 @@ Vision додає до знімка **UI-дерево** (Appium page source) і 
 
 У роботі (Draft): [014](../specs/014-element-order-changes/spec.md), [015](../specs/015-compare-selected-elements/spec.md), [016 — робоча конфігурація й переїзд з VRT](../specs/016-production-and-cutover/spec.md).
 
+Ідеї, що ще не стали специфікаціями, — у [беклозі](backlog.md).
+
 ## Чого Vision свідомо не робить
 
 - Не порівнює знімки різних пристроїв між собою ([ADR-0016](../decisions/0016-no-cross-device-comparison.md)).

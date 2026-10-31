@@ -200,6 +200,8 @@ interface TestDetailsModalProps {
   // the same check on every device of the build
   deviceRuns?: TestRun[];
   handleSelectRun?: (id: string) => void;
+  // the queue this review steps through, opened from the overview (REQ-031-24)
+  queueHeader?: React.ReactNode;
 }
 
 const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
@@ -215,6 +217,7 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
   handleClose,
   deviceRuns = [],
   handleSelectRun,
+  queueHeader,
 }) => {
   const classes = useStyles();
   const { enqueueSnackbar } = useDialogSnackbar();
@@ -1438,13 +1441,16 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
         className={classes.header}
         spacing={2}
       >
+        {queueHeader && <Grid item>{queueHeader}</Grid>}
         <Grid item>
-          <Typography variant="h6" display="inline">
-            {t("review.step", {
-              current: currentRunIndex + 1,
-              total: totalTestRunCount,
-            })}
-          </Typography>
+          {!queueHeader && (
+            <Typography variant="h6" display="inline">
+              {t("review.step", {
+                current: currentRunIndex + 1,
+                total: totalTestRunCount,
+              })}
+            </Typography>
+          )}
           <Typography
             variant="h6"
             display="inline"

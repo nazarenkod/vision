@@ -9,7 +9,10 @@ import { CountUp } from "./motion/useCountUp";
 import { useT } from "../i18n";
 
 /** Build header: identity, status and a bar of how the screenshots came out. */
-const BuildDetails: React.FunctionComponent = () => {
+const BuildDetails: React.FunctionComponent<{
+  // what can be done with the build: Report, Review (031)
+  actions?: React.ReactNode;
+}> = ({ actions }) => {
   const { selectedBuild } = useBuildState();
   const { testRuns } = useTestRunState();
   const { t, tx, formatDate } = useT();
@@ -76,6 +79,9 @@ const BuildDetails: React.FunctionComponent = () => {
           {selectedBuild.updatedAt &&
             t("builds.lastRun", { date: formatDate(selectedBuild.updatedAt) })}
         </Typography>
+        {actions && (
+          <Box sx={{ ml: "auto", display: "flex", gap: 1 }}>{actions}</Box>
+        )}
       </Box>
 
       <Box sx={{ display: "flex", flexDirection: "column", gap: 0.75 }}>

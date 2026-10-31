@@ -1,6 +1,7 @@
 import React, { useEffect } from "react";
-import { Box, Tab, Tabs } from "@mui/material";
-import { useParams, useNavigate } from "react-router-dom";
+import { Box, Button, Tab, Tabs } from "@mui/material";
+import { DescriptionOutlined, VisibilityOutlined } from "@mui/icons-material";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import BuildList from "../components/BuildList";
 import ProjectSelect from "../components/ProjectSelect";
 import TestRunList from "../components/TestRunList";
@@ -9,6 +10,12 @@ import { TestDetailsDialog } from "../components/TestDetailsDialog";
 import { ChangeGroups } from "../components/ChangeGroups";
 import { A11ySummary } from "../components/A11ySummary";
 import { StatusPill } from "../components/StatusPill";
+import {
+  BuildOverview,
+  OverviewActions,
+  useBuildOverview,
+} from "../components/BuildOverview";
+import { useBuildGroups } from "../components/BuildOverview/useBuildGroups";
 import {
   useHelpDispatch,
   setHelpSteps,
@@ -21,47 +28,69 @@ import {
   LOCATOR_PROJECT_PAGE_SELECT_PROJECT,
   LOCATOR_PROJECT_PAGE_TEST_RUN_LIST,
 } from "../constants";
-import { buildProjectPageUrl } from "../_helpers/route.helpers";
+import {
+  BuildTab,
+  buildProjectPageUrl,
+  buildTestRunLocation,
+  getQueryParams,
+} from "../_helpers/route.helpers";
+import {
+  queueIds,
+  queueParam,
+  waitingInOrder,
+} from "../_helpers/reviewQueue.helper";
 import { tokens } from "../theme";
 import { useT } from "../i18n";
-
-type BuildView = "changes" | "all" | "a11y";
-const VIEW_KEY = "vrt.buildView";
-
-const readView = (): BuildView => {
-  try {
-    const value = localStorage.getItem(VIEW_KEY);
-    return value === "all" || value === "a11y" ? value : "changes";
-  } catch {
-    return "changes";
-  }
-};
 
 const ProjectPage = () => {
   const { projectId } = useParams<{ projectId: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
   const helpDispatch = useHelpDispatch();
   const { selectedBuild } = useBuildState();
   const { testRuns } = useTestRunState();
-  const [view, setView] = React.useState<BuildView>(readView);
+  // the tab lives in the address: a link opens it, a new build opens Overview (REQ-031-01, -02)
+  const view: BuildTab = getQueryParams(location.search).tab ?? "overview";
   const { t } = useT();
+  const groups = useBuildGroups(selectedBuild?.id, testRuns);
+  const { overview, failed } = useBuildOverview(selectedBuild?.id);
 
   useEffect(() => {
     setHelpSteps(helpDispatch, PROJECT_PAGE_STEPS);
   });
 
-  const changeView = (next: BuildView) => {
-    setView(next);
-    try {
-      localStorage.setItem(VIEW_KEY, next);
-    } catch {
-      // the choice is a convenience only
-    }
-  };
+  const actions: OverviewActions = React.useMemo(
+    () => ({
+      openTab: (tab, status) =>
+        selectedBuild &&
+        navigate(
+          buildTestRunLocation(selectedBuild.id, undefined, { tab, status }),
+        ),
+      openQueue: (key, runId) => {
+        if (!selectedBuild) return;
+        const ids = queueIds(key, testRuns, groups ?? []);
+        const first = runId ?? ids[0];
+        if (!first) return;
+        navigate(
+          buildTestRunLocation(selectedBuild.id, first, {
+            tab: view,
+            queue: queueParam(key),
+          }),
+        );
+      },
+    }),
+    [selectedBuild, navigate, testRuns, groups, view],
+  );
+
+  const changeView = (next: BuildTab) => actions.openTab(next);
 
   const a11yNew = testRuns.reduce(
     (sum, run) => sum + (run.a11yNewCount ?? 0),
     0,
+  );
+  const waiting = React.useMemo(
+    () => waitingInOrder(testRuns, groups ?? []).length,
+    [testRuns, groups],
   );
 
   return (
@@ -97,7 +126,34 @@ const ProjectPage = () => {
             flexDirection: "column",
           }}
         >
-          <BuildDetails />
+          <BuildDetails
+            actions={
+              selectedBuild && (
+                <>
+                  <Button
+                    size="small"
+                    variant="outlined"
+                    startIcon={<DescriptionOutlined />}
+                    data-testid="openReport"
+                    disabled={!overview}
+                  >
+                    {t("overview.report")}
+                  </Button>
+                  {waiting > 0 && (
+                    <Button
+                      size="small"
+                      variant="contained"
+                      startIcon={<VisibilityOutlined />}
+                      data-testid="reviewWaiting"
+                      onClick={() => actions.openQueue({ kind: "all" })}
+                    >
+                      {t("overview.reviewN", { count: waiting })}
+                    </Button>
+                  )}
+                </>
+              )
+            }
+          />
           {selectedBuild && (
             <Tabs
               value={view}
@@ -105,6 +161,7 @@ const ProjectPage = () => {
               sx={{ px: 3, borderBottom: `1px solid ${tokens.border}` }}
               aria-label={t("builds.views")}
             >
+              <Tab value="overview" label={t("overview.tab")} />
               <Tab
                 value="changes"
                 label={
@@ -142,6 +199,8 @@ const ProjectPage = () => {
             </Tabs>
           )}
           <Box
+            // the tour points here: the list itself is hidden on the other tabs
+            id={LOCATOR_PROJECT_PAGE_TEST_RUN_LIST}
             sx={{
               flex: 1,
               minHeight: 0,
@@ -149,6 +208,14 @@ const ProjectPage = () => {
               position: "relative",
             }}
           >
+            {selectedBuild && view === "overview" && (
+              <BuildOverview
+                overview={overview}
+                failed={failed}
+                groups={groups}
+                actions={actions}
+              />
+            )}
             {selectedBuild && view === "changes" && (
               <ChangeGroups buildId={selectedBuild.id} />
             )}
@@ -157,7 +224,6 @@ const ProjectPage = () => {
             )}
             {/* kept mounted: it loads the build's runs and the order the review steps through */}
             <Box
-              id={LOCATOR_PROJECT_PAGE_TEST_RUN_LIST}
               sx={
                 !selectedBuild || view === "all"
                   ? { height: "100%" }
@@ -179,7 +245,7 @@ const ProjectPage = () => {
           </Box>
         </Box>
       </Box>
-      <TestDetailsDialog />
+      <TestDetailsDialog groups={groups} />
     </>
   );
 };

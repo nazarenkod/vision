@@ -13,8 +13,13 @@
   порівняння відкрили, щоб крапки й «N / M» не стрибали після рішень.
 - **Публічний звіт — окрема таблиця посилань і один endpoint без входу**
   ([ADR-0022](../../decisions/0022-public-report-links.md)).
-- **Живе оновлення.** Overview оновлюється з нинішнього сокета: подія `testRun_*` чи `build_updated`
-  перезапитує зведення з паузою 400 ms. Публічна сторінка не слухає сокет, бо він розсилає рядки всіх
+- **Живе оновлення.** Overview не слухає сокет сам: контекст прогонів збірки вже оновлюється його
+  подіями, і зміна статусу чи лічильника a11y будь-якого прогону збірки перезапитує зведення з паузою
+  400 ms. Групи для «To decide» і черг тримає один хук на сторінці, `useBuildGroups`.
+- **Вкладка в адресі.** `tab` (без нього — Overview), `status` (All tests на одному статусі),
+  `queue`, а `testId` завжди останній. Вкладка, з якої відкрили порівняння, лишається в адресі,
+  тож Esc повертає туди. Ціль останнього кроку туру — область вкладки, а не список, що прихований
+  на інших вкладках. Публічна сторінка не слухає сокет, бо він розсилає рядки всіх
   збірок. Вона перепитує своє зведення кожні 8 с з `ETag`, тож незмінене зведення коштує 304.
 - **PDF — друк сторінки звіту браузером** у «Save as PDF», зі стилем `@page A4`. Нової залежності
   немає, і PDF збігається з тим, що видно на екрані (ADR-0022).
@@ -38,12 +43,12 @@
 | посилання (чисте) | backend/src/reports/report-links.ts (новий) | термін (7/30/90), чинність, обрізання до розділів, до 20 змін, люди лише на ім'я |
 | посилання (сервіс, маршрути) | backend/src/reports/ (новий модуль) | `POST /builds/:id/report-links` (editor, admin), `GET /builds/:id/report-links`, `DELETE /report-links/:id` (автор або admin), `GET /public/reports/:token` без входу, з `ETag` |
 | типи | `frontend/src/types/` | `BuildOverview`, `ReportLink`, `PublicReport` |
-| сервіси | `frontend/src/services/` | buildOverview.service.ts, reports.service.ts (нові) |
-| вкладка Overview | frontend/src/components/BuildOverview/ (новий) | вердикт, плитки, To decide, Devices, Features, Jira bugs |
+| сервіси | `frontend/src/services/` | `frontend/src/services/buildOverview.service.ts`, reports.service.ts (новий) |
+| вкладка Overview | `frontend/src/components/BuildOverview/` | вердикт, плитки, To decide, Devices, Features, Jira bugs |
 | вкладка в адресі | `frontend/src/pages/ProjectPage.tsx`, `frontend/src/_helpers/route.helpers.ts` | `tab` і `queue` у query; без `tab` — Overview |
 | черги (чисте) | `frontend/src/_helpers/reviewQueue.helper.ts` | ключ черги → впорядковані id; меню черг; наступна непорожня |
 | порівняння | `frontend/src/components/TestDetailsDialog/index.tsx` | крокує чергою, якщо вона є, інакше як зараз (список All tests) |
-| заголовок черги, підсумок | frontend/src/components/TestDetailsDialog/QueueHeader.tsx, QueueDone.tsx (нові) | назва черги, «N / M», меню; підсумок, Enter і Esc |
+| заголовок черги, підсумок | `frontend/src/components/TestDetailsDialog/QueueHeader.tsx`, `frontend/src/components/TestDetailsDialog/QueueDone.tsx` | назва черги, «N / M», меню; підсумок, Enter і Esc |
 | крапки кроків | `frontend/src/components/TestDetailsDialog/StepDots.tsx` | без змін; поруч «N / M» замість «Step N/M» |
 | звіт | frontend/src/components/BuildReport/ (новий) | `ReportDialog` (налаштування, поділитися, посилання), `ReportDocument` (спільний для діалогу, сторінки й друку) |
 | текст звіту (чисте) | `frontend/src/_helpers/reportText.helper.ts` | Slack і Jira, мовою звіту |
@@ -109,29 +114,29 @@ sequenceDiagram
 
 | Вимога | Перевірка |
 |---|---|
-| REQ-031-01 | план: frontend/integration_tests/test/buildOverview.spec.ts — «opens a build on the Overview tab» |
-| REQ-031-02 | план: frontend/src/_helpers/route.helpers.test.ts — «keeps the build tab in the address» |
+| REQ-031-01 | `frontend/integration_tests/test/buildOverview.spec.ts › opens a build on the Overview tab` |
+| REQ-031-02 | `frontend/src/_helpers/route.helpers.test.ts › keeps the build tab in the address` |
 | REQ-031-03 | `backend/src/builds/build-overview.spec.ts › says Running, Waiting for review, Reviewed or Passed` |
 | REQ-031-04 | `backend/src/builds/build-overview.spec.ts › counts decisions per person and leaves undone ones out` |
 | REQ-031-05 | `backend/src/builds/build-overview.spec.ts › counts screenshots, waiting, rejected, new a11y issues and bugs` |
-| REQ-031-06 | план: buildOverview.spec.ts — «each number opens its tab or queue» |
-| REQ-031-07 | план: buildOverview.spec.ts — «lists the change groups in the order of the Changes tab, new last» |
+| REQ-031-06 | `frontend/integration_tests/test/buildOverview.spec.ts › each number opens its tab or queue` |
+| REQ-031-07 | `frontend/integration_tests/test/buildOverview.spec.ts › lists the change groups in the order of the Changes tab, new last` |
 | REQ-031-08 | `backend/src/builds/build-overview.spec.ts › splits the result by device profile` |
 | REQ-031-09 | `backend/src/builds/build-overview.spec.ts › names a feature by featureName or the check up to the first dot`; `backend/src/builds/build-overview.spec.ts › folds quiet features into one row` |
 | REQ-031-10 | `backend/src/builds/build-overview.spec.ts › marks bugs filed from this build New and older ones Known` |
 | REQ-031-11 | `backend/src/builds/build-overview.spec.ts › compares with the previous build of the branch` |
 | REQ-031-12 | `backend/src/builds/build-overview.spec.ts › says first build when the branch has no earlier one` |
-| REQ-031-13 | план: buildOverview.spec.ts — «updates the numbers when a run of the build changes» |
+| REQ-031-13 | `frontend/src/components/BuildOverview/useBuildOverview.test.tsx › updates the numbers when a run of the build changes` |
 | REQ-031-20 | `frontend/src/_helpers/reviewQueue.helper.test.ts › puts all waiting in the order of the groups, new last` |
 | REQ-031-21 | `frontend/src/_helpers/reviewQueue.helper.test.ts › keeps only the waiting runs of a group, device or feature` |
 | REQ-031-22 | `frontend/src/_helpers/reviewQueue.helper.test.ts › starts at the clicked run inside its group` |
 | REQ-031-23 | `frontend/src/_helpers/reviewQueue.helper.test.ts › opens the run a bug was filed from, decided or not` |
-| REQ-031-24 | план: buildOverview.spec.ts — «shows the queue name and position instead of Step» |
-| REQ-031-25 | план: buildOverview.spec.ts — «switches the queue from its menu» |
-| REQ-031-26 | план: buildOverview.spec.ts — «sums up a finished queue and offers the next one» |
+| REQ-031-24 | `frontend/integration_tests/test/buildOverview.spec.ts › shows the queue name and position instead of Step` |
+| REQ-031-25 | `frontend/integration_tests/test/buildOverview.spec.ts › switches the queue from its menu` |
+| REQ-031-26 | `frontend/integration_tests/test/buildOverview.spec.ts › sums up a finished queue and offers the next one` |
 | REQ-031-27 | `frontend/src/_helpers/reviewQueue.helper.test.ts › skips runs someone else decided` |
-| REQ-031-28 | план: buildOverview.spec.ts — «Esc returns to where the review was opened, focus on the same row» |
-| REQ-031-29 | план: route.helpers.test.ts — «keeps build, run and queue in the address» |
+| REQ-031-28 | `frontend/integration_tests/test/buildOverview.spec.ts › Esc returns to where the review was opened, focus on the same row` |
+| REQ-031-29 | `frontend/src/_helpers/route.helpers.test.ts › keeps build, run and queue in the address` |
 | REQ-031-40 | план: frontend/integration_tests/test/buildReport.spec.ts — «previews the report as settings change» |
 | REQ-031-41 | план: frontend/src/components/BuildReport/ReportDocument.test.tsx — «Short has Summary, Changes and Jira bugs; Full adds the rest» |
 | REQ-031-42 | план: ReportDocument.test.tsx — «renders in the report language, not the interface one» |

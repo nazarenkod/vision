@@ -315,7 +315,7 @@ export const ChangeGroups: React.FunctionComponent<Props> = ({
   }, [aiStatus?.enabled, groups, summaries, summarize]);
 
   const open = (run: TestRun) =>
-    navigate(buildTestRunLocation(buildId, run.id));
+    navigate(buildTestRunLocation(buildId, run.id, { tab: "changes" }));
 
   const decide = async () => {
     if (!confirm) return;

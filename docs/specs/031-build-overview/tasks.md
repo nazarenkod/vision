@@ -15,12 +15,12 @@
   - Файли: frontend/src/_helpers/reviewQueue.helper.ts, .test.ts.
 - [x] **T5** [P] (REQ-031-45, 47) Чистий `reportText` з тестами.
   - Файли: frontend/src/_helpers/reportText.helper.ts, .test.ts.
-- [ ] **T6** (REQ-031-01, 02, 05…13) Вкладка Overview: типи, сервіс, `BuildOverview/`, `tab` в адресі,
+- [x] **T6** (REQ-031-01, 02, 05…13) Вкладка Overview: типи, сервіс, `BuildOverview/`, `tab` в адресі,
   оновлення з сокета; тексти EN/UK.
   - Файли: `frontend/src/pages/ProjectPage.tsx`, `frontend/src/_helpers/route.helpers.ts`,
     frontend/src/components/BuildOverview/, `frontend/src/i18n/en.ts`, `frontend/src/i18n/uk.ts`.
   - Готово, коли: buildOverview.spec.ts (Playwright) зелений.
-- [ ] **T7** (REQ-031-20…29) Черга в порівнянні: `queue` в адресі, `QueueHeader`, `QueueDone`,
+- [x] **T7** (REQ-031-20…29) Черга в порівнянні: `queue` в адресі, `QueueHeader`, `QueueDone`,
   повернення й фокус. Після T4 і T6.
   - Файли: `frontend/src/components/TestDetailsDialog/index.tsx`, QueueHeader.tsx, QueueDone.tsx.
   - Готово, коли: сценарії US-2 у buildOverview.spec.ts зелені; без `queue` крокування як було.

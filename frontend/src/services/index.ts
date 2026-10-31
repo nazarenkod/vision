@@ -7,3 +7,4 @@ export * from "./testRun.service";
 export * from "./ollama.service";
 export * from "./insights.service";
 export * from "./backups.service";
+export * from "./buildOverview.service";

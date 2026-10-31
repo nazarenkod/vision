@@ -11,9 +11,9 @@
   - Файли: build-overview.service.ts, `backend/src/builds/builds.controller.ts`,
     `backend/src/a11y/a11y-issues.service.ts`.
   - Готово, коли: сервісний тест з моками Prisma зелений; 500 прогонів — ≤ 2 с на копії даних.
-- [ ] **T4** [P] (REQ-031-20…23, 27) Чистий `reviewQueue` з тестами.
+- [x] **T4** [P] (REQ-031-20…23, 27) Чистий `reviewQueue` з тестами.
   - Файли: frontend/src/_helpers/reviewQueue.helper.ts, .test.ts.
-- [ ] **T5** [P] (REQ-031-45, 47) Чистий `reportText` з тестами.
+- [x] **T5** [P] (REQ-031-45, 47) Чистий `reportText` з тестами.
   - Файли: frontend/src/_helpers/reportText.helper.ts, .test.ts.
 - [ ] **T6** (REQ-031-01, 02, 05…13) Вкладка Overview: типи, сервіс, `BuildOverview/`, `tab` в адресі,
   оновлення з сокета; тексти EN/UK.

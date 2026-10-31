@@ -37,6 +37,8 @@ export interface TestRun {
   // accessibility issues nobody has acted on yet / all counted issues
   a11yNewCount?: number | null;
   a11yTotalCount?: number | null;
+  // the feature the test named (ADR-0019); without it, the check's name up to the first dot
+  featureName?: string | null;
   // element changes the screenshot does not show
   semanticChangeCount?: number | null;
 }

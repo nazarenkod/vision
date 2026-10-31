@@ -41,12 +41,12 @@
 | сервіси | `frontend/src/services/` | buildOverview.service.ts, reports.service.ts (нові) |
 | вкладка Overview | frontend/src/components/BuildOverview/ (новий) | вердикт, плитки, To decide, Devices, Features, Jira bugs |
 | вкладка в адресі | `frontend/src/pages/ProjectPage.tsx`, `frontend/src/_helpers/route.helpers.ts` | `tab` і `queue` у query; без `tab` — Overview |
-| черги (чисте) | frontend/src/_helpers/reviewQueue.helper.ts (новий) | ключ черги → впорядковані id; меню черг; наступна непорожня |
+| черги (чисте) | `frontend/src/_helpers/reviewQueue.helper.ts` | ключ черги → впорядковані id; меню черг; наступна непорожня |
 | порівняння | `frontend/src/components/TestDetailsDialog/index.tsx` | крокує чергою, якщо вона є, інакше як зараз (список All tests) |
 | заголовок черги, підсумок | frontend/src/components/TestDetailsDialog/QueueHeader.tsx, QueueDone.tsx (нові) | назва черги, «N / M», меню; підсумок, Enter і Esc |
 | крапки кроків | `frontend/src/components/TestDetailsDialog/StepDots.tsx` | без змін; поруч «N / M» замість «Step N/M» |
 | звіт | frontend/src/components/BuildReport/ (новий) | `ReportDialog` (налаштування, поділитися, посилання), `ReportDocument` (спільний для діалогу, сторінки й друку) |
-| текст звіту (чисте) | frontend/src/_helpers/reportText.helper.ts (новий) | Slack і Jira, мовою звіту |
+| текст звіту (чисте) | `frontend/src/_helpers/reportText.helper.ts` | Slack і Jira, мовою звіту |
 | публічна сторінка | frontend/src/pages/PublicReportPage.tsx (новий), `frontend/src/Router.jsx` | `/r/:token` поза `PrivateRoute`; перепит кожні 8 с; друк |
 | тексти | `frontend/src/i18n/en.ts`, `frontend/src/i18n/uk.ts` | ключі `overview.*`, `queue.*`, `report.*` |
 
@@ -122,14 +122,14 @@ sequenceDiagram
 | REQ-031-11 | `backend/src/builds/build-overview.spec.ts › compares with the previous build of the branch` |
 | REQ-031-12 | `backend/src/builds/build-overview.spec.ts › says first build when the branch has no earlier one` |
 | REQ-031-13 | план: buildOverview.spec.ts — «updates the numbers when a run of the build changes» |
-| REQ-031-20 | план: frontend/src/_helpers/reviewQueue.helper.test.ts — «puts all waiting in the order of the groups, new last» |
-| REQ-031-21 | план: reviewQueue.helper.test.ts — «keeps only the waiting runs of a group, device or feature» |
-| REQ-031-22 | план: reviewQueue.helper.test.ts — «starts at the clicked run inside its group» |
-| REQ-031-23 | план: reviewQueue.helper.test.ts — «opens the run a bug was filed from, decided or not» |
+| REQ-031-20 | `frontend/src/_helpers/reviewQueue.helper.test.ts › puts all waiting in the order of the groups, new last` |
+| REQ-031-21 | `frontend/src/_helpers/reviewQueue.helper.test.ts › keeps only the waiting runs of a group, device or feature` |
+| REQ-031-22 | `frontend/src/_helpers/reviewQueue.helper.test.ts › starts at the clicked run inside its group` |
+| REQ-031-23 | `frontend/src/_helpers/reviewQueue.helper.test.ts › opens the run a bug was filed from, decided or not` |
 | REQ-031-24 | план: buildOverview.spec.ts — «shows the queue name and position instead of Step» |
 | REQ-031-25 | план: buildOverview.spec.ts — «switches the queue from its menu» |
 | REQ-031-26 | план: buildOverview.spec.ts — «sums up a finished queue and offers the next one» |
-| REQ-031-27 | план: reviewQueue.helper.test.ts — «skips runs someone else decided» |
+| REQ-031-27 | `frontend/src/_helpers/reviewQueue.helper.test.ts › skips runs someone else decided` |
 | REQ-031-28 | план: buildOverview.spec.ts — «Esc returns to where the review was opened, focus on the same row» |
 | REQ-031-29 | план: route.helpers.test.ts — «keeps build, run and queue in the address» |
 | REQ-031-40 | план: frontend/integration_tests/test/buildReport.spec.ts — «previews the report as settings change» |
@@ -137,9 +137,9 @@ sequenceDiagram
 | REQ-031-42 | план: ReportDocument.test.tsx — «renders in the report language, not the interface one» |
 | REQ-031-43 | план: ReportDocument.test.tsx — «summary names the project, build, branch, time, devices and numbers» |
 | REQ-031-44 | план: backend/src/reports/report-links.spec.ts — «lists up to 20 changes and counts the rest» |
-| REQ-031-45 | план: frontend/src/_helpers/reportText.helper.test.ts — «writes Slack mrkdwn»; «writes a Jira list with links» |
+| REQ-031-45 | `frontend/src/_helpers/reportText.helper.test.ts › writes Slack mrkdwn`; `frontend/src/_helpers/reportText.helper.test.ts › writes a Jira list with links` |
 | REQ-031-46 | manual: Report → PDF у Chrome і Safari → «Save as PDF» дає A4 з обраними розділами й мовою |
-| REQ-031-47 | план: reportText.helper.test.ts — «states the time of the state it shows» |
+| REQ-031-47 | `frontend/src/_helpers/reportText.helper.test.ts › states the time of the state it shows` |
 | REQ-031-48 | `backend/src/builds/build-overview.service.spec.ts › builds the overview without calling AI` |
 | REQ-031-49 | manual: у коді звіту немає викликів Slack, Jira чи пошти; рев'ю диффу |
 | REQ-031-60 | план: backend/src/reports/reports.controller.spec.ts — «creates a link with the chosen sections and language» |

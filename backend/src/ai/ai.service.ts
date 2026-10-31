@@ -69,7 +69,8 @@ export class AiService {
   private async usedToday(): Promise<number> {
     const since = new Date();
     since.setHours(0, 0, 0, 0);
-    return this.prismaService.aiResult.count({ where: { createdAt: { gte: since } } });
+    // answers on a person's own key spent their quota, not the instance's (REQ-025-47)
+    return this.prismaService.aiResult.count({ where: { createdAt: { gte: since }, personal: null } });
   }
 
   async status(): Promise<AiStatus> {
@@ -145,7 +146,9 @@ export class AiService {
     }
 
     await this.prismaService.aiResult
-      .create({ data: { kind: input.kind, cacheKey, payload: JSON.stringify(result), model } })
+      .create({
+        data: { kind: input.kind, cacheKey, payload: JSON.stringify(result), model, personal: personal ? true : null },
+      })
       .catch(() => undefined); // a parallel request stored the same answer first
     return { result, cached: false, model };
   }

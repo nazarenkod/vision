@@ -31,7 +31,7 @@ upstream VRT, а згодом зможе працювати й на живій.
 | `A11yDecision` | журнал рішень: `filed`, `linked`, `found`, `unlinked`, `ignored`, `restored` — хто, коли, по якій проблемі та якому багу |
 | `A11yIssueState` | рішення старого формату (по елементу на екрані). При старті API переносяться в `A11yProblem`; ті, чиє порушення вже не знайдено, діють як раніше на своєму екрані |
 | `CrossDeviceCheck` | що показало довідкове порівняння пристроїв і що вирішив рев'юер ([007](../specs/007-cross-device-reference/spec.md)); з [020](../specs/020-remove-reference-device/spec.md) нових записів немає, наявні лишаються |
-| `AiResult` | кеш відповідей AI за хешем вмісту ([010](../specs/010-ai-assist/spec.md)) |
+| `AiResult` | кеш відповідей AI за хешем вмісту ([010](../specs/010-ai-assist/spec.md)); `personal` — відповідь на особистому ключі Gemini, денний ліміт інстансу її не рахує ([025](../specs/025-bug-from-comparison/spec.md)) |
 | `VisualBug` | баг, заведений з порівняння: перевірка (`checkName` + `customTags`), прогін і профіль пристрою, з якого заведено, ключ і посилання Jira, назва, позначки (`marks`, JSON у пікселях знімка), хто й коли. Без зовнішніх ключів ([025](../specs/025-bug-from-comparison/spec.md)) |
 | `ReviewDecision` | журнал Approve і Reject для Undo: хто, що (`kind`), стан кожного прогону до й після (`items`, JSON), коли скасовано (`undoneAt`). Без зовнішніх ключів; записи старші за 7 днів видаляються при наступному записі ([ADR-0014](../decisions/0014-undo-through-decision-journal.md)) |
 
@@ -69,3 +69,4 @@ upstream VRT, а згодом зможе працювати й на живій.
 | `20261029110000_add_review_decisions` | `ReviewDecision` |
 | `20261029200000_add_visual_bugs` | `TestRun.featureName`, `VisualBug` |
 | `20261029210000_add_user_gemini_key` | `User.geminiApiKey` |
+| `20261031100000_add_ai_result_personal` | `AiResult.personal` |

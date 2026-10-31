@@ -74,6 +74,22 @@ describe('AiService', () => {
     await expect(service.generateJson({ kind: 'k', schema, prompt: 'p' })).rejects.toThrow('Daily AI limit');
   });
 
+  it('counts only the instance’s own calls toward its daily limit, not answers on a person’s key', async () => {
+    const { service, prismaService } = setup(gemini);
+
+    await service.generateJson({ kind: 'bug-draft', schema, prompt: 'mine', personalGeminiKey: 'personal-key' });
+    await service.generateJson({ kind: 'k', schema, prompt: 'shared' });
+
+    const stored = prismaService.aiResult.create.mock.calls.map(([{ data }]) => [data.kind, data.personal]);
+    expect(stored).toEqual([
+      ['bug-draft', true],
+      ['k', null],
+    ]);
+    expect(prismaService.aiResult.count).toHaveBeenCalledWith({
+      where: { createdAt: { gte: expect.any(Date) }, personal: null },
+    });
+  });
+
   it('uses a local Ollama model when configured', async () => {
     const { service, ollamaService } = setup({ AI_PROVIDER: 'ollama', OLLAMA_BASE_URL: 'http://x' });
     expect((await service.generateJson({ kind: 'k', schema, prompt: 'p' })).result).toEqual({ answer: 'local' });

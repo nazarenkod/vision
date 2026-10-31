@@ -285,6 +285,8 @@ model AiResult {
   cacheKey  String   @unique
   payload   String
   model     String?
+  // answered on a person's own Gemini key (025): outside the instance's daily limit
+  personal  Boolean?
   createdAt DateTime @default(now())
 }
 

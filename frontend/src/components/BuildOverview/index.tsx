@@ -223,10 +223,12 @@ const Verdict: React.FunctionComponent<{ overview: Overview }> = ({
         borderRadius: 3,
         px: 2,
         py: 1.75,
-        display: "grid",
-        gridTemplateColumns: "auto auto minmax(0, 1fr) auto 190px",
+        // one line when it fits; on a narrow window the chip and progress go below
+        display: "flex",
+        flexWrap: "wrap",
         alignItems: "center",
-        gap: 1.75,
+        columnGap: 1.75,
+        rowGap: 1.25,
       }}
     >
       <Box
@@ -242,10 +244,20 @@ const Verdict: React.FunctionComponent<{ overview: Overview }> = ({
       >
         <Icon sx={{ fontSize: 18 }} />
       </Box>
-      <Typography component="h2" sx={{ fontSize: 16, fontWeight: 650 }}>
+      <Typography
+        component="h2"
+        sx={{ fontSize: 16, fontWeight: 650, whiteSpace: "nowrap" }}
+      >
         {t(`overview.verdict.${verdict}` as MessageKey)}
       </Typography>
-      <Typography noWrap sx={{ fontSize: 13, color: tokens.textSecondary }}>
+      <Typography
+        sx={{
+          fontSize: 13,
+          color: tokens.textSecondary,
+          whiteSpace: "nowrap",
+          flex: "1 1 auto",
+        }}
+      >
         {done
           ? t("overview.decidedSummary", {
               passed: counts.passed,
@@ -283,7 +295,7 @@ const Verdict: React.FunctionComponent<{ overview: Overview }> = ({
       </Box>
       <Box
         data-testid="overviewProgress"
-        sx={{ display: "flex", flexDirection: "column", gap: 0.5 }}
+        sx={{ display: "flex", flexDirection: "column", gap: 0.5, width: 190 }}
       >
         <Box
           sx={{

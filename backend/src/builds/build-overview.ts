@@ -19,11 +19,12 @@ export interface OverviewRun {
   featureName: string | null;
   a11yNewCount: number | null;
   decidedById: string | null;
+  diffPercent: number | null;
 }
 
 export type PreviousRun = Pick<
   OverviewRun,
-  'name' | 'customTags' | 'status' | 'device' | 'os' | 'browser' | 'viewport'
+  'name' | 'customTags' | 'status' | 'device' | 'os' | 'browser' | 'viewport' | 'diffPercent'
 >;
 
 export interface OverviewBugInput {
@@ -91,7 +92,14 @@ export interface BuildOverview {
 
 const PASSED: TestStatus[] = [TestStatus.ok, TestStatus.approved, TestStatus.autoApproved];
 // came out different from the baseline when it arrived, decided since or not
-const DIFFERED: TestStatus[] = [TestStatus.unresolved, TestStatus.approved, TestStatus.failed];
+const DECIDED_AFTER_COMPARING: TestStatus[] = [TestStatus.approved, TestStatus.failed];
+/**
+ * The screenshot did not match its baseline when it arrived, decided since or
+ * not. Approved or rejected alone does not say so: a new screenshot has no
+ * baseline, and approving it only makes one. The difference does.
+ */
+const differed = (run: Pick<PreviousRun, 'status' | 'diffPercent'>) =>
+  run.status === TestStatus.unresolved || (DECIDED_AFTER_COMPARING.includes(run.status) && (run.diffPercent ?? 0) > 0);
 const NEEDED_DECISION: TestStatus[] = [TestStatus.unresolved, TestStatus.new, TestStatus.approved, TestStatus.failed];
 
 const emptyOutcome = (): Outcome => ({ total: 0, changed: 0, new: 0, rejected: 0, passed: 0 });
@@ -193,7 +201,7 @@ function previousOf(runs: OverviewRun[], previous: OverviewInput['previous']): B
   for (const run of runs) {
     const earlier = before.get(runIdentity(run));
     if (!earlier) added += 1;
-    else if (DIFFERED.includes(run.status) && !DIFFERED.includes(earlier.status)) changed += 1;
+    else if (differed(run) && !differed(earlier)) changed += 1;
   }
   const gone = [...before.keys()].filter((key) => !now.has(key)).length;
   return { number: previous.number, changed, added, gone };

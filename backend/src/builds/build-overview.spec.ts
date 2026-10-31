@@ -14,6 +14,7 @@ const run = (over: Partial<OverviewRun> = {}): OverviewRun => ({
   featureName: null,
   a11yNewCount: 0,
   decidedById: null,
+  diffPercent: null,
   ...over,
 });
 
@@ -198,12 +199,25 @@ describe('buildOverview', () => {
       number: 127,
       runs: [
         run({ name: 'Checkout. Pay' }),
-        run({ name: 'Login. Error', status: TestStatus.approved }),
+        run({ name: 'Login. Error', status: TestStatus.approved, diffPercent: 1.2 }),
         run({ name: 'Home. Feed' }),
         run({ name: 'Settings. Main' }),
       ],
     };
     expect(buildOverview(input({ runs, previous })).previous).toEqual({ number: 127, changed: 1, added: 1, gone: 1 });
+  });
+
+  it('does not count a screenshot approved as new as one that differed', () => {
+    // the previous build was the first: its screenshots were new and approved
+    const previous = { number: 1, runs: [run({ name: 'Checkout. Pay', status: TestStatus.approved })] };
+    const runs = [run({ name: 'Checkout. Pay', status: TestStatus.unresolved, diffPercent: 4.87 })];
+    expect(buildOverview(input({ runs, previous })).previous).toEqual({ number: 1, changed: 1, added: 0, gone: 0 });
+    // approved after a real difference: it did differ
+    const approvedChange = {
+      number: 1,
+      runs: [run({ name: 'Checkout. Pay', status: TestStatus.approved, diffPercent: 2 })],
+    };
+    expect(buildOverview(input({ runs, previous: approvedChange })).previous.changed).toBe(0);
   });
 
   it('says first build when the branch has no earlier one', () => {

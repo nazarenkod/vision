@@ -40,6 +40,7 @@ const RUN_FIELDS = {
   uiTreeName: true,
   projectId: true,
   decidedById: true,
+  diffPercent: true,
   updatedAt: true,
 } as const;
 
@@ -85,6 +86,7 @@ export class BuildOverviewService {
               os: true,
               browser: true,
               viewport: true,
+              diffPercent: true,
             },
           })
         : [],

@@ -12,132 +12,100 @@
 
 Автотести надсилають знімки через форк upstream Java SDK VRT 4.3.1 з двома доданими полями
 ([012](../012-java-sdk/spec.md), [ADR-0019](../../decisions/0019-sdk-upstream-plus-ui-tree-and-feature.md)).
-У коді тестів і на CI видно чужий продукт і його спадок:
+У коді тестів і на CI видно чужий продукт: клас `VisualRegressionTracker`, пакет
+`io.visual_regression_tracker`, змінні `VRT_*`, файл `vrt.json`, артефакт
+`com.github.Visual-Regression-Tracker:sdk-java`, термін VRT «test run» (`TestRunOptions`,
+`TestRunResult`, `getTestRunResponse()`), а у Vision це перевірка (check). Власник вирішив
+відв'язатися від VRT.
 
-- клас `VisualRegressionTracker`, пакет `io.visual_regression_tracker`, змінні `VRT_*`, файл
-  `vrt.json`, артефакт `com.github.Visual-Regression-Tracker:sdk-java`;
-- терміни VRT (`TestRun`, `track`, `stop`), а у Vision це перевірка і збірка;
-- друкарська помилка `diffTollerancePercent`, `enableSoftAssert`, `httpTimeoutInSeconds`;
-- щоб дізнатися статус і посилання, тест лізе в `getTestRunResponse()`;
-- виняток `TestRunException` не дає результату перевірки, лише текст.
+Що SDK робить і що надсилає серверу, не змінюється. Нових параметрів і методів не додаємо.
 
-Власник вирішив відв'язатися від VRT: перейменувати SDK, його методи, опції, результат і
-налаштування на мову Vision. Що SDK робить і що надсилає серверу, не змінюється. Нових параметрів
-знімка не додаємо: `uiTree` і фіча вже є.
+## Правила перейменування
+
+Щоб назви були послідовні, кожна публічна назва проходить три правила, без винятків:
+
+1. **Назва VRT → назва Vision.** «Visual Regression Tracker», «VRT» → «Vision»; «test run» і
+   `track` → «check» (перевірка, як у [словнику](../../product/glossary.md)).
+2. **Друкарська помилка → виправлено.** `Tollerance` → `Tolerance`.
+3. **Усе інше — без змін.** Назва збігається зі старим SDK, а статуси — з тими, що показує
+   інтерфейс Vision (`new`, `unresolved`, `failed`, `approved`, `autoApproved`, `ok`).
 
 ## Як це виглядає в тесті
 
-Публічні назви — частина контракту з командами, тому вони тут, а не в дизайні.
+Публічні назви — частина контракту з командами, тому вони тут, а не в дизайні. Таблиця охоплює
+весь публічний API; рядок «без змін» означає, що назва та сама.
+
+| Що | Було | Стало | Правило |
+|---|---|---|---|
+| Maven-артефакт | `com.github.Visual-Regression-Tracker:sdk-java:4.3.1-vision.2` | `vision:vision-sdk:1.0.0` | 1 |
+| Пакет | `io.visual_regression_tracker.sdk_java` | `vision` | 1 |
+| Головний клас | `VisualRegressionTracker` | `Vision` | 1 |
+| Почати збірку | `start()` | без змін | 3 |
+| Надіслати знімок | `track(name, imageBase64[, options])` | `check(name, imageBase64[, options])` | 1 |
+| Завершити збірку | `stop()` | без змін | 3 |
+| Опції знімка | `TestRunOptions` | `CheckOptions` | 1 |
+| Поля опцій | `os`, `browser`, `viewport`, `device`, `customTags`, `ignoreAreas`, `uiTree`, `featureName` | без змін | 3 |
+| Допуск різниці | `diffTollerancePercent` | `diffTolerancePercent` | 2 |
+| Область без порівняння | `IgnoreAreas` (`x`, `y`, `width`, `height`) | без змін | 3 |
+| Результат | `TestRunResult` | `CheckResult` | 1 |
+| Відповідь сервера в результаті | `getTestRunResponse().getX()` | `getX()` прямо в `CheckResult` | 1 |
+| Поля результату | `getId`, `getStatus`, `getUrl`, `getDiffPercent`, `getPixelMisMatchCount`, `getMerge`, `getImageName`, `getBaselineName`, `getDiffName`, `getImageUrl`, `getBaselineUrl`, `getDiffUrl` | без змін | 3 |
+| Допуск у результаті | `getDiffTollerancePercent` | `getDiffTolerancePercent` | 2 |
+| Статус | `TestRunStatus` | `CheckStatus` | 1 |
+| Значення статусу | `OK`, `NEW`, `UNRESOLVED`, `FAILED`, `APPROVED`, `AUTO_APPROVED` | без змін | 3 |
+| Виняток | `TestRunException` | `VisionException` | 1 |
+| Налаштування | `VisualRegressionTrackerConfig` | `VisionConfig` | 1 |
+| Поля налаштувань | `apiUrl`, `apiKey`, `project`, `branchName`, `ciBuildId`, `enableSoftAssert`, `httpTimeoutInSeconds` | без змін | 3 |
+| Змінні оточення | `VRT_` + назва поля великими літерами: `VRT_APIURL`, `VRT_APIKEY`, … | `VISION_` + назва поля великими літерами: `VISION_APIURL`, `VISION_APIKEY`, … | 1 |
+| Файл налаштувань | `vrt.json` | `vision.json`, ключі — назви полів | 1 |
+
+`VisionException` названо за SDK, а не «check», бо його кидають і налаштування, і `start`, і
+`stop`, як і старий `TestRunException`.
 
 ```java
 import vision.*;
 
-Vision vision = new Vision();                         // налаштування з VISION_* або vision.json
-vision.startBuild();
-
-CheckResult result = vision.check("Checkout.Payment", screenshotPng, CheckOptions.builder()
+Vision vision = new Vision();                         // VISION_APIURL, VISION_APIKEY, VISION_PROJECT або vision.json
+vision.start();
+CheckResult result = vision.check("Checkout.Payment", screenshotBase64, CheckOptions.builder()
         .device("Pixel 7").os("Android 15")
         .uiTree(driver.getPageSource())
-        .feature("Checkout")
-        .build());                                    // NEW чи CHANGED без softAssert — VisionException
-result.getStatus();                                   // PASSED / NEW / CHANGED / REJECTED
-result.getUrl();                                      // посилання на рев'ю
-
-vision.finishBuild();
+        .featureName("Checkout")
+        .build());
+result.getStatus();                                   // CheckStatus.OK, NEW, UNRESOLVED, …
+result.getUrl();
+vision.stop();
 ```
-
-### Об'єкт і методи
-
-| Було | Стало |
-|---|---|
-| `com.github.Visual-Regression-Tracker:sdk-java:4.3.1-vision.2` | `vision:vision-sdk:1.0.0` |
-| пакет `io.visual_regression_tracker.sdk_java` | пакет `vision` |
-| `VisualRegressionTracker` | `Vision` |
-| `start()` | `startBuild()` |
-| `stop()` | `finishBuild()` |
-| `track(name, imageBase64[, options])` | `check(name, screenshot[, options])`; `screenshot` — байти PNG або рядок base64 |
-| `TestRunException` | `VisionException`; `getResult()` — результат, коли виняток через статус перевірки |
-
-### Опції знімка: `TestRunOptions` → `CheckOptions`
-
-| Було | Стало |
-|---|---|
-| `os`, `device`, `browser`, `viewport` | без змін |
-| `customTags` | `tags` |
-| `diffTollerancePercent` | `tolerancePercent` |
-| `ignoreAreas(List<IgnoreAreas>)` | `ignoreAreas(List<IgnoreArea>)`; `IgnoreArea` — `x`, `y`, `width`, `height` у пікселях |
-| `uiTree` | без змін |
-| `featureName` | `feature` |
-
-### Результат: `TestRunResult` → `CheckResult`
-
-| Було | Стало |
-|---|---|
-| `getTestRunResponse().getStatus()` (`OK`, `APPROVED`, `AUTO_APPROVED`, `NEW`, `UNRESOLVED`, `FAILED`) | `getStatus()`: `PASSED` (`ok`, `approved`, `autoApproved`), `NEW`, `CHANGED` (`unresolved`), `REJECTED` (`failed`) |
-| `getTestRunResponse().getUrl()` | `getUrl()` |
-| `getTestRunResponse().getDiffPercent()` | `getDiffPercent()` |
-| `getImageUrl()`, `getBaselineUrl()`, `getDiffUrl()` | без змін |
-
-### Налаштування: `VisualRegressionTrackerConfig` → `VisionConfig`
-
-| Поле було → стало | Змінна оточення | Ключ `vision.json` |
-|---|---|---|
-| `apiUrl` → `url` | `VISION_URL` | `url` |
-| `apiKey` | `VISION_API_KEY` | `apiKey` |
-| `project` | `VISION_PROJECT` | `project` |
-| `branchName` → `branch` | `VISION_BRANCH` | `branch` |
-| `ciBuildId` | `VISION_CI_BUILD_ID` | `ciBuildId` |
-| `enableSoftAssert` → `softAssert` | `VISION_SOFT_ASSERT` | `softAssert` |
-| `httpTimeoutInSeconds` → `timeoutSeconds` | `VISION_TIMEOUT_SECONDS` | `timeoutSeconds` |
 
 ## Користувацькі історії
 
-### US-1 (P1): SDK мовою Vision
+### US-1 (P1): SDK під назвою Vision
 
-Як автоматизатор, я хочу працювати з SDK термінами Vision — збірка, перевірка, результат, — щоб у
-тестах і на CI не було назв чужого продукту.
+Як автоматизатор, я хочу працювати з SDK під назвою Vision і її термінами, щоб у тестах і на CI не
+було назв чужого продукту.
 
 - **Чому P1:** це і є зміна.
 - **Незалежна перевірка:** у порожньому Maven-проєкті на JDK 11 підключити `vision:vision-sdk:1.0.0`,
-  задати `VISION_URL`, `VISION_API_KEY`, `VISION_PROJECT`, викликати `startBuild`, `check`,
-  `finishBuild` → у Vision є завершена збірка з перевіркою.
+  задати `VISION_APIURL`, `VISION_APIKEY`, `VISION_PROJECT`, викликати `start`, `check`, `stop` →
+  у Vision є завершена збірка з перевіркою.
 - **Сценарії приймання:**
-  1. **Дано** змінні `VISION_*`, **коли** тест викликає `startBuild`, `check`, `finishBuild`,
-     **тоді** у Vision з'являється завершена збірка з перевіркою.
+  1. **Дано** змінні `VISION_*`, **коли** тест викликає `start`, `check`, `stop`, **тоді** у Vision
+     з'являється завершена збірка з перевіркою.
   2. **Дано** `vision.json` у робочій теці й жодної змінної, **коли** тест створює `new Vision()`,
      **тоді** налаштування беруться з файлу.
   3. **Дано** лише `VRT_APIURL`, `VRT_APIKEY`, `VRT_PROJECT` і `vrt.json`, **коли** тест створює
-     `new Vision()`, **тоді** виняток називає відсутню `VISION_URL`; старі назви не читаються.
-  4. **Дано** скріншот як байти PNG, **коли** тест передає їх у `check`, **тоді** у Vision той
-     самий знімок, що й з base64 цих байтів.
+     `new Vision()`, **тоді** виняток називає відсутню `VISION_APIURL`; старі назви не читаються.
+  4. **Дано** знімок, що збігся з еталоном, **коли** `check` завершився, **тоді**
+     `result.getStatus()` — `OK`, а `result.getUrl()` веде на знімок у Vision.
 
-### US-2 (P1): Результат перевірки без розбору
-
-Як автоматизатор, я хочу брати статус, посилання й відсоток різниці прямо з результату чи винятку,
-щоб не лізти у внутрішню відповідь сервера й не розбирати текст.
-
-- **Чому P1:** це найчастіша дія після `check`.
-- **Незалежна перевірка:** з `softAssert` надіслати новий знімок → `getStatus()` дорівнює `NEW`,
-  `getUrl()` веде на рев'ю; без `softAssert` → `VisionException`, `getResult()` дає те саме.
-- **Сценарії приймання:**
-  1. **Дано** знімок, що збігся з еталоном, **коли** `check` завершився, **тоді** `getStatus()` —
-     `PASSED`.
-  2. **Дано** нову перевірку без `softAssert`, **коли** `check`, **тоді** кидається
-     `VisionException` з посиланням у тексті, а `getResult().getStatus()` — `NEW`.
-  3. **Дано** відмінність з `softAssert`, **коли** `check` завершився, **тоді** повертається
-     `CHANGED` з відсотком різниці, у лог іде помилка з посиланням.
-  4. **Дано** недозволений пристрій ([029](../029-allowed-devices/spec.md)), **коли** `check` у
-     будь-якому режимі, **тоді** кидається `VisionException` з текстом сервера, а `getResult()` —
-     порожній.
-
-### US-3 (P1): Перехід без нових еталонів
+### US-2 (P1): Перехід без нових еталонів
 
 Як лід QA, я хочу переводити тести на Vision SDK поступово, щоб наявні еталони лишились і жоден
 тест не зламався через перехід.
 
 - **Чому P1:** якщо перехід скидає еталони чи ламає тести, команди не перейдуть.
 - **Незалежна перевірка:** перевірка з еталоном зі старого SDK → той самий тест через Vision SDK з
-  тими самими значеннями → `PASSED` проти того самого еталона.
+  тими самими значеннями → `OK` проти того самого еталона.
 - **Сценарії приймання:**
   1. **Дано** еталон, створений старим SDK, **коли** Vision SDK надсилає знімок з тими самими
      назвою, тегами, пристроєм, OS, браузером і viewport, **тоді** знімок порівнюється з цим еталоном.
@@ -148,52 +116,44 @@ vision.finishBuild();
 
 | ID | Історія | Вимога |
 |---|---|---|
-| REQ-032-01 | US-1 | SDK ПОВИНЕН мати пакет, Maven-координати, назви класів, методів, опцій, полів результату й налаштувань з розділу «Як це виглядає в тесті», і жодних назв зі старого SDK у публічному API. |
-| REQ-032-02 | US-1 | КОЛИ тест викликає `startBuild`, SDK ПОВИНЕН створити на сервері запущену збірку проєкту на гілці з налаштувань, як старий `start`. |
-| REQ-032-03 | US-1 | КОЛИ тест викликає `finishBuild`, SDK ПОВИНЕН завершити збірку на сервері, як старий `stop`. |
-| REQ-032-04 | US-1 | ЯКЩО тест викликає `check` або `finishBuild` до `startBuild`, ТО SDK ПОВИНЕН кинути `VisionException` без запиту до сервера. |
-| REQ-032-05 | US-1 | SDK ПОВИНЕН приймати скріншот у `check` як байти PNG або як рядок base64 і надсилати серверу однаковий запит для тих самих байтів. |
-| REQ-032-06 | US-1 | SDK ПОВИНЕН брати кожне налаштування спершу з явно заданого в коді, потім зі змінної `VISION_*`, потім з `vision.json` у робочій теці, з назвами з таблиці налаштувань. |
-| REQ-032-07 | US-1 | SDK ПОВИНЕН не читати змінні `VRT_*` і файл `vrt.json`. |
-| REQ-032-08 | US-1 | ЯКЩО адреса, ключ або проєкт не задані жодним способом, ТО SDK ПОВИНЕН кинути виняток до будь-якого запиту, де названо налаштування і його змінну `VISION_*`. |
-| REQ-032-09 | US-1 | ДЕ `softAssert` і `timeoutSeconds` не задані, SDK ПОВИНЕН вважати `softAssert` вимкненим, а тайм-аут — 10 с, як старий SDK. |
-| REQ-032-10 | US-1 | SDK ПОВИНЕН писати в лог «Vision» і терміни «збірка»/«перевірка» (англійською: build, check) замість «Visual Regression Tracker» і «test run». |
-| REQ-032-11 | US-2 | КОЛИ сервер повернув результат перевірки, `check` ПОВИНЕН віддавати `CheckResult` зі статусом `PASSED`, `NEW`, `CHANGED` або `REJECTED` за таблицею результату, посиланням на рев'ю, відсотком різниці й посиланнями на знімок, еталон і різницю. |
-| REQ-032-12 | US-2 | ЯКЩО статус `NEW` або `CHANGED` і `softAssert` вимкнено, ТО SDK ПОВИНЕН кинути `VisionException` з посиланням у тексті та цим `CheckResult` у `getResult()`. |
-| REQ-032-13 | US-2 | ДЕ `softAssert` увімкнено, КОЛИ статус `NEW` або `CHANGED`, SDK ПОВИНЕН записати в лог помилку з посиланням і повернути `CheckResult`. |
-| REQ-032-14 | US-2 | ЯКЩО сервер відповів помилкою (зокрема відхилив пристрій, REQ-029-05), ТО SDK ПОВИНЕН кинути `VisionException` з текстом сервера в будь-якому режимі, з порожнім `getResult()`. |
-| REQ-032-15 | US-3 | SDK ПОВИНЕН надсилати серверу запити, ідентичні запитам старого SDK з відповідними значеннями (`tags` як `customTags`, `tolerancePercent` як `diffTollerancePercent`, `feature` як `featureName`), щоб ідентичність перевірок і еталони не змінились, а сервер не потребував змін. |
-| REQ-032-16 | US-3 | SDK ПОВИНЕН підключатися в один проєкт тестів разом зі старим SDK без конфлікту класів. |
-| REQ-032-17 | US-1 | SDK ПОВИНЕН працювати на Java 11+ і підключатися до Maven- чи Gradle-проєкту без корпоративного репозиторію. |
+| REQ-032-01 | US-1 | SDK ПОВИНЕН мати всі публічні назви з таблиці «Було → Стало» і жодної назви з «VisualRegressionTracker», «VRT», «TestRun» чи «Tollerance» у публічному API. |
+| REQ-032-02 | US-1 | `start`, `check` і `stop` ПОВИННІ поводитися так само, як старі `start`, `track` і `stop`: ті самі запити, той самий soft assert, ті самі помилки, коли збірку не почато. |
+| REQ-032-03 | US-1 | SDK ПОВИНЕН брати кожне налаштування спершу з явно заданого в коді, потім зі змінної `VISION_<ПОЛЕ>`, потім з `vision.json` у робочій теці. |
+| REQ-032-04 | US-1 | SDK ПОВИНЕН не читати змінні `VRT_*` і файл `vrt.json`. |
+| REQ-032-05 | US-1 | ЯКЩО адреса, ключ або проєкт не задані жодним способом, ТО SDK ПОВИНЕН кинути виняток до будь-якого запиту, де названо поле і його змінну `VISION_*`. |
+| REQ-032-06 | US-1 | `CheckResult` ПОВИНЕН давати прямо всі поля відповіді сервера про перевірку й посилання на знімок, еталон і різницю, з назвами з таблиці. |
+| REQ-032-07 | US-1 | ЯКЩО статус `NEW` або `UNRESOLVED` і soft assert вимкнено, ТО `check` ПОВИНЕН кинути `VisionException` з посиланням, як старий `track`. |
+| REQ-032-08 | US-1 | ДЕ soft assert увімкнено, КОЛИ статус `NEW` або `UNRESOLVED`, SDK ПОВИНЕН записати в лог помилку з посиланням і повернути `CheckResult`, як старий `track`. |
+| REQ-032-09 | US-1 | ЯКЩО сервер відповів помилкою (зокрема відхилив пристрій, REQ-029-05), ТО SDK ПОВИНЕН кинути `VisionException` з текстом сервера в будь-якому режимі. |
+| REQ-032-10 | US-1 | SDK ПОВИНЕН писати в лог «Vision» і «check» замість «Visual Regression Tracker» і «test run». |
+| REQ-032-11 | US-2 | SDK ПОВИНЕН надсилати серверу запити, ідентичні запитам старого SDK з тими самими значеннями (`diffTolerancePercent` іде в те саме поле, що й старий `diffTollerancePercent`), щоб ідентичність перевірок і еталони не змінились, а сервер не потребував змін. |
+| REQ-032-12 | US-2 | SDK ПОВИНЕН підключатися в один проєкт тестів разом зі старим SDK без конфлікту класів. |
+| REQ-032-13 | US-1 | SDK ПОВИНЕН працювати на Java 11+ і підключатися до Maven- чи Gradle-проєкту без корпоративного репозиторію. |
 
 ## Граничні випадки
 
-- На CI задано і `VRT_*`, і `VISION_*` → діють лише `VISION_*` (REQ-032-06, REQ-032-07).
-- У робочій теці лежать і `vrt.json`, і `vision.json` → читається лише `vision.json` (REQ-032-07).
-- Тест мігрував, а CI ще має лише `VRT_*` → виняток називає `VISION_URL`, а не
-  `NullPointerException` (REQ-032-08).
-- `VISION_SOFT_ASSERT=yes` → не `true`, тож `softAssert` вимкнено, як `Boolean.parseBoolean` у
-  старому SDK (REQ-032-09).
-- `VISION_TIMEOUT_SECONDS=abc` → виняток з назвою змінної до будь-якого запиту (REQ-032-08).
-- Сервер повернув статус, якого SDK не знає → `VisionException` з текстом статусу, а не тихий
-  `PASSED` (REQ-032-11).
-- Порожній масив байтів чи порожній base64 → `VisionException` без запиту (REQ-032-05).
+- На CI задано і `VRT_*`, і `VISION_*` → діють лише `VISION_*` (REQ-032-03, REQ-032-04).
+- У робочій теці лежать і `vrt.json`, і `vision.json` → читається лише `vision.json` (REQ-032-04).
+- Тест мігрував, а CI ще має лише `VRT_*` → виняток називає `VISION_APIURL`, а не
+  `NullPointerException` (REQ-032-05).
+- `VISION_ENABLESOFTASSERT=yes` → soft assert вимкнено, як у старому SDK (REQ-032-02).
+- `check` чи `stop` до `start` → `VisionException`, як і раніше (REQ-032-02).
+- Сервер повернув статус, якого SDK не знає → `VisionException` з цим статусом у тексті, а не
+  мовчазний успіх (REQ-032-07).
 - Старий і новий SDK в одній збірці CI з тим самим `ciBuildId` → обидва пишуть в одну збірку, бо
-  запити однакові (REQ-032-15).
+  запити однакові (REQ-032-11).
 
 ## Ключові сутності
 
-- **Збірка** — один прогін тестів; її стартує `startBuild` і завершує `finishBuild`.
-- **Перевірка** — назва + теги + пристрій ([001](../001-check-identity/spec.md)); не змінюється.
-- **Результат перевірки** — статус, посилання, відсоток різниці, посилання на зображення.
+Без змін: збірка, перевірка ([001](../001-check-identity/spec.md)), знімок.
 
 ## Критерії успіху
 
 | ID | Критерій |
 |---|---|
-| SC-032-01 | Перехід тесту зі старого SDK — механічна заміна за таблицями «Було → Стало»; жодної зміни логіки тесту. |
-| SC-032-02 | Перехід не створює нових еталонів: 0 знімків зі статусом `NEW` для перевірок, що мали еталон. |
-| SC-032-03 | У публічних назвах, змінних, файлі налаштувань, лозі й документації SDK немає «VRT», «Visual Regression Tracker» чи «TestRun». |
+| SC-032-01 | Перехід тесту зі старого SDK — механічна заміна за таблицею «Було → Стало»; жодної зміни логіки тесту. |
+| SC-032-02 | Перехід не створює нових еталонів: 0 знімків зі статусом `new` для перевірок, що мали еталон. |
+| SC-032-03 | Кожна назва в таблиці «Було → Стало» має одне з трьох правил, і жодна не порушує їх. |
 
 ## Припущення
 
@@ -205,8 +165,8 @@ vision.finishBuild();
 ## Поза межами
 
 - Нові параметри знімка: власник вважає, що потрібні вже є.
-- Модуль для Appium, try-with-resources, надсилання з кількох потоків як гарантія — наступні кроки
-  окремою специфікацією.
+- Нові можливості (скріншот байтами PNG, результат у винятку, модуль для Appium,
+  try-with-resources) — наступні кроки окремою специфікацією.
 - Сумісні класи зі старими назвами в новому jar і читання `VRT_*` — рішення власника: лише нові
   назви.
 

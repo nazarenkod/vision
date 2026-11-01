@@ -216,7 +216,6 @@ const ProjectPage = () => {
               <BuildOverview
                 overview={overview}
                 failed={failed}
-                groups={groups}
                 actions={actions}
               />
             )}

@@ -4,7 +4,6 @@ import {
   AccessibilityNewOutlined,
   AccountTreeOutlined,
   BugReportOutlined,
-  ChevronRight,
   CheckRounded,
   HourglassEmptyRounded,
   LinkRounded,
@@ -16,8 +15,6 @@ import type { MessageKey } from "../../i18n";
 import { useTestRunState } from "../../contexts";
 import { buildOverviewService } from "../../services";
 import { BuildOverview as Overview } from "../../types/buildOverview";
-import { ChangeGroup } from "../../types/insights";
-import { TestRun } from "../../types";
 import { StatusPill } from "../StatusPill";
 import { ResultBar } from "./ResultBar";
 import { EmptyState } from "../EmptyState";
@@ -25,7 +22,7 @@ import { CountUp } from "../motion/useCountUp";
 import { staggered } from "../motion/Stagger";
 import { BuildTab } from "../../_helpers/route.helpers";
 import { sincePrevious } from "../../_helpers/previousBuild.helper";
-import { QueueKey, queueIds } from "../../_helpers/reviewQueue.helper";
+import { QueueKey } from "../../_helpers/reviewQueue.helper";
 
 // a burst of events while screenshots arrive or decisions land: ask once it settles
 const REFRESH_DELAY_MS = 400;
@@ -461,86 +458,6 @@ const Tiles: React.FunctionComponent<{
   );
 };
 
-const DECIDE_COLUMNS = "minmax(0, 1fr) 52px 20px";
-
-const ToDecide: React.FunctionComponent<{
-  overview: Overview;
-  groups: ChangeGroup[] | null;
-  testRuns: TestRun[];
-  actions: OverviewActions;
-}> = ({ overview, groups, testRuns, actions }) => {
-  const { t } = useT();
-  const rows = (groups ?? [])
-    .map((group) => {
-      const key: QueueKey = { kind: "group", fingerprint: group.fingerprint };
-      const ids = queueIds(key, testRuns, groups ?? []);
-      return { group, key, ids };
-    })
-    .filter((row) => row.ids.length > 0);
-
-  if (overview.verdict !== "waiting" && overview.verdict !== "running") {
-    return (
-      <Card
-        title={t("overview.decisions")}
-        index={6}
-        testId="overviewDecisions"
-      >
-        <Head
-          columns="minmax(0, 1fr) auto"
-          cells={[[t("overview.decisions")], [""]]}
-        />
-        {overview.progress.people.map((person) => (
-          <Row key={person.name ?? "?"} columns="minmax(0, 1fr) auto">
-            <span>{person.name ?? t("overview.someone")}</span>
-            <span style={{ color: tokens.textSecondary }}>
-              {t("overview.personDecisions", {
-                approved: person.approved,
-                rejected: person.rejected,
-              })}
-            </span>
-          </Row>
-        ))}
-      </Card>
-    );
-  }
-  return (
-    <Card title={t("overview.toDecide")} index={6} testId="overviewToDecide">
-      <Head
-        columns={DECIDE_COLUMNS}
-        cells={[[t("overview.group")], [t("overview.screens"), true], [""]]}
-      />
-      {rows.length === 0 && (
-        <Box sx={{ p: 2, color: tokens.textSecondary, fontSize: 13 }}>
-          {groups ? t("overview.nothingToDecide") : "…"}
-        </Box>
-      )}
-      {rows.map(({ group, key, ids }) => (
-        <Row
-          key={group.id}
-          columns={DECIDE_COLUMNS}
-          onClick={() => actions.openQueue(key)}
-          label={
-            group.kind === "new" ? t("groups.newScreenshots") : group.title
-          }
-          testId="overviewGroup"
-        >
-          {group.kind === "new" ? (
-            <span>
-              <StatusPill tone="new" label={t("groups.newScreenshots")} />
-            </span>
-          ) : (
-            <Typography noWrap sx={{ fontSize: 13, fontWeight: 600 }}>
-              {group.title}
-            </Typography>
-          )}
-          <Num value={ids.length} />
-          <ChevronRight sx={{ fontSize: 18, color: tokens.textMuted }} />
-        </Row>
-      ))}
-    </Card>
-  );
-};
-
 const TABLE_COLUMNS = "minmax(0, 1fr) 80px 52px 40px";
 
 const Devices: React.FunctionComponent<{
@@ -763,15 +680,17 @@ const Bugs: React.FunctionComponent<{
   );
 };
 
-/** The build's Overview tab (031): its state, what to decide, where, and its bugs. */
+/**
+ * The build's Overview tab (031): its state, where the changes are and its
+ * bugs. Change groups live in the Changes tab: on the overview they repeated
+ * the features whenever screenshots came without UI trees.
+ */
 export const BuildOverview: React.FunctionComponent<{
   overview: Overview | null;
   failed: boolean;
-  groups: ChangeGroup[] | null;
   actions: OverviewActions;
-}> = ({ overview, failed, groups, actions }) => {
+}> = ({ overview, failed, actions }) => {
   const { t } = useT();
-  const { testRuns } = useTestRunState();
   if (!overview) {
     return failed ? <EmptyState title={t("overview.loadFailed")} /> : null;
   }
@@ -797,23 +716,8 @@ export const BuildOverview: React.FunctionComponent<{
           alignItems: "start",
         }}
       >
-        {/* two stacks, so a short card leaves no hole beside a long one */}
-        <Box
-          sx={{
-            display: "flex",
-            flexDirection: "column",
-            gap: 1.75,
-            minWidth: 0,
-          }}
-        >
-          <ToDecide
-            overview={overview}
-            groups={groups}
-            testRuns={testRuns}
-            actions={actions}
-          />
-          <Features overview={overview} actions={actions} />
-        </Box>
+        <Features overview={overview} actions={actions} />
+        {/* stacked, so the shorter cards fill the column beside the features */}
         <Box
           sx={{
             display: "flex",

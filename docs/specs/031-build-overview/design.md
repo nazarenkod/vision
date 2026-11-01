@@ -115,7 +115,7 @@ sequenceDiagram
 | REQ-031-04 | `backend/src/builds/build-overview.spec.ts › counts decisions per person and leaves undone ones out` |
 | REQ-031-05 | `backend/src/builds/build-overview.spec.ts › counts screenshots, waiting, rejected, new a11y issues and bugs` |
 | REQ-031-06 | `frontend/integration_tests/test/buildOverview.spec.ts › each number opens its tab or queue` |
-| REQ-031-07 | `frontend/integration_tests/test/buildOverview.spec.ts › lists the change groups in the order of the Changes tab, new last` |
+| REQ-031-07 | знято 2026-11-01 — `frontend/integration_tests/test/buildOverview.spec.ts › leaves change groups to the Changes tab` |
 | REQ-031-08 | `backend/src/builds/build-overview.spec.ts › splits the result by device profile` |
 | REQ-031-09 | `backend/src/builds/build-overview.spec.ts › names a feature by featureName or the check up to the first dot`; `backend/src/builds/build-overview.spec.ts › folds quiet features into one row`; `frontend/src/components/BuildReport/ReportDocument.test.tsx › Short has Summary, Changes and Jira bugs; Full adds the rest` |
 | REQ-031-10 | `backend/src/builds/build-overview.spec.ts › marks bugs filed from this build New and older ones Known` |
@@ -126,7 +126,7 @@ sequenceDiagram
 | REQ-031-15 | `frontend/integration_tests/test/buildOverview.spec.ts › leaves the header counts to the numbers of the overview` |
 | REQ-031-20 | `frontend/src/_helpers/reviewQueue.helper.test.ts › puts all waiting in the order of the groups, new last` |
 | REQ-031-21 | `frontend/src/_helpers/reviewQueue.helper.test.ts › keeps only the waiting runs of a group, device or feature` |
-| REQ-031-22 | `frontend/src/_helpers/reviewQueue.helper.test.ts › starts at the clicked run inside its group` |
+| REQ-031-22 | знято 2026-11-01 — перевірки немає |
 | REQ-031-23 | `frontend/src/_helpers/reviewQueue.helper.test.ts › opens the run a bug was filed from, decided or not` |
 | REQ-031-24 | `frontend/integration_tests/test/buildOverview.spec.ts › shows the queue name and position instead of Step` |
 | REQ-031-25 | `frontend/integration_tests/test/buildOverview.spec.ts › switches the queue from its menu` |

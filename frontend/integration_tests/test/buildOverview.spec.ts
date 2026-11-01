@@ -197,17 +197,14 @@ test("opens a build on the Overview tab", async ({ openProjectPage, page }) => {
   expect(new URL(page.url()).searchParams.get("tab")).toBeNull();
 });
 
-test("lists the change groups in the order of the Changes tab, new last", async ({
+test("leaves change groups to the Changes tab", async ({
   openProjectPage,
   page,
 }) => {
   await openProjectPage(project.id, build.id, undefined, "overview");
-
-  // the group with nothing left to decide is not offered
-  await expect(page.getByTestId("overviewGroup")).toHaveText([
-    /PbButton moved down.*2/,
-    /New screenshots.*1/,
-  ]);
+  await expect(page.getByTestId("overviewFeatures")).toBeVisible();
+  // the groups repeated the features when screenshots came without UI trees
+  await expect(page.getByTestId("overviewToDecide")).toHaveCount(0);
 });
 
 test("each number opens its tab or queue", async ({

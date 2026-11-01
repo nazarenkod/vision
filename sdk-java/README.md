@@ -37,8 +37,9 @@ dependencies {
 
 ### Vision build
 
-This copy adds two optional fields, `TestRunOptions.uiTree` and `featureName`. Publish it and change only the
-version in your build (default `4.3.1-vision.2`; JDK 11–17 and Gradle 7 to build, runs on Java 11+):
+This copy adds two optional fields, `TestRunOptions.uiTree` and `featureName`, and names the main classes
+`Vision` and `VisionConfig` (upstream: `VisualRegressionTracker`, `VisualRegressionTrackerConfig`). Publish it,
+change the version in your build and those two class names in your tests (default `4.3.1-vision.3`; JDK 11–17 and Gradle 7 to build, runs on Java 11+):
 
 ```bash
 gradle publishToMavenLocal
@@ -55,7 +56,7 @@ More info about https://jitpack.io/
 ## Usage
 
 ### Configuration
-In order to initialize VisualRegressionTracker, following options should be defined:
+In order to initialize Vision, following options should be defined:
 
 * `apiUrl` (**Required**) - URL where backend is running. _Example_: "http://localhost:4200"
 * `project` (**Required**) - Project name or ID. _Example_: "003f5fcf-6c5f-4f1f-a99f-82a697711382"
@@ -72,7 +73,7 @@ In order to initialize VisualRegressionTracker, following options should be defi
 <summary>Create config with builder</summary>
 
 ```java
-VisualRegressionTrackerConfig config = VisualRegressionTrackerConfig.builder()
+VisionConfig config = VisionConfig.builder()
                 .apiUrl("http://localhost:4200")
                 .apiKey("F5Z2H0H2SNMXZVHX0EA4YQM1MGDD")
                 .project("003f5fcf-6c5f-4f1f-a99f-82a697711382")
@@ -119,24 +120,24 @@ export VRT_HTTPTIMEOUTINSECONDS=15
 </details>
 
 > [!NOTE]
-> Final values, that will be used by VisualRegressionTracker, will be resolved as following:
-> 1. If explicitly set while creating `VisualRegressionTrackerConfig` - use this value
+> Final values, that will be used by Vision, will be resolved as following:
+> 1. If explicitly set while creating `VisionConfig` - use this value
 > 2. Use value from environment variable if it exists
 > 3. Try to get it from the configuration file
 
 <br />
 
 
-### Create an instance of `VisualRegressionTracker`
+### Create an instance of `Vision`
 
 ```java
-VisualRegressionTracker visualRegressionTracker = new VisualRegressionTracker(config);
+Vision vision = new Vision(config);
 ```
 
 or
 
 ```java
-VisualRegressionTracker visualRegressionTracker = new VisualRegressionTracker();
+Vision vision = new Vision();
 ```
 
 > [!TIP]
@@ -144,13 +145,13 @@ VisualRegressionTracker visualRegressionTracker = new VisualRegressionTracker();
 
 <br />
 
-### Start `VisualRegressionTracker`
+### Start `Vision`
 
 ```java
-visualRegressionTracker.start();
+vision.start();
 ```
 
-At that point VisualRegressionTracker will try to create a new build for provided project. All of the subsequent tracked screenshots are going to be included in that build.
+At that point Vision will try to create a new build for provided project. All of the subsequent tracked screenshots are going to be included in that build.
 
 <br />
 
@@ -168,7 +169,7 @@ String screenshotBase64 = ((TakesScreenshot) driver).getScreenshotAs(OutputType.
 Default options
 
 ```java
-visualRegressionTracker.track(
+vision.track(
         "Name for test",
         screenshotBase64
 );
@@ -177,7 +178,7 @@ visualRegressionTracker.track(
 With specific options 
 
 ```java
-visualRegressionTracker.track(
+vision.track(
         "Name for test",
         screenshotBase64,
         TestRunOptions.builder()
@@ -192,7 +193,7 @@ visualRegressionTracker.track(
 With the screen's UI tree (Appium page source; optional, Vision only)
 
 ```java
-visualRegressionTracker.track(
+vision.track(
         "Payment",
         screenshotBase64,
         TestRunOptions.builder()
@@ -214,10 +215,10 @@ other `device` / `os` is refused by the server, and `track` throws a
 `TestRunException` with the reason, soft assert or not; no baseline is made.
 
 
-### Stop `VisualRegressionTracker`
+### Stop `Vision`
 
 ```java
-visualRegressionTracker.stop();
+vision.stop();
 ```
 
 Should be called once current build should be considered as completed.

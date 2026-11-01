@@ -28,20 +28,20 @@ enum METHOD {
 }
 
 @Slf4j
-public class VisualRegressionTracker {
+public class Vision {
 
     private static final String TRACKER_NOT_STARTED = "Visual Regression Tracker has not been started";
     private static final String CONFIG_FILE_NAME = "vrt.json";
     protected static final String API_KEY_HEADER = "apiKey";
     protected static final String PROJECT_HEADER = "project";
     protected Gson gson;
-    protected VisualRegressionTrackerConfig configuration;
+    protected VisionConfig configuration;
     protected PathProvider paths;
     protected String buildId;
     protected String projectId;
 
-    public VisualRegressionTracker() {
-        VisualRegressionTrackerConfig.VisualRegressionTrackerConfigBuilder configBuilder = VisualRegressionTrackerConfig.builder();
+    public Vision() {
+        VisionConfig.VisionConfigBuilder configBuilder = VisionConfig.builder();
         File configFile = new File(CONFIG_FILE_NAME);
         if (configFile.exists()) {
             configBuilder.configFile(configFile);
@@ -51,7 +51,7 @@ public class VisualRegressionTracker {
         gson = new Gson();
     }
 
-    public VisualRegressionTracker(VisualRegressionTrackerConfig trackerConfig) {
+    public Vision(VisionConfig trackerConfig) {
         configuration = trackerConfig;
         paths = new PathProvider(trackerConfig.getApiUrl());
         gson = new Gson();

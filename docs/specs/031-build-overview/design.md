@@ -122,7 +122,8 @@ sequenceDiagram
 | REQ-031-11 | `backend/src/builds/build-overview.spec.ts › compares with the previous build of the branch`; `frontend/src/_helpers/previousBuild.helper.test.ts › says what changed since the previous build, leaving out zeros` |
 | REQ-031-12 | `backend/src/builds/build-overview.spec.ts › says first build when the branch has no earlier one` |
 | REQ-031-13 | `frontend/src/components/BuildOverview/useBuildOverview.test.tsx › updates the numbers when a run of the build changes` |
-| REQ-031-14 | `frontend/integration_tests/test/buildOverview.spec.ts › shows a placeholder for a screenshot that did not load` |
+| REQ-031-14 | знято 2026-11-01 — перевірки немає |
+| REQ-031-15 | `frontend/integration_tests/test/buildOverview.spec.ts › leaves the header counts to the numbers of the overview` |
 | REQ-031-20 | `frontend/src/_helpers/reviewQueue.helper.test.ts › puts all waiting in the order of the groups, new last` |
 | REQ-031-21 | `frontend/src/_helpers/reviewQueue.helper.test.ts › keeps only the waiting runs of a group, device or feature` |
 | REQ-031-22 | `frontend/src/_helpers/reviewQueue.helper.test.ts › starts at the clicked run inside its group` |

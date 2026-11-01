@@ -23,7 +23,6 @@ import { ResultBar } from "./ResultBar";
 import { EmptyState } from "../EmptyState";
 import { CountUp } from "../motion/useCountUp";
 import { staggered } from "../motion/Stagger";
-import { thumbnailFor } from "../../_helpers/testRunImage.helper";
 import { BuildTab } from "../../_helpers/route.helpers";
 import { sincePrevious } from "../../_helpers/previousBuild.helper";
 import { QueueKey, queueIds } from "../../_helpers/reviewQueue.helper";
@@ -462,56 +461,7 @@ const Tiles: React.FunctionComponent<{
   );
 };
 
-const THUMB_SX = {
-  width: 20,
-  height: 41,
-  borderRadius: 0.75,
-  cursor: "pointer",
-  transition: `transform ${motion.base}ms ${motion.easing}`,
-  "&:hover": { transform: "translateY(-2px)" },
-};
-
-/** A small screenshot; one that does not load shows as an empty frame, not a broken picture. */
-const Thumb: React.FunctionComponent<{ run: TestRun; onOpen: () => void }> = ({
-  run,
-  onOpen,
-}) => {
-  const [broken, setBroken] = React.useState(false);
-  const open = (event: React.MouseEvent) => {
-    event.stopPropagation();
-    onOpen();
-  };
-  return broken ? (
-    <Box
-      data-testid="thumbMissing"
-      role="img"
-      aria-label={run.name}
-      onClick={open}
-      sx={{
-        ...THUMB_SX,
-        bgcolor: tokens.subtle,
-        border: `1px dashed ${tokens.borderStrong}`,
-      }}
-    />
-  ) : (
-    <Box
-      component="img"
-      src={thumbnailFor(run, true)}
-      alt={run.name}
-      loading="lazy"
-      onError={() => setBroken(true)}
-      onClick={open}
-      sx={{
-        ...THUMB_SX,
-        objectFit: "cover",
-        objectPosition: "top",
-        boxShadow: tokens.shadowShot,
-      }}
-    />
-  );
-};
-
-const DECIDE_COLUMNS = "minmax(0, 1fr) 72px 32px 20px";
+const DECIDE_COLUMNS = "minmax(0, 1fr) 52px 20px";
 
 const ToDecide: React.FunctionComponent<{
   overview: Overview;
@@ -520,10 +470,6 @@ const ToDecide: React.FunctionComponent<{
   actions: OverviewActions;
 }> = ({ overview, groups, testRuns, actions }) => {
   const { t } = useT();
-  const byId = React.useMemo(
-    () => new Map(testRuns.map((run) => [run.id, run])),
-    [testRuns],
-  );
   const rows = (groups ?? [])
     .map((group) => {
       const key: QueueKey = { kind: "group", fingerprint: group.fingerprint };
@@ -561,7 +507,7 @@ const ToDecide: React.FunctionComponent<{
     <Card title={t("overview.toDecide")} index={6} testId="overviewToDecide">
       <Head
         columns={DECIDE_COLUMNS}
-        cells={[[t("overview.group")], [t("overview.screens")], [""], [""]]}
+        cells={[[t("overview.group")], [t("overview.screens"), true], [""]]}
       />
       {rows.length === 0 && (
         <Box sx={{ p: 2, color: tokens.textSecondary, fontSize: 13 }}>
@@ -587,18 +533,6 @@ const ToDecide: React.FunctionComponent<{
               {group.title}
             </Typography>
           )}
-          <Box sx={{ display: "flex", gap: 0.625 }}>
-            {ids.slice(0, 3).map((id) => {
-              const run = byId.get(id);
-              return run ? (
-                <Thumb
-                  key={id}
-                  run={run}
-                  onOpen={() => actions.openQueue(key, id)}
-                />
-              ) : null;
-            })}
-          </Box>
           <Num value={ids.length} />
           <ChevronRight sx={{ fontSize: 18, color: tokens.textMuted }} />
         </Row>
@@ -667,6 +601,68 @@ const Devices: React.FunctionComponent<{
           </Row>
         );
       })}
+    </Card>
+  );
+};
+
+const Features: React.FunctionComponent<{
+  overview: Overview;
+  actions: OverviewActions;
+}> = ({ overview, actions }) => {
+  const { t } = useT();
+  const { features, quietFeatures } = overview;
+  return (
+    <Card title={t("overview.features")} index={8} testId="overviewFeatures">
+      <Head
+        columns={TABLE_COLUMNS}
+        cells={[
+          [t("overview.feature")],
+          [t("overview.result")],
+          [t("overview.review"), true],
+          [t("overview.bugs"), true],
+        ]}
+      />
+      {features.map((row) => {
+        const waiting = row.changed + row.new;
+        return (
+          <Row
+            key={row.name}
+            columns={TABLE_COLUMNS}
+            label={row.name}
+            testId="overviewFeature"
+            onClick={
+              waiting
+                ? () => actions.openQueue({ kind: "feature", name: row.name })
+                : undefined
+            }
+          >
+            <Typography noWrap sx={{ fontSize: 13, fontWeight: 600 }}>
+              {row.name}
+            </Typography>
+            <ResultBar outcome={row} />
+            <Num value={waiting} />
+            <Num value={row.bugs} />
+          </Row>
+        );
+      })}
+      {quietFeatures.count > 0 && (
+        <Row columns={TABLE_COLUMNS} testId="overviewQuietFeatures">
+          <span style={{ color: tokens.textSecondary }}>
+            {t("overview.quiet", { count: quietFeatures.count })}
+          </span>
+          <ResultBar
+            outcome={{
+              total: quietFeatures.screens,
+              changed: 0,
+              new: 0,
+              rejected: 0,
+              passed: quietFeatures.screens,
+            }}
+          />
+          <span />
+          <span />
+        </Row>
+      )}
     </Card>
   );
 };
@@ -801,14 +797,34 @@ export const BuildOverview: React.FunctionComponent<{
           alignItems: "start",
         }}
       >
-        <ToDecide
-          overview={overview}
-          groups={groups}
-          testRuns={testRuns}
-          actions={actions}
-        />
-        <Devices overview={overview} actions={actions} />
-        <Bugs overview={overview} actions={actions} />
+        {/* two stacks, so a short card leaves no hole beside a long one */}
+        <Box
+          sx={{
+            display: "flex",
+            flexDirection: "column",
+            gap: 1.75,
+            minWidth: 0,
+          }}
+        >
+          <ToDecide
+            overview={overview}
+            groups={groups}
+            testRuns={testRuns}
+            actions={actions}
+          />
+          <Features overview={overview} actions={actions} />
+        </Box>
+        <Box
+          sx={{
+            display: "flex",
+            flexDirection: "column",
+            gap: 1.75,
+            minWidth: 0,
+          }}
+        >
+          <Devices overview={overview} actions={actions} />
+          <Bugs overview={overview} actions={actions} />
+        </Box>
       </Box>
     </Box>
   );

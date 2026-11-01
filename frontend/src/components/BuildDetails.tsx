@@ -12,7 +12,9 @@ import { useT } from "../i18n";
 const BuildDetails: React.FunctionComponent<{
   // what can be done with the build: Report, Review (031)
   actions?: React.ReactNode;
-}> = ({ actions }) => {
+  // the Overview tab shows these numbers itself (REQ-031-15)
+  hideCounts?: boolean;
+}> = ({ actions, hideCounts }) => {
   const { selectedBuild } = useBuildState();
   const { testRuns } = useTestRunState();
   const { t, tx, formatDate } = useT();
@@ -125,8 +127,9 @@ const BuildDetails: React.FunctionComponent<{
           />
         </Box>
         <Box
+          data-testid="buildCounts"
           sx={{
-            display: "flex",
+            display: hideCounts ? "none" : "flex",
             flexWrap: "wrap",
             gap: "4px 20px",
             fontSize: 13,

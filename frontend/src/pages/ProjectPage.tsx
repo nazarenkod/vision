@@ -129,6 +129,7 @@ const ProjectPage = () => {
           }}
         >
           <BuildDetails
+            hideCounts={view === "overview"}
             actions={
               selectedBuild && (
                 <>

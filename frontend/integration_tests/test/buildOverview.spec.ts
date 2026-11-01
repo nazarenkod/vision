@@ -190,8 +190,9 @@ test("opens a build on the Overview tab", async ({ openProjectPage, page }) => {
   );
   await expect(page.getByTestId("overviewProgress")).toContainText("1 / 4");
   await expect(page.getByTestId("overviewDevice")).toHaveCount(2);
-  // features repeat the groups on the overview; they stay in the full report
-  await expect(page.getByTestId("overviewFeatures")).toHaveCount(0);
+  await expect(page.getByTestId("overviewQuietFeatures")).toContainText(
+    "+2 passed",
+  );
   await expect(page.getByTestId("overviewBug")).toContainText("P24MOB-14231");
   expect(new URL(page.url()).searchParams.get("tab")).toBeNull();
 });
@@ -309,15 +310,14 @@ test("Esc returns to where the review was opened, focus on the same row", async 
   expect(new URL(page.url()).searchParams.get("queue")).toBeNull();
 });
 
-test("shows a placeholder for a screenshot that did not load", async ({
+test("leaves the header counts to the numbers of the overview", async ({
   openProjectPage,
   page,
 }) => {
-  await page.route("**/image.png", (route) => route.fulfill({ status: 404 }));
-  await page.route("**/diff.png", (route) => route.fulfill({ status: 404 }));
   await openProjectPage(project.id, build.id, undefined, "overview");
+  await expect(page.getByTestId("overviewTile-screens")).toBeVisible();
+  await expect(page.getByTestId("buildCounts")).toBeHidden();
 
-  const group = page.getByTestId("overviewGroup").first();
-  await expect(group.getByTestId("thumbMissing")).toHaveCount(2);
-  await expect(group.getByRole("img", { name: "Checkout. Pay" })).toBeVisible();
+  await page.getByRole("tab", { name: /All tests/ }).click();
+  await expect(page.getByTestId("buildCounts")).toBeVisible();
 });

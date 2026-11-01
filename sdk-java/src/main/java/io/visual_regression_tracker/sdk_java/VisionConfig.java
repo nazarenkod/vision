@@ -21,7 +21,7 @@ import java.util.function.Function;
 @AllArgsConstructor
 @Accessors(chain = true)
 @Slf4j
-public class VisualRegressionTrackerConfig {
+public class VisionConfig {
 
     @NonNull
     private final String apiUrl;
@@ -35,11 +35,11 @@ public class VisualRegressionTrackerConfig {
     private Boolean enableSoftAssert;
     private int httpTimeoutInSeconds;
 
-    public static VisualRegressionTrackerConfigBuilder builder() {
-        return new VisualRegressionTrackerConfigBuilder();
+    public static VisionConfigBuilder builder() {
+        return new VisionConfigBuilder();
     }
 
-    public static class VisualRegressionTrackerConfigBuilder {
+    public static class VisionConfigBuilder {
         private String apiUrl;
         private String apiKey;
         private String project;
@@ -55,47 +55,47 @@ public class VisualRegressionTrackerConfig {
         private static final boolean DEFAULT_SOFT_ASSERTION_STATE = false;
         private static final int DEFAULT_HTTP_TIMEOUT_SECONDS = 10;
 
-        public VisualRegressionTrackerConfigBuilder apiUrl(String apiUrl) {
+        public VisionConfigBuilder apiUrl(String apiUrl) {
             this.apiUrl = apiUrl;
             return this;
         }
 
-        public VisualRegressionTrackerConfigBuilder apiKey(String apiKey) {
+        public VisionConfigBuilder apiKey(String apiKey) {
             this.apiKey = apiKey;
             return this;
         }
 
-        public VisualRegressionTrackerConfigBuilder project(String project) {
+        public VisionConfigBuilder project(String project) {
             this.project = project;
             return this;
         }
 
-        public VisualRegressionTrackerConfigBuilder branchName(String branchName) {
+        public VisionConfigBuilder branchName(String branchName) {
             this.branchName = branchName;
             return this;
         }
 
-        public VisualRegressionTrackerConfigBuilder ciBuildId(String ciBuildId) {
+        public VisionConfigBuilder ciBuildId(String ciBuildId) {
             this.ciBuildId = ciBuildId;
             return this;
         }
 
-        public VisualRegressionTrackerConfigBuilder enableSoftAssert(Boolean enableSoftAssert) {
+        public VisionConfigBuilder enableSoftAssert(Boolean enableSoftAssert) {
             this.enableSoftAssert = enableSoftAssert;
             return this;
         }
 
-        public VisualRegressionTrackerConfigBuilder httpTimeoutInSeconds(int httpTimeoutInSeconds) {
+        public VisionConfigBuilder httpTimeoutInSeconds(int httpTimeoutInSeconds) {
             this.httpTimeoutInSeconds = httpTimeoutInSeconds;
             return this;
         }
 
-        public VisualRegressionTrackerConfigBuilder configFile(File configFile) {
+        public VisionConfigBuilder configFile(File configFile) {
             this.configFile = configFile;
             return this;
         }
 
-        public VisualRegressionTrackerConfig build() {
+        public VisionConfig build() {
             Map<String, Object> configFromFile = Collections.emptyMap();
             if (configFile != null) {
                 configFromFile = readConfigFromFile(configFile);
@@ -105,7 +105,7 @@ public class VisualRegressionTrackerConfig {
             String actualApiKey = resolve("apiKey", configFromFile);
             String actualProject = resolve("project", configFromFile);
 
-            VisualRegressionTrackerConfig config = new VisualRegressionTrackerConfig(actualApiUrl, actualApiKey, actualProject);
+            VisionConfig config = new VisionConfig(actualApiUrl, actualApiKey, actualProject);
             config.setCiBuildId(resolve("ciBuildId", configFromFile));
             config.setBranchName(resolve("branchName", configFromFile));
 

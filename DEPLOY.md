@@ -280,9 +280,25 @@ decisions to problems»).
 изменений работают. Новый SDK нужен только для отправки XML-дерева экрана: доступность,
 изменения по элементам, правила по элементам, а также для названия фичи в багах из сравнения.
 
-Новый SDK — это upstream 4.3.1 плюс два необязательных поля: `uiTree` и `featureName`. Пакет и классы те же,
-работает на Java 11+. Готовый jar лежит в репозитории: `dist/sdk-java/sdk-java-4.3.1-vision.2.jar`
+Новый SDK — это upstream 4.3.1 плюс два необязательных поля, `uiTree` и `featureName`, а главные классы
+называются `Vision` и `VisionConfig` вместо `VisualRegressionTracker` и `VisualRegressionTrackerConfig`.
+Пакет, методы и остальные классы те же, работает на Java 11+. Готовый jar лежит в репозитории:
+`dist/sdk-java/sdk-java-4.3.1-vision.3.jar`
 (рядом его pom). Пересобрать: `./scripts/build-sdk-jar.sh` (JDK 11–17, Gradle 7).
+
+### Обновление с 4.3.1-vision.2
+
+Что нового в `4.3.1-vision.3`: классы `VisualRegressionTracker` и `VisualRegressionTrackerConfig`
+переименованы в `Vision` и `VisionConfig`. Старых имён в jar нет, поэтому в тестах меняются эти два
+имени (и импорты); методы, `TestRunOptions`, переменные `VRT_*` и `vrt.json` те же. Запросы к серверу
+не изменились, эталоны остаются. Обновляться не обязательно: `vision.2` продолжает работать.
+
+```java
+// было
+VisualRegressionTracker vrt = new VisualRegressionTracker(VisualRegressionTrackerConfig.builder()...build());
+// стало
+Vision vrt = new Vision(VisionConfig.builder()...build());
+```
 
 ### Обновление с 4.3.1-vision.1
 
@@ -294,17 +310,18 @@ decisions to problems»).
 Обновляться не обязательно: `vision.1` продолжает работать, сервер принимает запросы без
 `featureName`. Чтобы обновиться:
 
-1. Вариант А: ещё раз `mvn install:install-file` с файлами `vision.2` (команда ниже) и версия
-   `4.3.1-vision.2` в pom.xml. Вариант Б: заменить jar в `libs/` и поправить версию и `systemPath`.
+1. Вариант А: ещё раз `mvn install:install-file` с файлами `vision.3` (команда ниже) и версия
+   `4.3.1-vision.3` в pom.xml. Вариант Б: заменить jar в `libs/` и поправить версию и `systemPath`.
 2. Если названия проверок не начинаются с фичи, добавить `.featureName(...)` в обёртку над
-   `vrt.track` (пример в 8.2). Больше в тестах ничего не меняется.
+   `vrt.track` (пример в 8.2).
+3. Переименовать два класса, как описано выше для `vision.3`.
 
 ### Вариант А: установить в локальный Maven (рекомендую)
 
 Один раз на каждой машине, где собираются тесты (ноутбук, агенты CI):
 
 ```bash
-mvn install:install-file -Dfile=dist/sdk-java/sdk-java-4.3.1-vision.2.jar -DpomFile=dist/sdk-java/sdk-java-4.3.1-vision.2.pom
+mvn install:install-file -Dfile=dist/sdk-java/sdk-java-4.3.1-vision.3.jar -DpomFile=dist/sdk-java/sdk-java-4.3.1-vision.3.pom
 ```
 
 В pom.xml меняется только версия:
@@ -313,7 +330,7 @@ mvn install:install-file -Dfile=dist/sdk-java/sdk-java-4.3.1-vision.2.jar -DpomF
 <dependency>
     <groupId>com.github.Visual-Regression-Tracker</groupId>
     <artifactId>sdk-java</artifactId>
-    <version>4.3.1-vision.2</version>
+    <version>4.3.1-vision.3</version>
 </dependency>
 ```
 
@@ -327,9 +344,9 @@ mvn install:install-file -Dfile=dist/sdk-java/sdk-java-4.3.1-vision.2.jar -DpomF
 <dependency>
     <groupId>com.github.Visual-Regression-Tracker</groupId>
     <artifactId>sdk-java</artifactId>
-    <version>4.3.1-vision.2</version>
+    <version>4.3.1-vision.3</version>
     <scope>system</scope>
-    <systemPath>${project.basedir}/libs/sdk-java-4.3.1-vision.2.jar</systemPath>
+    <systemPath>${project.basedir}/libs/sdk-java-4.3.1-vision.3.jar</systemPath>
 </dependency>
 <!-- jar из файла не приносит своих зависимостей; если они уже есть в проекте, эти две не нужны -->
 <dependency>
@@ -347,8 +364,9 @@ mvn install:install-file -Dfile=dist/sdk-java/sdk-java-4.3.1-vision.2.jar -DpomF
 Maven предупредит о `system` scope, это нормально.
 
 Оба варианта проверены Maven-проектом на `vision.1`: собирается и отправляет экраны с XML в
-Vision. `vision.2` отличается от неё только полем `featureName`; его покрывают тесты SDK
-(`gradle test`), Maven-проектом его ещё не прогоняли.
+Vision. `vision.2` отличается от неё только полем `featureName`, `vision.3` — именами двух классов;
+их покрывают тесты SDK
+(`gradle test`), Maven-проектом их ещё не прогоняли.
 Публикация в Nexus тоже настроена (`gradle publish -PrepoUrl=...`, см. `sdk-java/README.md`),
 пригодится, когда захотите убрать ручной шаг.
 
@@ -369,7 +387,7 @@ export VRT_APIKEY=ваш_API_ключ
 `VRT_PROJECT` и `VRT_BRANCHNAME` — как сейчас. Ключ тот же, что на проде: он скопирован.
 
 Переменные работают, только если адрес и ключ **не заданы в коде**. SDK берёт значение из
-`VisualRegressionTrackerConfig.builder().apiUrl(...)`, если оно там есть, затем из
+`VisionConfig.builder().apiUrl(...)`, если оно там есть, затем из
 переменной `VRT_APIURL`, затем из `vrt.json`. Если в коде стоит `.apiUrl("http://vrt-prod...")`,
 вынесите его в переменную или системное свойство, например
 `.apiUrl(System.getenv().getOrDefault("VRT_APIURL", "http://vrt-prod:4200"))`.

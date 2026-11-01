@@ -61,7 +61,7 @@
 
 | Компонент | Шлях | Роль |
 |---|---|---|
-| Опції й запит | `sdk-java/src/main/java/io/visual_regression_tracker/sdk_java/TestRunOptions.java`, `sdk-java/src/main/java/io/visual_regression_tracker/sdk_java/request/TestRunRequest.java`, `sdk-java/src/main/java/io/visual_regression_tracker/sdk_java/VisualRegressionTracker.java` | `featureName`; у JSON лише коли задано (Gson пропускає `null`, REQ-025-73) |
+| Опції й запит | `sdk-java/src/main/java/io/visual_regression_tracker/sdk_java/TestRunOptions.java`, `sdk-java/src/main/java/io/visual_regression_tracker/sdk_java/request/TestRunRequest.java`, `sdk-java/src/main/java/io/visual_regression_tracker/sdk_java/Vision.java` | `featureName`; у JSON лише коли задано (Gson пропускає `null`, REQ-025-73) |
 | Збірка | `scripts/build-sdk-jar.sh`, `sdk-java/build.gradle`, `dist/sdk-java/` | версія `4.3.1-vision.2` |
 
 ### Фронтенд
@@ -195,7 +195,7 @@ sequenceDiagram
 | REQ-025-48 | `backend/src/ai/ai.service.spec.ts › gives up on a bug draft after 30 seconds`; `backend/src/ai/ai.service.spec.ts › refuses a bug draft without the person’s own Gemini key`; `frontend/src/_helpers/bugReport.helper.test.ts › keeps the note and the person’s fields when the draft fails` |
 | REQ-025-60 | `backend/src/visual-bugs/visual-bugs.service.spec.ts › lists the check’s bugs on every device and build` |
 | REQ-025-61 | manual: відкрити знімок перевірки з багом на тому самому пристрої — пунктирна рамка з ключем на чекпоінті, «Bug marks» її ховає |
-| REQ-025-70 | `sdk-java/src/test/java/io/visual_regression_tracker/sdk_java/VisualRegressionTrackerTest.java › trackSendsFeature` |
+| REQ-025-70 | `sdk-java/src/test/java/io/visual_regression_tracker/sdk_java/VisionTest.java › trackSendsFeature` |
 | REQ-025-71 | `backend/src/visual-bugs/visual-bug.spec.ts › takes the feature from the check name before the first dot when none is sent` |
 | REQ-025-72 | `backend/src/test-variations/test-variations.service.spec.ts › compares with the same baseline whether a feature is sent or not` |
-| REQ-025-73 | `sdk-java/src/test/java/io/visual_regression_tracker/sdk_java/VisualRegressionTrackerTest.java › trackWithoutFeatureSendsTheSameRequest` |
+| REQ-025-73 | `sdk-java/src/test/java/io/visual_regression_tracker/sdk_java/VisionTest.java › trackWithoutFeatureSendsTheSameRequest` |

@@ -21,7 +21,8 @@ Vision — внутрішній форк [Visual Regression Tracker](https://git
 3. **Міграції лише додавальні:** нова таблиця, nullable-колонка, індекс; без змін enum, видалень,
    перейменувань ([ADR-0003](docs/decisions/0003-additive-schema-only.md)).
 4. **Жодних скидань і видалень бази** (`prisma migrate reset`, `DROP DATABASE`, `dropdb`).
-5. **SDK = upstream + два необов'язкові параметри** `TestRunOptions.uiTree` і `featureName` ([ADR-0019](docs/decisions/0019-sdk-upstream-plus-ui-tree-and-feature.md)).
+5. **SDK змінюється лише за специфікацією:** зараз це upstream + `TestRunOptions.uiTree`, `featureName`
+   і головні класи `Vision`, `VisionConfig`; запити до сервера не ламаємо ([ADR-0024](docs/decisions/0024-own-vision-sdk.md)).
 6. **LLM — лише на вимогу,** ніколи при прийомі знімків ([ADR-0007](docs/decisions/0007-deterministic-first-ai-on-demand.md)).
 7. **Секрети не виходять із сервера:** токени Jira лише записуються (`jiraTokenSet`); рядок
    `User` ніколи не віддається цілком.

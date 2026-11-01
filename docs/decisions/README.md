@@ -34,8 +34,9 @@ Architecture Decision Record фіксує важливе рішення: кон�
 | [ADR-0016](0016-no-cross-device-comparison.md) | Порівняння між пристроями прибрано | Accepted | 2026-10-29 |
 | [ADR-0017](0017-interface-in-two-languages.md) | Інтерфейс двома мовами через власний словник | Accepted | 2026-10-29 |
 | [ADR-0018](0018-compare-only-measures-compared-elements.md) | «Порівнювати лише»: вирівняти елемент, різницю рахувати від його площі | Accepted | 2026-10-29 |
-| [ADR-0019](0019-sdk-upstream-plus-ui-tree-and-feature.md) | SDK — upstream плюс UI-дерево й назва фічі | Accepted | 2026-10-29 |
+| [ADR-0019](0019-sdk-upstream-plus-ui-tree-and-feature.md) | SDK — upstream плюс UI-дерево й назва фічі | Superseded by ADR-0024 | 2026-10-29 |
 | [ADR-0020](0020-personal-gemini-keys.md) | Особисті ключі Gemini для чернеток багів | Accepted | 2026-10-29 |
 | [ADR-0021](0021-xpath-selectors-from-stable-elements.md) | Селектори `xpath:` — шлях від стабільного елемента на розібраному дереві | Accepted | 2026-10-30 |
 | [ADR-0022](0022-public-report-links.md) | Публічний звіт збірки: посилання з токеном, без входу, PDF друком | Accepted | 2026-10-31 |
 | [ADR-0023](0023-events-socket-behind-login.md) | Сокет подій — лише з токеном входу і по кімнатах проєктів | Accepted | 2026-11-01 |
+| [ADR-0024](0024-own-vision-sdk.md) | SDK відходить від upstream кроками; перший — головні класи `Vision` | Accepted | 2026-11-01 |

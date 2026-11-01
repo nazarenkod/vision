@@ -8,12 +8,12 @@ import java.io.File;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
-public class VisualRegressionTrackerConfigTest {
+public class VisionConfigTest {
 
     @Test(expectedExceptions = NullPointerException.class,
             expectedExceptionsMessageRegExp = "apiKey is marked non-null but is null")
     public void shouldThrowExceptionIfApiKeyMissed() {
-        VisualRegressionTrackerConfig
+        VisionConfig
                 .builder()
                 .apiUrl("")
                 .project("")
@@ -23,7 +23,7 @@ public class VisualRegressionTrackerConfigTest {
     @Test(expectedExceptions = NullPointerException.class,
             expectedExceptionsMessageRegExp = "apiUrl is marked non-null but is null")
     public void shouldThrowExceptionIfApiUrlMissed() {
-        VisualRegressionTrackerConfig
+        VisionConfig
                 .builder()
                 .apiKey("")
                 .project("")
@@ -33,7 +33,7 @@ public class VisualRegressionTrackerConfigTest {
     @Test(expectedExceptions = NullPointerException.class,
             expectedExceptionsMessageRegExp = "project is marked non-null but is null")
     public void shouldThrowExceptionIfProjectMissed() {
-        VisualRegressionTrackerConfig
+        VisionConfig
                 .builder()
                 .apiKey("")
                 .apiUrl("")
@@ -44,7 +44,7 @@ public class VisualRegressionTrackerConfigTest {
     public void shouldBeCreatedFromConfigFile() {
         File configFile = new File("src/test/resources/vrt_config_example.json");
 
-        VisualRegressionTrackerConfig config = VisualRegressionTrackerConfig.builder()
+        VisionConfig config = VisionConfig.builder()
                 .configFile(configFile)
                 .build();
 
@@ -65,8 +65,8 @@ public class VisualRegressionTrackerConfigTest {
                 .set("VRT_ENABLESOFTASSERT", "false")
                 .set("VRT_CIBUILDID", "SOME_UNIQUE_ID");
 
-        VisualRegressionTrackerConfig config = environmentVariables.execute(() ->
-                VisualRegressionTrackerConfig.builder()
+        VisionConfig config = environmentVariables.execute(() ->
+                VisionConfig.builder()
                         .build()
         );
 
@@ -84,8 +84,8 @@ public class VisualRegressionTrackerConfigTest {
                 .set("VRT_APIURL", "http://162.243.161.172:4201");
         File configFile = new File("src/test/resources/vrt_config_example.json");
 
-        VisualRegressionTrackerConfig config = environmentVariables.execute(() ->
-                VisualRegressionTrackerConfig.builder()
+        VisionConfig config = environmentVariables.execute(() ->
+                VisionConfig.builder()
                         .apiUrl("http://localhost:4200")
                         .configFile(configFile)
                         .build()
@@ -102,7 +102,7 @@ public class VisualRegressionTrackerConfigTest {
 
     @Test
     public void shouldUseDefaultValuesIfNotProvided() {
-        VisualRegressionTrackerConfig config = VisualRegressionTrackerConfig.builder()
+        VisionConfig config = VisionConfig.builder()
                         .apiUrl("http://localhost:4200")
                         .apiKey("KEY")
                         .project("PROJECT")

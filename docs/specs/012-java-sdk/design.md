@@ -19,7 +19,7 @@ gzip + base64 у поле `uiTree`. Розбір, формат і щільніс
 | Вимога | Перевірка |
 |---|---|
 | REQ-012-01 | manual: `git diff` `sdk-java/` проти upstream 4.3.1 |
-| REQ-012-02 | `sdk-java/src/test/java/io/visual_regression_tracker/sdk_java/VisualRegressionTrackerTest.java › shouldSendTheUiTreeGzippedWhenGiven` |
-| REQ-012-03 | `sdk-java/src/test/java/io/visual_regression_tracker/sdk_java/VisualRegressionTrackerTest.java › shouldLeaveTheUiTreeOutWhenNotGiven` |
+| REQ-012-02 | `sdk-java/src/test/java/io/visual_regression_tracker/sdk_java/VisionTest.java › shouldSendTheUiTreeGzippedWhenGiven` |
+| REQ-012-03 | `sdk-java/src/test/java/io/visual_regression_tracker/sdk_java/VisionTest.java › shouldLeaveTheUiTreeOutWhenNotGiven` |
 | REQ-012-04 | manual: `backend/src/main.ts` upstream — `new ValidationPipe()`; запит з `uiTree` на upstream VRT приймається |
 | REQ-012-05 | manual: підключення за [DEPLOY.md §7](../../../DEPLOY.md) на JDK 11 |

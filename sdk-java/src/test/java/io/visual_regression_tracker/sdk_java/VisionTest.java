@@ -44,7 +44,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-public class VisualRegressionTrackerTest {
+public class VisionTest {
 
     private final static String BUILD_ID = "123123";
     private final static String PROJECT_ID = "projectId";
@@ -55,10 +55,10 @@ public class VisualRegressionTrackerTest {
 
     private final Gson gson = new Gson();
 
-    private VisualRegressionTrackerConfig config;
+    private VisionConfig config;
     private MockWebServer mockWebServer;
-    private VisualRegressionTracker vrt;
-    private VisualRegressionTracker vrtMocked;
+    private Vision vrt;
+    private Vision vrtMocked;
 
     @SneakyThrows
     @BeforeMethod
@@ -67,7 +67,7 @@ public class VisualRegressionTrackerTest {
         mockWebServer.start();
 
         // target to mock server
-        config = new VisualRegressionTrackerConfig(
+        config = new VisionConfig(
                 mockWebServer.url("/").toString(),
                 "733c148e-ef70-4e6d-9ae5-ab22263697cc",
                 "XHGDZDFD3GMJDNM87JKEMP0JS1G5",
@@ -75,8 +75,8 @@ public class VisualRegressionTrackerTest {
                 CI_BUILD_ID,
                 false,
                 HTTP_TIMEOUT);
-        vrt = new VisualRegressionTracker(config);
-        vrtMocked = mock(VisualRegressionTracker.class);
+        vrt = new Vision(config);
+        vrtMocked = mock(Vision.class);
         vrtMocked.paths = new PathProvider("baseApiUrl");
     }
 
@@ -85,6 +85,17 @@ public class VisualRegressionTrackerTest {
     public void tearDown() {
         mockWebServer.shutdown();
         reset(vrtMocked);
+    }
+
+    // teams move to the new names in one step: the old ones must not linger in the jar
+    @Test(dataProvider = "oldClassNames", expectedExceptions = ClassNotFoundException.class)
+    public void noClassKeepsTheOldVisualRegressionTrackerName(String oldName) throws ClassNotFoundException {
+        Class.forName("io.visual_regression_tracker.sdk_java." + oldName);
+    }
+
+    @DataProvider(name = "oldClassNames")
+    public Object[][] oldClassNames() {
+        return new Object[][]{{"VisualRegressionTracker"}, {"VisualRegressionTrackerConfig"}};
     }
 
     @Test
@@ -106,8 +117,8 @@ public class VisualRegressionTrackerTest {
         BuildResponse result = vrt.start();
 
         RecordedRequest recordedRequest = mockWebServer.takeRequest();
-        assertThat(recordedRequest.getHeader(VisualRegressionTracker.API_KEY_HEADER), is(config.getApiKey()));
-        assertThat(recordedRequest.getHeader(VisualRegressionTracker.PROJECT_HEADER), is(config.getProject()));
+        assertThat(recordedRequest.getHeader(Vision.API_KEY_HEADER), is(config.getApiKey()));
+        assertThat(recordedRequest.getHeader(Vision.PROJECT_HEADER), is(config.getProject()));
         assertThat(recordedRequest.getBody().readUtf8(), is(gson.toJson(buildRequest)));
         assertThat(vrt.buildId, is(BUILD_ID));
         assertThat(vrt.projectId, is(PROJECT_ID));
@@ -135,8 +146,8 @@ public class VisualRegressionTrackerTest {
 
         RecordedRequest recordedRequest = mockWebServer.takeRequest();
         assertThat(recordedRequest.getMethod(), is("PATCH"));
-        assertThat(recordedRequest.getHeader(VisualRegressionTracker.API_KEY_HEADER), is(config.getApiKey()));
-        assertThat(recordedRequest.getHeader(VisualRegressionTracker.PROJECT_HEADER), is(config.getProject()));
+        assertThat(recordedRequest.getHeader(Vision.API_KEY_HEADER), is(config.getApiKey()));
+        assertThat(recordedRequest.getHeader(Vision.PROJECT_HEADER), is(config.getProject()));
         assertThat(Objects.requireNonNull(recordedRequest.getRequestUrl()).encodedPath(), containsString(BUILD_ID));
         assertThat(recordedRequest.getBody().readUtf8(), is("{\"isRunning\":false}"));
         assertThat(actualBuildResponse.isRunning(), is(false));
@@ -251,8 +262,8 @@ public class VisualRegressionTrackerTest {
         TestRunResponse result = vrt.submitTestRun(NAME, IMAGE_BASE_64, testRunOptions);
 
         RecordedRequest request = mockWebServer.takeRequest();
-        assertThat(request.getHeader(VisualRegressionTracker.API_KEY_HEADER), is(config.getApiKey()));
-        assertThat(request.getHeader(VisualRegressionTracker.PROJECT_HEADER), is(config.getProject()));
+        assertThat(request.getHeader(Vision.API_KEY_HEADER), is(config.getApiKey()));
+        assertThat(request.getHeader(Vision.PROJECT_HEADER), is(config.getProject()));
         assertThat(request.getBody().readUtf8(), is(gson.toJson(testRunRequest)));
         assertThat(gson.toJson(result), is(gson.toJson(testRunResponse)));
     }
@@ -296,7 +307,7 @@ public class VisualRegressionTrackerTest {
             expectedExceptions = TestRunException.class,
             expectedExceptionsMessageRegExp = "^(Difference found: https://someurl.com/test/123123|No baseline: https://someurl.com/test/123123)$")
     public void trackShouldThrowException(TestRunResponse testRunResponse, String expectedExceptionMessage) throws IOException, InterruptedException {
-        vrtMocked.configuration = VisualRegressionTrackerConfig.builder()
+        vrtMocked.configuration = VisionConfig.builder()
                 .apiUrl("")
                 .project("")
                 .apiKey("")
@@ -313,13 +324,13 @@ public class VisualRegressionTrackerTest {
 
     @Test(dataProvider = "trackErrorCases")
     public void trackShouldLogSevere(TestRunResponse testRunResponse, String expectedExceptionMessage) throws IOException, InterruptedException {
-        Logger loggerMock = (Logger) LoggerFactory.getLogger(VisualRegressionTracker.class);
+        Logger loggerMock = (Logger) LoggerFactory.getLogger(Vision.class);
         // create and start a ListAppender
         ListAppender<ILoggingEvent> listAppender = new ListAppender<>();
         listAppender.start();
         // add the appender to the logger
         loggerMock.addAppender(listAppender);
-        vrtMocked.configuration = VisualRegressionTrackerConfig.builder()
+        vrtMocked.configuration = VisionConfig.builder()
                 .apiUrl("")
                 .project("")
                 .apiKey("")

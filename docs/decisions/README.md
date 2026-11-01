@@ -38,3 +38,4 @@ Architecture Decision Record фіксує важливе рішення: кон�
 | [ADR-0020](0020-personal-gemini-keys.md) | Особисті ключі Gemini для чернеток багів | Accepted | 2026-10-29 |
 | [ADR-0021](0021-xpath-selectors-from-stable-elements.md) | Селектори `xpath:` — шлях від стабільного елемента на розібраному дереві | Accepted | 2026-10-30 |
 | [ADR-0022](0022-public-report-links.md) | Публічний звіт збірки: посилання з токеном, без входу, PDF друком | Accepted | 2026-10-31 |
+| [ADR-0023](0023-own-vision-sdk.md) | Власний Vision SDK замість форку upstream VRT | Proposed | 2026-11-01 |

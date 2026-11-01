@@ -2,16 +2,11 @@ import React from "react";
 import { Box, ButtonBase, Link, Typography } from "@mui/material";
 import {
   AccessibilityNewOutlined,
-  AccountTreeOutlined,
   BugReportOutlined,
-  CheckRounded,
-  HourglassEmptyRounded,
   LinkRounded,
-  ScheduleRounded,
 } from "@mui/icons-material";
 import { motion, tokens } from "../../theme";
 import { useT } from "../../i18n";
-import type { MessageKey } from "../../i18n";
 import { useTestRunState } from "../../contexts";
 import { buildOverviewService } from "../../services";
 import { BuildOverview as Overview } from "../../types/buildOverview";
@@ -196,168 +191,20 @@ const Num: React.FunctionComponent<{ value: number }> = ({ value }) => (
   </Box>
 );
 
-const Verdict: React.FunctionComponent<{ overview: Overview }> = ({
-  overview,
-}) => {
-  const { t } = useT();
-  const { verdict, counts, progress, previous } = overview;
-  const done = verdict === "passed" || verdict === "reviewed";
-  const Icon =
-    verdict === "running"
-      ? HourglassEmptyRounded
-      : done
-        ? CheckRounded
-        : ScheduleRounded;
-  const tone = done ? tokens.status.passed : tokens.status.changed;
-  const share = progress.needed ? progress.decided / progress.needed : 1;
-  return (
-    <Box
-      data-testid="overviewVerdict"
-      {...staggered(0)}
-      sx={{
-        bgcolor: tokens.surface,
-        border: `1px solid ${tokens.border}`,
-        borderRadius: 3,
-        px: 2,
-        py: 1.75,
-        // one line when it fits; on a narrow window the chip and progress go below
-        display: "flex",
-        flexWrap: "wrap",
-        alignItems: "center",
-        columnGap: 1.75,
-        rowGap: 1.25,
-      }}
-    >
-      <Box
-        sx={{
-          width: 30,
-          height: 30,
-          borderRadius: 2,
-          display: "grid",
-          placeItems: "center",
-          bgcolor: tone.bg,
-          color: tone.fg,
-        }}
-      >
-        <Icon sx={{ fontSize: 18 }} />
-      </Box>
-      <Typography
-        component="h2"
-        sx={{ fontSize: 16, fontWeight: 650, whiteSpace: "nowrap" }}
-      >
-        {t(`overview.verdict.${verdict}` as MessageKey)}
-      </Typography>
-      <Typography
-        sx={{
-          fontSize: 13,
-          color: tokens.textSecondary,
-          whiteSpace: "nowrap",
-          flex: "1 1 auto",
-        }}
-      >
-        {done
-          ? t("overview.decidedSummary", {
-              passed: counts.passed,
-              rejected: counts.rejected,
-            })
-          : t("overview.needDecision", {
-              waiting: counts.waiting,
-              total: counts.total,
-            })}
-      </Typography>
-      <Box
-        data-testid="overviewPrevious"
-        sx={{
-          height: 26,
-          px: 1.25,
-          borderRadius: 999,
-          bgcolor: tokens.subtle,
-          display: "inline-flex",
-          alignItems: "center",
-          gap: 0.75,
-          fontSize: 12,
-          color: tokens.textSecondary,
-          whiteSpace: "nowrap",
-        }}
-      >
-        <AccountTreeOutlined sx={{ fontSize: 14 }} />
-        {previous ? sincePrevious(previous, t) : t("overview.firstBuild")}
-      </Box>
-      <Box
-        data-testid="overviewProgress"
-        sx={{ display: "flex", flexDirection: "column", gap: 0.5, width: 190 }}
-      >
-        <Box
-          sx={{
-            display: "flex",
-            justifyContent: "space-between",
-            fontSize: 12,
-            color: tokens.textSecondary,
-          }}
-        >
-          <span>{t("overview.decided")}</span>
-          <span>
-            <b style={{ color: tokens.text }}>{progress.decided}</b> /{" "}
-            {progress.needed}
-          </span>
-        </Box>
-        <Box
-          sx={{
-            height: 6,
-            borderRadius: 999,
-            bgcolor: tokens.border,
-            overflow: "hidden",
-          }}
-        >
-          <Box
-            sx={{
-              height: "100%",
-              width: `${share * 100}%`,
-              bgcolor: tokens.status.passed.bar,
-              transition: `width ${motion.fill}ms ${motion.easing}`,
-            }}
-          />
-        </Box>
-        {progress.people.length > 0 && (
-          <Typography
-            noWrap
-            title={progress.people
-              .map(
-                (person) =>
-                  `${person.name ?? t("overview.someone")}: ${t(
-                    "overview.personDecisions",
-                    {
-                      approved: person.approved,
-                      rejected: person.rejected,
-                    },
-                  )}`,
-              )
-              .join("\n")}
-            sx={{ fontSize: 11.5, color: tokens.textMuted }}
-          >
-            {progress.people
-              .map(
-                (person) =>
-                  `${person.name ?? t("overview.someone")} ${person.approved + person.rejected}`,
-              )
-              .join(" · ")}
-          </Typography>
-        )}
-      </Box>
-    </Box>
-  );
-};
-
 const Tiles: React.FunctionComponent<{
   overview: Overview;
   actions: OverviewActions;
 }> = ({ overview, actions }) => {
   const { t } = useT();
-  const { counts } = overview;
+  const { counts, progress, previous } = overview;
+  const someone = t("overview.someone");
   const tiles: Array<{
     key: string;
     value: number;
     label: string;
+    // what the number does not say: the change since the last build, the progress
+    caption?: string;
+    captionTitle?: string;
     color?: string;
     onClick?: () => void;
   }> = [
@@ -365,12 +212,26 @@ const Tiles: React.FunctionComponent<{
       key: "screens",
       value: counts.total,
       label: t("overview.screens"),
+      caption: previous ? sincePrevious(previous, t) : t("overview.firstBuild"),
       onClick: () => actions.openTab("all"),
     },
     {
       key: "waiting",
       value: counts.waiting,
       label: t("overview.waiting"),
+      caption: t("overview.decidedOf", {
+        decided: progress.decided,
+        needed: progress.needed,
+      }),
+      captionTitle: progress.people
+        .map(
+          (person) =>
+            `${person.name ?? someone}: ${t("overview.personDecisions", {
+              approved: person.approved,
+              rejected: person.rejected,
+            })}`,
+        )
+        .join("\n"),
       color: tokens.status.changed.fg,
       onClick: counts.waiting
         ? () => actions.openQueue({ kind: "all" })
@@ -452,6 +313,23 @@ const Tiles: React.FunctionComponent<{
           <Box component="span" sx={{ fontSize: 12.5, fontWeight: 500 }}>
             {tile.label}
           </Box>
+          {tile.caption && (
+            <Box
+              component="span"
+              data-testid={`overviewCaption-${tile.key}`}
+              title={tile.captionTitle || undefined}
+              sx={{
+                fontSize: 11.5,
+                color: tokens.textSecondary,
+                maxWidth: "100%",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                whiteSpace: "nowrap",
+              }}
+            >
+              {tile.caption}
+            </Box>
+          )}
         </ButtonBase>
       ))}
     </Box>
@@ -706,7 +584,6 @@ export const BuildOverview: React.FunctionComponent<{
         maxWidth: 1240,
       }}
     >
-      <Verdict overview={overview} />
       <Tiles overview={overview} actions={actions} />
       <Box
         sx={{

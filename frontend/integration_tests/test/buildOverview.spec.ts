@@ -179,16 +179,18 @@ test("opens a build on the Overview tab", async ({ openProjectPage, page }) => {
     "aria-selected",
     "true",
   );
-  await expect(page.getByTestId("overviewVerdict")).toContainText(
-    "Waiting for review",
-  );
-  await expect(page.getByTestId("overviewVerdict")).toContainText(
-    "3 of 4 need a decision",
-  );
-  await expect(page.getByTestId("overviewPrevious")).toHaveText(
+  // the build's state is the header's; the tiles carry what is not said there
+  await expect(page.getByTestId("overviewTile-waiting")).toContainText("3");
+  await expect(page.getByTestId("overviewCaption-screens")).toHaveText(
     "Since #127: 2 changed, 1 new",
   );
-  await expect(page.getByTestId("overviewProgress")).toContainText("1 / 4");
+  await expect(page.getByTestId("overviewCaption-waiting")).toHaveText(
+    "1 of 4 decided",
+  );
+  await expect(page.getByTestId("overviewCaption-waiting")).toHaveAttribute(
+    "title",
+    "Oleh Koval: 1 approved · 0 rejected",
+  );
   await expect(page.getByTestId("overviewDevice")).toHaveCount(2);
   await expect(page.getByTestId("overviewQuietFeatures")).toContainText(
     "+2 passed",

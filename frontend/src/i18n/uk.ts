@@ -1456,8 +1456,6 @@ export const uk: Messages = {
   "overview.verdict.waiting": "Чекає на перегляд",
   "overview.verdict.reviewed": "Переглянуто",
   "overview.verdict.passed": "Пройдено",
-  "overview.needDecision": "{waiting} з {total} чекають рішення",
-  "overview.decidedSummary": "{passed} пройшли · {rejected} відхилено",
   "overview.since": "Від #{number}",
   "overview.prevChanged": "{count} змінено",
   "overview.prevNew": {
@@ -1474,6 +1472,7 @@ export const uk: Messages = {
   },
   "overview.prevSame": "нічого нового",
   "overview.firstBuild": "Перша збірка цієї гілки",
+  "overview.decidedOf": "вирішено {decided} з {needed}",
   "overview.decided": "Вирішено",
   "overview.someone": "Хтось",
   "overview.personDecisions": "{approved} прийнято · {rejected} відхилено",

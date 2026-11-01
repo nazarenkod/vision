@@ -4,13 +4,19 @@ import { ArrowForward } from "@mui/icons-material";
 import { tokens } from "../../theme";
 import { BrandMark } from "../BrandMark";
 import { StatusPill } from "../StatusPill";
-import { ResultBar } from "../BuildOverview/ResultBar";
+import { ResultBar, ResultLegend } from "../BuildOverview/ResultBar";
 import { staticService } from "../../services";
 import { DICTIONARIES, Text } from "../../i18n/dictionaries";
 import type { MessageKey } from "../../i18n";
-import { formatDate, Language, translate } from "../../i18n/translate";
+import {
+  formatDate,
+  formatFixed,
+  Language,
+  translate,
+} from "../../i18n/translate";
 import { PublicReport, ReportSection } from "../../types/buildOverview";
 import { sincePrevious } from "../../_helpers/previousBuild.helper";
+import { buildPeriod } from "../../_helpers/buildPeriod.helper";
 
 /** Texts in the report's own language, whatever the interface speaks (REQ-031-42). */
 export const textIn =
@@ -52,6 +58,8 @@ const Section: React.FunctionComponent<{
 const tableSx = {
   width: "100%",
   borderCollapse: "collapse" as const,
+  // fixed columns, so the tables one under another line up
+  tableLayout: "fixed" as const,
   fontSize: 12,
   "& th": {
     textAlign: "left",
@@ -68,6 +76,31 @@ const tableSx = {
   },
   "& .r": { textAlign: "right" },
 };
+
+/** The same column widths for every table of the report. */
+const Columns: React.FunctionComponent = () => (
+  <colgroup>
+    <col />
+    <col style={{ width: 132 }} />
+    <col style={{ width: 84 }} />
+    <col style={{ width: 104 }} />
+  </colgroup>
+);
+
+// a count in a table: nothing to count is a dash, so the counts stand out
+const count = (value: number) => value || "—";
+
+// a run's status in the app's own words, so the report says what Vision says
+const STATUS_KEY: Record<string, MessageKey> = {
+  unresolved: "testStatus.unresolved",
+  new: "testStatus.new",
+  failed: "testStatus.failed",
+};
+const STATUS_TONE = {
+  unresolved: "changed",
+  new: "new",
+  failed: "failed",
+} as const;
 
 const SHOT_SX = { width: 72, borderRadius: 1, flexShrink: 0 };
 
@@ -181,12 +214,11 @@ export const ReportDocument: React.FunctionComponent<{
           </Typography>
           <Typography sx={{ fontSize: 12, color: tokens.textSecondary }}>
             {[
-              formatDate(build.createdAt, language, {
-                day: "numeric",
-                month: "numeric",
-                year: "numeric",
-                hour: "2-digit",
-                minute: "2-digit",
+              // when it ran, as the build's header says it (REQ-031-16)
+              buildPeriod(build.createdAt, build.updatedAt, {
+                formatDate: (value, options) =>
+                  formatDate(value, language, options),
+                t,
               }),
               overview.devices.length > 0 &&
                 t("report.devices", { count: overview.devices.length }),
@@ -317,13 +349,18 @@ export const ReportDocument: React.FunctionComponent<{
                       p: 1,
                     }}
                   >
-                    <Shot
-                      name={change.baselineName}
-                      alt={t("report.baseline")}
-                    />
-                    <ArrowForward
-                      sx={{ fontSize: 16, color: tokens.textSecondary }}
-                    />
+                    {/* a new screenshot has no baseline to come from */}
+                    {change.baselineName && (
+                      <>
+                        <Shot
+                          name={change.baselineName}
+                          alt={t("report.baseline")}
+                        />
+                        <ArrowForward
+                          sx={{ fontSize: 16, color: tokens.textSecondary }}
+                        />
+                      </>
+                    )}
                     <Shot
                       name={change.diffName ?? change.imageName}
                       alt={t("report.checkpoint")}
@@ -331,11 +368,13 @@ export const ReportDocument: React.FunctionComponent<{
                   </Box>
                   <Box sx={{ fontSize: 11.5 }}>
                     <StatusPill
-                      tone={change.status === "failed" ? "failed" : "changed"}
+                      tone={
+                        STATUS_TONE[
+                          change.status as keyof typeof STATUS_TONE
+                        ] ?? "changed"
+                      }
                       label={t(
-                        change.status === "failed"
-                          ? "overview.rejected"
-                          : "overview.waiting",
+                        STATUS_KEY[change.status] ?? "testStatus.unresolved",
                       )}
                     />
                     <Typography sx={{ fontSize: 12, fontWeight: 600, mt: 0.5 }}>
@@ -346,7 +385,7 @@ export const ReportDocument: React.FunctionComponent<{
                     >
                       {[change.device, change.os].filter(Boolean).join(" · ")}
                       {change.diffPercent !== null &&
-                        ` · ${change.diffPercent.toFixed(2)}%`}
+                        ` · ${formatFixed(change.diffPercent, 2, language)}%`}
                     </Typography>
                   </Box>
                 </Box>
@@ -400,6 +439,7 @@ export const ReportDocument: React.FunctionComponent<{
       {has("dev") && overview.devices.length > 0 && (
         <Section id="dev" title={t("report.section.dev")}>
           <Box component="table" sx={tableSx}>
+            <Columns />
             <thead>
               <tr>
                 <th>{t("overview.device")}</th>
@@ -416,18 +456,19 @@ export const ReportDocument: React.FunctionComponent<{
                   )}
                 >
                   <td>
-                    {row.device}{" "}
+                    {row.device}
                     <span style={{ color: tokens.textSecondary }}>
                       {[row.os, row.browser, row.viewport || row.screen]
                         .filter(Boolean)
-                        .join(" · ")}
+                        .map((part) => ` · ${part}`)
+                        .join("")}
                     </span>
                   </td>
-                  <td style={{ width: 120 }}>
-                    <ResultBar outcome={row} />
+                  <td>
+                    <ResultBar outcome={row} text={t} />
                   </td>
-                  <td className="r">{row.changed + row.new}</td>
-                  <td className="r">{row.a11yNew}</td>
+                  <td className="r">{count(row.changed + row.new)}</td>
+                  <td className="r">{count(row.a11yNew)}</td>
                 </tr>
               ))}
             </tbody>
@@ -438,6 +479,7 @@ export const ReportDocument: React.FunctionComponent<{
       {has("feat") && overview.features.length > 0 && (
         <Section id="feat" title={t("report.section.feat")}>
           <Box component="table" sx={tableSx}>
+            <Columns />
             <thead>
               <tr>
                 <th>{t("overview.feature")}</th>
@@ -450,11 +492,11 @@ export const ReportDocument: React.FunctionComponent<{
               {overview.features.map((row) => (
                 <tr key={row.name}>
                   <td>{row.name}</td>
-                  <td style={{ width: 120 }}>
-                    <ResultBar outcome={row} />
+                  <td>
+                    <ResultBar outcome={row} text={t} />
                   </td>
-                  <td className="r">{row.changed + row.new}</td>
-                  <td className="r">{row.bugs}</td>
+                  <td className="r">{count(row.changed + row.new)}</td>
+                  <td className="r">{count(row.bugs)}</td>
                 </tr>
               ))}
               {overview.quietFeatures.count > 0 && (
@@ -464,7 +506,18 @@ export const ReportDocument: React.FunctionComponent<{
                       count: overview.quietFeatures.count,
                     })}
                   </td>
-                  <td />
+                  <td>
+                    <ResultBar
+                      outcome={{
+                        total: overview.quietFeatures.screens,
+                        changed: 0,
+                        new: 0,
+                        rejected: 0,
+                        passed: overview.quietFeatures.screens,
+                      }}
+                      text={t}
+                    />
+                  </td>
                   <td />
                   <td />
                 </tr>
@@ -472,6 +525,12 @@ export const ReportDocument: React.FunctionComponent<{
             </tbody>
           </Box>
         </Section>
+      )}
+
+      {/* once, under the tables with bars: paper has no tooltips */}
+      {((has("dev") && overview.devices.length > 0) ||
+        (has("feat") && overview.features.length > 0)) && (
+        <ResultLegend text={t} />
       )}
 
       {has("a11y") && (report.a11y ?? []).length > 0 && (

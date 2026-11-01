@@ -55,8 +55,9 @@ test("updates the open page within 10 s", async ({ page }) => {
   await page.goto("/r/tok-123");
 
   const summary = page.getByTestId("reportSection-sum");
-  await expect(summary).toContainText("5Waiting");
-  await expect(page.getByTestId("reportLive")).toContainText("Live");
+  await expect(summary).toContainText("5To review");
+  // the state's time is the report's own "As of"; the page adds none of its own
+  await expect(page.getByTestId("reportLive")).toHaveText("Live");
   // a page without an account sees the report and nothing of the app around it
   await expect(page.getByRole("navigation")).toHaveCount(0);
 

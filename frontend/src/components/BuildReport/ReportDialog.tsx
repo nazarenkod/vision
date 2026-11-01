@@ -49,6 +49,8 @@ export const ReportDialog: React.FunctionComponent<{
   const [report, setReport] = React.useState<PublicReport | null>(null);
   const [links, setLinks] = React.useState<ReportLink[]>([]);
   const [copied, setCopied] = React.useState<string | null>(null);
+  // the link whose Revoke was pressed once and now asks to be sure
+  const [revoking, setRevoking] = React.useState<string | null>(null);
   const canLink = user?.role === "admin" || user?.role === "editor";
 
   React.useEffect(() => {
@@ -130,13 +132,8 @@ export const ReportDialog: React.FunctionComponent<{
           {t("report.title")}
         </Typography>
         <Typography sx={{ fontSize: 12, color: tokens.textSecondary }}>
-          {t("report.snapshot", {
-            number: overview.build.number ?? "",
-            time: formatDate(overview.asOf, {
-              hour: "2-digit",
-              minute: "2-digit",
-            }),
-          })}
+          {/* the time of the state is the report's own, said once */}
+          {t("report.snapshot", { number: overview.build.number ?? "" })}
         </Typography>
         <Box sx={{ flex: 1 }} />
         <Tooltip title={canLink ? "" : t("report.editorsOnly")}>
@@ -206,20 +203,37 @@ export const ReportDialog: React.FunctionComponent<{
                 }),
               })}
               {(user?.role === "admin" || link.createdById === user?.id) && (
+                // the link stops working for everyone it was sent to: the
+                // first press asks, the second revokes
                 <Button
                   size="small"
+                  data-testid="revokeLink"
                   onClick={() =>
-                    reportsService
-                      .revokeLink(link.id)
-                      .then(() =>
-                        setLinks((current) =>
-                          current.filter((other) => other.id !== link.id),
-                        ),
-                      )
+                    revoking === link.id
+                      ? reportsService
+                          .revokeLink(link.id)
+                          .then(() =>
+                            setLinks((current) =>
+                              current.filter((other) => other.id !== link.id),
+                            ),
+                          )
+                      : setRevoking(link.id)
                   }
-                  sx={{ minWidth: 0, py: 0 }}
+                  onBlur={() => setRevoking(null)}
+                  sx={{
+                    minWidth: 0,
+                    py: 0,
+                    color:
+                      revoking === link.id
+                        ? tokens.status.failed.fg
+                        : tokens.textSecondary,
+                  }}
                 >
-                  {t("report.revoke")}
+                  {t(
+                    revoking === link.id
+                      ? "report.revokeConfirm"
+                      : "report.revoke",
+                  )}
                 </Button>
               )}
             </Box>

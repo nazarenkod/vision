@@ -107,7 +107,7 @@ sequenceDiagram
 |---|---|
 | REQ-031-01 | `frontend/integration_tests/test/buildOverview.spec.ts › opens a build on the Overview tab` |
 | REQ-031-02 | `frontend/src/_helpers/route.helpers.test.ts › keeps the build tab in the address` |
-| REQ-031-03 | `backend/src/builds/build-overview.spec.ts › says Running, Waiting for review, Reviewed or Passed` |
+| REQ-031-03 | `backend/src/builds/build-overview.spec.ts › says Running, Waiting for review, Reviewed or Passed`; `frontend/src/components/BuildReport/ReportDocument.test.tsx › renders in the report language, not the interface one` |
 | REQ-031-04 | `backend/src/builds/build-overview.spec.ts › counts decisions per person and leaves undone ones out`; `frontend/integration_tests/test/buildOverview.spec.ts › opens a build on the Overview tab` |
 | REQ-031-05 | `backend/src/builds/build-overview.spec.ts › counts screenshots, waiting, rejected, new a11y issues and bugs` |
 | REQ-031-06 | `frontend/integration_tests/test/buildOverview.spec.ts › each number opens its tab or queue` |
@@ -123,6 +123,7 @@ sequenceDiagram
 | REQ-031-16 | `frontend/src/_helpers/buildPeriod.helper.test.ts › shows the start and the end, the end without the date on the same day`; `frontend/src/_helpers/buildPeriod.helper.test.ts › shows the start alone until the build runs on` |
 | REQ-031-17 | `frontend/integration_tests/test/buildOverview.spec.ts › shows a device's screen size when the run sent no viewport`; `frontend/src/components/BuildReport/ReportDocument.test.tsx › summary names the project, build, branch, time, devices and numbers` |
 | REQ-031-18 | `frontend/integration_tests/test/buildOverview.spec.ts › puts the count of All tests in a pill like the tabs beside it` |
+| REQ-031-19 | `frontend/integration_tests/test/buildOverview.spec.ts › explains a result bar and leaves zeros out of the counts`; `frontend/integration_tests/test/buildOverview.spec.ts › says there are no Jira bugs in one line`; `frontend/src/components/BuildReport/ReportDocument.test.tsx › explains the bars and leaves zeros out of the tables` |
 | REQ-031-20 | `frontend/src/_helpers/reviewQueue.helper.test.ts › puts all waiting in the order of the groups, new last`; `frontend/integration_tests/test/buildOverview.spec.ts › names the review button without a count` |
 | REQ-031-21 | `frontend/src/_helpers/reviewQueue.helper.test.ts › keeps only the waiting runs of a group, device or feature` |
 | REQ-031-22 | знято 2026-11-01 — перевірки немає |
@@ -136,8 +137,8 @@ sequenceDiagram
 | REQ-031-40 | `frontend/integration_tests/test/buildReport.spec.ts › previews the whole report and shares it` |
 | REQ-031-41 | знято 2026-11-01 — `frontend/integration_tests/test/buildReport.spec.ts › previews the whole report and shares it` |
 | REQ-031-42 | `frontend/src/components/BuildReport/ReportDocument.test.tsx › renders in the report language, not the interface one` |
-| REQ-031-43 | `frontend/src/components/BuildReport/ReportDocument.test.tsx › summary names the project, build, branch, time, devices and numbers` |
-| REQ-031-44 | `backend/src/reports/report-links.spec.ts › lists up to 20 changes and counts the rest` |
+| REQ-031-43 | `frontend/src/components/BuildReport/ReportDocument.test.tsx › summary names the project, build, branch, time, devices and numbers`; `frontend/src/components/BuildReport/ReportDocument.test.tsx › gives when the build ran as its period and the state's time once` |
+| REQ-031-44 | `backend/src/reports/report-links.spec.ts › lists up to 20 changes and counts the rest`; `backend/src/reports/report-links.spec.ts › shows new screenshots after the changed ones and before the rejected`; `frontend/src/components/BuildReport/ReportDocument.test.tsx › shows new screenshots without a baseline and names statuses as the app does` |
 | REQ-031-45 | знято 2026-11-01 — `frontend/integration_tests/test/buildReport.spec.ts › previews the whole report and shares it` |
 | REQ-031-46 | `frontend/integration_tests/test/buildReport.spec.ts › prints the report on A4 pages with the chosen sections and language`; manual: Report → PDF у Chrome і Safari → «Save as PDF» дає A4 з обраними розділами й мовою |
 | REQ-031-47 | `frontend/src/components/BuildReport/ReportDocument.test.tsx › summary names the project, build, branch, time, devices and numbers` |
@@ -149,7 +150,7 @@ sequenceDiagram
 | REQ-031-63 | `frontend/integration_tests/test/publicReport.spec.ts › updates the open page within 10 s` |
 | REQ-031-64 | `backend/src/reports/report-links.spec.ts › opens for as long as the build is kept and closes when revoked`; `backend/src/reports/reports.controller.spec.ts › says a revoked link is closed and shows nothing of the build` |
 | REQ-031-65 | `backend/src/reports/reports.controller.spec.ts › says the build is gone when it was deleted` |
-| REQ-031-66 | `backend/src/reports/reports.controller.spec.ts › lets the author or an admin revoke a link` |
+| REQ-031-66 | `backend/src/reports/reports.controller.spec.ts › lets the author or an admin revoke a link`; `frontend/integration_tests/test/buildReport.spec.ts › asks before revoking a public link` |
 | REQ-031-67 | `backend/src/reports/report-links.spec.ts › makes a 256-bit token unrelated to the build` |
 | REQ-031-68 | `backend/src/reports/report-links.spec.ts › keeps emails, keys and tokens out of a public report` |
 | REQ-031-69 | `backend/src/reports/reports.controller.spec.ts › lets editors and admins create links, not guests` |

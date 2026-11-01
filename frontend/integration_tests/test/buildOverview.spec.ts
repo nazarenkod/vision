@@ -411,3 +411,32 @@ test("names the review button without a count", async ({
   await openProjectPage(project.id, build.id, undefined, "overview");
   await expect(page.getByTestId("reviewWaiting")).toHaveText("Review");
 });
+
+test("explains a result bar and leaves zeros out of the counts", async ({
+  openProjectPage,
+  page,
+}) => {
+  await openProjectPage(project.id, build.id, undefined, "overview");
+  const login = page
+    .getByTestId("overviewFeature")
+    .filter({ hasText: "Login" });
+  // Login has no bugs: a dash rather than a 0
+  await expect(login.getByTestId("overviewNum").last()).toHaveText("—");
+
+  await login.getByTestId("resultBar").hover();
+  await expect(page.getByRole("tooltip")).toHaveText("1 changed");
+});
+
+test("says there are no Jira bugs in one line", async ({
+  openProjectPage,
+  page,
+}) => {
+  await page.route(`${API_URL}/builds/${build.id}/overview`, (route) =>
+    route.fulfill({
+      json: { ...overview, bugs: [], counts: { ...overview.counts, bugs: 0 } },
+    }),
+  );
+  await openProjectPage(project.id, build.id, undefined, "overview");
+  const bugs = page.getByTestId("overviewBugs");
+  await expect(bugs).toHaveText("No Jira bugs on this build");
+});

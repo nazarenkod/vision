@@ -14,7 +14,7 @@ import {
   PublicReport,
   ReportSection,
 } from "../types/buildOverview";
-import { formatDate, Language } from "../i18n/translate";
+import { Language } from "../i18n/translate";
 
 // the open page asks again this often, so a decision shows within 10 s (REQ-031-63)
 export const PUBLIC_REFRESH_MS = 8000;
@@ -68,7 +68,6 @@ const Gone: React.FunctionComponent<{ title: string; hint: string }> = ({
 export const PublicReportPage: React.FunctionComponent = () => {
   const { token = "" } = useParams<{ token: string }>();
   const [report, setReport] = React.useState<PublicReport | null>(null);
-  const [checkedAt, setCheckedAt] = React.useState<Date | null>(null);
   const etag = React.useRef<string>();
 
   React.useEffect(() => {
@@ -78,7 +77,6 @@ export const PublicReportPage: React.FunctionComponent = () => {
         .getPublic(token, etag.current)
         .then((answer) => {
           if (cancelled) return;
-          setCheckedAt(new Date());
           if (!answer) return;
           etag.current = answer.etag;
           setReport(answer.report);
@@ -139,15 +137,9 @@ export const PublicReportPage: React.FunctionComponent = () => {
               bgcolor: tokens.status.passed.bar,
             }}
           />
+          {/* the state's own time is in the report: the time of the last
+              poll beside it read as a second, different state */}
           {t("report.live")}
-          {checkedAt &&
-            ` · ${t("report.updated", {
-              time: formatDate(checkedAt, language, {
-                hour: "2-digit",
-                minute: "2-digit",
-                second: "2-digit",
-              }),
-            })}`}
         </Box>
         <Button
           size="small"

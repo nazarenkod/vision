@@ -240,6 +240,45 @@ test("previews the whole report and shares it", async ({
   expect(link).toMatch(/\/r\/tok-123$/);
 });
 
+test("asks before revoking a public link", async ({
+  openProjectPage,
+  page,
+}) => {
+  await page.route(`${API_URL}/builds/${build.id}/report`, (route) =>
+    route.fulfill({ json: fullReport() }),
+  );
+  await page.route(`${API_URL}/builds/${build.id}/report-links`, (route) =>
+    route.fulfill({
+      json: [
+        {
+          id: "l1",
+          token: "tok-123",
+          sections: ["sum", "chg", "bugs"],
+          language: "en",
+          createdBy: "Anna Petrenko",
+          createdById: "1",
+          createdAt: "2026-10-31T11:05:00Z",
+        },
+      ],
+    }),
+  );
+  let revoked = 0;
+  await page.route(`${API_URL}/report-links/l1`, (route) => {
+    revoked += 1;
+    return route.fulfill({ status: 200, body: "" });
+  });
+  await openProjectPage(project.id, build.id, undefined, "overview");
+  await page.getByTestId("openReport").click();
+
+  await page.getByTestId("revokeLink").click();
+  await expect(page.getByTestId("revokeLink")).toHaveText("Revoke the link?");
+  expect(revoked).toBe(0);
+
+  await page.getByTestId("revokeLink").click();
+  await expect(page.getByTestId("reportLink")).toHaveCount(0);
+  expect(revoked).toBe(1);
+});
+
 test("prints the report on A4 pages with the chosen sections and language", async ({
   openProjectPage,
   page,

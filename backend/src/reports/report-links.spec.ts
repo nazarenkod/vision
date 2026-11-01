@@ -93,7 +93,23 @@ describe('report links', () => {
     expect(report.changes).toHaveLength(MAX_CHANGES);
     // waiting first, the biggest difference first
     expect(report.changes[0].testRunId).toBe('c22');
-    expect(report.moreChanges).toBe(4);
+    // the new screenshot is counted too: it waits like the changed ones
+    expect(report.moreChanges).toBe(5);
+  });
+
+  it('shows new screenshots after the changed ones and before the rejected', () => {
+    const runs = [
+      run('rejected', { status: TestStatus.failed }),
+      run('fresh', { status: TestStatus.new, baselineName: null, diffName: null, diffPercent: null }),
+      run('changed'),
+      run('ok', { status: TestStatus.ok }),
+    ];
+    const report = publicReport(overview(), runs, link);
+    expect(report.changes.map((change) => [change.testRunId, change.baselineName])).toEqual([
+      ['changed', 'changed-base.png'],
+      ['fresh', null],
+      ['rejected', 'rejected-base.png'],
+    ]);
   });
 
   it('keeps emails, keys and tokens out of a public report', () => {

@@ -1,6 +1,7 @@
 import React from "react";
 import { render, screen } from "@testing-library/react";
 import { ReportDocument } from "./ReportDocument";
+import { formatDate } from "../../i18n/translate";
 import {
   ALL_SECTIONS,
   PublicReport,
@@ -118,7 +119,8 @@ describe("ReportDocument", () => {
       />,
     );
     expect(screen.getByText("Звіт збірки")).toBeInTheDocument();
-    expect(screen.getByText("Чекає на перегляд")).toBeInTheDocument();
+    // the build's state in the words of its header, not a third wording
+    expect(screen.getByText("Чекає рішення")).toBeInTheDocument();
     expect(screen.getByText("ще 3")).toBeInTheDocument();
     expect(screen.queryByText("Build report")).toBeNull();
   });
@@ -137,7 +139,7 @@ describe("ReportDocument", () => {
       "47",
       "Screens",
       "5",
-      "Waiting",
+      "To review",
       "Rejected",
       "New accessibility issues",
       "Jira bugs",
@@ -145,6 +147,79 @@ describe("ReportDocument", () => {
       expect(summary).toHaveTextContent(label);
     }
     expect(summary).toHaveTextContent("Since #127: 4 changed, 1 new");
+  });
+
+  it("gives when the build ran as its period and the state's time once", () => {
+    render(<ReportDocument report={report} sections={["sum"]} language="en" />);
+    const start = new Date("2026-10-31T10:42:00Z");
+    const end = new Date("2026-10-31T10:48:00Z");
+    const time = (value: Date) =>
+      formatDate(value, "en", {
+        hour: "numeric",
+        minute: "numeric",
+        second: "numeric",
+      });
+    expect(screen.getByTestId("reportDocument")).toHaveTextContent(
+      `${time(start)} – ${time(end)}`,
+    );
+    expect(screen.getAllByText(/^As of/)).toHaveLength(1);
+  });
+
+  it("shows new screenshots without a baseline and names statuses as the app does", () => {
+    render(
+      <ReportDocument
+        report={{
+          ...report,
+          changes: [
+            ...report.changes!,
+            {
+              testRunId: "n",
+              name: "Onboarding",
+              device: "Pixel 7",
+              os: "Android 14",
+              status: "new",
+              diffPercent: null,
+              imageName: "n.png",
+              baselineName: null,
+              diffName: null,
+            },
+          ],
+        }}
+        sections={["chg"]}
+        language="uk"
+      />,
+    );
+    const [changed, fresh] = screen.getAllByTestId("reportChange");
+    expect(changed).toHaveTextContent("чекає рішення");
+    // the difference in the report's language
+    expect(changed).toHaveTextContent("iPhone 15 · iOS 17 · 6,40%");
+    expect(fresh).toHaveTextContent("новий");
+    expect(fresh.querySelectorAll("img")).toHaveLength(1);
+  });
+
+  it("explains the bars and leaves zeros out of the tables", () => {
+    render(
+      <ReportDocument
+        report={{
+          ...report,
+          overview: {
+            ...report.overview!,
+            features: [{ name: "Checkout", bugs: 0, ...outcome }],
+          },
+        }}
+        sections={["dev", "feat"]}
+        language="uk"
+      />,
+    );
+    expect(screen.getByTestId("resultLegend")).toHaveTextContent("змінені");
+    expect(screen.getAllByTestId("resultLegend")).toHaveLength(1);
+    expect(
+      screen.getAllByRole("img", { name: "2 змінені · 14 без змін" }),
+    ).not.toHaveLength(0);
+    const devices = screen.getByTestId("reportSection-dev");
+    expect(devices).toHaveTextContent("PIXEL_4_XL · AOS 14 · 1080×2400");
+    // the device has 3 new issues, the feature no bugs: a dash, not a 0
+    expect(screen.getByTestId("reportSection-feat")).toHaveTextContent("—");
   });
 
   it("says first build on the branch when there is no earlier one", () => {

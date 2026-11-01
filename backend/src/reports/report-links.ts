@@ -67,7 +67,16 @@ export interface PublicReport {
   a11y?: Array<{ testRunId: string; name: string; device: string; newCount: number }>;
 }
 
-const WAITING_OR_REJECTED: TestStatus[] = [TestStatus.unresolved, TestStatus.failed];
+// the order of a report's changes: what waits first, new screens next, rejected last
+const CHANGE_ORDER: TestStatus[] = [TestStatus.unresolved, TestStatus.new, TestStatus.failed];
+/**
+ * A screenshot the report shows: one that differs from its baseline and waits
+ * or was rejected, or a new one with no baseline yet. The new ones wait too,
+ * so leaving them out made the report count more than it showed.
+ */
+const shownAsChange = (run: ReportRun) =>
+  run.status === TestStatus.new ||
+  ((run.status === TestStatus.unresolved || run.status === TestStatus.failed) && !!run.baselineName);
 
 /**
  * What a public report shows, field by field (REQ-031-62, -68): numbers,
@@ -81,10 +90,10 @@ export function publicReport(
 ): PublicReport {
   const has = (section: Section) => link.sections.includes(section);
   const changed = runs
-    .filter((run) => WAITING_OR_REJECTED.includes(run.status) && run.baselineName)
+    .filter(shownAsChange)
     .sort(
       (a, b) =>
-        Number(b.status === TestStatus.unresolved) - Number(a.status === TestStatus.unresolved) ||
+        CHANGE_ORDER.indexOf(a.status) - CHANGE_ORDER.indexOf(b.status) ||
         (b.diffPercent ?? 0) - (a.diffPercent ?? 0) ||
         a.name.localeCompare(b.name)
     );

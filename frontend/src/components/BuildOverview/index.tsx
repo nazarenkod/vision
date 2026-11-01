@@ -180,9 +180,11 @@ const Row: React.FunctionComponent<{
     </Box>
   );
 
+/** A count in a table; nothing to count shows as a dash, so the counts stand out. */
 const Num: React.FunctionComponent<{ value: number }> = ({ value }) => (
   <Box
     component="span"
+    data-testid="overviewNum"
     sx={{
       textAlign: "right",
       fontFamily: tokens.mono,
@@ -192,7 +194,7 @@ const Num: React.FunctionComponent<{ value: number }> = ({ value }) => (
       color: value ? tokens.text : tokens.textMuted,
     }}
   >
-    {value}
+    {value || "—"}
   </Box>
 );
 
@@ -398,7 +400,7 @@ const Devices: React.FunctionComponent<{
                   .join(" · ")}
               </Typography>
             </Box>
-            <ResultBar outcome={row} />
+            <ResultBar outcome={row} text={t} hint />
             <Num value={waiting} />
             <Num value={row.a11yNew} />
           </Row>
@@ -411,7 +413,9 @@ const Devices: React.FunctionComponent<{
 const FeatureRows: React.FunctionComponent<{
   rows: Overview["features"];
   actions: OverviewActions;
-}> = ({ rows, actions }) => (
+}> = ({ rows, actions }) => {
+  const { t } = useT();
+  return (
   <>
     {rows.map((row) => {
       const waiting = row.changed + row.new;
@@ -430,14 +434,15 @@ const FeatureRows: React.FunctionComponent<{
           <Typography noWrap sx={{ fontSize: 13, fontWeight: 600 }}>
             {row.name}
           </Typography>
-          <ResultBar outcome={row} />
+          <ResultBar outcome={row} text={t} hint />
           <Num value={waiting} />
           <Num value={row.bugs} />
         </Row>
       );
     })}
   </>
-);
+  );
+};
 
 const Features: React.FunctionComponent<{
   overview: Overview;
@@ -486,6 +491,7 @@ const Features: React.FunctionComponent<{
               rejected: 0,
               passed: quietFeatures.screens,
             }}
+            text={t}
           />
           <span />
           <span />
@@ -505,6 +511,19 @@ const Bugs: React.FunctionComponent<{
   actions: OverviewActions;
 }> = ({ overview, actions }) => {
   const { t } = useT();
+  // no bugs: one line, not a table's title and header over nothing
+  if (overview.bugs.length === 0) {
+    return (
+      <Card index={9} testId="overviewBugs" id="overview-bugs">
+        <Box
+          data-testid="overviewNoBugs"
+          sx={{ px: 2, py: 1.5, color: tokens.textSecondary, fontSize: 13 }}
+        >
+          {t("overview.noBugs")}
+        </Box>
+      </Card>
+    );
+  }
   return (
     <Card
       title={t("overview.jiraBugs")}
@@ -516,11 +535,6 @@ const Bugs: React.FunctionComponent<{
         columns={BUG_COLUMNS}
         cells={[[""], [t("overview.key")], [t("overview.summary")], [""]]}
       />
-      {overview.bugs.length === 0 && (
-        <Box sx={{ p: 2, color: tokens.textSecondary, fontSize: 13 }}>
-          {t("overview.noBugs")}
-        </Box>
-      )}
       {overview.bugs.map((bug) => {
         const Icon =
           bug.kind === "a11y"

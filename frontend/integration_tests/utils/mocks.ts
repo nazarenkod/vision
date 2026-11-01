@@ -244,3 +244,56 @@ export const inUkrainian = (page: Page) =>
   page.addInitScript(() =>
     window.localStorage.setItem("vision.language", "uk"),
   );
+
+// Stands in for the events socket (socket.io) on the polling transport, which
+// the client tries first. `sent` collects the packets the client sends, such
+// as the handshake with its login token ('40{"token":…}') and subscriptions;
+// `emit` pushes a server event. A handshake with `rejectToken` is refused as
+// the server refuses a token it does not accept.
+export const mockSocket = async (
+  page: Page,
+  { rejectToken }: { rejectToken?: string } = {},
+) => {
+  const sent: string[] = [];
+  const packets: string[] = [];
+  let flush: (() => void) | undefined;
+  const send = (packet: string) => {
+    packets.push(packet);
+    flush?.();
+  };
+  await page.route(`${API_URL}/socket.io/**`, async (route, request) => {
+    if (request.method() === "POST") {
+      for (const packet of request.postData()?.split("\x1e") ?? []) {
+        sent.push(packet);
+        // the client joins the default namespace
+        if (packet.startsWith("40")) {
+          send(
+            rejectToken && packet.includes(rejectToken)
+              ? '44{"message":"unauthorized"}'
+              : '40{"sid":"socket"}',
+          );
+        }
+      }
+      return route.fulfill({ body: "ok" });
+    }
+    if (!new URL(request.url()).searchParams.get("sid")) {
+      return route.fulfill({
+        body: '0{"sid":"engine","upgrades":[],"pingInterval":25000,"pingTimeout":60000,"maxPayload":1000000}',
+      });
+    }
+    if (packets.length === 0) {
+      await new Promise<void>((resolve) => {
+        flush = resolve;
+        setTimeout(resolve, 500);
+      });
+    }
+    // a long poll answers with what is waiting, or a no-op
+    const body = packets.length ? packets.splice(0).join("\x1e") : "6";
+    return route.fulfill({ body }).catch(() => undefined);
+  });
+  return {
+    sent,
+    emit: (event: string, data: unknown) =>
+      send(`42${JSON.stringify([event, data])}`),
+  };
+};

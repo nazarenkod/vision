@@ -97,7 +97,8 @@ docs/specs/NNN-коротка-назва/
 | [029](029-allowed-devices/spec.md) | Дозволені пристрої проєкту | Implemented |
 | [031](031-build-overview/spec.md) | Огляд збірки і звіт | Implemented |
 | [030](030-whats-compared/spec.md) | Зрозуміла вкладка «Зміни»: що вийшло, що порівнювали, що змінилось | Implemented |
-| [032](032-vision-sdk/spec.md) | Vision SDK: головні класи під назвою Vision | Implemented |
+| [032](032-authenticated-events/spec.md) | Події наживо лише для тих, хто увійшов, і лише свого проєкту | Implemented |
+| [033](033-vision-sdk/spec.md) | Vision SDK: головні класи під назвою Vision | Implemented |
 
 Статусу `Verified` поки немає в жодної: інтеграцію з реальною Jira Cloud і прогони на сервері
 команда ще не підтвердила.

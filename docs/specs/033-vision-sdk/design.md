@@ -1,4 +1,4 @@
-# 032 — Дизайн
+# 033 — Дизайн
 
 ## Підхід
 
@@ -6,7 +6,7 @@
 → `Vision`, `VisualRegressionTrackerConfig` → `VisionConfig` (разом з вкладеним
 `VisionConfigBuilder`). Пакет, захищені поля й методи, тексти логу, назви змінних `VRT_*` і
 `vrt.json` лишаються, бо специфікація змінює лише назви двох класів. Тести перейменовано так само;
-їхні очікування щодо JSON запитів не змінились — це і є перевірка REQ-032-02. Версія
+їхні очікування щодо JSON запитів не змінились — це і є перевірка REQ-033-02. Версія
 публікації — `4.3.1-vision.3`, координати ті самі.
 
 ## Компоненти
@@ -27,6 +27,6 @@
 
 | Вимога | Перевірка |
 |---|---|
-| REQ-032-01 | `sdk-java/src/test/java/io/visual_regression_tracker/sdk_java/VisionTest.java › noClassKeepsTheOldVisualRegressionTrackerName` |
-| REQ-032-02 | `sdk-java/src/test/java/io/visual_regression_tracker/sdk_java/VisionTest.java › shouldSubmitTestRun`; решта тестів `VisionTest` без змін очікувань |
-| REQ-032-03 | `sdk-java/src/test/java/io/visual_regression_tracker/sdk_java/VisionConfigTest.java › shouldResolveFinalValuesInTheRightOrder` |
+| REQ-033-01 | `sdk-java/src/test/java/io/visual_regression_tracker/sdk_java/VisionTest.java › noClassKeepsTheOldVisualRegressionTrackerName` |
+| REQ-033-02 | `sdk-java/src/test/java/io/visual_regression_tracker/sdk_java/VisionTest.java › shouldSubmitTestRun`; решта тестів `VisionTest` без змін очікувань |
+| REQ-033-03 | `sdk-java/src/test/java/io/visual_regression_tracker/sdk_java/VisionConfigTest.java › shouldResolveFinalValuesInTheRightOrder` |

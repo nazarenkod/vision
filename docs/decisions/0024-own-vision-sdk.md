@@ -1,4 +1,4 @@
-# ADR-0023: SDK відходить від upstream VRT кроками; перший — головні класи `Vision`
+# ADR-0024: SDK відходить від upstream VRT кроками; перший — головні класи `Vision`
 
 | | |
 |---|---|
@@ -13,7 +13,7 @@
 відв'язати Vision від VRT: у тестах видно `VisualRegressionTracker` і `VisualRegressionTrackerConfig`.
 Розглядали й повне перейменування (пакет, методи, `TestRun*`, `VISION_*`, нові координати), але
 власник обрав рухатися малими кроками. Специфікація першого кроку —
-[032](../specs/032-vision-sdk/spec.md).
+[033](../specs/033-vision-sdk/spec.md).
 
 ## Чинники рішення
 

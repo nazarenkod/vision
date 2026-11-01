@@ -312,7 +312,7 @@ export const en = {
   "builds.views": "Build views",
   "builds.changes": "Changes",
   "builds.toReview": "{count} to review",
-  "builds.allTests": "All tests · {count}",
+  "builds.allTests": "All tests",
   "builds.accessibility": "Accessibility",
   "builds.a11yNewPill": { one: "{count} new", other: "{count} new" },
 

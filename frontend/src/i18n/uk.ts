@@ -310,7 +310,7 @@ export const uk: Messages = {
   "builds.views": "Подання збірки",
   "builds.changes": "Зміни",
   "builds.toReview": "{count} на перегляд",
-  "builds.allTests": "Усі перевірки · {count}",
+  "builds.allTests": "Усі перевірки",
   "builds.accessibility": "Доступність",
   "builds.a11yNewPill": {
     one: "{count} нова",

@@ -183,7 +183,16 @@ const ProjectPage = () => {
               />
               <Tab
                 value="all"
-                label={t("builds.allTests", { count: testRuns.length })}
+                label={
+                  // the count in a pill, like the badges of the tabs beside it
+                  <Box sx={{ display: "flex", gap: 1, alignItems: "center" }}>
+                    {t("builds.allTests")}{" "}
+                    <StatusPill
+                      tone="neutral"
+                      label={String(testRuns.length)}
+                    />
+                  </Box>
+                }
               />
               <Tab
                 value="a11y"

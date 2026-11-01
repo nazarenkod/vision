@@ -361,25 +361,30 @@ test("keeps the counts out of the build header on every tab", async ({
   await expect(page.getByTestId("buildCounts")).toHaveCount(0);
 });
 
-test("opens the passed features from their folded row", async ({
+test("opens the passed features in place of their folded row", async ({
   openProjectPage,
   page,
 }) => {
   await openProjectPage(project.id, build.id, undefined, "overview");
-  const quiet = page.getByTestId("overviewQuietFeatures");
   await expect(page.getByTestId("overviewFeature")).toHaveCount(2);
 
-  await quiet.click();
-  await expect(quiet).toHaveAttribute("aria-expanded", "true");
+  await page.getByTestId("overviewQuietFeatures").click();
+  await expect(page.getByTestId("overviewQuietFeatures")).toHaveCount(0);
   await expect(page.getByTestId("overviewFeature")).toHaveText([
     /Checkout/,
     /Login/,
     /Home/,
     /Search/,
   ]);
+});
 
-  await quiet.click();
-  await expect(page.getByTestId("overviewFeature")).toHaveCount(2);
+test("puts the count of All tests in a pill like the tabs beside it", async ({
+  openProjectPage,
+  page,
+}) => {
+  await openProjectPage(project.id, build.id, undefined, "overview");
+  const tab = page.getByRole("tab", { name: /All tests/ });
+  await expect(tab).toHaveText(new RegExp(`^All tests\\s*${runs.length}$`));
 });
 
 test("shows a device's screen size when the run sent no viewport", async ({

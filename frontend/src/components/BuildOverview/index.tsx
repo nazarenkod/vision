@@ -292,6 +292,8 @@ const Tiles: React.FunctionComponent<{
             display: "flex",
             flexDirection: "column",
             alignItems: "flex-start",
+            // numbers and labels on one line across the tiles, captions or not
+            justifyContent: "flex-start",
             gap: 0.125,
             minWidth: 0,
             transition: `border-color ${motion.base}ms, transform ${motion.base}ms ${motion.easing}`,
@@ -456,11 +458,12 @@ const Features: React.FunctionComponent<{
         ]}
       />
       <FeatureRows rows={features} actions={actions} />
-      {quietFeatures.count > 0 && (
+      {/* opened, the row gives its place to the features it folded */}
+      {quietFeatures.count > 0 && !quietOpen && (
         <ButtonBase
           data-testid="overviewQuietFeatures"
-          aria-expanded={quietOpen}
-          onClick={() => setQuietOpen((open) => !open)}
+          aria-expanded={false}
+          onClick={() => setQuietOpen(true)}
           sx={rowSx(FEATURE_COLUMNS, true)}
         >
           <Box
@@ -473,13 +476,7 @@ const Features: React.FunctionComponent<{
             }}
           >
             {t("overview.quiet", { count: quietFeatures.count })}
-            <ExpandMoreRounded
-              sx={{
-                fontSize: 18,
-                transform: quietOpen ? "rotate(180deg)" : "none",
-                transition: `transform ${motion.base}ms ${motion.easing}`,
-              }}
-            />
+            <ExpandMoreRounded sx={{ fontSize: 18 }} />
           </Box>
           <ResultBar
             outcome={{
@@ -632,7 +629,12 @@ export const BuildOverview: React.FunctionComponent<{
           alignItems: "start",
         }}
       >
-        <Features overview={overview} actions={actions} />
+        <Features
+          // another build starts folded again
+          key={overview.build.id}
+          overview={overview}
+          actions={actions}
+        />
         {/* stacked, so the shorter cards fill the column beside the features */}
         <Box
           sx={{

@@ -1368,8 +1368,11 @@ export const en = {
   "overview.verdict.passed": "Passed",
   "overview.needDecision": "{waiting} of {total} need a decision",
   "overview.decidedSummary": "{passed} passed · {rejected} rejected",
-  "overview.vsPrevious":
-    "vs #{number}: {changed} changed · {added} new · {gone} gone",
+  "overview.since": "Since #{number}",
+  "overview.prevChanged": "{count} changed",
+  "overview.prevNew": "{count} new",
+  "overview.prevGone": "{count} gone",
+  "overview.prevSame": "nothing new",
   "overview.firstBuild": "First build on this branch",
   "overview.decided": "Decided",
   "overview.someone": "Someone",

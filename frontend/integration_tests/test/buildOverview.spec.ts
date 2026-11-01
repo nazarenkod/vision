@@ -38,9 +38,15 @@ const login = inBuild(TEST_UNRESOLVED, {
   device: "iPhone 15",
   os: "iOS 17",
 });
-const fresh = inBuild(TEST_RUN_NEW, { id: "fresh", name: "Onboarding. Step 3" });
+const fresh = inBuild(TEST_RUN_NEW, {
+  id: "fresh",
+  name: "Onboarding. Step 3",
+});
 // decided already: its group has nothing left to review
-const decided = inBuild(TEST_RUN_APPROVED, { id: "decided", name: "Cart. Empty" });
+const decided = inBuild(TEST_RUN_APPROVED, {
+  id: "decided",
+  name: "Cart. Empty",
+});
 const runs = [pay, login, fresh, decided];
 
 const group = (
@@ -74,12 +80,50 @@ const overview: BuildOverview = {
     people: [{ name: "Oleh Koval", approved: 1, rejected: 0 }],
   },
   devices: [
-    { device: "PIXEL_4_XL", os: "AOS 14", browser: "browser", viewport: "viewport", a11yNew: 2, total: 1, changed: 1, new: 0, rejected: 0, passed: 0 },
-    { device: "iPhone 15", os: "iOS 17", browser: "browser", viewport: "viewport", a11yNew: 0, total: 1, changed: 1, new: 0, rejected: 0, passed: 0 },
+    {
+      device: "PIXEL_4_XL",
+      os: "AOS 14",
+      browser: "browser",
+      viewport: "viewport",
+      a11yNew: 2,
+      total: 1,
+      changed: 1,
+      new: 0,
+      rejected: 0,
+      passed: 0,
+    },
+    {
+      device: "iPhone 15",
+      os: "iOS 17",
+      browser: "browser",
+      viewport: "viewport",
+      a11yNew: 0,
+      total: 1,
+      changed: 1,
+      new: 0,
+      rejected: 0,
+      passed: 0,
+    },
   ],
   features: [
-    { name: "Checkout", total: 1, changed: 1, new: 0, rejected: 0, passed: 0, bugs: 1 },
-    { name: "Login", total: 1, changed: 1, new: 0, rejected: 0, passed: 0, bugs: 0 },
+    {
+      name: "Checkout",
+      total: 1,
+      changed: 1,
+      new: 0,
+      rejected: 0,
+      passed: 0,
+      bugs: 1,
+    },
+    {
+      name: "Login",
+      total: 1,
+      changed: 1,
+      new: 0,
+      rejected: 0,
+      passed: 0,
+      bugs: 0,
+    },
   ],
   quietFeatures: { count: 2, screens: 2 },
   bugs: [
@@ -110,9 +154,8 @@ const mockOverview = async (page: Page) => {
   await page.route(`${API_URL}/builds/${build.id}/overview`, (route) =>
     route.fulfill({ json: overview }),
   );
-  await page.route(
-    `${API_URL}/test-runs/groups?buildId=${build.id}`,
-    (route) => route.fulfill({ json: groups }),
+  await page.route(`${API_URL}/test-runs/groups?buildId=${build.id}`, (route) =>
+    route.fulfill({ json: groups }),
   );
 };
 
@@ -142,14 +185,13 @@ test("opens a build on the Overview tab", async ({ openProjectPage, page }) => {
   await expect(page.getByTestId("overviewVerdict")).toContainText(
     "3 of 4 need a decision",
   );
-  await expect(page.getByTestId("overviewPrevious")).toContainText(
-    "vs #127: 2 changed · 1 new · 0 gone",
+  await expect(page.getByTestId("overviewPrevious")).toHaveText(
+    "Since #127: 2 changed, 1 new",
   );
   await expect(page.getByTestId("overviewProgress")).toContainText("1 / 4");
   await expect(page.getByTestId("overviewDevice")).toHaveCount(2);
-  await expect(page.getByTestId("overviewQuietFeatures")).toContainText(
-    "+2 passed",
-  );
+  // features repeat the groups on the overview; they stay in the full report
+  await expect(page.getByTestId("overviewFeatures")).toHaveCount(0);
   await expect(page.getByTestId("overviewBug")).toContainText("P24MOB-14231");
   expect(new URL(page.url()).searchParams.get("tab")).toBeNull();
 });
@@ -167,7 +209,10 @@ test("lists the change groups in the order of the Changes tab, new last", async 
   ]);
 });
 
-test("each number opens its tab or queue", async ({ openProjectPage, page }) => {
+test("each number opens its tab or queue", async ({
+  openProjectPage,
+  page,
+}) => {
   await openProjectPage(project.id, build.id, undefined, "overview");
 
   await page.getByTestId("overviewTile-screens").click();
@@ -197,7 +242,10 @@ test("shows the queue name and position instead of Step", async ({
   page,
 }) => {
   await openProjectPage(project.id, build.id, undefined, "overview");
-  await page.getByTestId("overviewDevice").filter({ hasText: "iPhone 15" }).click();
+  await page
+    .getByTestId("overviewDevice")
+    .filter({ hasText: "iPhone 15" })
+    .click();
 
   await expect(page.getByRole("dialog")).toBeVisible();
   await expect(page.getByTestId("queueName")).toHaveText("iPhone 15 iOS 17");
@@ -247,11 +295,11 @@ test("Esc returns to where the review was opened, focus on the same row", async 
 }) => {
   await openProjectPage(project.id, build.id, undefined, "overview");
   const row = page
-    .getByTestId("overviewFeature")
-    .filter({ hasText: "Checkout" });
+    .getByTestId("overviewDevice")
+    .filter({ hasText: "PIXEL_4_XL" });
   await row.focus();
   await page.keyboard.press("Enter");
-  await expect(page.getByTestId("queueName")).toHaveText("Checkout");
+  await expect(page.getByTestId("queueName")).toHaveText("PIXEL_4_XL AOS 14");
 
   await page.keyboard.press("Escape");
 
@@ -259,4 +307,17 @@ test("Esc returns to where the review was opened, focus on the same row", async 
   await expect(page.getByTestId("buildOverview")).toBeVisible();
   await expect(row).toBeFocused();
   expect(new URL(page.url()).searchParams.get("queue")).toBeNull();
+});
+
+test("shows a placeholder for a screenshot that did not load", async ({
+  openProjectPage,
+  page,
+}) => {
+  await page.route("**/image.png", (route) => route.fulfill({ status: 404 }));
+  await page.route("**/diff.png", (route) => route.fulfill({ status: 404 }));
+  await openProjectPage(project.id, build.id, undefined, "overview");
+
+  const group = page.getByTestId("overviewGroup").first();
+  await expect(group.getByTestId("thumbMissing")).toHaveCount(2);
+  await expect(group.getByRole("img", { name: "Checkout. Pay" })).toBeVisible();
 });

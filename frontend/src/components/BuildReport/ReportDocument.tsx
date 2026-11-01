@@ -10,6 +10,7 @@ import { DICTIONARIES, Text } from "../../i18n/dictionaries";
 import type { MessageKey } from "../../i18n";
 import { formatDate, Language, translate } from "../../i18n/translate";
 import { PublicReport, ReportSection } from "../../types/buildOverview";
+import { sincePrevious } from "../../_helpers/previousBuild.helper";
 
 /** Texts in the report's own language, whatever the interface speaks (REQ-031-42). */
 export const textIn =
@@ -250,8 +251,7 @@ export const ReportDocument: React.FunctionComponent<{
           <Typography sx={{ fontSize: 12, color: tokens.textSecondary }}>
             {t("overview.decided")}: {overview.progress.decided} /{" "}
             {overview.progress.needed}
-            {overview.previous &&
-              ` · ${t("overview.vsPrevious", overview.previous)}`}
+            {overview.previous && ` · ${sincePrevious(overview.previous, t)}`}
           </Typography>
         </Section>
       )}

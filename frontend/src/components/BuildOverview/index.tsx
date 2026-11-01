@@ -25,6 +25,7 @@ import { CountUp } from "../motion/useCountUp";
 import { staggered } from "../motion/Stagger";
 import { thumbnailFor } from "../../_helpers/testRunImage.helper";
 import { BuildTab } from "../../_helpers/route.helpers";
+import { sincePrevious } from "../../_helpers/previousBuild.helper";
 import { QueueKey, queueIds } from "../../_helpers/reviewQueue.helper";
 
 // a burst of events while screenshots arrive or decisions land: ask once it settles
@@ -284,14 +285,7 @@ const Verdict: React.FunctionComponent<{ overview: Overview }> = ({
         }}
       >
         <AccountTreeOutlined sx={{ fontSize: 14 }} />
-        {previous
-          ? t("overview.vsPrevious", {
-              number: previous.number,
-              changed: previous.changed,
-              added: previous.added,
-              gone: previous.gone,
-            })
-          : t("overview.firstBuild")}
+        {previous ? sincePrevious(previous, t) : t("overview.firstBuild")}
       </Box>
       <Box
         data-testid="overviewProgress"
@@ -468,32 +462,54 @@ const Tiles: React.FunctionComponent<{
   );
 };
 
+const THUMB_SX = {
+  width: 20,
+  height: 41,
+  borderRadius: 0.75,
+  cursor: "pointer",
+  transition: `transform ${motion.base}ms ${motion.easing}`,
+  "&:hover": { transform: "translateY(-2px)" },
+};
+
+/** A small screenshot; one that does not load shows as an empty frame, not a broken picture. */
 const Thumb: React.FunctionComponent<{ run: TestRun; onOpen: () => void }> = ({
   run,
   onOpen,
-}) => (
-  <Box
-    component="img"
-    src={thumbnailFor(run, true)}
-    alt={run.name}
-    loading="lazy"
-    onClick={(event: React.MouseEvent) => {
-      event.stopPropagation();
-      onOpen();
-    }}
-    sx={{
-      width: 20,
-      height: 41,
-      objectFit: "cover",
-      objectPosition: "top",
-      borderRadius: 0.75,
-      boxShadow: tokens.shadowShot,
-      cursor: "pointer",
-      transition: `transform ${motion.base}ms ${motion.easing}`,
-      "&:hover": { transform: "translateY(-2px)" },
-    }}
-  />
-);
+}) => {
+  const [broken, setBroken] = React.useState(false);
+  const open = (event: React.MouseEvent) => {
+    event.stopPropagation();
+    onOpen();
+  };
+  return broken ? (
+    <Box
+      data-testid="thumbMissing"
+      role="img"
+      aria-label={run.name}
+      onClick={open}
+      sx={{
+        ...THUMB_SX,
+        bgcolor: tokens.subtle,
+        border: `1px dashed ${tokens.borderStrong}`,
+      }}
+    />
+  ) : (
+    <Box
+      component="img"
+      src={thumbnailFor(run, true)}
+      alt={run.name}
+      loading="lazy"
+      onError={() => setBroken(true)}
+      onClick={open}
+      sx={{
+        ...THUMB_SX,
+        objectFit: "cover",
+        objectPosition: "top",
+        boxShadow: tokens.shadowShot,
+      }}
+    />
+  );
+};
 
 const DECIDE_COLUMNS = "minmax(0, 1fr) 72px 32px 20px";
 
@@ -655,68 +671,6 @@ const Devices: React.FunctionComponent<{
   );
 };
 
-const Features: React.FunctionComponent<{
-  overview: Overview;
-  actions: OverviewActions;
-}> = ({ overview, actions }) => {
-  const { t } = useT();
-  const { features, quietFeatures } = overview;
-  return (
-    <Card title={t("overview.features")} index={8} testId="overviewFeatures">
-      <Head
-        columns={TABLE_COLUMNS}
-        cells={[
-          [t("overview.feature")],
-          [t("overview.result")],
-          [t("overview.review"), true],
-          [t("overview.bugs"), true],
-        ]}
-      />
-      {features.map((row) => {
-        const waiting = row.changed + row.new;
-        return (
-          <Row
-            key={row.name}
-            columns={TABLE_COLUMNS}
-            label={row.name}
-            testId="overviewFeature"
-            onClick={
-              waiting
-                ? () => actions.openQueue({ kind: "feature", name: row.name })
-                : undefined
-            }
-          >
-            <Typography noWrap sx={{ fontSize: 13, fontWeight: 600 }}>
-              {row.name}
-            </Typography>
-            <ResultBar outcome={row} />
-            <Num value={waiting} />
-            <Num value={row.bugs} />
-          </Row>
-        );
-      })}
-      {quietFeatures.count > 0 && (
-        <Row columns={TABLE_COLUMNS} testId="overviewQuietFeatures">
-          <span style={{ color: tokens.textSecondary }}>
-            {t("overview.quiet", { count: quietFeatures.count })}
-          </span>
-          <ResultBar
-            outcome={{
-              total: quietFeatures.screens,
-              changed: 0,
-              new: 0,
-              rejected: 0,
-              passed: quietFeatures.screens,
-            }}
-          />
-          <span />
-          <span />
-        </Row>
-      )}
-    </Card>
-  );
-};
-
 const BUG_COLUMNS = "24px 104px minmax(0, 1fr) auto";
 
 const Bugs: React.FunctionComponent<{
@@ -854,7 +808,6 @@ export const BuildOverview: React.FunctionComponent<{
           actions={actions}
         />
         <Devices overview={overview} actions={actions} />
-        <Features overview={overview} actions={actions} />
         <Bugs overview={overview} actions={actions} />
       </Box>
     </Box>

@@ -143,6 +143,6 @@ describe("ReportDocument", () => {
     ]) {
       expect(summary).toHaveTextContent(label);
     }
-    expect(summary).toHaveTextContent("vs #127: 4 changed · 1 new · 0 gone");
+    expect(summary).toHaveTextContent("Since #127: 4 changed, 1 new");
   });
 });

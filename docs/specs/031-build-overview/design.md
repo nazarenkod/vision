@@ -42,7 +42,7 @@
 | посилання (сервіс, маршрути) | `backend/src/reports/` | `GET /builds/:id/report` (повний звіт для діалогу й друку), `POST /builds/:id/report-links` (editor, admin), `GET /builds/:id/report-links`, `DELETE /report-links/:id` (автор або admin), `GET /public/reports/:token` без входу, з `ETag` |
 | типи | `frontend/src/types/` | `BuildOverview`, `ReportLink`, `PublicReport` |
 | сервіси | `frontend/src/services/` | `frontend/src/services/buildOverview.service.ts`, `frontend/src/services/reports.service.ts` |
-| вкладка Overview | `frontend/src/components/BuildOverview/` | вердикт, плитки, To decide, Devices, Features, Jira bugs |
+| вкладка Overview | `frontend/src/components/BuildOverview/`, `frontend/src/_helpers/previousBuild.helper.ts` | вердикт, плитки, To decide, Devices, Features, Jira bugs |
 | вкладка в адресі | `frontend/src/pages/ProjectPage.tsx`, `frontend/src/_helpers/route.helpers.ts` | `tab` і `queue` у query; без `tab` — Overview |
 | черги (чисте) | `frontend/src/_helpers/reviewQueue.helper.ts` | ключ черги → впорядковані id; меню черг; наступна непорожня |
 | порівняння | `frontend/src/components/TestDetailsDialog/index.tsx` | крокує чергою, якщо вона є, інакше як зараз (список All tests) |
@@ -117,11 +117,12 @@ sequenceDiagram
 | REQ-031-06 | `frontend/integration_tests/test/buildOverview.spec.ts › each number opens its tab or queue` |
 | REQ-031-07 | `frontend/integration_tests/test/buildOverview.spec.ts › lists the change groups in the order of the Changes tab, new last` |
 | REQ-031-08 | `backend/src/builds/build-overview.spec.ts › splits the result by device profile` |
-| REQ-031-09 | `backend/src/builds/build-overview.spec.ts › names a feature by featureName or the check up to the first dot`; `backend/src/builds/build-overview.spec.ts › folds quiet features into one row` |
+| REQ-031-09 | `backend/src/builds/build-overview.spec.ts › names a feature by featureName or the check up to the first dot`; `backend/src/builds/build-overview.spec.ts › folds quiet features into one row`; `frontend/src/components/BuildReport/ReportDocument.test.tsx › Short has Summary, Changes and Jira bugs; Full adds the rest` |
 | REQ-031-10 | `backend/src/builds/build-overview.spec.ts › marks bugs filed from this build New and older ones Known` |
-| REQ-031-11 | `backend/src/builds/build-overview.spec.ts › compares with the previous build of the branch` |
+| REQ-031-11 | `backend/src/builds/build-overview.spec.ts › compares with the previous build of the branch`; `frontend/src/_helpers/previousBuild.helper.test.ts › says what changed since the previous build, leaving out zeros` |
 | REQ-031-12 | `backend/src/builds/build-overview.spec.ts › says first build when the branch has no earlier one` |
 | REQ-031-13 | `frontend/src/components/BuildOverview/useBuildOverview.test.tsx › updates the numbers when a run of the build changes` |
+| REQ-031-14 | `frontend/integration_tests/test/buildOverview.spec.ts › shows a placeholder for a screenshot that did not load` |
 | REQ-031-20 | `frontend/src/_helpers/reviewQueue.helper.test.ts › puts all waiting in the order of the groups, new last` |
 | REQ-031-21 | `frontend/src/_helpers/reviewQueue.helper.test.ts › keeps only the waiting runs of a group, device or feature` |
 | REQ-031-22 | `frontend/src/_helpers/reviewQueue.helper.test.ts › starts at the clicked run inside its group` |

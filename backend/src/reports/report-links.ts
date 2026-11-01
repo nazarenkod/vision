@@ -108,7 +108,7 @@ export function publicReport(
       // kept whatever the sections: the header counts the devices
       devices: overview.devices,
       features: has('feat') ? overview.features : [],
-      quietFeatures: has('feat') ? overview.quietFeatures : { count: 0, screens: 0 },
+      quietFeatures: has('feat') ? overview.quietFeatures : { count: 0, screens: 0, features: [] },
       bugs: has('bugs')
         ? overview.bugs.map(({ kind, jiraKey, jiraUrl, summary, testRunId, isNew }) => ({
             kind,

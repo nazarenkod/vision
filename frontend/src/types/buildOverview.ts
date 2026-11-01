@@ -15,6 +15,8 @@ export interface DeviceRow extends Outcome {
   os: string;
   browser: string;
   viewport: string;
+  // the screenshot's size in pixels, "1080×2400"; empty when unknown
+  screen: string;
   a11yNew: number;
 }
 
@@ -42,7 +44,7 @@ export interface BuildOverview {
   };
   devices: DeviceRow[];
   features: FeatureRow[];
-  quietFeatures: { count: number; screens: number };
+  quietFeatures: { count: number; screens: number; features: FeatureRow[] };
   bugs: OverviewBug[];
   previous: {
     number: number;

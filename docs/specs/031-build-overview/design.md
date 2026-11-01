@@ -112,15 +112,17 @@ sequenceDiagram
 | REQ-031-05 | `backend/src/builds/build-overview.spec.ts › counts screenshots, waiting, rejected, new a11y issues and bugs` |
 | REQ-031-06 | `frontend/integration_tests/test/buildOverview.spec.ts › each number opens its tab or queue` |
 | REQ-031-07 | знято 2026-11-01 — `frontend/integration_tests/test/buildOverview.spec.ts › leaves change groups to the Changes tab` |
-| REQ-031-08 | `backend/src/builds/build-overview.spec.ts › splits the result by device profile` |
-| REQ-031-09 | `backend/src/builds/build-overview.spec.ts › names a feature by featureName or the check up to the first dot`; `backend/src/builds/build-overview.spec.ts › folds quiet features into one row`; `frontend/src/components/BuildReport/ReportDocument.test.tsx › Short has Summary, Changes and Jira bugs; Full adds the rest` |
+| REQ-031-08 | `backend/src/builds/build-overview.spec.ts › splits the result by device profile`; `backend/src/builds/build-overview.spec.ts › takes the screen size of a device from the screenshots measured`; `backend/src/builds/build-overview.service.spec.ts › reads the screen size of each device from one of its screenshots`; `backend/src/builds/build-overview.service.spec.ts › leaves the screen size out when the screenshot cannot be read`; `frontend/integration_tests/test/buildOverview.spec.ts › shows a device's screen size when the run sent no viewport` |
+| REQ-031-09 | `backend/src/builds/build-overview.spec.ts › names a feature by featureName or the check up to the first dot`; `backend/src/builds/build-overview.spec.ts › folds quiet features into one row`; `frontend/integration_tests/test/buildOverview.spec.ts › opens the passed features from their folded row`; `frontend/src/components/BuildReport/ReportDocument.test.tsx › Short has Summary, Changes and Jira bugs; Full adds the rest` |
 | REQ-031-10 | `backend/src/builds/build-overview.spec.ts › marks bugs filed from this build New and older ones Known` |
 | REQ-031-11 | `backend/src/builds/build-overview.spec.ts › compares with the previous build of the branch`; `frontend/src/_helpers/previousBuild.helper.test.ts › says what changed since the previous build, leaving out zeros` |
-| REQ-031-12 | `backend/src/builds/build-overview.spec.ts › says first build when the branch has no earlier one` |
+| REQ-031-12 | `backend/src/builds/build-overview.spec.ts › says first build when the branch has no earlier one`; `frontend/src/components/BuildReport/ReportDocument.test.tsx › says first build on the branch when there is no earlier one` |
 | REQ-031-13 | `frontend/src/components/BuildOverview/useBuildOverview.test.tsx › updates the numbers when a run of the build changes` |
 | REQ-031-14 | знято 2026-11-01 — перевірки немає |
-| REQ-031-15 | `frontend/integration_tests/test/buildOverview.spec.ts › leaves the header counts to the numbers of the overview` |
-| REQ-031-20 | `frontend/src/_helpers/reviewQueue.helper.test.ts › puts all waiting in the order of the groups, new last` |
+| REQ-031-15 | `frontend/integration_tests/test/buildOverview.spec.ts › keeps the counts out of the build header on every tab` |
+| REQ-031-16 | `frontend/src/_helpers/buildPeriod.helper.test.ts › shows the start and the end, the end without the date on the same day`; `frontend/src/_helpers/buildPeriod.helper.test.ts › shows the start alone until the build runs on` |
+| REQ-031-17 | `frontend/integration_tests/test/buildOverview.spec.ts › shows a device's screen size when the run sent no viewport`; `frontend/src/components/BuildReport/ReportDocument.test.tsx › summary names the project, build, branch, time, devices and numbers` |
+| REQ-031-20 | `frontend/src/_helpers/reviewQueue.helper.test.ts › puts all waiting in the order of the groups, new last`; `frontend/integration_tests/test/buildOverview.spec.ts › names the review button without a count` |
 | REQ-031-21 | `frontend/src/_helpers/reviewQueue.helper.test.ts › keeps only the waiting runs of a group, device or feature` |
 | REQ-031-22 | знято 2026-11-01 — перевірки немає |
 | REQ-031-23 | `frontend/src/_helpers/reviewQueue.helper.test.ts › opens the run a bug was filed from, decided or not` |

@@ -44,7 +44,7 @@ const setup = (over: { link?: object | null; build?: object | null } = {}) => {
       progress: { decided: 0, needed: 0, people: [] },
       devices: [],
       features: [],
-      quietFeatures: { count: 0, screens: 0 },
+      quietFeatures: { count: 0, screens: 0, features: [] },
       bugs: [],
       previous: null,
       build: {

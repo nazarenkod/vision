@@ -2,6 +2,7 @@ import { TestStatus } from '@prisma/client';
 import { BuildOverviewService } from './build-overview.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { A11yIssuesService } from '../a11y/a11y-issues.service';
+import { StaticService } from '../static/static.service';
 
 const at = new Date('2026-10-31T10:42:00Z');
 const run = (id: string, over: Record<string, unknown> = {}) => ({
@@ -20,6 +21,7 @@ const run = (id: string, over: Record<string, unknown> = {}) => ({
   uiTreeName: null,
   projectId: 'project',
   decidedById: null,
+  imageName: 'pixel.png',
   updatedAt: at,
   ...over,
 });
@@ -81,8 +83,24 @@ const setup = () => {
     },
   };
   const a11y = { jiraBugsOn: jest.fn().mockResolvedValue([]) };
-  const service = new BuildOverviewService(prisma as unknown as PrismaService, a11y as unknown as A11yIssuesService);
-  return { service, prisma };
+  // a PNG header: signature, IHDR length and type, then width and height
+  const png = (width: number, height: number) => {
+    const buffer = Buffer.alloc(24);
+    buffer.write('\x89PNG\r\n\x1a\n', 0, 'latin1');
+    buffer.write('IHDR', 12, 'ascii');
+    buffer.writeUInt32BE(width, 16);
+    buffer.writeUInt32BE(height, 20);
+    return buffer;
+  };
+  const storage = {
+    getImageBuffer: jest.fn((name: string) => Promise.resolve(name === 'pixel.png' ? png(1080, 2400) : null)),
+  };
+  const service = new BuildOverviewService(
+    prisma as unknown as PrismaService,
+    a11y as unknown as A11yIssuesService,
+    storage as unknown as StaticService
+  );
+  return { service, prisma, storage };
 };
 
 describe('BuildOverviewService', () => {
@@ -112,5 +130,26 @@ describe('BuildOverviewService', () => {
     expect(prisma.user.findMany).toHaveBeenCalledWith(
       expect.objectContaining({ select: { id: true, firstName: true, lastName: true } })
     );
+  });
+
+  it('reads the screen size of each device from one of its screenshots', async () => {
+    const { service, storage } = setup();
+
+    const overview = await service.overview('b128');
+
+    expect(overview.devices.map((row) => [row.device, row.screen])).toEqual([['PIXEL_4_XL', '1080×2400']]);
+    // one file per device, and none again once known
+    expect(storage.getImageBuffer).toHaveBeenCalledTimes(1);
+    await service.overview('b128');
+    expect(storage.getImageBuffer).toHaveBeenCalledTimes(1);
+  });
+
+  it('leaves the screen size out when the screenshot cannot be read', async () => {
+    const { service, storage } = setup();
+    storage.getImageBuffer.mockResolvedValue(null);
+
+    const overview = await service.overview('b128');
+
+    expect(overview.devices[0].screen).toBe('');
   });
 });

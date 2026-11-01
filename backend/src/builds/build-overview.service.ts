@@ -2,12 +2,16 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { TestStatus } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { A11yIssuesService } from '../a11y/a11y-issues.service';
-import { buildOverview, BuildOverview, OverviewBugInput, OverviewRun } from './build-overview';
+import { StaticService } from '../static/static.service';
+import { pngSize } from '../ui-tree/ui-tree.service';
+import { buildOverview, BuildOverview, deviceKey, OverviewBugInput, OverviewRun } from './build-overview';
 
 // a11y bugs are worked out from report files; the overview asks again on every
 // event of the build, so they are kept until a run of the build changes, and a
 // minute at most for bugs filed on another build's runs of the same screens
 const A11Y_CACHE_MS = 60_000;
+// stored screenshots never change, so their sizes are kept; the cap only bounds memory
+const SCREEN_CACHE_SIZE = 5_000;
 
 export interface BuildOverviewResponse extends BuildOverview {
   build: {
@@ -41,6 +45,7 @@ const RUN_FIELDS = {
   projectId: true,
   decidedById: true,
   diffPercent: true,
+  imageName: true,
   updatedAt: true,
 } as const;
 
@@ -48,10 +53,12 @@ const RUN_FIELDS = {
 @Injectable()
 export class BuildOverviewService {
   private a11yCache = new Map<string, { key: string; at: number; bugs: OverviewBugInput[] }>();
+  private screenCache = new Map<string, string>();
 
   constructor(
     private prismaService: PrismaService,
-    private a11yIssuesService: A11yIssuesService
+    private a11yIssuesService: A11yIssuesService,
+    private staticService: StaticService
   ) {}
 
   async overview(buildId: string): Promise<BuildOverviewResponse> {
@@ -74,7 +81,7 @@ export class BuildOverviewService {
 
     // approvals made before runs kept who decided them name their author through the baseline they made
     const unattributed = runs.filter((run) => run.status === TestStatus.approved && !run.decidedById).map((r) => r.id);
-    const [previousRuns, baselines, visualBugs, a11yBugs] = await Promise.all([
+    const [previousRuns, baselines, visualBugs, a11yBugs, screenSizes] = await Promise.all([
       previousBuild
         ? this.prismaService.testRun.findMany({
             where: { buildId: previousBuild.id },
@@ -98,6 +105,7 @@ export class BuildOverviewService {
         : [],
       this.visualBugs(build.projectId, runs),
       this.a11yBugs(buildId, build.createdAt, runs),
+      this.screenSizes(runs),
     ]);
 
     const approvedBy = new Map<string, string>(baselines.map((b): [string, string] => [b.testRunId, b.userId]));
@@ -119,6 +127,7 @@ export class BuildOverviewService {
       approvedBy,
       people,
       bugs: [...visualBugs, ...a11yBugs],
+      screenSizes,
     });
     const asOf = runs.reduce((latest, run) => (run.updatedAt > latest ? run.updatedAt : latest), build.updatedAt);
     return {
@@ -181,6 +190,34 @@ export class BuildOverviewService {
       });
     }
     return result;
+  }
+
+  /**
+   * The screenshot size of each device profile, read from one screenshot of it:
+   * the PNG header is enough, and one file per device keeps the overview cheap.
+   * A missing or unreadable file leaves the size out.
+   */
+  private async screenSizes(
+    runs: Array<Pick<OverviewRun, 'id' | 'device' | 'os' | 'browser' | 'viewport'> & { imageName: string }>
+  ): Promise<Map<string, string>> {
+    const sample = new Map<string, { id: string; imageName: string }>();
+    for (const run of runs) if (run.imageName && !sample.has(deviceKey(run))) sample.set(deviceKey(run), run);
+    const sizes = new Map<string, string>();
+    await Promise.all(
+      [...sample.values()].map(async ({ id, imageName }) => {
+        let size = this.screenCache.get(imageName);
+        if (size === undefined) {
+          const buffer = await this.staticService.getImageBuffer(imageName).catch((): null => null);
+          if (!buffer || buffer.length < 24 || buffer.toString('ascii', 1, 4) !== 'PNG') return;
+          const { width, height } = pngSize(buffer);
+          size = `${width}×${height}`;
+          if (this.screenCache.size >= SCREEN_CACHE_SIZE) this.screenCache.clear();
+          this.screenCache.set(imageName, size);
+        }
+        sizes.set(id, size);
+      })
+    );
+    return sizes;
   }
 
   private async a11yBugs(

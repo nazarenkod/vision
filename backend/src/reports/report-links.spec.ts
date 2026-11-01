@@ -14,6 +14,7 @@ const overview = (): BuildOverviewResponse => ({
       os: 'AOS 14',
       browser: '',
       viewport: '',
+      screen: '1080×2400',
       a11yNew: 2,
       total: 3,
       changed: 1,
@@ -23,7 +24,7 @@ const overview = (): BuildOverviewResponse => ({
     },
   ],
   features: [{ name: 'Checkout', total: 3, changed: 1, new: 0, rejected: 1, passed: 1, bugs: 1 }],
-  quietFeatures: { count: 0, screens: 0 },
+  quietFeatures: { count: 0, screens: 0, features: [] },
   bugs: [
     {
       kind: 'visual',

@@ -120,6 +120,7 @@ describe('buildOverview', () => {
         os: 'iOS 17',
         browser: '',
         viewport: '',
+        screen: '',
         a11yNew: 0,
         total: 2,
         changed: 0,
@@ -132,6 +133,7 @@ describe('buildOverview', () => {
         os: 'AOS 14',
         browser: '',
         viewport: '',
+        screen: '',
         a11yNew: 3,
         total: 2,
         changed: 1,
@@ -139,6 +141,15 @@ describe('buildOverview', () => {
         rejected: 0,
         passed: 1,
       },
+    ]);
+  });
+
+  it('takes the screen size of a device from the screenshots measured', () => {
+    const runs = [run({ id: 'a' }), run({ id: 'b' }), run({ id: 'c', device: 'iPhone 15', os: 'iOS 17' })];
+    const { devices } = buildOverview(input({ runs, screenSizes: new Map([['b', '1080×2400']]) }));
+    expect(devices.map((row) => [row.device, row.screen])).toEqual([
+      ['iPhone 15', ''],
+      ['PIXEL_4_XL', '1080×2400'],
     ]);
   });
 
@@ -168,7 +179,13 @@ describe('buildOverview', () => {
       ['Login', 0, 1, 0],
       ['Profile', 0, 0, 1],
     ]);
-    expect(overview.quietFeatures).toEqual({ count: 3, screens: 4 });
+    expect(overview.quietFeatures).toMatchObject({ count: 3, screens: 4 });
+    // the folded row opens into them (REQ-031-09)
+    expect(overview.quietFeatures.features.map((row) => [row.name, row.total])).toEqual([
+      ['Cart', 1],
+      ['Home', 2],
+      ['Search', 1],
+    ]);
   });
 
   it('marks bugs filed from this build New and older ones Known', () => {

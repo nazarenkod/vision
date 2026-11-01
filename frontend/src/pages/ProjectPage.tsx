@@ -129,7 +129,6 @@ const ProjectPage = () => {
           }}
         >
           <BuildDetails
-            hideCounts={view === "overview"}
             actions={
               selectedBuild && (
                 <>
@@ -151,7 +150,7 @@ const ProjectPage = () => {
                       data-testid="reviewWaiting"
                       onClick={() => actions.openQueue({ kind: "all" })}
                     >
-                      {t("overview.reviewN", { count: waiting })}
+                      {t("overview.reviewAll")}
                     </Button>
                   )}
                 </>

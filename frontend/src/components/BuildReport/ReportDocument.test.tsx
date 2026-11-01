@@ -34,12 +34,13 @@ const report: PublicReport = {
         os: "AOS 14",
         browser: "",
         viewport: "",
+        screen: "1080×2400",
         a11yNew: 3,
         ...outcome,
       },
     ],
     features: [{ name: "Checkout", bugs: 1, ...outcome }],
-    quietFeatures: { count: 4, screens: 26 },
+    quietFeatures: { count: 4, screens: 26, features: [] },
     bugs: [
       {
         kind: "visual",
@@ -138,11 +139,27 @@ describe("ReportDocument", () => {
       "5",
       "Waiting",
       "Rejected",
-      "New a11y",
+      "New accessibility issues",
       "Jira bugs",
     ]) {
       expect(summary).toHaveTextContent(label);
     }
     expect(summary).toHaveTextContent("Since #127: 4 changed, 1 new");
+  });
+
+  it("says first build on the branch when there is no earlier one", () => {
+    render(
+      <ReportDocument
+        report={{
+          ...report,
+          overview: { ...report.overview!, previous: null },
+        }}
+        sections={["sum"]}
+        language="en"
+      />,
+    );
+    expect(screen.getByTestId("reportSection-sum")).toHaveTextContent(
+      "First build on this branch",
+    );
   });
 });

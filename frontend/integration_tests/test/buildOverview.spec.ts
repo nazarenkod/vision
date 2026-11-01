@@ -85,6 +85,7 @@ const overview: BuildOverview = {
       os: "AOS 14",
       browser: "browser",
       viewport: "viewport",
+      screen: "1080×2400",
       a11yNew: 2,
       total: 1,
       changed: 1,
@@ -97,12 +98,26 @@ const overview: BuildOverview = {
       os: "iOS 17",
       browser: "browser",
       viewport: "viewport",
+      screen: "1179×2556",
       a11yNew: 0,
       total: 1,
       changed: 1,
       new: 0,
       rejected: 0,
       passed: 0,
+    },
+    {
+      device: "Galaxy S23",
+      os: "Android 14",
+      browser: "",
+      viewport: "",
+      screen: "1080×2340",
+      a11yNew: 0,
+      total: 1,
+      changed: 0,
+      new: 0,
+      rejected: 0,
+      passed: 1,
     },
   ],
   features: [
@@ -125,7 +140,30 @@ const overview: BuildOverview = {
       bugs: 0,
     },
   ],
-  quietFeatures: { count: 2, screens: 2 },
+  quietFeatures: {
+    count: 2,
+    screens: 2,
+    features: [
+      {
+        name: "Home",
+        total: 1,
+        changed: 0,
+        new: 0,
+        rejected: 0,
+        passed: 1,
+        bugs: 0,
+      },
+      {
+        name: "Search",
+        total: 1,
+        changed: 0,
+        new: 0,
+        rejected: 0,
+        passed: 1,
+        bugs: 0,
+      },
+    ],
+  },
   bugs: [
     {
       kind: "visual",
@@ -181,9 +219,7 @@ test("opens a build on the Overview tab", async ({ openProjectPage, page }) => {
   );
   // the build's state is the header's; the tiles carry what is not said there
   await expect(page.getByTestId("overviewTile-waiting")).toContainText("3");
-  await expect(page.getByTestId("overviewCaption-screens")).toHaveText(
-    "Since #127: 2 changed, 1 new",
-  );
+  await expect(page.getByTestId("overviewCaption-screens")).toHaveCount(0);
   await expect(page.getByTestId("overviewCaption-waiting")).toHaveText(
     "1 of 4 decided",
   );
@@ -191,10 +227,13 @@ test("opens a build on the Overview tab", async ({ openProjectPage, page }) => {
     "title",
     "Oleh Koval: 1 approved · 0 rejected",
   );
-  await expect(page.getByTestId("overviewDevice")).toHaveCount(2);
+  await expect(page.getByTestId("overviewDevice")).toHaveCount(3);
   await expect(page.getByTestId("overviewQuietFeatures")).toContainText(
     "+2 passed",
   );
+  // the tables name themselves in their first column
+  await expect(page.getByRole("heading", { name: "Features" })).toHaveCount(0);
+  await expect(page.getByRole("heading", { name: "Devices" })).toHaveCount(0);
   await expect(page.getByTestId("overviewBug")).toContainText("P24MOB-14231");
   expect(new URL(page.url()).searchParams.get("tab")).toBeNull();
 });
@@ -233,7 +272,7 @@ test("each number opens its tab or queue", async ({
 
   await page.getByRole("tab", { name: "Overview" }).click();
   await page.getByTestId("overviewTile-waiting").click();
-  await expect(page.getByTestId("queueName")).toHaveText("All waiting");
+  await expect(page.getByTestId("queueName")).toHaveText("All to review");
   await expect(page.getByTestId("queuePosition")).toHaveText("1 / 3");
 });
 
@@ -309,14 +348,61 @@ test("Esc returns to where the review was opened, focus on the same row", async 
   expect(new URL(page.url()).searchParams.get("queue")).toBeNull();
 });
 
-test("leaves the header counts to the numbers of the overview", async ({
+test("keeps the counts out of the build header on every tab", async ({
   openProjectPage,
   page,
 }) => {
   await openProjectPage(project.id, build.id, undefined, "overview");
   await expect(page.getByTestId("overviewTile-screens")).toBeVisible();
-  await expect(page.getByTestId("buildCounts")).toBeHidden();
+  await expect(page.getByTestId("buildCounts")).toHaveCount(0);
 
   await page.getByRole("tab", { name: /All tests/ }).click();
-  await expect(page.getByTestId("buildCounts")).toBeVisible();
+  await expect(page.getByTestId("buildStatusBar")).toBeVisible();
+  await expect(page.getByTestId("buildCounts")).toHaveCount(0);
+});
+
+test("opens the passed features from their folded row", async ({
+  openProjectPage,
+  page,
+}) => {
+  await openProjectPage(project.id, build.id, undefined, "overview");
+  const quiet = page.getByTestId("overviewQuietFeatures");
+  await expect(page.getByTestId("overviewFeature")).toHaveCount(2);
+
+  await quiet.click();
+  await expect(quiet).toHaveAttribute("aria-expanded", "true");
+  await expect(page.getByTestId("overviewFeature")).toHaveText([
+    /Checkout/,
+    /Login/,
+    /Home/,
+    /Search/,
+  ]);
+
+  await quiet.click();
+  await expect(page.getByTestId("overviewFeature")).toHaveCount(2);
+});
+
+test("shows a device's screen size when the run sent no viewport", async ({
+  openProjectPage,
+  page,
+}) => {
+  await openProjectPage(project.id, build.id, undefined, "overview");
+  const devices = page.getByTestId("overviewDevice");
+  await expect(devices.filter({ hasText: "Galaxy S23" })).toContainText(
+    "Android 14 · 1080×2340",
+  );
+  await expect(devices.filter({ hasText: "PIXEL_4_XL" })).toContainText(
+    "AOS 14 · browser · viewport",
+  );
+  await expect(
+    page.getByTestId("overviewDevices").getByText("Accessibility"),
+  ).toBeVisible();
+});
+
+test("names the review button without a count", async ({
+  openProjectPage,
+  page,
+}) => {
+  await openProjectPage(project.id, build.id, undefined, "overview");
+  await expect(page.getByTestId("reviewWaiting")).toHaveText("Review");
 });

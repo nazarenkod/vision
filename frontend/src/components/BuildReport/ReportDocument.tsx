@@ -269,7 +269,11 @@ export const ReportDocument: React.FunctionComponent<{
           <Typography sx={{ fontSize: 12, color: tokens.textSecondary }}>
             {t("overview.decided")}: {overview.progress.decided} /{" "}
             {overview.progress.needed}
-            {overview.previous && ` · ${sincePrevious(overview.previous, t)}`}
+            {` · ${
+              overview.previous
+                ? sincePrevious(overview.previous, t)
+                : t("overview.firstBuild")
+            }`}
           </Typography>
         </Section>
       )}
@@ -414,7 +418,9 @@ export const ReportDocument: React.FunctionComponent<{
                   <td>
                     {row.device}{" "}
                     <span style={{ color: tokens.textSecondary }}>
-                      {row.os}
+                      {[row.os, row.browser, row.viewport || row.screen]
+                        .filter(Boolean)
+                        .join(" · ")}
                     </span>
                   </td>
                   <td style={{ width: 120 }}>

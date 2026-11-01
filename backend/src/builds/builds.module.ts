@@ -7,6 +7,7 @@ import { SharedModule } from '../shared/shared.module';
 import { AuthModule } from '../auth/auth.module';
 import { ProjectsModule } from '../projects/projects.module';
 import { A11yModule } from '../a11y/a11y.module';
+import { StaticModule } from '../static/static.module';
 import { BuildOverviewService } from './build-overview.service';
 
 @Module({
@@ -17,6 +18,8 @@ import { BuildOverviewService } from './build-overview.service';
     AuthModule,
     forwardRef(() => ProjectsModule),
     A11yModule,
+    // the overview reads each device's screen size from a screenshot
+    StaticModule,
   ],
   providers: [BuildsService, BuildOverviewService],
   controllers: [BuildsController],

@@ -47,6 +47,8 @@ export interface OverviewInput {
   // user id → name as people know it; no email (REQ-031-68)
   people: Map<string, string>;
   bugs: OverviewBugInput[];
+  // run id → its screenshot's size in pixels ("1080×2400"), for runs the service measured
+  screenSizes?: Map<string, string>;
 }
 
 /** Screenshots by how they came out; `changed` and `new` are the ones waiting. */
@@ -63,6 +65,8 @@ export interface DeviceRow extends Outcome {
   os: string;
   browser: string;
   viewport: string;
+  // the screenshot's size in pixels: Appium runs seldom send a viewport (REQ-031-08)
+  screen: string;
   a11yNew: number;
 }
 
@@ -84,8 +88,8 @@ export interface BuildOverview {
   progress: { decided: number; needed: number; people: PersonDecisions[] };
   devices: DeviceRow[];
   features: FeatureRow[];
-  // features with nothing to look at, folded into one row (REQ-031-09)
-  quietFeatures: { count: number; screens: number };
+  // features with nothing to look at, folded into one row that opens into them (REQ-031-09)
+  quietFeatures: { count: number; screens: number; features: FeatureRow[] };
   bugs: OverviewBugInput[];
   previous: { number: number; changed: number; added: number; gone: number } | null;
 }
@@ -150,19 +154,25 @@ function progressOf(input: OverviewInput) {
   return { decided, needed, people };
 }
 
-function devicesOf(runs: OverviewRun[]): DeviceRow[] {
+/** The device profile a run belongs to: one row of the devices table. */
+export const deviceKey = (run: Pick<OverviewRun, 'device' | 'os' | 'browser' | 'viewport'>): string =>
+  [run.device ?? '', run.os ?? '', run.browser ?? '', run.viewport ?? ''].join('\u0000');
+
+function devicesOf(runs: OverviewRun[], screenSizes: Map<string, string> = new Map()): DeviceRow[] {
   const rows = new Map<string, DeviceRow>();
   for (const run of runs) {
-    const key = [run.device ?? '', run.os ?? '', run.browser ?? '', run.viewport ?? ''].join('\u0000');
+    const key = deviceKey(run);
     const row = rows.get(key) ?? {
       device: run.device ?? '',
       os: run.os ?? '',
       browser: run.browser ?? '',
       viewport: run.viewport ?? '',
+      screen: '',
       a11yNew: 0,
       ...emptyOutcome(),
     };
     count(row, run.status);
+    row.screen ||= screenSizes.get(run.id) ?? '';
     row.a11yNew += run.a11yNewCount ?? 0;
     rows.set(key, row);
   }
@@ -189,7 +199,14 @@ function featuresOf(runs: OverviewRun[], bugs: OverviewBugInput[]) {
     .sort(
       (a, b) => waiting(b) - waiting(a) || b.rejected - a.rejected || b.bugs - a.bugs || a.name.localeCompare(b.name)
     );
-  return { features, quietFeatures: { count: quiet.length, screens: quiet.reduce((sum, row) => sum + row.total, 0) } };
+  return {
+    features,
+    quietFeatures: {
+      count: quiet.length,
+      screens: quiet.reduce((sum, row) => sum + row.total, 0),
+      features: quiet.sort((a, b) => a.name.localeCompare(b.name)),
+    },
+  };
 }
 
 function previousOf(runs: OverviewRun[], previous: OverviewInput['previous']): BuildOverview['previous'] {
@@ -219,7 +236,7 @@ export function buildOverview(input: OverviewInput): BuildOverview {
     verdict: verdictOf(input.build.isRunning, counts),
     counts: { ...counts, waiting: waiting(counts), a11yNew, bugs: bugs.length },
     progress: progressOf(input),
-    devices: devicesOf(input.runs),
+    devices: devicesOf(input.runs, input.screenSizes),
     ...featuresOf(input.runs, bugs),
     bugs,
     previous: previousOf(input.runs, input.previous),

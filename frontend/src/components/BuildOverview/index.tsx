@@ -3,6 +3,7 @@ import { Box, ButtonBase, Link, Typography } from "@mui/material";
 import {
   AccessibilityNewOutlined,
   BugReportOutlined,
+  ExpandMoreRounded,
   LinkRounded,
 } from "@mui/icons-material";
 import { motion, tokens } from "../../theme";
@@ -16,7 +17,6 @@ import { EmptyState } from "../EmptyState";
 import { CountUp } from "../motion/useCountUp";
 import { staggered } from "../motion/Stagger";
 import { BuildTab } from "../../_helpers/route.helpers";
-import { sincePrevious } from "../../_helpers/previousBuild.helper";
 import { QueueKey } from "../../_helpers/reviewQueue.helper";
 
 // a burst of events while screenshots arrive or decisions land: ask once it settles
@@ -75,7 +75,8 @@ export function useBuildOverview(buildId: string | undefined) {
 }
 
 const Card: React.FunctionComponent<{
-  title: string;
+  // tables whose first column names them go without one
+  title?: string;
   index: number;
   children: React.ReactNode;
   testId?: string;
@@ -93,20 +94,24 @@ const Card: React.FunctionComponent<{
       minWidth: 0,
       display: "flex",
       flexDirection: "column",
+      // the header row's fill follows the corners when there is no title
+      overflow: "hidden",
     }}
   >
-    <Typography
-      component="h3"
-      sx={{
-        px: 2,
-        py: 1.5,
-        fontSize: 14,
-        fontWeight: 650,
-        borderBottom: `1px solid ${tokens.border}`,
-      }}
-    >
-      {title}
-    </Typography>
+    {title && (
+      <Typography
+        component="h3"
+        sx={{
+          px: 2,
+          py: 1.5,
+          fontSize: 14,
+          fontWeight: 650,
+          borderBottom: `1px solid ${tokens.border}`,
+        }}
+      >
+        {title}
+      </Typography>
+    )}
     {children}
   </Box>
 );
@@ -196,13 +201,13 @@ const Tiles: React.FunctionComponent<{
   actions: OverviewActions;
 }> = ({ overview, actions }) => {
   const { t } = useT();
-  const { counts, progress, previous } = overview;
+  const { counts, progress } = overview;
   const someone = t("overview.someone");
   const tiles: Array<{
     key: string;
     value: number;
     label: string;
-    // what the number does not say: the change since the last build, the progress
+    // what the number does not say: the progress of the review
     caption?: string;
     captionTitle?: string;
     color?: string;
@@ -212,7 +217,6 @@ const Tiles: React.FunctionComponent<{
       key: "screens",
       value: counts.total,
       label: t("overview.screens"),
-      caption: previous ? sincePrevious(previous, t) : t("overview.firstBuild"),
       onClick: () => actions.openTab("all"),
     },
     {
@@ -336,7 +340,9 @@ const Tiles: React.FunctionComponent<{
   );
 };
 
-const TABLE_COLUMNS = "minmax(0, 1fr) 80px 52px 40px";
+const FEATURE_COLUMNS = "minmax(0, 1fr) 80px 64px 40px";
+// wide enough for "Accessibility" over its numbers
+const DEVICE_COLUMNS = "minmax(0, 1fr) 80px 64px 92px";
 
 const Devices: React.FunctionComponent<{
   overview: Overview;
@@ -344,9 +350,9 @@ const Devices: React.FunctionComponent<{
 }> = ({ overview, actions }) => {
   const { t } = useT();
   return (
-    <Card title={t("overview.devices")} index={7} testId="overviewDevices">
+    <Card index={7} testId="overviewDevices">
       <Head
-        columns={TABLE_COLUMNS}
+        columns={DEVICE_COLUMNS}
         cells={[
           [t("overview.device")],
           [t("overview.result")],
@@ -362,7 +368,7 @@ const Devices: React.FunctionComponent<{
         return (
           <Row
             key={profile}
-            columns={TABLE_COLUMNS}
+            columns={DEVICE_COLUMNS}
             label={`${row.device} ${row.os}`}
             testId="overviewDevice"
             onClick={
@@ -385,7 +391,7 @@ const Devices: React.FunctionComponent<{
                 noWrap
                 sx={{ fontSize: 11.5, color: tokens.textSecondary }}
               >
-                {[row.os, row.browser, row.viewport]
+                {[row.os, row.browser, row.viewport || row.screen]
                   .filter(Boolean)
                   .join(" · ")}
               </Typography>
@@ -400,16 +406,48 @@ const Devices: React.FunctionComponent<{
   );
 };
 
+const FeatureRows: React.FunctionComponent<{
+  rows: Overview["features"];
+  actions: OverviewActions;
+}> = ({ rows, actions }) => (
+  <>
+    {rows.map((row) => {
+      const waiting = row.changed + row.new;
+      return (
+        <Row
+          key={row.name}
+          columns={FEATURE_COLUMNS}
+          label={row.name}
+          testId="overviewFeature"
+          onClick={
+            waiting
+              ? () => actions.openQueue({ kind: "feature", name: row.name })
+              : undefined
+          }
+        >
+          <Typography noWrap sx={{ fontSize: 13, fontWeight: 600 }}>
+            {row.name}
+          </Typography>
+          <ResultBar outcome={row} />
+          <Num value={waiting} />
+          <Num value={row.bugs} />
+        </Row>
+      );
+    })}
+  </>
+);
+
 const Features: React.FunctionComponent<{
   overview: Overview;
   actions: OverviewActions;
 }> = ({ overview, actions }) => {
   const { t } = useT();
   const { features, quietFeatures } = overview;
+  const [quietOpen, setQuietOpen] = React.useState(false);
   return (
-    <Card title={t("overview.features")} index={8} testId="overviewFeatures">
+    <Card index={8} testId="overviewFeatures">
       <Head
-        columns={TABLE_COLUMNS}
+        columns={FEATURE_COLUMNS}
         cells={[
           [t("overview.feature")],
           [t("overview.result")],
@@ -417,34 +455,32 @@ const Features: React.FunctionComponent<{
           [t("overview.bugs"), true],
         ]}
       />
-      {features.map((row) => {
-        const waiting = row.changed + row.new;
-        return (
-          <Row
-            key={row.name}
-            columns={TABLE_COLUMNS}
-            label={row.name}
-            testId="overviewFeature"
-            onClick={
-              waiting
-                ? () => actions.openQueue({ kind: "feature", name: row.name })
-                : undefined
-            }
-          >
-            <Typography noWrap sx={{ fontSize: 13, fontWeight: 600 }}>
-              {row.name}
-            </Typography>
-            <ResultBar outcome={row} />
-            <Num value={waiting} />
-            <Num value={row.bugs} />
-          </Row>
-        );
-      })}
+      <FeatureRows rows={features} actions={actions} />
       {quietFeatures.count > 0 && (
-        <Row columns={TABLE_COLUMNS} testId="overviewQuietFeatures">
-          <span style={{ color: tokens.textSecondary }}>
+        <ButtonBase
+          data-testid="overviewQuietFeatures"
+          aria-expanded={quietOpen}
+          onClick={() => setQuietOpen((open) => !open)}
+          sx={rowSx(FEATURE_COLUMNS, true)}
+        >
+          <Box
+            component="span"
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              gap: 0.5,
+              color: tokens.textSecondary,
+            }}
+          >
             {t("overview.quiet", { count: quietFeatures.count })}
-          </span>
+            <ExpandMoreRounded
+              sx={{
+                fontSize: 18,
+                transform: quietOpen ? "rotate(180deg)" : "none",
+                transition: `transform ${motion.base}ms ${motion.easing}`,
+              }}
+            />
+          </Box>
           <ResultBar
             outcome={{
               total: quietFeatures.screens,
@@ -456,7 +492,10 @@ const Features: React.FunctionComponent<{
           />
           <span />
           <span />
-        </Row>
+        </ButtonBase>
+      )}
+      {quietOpen && (
+        <FeatureRows rows={quietFeatures.features ?? []} actions={actions} />
       )}
     </Card>
   );

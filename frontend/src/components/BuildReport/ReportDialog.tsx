@@ -7,13 +7,7 @@ import {
   Tooltip,
   Typography,
 } from "@mui/material";
-import {
-  Close,
-  ContentCopyRounded,
-  DownloadRounded,
-  LinkRounded,
-  TagRounded,
-} from "@mui/icons-material";
+import { Close, DownloadRounded, LinkRounded } from "@mui/icons-material";
 import { tokens } from "../../theme";
 import { useT } from "../../i18n";
 import { useUserState } from "../../contexts";
@@ -25,9 +19,8 @@ import {
   ReportLink,
   ReportSection,
 } from "../../types/buildOverview";
-import { reportText } from "../../_helpers/reportText.helper";
-import { ReportDocument, textIn } from "./ReportDocument";
-import { localeOf, Language } from "../../i18n/translate";
+import { ReportDocument } from "./ReportDocument";
+import { Language } from "../../i18n/translate";
 
 export const publicReportUrl = (token: string) =>
   `${window.location.origin}/r/${encodeURIComponent(token)}`;
@@ -41,8 +34,8 @@ export const printReportUrl = (
 
 /**
  * A build's report (031): the whole report as readers will see it, and the
- * ways to share it. Nothing to set up: every section, in the interface's
- * language. Vision only copies and prints; it sends nothing anywhere
+ * ways to share it: a public link or a PDF. Nothing to set up: every
+ * section, in the interface's language. Vision sends nothing anywhere
  * itself (REQ-031-49).
  */
 export const ReportDialog: React.FunctionComponent<{
@@ -99,23 +92,6 @@ export const ReportDialog: React.FunctionComponent<{
     setLinks((current) => [link, ...current]);
     await copy("link", publicReportUrl(link.token));
   };
-  // the text carries the link when there is one; otherwise the build itself
-  const latestLink = links[0];
-  const textUrl = latestLink
-    ? publicReportUrl(latestLink.token)
-    : `${window.location.origin}/${overview.build.projectId}?buildId=${buildId}`;
-  const copyText = (format: "slack" | "jira") =>
-    copy(
-      format,
-      reportText(
-        overview,
-        format,
-        textUrl,
-        textIn(language),
-        localeOf(language),
-      ),
-    );
-
   const label = (text: string, what: string) =>
     copied === what
       ? t("report.copied")
@@ -177,24 +153,6 @@ export const ReportDialog: React.FunctionComponent<{
             </Button>
           </span>
         </Tooltip>
-        <Button
-          size="small"
-          variant="outlined"
-          startIcon={<TagRounded />}
-          data-testid="copySlackText"
-          onClick={() => copyText("slack")}
-        >
-          {label(t("report.slackText"), "slack")}
-        </Button>
-        <Button
-          size="small"
-          variant="outlined"
-          startIcon={<ContentCopyRounded />}
-          data-testid="copyJiraText"
-          onClick={() => copyText("jira")}
-        >
-          {label(t("report.jiraComment"), "jira")}
-        </Button>
         <Button
           size="small"
           variant="outlined"

@@ -230,11 +230,9 @@ test("previews the whole report and shares it", async ({
   await expect(page.getByTestId(/^reportSection-/)).toHaveCount(6);
   await expect(page.getByRole("checkbox")).toHaveCount(0);
 
-  await page.getByTestId("copySlackText").click();
-  const slack = await page.evaluate(() => navigator.clipboard.readText());
-  expect(slack).toContain(
-    "*Mobile Shop · #128 · release/7.4* — Waiting for review",
-  );
+  // shared by link or as a PDF; no text for Slack or Jira
+  await expect(page.getByTestId("copySlackText")).toHaveCount(0);
+  await expect(page.getByTestId("copyJiraText")).toHaveCount(0);
 
   await page.getByTestId("copyReportLink").click();
   await expect(page.getByTestId("reportLink")).toHaveCount(1);

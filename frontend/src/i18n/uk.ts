@@ -1514,8 +1514,6 @@ export const uk: Messages = {
   "report.section.feat": "Функціонал",
   "report.section.a11y": "Доступність",
   "report.copyLink": "Копіювати публічне посилання",
-  "report.slackText": "Текст для Slack",
-  "report.jiraComment": "Коментар у Jira",
   "report.pdf": "PDF",
   "report.copied": "Скопійовано",
   "report.copyFailed": "Не вдалося скопіювати",
@@ -1546,11 +1544,5 @@ export const uk: Messages = {
   "report.baseline": "Еталон",
   "report.checkpoint": "Знімок",
   "report.textTitle": "{project} · #{number} · {branch}",
-  "report.textCounts":
-    "{total} знімків на {devices} пристроях: {passed} пройшли, {changed} змінились, {new} нових",
-  "report.textWaiting": "Чекають рішення: {waiting} · відхилено: {rejected}",
-  "report.textA11y": "Доступність: нових проблем {count}",
-  "report.textBugs": "Jira: {keys}",
-  "report.textOpen": "Відкрити звіт",
   "report.textAsOf": "Стан на {time}",
 };

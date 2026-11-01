@@ -1414,8 +1414,6 @@ export const en = {
   "report.section.feat": "Features",
   "report.section.a11y": "Accessibility",
   "report.copyLink": "Copy public link",
-  "report.slackText": "Slack text",
-  "report.jiraComment": "Jira comment",
   "report.pdf": "PDF",
   "report.copied": "Copied",
   "report.copyFailed": "Could not copy",
@@ -1440,13 +1438,6 @@ export const en = {
   "report.baseline": "Baseline",
   "report.checkpoint": "Checkpoint",
   "report.textTitle": "{project} · #{number} · {branch}",
-  "report.textCounts":
-    "{total} screens on {devices} devices: {passed} passed, {changed} changed, {new} new",
-  "report.textWaiting":
-    "Waiting for a decision: {waiting} · rejected: {rejected}",
-  "report.textA11y": "Accessibility: {count} new issues",
-  "report.textBugs": "Jira: {keys}",
-  "report.textOpen": "Open the report",
   "report.textAsOf": "As of {time}",
 } satisfies Record<string, Message>;
 

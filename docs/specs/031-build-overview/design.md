@@ -23,9 +23,6 @@
   збірок. Вона перепитує своє зведення кожні 8 с з `ETag`, тож незмінене зведення коштує 304.
 - **PDF — друк сторінки звіту браузером** у «Save as PDF», зі стилем `@page A4`. Нової залежності
   немає, і PDF збігається з тим, що видно на екрані (ADR-0022).
-- **Текст для Slack і Jira** складає чиста функція `reportText(overview, format, text)`. Slack
-  отримує mrkdwn, Jira — простий список з URL: його однаково показують Jira Cloud і Server, а ключі
-  Jira самі стають посиланнями.
 
 
 ## Компоненти
@@ -49,7 +46,6 @@
 | заголовок черги, підсумок | `frontend/src/components/TestDetailsDialog/QueueHeader.tsx`, `frontend/src/components/TestDetailsDialog/QueueDone.tsx` | назва черги, «N / M», меню; підсумок, Enter і Esc |
 | крапки кроків | `frontend/src/components/TestDetailsDialog/StepDots.tsx` | без змін; поруч «N / M» замість «Step N/M» |
 | звіт | `frontend/src/components/BuildReport/` | `ReportDialog` (налаштування, поділитися, посилання), `ReportDocument` (спільний для діалогу, сторінки й друку) |
-| текст звіту (чисте) | `frontend/src/_helpers/reportText.helper.ts` | Slack і Jira, мовою звіту |
 | сторінки звіту | `frontend/src/pages/ReportPage.tsx`, `frontend/src/Router.jsx`, `frontend/src/App.tsx` | `/r/:token` поза `PrivateRoute`, перепит кожні 8 с; `/report/:buildId` для друку (входу треба), друкує, щойно знімки завантажились; обидві — без шапки й навігації |
 | тексти | `frontend/src/i18n/en.ts`, `frontend/src/i18n/uk.ts` | ключі `overview.*`, `queue.*`, `report.*` |
 
@@ -103,7 +99,7 @@ sequenceDiagram
 | Огляд перераховується на кожну подію під час прийому знімків | пауза 400 ms і не більше одного запиту одночасно; зведення — агрегація в базі, як `build-stats.ts` |
 | Група змінює `id` після рішень | черга тримається за `fingerprint` групи, а список id фіксується при відкритті |
 | PDF залежить від браузера | `@page A4`, контрольний PDF у Chrome і Safari вручну; власний генератор не беремо (ADR-0022) |
-| Час «стану» в PDF і тексті | час останнього оновлення зведення, а не натискання, — щоб не обіцяти свіжіший стан, ніж є |
+| Час «стану» в PDF | час останнього оновлення зведення, а не натискання, — щоб не обіцяти свіжіший стан, ніж є |
 
 ## Перевірка вимог
 
@@ -139,9 +135,9 @@ sequenceDiagram
 | REQ-031-42 | `frontend/src/components/BuildReport/ReportDocument.test.tsx › renders in the report language, not the interface one` |
 | REQ-031-43 | `frontend/src/components/BuildReport/ReportDocument.test.tsx › summary names the project, build, branch, time, devices and numbers` |
 | REQ-031-44 | `backend/src/reports/report-links.spec.ts › lists up to 20 changes and counts the rest` |
-| REQ-031-45 | `frontend/src/_helpers/reportText.helper.test.ts › writes Slack mrkdwn`; `frontend/src/_helpers/reportText.helper.test.ts › writes a Jira list with links` |
+| REQ-031-45 | знято 2026-11-01 — `frontend/integration_tests/test/buildReport.spec.ts › previews the whole report and shares it` |
 | REQ-031-46 | `frontend/integration_tests/test/buildReport.spec.ts › prints the report on A4 pages with the chosen sections and language`; manual: Report → PDF у Chrome і Safari → «Save as PDF» дає A4 з обраними розділами й мовою |
-| REQ-031-47 | `frontend/src/_helpers/reportText.helper.test.ts › states the time of the state it shows` |
+| REQ-031-47 | `frontend/src/components/BuildReport/ReportDocument.test.tsx › summary names the project, build, branch, time, devices and numbers` |
 | REQ-031-48 | `backend/src/builds/build-overview.service.spec.ts › builds the overview without calling AI` |
 | REQ-031-49 | manual: у коді звіту (`frontend/src/components/BuildReport/`, `frontend/src/pages/ReportPage.tsx`, `frontend/src/services/reports.service.ts`, `backend/src/reports/`) немає звернень ні до чого, крім API Vision; перевірено пошуком і рев'ю диффу 2026-10-31 |
 | REQ-031-60 | `backend/src/reports/reports.controller.spec.ts › creates a link with the chosen sections and language` |

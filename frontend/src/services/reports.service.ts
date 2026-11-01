@@ -21,7 +21,7 @@ export const reportsService = {
     }).then(handleResponse),
   createLink: (
     buildId: string,
-    body: { sections: ReportSection[]; language: "en" | "uk"; days: number },
+    body: { sections: ReportSection[]; language: "en" | "uk" },
   ): Promise<ReportLink> =>
     fetch(`${API_URL}/builds/${buildId}/report-links`, {
       method: "POST",

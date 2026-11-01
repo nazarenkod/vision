@@ -22,7 +22,7 @@ export class ReportsController {
   create(
     @CurrentUser() user: User,
     @Param('id', new ParseUUIDPipe()) buildId: string,
-    @Body() body: { sections?: string[]; language?: string; days?: number }
+    @Body() body: { sections?: string[]; language?: string }
   ): Promise<ReportLinkDto> {
     return this.reportsService.create(buildId, body ?? {}, user);
   }

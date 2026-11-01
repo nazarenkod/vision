@@ -199,7 +199,7 @@ const fullReport = (): PublicReport => ({
   ],
 });
 
-test("previews the report as settings change", async ({
+test("previews the whole report and shares it", async ({
   openProjectPage,
   page,
   context,
@@ -219,7 +219,6 @@ test("previews the report as settings change", async ({
             createdBy: "Anna Petrenko",
             createdById: "1",
             createdAt: "2026-10-31T11:05:00Z",
-            expiresAt: "2026-11-30T11:05:00Z",
           },
         })
       : route.fulfill({ json: [] }),
@@ -227,22 +226,14 @@ test("previews the report as settings change", async ({
   await openProjectPage(project.id, build.id, undefined, "overview");
   await page.getByTestId("openReport").click();
 
-  const sections = page.getByTestId(/^reportSection-/);
-  await expect(sections).toHaveCount(3);
-  await page.getByTestId("segment-full").click();
-  await expect(sections).toHaveCount(6);
-  await page.getByTestId("reportOption-dev").click();
-  await expect(sections).toHaveCount(5);
-
-  await page.getByTestId("segment-uk").click();
-  await expect(page.getByTestId("reportDocument")).toContainText("Звіт збірки");
-  // the interface keeps its language
-  await expect(page.getByRole("button", { name: /Slack text/ })).toBeVisible();
+  // the whole report, nothing to set up first
+  await expect(page.getByTestId(/^reportSection-/)).toHaveCount(6);
+  await expect(page.getByRole("checkbox")).toHaveCount(0);
 
   await page.getByTestId("copySlackText").click();
   const slack = await page.evaluate(() => navigator.clipboard.readText());
   expect(slack).toContain(
-    "*Mobile Shop · #128 · release/7.4* — Чекає на перегляд",
+    "*Mobile Shop · #128 · release/7.4* — Waiting for review",
   );
 
   await page.getByTestId("copyReportLink").click();

@@ -1,9 +1,8 @@
 import { TestStatus } from '@prisma/client';
-import { expiryOf, linkState, MAX_CHANGES, newToken, publicReport, ReportRun, sectionsOf } from './report-links';
+import { linkState, MAX_CHANGES, newToken, publicReport, ReportRun, sectionsOf } from './report-links';
 import { BuildOverviewResponse } from '../builds/build-overview.service';
 
 const now = new Date('2026-10-31T11:05:00Z');
-const DAY = 24 * 60 * 60 * 1000;
 
 const overview = (): BuildOverviewResponse => ({
   verdict: 'waiting',
@@ -70,17 +69,9 @@ const link = {
 };
 
 describe('report links', () => {
-  it('expires after 7, 30 or 90 days, 30 by default', () => {
-    expect(expiryOf(7, now).getTime() - now.getTime()).toBe(7 * DAY);
-    expect(expiryOf(90, now).getTime() - now.getTime()).toBe(90 * DAY);
-    expect(expiryOf(undefined, now).getTime() - now.getTime()).toBe(30 * DAY);
-    expect(expiryOf(365, now).getTime() - now.getTime()).toBe(30 * DAY);
-  });
-
-  it('refuses an expired or revoked link without build data', () => {
-    expect(linkState({ expiresAt: new Date(now.getTime() + 1), revokedAt: null }, now)).toBe('ok');
-    expect(linkState({ expiresAt: now, revokedAt: null }, now)).toBe('expired');
-    expect(linkState({ expiresAt: new Date(now.getTime() + DAY), revokedAt: now }, now)).toBe('expired');
+  it('opens for as long as the build is kept and closes when revoked', () => {
+    expect(linkState({ revokedAt: null })).toBe('ok');
+    expect(linkState({ revokedAt: now })).toBe('expired');
   });
 
   it('makes a 256-bit token unrelated to the build', () => {

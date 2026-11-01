@@ -12,7 +12,6 @@ CREATE TABLE "ReportLink" (
     "language" TEXT NOT NULL,
     "createdById" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "expiresAt" TIMESTAMP(3) NOT NULL,
     "revokedAt" TIMESTAMP(3),
 
     CONSTRAINT "ReportLink_pkey" PRIMARY KEY ("id")

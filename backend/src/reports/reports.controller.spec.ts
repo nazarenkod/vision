@@ -7,7 +7,6 @@ import { PrismaService } from '../prisma/prisma.service';
 import { BuildOverviewService } from '../builds/build-overview.service';
 
 const now = new Date();
-const later = new Date(now.getTime() + 24 * 60 * 60 * 1000);
 
 const setup = (over: { link?: object | null; build?: object | null } = {}) => {
   const prisma = {
@@ -25,7 +24,6 @@ const setup = (over: { link?: object | null; build?: object | null } = {}) => {
               sections: '["sum","chg"]',
               language: 'uk',
               createdById: 'anna',
-              expiresAt: later,
               revokedAt: null,
             }
           : over.link
@@ -77,7 +75,6 @@ describe('ReportsController', () => {
     const link = await controller.create({ id: 'anna' } as never, 'b', {
       sections: ['chg', 'sum', 'nonsense'],
       language: 'uk',
-      days: 7,
     });
     const data = prisma.reportLink.create.mock.calls[0][0].data;
     expect(JSON.parse(data.sections)).toEqual(['sum', 'chg']);
@@ -118,8 +115,8 @@ describe('ReportsController', () => {
     expect(sent(res)).toEqual({ state: 'gone' });
   });
 
-  it('says a link is expired and shows nothing of the build', async () => {
-    const { controller, res } = setup({ link: { buildId: 'b', expiresAt: now, revokedAt: null } });
+  it('says a revoked link is closed and shows nothing of the build', async () => {
+    const { controller, res } = setup({ link: { buildId: 'b', revokedAt: now } });
     await controller.publicReport('t', undefined, res as never);
     expect(sent(res)).toEqual({ state: 'expired' });
   });

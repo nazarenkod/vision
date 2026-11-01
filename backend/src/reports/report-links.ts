@@ -5,20 +5,11 @@ import { randomBytes } from 'crypto';
 import { TestStatus } from '@prisma/client';
 import { BuildOverviewResponse } from '../builds/build-overview.service';
 
-export const EXPIRY_DAYS = [7, 30, 90] as const;
-export const DEFAULT_EXPIRY_DAYS = 30;
 export const SECTIONS = ['sum', 'chg', 'bugs', 'dev', 'feat', 'a11y'] as const;
 export type Section = (typeof SECTIONS)[number];
 export type ReportLanguage = 'en' | 'uk';
 // a report lists this many changed screenshots and counts the rest (REQ-031-44)
 export const MAX_CHANGES = 20;
-
-const DAY_MS = 24 * 60 * 60 * 1000;
-
-export function expiryOf(days: number | undefined, now: Date): Date {
-  const chosen = (EXPIRY_DAYS as readonly number[]).includes(days ?? -1) ? days : DEFAULT_EXPIRY_DAYS;
-  return new Date(now.getTime() + chosen * DAY_MS);
-}
 
 /** 32 random bytes: nothing about the build is in it, and guessing one is hopeless (REQ-031-67). */
 export const newToken = (): string => randomBytes(32).toString('base64url');
@@ -31,9 +22,8 @@ export const sectionsOf = (input: unknown): Section[] => {
 
 export const languageOf = (input: unknown): ReportLanguage => (input === 'uk' ? 'uk' : 'en');
 
-export function linkState(link: { expiresAt: Date; revokedAt: Date | null }, now: Date): 'ok' | 'expired' {
-  return link.revokedAt || link.expiresAt <= now ? 'expired' : 'ok';
-}
+/** A link opens for as long as its build is kept; only revoking ends it (REQ-031-61). */
+export const linkState = (link: { revokedAt: Date | null }): 'ok' | 'expired' => (link.revokedAt ? 'expired' : 'ok');
 
 /** The run fields a report reads. */
 export interface ReportRun {

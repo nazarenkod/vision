@@ -368,7 +368,7 @@ model ReportLink {
   language    String
   createdById String?
   createdAt   DateTime  @default(now())
-  expiresAt   DateTime
+  // no end date: a link opens for as long as the build is kept; revoking ends it
   revokedAt   DateTime?
 
   @@index([buildId])

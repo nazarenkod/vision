@@ -2,11 +2,8 @@ import React from "react";
 import {
   Box,
   Button,
-  Checkbox,
   Dialog,
-  FormControlLabel,
   IconButton,
-  ToggleButton,
   Tooltip,
   Typography,
 } from "@mui/material";
@@ -19,7 +16,6 @@ import {
 } from "@mui/icons-material";
 import { tokens } from "../../theme";
 import { useT } from "../../i18n";
-import type { MessageKey } from "../../i18n";
 import { useUserState } from "../../contexts";
 import { reportsService } from "../../services";
 import {
@@ -28,14 +24,10 @@ import {
   PublicReport,
   ReportLink,
   ReportSection,
-  SHORT_SECTIONS,
 } from "../../types/buildOverview";
 import { reportText } from "../../_helpers/reportText.helper";
 import { ReportDocument, textIn } from "./ReportDocument";
-import { SlidingToggleGroup } from "../motion/SlidingToggleGroup";
 import { localeOf, Language } from "../../i18n/translate";
-
-const DAYS = [7, 30, 90];
 
 export const publicReportUrl = (token: string) =>
   `${window.location.origin}/r/${encodeURIComponent(token)}`;
@@ -47,60 +39,11 @@ export const printReportUrl = (
 ) =>
   `${window.location.origin}/report/${buildId}?sections=${sections.join(",")}&lang=${language}`;
 
-const Segmented: React.FunctionComponent<{
-  value: string;
-  onChange: (value: string) => void;
-  options: Array<{ value: string; label: string }>;
-  ariaLabel: string;
-}> = ({ value, onChange, options, ariaLabel }) => (
-  <SlidingToggleGroup
-    exclusive
-    size="small"
-    value={value}
-    aria-label={ariaLabel}
-    onChange={(_event, next: string | null) => next && onChange(next)}
-    sx={{ alignSelf: "flex-start" }}
-  >
-    {options.map((option) => (
-      <ToggleButton
-        key={option.value}
-        value={option.value}
-        data-testid={`segment-${option.value}`}
-      >
-        {option.label}
-      </ToggleButton>
-    ))}
-  </SlidingToggleGroup>
-);
-
-const SideTitle: React.FunctionComponent<{ children: React.ReactNode }> = ({
-  children,
-}) => (
-  <Typography
-    sx={{
-      fontFamily: tokens.mono,
-      fontSize: 10.5,
-      letterSpacing: "0.06em",
-      textTransform: "uppercase",
-      color: tokens.textSecondary,
-      display: "flex",
-      alignItems: "center",
-      gap: 1,
-      "&::after": {
-        content: '""',
-        flex: 1,
-        height: "1px",
-        bgcolor: tokens.border,
-      },
-    }}
-  >
-    {children}
-  </Typography>
-);
-
 /**
- * A build's report (031): pick what goes in, see it, share it. Vision only
- * copies and prints; it sends nothing anywhere itself (REQ-031-49).
+ * A build's report (031): the whole report as readers will see it, and the
+ * ways to share it. Nothing to set up: every section, in the interface's
+ * language. Vision only copies and prints; it sends nothing anywhere
+ * itself (REQ-031-49).
  */
 export const ReportDialog: React.FunctionComponent<{
   open: boolean;
@@ -108,12 +51,8 @@ export const ReportDialog: React.FunctionComponent<{
   overview: BuildOverview;
   onClose: () => void;
 }> = ({ open, buildId, overview, onClose }) => {
-  const { t, language: interfaceLanguage, formatDate } = useT();
+  const { t, language, formatDate } = useT();
   const { user } = useUserState();
-  const [full, setFull] = React.useState(false);
-  const [off, setOff] = React.useState<Set<ReportSection>>(new Set());
-  const [language, setLanguage] = React.useState<Language>(interfaceLanguage);
-  const [days, setDays] = React.useState(30);
   const [report, setReport] = React.useState<PublicReport | null>(null);
   const [links, setLinks] = React.useState<ReportLink[]>([]);
   const [copied, setCopied] = React.useState<string | null>(null);
@@ -136,9 +75,6 @@ export const ReportDialog: React.FunctionComponent<{
     // the preview follows the overview: a decision elsewhere shows up here too
   }, [open, buildId, overview.asOf]);
 
-  const offered = full ? ALL_SECTIONS : SHORT_SECTIONS;
-  const sections = offered.filter((section) => !off.has(section));
-
   const flash = (what: string) => {
     setCopied(what);
     setTimeout(
@@ -157,31 +93,35 @@ export const ReportDialog: React.FunctionComponent<{
 
   const copyLink = async () => {
     const link = await reportsService.createLink(buildId, {
-      sections,
+      sections: ALL_SECTIONS,
       language,
-      days,
     });
     setLinks((current) => [link, ...current]);
     await copy("link", publicReportUrl(link.token));
   };
-  // text and PDF carry the link too when there is one; otherwise the build itself
+  // the text carries the link when there is one; otherwise the build itself
   const latestLink = links[0];
   const textUrl = latestLink
     ? publicReportUrl(latestLink.token)
     : `${window.location.origin}/${overview.build.projectId}?buildId=${buildId}`;
+  const copyText = (format: "slack" | "jira") =>
+    copy(
+      format,
+      reportText(
+        overview,
+        format,
+        textUrl,
+        textIn(language),
+        localeOf(language),
+      ),
+    );
 
-  const label = (key: string, what: string, Icon: typeof LinkRounded) => (
-    <>
-      <Icon sx={{ fontSize: 18 }} />
-      <Box component="span" sx={{ flex: 1, textAlign: "left" }}>
-        {copied === what
-          ? t("report.copied")
-          : copied === "failed"
-            ? t("report.copyFailed")
-            : key}
-      </Box>
-    </>
-  );
+  const label = (text: string, what: string) =>
+    copied === what
+      ? t("report.copied")
+      : copied === "failed"
+        ? t("report.copyFailed")
+        : text;
 
   return (
     <Dialog
@@ -194,12 +134,14 @@ export const ReportDialog: React.FunctionComponent<{
     >
       <Box
         sx={{
-          height: 54,
+          minHeight: 54,
           display: "flex",
           alignItems: "center",
-          gap: 1.25,
+          flexWrap: "wrap",
+          gap: 1,
           px: 2.5,
           pr: 1.5,
+          py: 1,
           borderBottom: `1px solid ${tokens.border}`,
           flexShrink: 0,
         }}
@@ -221,178 +163,90 @@ export const ReportDialog: React.FunctionComponent<{
           })}
         </Typography>
         <Box sx={{ flex: 1 }} />
+        <Tooltip title={canLink ? "" : t("report.editorsOnly")}>
+          <span>
+            <Button
+              size="small"
+              variant="contained"
+              startIcon={<LinkRounded />}
+              disabled={!canLink || !report}
+              onClick={copyLink}
+              data-testid="copyReportLink"
+            >
+              {label(t("report.copyLink"), "link")}
+            </Button>
+          </span>
+        </Tooltip>
+        <Button
+          size="small"
+          variant="outlined"
+          startIcon={<TagRounded />}
+          data-testid="copySlackText"
+          onClick={() => copyText("slack")}
+        >
+          {label(t("report.slackText"), "slack")}
+        </Button>
+        <Button
+          size="small"
+          variant="outlined"
+          startIcon={<ContentCopyRounded />}
+          data-testid="copyJiraText"
+          onClick={() => copyText("jira")}
+        >
+          {label(t("report.jiraComment"), "jira")}
+        </Button>
+        <Button
+          size="small"
+          variant="outlined"
+          startIcon={<DownloadRounded />}
+          data-testid="printReport"
+          href={printReportUrl(buildId, ALL_SECTIONS, language)}
+          target="_blank"
+          rel="noreferrer"
+        >
+          {t("report.pdf")}
+        </Button>
         <IconButton onClick={onClose} aria-label={t("common.cancel")}>
           <Close />
         </IconButton>
       </Box>
-      <Box sx={{ flex: 1, display: "flex", minHeight: 0 }}>
+      {links.length > 0 && (
         <Box
           sx={{
-            width: 300,
-            flexShrink: 0,
-            borderRight: `1px solid ${tokens.border}`,
-            p: 2,
             display: "flex",
-            flexDirection: "column",
-            gap: 1.75,
-            overflow: "auto",
+            alignItems: "center",
+            flexWrap: "wrap",
+            gap: 1,
+            px: 2.5,
+            py: 0.75,
+            borderBottom: `1px solid ${tokens.border}`,
+            fontSize: 12,
+            color: tokens.textSecondary,
           }}
         >
-          <Segmented
-            value={full ? "full" : "short"}
-            onChange={(next) => setFull(next === "full")}
-            options={[
-              { value: "short", label: t("report.short") },
-              { value: "full", label: t("report.full") },
-            ]}
-            ariaLabel={t("report.sections")}
-          />
-          <SideTitle>{t("report.sections")}</SideTitle>
-          <Box sx={{ display: "flex", flexDirection: "column" }}>
-            {ALL_SECTIONS.map((section) => (
-              <FormControlLabel
-                key={section}
-                disabled={!offered.includes(section)}
-                control={
-                  <Checkbox
-                    size="small"
-                    data-testid={`reportOption-${section}`}
-                    checked={offered.includes(section) && !off.has(section)}
-                    onChange={() =>
-                      setOff((current) => {
-                        const next = new Set(current);
-                        if (next.has(section)) next.delete(section);
-                        else next.add(section);
-                        return next;
-                      })
-                    }
-                  />
-                }
-                label={t(`report.section.${section}` as MessageKey)}
-              />
-            ))}
-          </Box>
-          <SideTitle>{t("report.language")}</SideTitle>
-          <Segmented
-            value={language}
-            onChange={(next) => setLanguage(next as Language)}
-            options={[
-              { value: "en", label: "English" },
-              { value: "uk", label: "Українська" },
-            ]}
-            ariaLabel={t("report.language")}
-          />
-          <SideTitle>{t("report.share")}</SideTitle>
-          <Typography sx={{ fontSize: 12, color: tokens.textSecondary }}>
-            {t("report.expiresIn")}
-          </Typography>
-          <Segmented
-            value={String(days)}
-            onChange={(next) => setDays(Number(next))}
-            options={DAYS.map((value) => ({
-              value: String(value),
-              label: t("report.days", { count: value }),
-            }))}
-            ariaLabel={t("report.expiresIn")}
-          />
-          <Tooltip title={canLink ? "" : t("report.editorsOnly")}>
-            <span>
-              <Button
-                fullWidth
-                variant="contained"
-                disabled={!canLink || !report}
-                onClick={copyLink}
-                data-testid="copyReportLink"
-                sx={{ justifyContent: "flex-start", gap: 1 }}
-              >
-                {label(t("report.copyLink"), "link", LinkRounded)}
-              </Button>
-            </span>
-          </Tooltip>
-          <Button
-            fullWidth
-            variant="outlined"
-            data-testid="copySlackText"
-            onClick={() =>
-              copy(
-                "slack",
-                reportText(
-                  overview,
-                  "slack",
-                  textUrl,
-                  textIn(language),
-                  localeOf(language),
-                ),
-              )
-            }
-            sx={{ justifyContent: "flex-start", gap: 1 }}
-          >
-            {label(t("report.slackText"), "slack", TagRounded)}
-          </Button>
-          <Button
-            fullWidth
-            variant="outlined"
-            data-testid="copyJiraText"
-            onClick={() =>
-              copy(
-                "jira",
-                reportText(
-                  overview,
-                  "jira",
-                  textUrl,
-                  textIn(language),
-                  localeOf(language),
-                ),
-              )
-            }
-            sx={{ justifyContent: "flex-start", gap: 1 }}
-          >
-            {label(t("report.jiraComment"), "jira", ContentCopyRounded)}
-          </Button>
-          <Button
-            fullWidth
-            variant="outlined"
-            data-testid="printReport"
-            href={printReportUrl(buildId, sections, language)}
-            target="_blank"
-            rel="noreferrer"
-            sx={{ justifyContent: "flex-start", gap: 1 }}
-          >
-            <DownloadRounded sx={{ fontSize: 18 }} />
-            <Box component="span" sx={{ flex: 1, textAlign: "left" }}>
-              {t("report.pdf")}
-            </Box>
-          </Button>
-          <SideTitle>{t("report.links")}</SideTitle>
-          {links.length === 0 && (
-            <Typography sx={{ fontSize: 12, color: tokens.textSecondary }}>
-              {t("report.noLinks")}
-            </Typography>
-          )}
+          <span>{t("report.links")}:</span>
           {links.map((link) => (
             <Box
               key={link.id}
               data-testid="reportLink"
               sx={{
-                display: "flex",
+                display: "inline-flex",
                 alignItems: "center",
-                gap: 1,
+                gap: 0.5,
                 border: `1px solid ${tokens.border}`,
-                borderRadius: 2,
-                px: 1,
-                py: 0.75,
-                fontSize: 12,
+                borderRadius: 999,
+                pl: 1.25,
+                pr: 0.25,
+                color: tokens.text,
               }}
             >
-              <Box sx={{ flex: 1, minWidth: 0 }}>
-                {t("report.linkUntil", {
-                  date: formatDate(link.expiresAt, {
-                    day: "numeric",
-                    month: "numeric",
-                  }),
-                  who: link.createdBy ?? t("overview.someone"),
-                })}
-              </Box>
+              {t("report.linkBy", {
+                who: link.createdBy ?? t("overview.someone"),
+                date: formatDate(link.createdAt, {
+                  day: "numeric",
+                  month: "numeric",
+                }),
+              })}
               {(user?.role === "admin" || link.createdById === user?.id) && (
                 <Button
                   size="small"
@@ -405,6 +259,7 @@ export const ReportDialog: React.FunctionComponent<{
                         ),
                       )
                   }
+                  sx={{ minWidth: 0, py: 0 }}
                 >
                   {t("report.revoke")}
                 </Button>
@@ -412,23 +267,24 @@ export const ReportDialog: React.FunctionComponent<{
             </Box>
           ))}
         </Box>
-        <Box
-          sx={{
-            flex: 1,
-            minWidth: 0,
-            overflow: "auto",
-            bgcolor: tokens.lightbox,
-            p: 3,
-          }}
-        >
-          {report && (
-            <ReportDocument
-              report={report}
-              sections={sections}
-              language={language}
-            />
-          )}
-        </Box>
+      )}
+      <Box
+        sx={{
+          flex: 1,
+          minHeight: 0,
+          overflow: "auto",
+          bgcolor: tokens.lightbox,
+          p: 3,
+        }}
+      >
+        {report && (
+          <ReportDocument
+            report={report}
+            sections={ALL_SECTIONS}
+            language={language}
+            wide
+          />
+        )}
       </Box>
     </Dialog>
   );

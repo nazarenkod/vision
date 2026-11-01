@@ -29,8 +29,8 @@
 |---|---|
 | `GET /builds/:id/overview` | зведення збірки для вкладки Overview: вердикт, числа, прогрес рев'ю з іменами людей, пристрої, фічі, баги Jira (нові й відомі), порівняння з попередньою збіркою гілки, `asOf`. Без AI |
 | `GET /builds/:id/report` | звіт збірки з усіма розділами: зведення, до 20 змін зі знімками (`moreChanges` — решта), рядки доступності |
-| `GET /builds/:id/report-links` | дійсні публічні посилання збірки з автором і терміном |
-| `POST /builds/:id/report-links` | `admin`, `editor`: `{ sections, language, days }` (7, 30 або 90, типово 30) → посилання з `token` |
+| `GET /builds/:id/report-links` | невідкликані публічні посилання збірки з автором і датою |
+| `POST /builds/:id/report-links` | `admin`, `editor`: `{ sections, language }` → посилання з `token`, без терміну дії |
 | `DELETE /report-links/:id` | відкликати: автор або `admin`, інакше `403` |
 | `GET /public/reports/:token` | **без входу** ([ADR-0022](../decisions/0022-public-report-links.md)): звіт із розділами й мовою посилання, лише білий список полів; `{ state: "expired" }` або `{ state: "gone" }` без даних збірки. `ETag`; той самий `If-None-Match` — `304` |
 

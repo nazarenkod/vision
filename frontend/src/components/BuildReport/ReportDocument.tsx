@@ -69,26 +69,44 @@ const tableSx = {
   "& .r": { textAlign: "right" },
 };
 
+const SHOT_SX = { width: 72, borderRadius: 1, flexShrink: 0 };
+
+/** A screenshot of the report; one whose file is gone shows as an empty frame. */
 const Shot: React.FunctionComponent<{ name: string | null; alt: string }> = ({
   name,
   alt,
-}) =>
-  name ? (
+}) => {
+  const [broken, setBroken] = React.useState(false);
+  if (!name) return null;
+  return broken ? (
+    <Box
+      data-testid="reportShotMissing"
+      role="img"
+      aria-label={alt}
+      sx={{
+        ...SHOT_SX,
+        height: 150,
+        border: `1px dashed ${tokens.borderStrong}`,
+        bgcolor: tokens.subtle,
+      }}
+    />
+  ) : (
     <Box
       component="img"
       src={staticService.getImage(name)}
       alt={alt}
       loading="lazy"
+      onError={() => setBroken(true)}
       sx={{
-        width: 72,
+        ...SHOT_SX,
         maxHeight: 150,
         objectFit: "contain",
-        borderRadius: 1,
         boxShadow: tokens.shadowShot,
         bgcolor: tokens.surface,
       }}
     />
-  ) : null;
+  );
+};
 
 /**
  * A build's report (031): the same sheet in the dialog's preview, on the

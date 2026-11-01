@@ -3,7 +3,6 @@ import { Role, User } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { BuildOverviewService } from '../builds/build-overview.service';
 import {
-  expiryOf,
   languageOf,
   linkState,
   newToken,
@@ -23,7 +22,6 @@ export interface ReportLinkDto {
   createdBy: string | null;
   createdById: string | null;
   createdAt: Date;
-  expiresAt: Date;
 }
 
 const nameOf = (user: { firstName: string | null; lastName: string | null } | null | undefined) =>
@@ -39,7 +37,7 @@ export class ReportsService {
 
   async create(
     buildId: string,
-    body: { sections?: unknown; language?: unknown; days?: number },
+    body: { sections?: unknown; language?: unknown },
     user: Pick<User, 'id'>
   ): Promise<ReportLinkDto> {
     const build = await this.prismaService.build.findUnique({ where: { id: buildId }, select: { projectId: true } });
@@ -52,7 +50,6 @@ export class ReportsService {
         sections: JSON.stringify(sectionsOf(body.sections)),
         language: languageOf(body.language),
         createdById: user.id,
-        expiresAt: expiryOf(body.days, new Date()),
       },
     });
     return (await this.toDtos([link]))[0];
@@ -60,7 +57,7 @@ export class ReportsService {
 
   async list(buildId: string): Promise<ReportLinkDto[]> {
     const links = await this.prismaService.reportLink.findMany({
-      where: { buildId, revokedAt: null, expiresAt: { gt: new Date() } },
+      where: { buildId, revokedAt: null },
       orderBy: { createdAt: 'desc' },
     });
     return this.toDtos(links);
@@ -105,7 +102,7 @@ export class ReportsService {
   /** What a reader without an account sees (REQ-031-62…65). */
   async publicReport(token: string): Promise<PublicReport> {
     const link = await this.prismaService.reportLink.findUnique({ where: { token } });
-    if (!link || linkState(link, new Date()) === 'expired') return { state: 'expired' };
+    if (!link || linkState(link) === 'expired') return { state: 'expired' };
     const build = await this.prismaService.build.findUnique({ where: { id: link.buildId }, select: { id: true } });
     if (!build) return { state: 'gone' };
     const [overview, runs, author] = await Promise.all([
@@ -133,7 +130,6 @@ export class ReportsService {
       language: string;
       createdById: string | null;
       createdAt: Date;
-      expiresAt: Date;
     }>
   ): Promise<ReportLinkDto[]> {
     const ids = [...new Set(links.map((link) => link.createdById).filter(Boolean))];
@@ -152,7 +148,6 @@ export class ReportsService {
       createdBy: link.createdById ? (names.get(link.createdById) ?? null) : null,
       createdById: link.createdById,
       createdAt: link.createdAt,
-      expiresAt: link.expiresAt,
     }));
   }
 }

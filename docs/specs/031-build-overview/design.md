@@ -38,7 +38,7 @@
 | назва фічі | `backend/src/visual-bugs/visual-bug.ts` | наявний `featureOf` — та сама фіча, що в назві бага |
 | баги доступності збірки | `backend/src/a11y/a11y-issues.service.ts` | новий метод: ключі Jira проблем, що трапились у прогонах збірки; читає лише прогони з `a11yTotalCount > 0`, кеш за збіркою й найпізнішим `updatedAt` |
 | журнал рішень | `backend/src/test-runs/decision-undo.service.ts` | пише автора рішення в прогон (`decidedById`), Undo його стирає |
-| посилання (чисте) | `backend/src/reports/report-links.ts` | термін (7/30/90), чинність, обрізання до розділів, до 20 змін, люди лише на ім'я |
+| посилання (чисте) | `backend/src/reports/report-links.ts` | чинність (лише відкликання), обрізання до розділів, до 20 змін, люди лише на ім'я |
 | посилання (сервіс, маршрути) | `backend/src/reports/` | `GET /builds/:id/report` (повний звіт для діалогу й друку), `POST /builds/:id/report-links` (editor, admin), `GET /builds/:id/report-links`, `DELETE /report-links/:id` (автор або admin), `GET /public/reports/:token` без входу, з `ETag` |
 | типи | `frontend/src/types/` | `BuildOverview`, `ReportLink`, `PublicReport` |
 | сервіси | `frontend/src/services/` | `frontend/src/services/buildOverview.service.ts`, `frontend/src/services/reports.service.ts` |
@@ -58,7 +58,7 @@
 Міграція лише додавальна ([ADR-0003](../../decisions/0003-additive-schema-only.md)):
 
 - **Нова таблиця `ReportLink`:** `id`, `token` (унікальний, 32 випадкові байти base64url), `buildId`,
-  `projectId`, `sections` (JSON-рядок), `language`, `createdById`, `createdAt`, `expiresAt`,
+  `projectId`, `sections` (JSON-рядок), `language`, `createdById`, `createdAt`,
   `revokedAt?`. Індекси — `token` і `buildId`. **Без зовнішніх ключів на `Build` і `User`:** upstream
   видаляє збірки (ліміт збірок, гілки), і обмеження зламало б це видалення. Посилання на видалену
   збірку показує «збірки більше немає» (REQ-031-65).
@@ -134,8 +134,8 @@ sequenceDiagram
 | REQ-031-27 | `frontend/src/_helpers/reviewQueue.helper.test.ts › skips runs someone else decided` |
 | REQ-031-28 | `frontend/integration_tests/test/buildOverview.spec.ts › Esc returns to where the review was opened, focus on the same row` |
 | REQ-031-29 | `frontend/src/_helpers/route.helpers.test.ts › keeps build, run and queue in the address` |
-| REQ-031-40 | `frontend/integration_tests/test/buildReport.spec.ts › previews the report as settings change` |
-| REQ-031-41 | `frontend/src/components/BuildReport/ReportDocument.test.tsx › Short has Summary, Changes and Jira bugs; Full adds the rest` |
+| REQ-031-40 | `frontend/integration_tests/test/buildReport.spec.ts › previews the whole report and shares it` |
+| REQ-031-41 | знято 2026-11-01 — `frontend/integration_tests/test/buildReport.spec.ts › previews the whole report and shares it` |
 | REQ-031-42 | `frontend/src/components/BuildReport/ReportDocument.test.tsx › renders in the report language, not the interface one` |
 | REQ-031-43 | `frontend/src/components/BuildReport/ReportDocument.test.tsx › summary names the project, build, branch, time, devices and numbers` |
 | REQ-031-44 | `backend/src/reports/report-links.spec.ts › lists up to 20 changes and counts the rest` |
@@ -145,10 +145,10 @@ sequenceDiagram
 | REQ-031-48 | `backend/src/builds/build-overview.service.spec.ts › builds the overview without calling AI` |
 | REQ-031-49 | manual: у коді звіту (`frontend/src/components/BuildReport/`, `frontend/src/pages/ReportPage.tsx`, `frontend/src/services/reports.service.ts`, `backend/src/reports/`) немає звернень ні до чого, крім API Vision; перевірено пошуком і рев'ю диффу 2026-10-31 |
 | REQ-031-60 | `backend/src/reports/reports.controller.spec.ts › creates a link with the chosen sections and language` |
-| REQ-031-61 | `backend/src/reports/report-links.spec.ts › expires after 7, 30 or 90 days, 30 by default` |
+| REQ-031-61 | `backend/src/reports/report-links.spec.ts › opens for as long as the build is kept and closes when revoked` |
 | REQ-031-62 | `backend/src/reports/reports.controller.spec.ts › serves a report without signing in and nothing else` |
 | REQ-031-63 | `frontend/integration_tests/test/publicReport.spec.ts › updates the open page within 10 s` |
-| REQ-031-64 | `backend/src/reports/report-links.spec.ts › refuses an expired or revoked link without build data`; `backend/src/reports/reports.controller.spec.ts › says a link is expired and shows nothing of the build` |
+| REQ-031-64 | `backend/src/reports/report-links.spec.ts › opens for as long as the build is kept and closes when revoked`; `backend/src/reports/reports.controller.spec.ts › says a revoked link is closed and shows nothing of the build` |
 | REQ-031-65 | `backend/src/reports/reports.controller.spec.ts › says the build is gone when it was deleted` |
 | REQ-031-66 | `backend/src/reports/reports.controller.spec.ts › lets the author or an admin revoke a link` |
 | REQ-031-67 | `backend/src/reports/report-links.spec.ts › makes a 256-bit token unrelated to the build` |

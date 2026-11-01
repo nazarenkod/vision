@@ -103,7 +103,6 @@ export interface ReportLink {
   createdBy: string | null;
   createdById: string | null;
   createdAt: string;
-  expiresAt: string;
 }
 
 export interface PublicReport {

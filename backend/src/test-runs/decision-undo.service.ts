@@ -84,6 +84,9 @@ export class DecisionUndoService {
     for (const id of ids) {
       const before = await this.state(id);
       await decide(id);
+      // the build overview counts decisions per person (031); the journal itself
+      // is pruned after a week, the run keeps this for as long as it lives
+      await this.prismaService.testRun.update({ where: { id }, data: { decidedById: userId ?? null } });
       const after = await this.state(id);
       if (before && after) items.push({ testRunId: id, before, after });
     }
@@ -161,7 +164,11 @@ export class DecisionUndoService {
         await tx.testVariation.update({ where: { id: step.id }, data: step.data });
         return;
       case 'status':
-        await tx.testRun.update({ where: { id: step.testRunId }, data: { status: step.status as TestStatus } });
+        // an undone decision is nobody's (031)
+        await tx.testRun.update({
+          where: { id: step.testRunId },
+          data: { status: step.status as TestStatus, decidedById: null },
+        });
         return;
       default:
         // files go after the commit

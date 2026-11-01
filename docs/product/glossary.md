@@ -24,6 +24,7 @@
 | Еталонний пристрій (reference device) | колишнє налаштування: пристрій, з яким довідково порівнювались інші ([007](../specs/007-cross-device-reference/spec.md)); прибрано в [020](../specs/020-remove-reference-device/spec.md) |
 | UI-дерево (`uiTree`) | Appium page source (XML), надісланий разом зі скриншотом |
 | Елемент, ключ елемента (`nodeKey`) | `id:<resource-id або Compose tag>`, інакше `Class:текст` або `path:…`; повтори того ж id — `#1`, `#2` |
+| Інтерактивний елемент (control) | вузол UI-дерева, який видно (visible, ненульові ширина й висота), увімкнений (enabled) і клікабельний (clickable), площею не більше 50 % екрана; більший — це розкладка, а не елемент керування. Його перевіряють правила доступності ([003](../specs/003-accessibility-checks/spec.md)) |
 | Безіменний елемент (nameless element) | вузол UI-дерева без id, тексту й підпису; вибирається й називається в правилі селектором `xpath:` ([027](../specs/027-nameless-elements/spec.md), експеримент) |
 | Опора (anchor) | стабільний елемент (з id або текстом), від якого селектор `xpath:` іде вниз до нащадка або вгору до предка ([027](../specs/027-nameless-elements/spec.md)) |
 | Селектор (selector) | як правило знаходить елементи: `id:`, `class:`, `text:` (рядок або `/регулярний вираз/`), `xpath:` — шлях від опори ([ADR-0021](../decisions/0021-xpath-selectors-from-stable-elements.md)) |

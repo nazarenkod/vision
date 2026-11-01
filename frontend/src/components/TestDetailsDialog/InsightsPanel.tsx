@@ -676,7 +676,8 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
         <Typography variant="body2" color="textSecondary">
           {tx("panel.noTree", {
             code: (
-              <code>
+              // one long word: it would run past the panel instead of wrapping
+              <code style={{ overflowWrap: "anywhere" }}>
                 TestRunOptions.builder().uiTree(driver.getPageSource())
               </code>
             ),

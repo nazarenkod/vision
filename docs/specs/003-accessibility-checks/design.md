@@ -41,3 +41,4 @@
 | REQ-003-08 | `backend/src/a11y/a11y-issues.spec.ts › takes filed bugs out of the new count and false positives out of every count` |
 | REQ-003-09 | manual: відкрити знімок з деревом → вкладка Accessibility, клік по картці |
 | REQ-003-14 | `frontend/integration_tests/test/a11yProblems.spec.ts › switches the frames on the screenshot from the Accessibility tab` |
+| REQ-003-15 | `frontend/integration_tests/test/testDetailsDialog.spec.ts › says accessibility needs the UI tree when it cannot be read` |

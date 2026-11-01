@@ -8,7 +8,7 @@ upstream VRT, а згодом зможе працювати й на живій.
 
 | Таблиця | Що додано | Навіщо |
 |---|---|---|
-| `TestRun` | `uiTreeName`, `baselineUiTreeName`, `uiTreeOptions`, `a11yReportName`, `a11yNewCount`, `a11yTotalCount`, `diffRegions`, `changeSignature`, `imageThumbnailName`, `diffThumbnailName`, `captureWarnings`, `semanticChangeCount`, `componentChanges`, `featureName` | результати аналізу дерева: файли й лічильники; назва фічі з SDK для назви бага, поза ключем варіації ([ADR-0019](../decisions/0019-sdk-upstream-plus-ui-tree-and-feature.md)); `captureWarnings` з [020](../specs/020-remove-reference-device/spec.md) не пишеться й не читається |
+| `TestRun` | `uiTreeName`, `baselineUiTreeName`, `uiTreeOptions`, `a11yReportName`, `a11yNewCount`, `a11yTotalCount`, `diffRegions`, `changeSignature`, `imageThumbnailName`, `diffThumbnailName`, `captureWarnings`, `semanticChangeCount`, `componentChanges`, `featureName`, `decidedById` | результати аналізу дерева: файли й лічильники; назва фічі з SDK для назви бага, поза ключем варіації ([ADR-0019](../decisions/0019-sdk-upstream-plus-ui-tree-and-feature.md)); хто прийняв чи відхилив прогон в інтерфейсі, Undo стирає — для прогресу рев'ю в огляді збірки ([031](../specs/031-build-overview/spec.md)); `captureWarnings` з [020](../specs/020-remove-reference-device/spec.md) не пишеться й не читається |
 | `TestVariation`, `Baseline` | `baselineUiTreeName` / `uiTreeName` | дерево еталона йде разом із картинкою |
 | `Project` | `jiraUrl`, `jiraToken` (спільний, необов'язковий), `jiraEmail`, `jiraIssueType`, `jiraLinkType`, `uiTreeSettings` (JSON); `bulkApproveVariations`, `bulkApproveGroupBy` — від прибраних груп варіацій ([022](../specs/022-remove-variation-groups/spec.md)), лишаються в рядку, але не читаються й не віддаються API | Jira і налаштування мобільного порівняння, заголовок екрана |
 | `User` | `jiraToken`, `jiraEmail`, `geminiApiKey`, `lastSignInAt` | особистий токен Jira ([ADR-0010](../decisions/0010-personal-jira-tokens.md)); особистий ключ Gemini для чернеток багів, лише записується ([ADR-0020](../decisions/0020-personal-gemini-keys.md)); останній вхід в інтерфейс паролем чи SSO, для сторінки Users ([018](../specs/018-ui-redesign/spec.md)) |
@@ -31,8 +31,9 @@ upstream VRT, а згодом зможе працювати й на живій.
 | `A11yDecision` | журнал рішень: `filed`, `linked`, `found`, `unlinked`, `ignored`, `restored` — хто, коли, по якій проблемі та якому багу |
 | `A11yIssueState` | рішення старого формату (по елементу на екрані). При старті API переносяться в `A11yProblem`; ті, чиє порушення вже не знайдено, діють як раніше на своєму екрані |
 | `CrossDeviceCheck` | що показало довідкове порівняння пристроїв і що вирішив рев'юер ([007](../specs/007-cross-device-reference/spec.md)); з [020](../specs/020-remove-reference-device/spec.md) нових записів немає, наявні лишаються |
-| `AiResult` | кеш відповідей AI за хешем вмісту ([010](../specs/010-ai-assist/spec.md)) |
+| `AiResult` | кеш відповідей AI за хешем вмісту ([010](../specs/010-ai-assist/spec.md)); `personal` — відповідь на особистому ключі Gemini, денний ліміт інстансу її не рахує ([025](../specs/025-bug-from-comparison/spec.md)) |
 | `VisualBug` | баг, заведений з порівняння: перевірка (`checkName` + `customTags`), прогін і профіль пристрою, з якого заведено, ключ і посилання Jira, назва, позначки (`marks`, JSON у пікселях знімка), хто й коли. Без зовнішніх ключів ([025](../specs/025-bug-from-comparison/spec.md)) |
+| `ReportLink` | публічне посилання на звіт збірки: випадковий `token` (32 байти), збірка й проєкт, розділи (`sections`, JSON) і мова звіту, хто створив, `revokedAt`. Терміну дії немає: посилання працює, доки зберігається збірка. Без зовнішніх ключів: upstream видаляє збірки й людей ([031](../specs/031-build-overview/spec.md), [ADR-0022](../decisions/0022-public-report-links.md)) |
 | `ReviewDecision` | журнал Approve і Reject для Undo: хто, що (`kind`), стан кожного прогону до й після (`items`, JSON), коли скасовано (`undoneAt`). Без зовнішніх ключів; записи старші за 7 днів видаляються при наступному записі ([ADR-0014](../decisions/0014-undo-through-decision-journal.md)) |
 
 ## Файли (`imageUploads` або S3)
@@ -69,3 +70,5 @@ upstream VRT, а згодом зможе працювати й на живій.
 | `20261029110000_add_review_decisions` | `ReviewDecision` |
 | `20261029200000_add_visual_bugs` | `TestRun.featureName`, `VisualBug` |
 | `20261029210000_add_user_gemini_key` | `User.geminiApiKey` |
+| `20261031100000_add_ai_result_personal` | `AiResult.personal` |
+| `20261031120000_add_report_links` | `TestRun.decidedById`, `ReportLink` |

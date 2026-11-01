@@ -46,10 +46,16 @@ const issueRef = (violationIds: string[]) => ({
 export const insightsService = {
   getGroups: (buildId: string) =>
     get<ChangeGroup[]>(`/test-runs/groups?buildId=${buildId}`),
+  // the API answers "nothing" with an empty body, which reads as "": a run whose
+  // report file is gone then crashed the review on report.summary
   getA11y: (testRunId: string) =>
-    get<A11yReport | null>(`/test-runs/${testRunId}/a11y`),
+    get<A11yReport | null>(`/test-runs/${testRunId}/a11y`).then(
+      (report) => report || null,
+    ),
   getStructure: (testRunId: string) =>
-    get<StructureInfo | null>(`/test-runs/${testRunId}/structure`),
+    get<StructureInfo | null>(`/test-runs/${testRunId}/structure`).then(
+      (structure) => structure || null,
+    ),
   getProjectInsights: (projectId: string, days: number) =>
     get<ProjectInsights>(`/analytics/${projectId}?days=${days}`),
   // each takes every issue of one problem (same rule, same component)

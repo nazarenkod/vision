@@ -43,8 +43,11 @@ import {
 import TestRunFilters from "./TestRunFilters";
 import { TestRun, TestStatus } from "../../types";
 import { testRunService } from "../../services";
-import { useNavigate } from "react-router";
-import { buildTestRunLocation } from "../../_helpers/route.helpers";
+import { useLocation, useNavigate } from "react-router";
+import {
+  buildTestRunLocation,
+  getQueryParams,
+} from "../../_helpers/route.helpers";
 import { TEST_RUN_SHOW_DIFF_KEY } from "../../constants";
 import {
   byAttention,
@@ -255,6 +258,18 @@ const TestRunList: React.FunctionComponent = () => {
       ),
     [],
   );
+
+  // a number on the overview opens this list on one status (031)
+  const location = useLocation();
+  const linkedStatus = getQueryParams(location.search).status;
+  React.useEffect(() => {
+    if (
+      linkedStatus &&
+      (Object.values(TestStatus) as string[]).includes(linkedStatus)
+    ) {
+      setStatusFilter([linkedStatus as TestStatus]);
+    }
+  }, [linkedStatus]);
 
   const resetFilters = React.useCallback(() => {
     setNameFilter("");
@@ -525,6 +540,7 @@ const TestRunList: React.FunctionComponent = () => {
                   buildTestRunLocation(
                     selectedBuild.id,
                     param.row["id"].toString(),
+                    { tab: "all" },
                   ),
                 );
               }}
@@ -592,7 +608,11 @@ const TestRunList: React.FunctionComponent = () => {
                     onToggle={toggleRun}
                     onToggleTag={toggleTag}
                     onOpen={(id) =>
-                      navigate(buildTestRunLocation(selectedBuild.id, id))
+                      navigate(
+                        buildTestRunLocation(selectedBuild.id, id, {
+                          tab: "all",
+                        }),
+                      )
                     }
                   />
                 )}

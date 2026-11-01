@@ -191,7 +191,7 @@ sequenceDiagram
 | REQ-025-44 | `backend/src/visual-bugs/bug-draft.spec.ts › asks for Ukrainian and takes only essence, steps, actual and expected` |
 | REQ-025-45 | `frontend/src/_helpers/bugReport.helper.test.ts › marks drafted fields until the person edits them`; `frontend/integration_tests/test/reportBug.spec.ts › fills the texts with AI on the person’s own Gemini key and marks them` |
 | REQ-025-46 | `frontend/src/_helpers/bugReport.helper.test.ts › asking again keeps the fields the person edited` |
-| REQ-025-47 | `backend/src/ai/ai.service.spec.ts › asks again instead of answering from the cache on a new attempt`; `backend/src/ai/ai.service.spec.ts › drafts on the person’s own key whatever the instance runs, outside its daily limit` |
+| REQ-025-47 | `backend/src/ai/ai.service.spec.ts › asks again instead of answering from the cache on a new attempt`; `backend/src/ai/ai.service.spec.ts › drafts on the person’s own key whatever the instance runs, outside its daily limit`; `backend/src/ai/ai.service.spec.ts › counts only the instance’s own calls toward its daily limit…` |
 | REQ-025-48 | `backend/src/ai/ai.service.spec.ts › gives up on a bug draft after 30 seconds`; `backend/src/ai/ai.service.spec.ts › refuses a bug draft without the person’s own Gemini key`; `frontend/src/_helpers/bugReport.helper.test.ts › keeps the note and the person’s fields when the draft fails` |
 | REQ-025-60 | `backend/src/visual-bugs/visual-bugs.service.spec.ts › lists the check’s bugs on every device and build` |
 | REQ-025-61 | manual: відкрити знімок перевірки з багом на тому самому пристрої — пунктирна рамка з ключем на чекпоінті, «Bug marks» її ховає |

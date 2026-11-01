@@ -1,5 +1,6 @@
 import { Rect, UiTree } from './ui-tree.types';
 import { elementsUnderRegions } from './structure-diff';
+import { IOS_STATUS_BAR_PT } from './comparison-inputs';
 
 export type NoiseHintKind = 'status-bar' | 'dynamic-text' | 'anti-aliasing';
 
@@ -10,8 +11,9 @@ export interface NoiseHint {
   ignoreArea?: Rect;
 }
 
-// Status bar height: 24 dp on Android, ~50 pt on iPhones with a notch or island.
-const STATUS_BAR = { android: 24, ios: 50 };
+// Status bar height: 24 dp on Android; on iOS the same band the comparison leaves out,
+// so a change the exclusion would hide is also the one called status-bar noise.
+const STATUS_BAR = { android: 24, ios: IOS_STATUS_BAR_PT };
 const TYPICAL_PHONE_WIDTH_DP = 411;
 // Times, dates, money amounts, counters: text that changes on every run.
 const DYNAMIC_TEXT =

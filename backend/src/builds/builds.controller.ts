@@ -27,6 +27,7 @@ import { ModifyBuildDto } from './dto/build-modify.dto';
 import { ProjectsService } from '../projects/projects.service';
 import { RoleGuard } from '../auth/guards/role.guard';
 import { Roles } from '../shared/roles.decorator';
+import { BuildOverviewResponse, BuildOverviewService } from './build-overview.service';
 
 @Controller('builds')
 @ApiTags('builds')
@@ -34,7 +35,8 @@ export class BuildsController {
   constructor(
     private buildsService: BuildsService,
     @Inject(forwardRef(() => ProjectsService))
-    private projectService: ProjectsService
+    private projectService: ProjectsService,
+    private buildOverviewService: BuildOverviewService
   ) {}
 
   @Get()
@@ -63,6 +65,14 @@ export class BuildsController {
   @UseGuards(JwtAuthGuard)
   getDetails(@Param('id', new ParseUUIDPipe()) id: string): Promise<BuildDto> {
     return this.buildsService.findOne(id);
+  }
+
+  // the build's Overview tab and report (031)
+  @Get(':id/overview')
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  getOverview(@Param('id', new ParseUUIDPipe()) id: string): Promise<BuildOverviewResponse> {
+    return this.buildOverviewService.overview(id);
   }
 
   @Delete(':id')

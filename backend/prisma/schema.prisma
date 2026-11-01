@@ -117,6 +117,9 @@ model TestRun {
   semanticChangeCount   Int?
   // [{componentId, before, after, bounds}] for grouping one component's change across screens
   componentChanges      String?
+  // who approved or rejected this run in the interface (031); null until someone
+  // decides, again after an undo, and on runs decided before this column existed
+  decidedById           String?
   baseline              Baseline?
   build                 Build          @relation(fields: [buildId], references: [id])
   project               Project?       @relation(fields: [projectId], references: [id])
@@ -285,6 +288,8 @@ model AiResult {
   cacheKey  String   @unique
   payload   String
   model     String?
+  // answered on a person's own Gemini key (025): outside the instance's daily limit
+  personal  Boolean?
   createdAt DateTime @default(now())
 }
 
@@ -346,4 +351,25 @@ model VisualBug {
   createdAt  DateTime @default(now())
 
   @@index([projectId, checkName, customTags])
+}
+
+// A public link to a build's report (031, ADR-0022). No relations on purpose:
+// upstream deletes builds and users, and a foreign key would stop it; a link to a
+// deleted build says so instead.
+model ReportLink {
+  id          String    @id @default(uuid())
+  // 32 random bytes, base64url; the only thing a reader needs
+  token       String    @unique
+  buildId     String
+  projectId   String
+  // JSON array of section ids: sum, chg, bugs, dev, feat, a11y
+  sections    String
+  // en | uk
+  language    String
+  createdById String?
+  createdAt   DateTime  @default(now())
+  // no end date: a link opens for as long as the build is kept; revoking ends it
+  revokedAt   DateTime?
+
+  @@index([buildId])
 }

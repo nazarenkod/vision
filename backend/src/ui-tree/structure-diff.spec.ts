@@ -69,6 +69,21 @@ describe('findNoiseHints', () => {
     ]);
   });
 
+  it('calls the whole iOS status bar band noise, as tall as the band the comparison leaves out', () => {
+    // a change at 52 pt is still the status bar on iPhones with an island; a 50 pt band missed it
+    const tree = { format: 'appium-ios', pixelsPerDp: 3, nodes: [] } as never;
+    const hints = findNoiseHints({
+      regions: [{ x: 900, y: 156, width: 60, height: 6 }],
+      diffPercent: 0.01,
+      imageWidth: 1179,
+      imageHeight: 2556,
+      tree,
+    });
+    expect(hints).toEqual([
+      expect.objectContaining({ kind: 'status-bar', ignoreArea: { x: 0, y: 0, width: 1179, height: 162 } }),
+    ]);
+  });
+
   it('recognises text that holds an amount', () => {
     const tree = parse(xml.replace('text="Commission 0 UAH"', 'text="12,50 UAH"'));
     const hints = findNoiseHints({

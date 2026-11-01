@@ -1,25 +1,26 @@
 import React from "react";
 import { Typography, Box, LinearProgress } from "@mui/material";
 import { BuildStatusChip } from "./BuildStatusChip";
-import { useBuildState, useTestRunState } from "../contexts";
+import { useBuildState } from "../contexts";
 import { LOCATOR_BUILD_DETAILS } from "../constants/help";
 import { Tooltip } from "./Tooltip";
 import { motion, tokens } from "../theme";
-import { CountUp } from "./motion/useCountUp";
 import { useT } from "../i18n";
+import { buildPeriod } from "../_helpers/buildPeriod.helper";
 
-/** Build header: identity, status and a bar of how the screenshots came out. */
-const BuildDetails: React.FunctionComponent = () => {
+/**
+ * Build header: identity, when it ran and a bar of how the screenshots came
+ * out. The numbers are the Overview's tiles and the tabs' badges (REQ-031-15).
+ */
+const BuildDetails: React.FunctionComponent<{
+  // what can be done with the build: Report, Review (031)
+  actions?: React.ReactNode;
+}> = ({ actions }) => {
   const { selectedBuild } = useBuildState();
-  const { testRuns } = useTestRunState();
-  const { t, tx, formatDate } = useT();
+  const { t, formatDate } = useT();
   const buildNumber = React.useMemo(
     () => `#${selectedBuild?.number} ${selectedBuild?.ciBuildId || ""}`,
     [selectedBuild?.number, selectedBuild?.ciBuildId],
-  );
-  const a11yNew = React.useMemo(
-    () => testRuns.reduce((sum, run) => sum + (run.a11yNewCount ?? 0), 0),
-    [testRuns],
   );
 
   if (!selectedBuild) {
@@ -71,11 +72,19 @@ const BuildDetails: React.FunctionComponent = () => {
           </Typography>
         </Tooltip>
         <BuildStatusChip status={selectedBuild.status} />
-        <Typography variant="body2" color="textSecondary">
-          {formatDate(selectedBuild.createdAt)}
-          {selectedBuild.updatedAt &&
-            t("builds.lastRun", { date: formatDate(selectedBuild.updatedAt) })}
+        <Typography
+          variant="body2"
+          color="textSecondary"
+          data-testid="buildPeriod"
+        >
+          {buildPeriod(selectedBuild.createdAt, selectedBuild.updatedAt, {
+            formatDate,
+            t,
+          })}
         </Typography>
+        {actions && (
+          <Box sx={{ ml: "auto", display: "flex", gap: 1 }}>{actions}</Box>
+        )}
       </Box>
 
       <Box sx={{ display: "flex", flexDirection: "column", gap: 0.75 }}>
@@ -117,84 +126,6 @@ const BuildDetails: React.FunctionComponent = () => {
               bgcolor: tokens.status.passed.bar,
             }}
           />
-        </Box>
-        <Box
-          sx={{
-            display: "flex",
-            flexWrap: "wrap",
-            gap: "4px 20px",
-            fontSize: 13,
-            color: tokens.textSecondary,
-            "& b": { fontVariantNumeric: "tabular-nums", fontWeight: 650 },
-          }}
-        >
-          <span>
-            {tx(
-              "builds.total",
-              {
-                value: (
-                  <b style={{ color: tokens.text }}>
-                    <CountUp value={total} />
-                  </b>
-                ),
-              },
-              { count: total },
-            )}
-          </span>
-          <span>
-            {tx(
-              "builds.unresolved",
-              {
-                value: (
-                  <b style={{ color: tokens.text }}>
-                    <CountUp value={selectedBuild.unresolvedCount} />
-                  </b>
-                ),
-              },
-              { count: selectedBuild.unresolvedCount },
-            )}
-          </span>
-          <span>
-            {tx(
-              "builds.failed",
-              {
-                value: (
-                  <b style={{ color: tokens.text }}>
-                    <CountUp value={selectedBuild.failedCount} />
-                  </b>
-                ),
-              },
-              { count: selectedBuild.failedCount },
-            )}
-          </span>
-          <span>
-            {tx(
-              "builds.passed",
-              {
-                value: (
-                  <b style={{ color: tokens.text }}>
-                    <CountUp value={selectedBuild.passedCount} />
-                  </b>
-                ),
-              },
-              { count: selectedBuild.passedCount },
-            )}
-          </span>
-          {a11yNew > 0 && (
-            <span>
-              {tx(
-                "builds.a11yNew",
-                {
-                  value: (
-                    <b style={{ color: tokens.status.changed.fg }}>
-                      <CountUp value={a11yNew} />
-                    </b>
-                  ),
-                },
-                { count: a11yNew },
-              )}
-            </span>
-          )}
         </Box>
       </Box>
       {selectedBuild.isRunning && <LinearProgress />}

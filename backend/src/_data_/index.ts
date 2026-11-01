@@ -122,6 +122,7 @@ export const generateTestRun = (testRun?: Partial<TestRun>): TestRun => {
     captureWarnings: null,
     semanticChangeCount: null,
     componentChanges: null,
+    decidedById: null,
     ...testRun,
   };
 };

@@ -13,7 +13,6 @@ import {
   Checkbox,
   ToggleButton,
   Slider,
-  Popover,
   Dialog,
   DialogActions,
   DialogContent,
@@ -200,6 +199,8 @@ interface TestDetailsModalProps {
   // the same check on every device of the build
   deviceRuns?: TestRun[];
   handleSelectRun?: (id: string) => void;
+  // the queue this review steps through, opened from the overview (REQ-031-24)
+  queueHeader?: React.ReactNode;
 }
 
 const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
@@ -215,6 +216,7 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
   handleClose,
   deviceRuns = [],
   handleSelectRun,
+  queueHeader,
 }) => {
   const classes = useStyles();
   const { enqueueSnackbar } = useDialogSnackbar();
@@ -342,8 +344,6 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
         : [];
     });
   const [ruleBusy, setRuleBusy] = useState(false);
-  const [noTreeAnchor, setNoTreeAnchor] = useState<HTMLElement | null>(null);
-  const selectButton = React.useRef<HTMLButtonElement>(null);
   const elementsOf = (side: Side) =>
     (side === "baseline" ? structure?.baselineElements : structure?.elements) ??
     [];
@@ -418,7 +418,6 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
     setPinnedMark(undefined);
     setPreviewViolation(undefined);
     setPreviewRegion(undefined);
-    setNoTreeAnchor(null);
   }, [testRun.id]);
   const selectionRef = React.useRef(selection);
   selectionRef.current = selection;
@@ -677,11 +676,10 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
     }
   };
 
+  // without a tree there are no elements: the button stays off (REQ-024-33)
+  const canSelect = withUiTree && structure?.hasUiTree !== false;
   const toggleSelecting = () => {
-    if (!withUiTree || structure?.hasUiTree === false) {
-      setNoTreeAnchor(selectButton.current);
-      return;
-    }
+    if (!canSelect) return;
     leaveAreasThen(() => {
       setPickMode((on) => !on);
       setSelection(undefined);
@@ -690,8 +688,7 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
   };
   useHotkeys("e", () => canEdit && toggleSelecting(), [
     canEdit,
-    withUiTree,
-    structure,
+    canSelect,
     areasOpen,
     touched,
   ]);
@@ -1183,49 +1180,54 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
   const comparisonTools = () => (
     <Box display="flex" alignItems="center" gap={1}>
       {canEdit && (
-        <Button
-          ref={selectButton}
-          variant="outlined"
-          onClick={toggleSelecting}
-          data-testid="selectElements"
-          aria-pressed={pickMode}
-          // pressed like Draw in the areas menu: a solid green bar shouted over the screenshot
-          sx={{
-            height: 34,
-            px: 1.25,
-            gap: 1,
-            fontSize: 13.5,
-            fontWeight: 600,
-            color: pickMode ? tokens.brandDark : tokens.text,
-            borderColor: pickMode ? tokens.brand : tokens.border,
-            bgcolor: pickMode ? tokens.brandSoft : tokens.surface,
-            "&:hover": {
-              borderColor: tokens.brand,
-              bgcolor: pickMode ? tokens.brandSoft : tokens.subtle,
-            },
-          }}
-        >
-          {/* the same label while selecting, so the bar keeps its width (REQ-024-12) */}
-          {t("select.button")}
-          {/* a child, not endIcon: MUI sizes the first child of an icon slot to 20px */}
-          <Box
-            component="kbd"
-            aria-hidden="true"
-            sx={{
-              font: `500 11px/16px ${tokens.mono}`,
-              minWidth: 18,
-              px: 0.5,
-              textAlign: "center",
-              borderRadius: "4px",
-              border: `1px solid ${tokens.border}`,
-              borderBottomWidth: 2,
-              bgcolor: tokens.subtle,
-              color: tokens.textMuted,
-            }}
-          >
-            {pickMode ? "Esc" : "E"}
-          </Box>
-        </Button>
+        <Tooltip title={canSelect ? "" : t("select.noTree")}>
+          {/* a disabled button takes no pointer, so the tooltip listens on its wrapper */}
+          <span data-testid="selectElementsWrap">
+            <Button
+              variant="outlined"
+              onClick={toggleSelecting}
+              disabled={!canSelect}
+              data-testid="selectElements"
+              aria-pressed={pickMode}
+              // pressed like Draw in the areas menu: a solid green bar shouted over the screenshot
+              sx={{
+                height: 34,
+                px: 1.25,
+                gap: 1,
+                fontSize: 13.5,
+                fontWeight: 600,
+                color: pickMode ? tokens.brandDark : tokens.text,
+                borderColor: pickMode ? tokens.brand : tokens.border,
+                bgcolor: pickMode ? tokens.brandSoft : tokens.surface,
+                "&:hover": {
+                  borderColor: tokens.brand,
+                  bgcolor: pickMode ? tokens.brandSoft : tokens.subtle,
+                },
+              }}
+            >
+              {/* the same label while selecting, so the bar keeps its width (REQ-024-12) */}
+              {t("select.button")}
+              {/* a child, not endIcon: MUI sizes the first child of an icon slot to 20px */}
+              <Box
+                component="kbd"
+                aria-hidden="true"
+                sx={{
+                  font: `500 11px/16px ${tokens.mono}`,
+                  minWidth: 18,
+                  px: 0.5,
+                  textAlign: "center",
+                  borderRadius: "4px",
+                  border: `1px solid ${tokens.border}`,
+                  borderBottomWidth: 2,
+                  bgcolor: tokens.subtle,
+                  color: tokens.textMuted,
+                }}
+              >
+                {pickMode ? "Esc" : "E"}
+              </Box>
+            </Button>
+          </span>
+        </Tooltip>
       )}
       <AreasMenu
         open={areasOpen}
@@ -1438,13 +1440,16 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
         className={classes.header}
         spacing={2}
       >
+        {queueHeader && <Grid item>{queueHeader}</Grid>}
         <Grid item>
-          <Typography variant="h6" display="inline">
-            {t("review.step", {
-              current: currentRunIndex + 1,
-              total: totalTestRunCount,
-            })}
-          </Typography>
+          {!queueHeader && (
+            <Typography variant="h6" display="inline">
+              {t("review.step", {
+                current: currentRunIndex + 1,
+                total: totalTestRunCount,
+              })}
+            </Typography>
+          )}
           <Typography
             variant="h6"
             display="inline"
@@ -1921,49 +1926,6 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
           }
         />
       )}
-      <Popover
-        open={!!noTreeAnchor}
-        anchorEl={noTreeAnchor}
-        onClose={() => setNoTreeAnchor(null)}
-        anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
-        transformOrigin={{ vertical: "top", horizontal: "right" }}
-        slotProps={{
-          paper: { sx: { mt: 1, p: 2, width: 260, borderRadius: "14px" } },
-        }}
-      >
-        <Box
-          data-testid="noTree"
-          display="flex"
-          flexDirection="column"
-          gap={1.5}
-        >
-          <Typography sx={{ fontSize: 14.5, fontWeight: 600 }}>
-            {t("select.noTree")}
-          </Typography>
-          <Box
-            display="flex"
-            justifyContent="flex-end"
-            alignItems="center"
-            gap={1}
-          >
-            <Tooltip title={t("select.whyText")}>
-              <Button size="small">{t("select.why")}</Button>
-            </Tooltip>
-            <Button
-              size="small"
-              variant="contained"
-              data-testid="drawAreaInstead"
-              onClick={() => {
-                setNoTreeAnchor(null);
-                setAreasOpen(true);
-                setIsDrawMode(true);
-              }}
-            >
-              {t("select.drawArea")}
-            </Button>
-          </Box>
-        </Box>
-      </Popover>
       <Dialog
         open={!!pendingLeave}
         onClose={() => setPendingLeave(undefined)}

@@ -18,6 +18,7 @@ type Fixtures = {
     id: string,
     buildId?: string,
     testId?: string,
+    tab?: "overview" | "changes" | "all" | "a11y",
   ) => Promise<ProjectPage>;
   openTestVariationListPage: (
     projectId: string,
@@ -74,17 +75,16 @@ export const test = base.extend<Fixtures & Options>({
   },
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   openProjectPage: async ({ page, authUser }, use) => {
-    // The build opens on its change groups now; these tests are about the list
-    // of all runs, as the page opened before. A view picked in a test stays.
-    await page.addInitScript(() => {
-      if (!localStorage.getItem("vrt.buildView")) {
-        localStorage.setItem("vrt.buildView", "all");
-      }
-    });
-    await use(async (id, buildId, testId) => {
+    // A build opens on its Overview now (031); these tests are about the list
+    // of all runs, as the page opened before, so a build given here opens on
+    // All tests unless the test names another tab.
+    await use(async (id, buildId, testId, tab = "all") => {
       let url = `${id}`;
       if (buildId) {
         url = url.concat(`?buildId=${buildId}`);
+        if (tab !== "overview") {
+          url = url.concat(`&tab=${tab}`);
+        }
         if (testId) {
           url = url.concat(`&testId=${testId}`);
         }

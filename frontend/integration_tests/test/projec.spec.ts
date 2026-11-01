@@ -59,6 +59,8 @@ test.beforeEach(async ({ page }) => {
 test("renders", async ({ openProjectPage, page }) => {
   const projectPage = await openProjectPage(project.id);
   await projectPage.buildList.getBuildLocator(TEST_BUILD_FAILED.number).click();
+  // a build opens on its Overview (031); these are about the list of runs
+  await page.getByRole("tab", { name: /All tests|Усі перевірки/ }).click();
 
   await expect(page).toHaveScreenshot("project-page-test-run-list.png");
 
@@ -75,6 +77,8 @@ test("renders the build and the review in Ukrainian", async ({
   await inUkrainian(page);
   const projectPage = await openProjectPage(project.id);
   await projectPage.buildList.getBuildLocator(TEST_BUILD_FAILED.number).click();
+  // a build opens on its Overview (031); these are about the list of runs
+  await page.getByRole("tab", { name: /All tests|Усі перевірки/ }).click();
 
   await expect(page).toHaveScreenshot("project-page-test-run-list-uk.png");
 
@@ -91,6 +95,8 @@ test("renders the review in Ukrainian in the dark theme", async ({
   await page.emulateMedia({ colorScheme: "dark" });
   const projectPage = await openProjectPage(project.id);
   await projectPage.buildList.getBuildLocator(TEST_BUILD_FAILED.number).click();
+  // a build opens on its Overview (031); these are about the list of runs
+  await page.getByRole("tab", { name: /All tests|Усі перевірки/ }).click();
   await projectPage.testRunList.getRow(TEST_UNRESOLVED.id).click();
 
   await expect(page).toHaveScreenshot(
@@ -716,10 +722,7 @@ test("collapses a change group from its header", async ({
         ],
       }),
   );
-  await page.addInitScript(() =>
-    localStorage.setItem("vrt.buildView", "changes"),
-  );
-  await openProjectPage(project.id, TEST_BUILD_FAILED.id);
+  await openProjectPage(project.id, TEST_BUILD_FAILED.id, undefined, "changes");
 
   const first = page.getByTestId("changeGroup").first();
   await expect(page.getByTestId("changeGroup")).toHaveCount(2);

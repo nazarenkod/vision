@@ -128,7 +128,7 @@
   ([ADR-0003](../../decisions/0003-additive-schema-only.md)).
 - Колірний підпис зміни: на ньому працюють групи змін (006), тож він лишається.
 - Auto approve feature: це поведінка upstream VRT, вона не пов'язана з варіаціями.
-- Поле тегів у знімках і SDK: SDK лишається upstream ([ADR-0004](../../decisions/0004-sdk-upstream-plus-ui-tree.md)).
+- Поле тегів у знімках і SDK: SDK лишається upstream ([ADR-0019](../../decisions/0019-sdk-upstream-plus-ui-tree-and-feature.md)).
 
 ## Чекліст якості специфікації
 

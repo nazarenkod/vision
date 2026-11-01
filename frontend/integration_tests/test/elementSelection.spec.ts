@@ -894,7 +894,7 @@ test("turns on element selection from the Changes tab", async ({
   );
 });
 
-test("offers an area when the screenshot has no UI tree", async ({
+test("keeps Select elements off when the screenshot has no UI tree", async ({
   openProjectPage,
   page,
 }) => {
@@ -904,18 +904,17 @@ test("offers an area when the screenshot has no UI tree", async ({
     { ...baseStructure, hasUiTree: false, elements: [], baselineElements: [] },
     { ...TEST_UNRESOLVED, uiTreeName: null },
   );
-  await page.getByTestId("selectElements").click();
-  await expect(page.getByTestId("noTree")).toContainText(
-    "No UI tree on this screenshot",
+  await expect(page.getByTestId("selectElements")).toBeDisabled();
+  await page.getByTestId("selectElementsWrap").hover();
+  await expect(page.getByRole("tooltip")).toHaveText(
+    "Selecting elements needs the UI tree",
   );
-  await expect(page.getByTestId("selectingBar")).toHaveCount(0);
 
-  await page.getByTestId("drawAreaInstead").click();
+  await page.keyboard.press("e");
+  await expect(page.getByTestId("selectingBar")).toHaveCount(0);
+  // areas are still there for such screenshots
+  await page.getByTestId("areasButton").click();
   await expect(page.getByTestId("areasMenu")).toBeVisible();
-  await expect(page.getByTestId("areaDraw")).toHaveAttribute(
-    "aria-pressed",
-    "true",
-  );
 });
 
 test("offers element actions on a changed area", async ({

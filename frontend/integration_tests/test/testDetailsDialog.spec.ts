@@ -540,3 +540,22 @@ test("has no Devices tab and no capture warnings", async ({
     await expect(page.getByText(text, { exact: true })).toHaveCount(0);
   }
 });
+
+test("says accessibility needs the UI tree when it cannot be read", async ({
+  openProjectPage,
+  page,
+}) => {
+  const run = { ...TEST_UNRESOLVED, hasUiTree: true } as TestRun;
+  await mockGetTestRuns(page, build.id, [run]);
+  await mockTestRun(page, run);
+  await page.route(`${API_URL}/test-runs/${run.id}/a11y`, (route) =>
+    route.fulfill({ body: "null" }),
+  );
+
+  await openProjectPage(project.id, build.id, run.id);
+  await expect(
+    page.getByText(
+      "Accessibility is checked from the UI tree, and this screenshot's tree could not be read.",
+    ),
+  ).toBeVisible();
+});

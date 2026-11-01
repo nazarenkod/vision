@@ -37,3 +37,4 @@ Architecture Decision Record фіксує важливе рішення: кон�
 | [ADR-0019](0019-sdk-upstream-plus-ui-tree-and-feature.md) | SDK — upstream плюс UI-дерево й назва фічі | Accepted | 2026-10-29 |
 | [ADR-0020](0020-personal-gemini-keys.md) | Особисті ключі Gemini для чернеток багів | Accepted | 2026-10-29 |
 | [ADR-0021](0021-xpath-selectors-from-stable-elements.md) | Селектори `xpath:` — шлях від стабільного елемента на розібраному дереві | Accepted | 2026-10-30 |
+| [ADR-0022](0022-public-report-links.md) | Публічний звіт збірки: посилання з токеном, без входу, PDF друком | Accepted | 2026-10-31 |

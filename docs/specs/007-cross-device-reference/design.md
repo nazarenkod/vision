@@ -12,8 +12,8 @@
 | Компонент | Шлях | Роль |
 |---|---|---|
 | Порівняння | `ui-tree/cross-device.ts` (видалено в 020) | `compareAcrossDevices` |
-| Вибір еталона й запис | `backend/src/ui-tree/ui-tree.service.ts` | `crossDevice`, `recordCrossDevice` |
-| API | `backend/src/test-runs/test-runs.controller.ts` | `GET /test-runs/:id/cross-device` |
+| Вибір еталона й запис | `backend/src/ui-tree/ui-tree.service.ts` | `crossDevice`, `recordCrossDevice` (видалено в [020](../020-remove-reference-device/spec.md)) |
+| API | `backend/src/test-runs/test-runs.controller.ts` | `GET /test-runs/:id/cross-device` (видалено в [020](../020-remove-reference-device/spec.md)) |
 | UI | `CrossDevicePanel.tsx` (видалено в 020) | вкладка Devices |
 
 ## Дані

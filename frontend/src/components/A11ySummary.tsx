@@ -147,7 +147,7 @@ export const A11ySummary: React.FunctionComponent<{ buildId: string }> = ({
                 <TableCell>
                   <MuiLink
                     component={Link}
-                    to={buildTestRunLocation(buildId, run.id)}
+                    to={buildTestRunLocation(buildId, run.id, { tab: "a11y" })}
                     sx={{ fontWeight: 500 }}
                   >
                     {run.name}

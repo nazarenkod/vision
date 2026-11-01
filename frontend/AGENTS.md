@@ -15,6 +15,9 @@
 | `src/constants/brand.ts` | назва продукту (Vision) і слоган — лише тут |
 | `src/components/TestDetailsDialog/` | ревю скриншота: `InsightsPanel` (доступність, зміни), `JiraBugDialog`, `ReportBugDialog` і `BugEvidence` (баг із порівняння, [025](../docs/specs/025-bug-from-comparison/spec.md)), `DeviceStrip`; вибір елементів: `ElementPopover` (один), `SelectionPanel` (2–3, [028](../docs/specs/028-several-elements/spec.md)), спільні дії й клавіші — `ElementActions` |
 | `src/components/ProjectForm/` | налаштування проєкту, зокрема `A11yRulesSettings` (норми й увімкнені правила доступності, [026](../docs/specs/026-a11y-rules-settings/spec.md)) і `AllowedDevicesSettings` (дозволені пристрої, [029](../docs/specs/029-allowed-devices/spec.md)) |
+| `src/components/BuildOverview/` | вкладка Overview збірки; `useBuildGroups` — групи змін для огляду й черг ([031](../docs/specs/031-build-overview/spec.md)) |
+| `src/_helpers/reviewQueue.helper.ts` | черги рев'ю: ключ у адресі (`queue`), порядок, пропуск вирішених, наступна черга; у порівнянні — `QueueHeader`, `QueueDone` |
+| `src/components/BuildReport/`, `src/pages/ReportPage.tsx` | діалог звіту, `ReportDocument` (один для діалогу, друку й публічної сторінки); `/r/:token` без входу, `/report/:buildId` для друку |
 | `src/pages/InsightsPage.tsx` | Insights |
 | `src/services/*.service.ts` | виклики API: `fetch` + `authHeader()` + `handleResponse` |
 | `src/types/` | типи; `insights.ts` дзеркалить відповіді бекенду для Vision-фіч |
@@ -25,10 +28,10 @@
 
 ```bash
 CI=true npx jest                       # unit-тести
-npx tsc --noEmit -p .                  # базова лінія: 25 помилок апстріму; нових не додаємо
+npx tsc --noEmit -p .                  # відомі помилки апстріму — у scripts/baselines/; нових не додаємо
 npx eslint <змінені файли>
 npx prettier --write <змінені файли>   # НЕ `prettier --write src`: він переформатує чужі файли
-npx playwright test <spec>             # функціональні тести, локально
+npx playwright test <spec> --ignore-snapshots   # функціональні тести; у хмарі браузер дає hook сесії
 ./test-docker.sh --update-snapshots    # скриншот-еталони — лише в Docker (Linux)
 ```
 
@@ -49,6 +52,9 @@ npx playwright test <spec>             # функціональні тести, 
 
 ## Пастки
 
+- Вкладка збірки й черга живуть в адресі (`tab`, `status`, `queue`; `testId` — останній). Хто
+  відкриває прогін з вкладки, передає її в `buildTestRunLocation(…, { tab })`, інакше Esc
+  поверне на Overview. Фікстура `openProjectPage` типово відкриває збірку на All tests.
 - Playwright під час прогону переписує `public/env-config.js` на `localhost:4200`. Для
   локального дев-сервера поверни `REACT_APP_API_URL` на свій порт.
 - `npm run test:pw:docker` монтує поточну папку в контейнер і ставить туди Linux-залежності.

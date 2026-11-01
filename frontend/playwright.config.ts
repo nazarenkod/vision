@@ -2,6 +2,9 @@ import { defineConfig } from "@playwright/test";
 
 const baseURL = "http://localhost:4173";
 const isCI = !!process.env.CI;
+// Cloud sessions ship one prebuilt Chromium, not always the build this
+// @playwright/test expects; .claude/hooks/session-start.sh points here at it
+const chromium = process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE;
 
 export default defineConfig({
   testDir: "integration_tests/test",
@@ -24,6 +27,7 @@ export default defineConfig({
     navigationTimeout: 5000,
     trace: "retry-with-trace",
     screenshot: "only-on-failure",
+    ...(chromium ? { launchOptions: { executablePath: chromium } } : {}),
   },
   expect: {
     toHaveScreenshot: {

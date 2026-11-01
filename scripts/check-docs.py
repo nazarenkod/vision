@@ -8,6 +8,9 @@
   and (unless it is a Draft) a design.md that traces every requirement;
 - every test a trace names exists and still has that name;
 - every repository path a design names in backticks exists;
+- a requirement that an implemented spec changes or removes («змінює»,
+  «знімає» in its «Пов'язане» row) is marked «Замінено» or «Знято» with
+  that spec's number in its own row;
 - every ADR has its status and the sections the template asks for, and the
   indexes of specs and ADRs list every one of them.
 
@@ -114,6 +117,50 @@ def check_specs(root: pathlib.Path):
     return problems
 
 
+CHANGES = re.compile(r"\b(?:змінює|замінює|знімає)\b", re.I)
+# REQ-004-10, and ranges written as REQ-004-10…REQ-004-17 or REQ-007-01…07
+REQ_OR_RANGE = re.compile(r"REQ-(\d{3})-(\d{2})(?:\s*…\s*(?:REQ-\1-)?(\d{2}))?")
+
+
+def changed_requirements(related_row: str):
+    """REQ ids that a spec's «Пов'язане» row says it changes or removes."""
+    found = []
+    for clause in re.split(r";|(?<=\.)\s+(?=[^\W\d_])", related_row):
+        keyword = CHANGES.search(clause)
+        if not keyword:
+            continue
+        for number, first, last in REQ_OR_RANGE.findall(clause[keyword.end():]):
+            found += [f"REQ-{number}-{n:02d}" for n in range(int(first), int(last or first) + 1)]
+    return found
+
+
+def check_replacements(root: pathlib.Path):
+    """A requirement another spec changed says so in its own row, so nobody reads it as in force."""
+    problems = []
+    specs_dir = root / "docs" / "specs"
+    folders = {p.name[:3]: p for p in specs_dir.iterdir() if p.is_dir() and re.match(r"^\d{3}-", p.name)}
+    for number, folder in sorted(folders.items()):
+        spec_file = folder / "spec.md"
+        if not spec_file.exists():
+            continue
+        spec = spec_file.read_text(encoding="utf-8")
+        # until the newer spec is implemented, the old behaviour is still the real one
+        if status_of(spec) not in {"Implemented", "Verified"}:
+            continue
+        related = re.search(r"^\|\s*Пов'язане\s*\|(.*)$", spec, re.M)
+        for req in changed_requirements(related.group(1) if related else ""):
+            old = folders.get(req[4:7])
+            if req[4:7] == number or not old or not (old / "spec.md").exists():
+                continue
+            row = re.search(rf"^\|\s*{req}\s*\|.*$", (old / "spec.md").read_text(encoding="utf-8"), re.M)
+            where = old.relative_to(root)
+            if not row:
+                problems.append(f"{folder.relative_to(root)}/spec.md changes {req}, which {where}/spec.md does not define")
+            elif not re.search(r"Замінено|Знято", row.group(0), re.I) or not re.search(rf"\b{number}\b", row.group(0)):
+                problems.append(f"{where}/spec.md: {req} is changed by {number} but its row is not marked «Замінено/Знято … [{number}]»")
+    return problems
+
+
 def check_adrs(root: pathlib.Path):
     problems = []
     adr_dir = root / "docs" / "decisions"
@@ -132,7 +179,7 @@ def check_adrs(root: pathlib.Path):
 
 
 def main(root: pathlib.Path = ROOT) -> int:
-    problems = check_links(root) + check_specs(root) + check_adrs(root)
+    problems = check_links(root) + check_specs(root) + check_replacements(root) + check_adrs(root)
     for problem in problems:
         print(problem)
     print(f"{len(problems)} problem(s)" if problems else "Documentation is consistent")

@@ -18,6 +18,8 @@
 | `src/analytics/` | Insights | [008](../docs/specs/008-insights/spec.md) |
 | `src/ai/` | AI на вимогу, кеш, ліміт; чернетка бага на особистому ключі Gemini (`personalGeminiKey`) | [010](../docs/specs/010-ai-assist/spec.md), [025](../docs/specs/025-bug-from-comparison/spec.md) |
 | `src/visual-bugs/` | баг із порівняння: назва, опис із розділами, позначки на знімку, баги перевірки | [025](../docs/specs/025-bug-from-comparison/spec.md) |
+| `src/builds/build-overview*.ts` | зведення збірки для Overview і звіту: чиста `buildOverview`, сервіс вантажить рядки; баги доступності — з файлів звітів, кеш за збіркою | [031](../docs/specs/031-build-overview/spec.md) |
+| `src/reports/` | публічні посилання на звіт, `report-links.ts` — білий список полів публічного звіту; `GET /public/reports/:token` — єдиний маршрут з даними без входу ([ADR-0022](../docs/decisions/0022-public-report-links.md)) | [031](../docs/specs/031-build-overview/spec.md) |
 | `src/compare/` | піксельне порівняння (upstream + області змін, пул воркерів) | — |
 | `src/backups/` | сторінка Backups: стан бекапу, вхід у Google Drive кодом, розклад і запит на бекап у файлах для `scripts/vision-backup.sh` (ADR-0013) | [013](../docs/specs/013-backups-and-secrets/spec.md), [017](../docs/specs/017-backup-settings-ui/spec.md) |
 
@@ -56,6 +58,8 @@ npm run test:e2e / test:acceptance         # потрібні запущені P
   вважає ще одним проєктом і падає з «jest is not defined».
 - `parseUiTreeSettings` відкидає записи, яких не розуміє. Додаючи поле в налаштування проєкту,
   онови й парсер, і його тест (`comparison-inputs.spec.ts`).
+- Нове поле в публічному звіті (`src/reports/report-links.ts`) бачать люди без акаунта: лише
+  свідомо, з рядком у білому списку й тестом «keeps emails, keys and tokens out…».
 - Approve upstream змінить щось нове (поле варіації, ще одну таблицю) — онови `decision-undo.ts`;
   `decision-undo.spec.ts` порівнює стан до approve і після undo й про це скаже.
 - Кеш індексу проблем (`A11yIssuesService.indexFor`) скидається після кожного запису в цьому

@@ -1,17 +1,38 @@
-import { WebSocketGateway, WebSocketServer } from '@nestjs/websockets';
-import { Server } from 'socket.io';
+import {
+  ConnectedSocket,
+  MessageBody,
+  OnGatewayInit,
+  SubscribeMessage,
+  WebSocketGateway,
+  WebSocketServer,
+} from '@nestjs/websockets';
+import { Logger, OnModuleDestroy } from '@nestjs/common';
+import { Server, Socket } from 'socket.io';
 import { TestRun } from '@prisma/client';
 import { BuildDto } from '../../builds/dto/build.dto';
 import { getBuildsStats } from '../../builds/build-stats';
 import { debounce } from 'lodash';
 import { PrismaService } from '../../prisma/prisma.service';
+import { AuthService } from '../../auth/auth.service';
+import { msUntilExpiry, tokenFromHandshake } from './events-auth';
+import { groupByProject, projectRoom } from './events-rooms';
 
+// The message a rejected client gets in connect_error; the UI signs out on it.
+export const UNAUTHORIZED = 'unauthorized';
+
+// Only signed-in users get events, and only of the project they subscribed to
+// (spec 032, ADR-0023). Upstream VRT broadcast everything to anyone.
 @WebSocketGateway({ cors: true })
-export class EventsGateway {
+export class EventsGateway implements OnGatewayInit, OnModuleDestroy {
+  private readonly logger = new Logger(EventsGateway.name);
+
   @WebSocketServer()
   server: Server;
 
-  constructor(private prismaService: PrismaService) {}
+  constructor(
+    private prismaService: PrismaService,
+    private authService: AuthService
+  ) {}
 
   private debounceTimeout = 1500;
   private maxWait = 3000;
@@ -20,8 +41,69 @@ export class EventsGateway {
   private testRunsUpdatedQueued: Array<TestRun> = [];
   private buildsUpdatedQueued: Array<string> = [];
 
+  afterInit(server: Server): void {
+    server.use((socket, next) => {
+      this.authenticate(socket).then(
+        () => next(),
+        () => next(new Error(UNAUTHORIZED))
+      );
+    });
+  }
+
+  // A burst still waiting for its debounce would fire into a closed server.
+  onModuleDestroy(): void {
+    this.testRunCreatedDebounced.cancel();
+    this.testRunUpdatedDebounced.cancel();
+    this.testRunDeletedDebounced.cancel();
+    this.buildUpdatedDebounced.cancel();
+  }
+
+  private async authenticate(socket: Socket): Promise<void> {
+    const token = tokenFromHandshake(socket.handshake.auth);
+    if (!token) throw new Error(UNAUTHORIZED);
+    const payload = await this.authService.verifyToken(token);
+    const user = await this.prismaService.user.findUnique({
+      where: { email: payload.email },
+      select: { id: true },
+    });
+    if (!user) throw new Error(UNAUTHORIZED);
+    socket.data.userId = user.id;
+
+    const expiresIn = msUntilExpiry(payload.exp, Date.now());
+    if (expiresIn !== undefined) {
+      const timer = setTimeout(() => socket.disconnect(true), expiresIn);
+      socket.on('disconnect', () => clearTimeout(timer));
+    }
+  }
+
+  @SubscribeMessage('subscribe')
+  async subscribe(
+    @ConnectedSocket() socket: Socket,
+    @MessageBody() body: { projectId?: string | null } | undefined
+  ): Promise<{ ok: boolean }> {
+    const projectId = body?.projectId || null;
+    // Remembered before the lookups so that a later subscribe wins even if its
+    // lookups finish first.
+    socket.data.projectId = projectId;
+    for (const room of socket.rooms) {
+      if (room !== socket.id) socket.leave(room);
+    }
+    if (!projectId) return { ok: true };
+
+    const allowed = await Promise.all([
+      this.prismaService.project.findUnique({ where: { id: projectId }, select: { id: true } }),
+      this.prismaService.user.findUnique({ where: { id: socket.data.userId }, select: { id: true } }),
+    ]).then(
+      ([project, user]) => !!project && !!user,
+      () => false
+    );
+    if (!allowed) return { ok: false };
+    if (socket.data.projectId === projectId) socket.join(projectRoom(projectId));
+    return { ok: true };
+  }
+
   buildCreated(build: BuildDto): void {
-    this.server.emit('build_created', build);
+    this.server.to(projectRoom(build.projectId)).emit('build_created', build);
   }
 
   buildUpdated(id: string): void {
@@ -50,12 +132,34 @@ export class EventsGateway {
   }
 
   buildDeleted(buildDto: BuildDto) {
-    this.server.emit('build_deleted', buildDto);
+    this.server.to(projectRoom(buildDto.projectId)).emit('build_deleted', buildDto);
+  }
+
+  private emitToProjects<T>(event: string, items: T[], projectOf: (item: T) => string | null | undefined): void {
+    for (const [projectId, group] of groupByProject(items, projectOf)) {
+      this.server.to(projectRoom(projectId)).emit(event, group);
+    }
+  }
+
+  // Older test runs have no projectId of their own; they go to their build's project.
+  private emitTestRuns(event: string, testRuns: Array<TestRun>): void {
+    const buildIds = [...new Set(testRuns.filter((tr) => !tr.projectId).map((tr) => tr.buildId))];
+    if (buildIds.length === 0) {
+      this.emitToProjects(event, testRuns, (tr) => tr.projectId);
+      return;
+    }
+    this.prismaService.build
+      .findMany({ where: { id: { in: buildIds } }, select: { id: true, projectId: true } })
+      .then((builds) => {
+        const projectOfBuild = new Map(builds.map((b) => [b.id, b.projectId]));
+        this.emitToProjects(event, testRuns, (tr) => tr.projectId ?? projectOfBuild.get(tr.buildId));
+      })
+      .catch((error) => this.logger.error(`${event} not sent: ${error}`));
   }
 
   private testRunUpdatedDebounced = debounce(
     () => {
-      this.server.emit('testRun_updated', this.testRunsUpdatedQueued);
+      this.emitTestRuns('testRun_updated', this.testRunsUpdatedQueued);
       this.testRunsUpdatedQueued = [];
     },
     this.debounceTimeout,
@@ -67,7 +171,7 @@ export class EventsGateway {
 
   private testRunCreatedDebounced = debounce(
     () => {
-      this.server.emit('testRun_created', this.testRunsCreatedQueued);
+      this.emitTestRuns('testRun_created', this.testRunsCreatedQueued);
       this.testRunsCreatedQueued = [];
     },
     this.debounceTimeout,
@@ -79,7 +183,7 @@ export class EventsGateway {
 
   private testRunDeletedDebounced = debounce(
     () => {
-      this.server.emit('testRun_deleted', this.testRunsDeletedQueued);
+      this.emitTestRuns('testRun_deleted', this.testRunsDeletedQueued);
       this.testRunsDeletedQueued = [];
     },
     this.debounceTimeout,
@@ -99,12 +203,15 @@ export class EventsGateway {
       Promise.all([
         this.prismaService.build.findMany({ where: { id: { in: buildIds } } }),
         getBuildsStats(this.prismaService, buildIds),
-      ]).then(([builds, stats]) => {
-        this.server.emit(
-          'build_updated',
-          builds.map((build) => new BuildDto(build, stats.get(build.id)))
-        );
-      });
+      ])
+        .then(([builds, stats]) => {
+          this.emitToProjects(
+            'build_updated',
+            builds.map((build) => new BuildDto(build, stats.get(build.id))),
+            (build) => build.projectId
+          );
+        })
+        .catch((error) => this.logger.error(`build_updated not sent: ${error}`));
     },
     this.debounceTimeout,
     {

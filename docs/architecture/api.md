@@ -4,6 +4,18 @@
 (`/api`). Автентифікація: JWT користувача або API-ключ (`apiKey`), як в upstream. Дії, що
 змінюють рішення, доступні ролям `admin` і `editor`.
 
+## Події наживо (socket.io)
+
+Шлях `/socket.io`, той самий порт, що й API ([032](../specs/032-authenticated-events/spec.md),
+[ADR-0023](../decisions/0023-events-socket-behind-login.md)). В upstream сокет був відкритий усім.
+
+| Що | Як |
+|---|---|
+| Рукостискання | `auth: { token: <JWT входу> }` — той самий токен, що в `Authorization: Bearer`. Немає, чужий підпис, термін сплив, користувача немає — `connect_error` з `message: "unauthorized"`. `apiKey` не приймається. Роль не перевіряється |
+| Термін токена | коли спливає `exp`, сервер розриває з'єднання (`io server disconnect`); повторна спроба з тим самим токеном отримує `unauthorized` |
+| `subscribe` `{ projectId }` | підписка на проєкт, одна на з'єднання: попередня знімається. Ack `{ ok: true }`; `{ ok: false }` — проєкту чи користувача немає. `projectId: null` — лише відписатися |
+| Події | `build_created`, `build_deleted` (один `Build`), `build_updated`, `testRun_created`, `testRun_updated`, `testRun_deleted` (масиви) — лише в кімнату проєкту запису. Без підписки подій немає |
+
 ## Прийом
 
 | Метод і шлях | Що нового |

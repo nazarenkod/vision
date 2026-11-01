@@ -44,7 +44,8 @@ flowchart LR
    - приховані зміни: якщо пікселі збіглися, а вони є, статус стає `unresolved`;
    - змінені компоненти.
 6. У рядок `TestRun` пишуться лише імена файлів і лічильники (`a11yNewCount`, `a11yTotalCount`,
-   `semanticChangeCount`…), потім іде подія socket.io.
+   `semanticChangeCount`…), потім іде подія socket.io — лише з'єднанням, що увійшли з JWT і
+   підписані на проєкт збірки ([032](../specs/032-authenticated-events/spec.md)).
 
 LLM на цьому шляху не викликається ніколи.
 

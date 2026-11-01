@@ -12,7 +12,7 @@ jest.mock("../contexts", () => ({
 
 const userWithRole = (role: User["role"]): User => ({
   id: role,
-  token: 123567,
+  token: "123567",
   apiKey: "SOME KEY SECRET",
   email: `${role}@email.com`,
   firstName: "First name",

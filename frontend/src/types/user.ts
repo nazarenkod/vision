@@ -3,7 +3,7 @@ export interface User {
   email: string;
   firstName: string;
   lastName: string;
-  token: number;
+  token: string;
   apiKey: string;
   role: keyof typeof Role;
   // the last sign-in to the web interface; null: not signed in since it is kept

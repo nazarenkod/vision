@@ -1,4 +1,4 @@
-import { expect, Page } from "@playwright/test";
+import { expect } from "@playwright/test";
 import { test } from "fixtures";
 import {
   TEST_BUILD_FAILED,
@@ -16,6 +16,7 @@ import {
   mockGetProjects,
   mockGetTestRuns,
   mockImage,
+  mockSocket,
   mockTestRun,
 } from "utils/mocks";
 
@@ -356,41 +357,6 @@ for (const keys of [["ArrowRight"], ["a", "x", "ArrowRight"]]) {
   });
 }
 
-// The server reports a decision over socket.io as well as answering it, and
-// the report is what turns the run approved on screen. This stands in for it
-// on the polling transport, which the client tries first.
-const mockSocket = async (page: Page) => {
-  const packets: string[] = [];
-  let flush: (() => void) | undefined;
-  const send = (packet: string) => {
-    packets.push(packet);
-    flush?.();
-  };
-  await page.route(`${API_URL}/socket.io/**`, async (route, request) => {
-    if (request.method() === "POST") {
-      // the client joins the default namespace
-      if (request.postData()?.startsWith("40")) send('40{"sid":"socket"}');
-      return route.fulfill({ body: "ok" });
-    }
-    if (!new URL(request.url()).searchParams.get("sid")) {
-      return route.fulfill({
-        body: '0{"sid":"engine","upgrades":[],"pingInterval":25000,"pingTimeout":60000,"maxPayload":1000000}',
-      });
-    }
-    if (packets.length === 0) {
-      await new Promise<void>((resolve) => {
-        flush = resolve;
-        setTimeout(resolve, 500);
-      });
-    }
-    // a long poll answers with what is waiting, or a no-op
-    const body = packets.length ? packets.splice(0).join("\x1e") : "6";
-    return route.fulfill({ body }).catch(() => undefined);
-  });
-  return (event: string, data: unknown) =>
-    send(`42${JSON.stringify([event, data])}`);
-};
-
 test.describe("with Go to the next on", () => {
   const runs: TestRun[] = [TEST_UNRESOLVED, TEST_RUN_NEW, TEST_RUN_OK].map(
     (run) => ({ ...run, buildId: build.id }),
@@ -399,7 +365,8 @@ test.describe("with Go to the next on", () => {
   test.beforeEach(async ({ page }) => {
     await mockGetTestRuns(page, build.id, runs);
     for (const run of runs) await mockTestRun(page, run);
-    const emit = await mockSocket(page);
+    // the report is what turns the run approved on screen
+    const { emit } = await mockSocket(page);
     for (const [path, status] of [
       ["approve?merge=false", "approved"],
       ["reject", "failed"],

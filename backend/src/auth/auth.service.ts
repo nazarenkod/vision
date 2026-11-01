@@ -30,4 +30,10 @@ export class AuthService {
     const token = this.jwtService.sign(payload);
     return token;
   }
+
+  // Same secret and expiry check as JwtStrategy, for callers outside an HTTP
+  // request (the events socket). Rejects when the token is not valid.
+  verifyToken(token: string): Promise<JwtPayload & { exp?: number }> {
+    return this.jwtService.verifyAsync(token);
+  }
 }

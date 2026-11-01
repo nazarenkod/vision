@@ -21,6 +21,7 @@
 | `src/builds/build-overview*.ts` | зведення збірки для Overview і звіту: чиста `buildOverview`, сервіс вантажить рядки; баги доступності — з файлів звітів, кеш за збіркою | [031](../docs/specs/031-build-overview/spec.md) |
 | `src/reports/` | публічні посилання на звіт, `report-links.ts` — білий список полів публічного звіту; `GET /public/reports/:token` — єдиний маршрут з даними без входу ([ADR-0022](../docs/decisions/0022-public-report-links.md)) | [031](../docs/specs/031-build-overview/spec.md) |
 | `src/compare/` | піксельне порівняння (upstream + області змін, пул воркерів) | — |
+| `src/shared/events/` | сокет подій: вхід JWT на рукостисканні (`events-auth.ts`, `AuthService.verifyToken`), розрив на `exp`, підписка `subscribe` і розсилка в кімнату проєкту (`events-rooms.ts`) | [032](../docs/specs/032-authenticated-events/spec.md) |
 | `src/backups/` | сторінка Backups: стан бекапу, вхід у Google Drive кодом, розклад і запит на бекап у файлах для `scripts/vision-backup.sh` (ADR-0013) | [013](../docs/specs/013-backups-and-secrets/spec.md), [017](../docs/specs/017-backup-settings-ui/spec.md) |
 
 ## Команди
@@ -47,6 +48,8 @@ npm run test:e2e / test:acceptance         # потрібні запущені P
   цілком, тож великий JSON у колонку не кладемо.
 - **Jira:** усі виклики — через `JiraClient`, від імені того, хто діє (`userId` → особистий токен,
   інакше спільний токен проєкту). Збій міток чи вкладень — попередження у відповіді, а не помилка.
+- **Нова подія наживо — лише в кімнату проєкту** (`projectRoom`), не `server.emit`: сокет
+  пускає лише тих, хто увійшов, і кожен отримує свій проєкт ([ADR-0023](../docs/decisions/0023-events-socket-behind-login.md)).
 - **Не повертай рядок `User` цілком** (хеш пароля, API-ключ, токен Jira): лише `select` потрібних
   полів або `UserDto`.
 - Коментарі пояснюють *чому*, а не *що*.

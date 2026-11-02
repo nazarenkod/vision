@@ -616,6 +616,8 @@ Drive рабочего аккаунта администратора ([013](docs
 | «production VRT is older than 5.x» | сначала обновите прод, или запускайте Vision на пустой базе (без шага 4) |
 | «Production has migrations this fork does not know» | прод новее форка: нужно подтянуть upstream в форк |
 | `migration` в состоянии Exited (1) | `./scripts/vision.sh logs migration` |
+| `docker-credential-desktop: executable file not found` | на macOS `vision.sh` сам добавляет в `PATH` папку Docker Desktop (`/Applications/Docker.app/Contents/Resources/bin`); если Docker стоит в другом месте, укажите её в `VISION_DOCKER_APP_BIN` |
+| Сборка `up -d --build` идёт много минут без вывода | выбран сборщик в отдельном контейнере (`docker buildx ls`, звёздочка у `docker-container`): `vision.sh` сам собирает встроенным сборщиком Docker и пишет об этом; свой сборщик — через `BUILDX_BUILDER` |
 | Не работает вход | `DEMO_API_URL` должен открываться из браузера; `./scripts/vision.sh logs api` |
 | У старых прогонов нет картинок | `PROD_IMAGES_DIR` указывал не туда: исправить и повторить шаг 4 |
 | Прод хранит картинки в S3 | скопируйте бакет в **отдельный** бакет и укажите его API Vision теми же переменными `AWS_*`, что у прода. Бакет прода Vision указывать нельзя: Vision удаляет старые картинки |

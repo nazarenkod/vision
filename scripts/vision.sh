@@ -22,6 +22,7 @@ if printf '%s\n' "$@" | grep -qxE 'build|--build'; then
   else
     echo "    (cannot check free space of the Docker data dir; make sure 6 GB are free there)"
   fi
+  vision_builder
 fi
 
 # Mounted into the API; created here so they belong to whoever runs the backups, not to

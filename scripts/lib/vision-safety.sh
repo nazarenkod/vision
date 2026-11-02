@@ -33,8 +33,35 @@ vision_load_env() {
   set +a
 }
 
+# Docker Desktop on macOS keeps its credential helper inside the app. A shell started
+# without the app's PATH (an agent, ssh, cron) then fails every image pull with
+# "docker-credential-desktop: executable file not found".
+vision_docker_path() {
+  local bin="${VISION_DOCKER_APP_BIN:-/Applications/Docker.app/Contents/Resources/bin}"
+  if ! command -v docker-credential-desktop >/dev/null 2>&1 && [ -x "$bin/docker-credential-desktop" ]; then
+    PATH="$bin:$PATH"
+    export PATH
+  fi
+}
+
+# A builder in its own container (docker-container driver, e.g. one made for multi-arch
+# images) shares no cache with the engine and has to load every image back into it, so a
+# build of Vision crawls for many minutes. Build with the engine's own builder instead,
+# unless BUILDX_BUILDER says otherwise.
+vision_builder() {
+  [ -n "${BUILDX_BUILDER:-}" ] && return 0
+  local driver
+  driver="$(docker buildx inspect 2>/dev/null | awk '/^Driver:/ {print $2; exit}')"
+  if [ -n "$driver" ] && [ "$driver" != "docker" ]; then
+    BUILDX_BUILDER="$(docker context show 2>/dev/null || echo default)"
+    export BUILDX_BUILDER
+    echo "    (building with the engine's own builder \"$BUILDX_BUILDER\", not the selected $driver one)"
+  fi
+}
+
 # Every container labelled with the project must come from this compose file.
 vision_guard() {
+  vision_docker_path
   command -v docker >/dev/null || vision_die "docker not found"
   docker info >/dev/null 2>&1 || vision_die "Docker is not running or not reachable"
   local foreign

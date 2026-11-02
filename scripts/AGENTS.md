@@ -6,7 +6,7 @@
 | Скрипт | Що робить |
 |---|---|
 | `vision.sh` | обгортка над `docker compose` лише для проєкту `vision` (`docker-compose.demo.yml`) |
-| `lib/vision-safety.sh` | спільні запобіжники: закріплене ім'я проєкту, перевірка чужих контейнерів, запас диска, підтвердження |
+| `lib/vision-safety.sh` | спільні запобіжники: закріплене ім'я проєкту, перевірка чужих контейнерів, запас диска, підтвердження; `PATH` до Docker Desktop і вбудований збирач для `--build` |
 | `demo-clone-from-prod.sh` | лише **читає** прод: `pg_dump` бази й копія або жорсткі посилання на картинки → у Vision |
 | `vision-backup.sh` | бекап бази Vision без секретів і картинок у Google Drive (`rclone`); `--scheduled` з cron кожні 5 хв бере час і запити зі сторінки Backups ([013](../docs/specs/013-backups-and-secrets/spec.md), [017](../docs/specs/017-backup-settings-ui/spec.md)) |
 | `vision-restore.sh` | відновлення з бекапу, майстер-адміністратор |
@@ -20,6 +20,7 @@
 | `tests/test_agent_guard.py` | тести hook'а `.claude/hooks/guard.py` |
 | `tests/test_check_docs.py` | тести `check-docs.py` |
 | `tests/test_verify.py` | тести `verify.py`: відомі помилки `tsc`, міграції, змінені файли |
+| `tests/test_vision_sh.py` | `vision.sh` при збірці: вбудований збирач Docker замість `docker-container`, помічник облікових даних Docker Desktop поза `PATH` (замінник `docker`) |
 | `tests/test_vision_backup.py` | бекап, відновлення й бекап перед копією проду на локальному Postgres (замінники `docker`, `rclone`) |
 
 Тести запускаються як `python3 -I scripts/tests/<файл>.py`.

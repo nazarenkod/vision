@@ -6,16 +6,15 @@ FROM --platform=$BUILDPLATFORM node:20-alpine AS builder
 # Create app directory
 WORKDIR /app
 
-# Copy all files from the repo to /app
+# Dependencies first: a change in the code then keeps the cached npm ci
+COPY package*.json .
+RUN npm ci --verbose
+
 COPY /public ./public
 COPY /src ./src
 COPY index.html .
-COPY package*.json .
 COPY tsconfig.json .
 COPY vite.config.ts .
-
-# Install app dependencies
-RUN npm ci --verbose
 
 # Build the ui
 RUN npm run build

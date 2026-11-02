@@ -1,7 +1,17 @@
 import React from "react";
-import { Box, Button, IconButton, Tooltip, Typography } from "@mui/material";
+import {
+  Box,
+  Button,
+  IconButton,
+  Menu,
+  MenuItem,
+  Tooltip,
+  Typography,
+} from "@mui/material";
 import {
   ChevronRightRounded,
+  ExpandMoreRounded,
+  MoreHoriz,
   Close,
   WarningAmberRounded,
 } from "@mui/icons-material";
@@ -43,6 +53,11 @@ interface WhatsComparedProps {
   onUseElement: (areaId: string) => void;
   // what the pointer is over, to light it up on the screenshots (REQ-024-24)
   onPreview: (id: string | undefined) => void;
+  // with changes to look at, the groups wait behind the summary (REQ-036-34)
+  startOpen: boolean;
+  // both only for someone who may change the project, on a screen with a UI tree (REQ-036-40, 41)
+  onSelectElements?: () => void;
+  onAddRule?: () => void;
 }
 
 type Swatch = "compare" | "ignore" | "tolerate" | "variable" | "gone" | "off";
@@ -81,11 +96,10 @@ const swatchSx = (swatch: Swatch) => {
   }
 };
 
+// set as a sentence: capitals shout over the rows they head (REQ-036-30)
 const groupTitleSx = {
-  fontSize: 11.5,
-  fontWeight: 600,
-  letterSpacing: "0.05em",
-  textTransform: "uppercase",
+  fontSize: 13,
+  fontWeight: 500,
   color: tokens.textMuted,
 } as const;
 
@@ -232,9 +246,14 @@ export const WhatsCompared: React.FunctionComponent<WhatsComparedProps> = ({
   onRemoveFromCompared,
   onUseElement,
   onPreview,
+  startOpen,
+  onSelectElements,
+  onAddRule,
 }) => {
   const { t } = useT();
   const [outsideOpen, setOutsideOpen] = React.useState(false);
+  const [open, setOpen] = React.useState(startOpen);
+  const [menu, setMenu] = React.useState<HTMLElement | null>(null);
   const suggestions = new Map(
     (structure.areaSuggestions ?? []).map((item) => [item.areaId, item]),
   );
@@ -245,21 +264,12 @@ export const WhatsCompared: React.FunctionComponent<WhatsComparedProps> = ({
   const { summary } = overview;
   const headline =
     summary.kind === "only"
-      ? t("compared.only", { count: summary.count })
+      ? t("compared.only")
       : summary.kind === "none"
         ? t("compared.none")
         : summary.kind === "except"
-          ? t("compared.except", { count: summary.count })
+          ? t("compared.except")
           : t("compared.whole");
-  const help = noTree
-    ? t("compared.noTreeHelp")
-    : summary.kind === "only"
-      ? t("compared.onlyHelp")
-      : summary.kind === "none"
-        ? t("compared.noneHelp")
-        : summary.kind === "except"
-          ? t("compared.exceptHelp")
-          : t("compared.wholeHelp");
 
   const sourceText = (row: CompareRow) => t(SOURCE_KEY[row.source]);
 
@@ -675,9 +685,7 @@ export const WhatsCompared: React.FunctionComponent<WhatsComparedProps> = ({
         data-testid={testId}
         sx={{ display: "flex", flexDirection: "column" }}
       >
-        <Box sx={{ ...groupTitleSx, mb: 0.5 }}>
-          {title} · {rows.length}
-        </Box>
+        <Box sx={{ ...groupTitleSx, mb: 0.5 }}>{title}</Box>
         {rows.map((item) => row(item))}
       </Box>
     );
@@ -697,7 +705,25 @@ export const WhatsCompared: React.FunctionComponent<WhatsComparedProps> = ({
         gap: 1.5,
       }}
     >
-      <Box sx={{ display: "flex", gap: 1.75 }}>
+      <Box
+        component="button"
+        type="button"
+        aria-expanded={open}
+        data-testid="comparedToggle"
+        onClick={() => setOpen((value) => !value)}
+        sx={{
+          all: "unset",
+          cursor: "pointer",
+          display: "flex",
+          alignItems: "center",
+          gap: 1.75,
+          borderRadius: "8px",
+          "&:focus-visible": {
+            outline: `2px solid ${tokens.brand}`,
+            outlineOffset: 2,
+          },
+        }}
+      >
         {structure.size && (
           <ComparedMap
             size={structure.size}
@@ -710,21 +736,32 @@ export const WhatsCompared: React.FunctionComponent<WhatsComparedProps> = ({
           sx={{
             display: "flex",
             flexDirection: "column",
-            gap: 0.5,
+            gap: 0.25,
             minWidth: 0,
+            flex: 1,
           }}
         >
           <Box sx={groupTitleSx}>{t("compared.title")}</Box>
           <Typography
             data-testid="comparedSummary"
-            sx={{ fontSize: 17, fontWeight: 650, lineHeight: 1.3 }}
+            sx={{ fontSize: 15.5, fontWeight: 650, lineHeight: 1.3 }}
           >
             {headline}
           </Typography>
-          <Typography sx={{ fontSize: 13.5, color: tokens.textSecondary }}>
-            {help}
-          </Typography>
+          {noTree && (
+            <Typography sx={{ fontSize: 13.5, color: tokens.textSecondary }}>
+              {t("compared.noTreeHelp")}
+            </Typography>
+          )}
         </Box>
+        <ExpandMoreRounded
+          sx={{
+            fontSize: 20,
+            color: tokens.textMuted,
+            transform: open ? "rotate(180deg)" : "none",
+            transition: "transform 200ms",
+          }}
+        />
       </Box>
 
       {overview.compared.length > 0 && (
@@ -733,7 +770,7 @@ export const WhatsCompared: React.FunctionComponent<WhatsComparedProps> = ({
           sx={{ display: "flex", flexDirection: "column" }}
         >
           <Box sx={{ ...groupTitleSx, mb: 0.5 }}>
-            {t("compared.group.compared")} · {overview.compared.length}
+            {t("compared.group.compared")}
           </Box>
           {overview.compared.map(comparedRow)}
         </Box>
@@ -800,17 +837,13 @@ export const WhatsCompared: React.FunctionComponent<WhatsComparedProps> = ({
         </Box>
       )}
 
-      {overview.variable.length > 0 && (
+      {open && overview.variable.length > 0 && (
         <Box
           data-testid="variableGroup"
           sx={{ display: "flex", flexDirection: "column" }}
         >
           <Box sx={{ ...groupTitleSx, mb: 0.5 }}>
-            {t("compared.group.variable")} ·{" "}
-            {overview.variable.reduce(
-              (sum, item) => sum + (item.rects.length || 1),
-              0,
-            )}
+            {t("compared.group.variable")}
           </Box>
           {overview.variable.map(variableRow)}
         </Box>
@@ -851,14 +884,16 @@ export const WhatsCompared: React.FunctionComponent<WhatsComparedProps> = ({
         </Box>
       )}
 
-      {group(t("compared.group.ignored"), overview.ignored, "ignoredGroup")}
-      {group(
-        t("compared.group.tolerated"),
-        overview.tolerated,
-        "toleratedGroup",
-      )}
+      {open &&
+        group(t("compared.group.ignored"), overview.ignored, "ignoredGroup")}
+      {open &&
+        group(
+          t("compared.group.tolerated"),
+          overview.tolerated,
+          "toleratedGroup",
+        )}
 
-      {overview.outside.length > 0 && (
+      {open && overview.outside.length > 0 && (
         <Box
           data-testid="outsideGroup"
           sx={{
@@ -897,7 +932,7 @@ export const WhatsCompared: React.FunctionComponent<WhatsComparedProps> = ({
               }}
             />
             <Box component="span" sx={groupTitleSx}>
-              {t("compared.group.outside")} · {overview.outside.length}
+              {t("compared.group.outside")}
             </Box>
             {overview.only && (
               <Box
@@ -917,6 +952,81 @@ export const WhatsCompared: React.FunctionComponent<WhatsComparedProps> = ({
               </Box>
               {overview.outside.map((item) => row(item, true))}
             </Box>
+          )}
+        </Box>
+      )}
+
+      {onSelectElements && (
+        // what changes the comparison sits with the comparison (REQ-036-40, 42)
+        <Box
+          data-testid="changeWhatIsCompared"
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            gap: 1.25,
+            mx: -1.75,
+            mb: -1.5,
+            px: 1.75,
+            py: 1.25,
+            borderTop: `1px solid ${tokens.border}`,
+            bgcolor: tokens.subtle,
+            borderRadius: "0 0 12px 12px",
+          }}
+        >
+          <Box
+            sx={{
+              flex: 1,
+              fontSize: 12.5,
+              lineHeight: 1.4,
+              color: tokens.textMuted,
+            }}
+          >
+            {t("compared.selectHelp")}
+          </Box>
+          <Button
+            size="small"
+            variant="outlined"
+            data-testid="selectElementsFromPanel"
+            onClick={onSelectElements}
+            sx={{ flexShrink: 0, bgcolor: tokens.surface }}
+          >
+            {t("select.button")}
+            <Box
+              component="kbd"
+              sx={{
+                ml: 0.75,
+                font: `500 11px ${tokens.mono}`,
+                border: `1px solid ${tokens.borderStrong}`,
+                borderRadius: "4px",
+                px: 0.5,
+                color: tokens.textSecondary,
+              }}
+            >
+              E
+            </Box>
+          </Button>
+          {onAddRule && (
+            <>
+              <IconButton
+                size="small"
+                aria-label={t("compared.moreActions")}
+                data-testid="comparedMore"
+                onClick={(event) => setMenu(event.currentTarget)}
+              >
+                <MoreHoriz sx={{ fontSize: 18 }} />
+              </IconButton>
+              <Menu anchorEl={menu} open={!!menu} onClose={() => setMenu(null)}>
+                <MenuItem
+                  data-testid="addRuleFromPanel"
+                  onClick={() => {
+                    setMenu(null);
+                    onAddRule();
+                  }}
+                >
+                  {t("compared.manualRule")}
+                </MenuItem>
+              </Menu>
+            </>
           )}
         </Box>
       )}

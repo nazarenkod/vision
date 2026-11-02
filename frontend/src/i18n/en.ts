@@ -571,7 +571,6 @@ export const en = {
   "panel.noDetails": "No details about this change.",
   "panel.invisible": "Changes the pixels do not show",
   "panel.ignoreArea": "Ignore area",
-  "panel.spots": "Changed in {count} spots",
   "panel.areaAt": "{width} × {height} px at {x}, {y}",
   "panel.moved": "Compared at their new place",
   "panel.movedHelp":
@@ -581,7 +580,6 @@ export const en = {
   "panel.right": "right {count} dp",
   "panel.left": "left {count} dp",
   "panel.ruleRemoved": "Rule removed; compared again",
-  "panel.addRuleButton": "Add element rule",
   "panel.resize": "Drag to resize the panel; double-click for the usual width",
   "panel.details": "Review details",
   "panel.accessibility": "Accessibility",
@@ -1201,24 +1199,17 @@ export const en = {
   // what is compared (spec 024)
   "compared.whole": "Whole screen",
   "compared.none": "Nothing is compared",
-  "compared.except": {
-    one: "Whole screen except {count} place",
-    other: "Whole screen except {count} places",
-  },
-  "compared.only": {
-    one: "Only {count} element",
-    other: "Only {count} elements",
-  },
+  "compared.except": "Whole screen, with exceptions",
+  "compared.only": "Only the chosen elements",
   "compared.areas": {
     one: "· without {count} area",
     other: "· without {count} areas",
   },
-  "compared.title": "What's compared",
-  "compared.onlyHelp":
-    "The rest of the screen does not count, whatever changes there.",
-  "compared.exceptHelp": "Everything else on the screen is compared.",
-  "compared.wholeHelp": "No rule or area leaves anything out.",
-  "compared.noneHelp": "None of the chosen elements was found.",
+  "compared.title": "Comparison scope",
+  "compared.selectHelp":
+    "Click an element on the screen to ignore it or compare only it.",
+  "compared.manualRule": "Rule by hand…",
+  "compared.moreActions": "More actions",
   "compared.noTreeHelp":
     "Without a UI tree the chosen elements cannot be found.",
   "compared.group.compared": "Compared",
@@ -1271,17 +1262,42 @@ export const en = {
   "compared.removedFromCompared":
     "Removed from what is compared; compared again",
   "compared.map": "Screen map: {summary}",
-  "compared.changeWhat": "Change what is compared:",
-  "changes.title": "What changed",
+  "changes.list": "What changed",
+  "changes.spots": {
+    one: "Changed in {count} spot",
+    other: "Changed in {count} spots",
+  },
+  "changes.loose": {
+    one: "{count} spot outside elements",
+    other: "{count} spots outside elements",
+  },
+  "changes.looseWhat": "Not part of any element",
+  "changes.nth": " · {nth} of {of}",
+  "changes.more": {
+    one: "{count} more spot",
+    other: "{count} more spots",
+  },
+  "changes.place": "{width} × {height} px, {where}",
+  "changes.text": "Text: “{before}” → “{after}”",
+  "changes.label": "Label: “{before}” → “{after}”",
+  "changes.state": "State: {before} → {after}",
+  "changes.added": "Appeared",
+  "changes.removed": "Disappeared",
+  "changes.resized": "Resized {before} → {after} dp",
+  "changes.where.top.left": "top left",
+  "changes.where.top.center": "top",
+  "changes.where.top.right": "top right",
+  "changes.where.middle.left": "left",
+  "changes.where.middle.center": "middle",
+  "changes.where.middle.right": "right",
+  "changes.where.bottom.left": "bottom left",
+  "changes.where.bottom.center": "bottom",
+  "changes.where.bottom.right": "bottom right",
   "verdict.same": "No changes",
-  "verdict.sameWhy": "Everything that is compared matches the baseline.",
-  "verdict.sameOnlyWhy": "The chosen elements are the same as on the baseline.",
   "verdict.changes": {
     one: "{count} change",
     other: "{count} changes",
   },
-  "verdict.changesWhy":
-    "Everything else that is compared matches the baseline.",
   "verdict.changed": "Changed",
   "verdict.decide": "No changes found, but it needs your decision",
   "verdict.noBaselineTree":

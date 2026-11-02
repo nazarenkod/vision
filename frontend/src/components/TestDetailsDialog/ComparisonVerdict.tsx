@@ -2,6 +2,7 @@ import React from "react";
 import { Box, Typography } from "@mui/material";
 import {
   CheckRounded,
+  DifferenceOutlined,
   ErrorOutlineRounded,
   HourglassEmptyRounded,
 } from "@mui/icons-material";
@@ -10,7 +11,8 @@ import { tokens } from "../../theme";
 
 /**
  * What came out of the comparison and why, first in the Changes tab
- * (REQ-030-01…04). A count of changes stands in the badge itself.
+ * (REQ-030-01…04). The count lives in the title alone, so the badge is an icon
+ * (REQ-036-01), and a reason shows only when there is something to explain.
  */
 export const ComparisonVerdict: React.FunctionComponent<{
   verdict: Verdict;
@@ -23,9 +25,7 @@ export const ComparisonVerdict: React.FunctionComponent<{
     ) : verdict.tone === "failed" ? (
       <ErrorOutlineRounded sx={{ fontSize: 20 }} />
     ) : changes ? (
-      <Box component="span" sx={{ fontWeight: 700, fontSize: 15 }}>
-        {changes}
-      </Box>
+      <DifferenceOutlined sx={{ fontSize: 19 }} />
     ) : (
       <HourglassEmptyRounded sx={{ fontSize: 19 }} />
     );
@@ -34,7 +34,11 @@ export const ComparisonVerdict: React.FunctionComponent<{
       component="section"
       data-testid="comparisonVerdict"
       data-tone={verdict.tone}
-      sx={{ display: "flex", gap: 1.5, alignItems: "flex-start" }}
+      sx={{
+        display: "flex",
+        gap: 1.5,
+        alignItems: verdict.reason ? "flex-start" : "center",
+      }}
     >
       <Box
         aria-hidden
@@ -67,12 +71,18 @@ export const ComparisonVerdict: React.FunctionComponent<{
         >
           {verdict.title}
         </Typography>
-        <Typography
-          data-testid="verdictReason"
-          sx={{ fontSize: 13.5, color: tokens.textSecondary, lineHeight: 1.45 }}
-        >
-          {verdict.reason}
-        </Typography>
+        {verdict.reason && (
+          <Typography
+            data-testid="verdictReason"
+            sx={{
+              fontSize: 13.5,
+              color: tokens.textSecondary,
+              lineHeight: 1.45,
+            }}
+          >
+            {verdict.reason}
+          </Typography>
+        )}
       </Box>
     </Box>
   );

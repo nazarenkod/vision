@@ -37,9 +37,10 @@ dependencies {
 
 ### Vision build
 
-This copy adds two optional fields, `TestRunOptions.uiTree` and `featureName`, and names the main classes
-`Vision` and `VisionConfig` (upstream: `VisualRegressionTracker`, `VisualRegressionTrackerConfig`). Publish it,
-change the version in your build and those two class names in your tests (default `4.3.1-vision.3`; JDK 11–17 and Gradle 7 to build, runs on Java 11+):
+This copy adds two optional fields, `CheckOptions.uiTree` and `featureName`, and names its classes
+`Vision`, `VisionConfig`, `CheckOptions` and `CheckResult` (upstream: `VisualRegressionTracker`,
+`VisualRegressionTrackerConfig`, `TestRunOptions`, `TestRunResult`). Publish it, change the version in your
+build and those class names in your tests (default `4.3.1-vision.4`; JDK 11–17 and Gradle 7 to build, runs on Java 11+):
 
 ```bash
 gradle publishToMavenLocal
@@ -181,7 +182,7 @@ With specific options
 vision.track(
         "Name for test",
         screenshotBase64,
-        TestRunOptions.builder()
+        CheckOptions.builder()
             .browser("Chrome")
             .os("Windows")
             .viewport("1200x800")
@@ -196,7 +197,7 @@ With the screen's UI tree (Appium page source; optional, Vision only)
 vision.track(
         "Payment",
         screenshotBase64,
-        TestRunOptions.builder()
+        CheckOptions.builder()
             .device("Pixel 7")
             .os("Android 15")
             .uiTree(driver.getPageSource())

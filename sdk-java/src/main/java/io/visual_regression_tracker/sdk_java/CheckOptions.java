@@ -9,7 +9,7 @@ import lombok.ToString;
 @Builder
 @Getter
 @ToString
-public class TestRunOptions {
+public class CheckOptions {
     private final String os;
     private final String browser;
     private final String viewport;

@@ -98,10 +98,10 @@ public class Vision {
         return vrtStopResponse;
     }
 
-    public TestRunResult track(String name, String imageBase64, TestRunOptions testRunOptions)
+    public CheckResult track(String name, String imageBase64, CheckOptions checkOptions)
             throws IOException, InterruptedException {
-        log.info("Tracking test run <{}> with options <{}> for buildId <{}>", name, testRunOptions, buildId);
-        TestRunResponse testResultDTO = submitTestRun(name, imageBase64, testRunOptions);
+        log.info("Tracking test run <{}> with options <{}> for buildId <{}>", name, checkOptions, buildId);
+        TestRunResponse testResultDTO = submitTestRun(name, imageBase64, checkOptions);
 
         String errorMessage;
         switch (testResultDTO.getStatus()) {
@@ -124,11 +124,11 @@ public class Vision {
             }
         }
 
-        return new TestRunResult(testResultDTO, this.paths);
+        return new CheckResult(testResultDTO, this.paths);
     }
 
-    public TestRunResult track(String name, String imageBase64) throws IOException, InterruptedException {
-        return track(name, imageBase64, TestRunOptions.builder().build());
+    public CheckResult track(String name, String imageBase64) throws IOException, InterruptedException {
+        return track(name, imageBase64, CheckOptions.builder().build());
     }
 
     protected boolean isStarted() {
@@ -136,7 +136,7 @@ public class Vision {
     }
 
     protected TestRunResponse submitTestRun(String name, String imageBase64,
-                                            TestRunOptions testRunOptions) throws IOException, InterruptedException {
+                                            CheckOptions checkOptions) throws IOException, InterruptedException {
         if (!isStarted()) {
             throw new TestRunException(TRACKER_NOT_STARTED);
         }
@@ -147,15 +147,15 @@ public class Vision {
                 .branchName(configuration.getBranchName())
                 .name(name)
                 .imageBase64(imageBase64)
-                .os(testRunOptions.getOs())
-                .browser(testRunOptions.getBrowser())
-                .viewport(testRunOptions.getViewport())
-                .device(testRunOptions.getDevice())
-                .customTags(testRunOptions.getCustomTags())
-                .diffTollerancePercent(testRunOptions.getDiffTollerancePercent())
-                .ignoreAreas(testRunOptions.getIgnoreAreas())
-                .uiTree(encodeUiTree(testRunOptions.getUiTree()))
-                .featureName(testRunOptions.getFeatureName())
+                .os(checkOptions.getOs())
+                .browser(checkOptions.getBrowser())
+                .viewport(checkOptions.getViewport())
+                .device(checkOptions.getDevice())
+                .customTags(checkOptions.getCustomTags())
+                .diffTollerancePercent(checkOptions.getDiffTollerancePercent())
+                .ignoreAreas(checkOptions.getIgnoreAreas())
+                .uiTree(encodeUiTree(checkOptions.getUiTree()))
+                .featureName(checkOptions.getFeatureName())
                 .build();
 
         HttpRequest.BodyPublisher body = HttpRequest.BodyPublishers.ofString(gson.toJson(newTestRun));

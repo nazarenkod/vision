@@ -218,7 +218,7 @@ export const AllowedDevicesSettings: React.FunctionComponent = () => {
                 <DeviceTags parts={entry} />
               </Box>
               {allowed ? (
-                // text, not a grey chip: a chip would read as one more tag (REQ-036-06)
+                // text, not a grey chip: a chip would read as one more tag (REQ-037-06)
                 <Typography
                   variant="body2"
                   sx={{

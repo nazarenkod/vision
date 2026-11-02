@@ -13,7 +13,7 @@
 | Розрахунок | `backend/src/analytics/insights.ts` | `computeInsights`, `deviceOf` |
 | Дані | `backend/src/analytics/analytics.service.ts` | `projectInsights`; `MAX_RUNS` |
 | API | `backend/src/analytics/analytics.controller.ts` | `GET /analytics/:projectId?days=` (7–730, типово 90) |
-| UI | `frontend/src/pages/InsightsPage.tsx` | `PERIODS` 30/90/180/365, масове видалення еталонів |
+| UI | `frontend/src/pages/InsightsPage.tsx` | `PERIODS` 30/90/180/365, масове видалення еталонів; чотири блоки без підзаголовків (REQ-008-11) |
 
 ## Перевірка вимог
 
@@ -28,4 +28,6 @@
 | REQ-008-04 | `backend/src/analytics/insights.spec.ts › ranks screens by their newest accessibility issues, with the decisions taken on them` |
 | REQ-008-06 | `backend/src/analytics/insights.spec.ts › lists the checks each device is missing on the main branch` |
 | REQ-008-07 | `backend/src/analytics/insights.spec.ts › counts reviews waiting for a decision by the newest run of each baseline` |
+| REQ-008-11 | `frontend/integration_tests/test/insights.spec.ts › shows stale baselines, unstable screens and accessibility, nothing else` |
+| REQ-008-12 | `frontend/integration_tests/test/insights.spec.ts › shows stale baselines, unstable screens and accessibility, nothing else` |
 | REQ-008-08 | `backend/src/analytics/insights.spec.ts › judges only the history that is left when older builds were removed`; `frontend/integration_tests/test/insights.spec.ts › says from when the history is kept in one line by the period` |

@@ -76,7 +76,7 @@ export const deviceOf = (row: {
   viewport?: string | null;
 }) => [row.device, row.os, row.browser, row.viewport].filter(Boolean).join(' · ') || 'No device';
 
-/** The profile field by field, so the UI shows it as tags (spec 036); `device` above stays for the CLI. */
+/** The profile field by field, so the UI shows it as tags (spec 037); `device` above stays for the CLI. */
 export interface DeviceProfile {
   os: string;
   device: string;

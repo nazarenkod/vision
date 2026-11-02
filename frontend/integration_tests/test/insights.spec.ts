@@ -107,7 +107,7 @@ const openInsights = async (page, insights: ProjectInsights = INSIGHTS) => {
   return requests;
 };
 
-test("shows what the project history says", async ({
+test("shows stale baselines, unstable screens and accessibility, nothing else", async ({
   page,
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   authUser,
@@ -115,7 +115,16 @@ test("shows what the project history says", async ({
   await openInsights(page);
 
   await expect(page.getByRole("heading", { name: "Insights" })).toBeVisible();
-  await expect(page.getByTestId("insightsTile-unused")).toBeVisible();
+  await expect(
+    page.getByRole("heading", { level: 2 }).allTextContents(),
+  ).resolves.toEqual([
+    "Stale baselines",
+    "Unstable screens",
+    "Accessibility",
+    "Most frequent problems",
+  ]);
+  await expect(page.getByText("2 of 40", { exact: true })).toBeVisible();
+  await expect(page.getByTestId(/^insightsTile-/)).toHaveCount(0);
   await expect(page.getByRole("row", { name: /Old promo/ })).toContainText(
     "200",
   );
@@ -127,16 +136,6 @@ test("shows what the project history says", async ({
   );
   await expect(page.getByRole("row", { name: /^Payment/ })).toContainText("6");
   await expect(page.getByText("Touch target too small")).toBeVisible();
-  await expect(
-    page.getByText("4 tiny changes approved in 11 screens"),
-  ).toBeVisible();
-  await expect(
-    page.getByText("4 with hidden changes of 8 screens"),
-  ).toBeVisible();
-  await expect(page.getByText(/taken while loading/)).toHaveCount(0);
-  await expect(page.getByTestId("insightsCoverage")).toContainText(
-    "1 missing of 4",
-  );
 });
 
 test("shows each device as tags, OS first", async ({
@@ -152,9 +151,6 @@ test("shows each device as tags, OS first", async ({
   await expect(tags("Login")).toHaveText(["Android 15", "Pixel 7"]);
   // a server from before the tags sends one line: one tag, not a broken row
   await expect(tags("Onboarding v1")).toHaveText(["Galaxy S23 · Android 14"]);
-  await expect(
-    page.getByTestId("insightsCoverage").getByTestId("deviceTag"),
-  ).toHaveText(["Android 14", "Galaxy S23"]);
 });
 
 test("says from when the history is kept in one line by the period", async ({
@@ -176,7 +172,7 @@ test("asks for the period it shows", async ({
   authUser,
 }) => {
   const requests = await openInsights(page);
-  await expect(page.getByTestId("insightsTile-unused")).toBeVisible();
+  await expect(page.getByRole("row", { name: /Old promo/ })).toBeVisible();
 
   await page.getByTestId("insightsPeriod").click();
   await page.getByRole("option", { name: "Last 30 days" }).click();

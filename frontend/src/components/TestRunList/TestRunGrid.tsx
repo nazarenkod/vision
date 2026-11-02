@@ -163,10 +163,10 @@ export const TestRunGrid: React.FunctionComponent<{
                 {run.name}
               </Typography>
               <TestStatusChip status={run.status} />
-              {/* the same grey tags as the table and every other screen (spec 036),
+              {/* the same grey tags as the table and every other screen (spec 037),
                 at most two rows so a narrow card still leads with the name and the
                 status. Each one filters the list by itself; the filter shows in the
-                Tag field above, the tag itself stays grey (REQ-036-04). */}
+                Tag field above, the tag itself stays grey (REQ-037-04). */}
               <Box
                 title={tags.join(" · ")}
                 data-testid="cardTags"

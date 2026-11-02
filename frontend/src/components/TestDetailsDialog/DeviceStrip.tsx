@@ -97,7 +97,7 @@ export const DeviceStrip: React.FunctionComponent<{
               pr: 0.5,
               borderRadius: 999,
               fontSize: 12.5,
-              // the frame marks the current device; the tags inside stay grey (REQ-036-04)
+              // the frame marks the current device; the tags inside stay grey (REQ-037-04)
               border: `1px solid ${current ? tokens.brand : tokens.border}`,
               bgcolor: tokens.surface,
               color: tokens.text,

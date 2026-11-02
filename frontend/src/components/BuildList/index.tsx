@@ -48,17 +48,21 @@ const useStyles = makeStyles(() =>
       height: "100%",
       overflow: "auto",
     },
+    // the menu sits in its own narrow column at the card's edge, so the
+    // card's text keeps the width a long branch name needs
     listItemSecondaryAction: {
       visibility: "hidden",
+      right: 4,
     },
     listItem: {
-      paddingRight: 48,
+      paddingRight: 36,
       margin: "2px 8px",
       borderRadius: 8,
       alignItems: "flex-start",
-      "&:hover $listItemSecondaryAction": {
-        visibility: "inherit",
-      },
+      "&:hover $listItemSecondaryAction, &.Mui-selected $listItemSecondaryAction":
+        {
+          visibility: "inherit",
+        },
     },
   }),
 );
@@ -363,58 +367,85 @@ const BuildList: FunctionComponent = () => {
                     />
                     <ListItemText
                       disableTypography
-                      sx={{ my: 0 }}
+                      sx={{ my: 0, minWidth: 0 }}
                       primary={
-                        <Box
+                        <Typography
+                          variant="subtitle2"
                           sx={{
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "space-between",
-                            gap: 1,
+                            fontSize: 15,
+                            fontVariantNumeric: "tabular-nums",
+                            overflowWrap: "anywhere",
                           }}
                         >
-                          <Typography
-                            variant="subtitle2"
-                            style={{ wordWrap: "break-word" }}
-                          >
-                            {`#${build.number} ${build.ciBuildId || ""}`}
-                          </Typography>
-                          <BuildStatusChip status={build.status} />
-                        </Box>
+                          {`#${build.number}`}
+                          {build.ciBuildId && (
+                            <Box
+                              component="span"
+                              sx={{
+                                ml: 0.75,
+                                fontSize: 13,
+                                fontWeight: 500,
+                                color: tokens.textMuted,
+                              }}
+                            >
+                              {build.ciBuildId}
+                            </Box>
+                          )}
+                        </Typography>
                       }
                       secondary={
                         <Box
                           sx={{
                             display: "flex",
                             flexDirection: "column",
-                            gap: 0.25,
-                            mt: 0.5,
+                            gap: 0.5,
+                            mt: 0.25,
                           }}
                         >
-                          <Tooltip title={build.branchName}>
-                            <Typography
-                              noWrap
-                              sx={{
-                                fontFamily: tokens.mono,
-                                fontSize: 12.5,
-                                color: "text.primary",
-                              }}
-                            >
-                              {build.branchName}
-                            </Typography>
-                          </Tooltip>
-                          <Typography variant="caption" color="textSecondary">
-                            {`${t("builds.summary", {
-                              changed: build.unresolvedCount,
-                              passed: build.passedCount,
-                            })}${
-                              build.failedCount
-                                ? t("builds.summaryFailed", {
-                                    count: build.failedCount,
-                                  })
-                                : ""
-                            } · ${formatDate(build.updatedAt ?? build.createdAt)}`}
+                          <Typography
+                            variant="caption"
+                            sx={{
+                              fontSize: 12.5,
+                              color: tokens.textMuted,
+                              fontVariantNumeric: "tabular-nums",
+                            }}
+                            data-testid="buildDate"
+                          >
+                            {formatDate(build.createdAt)}
                           </Typography>
+                          <Box
+                            sx={{
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "space-between",
+                              gap: 1,
+                            }}
+                          >
+                            <Tooltip title={build.branchName}>
+                              <Box
+                                component="span"
+                                data-testid="buildBranch"
+                                sx={{
+                                  minWidth: 0,
+                                  px: 1,
+                                  py: 0.25,
+                                  borderRadius: 999,
+                                  border: `1px solid ${tokens.border}`,
+                                  bgcolor: tokens.subtle,
+                                  color: tokens.textSecondary,
+                                  fontFamily: tokens.mono,
+                                  fontSize: 12,
+                                  lineHeight: 1.4,
+                                  whiteSpace: "nowrap",
+                                  overflow: "hidden",
+                                  textOverflow: "ellipsis",
+                                }}
+                              >
+                                {build.branchName}
+                              </Box>
+                            </Tooltip>
+                            <BuildStatusChip status={build.status} />
+                          </Box>
                         </Box>
                       }
                     />
@@ -423,10 +454,12 @@ const BuildList: FunctionComponent = () => {
                       className={classes.listItemSecondaryAction}
                     >
                       <IconButton
+                        size="small"
+                        aria-label={t("builds.actions")}
+                        data-testid="buildMenu"
                         onClick={(event) => handleMenuClick(event, build)}
-                        size="large"
                       >
-                        <MoreVert />
+                        <MoreVert fontSize="small" />
                       </IconButton>
                     </ListItemSecondaryAction>
                   </ListItemButton>

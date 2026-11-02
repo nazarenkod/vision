@@ -156,7 +156,7 @@ const Thumb: React.FunctionComponent<{ run: TestRun; onOpen: () => void }> = ({
           transition: `transform ${motion.base}ms ${motion.easing}`,
         }}
       />
-      {/* the OS too: two versions of Android on one model look alike (REQ-036-07) */}
+      {/* the OS too: two versions of Android on one model look alike (REQ-037-07) */}
       <DeviceTags parts={run} dense />
       {(run.customTags || run.diffPercent > 0) && (
         <Box

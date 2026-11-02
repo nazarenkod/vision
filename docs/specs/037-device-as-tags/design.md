@@ -1,8 +1,8 @@
-# 036 — Дизайн
+# 037 — Дизайн
 
 ## Підхід
 
-Один компонент показує профіль пристрою тегами, і його ставимо в кожне місце з REQ-036-03 замість
+Один компонент показує профіль пристрою тегами, і його ставимо в кожне місце з REQ-037-03 замість
 власного тексту цього місця. Порядок і відбір значень визначає чиста функція `deviceTagsOf`
 (ОС → модель → браузер → viewport, порожні пропускає). Тег — це `Chip size="small"`, як у
 колонці «Теги» таблиці перевірок, тому вигляд збігається з еталоном без власних кольорів. Назву
@@ -13,7 +13,7 @@
 (`dense`: висота 20 px замість 24 px), щоб ОС і модель уміщалися в один рядок. Стиль той самий:
 сірий чип без підпису.
 
-Стан (обраний фільтр, поточний пристрій, показаний еталон) теги не фарбують (REQ-036-04). Його
+Стан (обраний фільтр, поточний пристрій, показаний еталон) теги не фарбують (REQ-037-04). Його
 несе те, що їх тримає: рамка кнопки в смузі пристроїв, риска біля пристрою на картці еталона,
 `aria-pressed` у кнопок.
 
@@ -31,13 +31,13 @@ Insights отримує пристрій від сервера одним ряд
 | `deviceTagsOf` | `frontend/src/_helpers/device.helper.ts` | значення профілю в порядку тегів |
 | `DeviceTags` | `frontend/src/components/DeviceTags.tsx` | теги, підказки, режим `print` |
 | Картки перевірок | `frontend/src/components/TestRunList/TestRunGrid.tsx` | теги-чипи, клік фільтрує; не більше двох рядків (52 px) |
-| Огляд збірки | `frontend/src/components/BuildOverview/index.tsx` | компактні теги + розмір екрана (REQ-036-05); колонки результату й чисел вужчі (56/52/84 px), щоб при 1280 px ОС і модель ішли одним рядком; `DeviceCell` прибрано з `SummaryParts.tsx` |
+| Огляд збірки | `frontend/src/components/BuildOverview/index.tsx` | компактні теги + розмір екрана (REQ-037-05); колонки результату й чисел вужчі (56/52/84 px), щоб при 1280 px ОС і модель ішли одним рядком; `DeviceCell` прибрано з `SummaryParts.tsx` |
 | Доступність | `frontend/src/components/A11ySummary.tsx` | теги; колонка пристрою 200 px |
 | Смуга пристроїв | `frontend/src/components/TestDetailsDialog/DeviceStrip.tsx` | крапка статусу + теги, рамка поточного; теги у вікні «Прийняти всі» |
 | Еталони | `frontend/src/components/TestVariationList.tsx`, `TestVariationDetails.tsx` | теги, риска показаного; власні теги — сірий чип, гілка — окрема мітка |
 | Insights | `frontend/src/pages/InsightsPage.tsx`, `frontend/src/types/insights.ts` | теги з `profile`/`profiles`, запасний варіант — один тег |
-| Налаштування | `frontend/src/components/ProjectForm/AllowedDevicesSettings.tsx` | теги, «дозволено» зеленим текстом (REQ-036-06) |
-| Групи змін | `frontend/src/components/ChangeGroups.tsx` | компактні теги з ОС (REQ-036-07); мініатюри вирівняні по верху, бо під ними різна кількість тегів |
+| Налаштування | `frontend/src/components/ProjectForm/AllowedDevicesSettings.tsx` | теги, «дозволено» зеленим текстом (REQ-037-06) |
+| Групи змін | `frontend/src/components/ChangeGroups.tsx` | компактні теги з ОС (REQ-037-07); мініатюри вирівняні по верху, бо під ними різна кількість тегів |
 | Шапка бага | `frontend/src/components/TestDetailsDialog/ReportBugDialog.tsx` | назва + теги ОС і моделі |
 | Звіт | `frontend/src/components/BuildReport/ReportDocument.tsx` | теги `print` у змінах, пристроях і доступності |
 | Insights на сервері | `backend/src/analytics/insights.ts` | `profileOf`, поля `profile` і `profiles` |
@@ -48,7 +48,7 @@ Insights отримує пристрій від сервера одним ряд
 Схема бази не змінюється. Відповіді API лише розширюються:
 
 - Insights: `unused[].profile`, `unstable[].profiles` (у тому ж порядку, що й `devices`),
-  `coverage[].profile`. Поля `device` і `devices` лишаються.
+  `coverage[].profile` (покриття Insights більше не показує, поле лишається для CLI). Поля `device` і `devices` лишаються.
 - Публічний звіт: `a11y[].os`. ОС уже є в `changes[]` і в таблиці пристроїв, тож нічого
   нового назовні не відкривається. Тест «keeps emails, keys and tokens out…» проходить.
 
@@ -73,12 +73,12 @@ Insights отримує пристрій від сервера одним ряд
 
 | Вимога | Перевірка |
 |---|---|
-| REQ-036-01 | `frontend/src/_helpers/device.helper.test.ts › puts the OS first, then the model, browser and viewport`; `frontend/src/_helpers/device.helper.test.ts › leaves out empty values but keeps repeated ones apart` |
-| REQ-036-02 | `frontend/src/components/BuildReport/ReportDocument.test.tsx › explains the bars and leaves zeros out of the tables`; manual: навести курсор на тег в огляді збірки й побачити «ОС» / «Пристрій» |
-| REQ-036-03 | `frontend/integration_tests/test/insights.spec.ts › shows each device as tags, OS first`; manual: пройти екрани з REQ-036-03 і побачити теги |
-| REQ-036-04 | manual: клацнути тег на картці, відкрити другий пристрій у смузі пристроїв, вибрати еталон: теги лишаються сірими |
-| REQ-036-05 | `frontend/integration_tests/test/buildOverview.spec.ts › shows a device's screen size when the run sent no viewport`; `frontend/src/components/BuildReport/ReportDocument.test.tsx › explains the bars and leaves zeros out of the tables` |
-| REQ-036-06 | `frontend/integration_tests/test/projectSettings.spec.ts › marks received devices outside the list and adds one in a click` |
-| REQ-036-07 | manual: відкрити групу змін на двох версіях Android однієї моделі й побачити різні теги ОС |
-| REQ-036-08 | `frontend/src/components/BuildReport/ReportDocument.test.tsx › shows new screenshots without a baseline and names statuses as the app does`; `backend/src/reports/report-links.spec.ts › names the OS of each accessibility row next to its device` |
-| REQ-036-09 | manual: створити баг у Jira й побачити в описі «ОС: … · Пристрій: …», як раніше |
+| REQ-037-01 | `frontend/src/_helpers/device.helper.test.ts › puts the OS first, then the model, browser and viewport`; `frontend/src/_helpers/device.helper.test.ts › leaves out empty values but keeps repeated ones apart` |
+| REQ-037-02 | `frontend/src/components/BuildReport/ReportDocument.test.tsx › explains the bars and leaves zeros out of the tables`; manual: навести курсор на тег в огляді збірки й побачити «ОС» / «Пристрій» |
+| REQ-037-03 | `frontend/integration_tests/test/insights.spec.ts › shows each device as tags, OS first`; manual: пройти екрани з REQ-037-03 і побачити теги |
+| REQ-037-04 | manual: клацнути тег на картці, відкрити другий пристрій у смузі пристроїв, вибрати еталон: теги лишаються сірими |
+| REQ-037-05 | `frontend/integration_tests/test/buildOverview.spec.ts › shows a device's screen size when the run sent no viewport`; `frontend/src/components/BuildReport/ReportDocument.test.tsx › explains the bars and leaves zeros out of the tables` |
+| REQ-037-06 | `frontend/integration_tests/test/projectSettings.spec.ts › marks received devices outside the list and adds one in a click` |
+| REQ-037-07 | manual: відкрити групу змін на двох версіях Android однієї моделі й побачити різні теги ОС |
+| REQ-037-08 | `frontend/src/components/BuildReport/ReportDocument.test.tsx › shows new screenshots without a baseline and names statuses as the app does`; `backend/src/reports/report-links.spec.ts › names the OS of each accessibility row next to its device` |
+| REQ-037-09 | manual: створити баг у Jira й побачити в описі «ОС: … · Пристрій: …», як раніше |

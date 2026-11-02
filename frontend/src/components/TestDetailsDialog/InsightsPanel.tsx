@@ -23,6 +23,7 @@ import {
 } from "@mui/material";
 import {
   BugReport,
+  ChevronRightRounded,
   MoreHoriz,
   VisibilityOffOutlined,
 } from "@mui/icons-material";
@@ -34,6 +35,7 @@ import {
   A11yReport,
   A11yViolation,
   PickableElement,
+  Rect,
   StructureInfo,
   TestRun,
   VisualBug,
@@ -46,11 +48,7 @@ import { motion, tokens } from "../../theme";
 import { labelOf, useT } from "../../i18n";
 import { WhatsCompared } from "./WhatsCompared";
 import { ComparisonVerdict } from "./ComparisonVerdict";
-import {
-  countChanges,
-  overview,
-  verdict,
-} from "../../_helpers/whatsCompared.helper";
+import { overview, verdict } from "../../_helpers/whatsCompared.helper";
 import { expectedOf } from "../../_helpers/variableText.helper";
 import { useRuleSnackbar } from "../useRuleSnackbar";
 import { readAreas } from "../../_helpers/ignoreArea.helper";
@@ -61,7 +59,17 @@ import {
 } from "../../_helpers/panelWidth.helper";
 
 const PANEL_WIDTH_KEY = "vision.review.panelWidth";
-import { groupAreas, splitElement } from "./changedAreas";
+import {
+  ChangeRow,
+  changeRows,
+  countRows,
+  rowName,
+  splitElement,
+  whereOn,
+} from "./changedAreas";
+
+// a long row opens five places at a time, the rest one click away (REQ-036-22)
+const PLACES_SHOWN = 5;
 import { SelectorMatches } from "../../types/insights";
 import { elementLabel } from "../../_helpers/elementPicking.helper";
 
@@ -979,6 +987,23 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
     resourceId: string;
   } | null>(null);
   // quiet icons: a text button on every row drowned the elements out
+  // one changed row open at a time, its places five at a time (REQ-036-22)
+  const [openRow, setOpenRow] = React.useState<string | null>(null);
+  const [allPlaces, setAllPlaces] = React.useState(false);
+  // the row's own actions show when it is pointed at or focused (REQ-036-17)
+  const changeRowSx = {
+    display: "grid",
+    gridTemplateColumns: "minmax(0, 1fr) auto",
+    alignItems: "center",
+    columnGap: 1,
+    py: 0.5,
+    px: 1,
+    mx: -1,
+    borderRadius: 1,
+    "& .acts": { opacity: 0, transition: "opacity 120ms" },
+    "&:hover": { bgcolor: tokens.subtle },
+    "&:hover .acts, &:focus-within .acts": { opacity: 1 },
+  } as const;
   const quietIcon = {
     width: 28,
     height: 28,
@@ -1012,66 +1037,11 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
       </>
     ) : null;
 
-  const rowSx = {
-    display: "grid",
-    gridTemplateColumns: "minmax(0, 1fr) auto",
-    alignItems: "center",
-    columnGap: 1,
-    py: 0.5,
-    px: 1,
-    mx: -1,
-    borderRadius: 1,
-    "&:hover": { bgcolor: tokens.subtle },
-  } as const;
-
   const actionsCell = (children: React.ReactNode) => (
     <Box sx={{ display: "flex", alignItems: "center", gap: 0.25 }}>
       {children}
     </Box>
   );
-
-  // the name leads; the type and the id follow quietly, so twenty rows stay scannable
-  const elementCell = (element: string) => {
-    const { type, name, id } = splitElement(element);
-    return (
-      <Box sx={{ minWidth: 0 }}>
-        <Box
-          sx={{
-            fontSize: 14,
-            lineHeight: 1.35,
-            color: tokens.text,
-            overflowWrap: "anywhere",
-            display: "-webkit-box",
-            WebkitLineClamp: 2,
-            WebkitBoxOrient: "vertical",
-            overflow: "hidden",
-          }}
-          title={name ?? undefined}
-        >
-          {name ?? type}
-        </Box>
-        <Box
-          sx={{
-            fontSize: 12,
-            lineHeight: 1.4,
-            color: tokens.textMuted,
-            whiteSpace: "nowrap",
-            overflow: "hidden",
-            textOverflow: "ellipsis",
-          }}
-          title={id ?? undefined}
-        >
-          {name ? type : null}
-          {name && id ? " · " : null}
-          {id && (
-            <Box component="span" sx={{ font: `400 12px ${tokens.mono}` }}>
-              {id}
-            </Box>
-          )}
-        </Box>
-      </Box>
-    );
-  };
 
   const changesTab = () => {
     if (structure === undefined)
@@ -1083,15 +1053,33 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
         </Typography>
       );
     }
-    const visibleChanges = structure.changes.filter(
-      (change) => change.kind !== "moved",
-    );
     const compared = overview(
       structure,
       readAreas(testRun.ignoreAreas),
       readAreas(testRun.tempIgnoreAreas),
     );
-    const changeCount = countChanges(structure);
+    const rows = changeRows(structure.regions, structure.changes);
+    const changeCount = countRows(rows);
+    const placeText = (place: Rect) =>
+      t("changes.place", {
+        width: Math.round(place.width),
+        height: Math.round(place.height),
+        where: structure.size
+          ? t(`changes.where.${whereOn(place, structure.size)}` as const)
+          : `${Math.round(place.x)}, ${Math.round(place.y)}`,
+      });
+    const whatChanged = (row: ChangeRow) => {
+      const change = row.change;
+      if (change && change.kind !== "moved") {
+        const params = {
+          before: String(change.before ?? ""),
+          after: String(change.after ?? ""),
+        };
+        return t(`changes.${change.kind}` as const, params);
+      }
+      if (!row.element) return t("changes.looseWhat");
+      return t("changes.spots", { count: row.places.length });
+    };
     return (
       <>
         {testRun.baselineName && (
@@ -1214,6 +1202,11 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
           onRemoveFromCompared={removeFromCompared}
           onUseElement={onUseElement}
           onPreview={(id) => onPreviewMark?.(id)}
+          startOpen={changeCount === 0}
+          onSelectElements={
+            canEdit && withUiTree ? onSelectElements : undefined
+          }
+          onAddRule={canEdit && withUiTree ? () => openRule(null) : undefined}
         />
         {structure.invisible.length > 0 && (
           <Alert severity="error" sx={{ py: 0 }}>
@@ -1255,98 +1248,230 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
             {hint.message}
           </Alert>
         ))}
-        {changeCount > 0 && (
-          // one list under one heading: spots by element, then what the tree shows (REQ-030-50)
+        {rows.length > 0 && (
+          // straight under the count, one row per changed thing (REQ-036-10…22)
           <Box
             data-testid="whatChanged"
-            sx={{ display: "flex", flexDirection: "column" }}
+            aria-label={t("changes.list")}
+            sx={{ display: "flex", flexDirection: "column", mt: -1 }}
           >
-            <Box
-              component="h3"
-              sx={{
-                m: 0,
-                mb: 0.5,
-                fontSize: 11.5,
-                fontWeight: 600,
-                letterSpacing: "0.05em",
-                textTransform: "uppercase",
-                color: tokens.textMuted,
-              }}
-            >
-              {t("changes.title")} · {changeCount}
-            </Box>
-            {groupAreas(structure.regions).map((group, index) => (
-              <Box
-                key={group.element ?? `area-${index}`}
-                data-testid="changedArea"
-                onMouseEnter={() => onPreviewRegion?.(group.bounds)}
-                onMouseLeave={() => onPreviewRegion?.(undefined)}
-                sx={rowSx}
-              >
-                {group.element ? (
-                  elementCell(group.element)
-                ) : (
-                  <Box sx={{ fontSize: 14, color: tokens.textSecondary }}>
-                    {t("panel.areaAt", { ...group.regions[0] })}
-                  </Box>
-                )}
-                {actionsCell(
-                  <>
-                    {group.regions.length > 1 && (
-                      <Tooltip
-                        title={t("panel.spots", {
-                          count: group.regions.length,
-                        })}
+            {rows.map((row) => {
+              const many = row.places.length > 1;
+              const open = many && openRow === row.key;
+              const shown = open
+                ? allPlaces
+                  ? row.places
+                  : row.places.slice(0, PLACES_SHOWN)
+                : [];
+              const parts = row.element ? splitElement(row.element) : null;
+              const tip = parts
+                ? [parts.type, parts.id].filter(Boolean).join(" · ")
+                : "";
+              return (
+                <Box
+                  key={row.key}
+                  data-testid="changedArea"
+                  data-element={row.element ?? ""}
+                  onMouseEnter={() =>
+                    row.bounds && onPreviewRegion?.(row.bounds)
+                  }
+                  onMouseLeave={() => onPreviewRegion?.(undefined)}
+                  sx={{ display: "flex", flexDirection: "column" }}
+                >
+                  <Box sx={changeRowSx}>
+                    <Box
+                      component={many ? "button" : "div"}
+                      type={many ? "button" : undefined}
+                      aria-expanded={many ? open : undefined}
+                      data-testid={many ? "changedAreaToggle" : undefined}
+                      title={tip || undefined}
+                      onClick={
+                        many
+                          ? () => {
+                              setOpenRow(open ? null : row.key);
+                              setAllPlaces(false);
+                            }
+                          : undefined
+                      }
+                      sx={{
+                        all: "unset",
+                        cursor: many ? "pointer" : "default",
+                        display: "grid",
+                        gridTemplateColumns: "20px minmax(0, 1fr)",
+                        alignItems: "center",
+                        columnGap: 0.75,
+                        minWidth: 0,
+                        borderRadius: "6px",
+                        "&:focus-visible": {
+                          outline: `2px solid ${tokens.brand}`,
+                          outlineOffset: 2,
+                        },
+                      }}
+                    >
+                      <Box
+                        sx={{
+                          display: "flex",
+                          justifyContent: "center",
+                          color: tokens.textMuted,
+                        }}
                       >
+                        {many && (
+                          <ChevronRightRounded
+                            sx={{
+                              fontSize: 18,
+                              transform: open ? "rotate(90deg)" : "none",
+                              transition: "transform 160ms",
+                            }}
+                          />
+                        )}
+                      </Box>
+                      <Box sx={{ minWidth: 0 }}>
                         <Box
-                          component="span"
+                          data-testid="changedAreaName"
                           sx={{
-                            font: `600 11px ${tokens.mono}`,
-                            color: tokens.textSecondary,
-                            bgcolor: tokens.subtle,
-                            border: `1px solid ${tokens.border}`,
-                            borderRadius: 1,
-                            px: 0.5,
-                            mr: 0.25,
+                            fontSize: 14,
+                            lineHeight: 1.35,
+                            color: tokens.text,
+                            whiteSpace: "nowrap",
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
                           }}
                         >
-                          ×{group.regions.length}
+                          {row.element
+                            ? rowName(row.element)
+                            : t("changes.loose", { count: row.places.length })}
+                          {row.of > 1 && (
+                            <Box
+                              component="span"
+                              sx={{ color: tokens.textMuted }}
+                            >
+                              {t("changes.nth", { nth: row.nth, of: row.of })}
+                            </Box>
+                          )}
                         </Box>
-                      </Tooltip>
-                    )}
-                    {onReportBug && (
-                      <Tooltip title={t("reportBug.fromChange")}>
-                        <IconButton
-                          size="small"
-                          aria-label={t("reportBug.fromChange")}
-                          onClick={() => onReportBug(group.bounds)}
-                          data-testid="reportBugFromArea"
-                          sx={quietIcon}
+                        <Box
+                          data-testid="changedAreaWhat"
+                          sx={{
+                            fontSize: 12.5,
+                            lineHeight: 1.4,
+                            color: tokens.textMuted,
+                            overflowWrap: "anywhere",
+                          }}
                         >
-                          <BugReport sx={{ fontSize: 18 }} />
-                        </IconButton>
-                      </Tooltip>
+                          {whatChanged(row)}
+                        </Box>
+                      </Box>
+                    </Box>
+                    {actionsCell(
+                      <Box className="acts" sx={{ display: "flex" }}>
+                        {onReportBug && row.bounds && (
+                          <Tooltip title={t("reportBug.fromChange")}>
+                            <IconButton
+                              size="small"
+                              aria-label={t("reportBug.fromChange")}
+                              onClick={() =>
+                                row.bounds && onReportBug(row.bounds)
+                              }
+                              data-testid="reportBugFromArea"
+                              sx={quietIcon}
+                            >
+                              <BugReport sx={{ fontSize: 18 }} />
+                            </IconButton>
+                          </Tooltip>
+                        )}
+                        {elementActions(row.resourceId)}
+                      </Box>,
                     )}
-                    {elementActions(group.resourceId)}
-                  </>,
-                )}
-              </Box>
-            ))}
-            {visibleChanges.map((change) => (
-              <Box key={`${change.kind}:${change.key}`} sx={rowSx}>
-                <Box
-                  sx={{
-                    fontSize: 14,
-                    lineHeight: 1.35,
-                    minWidth: 0,
-                    overflowWrap: "anywhere",
-                  }}
-                >
-                  {describeChange(change, t)}
+                  </Box>
+                  {open && (
+                    <Box
+                      data-testid="changedPlaces"
+                      sx={{
+                        display: "flex",
+                        flexDirection: "column",
+                        ml: 3.5,
+                        mb: 0.75,
+                        pl: 1.25,
+                        borderLeft: `1px solid ${tokens.border}`,
+                      }}
+                    >
+                      {tip && (
+                        <Box
+                          sx={{
+                            fontSize: 12,
+                            color: tokens.textMuted,
+                            px: 1,
+                            pb: 0.5,
+                            overflowWrap: "anywhere",
+                          }}
+                        >
+                          {parts?.type}
+                          {parts?.id && (
+                            <>
+                              {" · "}
+                              <Box
+                                component="span"
+                                sx={{ font: `400 12px ${tokens.mono}` }}
+                              >
+                                {parts.id}
+                              </Box>
+                            </>
+                          )}
+                        </Box>
+                      )}
+                      {shown.map((place, index) => (
+                        <Box
+                          key={index}
+                          data-testid="changedPlace"
+                          onMouseEnter={() => onPreviewRegion?.(place)}
+                          onMouseLeave={() =>
+                            row.bounds && onPreviewRegion?.(row.bounds)
+                          }
+                          sx={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 1,
+                            px: 1,
+                            py: 0.5,
+                            borderRadius: "6px",
+                            fontSize: 13,
+                            color: tokens.textSecondary,
+                            "&:hover": {
+                              bgcolor: tokens.subtle,
+                              color: tokens.text,
+                            },
+                          }}
+                        >
+                          <Box
+                            aria-hidden
+                            sx={{
+                              width: 8,
+                              height: 8,
+                              flexShrink: 0,
+                              borderRadius: "2px",
+                              border: `1.5px solid ${tokens.diff}`,
+                            }}
+                          />
+                          {placeText(place)}
+                        </Box>
+                      ))}
+                      {shown.length < row.places.length && (
+                        <Button
+                          size="small"
+                          data-testid="changedPlacesMore"
+                          onClick={() => setAllPlaces(true)}
+                          sx={{ alignSelf: "flex-start", minWidth: 0, px: 1 }}
+                        >
+                          {t("changes.more", {
+                            count: row.places.length - shown.length,
+                          })}
+                        </Button>
+                      )}
+                    </Box>
+                  )}
                 </Box>
-                {actionsCell(elementActions(change.resourceId || null))}
-              </Box>
-            ))}
+              );
+            })}
           </Box>
         )}
         {structure.moves.length > 0 && (
@@ -1371,51 +1496,6 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
                   : ""}
               </Typography>
             ))}
-          </Box>
-        )}
-        {canEdit && withUiTree && (
-          <Box
-            data-testid="changeWhatIsCompared"
-            sx={{
-              display: "flex",
-              alignItems: "center",
-              flexWrap: "wrap",
-              columnGap: 1.25,
-              fontSize: 13,
-              color: tokens.textMuted,
-            }}
-          >
-            <span>{t("compared.changeWhat")}</span>
-            {onSelectElements && (
-              <Button
-                size="small"
-                data-testid="selectElementsFromPanel"
-                onClick={onSelectElements}
-                sx={{ minWidth: 0, px: 0.5 }}
-              >
-                {t("select.button")}
-                <Box
-                  component="kbd"
-                  sx={{
-                    ml: 0.75,
-                    font: `500 11px ${tokens.mono}`,
-                    border: `1px solid ${tokens.borderStrong}`,
-                    borderRadius: "4px",
-                    px: 0.5,
-                    color: tokens.textSecondary,
-                  }}
-                >
-                  E
-                </Box>
-              </Button>
-            )}
-            <Button
-              size="small"
-              onClick={() => openRule(null)}
-              sx={{ minWidth: 0, px: 0.5 }}
-            >
-              {t("panel.addRuleButton")}
-            </Button>
           </Box>
         )}
       </>

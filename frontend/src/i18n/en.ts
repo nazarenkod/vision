@@ -287,6 +287,7 @@ export const en = {
   "builds.loadFailed": "Builds could not be loaded",
   "builds.noMatch": 'No builds match "{search}"',
   "builds.empty": "No builds",
+  "builds.actions": "Build actions",
   "builds.stop": "Stop",
   "builds.editCiBuild": "Edit CI Build",
   "builds.delete": "Delete",
@@ -429,6 +430,7 @@ export const en = {
   "filters.reset": "Reset",
   "filters.project": "Project",
   "filters.selectProject": "Select project",
+  "projectSelect.newProject": "New project",
 
   // review
   "review.applyIgnoreArea":
@@ -565,7 +567,6 @@ export const en = {
   "panel.noDetails": "No details about this change.",
   "panel.invisible": "Changes the pixels do not show",
   "panel.ignoreArea": "Ignore area",
-  "panel.spots": "Changed in {count} spots",
   "panel.areaAt": "{width} × {height} px at {x}, {y}",
   "panel.moved": "Compared at their new place",
   "panel.movedHelp":
@@ -575,7 +576,6 @@ export const en = {
   "panel.right": "right {count} dp",
   "panel.left": "left {count} dp",
   "panel.ruleRemoved": "Rule removed; compared again",
-  "panel.addRuleButton": "Add element rule",
   "panel.resize": "Drag to resize the panel; double-click for the usual width",
   "panel.details": "Review details",
   "panel.accessibility": "Accessibility",
@@ -755,18 +755,8 @@ export const en = {
   "insights.partial":
     "The project is younger than the period, or its build limit removed older builds.",
   "insights.historyFrom": "History from {date}",
-  "insights.baselines": "baselines",
-  "insights.unusedFor": "unused",
-  "insights.changedOf": "of {count} screens changed",
-  "insights.flips": "flips",
-  "insights.a11yIssues": "accessibility issues",
-  "insights.waiting": "waiting for a decision",
-  "insights.median": "to a decision, median",
-  "insights.hours": "{count} h",
-  "insights.unused": "Unused baselines",
-  "insights.unusedHint": "Nothing compared with them in {count} days.",
-  "insights.unusedHintPartial":
-    "Nothing compared with them in the history kept.",
+  "insights.unused": "Stale baselines",
+  "insights.unusedOf": "{unused} of {total}",
   "insights.selectNone": "Select none",
   "insights.selectAll": "Select all",
   "insights.delete": "Delete {count}",
@@ -779,8 +769,6 @@ export const en = {
   "insights.select": "Select {name}",
   "insights.neverApproved": "never approved",
   "insights.unstable": "Unstable screens",
-  "insights.unstableHint":
-    "Flip: the screen changed, then matched its baseline again. Animations, data, timing.",
   "insights.noUnstable": "No unstable screens.",
   "insights.devices": "Devices",
   "insights.runs": "Screens",
@@ -789,31 +777,14 @@ export const en = {
   "insights.rejected": "Rejected",
   "insights.newBaselines": "New baselines",
   "insights.lastChange": "Last change",
-  "insights.hotspots": "Accessibility hotspots",
-  "insights.hotspotsHint": "Most issues in the latest version of the screen.",
+  "insights.hotspots": "Accessibility",
   "insights.noHotspots": "No issues, or no UI trees.",
   "insights.issues": "Issues",
   "insights.new": "New",
-  "insights.bugsFiled": "Bugs filed",
-  "insights.falsePositives": "False positives",
-  "insights.frequent": "Most frequent issues",
-  "insights.frequentHint":
-    "Fix once in a shared component to clear many screens.",
+  "insights.bugsFiled": "Bugs",
+  "insights.falsePositives": "False",
+  "insights.frequent": "Most frequent problems",
   "insights.nothingToRank": "Nothing yet.",
-  "insights.noise": "Noise that gets approved",
-  "insights.noiseHint":
-    "Tiny changes (under 0.2 %) approved again and again: a tolerance or an element rule stops them.",
-  "insights.noNoise": "No such noise.",
-  "insights.tinyApproved": "{count} tiny changes approved in {runs} screens",
-  "insights.quality": "Hidden changes",
-  "insights.qualityHint": "Elements changed where the pixels did not.",
-  "insights.noQuality": "No screen stands out.",
-  "insights.withHidden": "{count} with hidden changes",
-  "insights.ofRuns": "of {count} screens",
-  "insights.coverage": "Device coverage",
-  "insights.coverageHint": "Main-branch checks a device is missing.",
-  "insights.fullCoverage": "Every device runs every check.",
-  "insights.missing": "{missing} missing of {total}",
   "insights.deleteTitle": {
     one: "Delete {count} baselines?",
     other: "Delete {count} baselines?",
@@ -1071,8 +1042,6 @@ export const en = {
   "device.viewport": "Viewport: {value}",
 
   // builds
-  "builds.summary": "{changed} changed · {passed} passed",
-  "builds.summaryFailed": " · {count} failed",
 
   // review
   "review.tolerance": "tolerance {value}%",
@@ -1195,24 +1164,17 @@ export const en = {
   // what is compared (spec 024)
   "compared.whole": "Whole screen",
   "compared.none": "Nothing is compared",
-  "compared.except": {
-    one: "Whole screen except {count} place",
-    other: "Whole screen except {count} places",
-  },
-  "compared.only": {
-    one: "Only {count} element",
-    other: "Only {count} elements",
-  },
+  "compared.except": "Whole screen, with exceptions",
+  "compared.only": "Only the chosen elements",
   "compared.areas": {
     one: "· without {count} area",
     other: "· without {count} areas",
   },
-  "compared.title": "What's compared",
-  "compared.onlyHelp":
-    "The rest of the screen does not count, whatever changes there.",
-  "compared.exceptHelp": "Everything else on the screen is compared.",
-  "compared.wholeHelp": "No rule or area leaves anything out.",
-  "compared.noneHelp": "None of the chosen elements was found.",
+  "compared.title": "Comparison scope",
+  "compared.selectHelp":
+    "Click an element on the screen to ignore it or compare only it.",
+  "compared.manualRule": "Rule by hand…",
+  "compared.moreActions": "More actions",
   "compared.noTreeHelp":
     "Without a UI tree the chosen elements cannot be found.",
   "compared.group.compared": "Compared",
@@ -1265,17 +1227,42 @@ export const en = {
   "compared.removedFromCompared":
     "Removed from what is compared; compared again",
   "compared.map": "Screen map: {summary}",
-  "compared.changeWhat": "Change what is compared:",
-  "changes.title": "What changed",
+  "changes.list": "What changed",
+  "changes.spots": {
+    one: "Changed in {count} spot",
+    other: "Changed in {count} spots",
+  },
+  "changes.loose": {
+    one: "{count} spot outside elements",
+    other: "{count} spots outside elements",
+  },
+  "changes.looseWhat": "Not part of any element",
+  "changes.nth": " · {nth} of {of}",
+  "changes.more": {
+    one: "{count} more spot",
+    other: "{count} more spots",
+  },
+  "changes.place": "{width} × {height} px, {where}",
+  "changes.text": "Text: “{before}” → “{after}”",
+  "changes.label": "Label: “{before}” → “{after}”",
+  "changes.state": "State: {before} → {after}",
+  "changes.added": "Appeared",
+  "changes.removed": "Disappeared",
+  "changes.resized": "Resized {before} → {after} dp",
+  "changes.where.top.left": "top left",
+  "changes.where.top.center": "top",
+  "changes.where.top.right": "top right",
+  "changes.where.middle.left": "left",
+  "changes.where.middle.center": "middle",
+  "changes.where.middle.right": "right",
+  "changes.where.bottom.left": "bottom left",
+  "changes.where.bottom.center": "bottom",
+  "changes.where.bottom.right": "bottom right",
   "verdict.same": "No changes",
-  "verdict.sameWhy": "Everything that is compared matches the baseline.",
-  "verdict.sameOnlyWhy": "The chosen elements are the same as on the baseline.",
   "verdict.changes": {
     one: "{count} change",
     other: "{count} changes",
   },
-  "verdict.changesWhy":
-    "Everything else that is compared matches the baseline.",
   "verdict.changed": "Changed",
   "verdict.decide": "No changes found, but it needs your decision",
   "verdict.noBaselineTree":

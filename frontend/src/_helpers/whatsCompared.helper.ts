@@ -9,7 +9,10 @@ import {
 } from "../types/insights";
 import { IgnoreArea } from "../types/ignoreArea";
 import { english, Text } from "../i18n";
-import { groupAreas } from "../components/TestDetailsDialog/changedAreas";
+import {
+  changeRows,
+  countRows,
+} from "../components/TestDetailsDialog/changedAreas";
 
 /**
  * Whether compare-only rules shape this comparison. Without a UI tree on
@@ -345,10 +348,7 @@ export function overview(
 export function countChanges(
   structure: Pick<StructureInfo, "regions" | "changes">,
 ): number {
-  return (
-    groupAreas(structure.regions).length +
-    structure.changes.filter((change) => change.kind !== "moved").length
-  );
+  return countRows(changeRows(structure.regions, structure.changes));
 }
 
 // --- what came out (REQ-030-01…04, 32, 33) ---
@@ -490,7 +490,8 @@ export function verdict(
     return {
       tone: "changed",
       title: text("verdict.changes", { count: changes }),
-      reason: text("verdict.changesWhy"),
+      // the count says it; the rest matching goes without saying (REQ-036-02)
+      reason: "",
     };
   }
   if (input.hasDiff) {
@@ -503,6 +504,6 @@ export function verdict(
   return {
     tone: "passed",
     title: text("verdict.same"),
-    reason: text(input.only ? "verdict.sameOnlyWhy" : "verdict.sameWhy"),
+    reason: "",
   };
 }

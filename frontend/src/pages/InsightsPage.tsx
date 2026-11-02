@@ -24,7 +24,7 @@ import { ProjectInsights } from "../types";
 import { useUserState } from "../contexts";
 import { routes } from "../constants";
 import { motion, tokens } from "../theme";
-import { Num, Tiles } from "../components/SummaryParts";
+import { Num } from "../components/SummaryParts";
 import { ErrorState } from "../components/EmptyState";
 import { shimmer } from "../components/SkeletonList";
 import { barShare, largest } from "../_helpers/insights.helper";
@@ -67,10 +67,11 @@ const RULE_KEY: Record<string, MessageKey> = {
 
 const Section: React.FunctionComponent<{
   title: string;
-  hint: React.ReactNode;
+  // sits next to the title: how many of what the section lists
+  badge?: React.ReactNode;
   action?: React.ReactNode;
   children: React.ReactNode;
-}> = ({ title, hint, action, children }) => (
+}> = ({ title, badge, action, children }) => (
   <Box
     component="section"
     className="v-enter"
@@ -84,13 +85,14 @@ const Section: React.FunctionComponent<{
       gap: 1.5,
     }}
   >
-    <Box sx={{ display: "flex", alignItems: "flex-start", gap: 2 }}>
-      <Box sx={{ flex: 1 }}>
-        <Typography variant="h6">{title}</Typography>
-        <Typography variant="body2" color="textSecondary">
-          {hint}
-        </Typography>
-      </Box>
+    <Box
+      sx={{ display: "flex", alignItems: "center", gap: 1.5, flexWrap: "wrap" }}
+    >
+      <Typography variant="h6" component="h2">
+        {title}
+      </Typography>
+      {badge}
+      <Box sx={{ flex: 1 }} />
       {action}
     </Box>
     {children}
@@ -142,8 +144,7 @@ const Amount: React.FunctionComponent<{
 
 /**
  * What a project's history says: baselines nobody uses, screens that keep
- * changing or flipping, the worst screens for accessibility, noise to tolerate,
- * screenshots taken too early, and checks a device is missing.
+ * changing or flipping, and the worst screens and rules for accessibility.
  */
 const InsightsPage: React.FunctionComponent = () => {
   const { projectId = "" } = useParams<{ projectId: string }>();
@@ -273,14 +274,7 @@ const InsightsPage: React.FunctionComponent = () => {
           aria-busy="true"
           sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}
         >
-          <Box sx={{ display: "flex", gap: 1.5 }}>
-            {[0, 1, 2, 3].map((i) => (
-              <Box
-                key={i}
-                sx={{ ...shimmer, height: 76, flex: 1, borderRadius: 3 }}
-              />
-            ))}
-          </Box>
+          <Box sx={{ ...shimmer, height: 240, borderRadius: 3 }} />
           <Box sx={{ ...shimmer, height: 240, borderRadius: 3 }} />
         </Box>
       )}
@@ -293,63 +287,17 @@ const InsightsPage: React.FunctionComponent = () => {
       )}
       {data && (
         <>
-          <Tiles
-            testId="insights"
-            tiles={[
-              {
-                key: "baselines",
-                label: t("insights.baselines"),
-                value: data.summary.baselines,
-              },
-              {
-                key: "unused",
-                label: t("insights.unusedFor", { count: data.days }),
-                value: data.summary.unused,
-                color: tokens.status.changed.fg,
-              },
-              {
-                key: "changed",
-                label: t("insights.changedOf", { count: data.summary.runs }),
-                value: `${formatNumber(data.summary.changedPercent)}%`,
-              },
-              {
-                key: "flips",
-                label: t("insights.flips"),
-                hint: t("insights.unstableHint"),
-                value: data.summary.flips,
-                color: tokens.status.failed.fg,
-              },
-              {
-                key: "a11y",
-                label: t("insights.a11yIssues"),
-                value: data.summary.a11yIssues,
-              },
-              {
-                key: "waiting",
-                label: t("insights.waiting"),
-                value: data.summary.waiting,
-              },
-              {
-                key: "median",
-                label: t("insights.median"),
-                value:
-                  data.summary.medianDecisionHours === null
-                    ? "—"
-                    : t("insights.hours", {
-                        count: data.summary.medianDecisionHours,
-                      }),
-              },
-            ]}
-          />
-
           <Section
             title={t("insights.unused")}
-            hint={t(
-              data.partialHistory
-                ? "insights.unusedHintPartial"
-                : "insights.unusedHint",
-              { count: data.days },
-            )}
+            badge={
+              <StatusPill
+                tone={data.summary.unused ? "changed" : "neutral"}
+                label={t("insights.unusedOf", {
+                  unused: formatNumber(data.summary.unused),
+                  total: formatNumber(data.summary.baselines),
+                })}
+              />
+            }
             action={
               canEdit && data.unused.length > 0 ? (
                 <Box sx={{ display: "flex", gap: 1 }}>
@@ -446,10 +394,7 @@ const InsightsPage: React.FunctionComponent = () => {
             )}
           </Section>
 
-          <Section
-            title={t("insights.unstable")}
-            hint={t("insights.unstableHint")}
-          >
+          <Section title={t("insights.unstable")}>
             {data.unstable.length === 0 ? (
               <Empty text={t("insights.noUnstable")} />
             ) : (
@@ -528,10 +473,7 @@ const InsightsPage: React.FunctionComponent = () => {
               gap: 2,
             }}
           >
-            <Section
-              title={t("insights.hotspots")}
-              hint={t("insights.hotspotsHint")}
-            >
+            <Section title={t("insights.hotspots")}>
               {data.a11yScreens.length === 0 ? (
                 <Empty text={t("insights.noHotspots")} />
               ) : (
@@ -583,10 +525,7 @@ const InsightsPage: React.FunctionComponent = () => {
                 </TableContainer>
               )}
             </Section>
-            <Section
-              title={t("insights.frequent")}
-              hint={t("insights.frequentHint")}
-            >
+            <Section title={t("insights.frequent")}>
               {data.a11yRules.length === 0 ? (
                 <Empty text={t("insights.nothingToRank")} />
               ) : (
@@ -614,80 +553,6 @@ const InsightsPage: React.FunctionComponent = () => {
               )}
             </Section>
           </Box>
-
-          <Box
-            sx={{
-              display: "grid",
-              gridTemplateColumns: { xs: "1fr", lg: "1fr 1fr" },
-              gap: 2,
-            }}
-          >
-            <Section title={t("insights.noise")} hint={t("insights.noiseHint")}>
-              {data.noise.length === 0 ? (
-                <Empty text={t("insights.noNoise")} />
-              ) : (
-                data.noise.map((item) => (
-                  <Typography key={checkName(item)} variant="body2">
-                    <b>{checkName(item)}</b>:{" "}
-                    {t("insights.tinyApproved", {
-                      count: item.tinyApproved,
-                      runs: item.runs,
-                    })}
-                  </Typography>
-                ))
-              )}
-            </Section>
-            <Section
-              title={t("insights.quality")}
-              hint={t("insights.qualityHint")}
-            >
-              {data.captureIssues.length === 0 ? (
-                <Empty text={t("insights.noQuality")} />
-              ) : (
-                data.captureIssues.map((item) => (
-                  <Typography key={checkName(item)} variant="body2">
-                    <b>{checkName(item)}</b>:{" "}
-                    {t("insights.withHidden", { count: item.hidden })}{" "}
-                    {t("insights.ofRuns", { count: item.runs })}
-                  </Typography>
-                ))
-              )}
-            </Section>
-          </Box>
-
-          <Section
-            title={t("insights.coverage")}
-            hint={t("insights.coverageHint")}
-          >
-            {data.coverage.length === 0 ? (
-              <Empty text={t("insights.fullCoverage")} />
-            ) : (
-              data.coverage.map((entry) => (
-                <Box key={entry.device} data-testid="insightsCoverage">
-                  <Box
-                    sx={{
-                      display: "flex",
-                      flexWrap: "wrap",
-                      alignItems: "center",
-                      gap: 1,
-                    }}
-                  >
-                    <DeviceOf profile={entry.profile} label={entry.device} />
-                    <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                      {t("insights.missing", {
-                        missing: entry.missingCount,
-                        total: entry.checks + entry.missingCount,
-                      })}
-                    </Typography>
-                  </Box>
-                  <Typography variant="body2" color="textSecondary">
-                    {entry.missing.map(checkName).join(", ")}
-                    {entry.missingCount > entry.missing.length ? "…" : ""}
-                  </Typography>
-                </Box>
-              ))
-            )}
-          </Section>
         </>
       )}
 

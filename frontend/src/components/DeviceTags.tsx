@@ -29,7 +29,7 @@ interface Props {
 
 /**
  * The device as the test run table shows it: one grey tag per value, OS first,
- * the name of each value in its tooltip (spec 036). Grey whatever the state
+ * the name of each value in its tooltip (spec 037). Grey whatever the state
  * around it, so a selection is shown by what holds the tags, not the tags.
  */
 export const DeviceTags: React.FunctionComponent<Props> = ({

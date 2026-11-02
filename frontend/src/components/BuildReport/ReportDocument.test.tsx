@@ -252,7 +252,7 @@ describe("ReportDocument", () => {
       screen.getAllByRole("img", { name: "2 змінені · 14 без змін" }),
     ).not.toHaveLength(0);
     const devices = screen.getByTestId("reportSection-dev");
-    // tags OS first, outlined so they print without backgrounds (spec 036)
+    // tags OS first, outlined so they print without backgrounds (spec 037)
     expect(
       within(devices)
         .getAllByTestId("deviceTag")

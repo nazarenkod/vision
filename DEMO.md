@@ -87,6 +87,12 @@ Without a device, upload PNG + XML pairs exported from Appium Inspector:
 ./scripts/upload-uitree-samples.py samples/ --project "Mobile app" --api http://localhost:14200 --api-key KEY --device "Pixel 7" --density 420
 ```
 
+To fill every Insights block in a separate project "Insights demo" (stale baselines, unstable screens, accessibility), with made-up history going back 120 days:
+
+```bash
+./scripts/seed-insights-demo.py --email admin@example.com
+```
+
 ## Five-minute demo
 
 1. **Projects** shows the same layout as the other internal tools.

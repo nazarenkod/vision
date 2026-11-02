@@ -23,7 +23,7 @@ export const TestVariationDetails: React.FunctionComponent<IProps> = ({
         alignItems: "center",
       }}
     >
-      {/* the same grey tags as everywhere, named in their tooltips (spec 036) */}
+      {/* the same grey tags as everywhere, named in their tooltips (spec 037) */}
       <DeviceTags parts={testVariation} />
       {testVariation.customTags && (
         <Tooltip title={t("review.attr.customTags")} describeChild>

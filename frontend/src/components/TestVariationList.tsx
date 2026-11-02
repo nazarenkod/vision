@@ -114,7 +114,7 @@ const CheckCard: React.FunctionComponent<{
               aria-label={deviceLabel(device, undefined, t)}
               aria-pressed={device.id === shown.id}
             >
-              {/* the shown device is marked beside its tags, which stay grey (REQ-036-04) */}
+              {/* the shown device is marked beside its tags, which stay grey (REQ-037-04) */}
               <Box
                 component="span"
                 sx={{

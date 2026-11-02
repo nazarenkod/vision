@@ -61,22 +61,21 @@ const plan = (
 describe("what came out", () => {
   const base = { problems: [], changes: 0, hasDiff: false, only: false };
 
-  it("says what came out and why", () => {
-    const result = verdict(base);
-    expect(result.title).toBeTruthy();
-    expect(result.reason).toBeTruthy();
-    expect(result.reason).not.toBe(result.title);
-  });
-
-  it("says nothing changed when the compared part matches", () => {
+  it("says nothing changed without a sentence that repeats it", () => {
     expect(verdict(base)).toEqual({
       tone: "passed",
       title: "No changes",
-      reason: "Everything that is compared matches the baseline.",
+      reason: "",
     });
-    expect(verdict({ ...base, only: true }).reason).toBe(
-      "The chosen elements are the same as on the baseline.",
-    );
+    expect(verdict({ ...base, only: true }).reason).toBe("");
+  });
+
+  it("gives the count alone when there are changes", () => {
+    expect(verdict({ ...base, changes: 9 })).toEqual({
+      tone: "changed",
+      title: "9 changes",
+      reason: "",
+    });
   });
 
   it("counts the changes the list shows", () => {

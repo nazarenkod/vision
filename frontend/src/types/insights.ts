@@ -444,7 +444,7 @@ export interface ProjectInsights {
     customTags: string;
     branchName: string;
     device: string;
-    // field by field, for the tags (spec 036); absent from an older server
+    // field by field, for the tags (spec 037); absent from an older server
     profile?: DeviceProfile;
     hasBaseline: boolean;
     lastUsedAt: string;

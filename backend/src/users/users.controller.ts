@@ -16,7 +16,7 @@ import { Request, Response } from 'express';
 import { UsersService } from './users.service';
 import { ApiOkResponse, ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { UserLoginResponseDto } from './dto/user-login-response.dto';
-import { CreateUserDto } from './dto/user-create.dto';
+import { CreateAccountDto } from './dto/account-create.dto';
 import { JwtAuthGuard } from '../auth/guards/auth.guard';
 import { UserDto } from './dto/user.dto';
 import { UpdateUserDto } from './dto/user-update.dto';
@@ -58,10 +58,21 @@ export class UsersController {
     private configService: ConfigService
   ) {}
 
-  @Post('register')
-  @ApiOkResponse({ type: UserLoginResponseDto })
-  register(@Body() createUserDto: CreateUserDto): Promise<UserLoginResponseDto> {
-    return this.usersService.create(createUserDto);
+  // There is no self sign-up (035): accounts come from an admin, or from the
+  // first sign-in through LDAP or SSO.
+  @Post()
+  @ApiOkResponse({ type: UserDto })
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RoleGuard)
+  @Roles(Role.admin)
+  createAccount(@Body() dto: CreateAccountDto): Promise<UserDto> {
+    return this.usersService.createAccount(dto);
+  }
+
+  @Get('accounts/enabled')
+  @ApiOkResponse({ type: Boolean })
+  accountsEnabled(): boolean {
+    return this.usersService.canCreateAccounts();
   }
 
   @Post('login')

@@ -21,8 +21,6 @@ const project: ProjectDto = {
   maxBranchLifetime: 0,
   imageComparisonConfig: '{}',
   jiraUrl: null,
-  jiraEmail: null,
-  jiraToken: null,
   jiraIssueType: null,
   jiraLinkType: null,
   uiTreeSettings: null,

@@ -83,6 +83,24 @@ describe('ProjectsService', () => {
       expect(projectUpdateMock.mock.calls[0][0].data.uiTreeSettings).toBeUndefined();
     });
 
+    it('ignores a shared Jira token or email that an older client still sends', async () => {
+      const projectUpdateMock = jest.fn().mockResolvedValue({});
+      service = await initService({ projectUpdateMock });
+
+      await service.update({
+        id: 'p1',
+        name: 'Mobile',
+        jiraUrl: 'https://jira',
+        jiraToken: 'secret',
+        jiraEmail: 'bot@example.com',
+      } as never);
+
+      const { data } = projectUpdateMock.mock.calls[0][0];
+      expect(data.jiraUrl).toBe('https://jira');
+      expect(data).not.toHaveProperty('jiraToken');
+      expect(data).not.toHaveProperty('jiraEmail');
+    });
+
     it('refuses to save allowed devices with an unsupported wildcard', async () => {
       const projectUpdateMock = jest.fn().mockResolvedValue({});
       service = await initService({ projectUpdateMock });
@@ -124,6 +142,17 @@ describe('ProjectsService', () => {
       expect(returned.name).toBe(TEST_PROJECT.name);
       expect(returned).not.toHaveProperty('bulkApproveVariations');
       expect(returned).not.toHaveProperty('bulkApproveGroupBy');
+    });
+
+    it('returns neither the shared Jira token nor its email, nor whether one is saved', () => {
+      const project = { ...TEST_PROJECT, jiraToken: 'secret', jiraEmail: 'bot@example.com' };
+
+      const returned = toPublicProject(project);
+
+      expect(returned).not.toHaveProperty('jiraToken');
+      expect(returned).not.toHaveProperty('jiraEmail');
+      expect(returned).not.toHaveProperty('jiraTokenSet');
+      expect(JSON.stringify(returned)).not.toMatch(/secret|bot@example/);
     });
   });
 });

@@ -50,6 +50,7 @@ describe('UsersService with DbUserService implementation', () => {
             user: {
               findMany: jest.fn().mockResolvedValueOnce([]),
               create: jest.fn(),
+              findFirst: jest.fn(),
               update: jest.fn(),
               delete: jest.fn(),
               findUnique: jest.fn().mockResolvedValueOnce(user),
@@ -101,32 +102,63 @@ describe('UsersService with DbUserService implementation', () => {
     expect(typeof result).toBe('string');
   });
 
-  it('should create a new user', async () => {
-    // Arrange
-    const createUserDto = {
-      email: 'test@example.com',
-      firstName: 'John',
-      lastName: 'Doe',
-      password: 'password123',
-    };
+  it('creates an account with the role the admin chose and no sign-in token', async () => {
+    const create = jest.spyOn(prismaService.user, 'create').mockResolvedValueOnce({ ...user, role: Role.editor });
 
-    const prismaUserCreateMock = jest.spyOn(prismaService.user, 'create');
-    prismaUserCreateMock.mockResolvedValueOnce(user);
+    const result = await service.createAccount({
+      email: '  New.Person@Example.com ',
+      firstName: ' Ann ',
+      lastName: 'Lee',
+      role: Role.editor,
+      password: 'secret-1',
+    });
 
-    // Act
-    const result = await service.create(createUserDto);
-
-    // Assert
-    expect(prismaUserCreateMock).toHaveBeenCalledWith({
+    expect(create).toHaveBeenCalledWith({
       data: {
-        email: 'test@example.com',
-        firstName: 'John',
-        lastName: 'Doe',
+        email: 'new.person@example.com',
+        firstName: 'Ann',
+        lastName: 'Lee',
+        role: Role.editor,
         apiKey: 'generatedApiKey',
         password: 'encryptedPassword',
       },
     });
-    expect(result).toEqual(expect.any(UserLoginResponseDto));
+    expect(result).toBeInstanceOf(UserDto);
+    expect(result.role).toBe(Role.editor);
+    expect(result).not.toHaveProperty('token');
+    expect(result).not.toHaveProperty('password');
+  });
+
+  it('creates an account without names', async () => {
+    const create = jest.spyOn(prismaService.user, 'create').mockResolvedValueOnce(user);
+    await service.createAccount({ email: 'a@example.com', role: Role.guest, password: 'secret-1' });
+    expect(create.mock.calls[0][0].data).toMatchObject({ firstName: '', lastName: '', role: Role.guest });
+  });
+
+  it('refuses an email that is taken in any letter case', async () => {
+    const findFirst = jest.spyOn(prismaService.user, 'findFirst').mockResolvedValueOnce({ id: '1' } as never);
+    const create = jest.spyOn(prismaService.user, 'create');
+
+    await expect(
+      service.createAccount({ email: 'Test@Example.com', role: Role.guest, password: 'secret-1' })
+    ).rejects.toThrow('This email is already taken');
+    expect(findFirst).toHaveBeenCalledWith({
+      where: { email: { equals: 'test@example.com', mode: 'insensitive' } },
+      select: { id: true },
+    });
+    expect(create).not.toHaveBeenCalled();
+  });
+
+  it('refuses an account without a password', async () => {
+    const create = jest.spyOn(prismaService.user, 'create');
+    await expect(service.createAccount({ email: 'a@example.com', role: Role.guest, password: ' ' })).rejects.toThrow(
+      'Password is required'
+    );
+    expect(create).not.toHaveBeenCalled();
+  });
+
+  it('lets accounts be created when sign-in goes through the database', () => {
+    expect(service.canCreateAccounts()).toBe(true);
   });
 
   it('should update a user', async () => {
@@ -264,6 +296,13 @@ describe('UsersService with OidcUsersService implementation', () => {
 
     service = module.get<UsersService>(UsersService);
     prismaService = module.get<PrismaService>(PrismaService);
+  });
+
+  it('refuses to create accounts when sign-in goes through LDAP or SSO', async () => {
+    expect(service.canCreateAccounts()).toBe(false);
+    await expect(
+      service.createAccount({ email: 'a@example.com', role: Role.guest, password: 'secret-1' })
+    ).rejects.toThrow('Accounts come from LDAP or SSO');
   });
 
   it('reports OIDC as enabled', () => {

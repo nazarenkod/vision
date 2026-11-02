@@ -60,11 +60,15 @@ function setup(jira: (url: string, init: RequestInit) => Response) {
       update: jest.fn(),
     },
     project: {
-      findUnique: jest.fn().mockResolvedValue({ jiraUrl: 'https://jira', jiraToken: 't', uiTreeSettings: null }),
+      findUnique: jest.fn().mockResolvedValue({ jiraUrl: 'https://jira', jiraToken: 'shared', uiTreeSettings: null }),
     },
     user: {
       findUnique: jest.fn(async ({ where }) =>
-        where.id === 'with-token' ? { id: 'with-token', jiraToken: 'mine', jiraEmail: null } : { id: where.id }
+        where.id === 'with-token'
+          ? { id: 'with-token', jiraToken: 'mine', jiraEmail: null }
+          : where.id === 'reviewer'
+            ? { id: 'reviewer', jiraToken: 't', jiraEmail: null }
+            : { id: where.id }
       ),
     },
     a11yIssueState: { findMany: jest.fn().mockResolvedValue([]), deleteMany: jest.fn() },
@@ -132,7 +136,7 @@ const fakeJira =
 
 describe('A11yIssuesService: no duplicate bugs', () => {
   const file = (service: A11yIssuesService) =>
-    service.fileBug('run', [report.violations[0].id], { parentKey: 'MOB-1' });
+    service.fileBug('run', [report.violations[0].id], { parentKey: 'MOB-1' }, 'reviewer');
 
   it('files one bug per problem, with its id, and records it for the project', async () => {
     const { service, rows, calls } = setup(fakeJira());
@@ -204,25 +208,27 @@ describe('A11yIssuesService: review asks Jira', () => {
         issues: [{ key: 'MOB-9', fields: { summary: `x [${code}]`, status: { statusCategory: { key: 'new' } } } }],
       });
     });
-    const reviewed = await service.getReviewedReport('run');
+    const reviewed = await service.getReviewedReport('run', 'reviewer');
     expect(reviewed.violations[0].issue).toMatchObject({ status: 'reported', jiraKey: 'MOB-9' });
     expect(rows).toEqual([expect.objectContaining({ key: KEY, code, jiraKey: 'MOB-9' })]);
 
     rows.length = 0;
-    await service.getReviewedReport('run');
+    await service.getReviewedReport('run', 'reviewer');
     expect(calls.filter((call) => call.includes('/search'))).toHaveLength(1);
   });
 });
 
 describe('A11yIssuesService: personal Jira tokens', () => {
-  it("files as the person with their own token, else with the project's shared one", async () => {
+  it("files as the person with their own token, never with the project's shared one", async () => {
     const own = setup(fakeJira());
     await own.service.fileBug('run', [report.violations[0].id], { parentKey: 'MOB-1' }, 'with-token');
     expect(new Set(own.auth)).toEqual(new Set(['Bearer mine']));
 
     const shared = setup(fakeJira());
-    await shared.service.fileBug('run', [report.violations[0].id], { parentKey: 'MOB-1' }, 'without-token');
-    expect(new Set(shared.auth)).toEqual(new Set(['Bearer t']));
+    await expect(
+      shared.service.fileBug('run', [report.violations[0].id], { parentKey: 'MOB-1' }, 'without-token')
+    ).rejects.toThrow('Add your Jira token in your profile');
+    expect(shared.auth).toEqual([]);
   });
 });
 
@@ -251,11 +257,11 @@ describe('A11yIssuesService: unlinking', () => {
       }
       return fakeJira()(url, init);
     });
-    const filed = await service.fileBug('run', [report.violations[0].id], { parentKey: 'MOB-1' });
+    const filed = await service.fileBug('run', [report.violations[0].id], { parentKey: 'MOB-1' }, 'reviewer');
     code = filed.code;
     edits.length = 0;
 
-    await service.reset('run', [report.violations[0].id]);
+    await service.reset('run', [report.violations[0].id], 'reviewer');
     expect(rows).toEqual([]);
     expect(JSON.parse(edits[0]).update.labels).toEqual(
       expect.arrayContaining([
@@ -269,7 +275,7 @@ describe('A11yIssuesService: unlinking', () => {
     expect(decisions.map((item) => item.action)).toEqual(['filed', 'unlinked']);
 
     // the review finds the bug by the id in its summary, and leaves it alone
-    const reviewed = await service.getReviewedReport('run');
+    const reviewed = await service.getReviewedReport('run', 'reviewer');
     expect(reviewed.violations[0].issue).toBeUndefined();
     expect(rows).toEqual([]);
   });
@@ -298,7 +304,7 @@ describe('A11yIssuesService: problems decided under another grouping', () => {
       facets: [facetsOf(report.violations[0], 'Адреси'), facetsOf(other, 'Платежі')],
     });
     // 38 × 38 and 38 × 40 are two problems now: unlinking the first leaves the second with the bug
-    await service.reset('run', [report.violations[0].id]);
+    await service.reset('run', [report.violations[0].id], 'reviewer');
     expect(rows).toHaveLength(1);
     expect((rows[0].facets as Array<{ screen: string }>).map((item) => item.screen)).toEqual(['Платежі']);
     expect(decisions[0]).toMatchObject({ action: 'unlinked', jiraKey: 'MOB-3' });
@@ -315,13 +321,13 @@ describe('A11yIssuesService: problems decided under another grouping', () => {
     );
     (service as unknown as { settingsFor: () => unknown }).settingsFor = async () => saved;
 
-    const reviewed = await service.getReviewedReport('run');
+    const reviewed = await service.getReviewedReport('run', 'reviewer');
     expect(reviewed.violations.map((v) => v.group)).toEqual([KEY]);
     expect(reviewed.ignored).toEqual([]);
     expect(reviewed.summary).toMatchObject({ new: 1, ignored: 0 });
 
     // what the class ignored is filed as any other problem
-    const filed = await service.fileBug('run', [report.violations[0].id], { parentKey: 'MOB-1' });
+    const filed = await service.fileBug('run', [report.violations[0].id], { parentKey: 'MOB-1' }, 'reviewer');
     expect(filed).toMatchObject({ jiraKey: 'MOB-77', alreadyFiled: false });
     expect(rows[0]).toMatchObject({ key: KEY, jiraKey: 'MOB-77' });
   });
@@ -329,17 +335,17 @@ describe('A11yIssuesService: problems decided under another grouping', () => {
 
 describe("A11yIssuesService: the project's norms", () => {
   // the team agreed on 38 dp: the 38 × 38 button received at 48 dp passes now
-  const at38 = { jiraUrl: 'https://jira', jiraToken: 't', uiTreeSettings: '{"a11yNorms":{"touchTargetAndroid":38}}' };
+  const at38 = { jiraUrl: 'https://jira', uiTreeSettings: '{"a11yNorms":{"touchTargetAndroid":38}}' };
 
   const prismaOf = (service: A11yIssuesService) =>
     (service as unknown as { prismaService: Record<string, Record<string, jest.Mock>> }).prismaService;
 
   it("reviews a received report by the project's current norms", async () => {
     const { service } = setup(fakeJira());
-    expect((await service.getReviewedReport('run')).violations).toHaveLength(1);
+    expect((await service.getReviewedReport('run', 'reviewer')).violations).toHaveLength(1);
 
     prismaOf(service).project.findUnique = jest.fn().mockResolvedValue(at38);
-    const reviewed = await service.getReviewedReport('run');
+    const reviewed = await service.getReviewedReport('run', 'reviewer');
     expect(reviewed.violations).toHaveLength(0);
     expect(reviewed.summary).toMatchObject({ new: 0, total: 0 });
   });

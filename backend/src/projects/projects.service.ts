@@ -1,4 +1,13 @@
-import { ConflictException, forwardRef, HttpException, HttpStatus, Inject, Injectable, Logger } from '@nestjs/common';
+import {
+  ConflictException,
+  forwardRef,
+  HttpException,
+  HttpStatus,
+  Inject,
+  Injectable,
+  Logger,
+  OnModuleInit,
+} from '@nestjs/common';
 import { CreateProjectDto } from './dto/create-project.dto';
 import { BuildsService } from '../builds/builds.service';
 import { TestVariationsService } from '../test-variations/test-variations.service';
@@ -9,6 +18,7 @@ import { UpdateProjectDto } from './dto/update-project.dto';
 import { settingsConflict } from './settings-conflict';
 import { hideConfigSecrets, keepConfigSecrets } from './project-secrets';
 import { AllowedDevice, invalidAllowedDevice } from './allowed-devices';
+import { wipeSharedJiraCredentials } from './shared-jira-credentials';
 
 const blankToNull = (value: string | null | undefined) =>
   value === undefined ? undefined : value?.trim() ? value.trim() : null;
@@ -17,8 +27,6 @@ const blankToNull = (value: string | null | undefined) =>
 function jiraFields(dto: Partial<CreateProjectDto>) {
   return {
     jiraUrl: blankToNull(dto.jiraUrl),
-    jiraEmail: blankToNull(dto.jiraEmail),
-    jiraToken: blankToNull(dto.jiraToken),
     jiraIssueType: blankToNull(dto.jiraIssueType),
     jiraLinkType: blankToNull(dto.jiraLinkType),
     // stored only when it parses, so a bad value can never break comparisons
@@ -44,29 +52,27 @@ function normalizeUiTreeSettings(value: string | null): string | null {
 }
 
 /**
- * A project as the API returns it: the Jira token never leaves the server, and
- * the columns of the removed variation groups (022) stay in the row unread.
+ * A project as the API returns it. The columns of the removed variation groups
+ * (022) and of the shared Jira token (035) stay in the row unread.
  */
 export function toPublicProject(project: Project): Omit<
   Project,
-  'jiraToken' | 'bulkApproveVariations' | 'bulkApproveGroupBy'
+  'jiraToken' | 'jiraEmail' | 'bulkApproveVariations' | 'bulkApproveGroupBy'
 > & {
-  jiraTokenSet: boolean;
   geminiApiKeySet: boolean;
 } {
   if (!project) return project as never;
-  const { jiraToken, bulkApproveVariations, bulkApproveGroupBy, ...rest } = project;
+  const { jiraToken, jiraEmail, bulkApproveVariations, bulkApproveGroupBy, ...rest } = project;
   const comparison = hideConfigSecrets(project.imageComparisonConfig);
   return {
     ...rest,
     imageComparisonConfig: comparison.config,
-    jiraTokenSet: !!jiraToken,
     geminiApiKeySet: comparison.apiKeySet,
   };
 }
 
 @Injectable()
-export class ProjectsService {
+export class ProjectsService implements OnModuleInit {
   private readonly logger = new Logger(ProjectsService.name);
 
   constructor(
@@ -76,6 +82,15 @@ export class ProjectsService {
     @Inject(forwardRef(() => TestVariationsService))
     private testVariationsService: TestVariationsService
   ) {}
+
+  // Shared Jira tokens are gone (035, ADR-0025): what an older version saved
+  // is wiped here rather than in a migration (ADR-0003). It must not stop the
+  // start, and the next start tries again.
+  onModuleInit(): void {
+    wipeSharedJiraCredentials(this.prismaService)
+      .then((count) => count && this.logger.log(`Wiped the shared Jira token of ${count} project(s)`))
+      .catch((error) => this.logger.warn(`Could not wipe shared Jira tokens: ${error}`));
+  }
 
   async findOne(idOrName: string): Promise<Project> {
     const isUUID = uuidAPIKey.isUUID(idOrName);

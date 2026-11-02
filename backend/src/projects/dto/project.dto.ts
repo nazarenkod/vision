@@ -4,8 +4,12 @@ import { ImageComparison, Project } from '@prisma/client';
 import { Type } from 'class-transformer';
 
 // the variation group columns stay in the row (ADR-0003) but are no longer
-// part of the API (022)
-export class ProjectDto implements Omit<Project, 'bulkApproveVariations' | 'bulkApproveGroupBy'> {
+// part of the API (022); nor is the shared Jira token and its email: Jira goes
+// only with the acting person's own token (035, ADR-0025)
+export class ProjectDto implements Omit<
+  Project,
+  'bulkApproveVariations' | 'bulkApproveGroupBy' | 'jiraToken' | 'jiraEmail'
+> {
   @ApiProperty()
   @IsUUID()
   readonly id: string;
@@ -56,17 +60,6 @@ export class ProjectDto implements Omit<Project, 'bulkApproveVariations' | 'bulk
   @IsOptional()
   @IsUrl({ require_tld: false })
   jiraUrl: string | null;
-
-  @ApiPropertyOptional({ description: 'Jira Cloud only: account email used with the API token' })
-  @IsOptional()
-  @IsString()
-  jiraEmail: string | null;
-
-  // write-only: responses carry jiraTokenSet instead; omit to keep, empty string to remove
-  @ApiPropertyOptional({ writeOnly: true })
-  @IsOptional()
-  @IsString()
-  jiraToken: string | null;
 
   @ApiPropertyOptional({ example: 'Bug' })
   @IsOptional()

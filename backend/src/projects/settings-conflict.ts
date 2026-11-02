@@ -13,7 +13,6 @@ export const SETTINGS_FIELDS = [
   'maxBranchLifetime',
   'uiTreeSettings',
   'jiraUrl',
-  'jiraEmail',
   'jiraIssueType',
   'jiraLinkType',
 ] as const;

@@ -75,7 +75,11 @@ function setup(options: { labelsOnScreen?: boolean; refuse?: (url: string, init:
     project: { findUnique: jest.fn().mockResolvedValue({ jiraUrl: 'https://jira', jiraToken: 'shared' }) },
     user: {
       findUnique: jest.fn(async ({ where }) =>
-        where.id === 'with-token' ? { id: 'with-token', jiraToken: 'mine', jiraEmail: null } : { id: where.id }
+        where.id === 'with-token'
+          ? { id: 'with-token', jiraToken: 'mine', jiraEmail: null }
+          : where.id === 'reviewer'
+            ? { id: 'reviewer', jiraToken: 'theirs', jiraEmail: null }
+            : { id: where.id }
       ),
     },
     visualBug: {
@@ -104,7 +108,7 @@ const filing = {
 describe('VisualBugsService', () => {
   it('asks for severity without choosing one and hides nothing else it filled', async () => {
     const { service } = setup();
-    const prep = await service.prepare('run', { parentKey: 'MOB-1' });
+    const prep = await service.prepare('run', { parentKey: 'MOB-1' }, 'reviewer');
     expect(prep.prefix).toBe('[Automation] [Checkout]');
     // the device and its OS, no build or branch (REQ-025-21)
     expect(prep.environment).toBe(
@@ -130,23 +134,25 @@ describe('VisualBugsService', () => {
 
   it('refuses to file while severity is not chosen', async () => {
     const { service, created } = setup();
-    await expect(service.file('run', { ...filing, fieldValues: {} })).rejects.toThrow(/Серйозність помилки/);
+    await expect(service.file('run', { ...filing, fieldValues: {} }, 'reviewer')).rejects.toThrow(
+      /Серйозність помилки/
+    );
     expect(created).toHaveLength(0);
   });
 
   it('attaches the marked checkpoint and the plain baseline', async () => {
     const { service, attachments } = setup();
-    await service.file('run', filing);
+    await service.file('run', filing, 'reviewer');
     expect(attachments).toEqual(['checkpoint.png', 'baseline.png']);
   });
 
   it('labels the bug vision, on the create screen or right after', async () => {
     const onScreen = setup();
-    await onScreen.service.file('run', filing);
+    await onScreen.service.file('run', filing, 'reviewer');
     expect(onScreen.created[0].labels).toEqual(['vision']);
 
     const after = setup({ labelsOnScreen: false });
-    await after.service.file('run', filing);
+    await after.service.file('run', filing, 'reviewer');
     expect(after.created[0].labels).toBeUndefined();
     expect(after.calls).toContain('PUT /rest/api/2/issue/MOB-77');
   });
@@ -155,7 +161,7 @@ describe('VisualBugsService', () => {
     const { service, bugs } = setup({
       refuse: (url) => url.includes('/issueLink') || url.endsWith('/attachments'),
     });
-    const result = await service.file('run', filing);
+    const result = await service.file('run', filing, 'reviewer');
 
     expect(result.jiraKey).toBe('MOB-77');
     expect(result.warnings).toEqual([
@@ -168,7 +174,7 @@ describe('VisualBugsService', () => {
 
   it('lists the check’s bugs on every device and build', async () => {
     const { service, prisma } = setup();
-    await service.file('run', filing);
+    await service.file('run', filing, 'reviewer');
     const [bug] = await service.forCheck('run');
 
     expect(prisma.visualBug.findMany).toHaveBeenCalledWith({

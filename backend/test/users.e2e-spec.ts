@@ -5,7 +5,7 @@ import { AppModule } from '../src/app.module';
 import { UsersService } from '../src/users/users.service';
 import { UserLoginRequestDto } from '../src/users/dto/user-login-request.dto';
 import { compareSync } from 'bcryptjs';
-import { requestWithAuth, generateUser } from './preconditions';
+import { requestWithAuth, generateUser, haveUserLogged } from './preconditions';
 import { User } from '@prisma/client';
 
 describe('Users (e2e)', () => {
@@ -32,24 +32,36 @@ describe('Users (e2e)', () => {
     await usersService.delete(user.id);
   });
 
-  it('POST /register', () => {
-    user = generateUser('123456');
-    return request(app.getHttpServer())
-      .post('/users/register')
+  it('POST / by an admin creates the account', async () => {
+    const admin = await haveUserLogged(usersService, 'admin');
+    user = generateUser('123456', 'editor');
+    await requestWithAuth(app, 'post', '/users', admin.token)
       .send(user)
       .expect(201)
       .expect((res) => {
         expect(res.body.email).toBe(user.email);
-        expect(res.body.firstName).toBe(user.firstName);
-        expect(res.body.lastName).toBe(user.lastName);
-        expect(res.body.apiKey).not.toBeNull();
+        expect(res.body.role).toBe('editor');
+        expect(res.body.token).toBeUndefined();
         user.id = res.body.id;
       });
+    await usersService.delete(admin.id);
+  });
+
+  it('POST / is refused to anyone but an admin', async () => {
+    user = await haveUserLogged(usersService, 'editor');
+    await requestWithAuth(app, 'post', '/users', (user as { token?: string }).token)
+      .send(generateUser('123456'))
+      .expect(403);
+  });
+
+  it('POST /register no longer exists', async () => {
+    user = await haveUserLogged(usersService, 'guest');
+    await request(app.getHttpServer()).post('/users/register').send(generateUser('123456')).expect(404);
   });
 
   it('POST /login', async () => {
     const password = '123456';
-    user = await usersService.create(generateUser(password));
+    user = await usersService.createAccount(generateUser(password));
     const loginData: UserLoginRequestDto = {
       email: user.email,
       password,
@@ -71,7 +83,7 @@ describe('Users (e2e)', () => {
 
   it('GET /newApiKey', async () => {
     const password = '123456';
-    user = await usersService.create(generateUser(password));
+    user = await usersService.createAccount(generateUser(password));
     const loggedUser = await usersService.login({
       email: user.email,
       password,
@@ -87,7 +99,7 @@ describe('Users (e2e)', () => {
   it('PUT /password', async () => {
     const newPassword = 'newPassword';
     const password = '123456';
-    user = await usersService.create(generateUser(password));
+    user = await usersService.createAccount(generateUser(password));
     const loggedUser = await usersService.login({
       email: user.email,
       password,
@@ -101,7 +113,7 @@ describe('Users (e2e)', () => {
 
   it('PUT /', async () => {
     const password = '123456';
-    user = await usersService.create(generateUser(password));
+    user = await usersService.createAccount(generateUser(password));
     const editedUser = {
       email: 'edited' + user.email,
       firstName: 'EDITEDfName',

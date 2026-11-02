@@ -7,11 +7,12 @@ import { TestRunsService } from 'src/test-runs/test-runs.service';
 import { readFileSync } from 'fs';
 import { TestRunResultDto } from 'src/test-runs/dto/testRunResult.dto';
 import { Build, Role } from '@prisma/client';
-import { CreateUserDto } from 'src/users/dto/user-create.dto';
+import { CreateAccountDto } from 'src/users/dto/account-create.dto';
 
-export const generateUser = (password: string): CreateUserDto => ({
+export const generateUser = (password: string, role: Role = 'guest'): CreateAccountDto => ({
   email: `email+${uuidAPIKey.create().apiKey.toLocaleLowerCase()}@example.com`,
   password,
+  role,
   firstName: 'fName',
   lastName: 'lName',
 });
@@ -35,9 +36,7 @@ export const requestWithApiKey = (
 
 export const haveUserLogged = async (usersService: UsersService, role: Role = 'admin') => {
   const password = '123456';
-  const user = await usersService.create(generateUser(password));
-
-  await usersService.assignRole({ id: user.id, role });
+  const user = await usersService.createAccount(generateUser(password, role));
 
   return usersService.login({
     email: user.email,

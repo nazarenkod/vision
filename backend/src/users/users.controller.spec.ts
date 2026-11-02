@@ -5,6 +5,20 @@ import { UsersService } from './users.service';
 import { ConfigService } from '@nestjs/config';
 import { Role, User } from '@prisma/client';
 import { UserDto } from './dto/user.dto';
+import { GUARDS_METADATA, METHOD_METADATA, PATH_METADATA } from '@nestjs/common/constants';
+import { RequestMethod } from '@nestjs/common';
+import { JwtAuthGuard } from '../auth/guards/auth.guard';
+import { RoleGuard } from '../auth/guards/role.guard';
+
+const routeOf = (name: string) => {
+  const handler = UsersController.prototype[name];
+  return {
+    path: Reflect.getMetadata(PATH_METADATA, handler) as string,
+    method: Reflect.getMetadata(METHOD_METADATA, handler) as RequestMethod,
+    guards: (Reflect.getMetadata(GUARDS_METADATA, handler) ?? []) as unknown[],
+    roles: Reflect.getMetadata('roles', handler) as Role[] | undefined,
+  };
+};
 
 describe('Users Controller', () => {
   let controller: UsersController;
@@ -75,6 +89,50 @@ describe('Users Controller', () => {
     const removed = await withPrisma.setGemini(user, { geminiApiKey: '' });
     expect(update).toHaveBeenLastCalledWith({ where: { id: '1' }, data: { geminiApiKey: null } });
     expect(removed.geminiKeySet).toBe(false);
+  });
+
+  it('has no route for signing oneself up', () => {
+    const routes = Object.getOwnPropertyNames(UsersController.prototype)
+      .filter((name) => name !== 'constructor')
+      .map(routeOf)
+      .filter((route) => route.path !== undefined);
+    expect(routes.map((route) => route.path)).not.toContain('register');
+    // every route that creates something wants a signed-in caller, apart from signing in itself
+    const open = routes.filter((route) => route.method === RequestMethod.POST && !route.guards.length);
+    expect(open.map((route) => route.path)).toEqual(['login']);
+  });
+
+  it('lets only admins create accounts', () => {
+    const route = routeOf('createAccount');
+    expect(route.method).toBe(RequestMethod.POST);
+    expect(route.path).toBe('/');
+    expect(route.guards).toEqual([JwtAuthGuard, RoleGuard]);
+    expect(route.roles).toEqual([Role.admin]);
+  });
+
+  it('says whether accounts can be created here', () => {
+    const canCreateAccounts = jest.fn(() => false);
+    const withService = new UsersController({ canCreateAccounts } as never, {} as never, { get: jest.fn() } as never);
+    expect(withService.accountsEnabled()).toBe(false);
+  });
+
+  it('writes Jira and Gemini secrets only to the signed-in person', async () => {
+    const update = jest.fn(async ({ data }) => ({ ...user, ...data }));
+    const withPrisma = new UsersController(
+      usersService as never,
+      { user: { update } } as never,
+      { get: jest.fn() } as never
+    );
+
+    const jira = await withPrisma.setJira(user, { jiraToken: 'token-1', jiraEmail: 'me@example.com' });
+    const gemini = await withPrisma.setGemini(user, { geminiApiKey: 'key-1' });
+
+    expect(update.mock.calls.map(([args]) => args.where)).toEqual([{ id: '1' }, { id: '1' }]);
+    expect(JSON.stringify([jira, gemini])).not.toMatch(/token-1|key-1/);
+    // no route takes somebody else's id together with a Jira token or a Gemini key
+    for (const name of ['setJira', 'setGemini']) {
+      expect(routeOf(name).path).not.toContain(':');
+    }
   });
 
   it('reports whether OIDC is enabled', () => {

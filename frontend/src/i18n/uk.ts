@@ -321,6 +321,7 @@ export const uk: Messages = {
   // runs
   "runs.name": "Назва",
   "runs.tags": "Теги",
+  "runs.moreTags": "Ще {count}: {tags}",
   "runs.status": "Статус",
   "runs.noMatch": "Жоден екран не відповідає фільтрам",
   "runs.cardsSelected": {

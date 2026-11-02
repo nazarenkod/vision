@@ -109,7 +109,7 @@ sequenceDiagram
 | REQ-031-01 | `frontend/integration_tests/test/buildOverview.spec.ts › opens a build on the Overview tab` |
 | REQ-031-02 | `frontend/src/_helpers/route.helpers.test.ts › keeps the build tab in the address` |
 | REQ-031-03 | `backend/src/builds/build-overview.spec.ts › says Running, Waiting for review, Reviewed or Passed`; `frontend/src/components/BuildReport/ReportDocument.test.tsx › renders in the report language, not the interface one` |
-| REQ-031-04 | `backend/src/builds/build-overview.spec.ts › counts decisions per person and leaves undone ones out`; `frontend/integration_tests/test/buildOverview.spec.ts › opens a build on the Overview tab`; `frontend/integration_tests/test/buildOverview.spec.ts › leaves the decided caption out when nothing needed a decision` |
+| REQ-031-04 | `backend/src/builds/build-overview.spec.ts › counts decisions per person and leaves undone ones out`; `frontend/integration_tests/test/buildOverview.spec.ts › opens a build on the Overview tab`; `frontend/integration_tests/test/buildOverview.spec.ts › has no progress hint when nothing needed a decision` |
 | REQ-031-05 | `backend/src/builds/build-overview.spec.ts › counts screenshots, waiting, rejected, new a11y issues and bugs` |
 | REQ-031-06 | `frontend/integration_tests/test/buildOverview.spec.ts › each number opens its tab or queue` |
 | REQ-031-07 | знято 2026-11-01 — `frontend/integration_tests/test/buildOverview.spec.ts › leaves change groups to the Changes tab` |

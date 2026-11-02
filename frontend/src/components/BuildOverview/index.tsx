@@ -101,22 +101,22 @@ const OverviewTiles: React.FunctionComponent<{
       key: "waiting",
       value: counts.waiting,
       label: t("overview.waiting"),
-      // "0 of 0 decided" says nothing: nothing needed a decision
-      caption: progress.needed
-        ? t("overview.decidedOf", {
-            decided: progress.decided,
-            needed: progress.needed,
-          })
+      // the tile says only what waits; the progress and who decided, on hover
+      hint: progress.needed
+        ? [
+            t("overview.decidedOf", {
+              decided: progress.decided,
+              needed: progress.needed,
+            }),
+            ...progress.people.map(
+              (person) =>
+                `${person.name ?? someone}: ${t("overview.personDecisions", {
+                  approved: person.approved,
+                  rejected: person.rejected,
+                })}`,
+            ),
+          ].join("\n")
         : undefined,
-      captionTitle: progress.people
-        .map(
-          (person) =>
-            `${person.name ?? someone}: ${t("overview.personDecisions", {
-              approved: person.approved,
-              rejected: person.rejected,
-            })}`,
-        )
-        .join("\n"),
       color: tokens.status.changed.fg,
       onClick: counts.waiting
         ? () => actions.openQueue({ kind: "all" })

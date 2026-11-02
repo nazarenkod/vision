@@ -228,13 +228,11 @@ test("opens a build on the Overview tab", async ({ openProjectPage, page }) => {
   );
   // the build's state is the header's; the tiles carry what is not said there
   await expect(page.getByTestId("overviewTile-waiting")).toContainText("3");
-  await expect(page.getByTestId("overviewCaption-screens")).toHaveCount(0);
-  await expect(page.getByTestId("overviewCaption-waiting")).toHaveText(
-    "1 of 4 decided",
-  );
-  await expect(page.getByTestId("overviewCaption-waiting")).toHaveAttribute(
+  // the tile says only what waits; the progress is on hover
+  await expect(page.getByTestId("overviewCaption-waiting")).toHaveCount(0);
+  await expect(page.getByTestId("overviewTile-waiting")).toHaveAttribute(
     "title",
-    "Oleh Koval: 1 approved · 0 rejected",
+    "1 of 4 decided\nOleh Koval: 1 approved · 0 rejected",
   );
   await expect(page.getByTestId("overviewDevice")).toHaveCount(3);
   await expect(page.getByTestId("overviewQuietFeatures")).toContainText(
@@ -247,7 +245,7 @@ test("opens a build on the Overview tab", async ({ openProjectPage, page }) => {
   expect(new URL(page.url()).searchParams.get("tab")).toBeNull();
 });
 
-test("leaves the decided caption out when nothing needed a decision", async ({
+test("has no progress hint when nothing needed a decision", async ({
   openProjectPage,
   page,
 }) => {
@@ -258,7 +256,10 @@ test("leaves the decided caption out when nothing needed a decision", async ({
   );
   await openProjectPage(project.id, build.id, undefined, "overview");
   await expect(page.getByTestId("overviewTile-waiting")).toBeVisible();
-  await expect(page.getByTestId("overviewCaption-waiting")).toHaveCount(0);
+  await expect(page.getByTestId("overviewTile-waiting")).not.toHaveAttribute(
+    "title",
+    /.+/,
+  );
 });
 
 test("leaves change groups to the Changes tab", async ({

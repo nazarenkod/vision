@@ -70,6 +70,7 @@ export const rowSx = (columns: string, clickable: boolean) => ({
 
 export const Head: React.FunctionComponent<{
   columns: string;
+  // [label, a count column: centred over its numbers]
   cells: Array<[string, boolean?]>;
 }> = ({ columns, cells }) => (
   <Box
@@ -83,8 +84,8 @@ export const Head: React.FunctionComponent<{
       color: tokens.textSecondary,
     }}
   >
-    {cells.map(([label, right], i) => (
-      <span key={i} style={right ? { textAlign: "right" } : undefined}>
+    {cells.map(([label, count], i) => (
+      <span key={i} style={count ? { textAlign: "center" } : undefined}>
         {label}
       </span>
     ))}
@@ -124,7 +125,8 @@ export const Num: React.FunctionComponent<{
     component="span"
     data-testid={testId}
     sx={{
-      textAlign: "right",
+      // under the middle of its header: short numbers under long headers read as one column
+      textAlign: "center",
       fontFamily: tokens.mono,
       fontSize: 12,
       fontVariantNumeric: "tabular-nums",

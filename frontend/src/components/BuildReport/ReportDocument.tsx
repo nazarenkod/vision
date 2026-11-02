@@ -74,7 +74,8 @@ const tableSx = {
     borderBottom: `1px solid ${tokens.border}`,
     fontVariantNumeric: "tabular-nums",
   },
-  "& .r": { textAlign: "right" },
+  // counts sit under the middle of their headers, as on the Overview
+  "& .r": { textAlign: "center" },
 };
 
 /** The same column widths for every table of the report. */

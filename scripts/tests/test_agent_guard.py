@@ -77,6 +77,10 @@ class AgentGuardTest(unittest.TestCase):
         self.assertBlocked("git push origin --delete spec/x", "vision", cwd=vision)
         self.assertBlocked(f"git -C {upstream} push origin spec/x", "vision", cwd=vision)
         self.assertBlocked("git push origin spec/x other/y", "vision", cwd=vision)
+        # what the shell redirects is not another branch
+        self.assertAllowed("git push -u origin spec/x 2>&1 | tail -3", cwd=vision)
+        self.assertAllowed("git push origin spec/x >push.log 2>&1", cwd=vision)
+        self.assertBlocked("git push origin main 2>&1", "vision", cwd=vision)
 
     def test_refuses_resets_and_drops(self):
         self.assertBlocked("cd backend && npx prisma migrate reset --force", "additive")

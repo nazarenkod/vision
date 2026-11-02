@@ -16,7 +16,7 @@ import {
   foundOn,
   Overview,
 } from "../../_helpers/whatsCompared.helper";
-import { placesIn } from "../../_helpers/variableText.helper";
+import { expectedOf, placesIn } from "../../_helpers/variableText.helper";
 import { ComparedMap } from "./ComparedMap";
 import { tokens } from "../../theme";
 import { Text, useT } from "../../i18n";
@@ -523,21 +523,9 @@ export const WhatsCompared: React.FunctionComponent<WhatsComparedProps> = ({
     const failed = items.filter((entry) => !entry.ok);
     const shown = failed[0] ?? items[0];
     const parts = rule.parts ?? [];
-    const segments = shown
-      ? placesIn(parts, shown.text)
-      : [
-          {
-            text: parts
-              .map((part) =>
-                "text" in part ? part.text : (part.sample ?? "…"),
-              )
-              .join(""),
-            place: false,
-          },
-        ];
-    const patterns = parts
-      .flatMap((part) => ("pattern" in part ? [part.pattern] : []))
-      .join(" · ");
+    const expected = expectedOf(parts);
+    // what it says now; without a text on the snapshot, what it said when the check was made
+    const segments = shown ? placesIn(parts, shown.text) : expected;
     const bad = !!check && (check.gone || failed.length > 0);
     const tag = !check
       ? t("compared.variable.notChecked")
@@ -563,84 +551,112 @@ export const WhatsCompared: React.FunctionComponent<WhatsComparedProps> = ({
         ? tokens.status.failed
         : tokens.status.passed;
     const others = items.filter((entry) => entry !== shown);
-    const fact =
-      failed.length && shown?.reason === "pattern"
-        ? t("compared.variable.expected", { pattern: patterns })
-        : others.length
-          ? [
-              ...others.slice(0, 2).map((entry) => entry.text),
-              ...(others.length > 2
-                ? [t("compared.variable.more", { count: others.length - 2 })]
-                : []),
-            ].join(" · ")
-          : null;
+    const place = (text: string, key: number, failing: boolean) => (
+      <Box
+        key={key}
+        component="span"
+        sx={{
+          fontWeight: 600,
+          color: failing ? tokens.status.failed.fg : tokens.variable,
+          bgcolor: failing ? tokens.status.failed.bg : tokens.variableSoft,
+          borderRadius: "4px",
+          px: 0.5,
+        }}
+      >
+        {text || "\u00a0"}
+      </Box>
+    );
     return (
       <Box key={item.key} sx={{ display: "flex", flexDirection: "column" }}>
-        <Tooltip placement="left" title={patterns}>
+        <Box
+          data-testid="variableRule"
+          data-state={!check ? "unchecked" : bad ? "failed" : "fits"}
+          onMouseEnter={() => onPreview(item.key)}
+          onMouseLeave={() => onPreview(undefined)}
+          sx={{ ...rowSx, alignItems: "flex-start", py: 0.5 }}
+        >
+          <Box sx={{ ...swatchSx(bad ? "gone" : "variable"), mt: 0.25 }} />
+          {/* the whole text: the value that broke it is the point, it must not be cut off */}
           <Box
-            data-testid="variableRule"
-            data-state={!check ? "unchecked" : bad ? "failed" : "fits"}
-            onMouseEnter={() => onPreview(item.key)}
-            onMouseLeave={() => onPreview(undefined)}
+            component="span"
+            data-testid="variableNow"
+            sx={{ flex: 1, minWidth: 0, overflowWrap: "anywhere" }}
+          >
+            {segments.map((segment, i) =>
+              segment.place ? (
+                place(segment.text, i, bad && !!shown && !shown.ok)
+              ) : (
+                <span key={i}>{segment.text}</span>
+              ),
+            )}
+          </Box>
+          <Box
+            component="span"
             sx={{
-              ...rowSx,
-              bgcolor: bad ? tokens.status.failed.bg : "transparent",
+              fontSize: 12,
+              fontWeight: 600,
+              borderRadius: "999px",
+              px: 0.9,
+              flexShrink: 0,
+              color: tone.fg,
+              bgcolor: tone.bg,
             }}
           >
-            <Box sx={swatchSx(bad ? "gone" : "variable")} />
-            <Box component="span" sx={nameSx}>
-              {segments.map((segment, i) =>
+            {tag}
+          </Box>
+          <Chip>{sourceText(item)}</Chip>
+          {removeButton(rule)}
+        </Box>
+        {bad && shown && !shown.ok && (
+          <Box
+            data-testid="variableExpected"
+            sx={{
+              fontSize: 12.5,
+              color: tokens.textMuted,
+              pl: 3,
+              mb: 0.5,
+              overflowWrap: "anywhere",
+            }}
+          >
+            {t("compared.variable.expected")}{" "}
+            <Box component="span" sx={{ color: tokens.text }}>
+              {expected.map((segment, i) =>
                 segment.place ? (
-                  <Box
+                  // the pattern is for whoever wants it, one hover away
+                  <Tooltip
                     key={i}
-                    component="span"
-                    sx={{
-                      fontWeight: 600,
-                      color: bad ? tokens.status.failed.fg : tokens.variable,
-                      bgcolor: bad ? "transparent" : tokens.variableSoft,
-                      borderRadius: "4px",
-                      px: 0.5,
-                    }}
+                    title={t("select.variablePattern", {
+                      pattern: segment.pattern ?? "",
+                    })}
                   >
-                    {segment.text}
-                  </Box>
+                    {place(segment.text, i, false)}
+                  </Tooltip>
                 ) : (
                   <span key={i}>{segment.text}</span>
                 ),
               )}
-            </Box>
-            <Box
-              component="span"
-              sx={{
-                fontSize: 12,
-                fontWeight: 600,
-                borderRadius: "999px",
-                px: 0.9,
-                flexShrink: 0,
-                color: tone.fg,
-                bgcolor: tone.bg,
-              }}
-            >
-              {tag}
-            </Box>
-            <Chip>{sourceText(item)}</Chip>
-            {removeButton(rule)}
+            </Box>{" "}
+            {t("compared.variable.sameShape")}
           </Box>
-        </Tooltip>
-        {fact && (
+        )}
+        {others.length > 0 && (
           <Box
             sx={{
               fontSize: 12.5,
               color: tokens.textMuted,
               pl: 3,
-              mt: -0.25,
               mb: 0.5,
               overflow: "hidden",
               textOverflow: "ellipsis",
               whiteSpace: "nowrap",
             }}
           >
-            {fact}
+            {[
+              ...others.slice(0, 2).map((entry) => entry.text),
+              ...(others.length > 2
+                ? [t("compared.variable.more", { count: others.length - 2 })]
+                : []),
+            ].join(" · ")}
           </Box>
         )}
       </Box>

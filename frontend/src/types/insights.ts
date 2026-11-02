@@ -122,6 +122,8 @@ export interface VariableTextProblem {
   text?: string;
   reason?: VariableTextReason;
   bounds: Rect;
+  // the text as it was when the check was made, filled in for showing (REQ-033-34)
+  expected?: string;
 }
 
 export interface ElementRule {

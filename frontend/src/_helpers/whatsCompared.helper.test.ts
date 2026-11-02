@@ -482,9 +482,19 @@ describe("variable text (spec 033)", () => {
       }),
     ).toEqual({
       tone: "failed",
-      title: "Does not fit the pattern",
+      title: "The value does not look as expected",
       reason: "Now it says “Updated at undefined”.",
     });
+    // with the text as it was, the reason says what was expected (REQ-033-34)
+    expect(
+      verdict({
+        problems: [],
+        variableProblems: [{ ...failed, expected: "Updated at 14:07" }],
+        changes: 0,
+        hasDiff: false,
+        only: false,
+      }).reason,
+    ).toBe("Now “Updated at undefined”, expected like “Updated at 14:07”.");
     expect(
       verdict({
         problems: [],

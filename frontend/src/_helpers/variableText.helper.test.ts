@@ -1,4 +1,5 @@
 import {
+  expectedOf,
   fitsParts,
   partsOf,
   patternFor,
@@ -110,6 +111,20 @@ describe("placesIn", () => {
     ]);
     expect(placesIn(marking("Оновлено о 14:07", "14:07"), "Updated")).toEqual([
       { text: "Updated", place: false },
+    ]);
+  });
+});
+
+describe("what is there now and what was expected", () => {
+  it("shows a value that does not fit by the text around it, next to the one it was made from", () => {
+    const parts = marking("Updated at 14:07", "14:07");
+    expect(placesIn(parts, "Updated at undefined")).toEqual([
+      { text: "Updated at ", place: false },
+      { text: "undefined", place: true },
+    ]);
+    expect(expectedOf(parts)).toEqual([
+      { text: "Updated at ", place: false },
+      { text: "14:07", place: true, pattern: "\\d+:\\d{2}" },
     ]);
   });
 });

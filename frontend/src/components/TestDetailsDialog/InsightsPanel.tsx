@@ -51,6 +51,7 @@ import {
   overview,
   verdict,
 } from "../../_helpers/whatsCompared.helper";
+import { expectedOf } from "../../_helpers/variableText.helper";
 import { useRuleSnackbar } from "../useRuleSnackbar";
 import { readAreas } from "../../_helpers/ignoreArea.helper";
 import {
@@ -1099,7 +1100,22 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
             verdict={verdict(
               {
                 problems: structure.compareOnly?.problems ?? [],
-                variableProblems: structure.variableProblems ?? [],
+                // what each text was when the check was made, to say what was expected
+                variableProblems: (structure.variableProblems ?? []).map(
+                  (problem) => {
+                    const rule = structure.rules.find(
+                      (item) => item.id === problem.ruleId,
+                    );
+                    return rule?.parts
+                      ? {
+                          ...problem,
+                          expected: expectedOf(rule.parts)
+                            .map((segment) => segment.text)
+                            .join(""),
+                        }
+                      : problem;
+                  },
+                ),
                 changes: changeCount,
                 hasDiff: !!testRun.diffName,
                 only: compared.only,

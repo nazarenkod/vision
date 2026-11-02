@@ -176,24 +176,42 @@ export function placesIn(
   parts: TextPart[],
   text: string,
 ): Array<{ text: string; place: boolean }> {
-  const source = parts
-    .map((part) =>
-      isPlace(part)
-        ? `(${part.pattern.replace(/(?<!\\)\((?!\?)/g, "(?:")})`
-        : `(${escape(spaces(part.text)).replace(/ /g, " +")})`,
-    )
-    .join("");
-  try {
-    const match = new RegExp(`^ *${source} *$`, "u").exec(spaces(text).trim());
-    if (match)
-      return parts.map((part, i) => ({
-        text: match[i + 1],
-        place: isPlace(part),
-      }));
-  } catch {
-    // a pattern that does not parse is shown as plain text
+  // a value that does not fit is still found by the fixed text around it, to show what is there now
+  for (const loose of [false, true]) {
+    const source = parts
+      .map((part) =>
+        isPlace(part)
+          ? loose
+            ? "(.*?)"
+            : `(${part.pattern.replace(/(?<!\\)\((?!\?)/g, "(?:")})`
+          : `(${escape(spaces(part.text)).replace(/ /g, " +")})`,
+      )
+      .join("");
+    try {
+      const match = new RegExp(`^ *${source} *$`, "u").exec(
+        spaces(text).trim(),
+      );
+      if (match)
+        return parts.map((part, i) => ({
+          text: match[i + 1],
+          place: isPlace(part),
+        }));
+    } catch {
+      // a pattern that does not parse is shown as plain text
+    }
   }
   return [{ text, place: false }];
+}
+
+/** The text as it was when the check was made: what "expected" means to a person (REQ-033-31). */
+export function expectedOf(
+  parts: TextPart[],
+): Array<{ text: string; place: boolean; pattern?: string }> {
+  return parts.map((part) =>
+    isPlace(part)
+      ? { text: part.sample ?? "…", place: true, pattern: part.pattern }
+      : { text: part.text, place: false },
+  );
 }
 
 /** A text as the check reads it: one kind of space, none at the ends. */

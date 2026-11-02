@@ -451,8 +451,16 @@ export function verdict(
             : "verdict.variablePattern",
       ),
       reason: text(
-        failed.length > 1 ? "verdict.variableWhyMany" : "verdict.variableWhy",
-        { text: first.text ?? "", count: failed.length },
+        failed.length > 1
+          ? "verdict.variableWhyMany"
+          : first.expected
+            ? "verdict.variableWhyExpected"
+            : "verdict.variableWhy",
+        {
+          text: first.text ?? "",
+          expected: first.expected ?? "",
+          count: failed.length,
+        },
       ),
     };
   }

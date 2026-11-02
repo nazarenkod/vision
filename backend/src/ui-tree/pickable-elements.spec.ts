@@ -118,19 +118,32 @@ describe('pickableElements: elements with no name (spec 027)', () => {
     ]);
   });
 
-  it('works out the elements of a 2 000-node screen in under half a second', () => {
+  it('works out the elements of a 2 000-node screen in about the time it takes to parse it', () => {
     const card = offers.slice(
       offers.indexOf('<android.view.ViewGroup class="android.view.ViewGroup" text="" content-desc="-211'),
       offers.indexOf('<android.view.ViewGroup class="android.view.ViewGroup" text="" content-desc="-211 днів Кешбек')
     );
     const big = offers.replace(card, card.repeat(200));
-    const large = parse(big);
-    expect(large.nodes.length).toBeGreaterThan(2000);
-    const started = Date.now();
-    pickableElements(large);
-    // about 100 ms on its own; the whole suite runs in parallel and doubles it
-    expect(Date.now() - started).toBeLessThan(500);
-  });
+    expect(parse(big).nodes.length).toBeGreaterThan(2000);
+    // A wall-clock limit failed whenever the parallel suite loaded the machine; parsing the same
+    // XML slows down with it, so the ratio holds (~1.5) while a few times slower picking breaks it.
+    // Each round parses afresh because the anchors are cached per tree; the first round warms up.
+    const parseTimes: number[] = [];
+    const pickTimes: number[] = [];
+    for (let round = 0; round < 6; round++) {
+      let started = performance.now();
+      const large = parse(big);
+      const parsed = performance.now() - started;
+      started = performance.now();
+      pickableElements(large);
+      const picked = performance.now() - started;
+      if (round === 0) continue;
+      parseTimes.push(parsed);
+      pickTimes.push(picked);
+    }
+    const median = (times: number[]) => [...times].sort((a, b) => a - b)[Math.floor(times.length / 2)];
+    expect(median(pickTimes)).toBeLessThan(4 * median(parseTimes));
+  }, 30_000);
 });
 
 describe('pickableElements: texts for variable-text rules (spec 033)', () => {

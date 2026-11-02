@@ -1,4 +1,5 @@
 import React from "react";
+import { tokens } from "../../theme";
 import { Box, Button, Checkbox } from "@mui/material";
 import { ArrowDownward, ArrowUpward } from "@mui/icons-material";
 import { TestRunDensity } from "./TestRunListControls";
@@ -77,7 +78,13 @@ export const TestRunGridHeader: React.FunctionComponent<{
         onClick={() => onSortChange(nextSort(sort, field))}
         endIcon={field === sort.field ? <Arrow fontSize="small" /> : undefined}
         data-testid={`gridSort-${field}`}
-        sx={{ textTransform: "none", fontSize: 14, fontWeight: 500 }}
+        // the data grid's column titles, so both views share one header
+        sx={{
+          textTransform: "none",
+          fontSize: 11.5,
+          fontWeight: 600,
+          color: tokens.textSecondary,
+        }}
       >
         {t(SORT_LABELS[field])}
       </Button>
@@ -92,6 +99,7 @@ export const TestRunGridHeader: React.FunctionComponent<{
       flexShrink={0}
       borderBottom={1}
       borderColor="divider"
+      bgcolor={tokens.subtle}
     >
       <Box width={50} display="flex" justifyContent="center">
         <Checkbox

@@ -25,7 +25,7 @@ import { ProjectInsights } from "../types";
 import { useUserState } from "../contexts";
 import { routes } from "../constants";
 import { motion, tokens } from "../theme";
-import { CountUp } from "../components/motion/useCountUp";
+import { Num, Tiles } from "../components/SummaryParts";
 import { ErrorState } from "../components/EmptyState";
 import { shimmer } from "../components/SkeletonList";
 import { barShare, largest } from "../_helpers/insights.helper";
@@ -92,44 +92,6 @@ const Empty: React.FunctionComponent<{ text: string }> = ({ text }) => (
   <Typography variant="body2" color="textSecondary" sx={{ py: 1 }}>
     {text}
   </Typography>
-);
-
-const Stat: React.FunctionComponent<{
-  label: string;
-  value: React.ReactNode;
-  tone?: "warning" | "danger";
-}> = ({ label, value, tone }) => (
-  <Box
-    sx={{
-      bgcolor: tokens.surface,
-      border: `1px solid ${tokens.border}`,
-      borderRadius: 3,
-      px: 2,
-      py: 1.5,
-      minWidth: 150,
-      flex: "1 1 150px",
-    }}
-  >
-    <Typography
-      sx={{
-        fontSize: 26,
-        fontWeight: 650,
-        letterSpacing: "-0.01em",
-        fontVariantNumeric: "tabular-nums",
-        color:
-          tone === "danger"
-            ? tokens.status.failed.fg
-            : tone === "warning"
-              ? tokens.status.changed.fg
-              : tokens.text,
-      }}
-    >
-      {typeof value === "number" ? <CountUp value={value} /> : value}
-    </Typography>
-    <Typography variant="body2" color="textSecondary">
-      {label}
-    </Typography>
-  </Box>
 );
 
 /** A number with a thin bar: its share of the largest in the table. */
@@ -317,41 +279,53 @@ const InsightsPage: React.FunctionComponent = () => {
             </Alert>
           )}
 
-          <Box sx={{ display: "flex", gap: 1.5, flexWrap: "wrap" }}>
-            <Stat
-              label={t("insights.baselines")}
-              value={data.summary.baselines}
-            />
-            <Stat
-              label={t("insights.unusedFor", { count: data.days })}
-              value={data.summary.unused}
-              tone={data.summary.unused ? "warning" : undefined}
-            />
-            <Stat
-              label={t("insights.changedOf", { count: data.summary.runs })}
-              value={`${formatNumber(data.summary.changedPercent)}%`}
-            />
-            <Stat
-              label={t("insights.flips")}
-              value={data.summary.flips}
-              tone={data.summary.flips ? "danger" : undefined}
-            />
-            <Stat
-              label={t("insights.a11yIssues")}
-              value={data.summary.a11yIssues}
-            />
-            <Stat label={t("insights.waiting")} value={data.summary.waiting} />
-            <Stat
-              label={t("insights.median")}
-              value={
-                data.summary.medianDecisionHours === null
-                  ? "—"
-                  : t("insights.hours", {
-                      count: data.summary.medianDecisionHours,
-                    })
-              }
-            />
-          </Box>
+          <Tiles
+            testId="insights"
+            tiles={[
+              {
+                key: "baselines",
+                label: t("insights.baselines"),
+                value: data.summary.baselines,
+              },
+              {
+                key: "unused",
+                label: t("insights.unusedFor", { count: data.days }),
+                value: data.summary.unused,
+                color: tokens.status.changed.fg,
+              },
+              {
+                key: "changed",
+                label: t("insights.changedOf", { count: data.summary.runs }),
+                value: `${formatNumber(data.summary.changedPercent)}%`,
+              },
+              {
+                key: "flips",
+                label: t("insights.flips"),
+                value: data.summary.flips,
+                color: tokens.status.failed.fg,
+              },
+              {
+                key: "a11y",
+                label: t("insights.a11yIssues"),
+                value: data.summary.a11yIssues,
+              },
+              {
+                key: "waiting",
+                label: t("insights.waiting"),
+                value: data.summary.waiting,
+              },
+              {
+                key: "median",
+                label: t("insights.median"),
+                value:
+                  data.summary.medianDecisionHours === null
+                    ? "—"
+                    : t("insights.hours", {
+                        count: data.summary.medianDecisionHours,
+                      }),
+              },
+            ]}
+          />
 
           <Section
             title={t("insights.unused")}
@@ -403,7 +377,7 @@ const InsightsPage: React.FunctionComponent = () => {
                       <TableCell>{t("insights.device")}</TableCell>
                       <TableCell>{t("insights.branch")}</TableCell>
                       <TableCell>{t("insights.lastUsed")}</TableCell>
-                      <TableCell align="right">
+                      <TableCell align="center">
                         {t("insights.idleDays")}
                       </TableCell>
                     </TableRow>
@@ -441,7 +415,9 @@ const InsightsPage: React.FunctionComponent = () => {
                           {item.branchName}
                         </TableCell>
                         <TableCell>{date(item.lastUsedAt)}</TableCell>
-                        <TableCell align="right">{item.idleDays}</TableCell>
+                        <TableCell align="center">
+                          <Num value={item.idleDays} />
+                        </TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
@@ -463,17 +439,17 @@ const InsightsPage: React.FunctionComponent = () => {
                     <TableRow>
                       <TableCell>{t("insights.check")}</TableCell>
                       <TableCell>{t("insights.devices")}</TableCell>
-                      <TableCell align="right">{t("insights.runs")}</TableCell>
-                      <TableCell align="right">
+                      <TableCell align="center">{t("insights.runs")}</TableCell>
+                      <TableCell align="center">
                         {t("insights.changed")}
                       </TableCell>
-                      <TableCell align="right">
+                      <TableCell align="center">
                         {t("insights.flipsColumn")}
                       </TableCell>
-                      <TableCell align="right">
+                      <TableCell align="center">
                         {t("insights.rejected")}
                       </TableCell>
-                      <TableCell align="right">
+                      <TableCell align="center">
                         {t("insights.newBaselines")}
                       </TableCell>
                       <TableCell>{t("insights.lastChange")}</TableCell>
@@ -486,20 +462,24 @@ const InsightsPage: React.FunctionComponent = () => {
                         <TableCell sx={{ color: tokens.textSecondary }}>
                           {item.devices.join(", ")}
                         </TableCell>
-                        <TableCell align="right">{item.runs}</TableCell>
-                        <TableCell align="right">
+                        <TableCell align="center">
+                          <Num value={item.runs} />
+                        </TableCell>
+                        <TableCell align="center">
                           {formatNumber(item.changedPercent)}%
                         </TableCell>
-                        <TableCell align="right">
+                        <TableCell align="center">
                           <Amount
                             value={item.flips}
                             max={largest(data.unstable.map((u) => u.flips))}
                             colour={tokens.status.failed.bar}
                           />
                         </TableCell>
-                        <TableCell align="right">{item.rejected}</TableCell>
-                        <TableCell align="right">
-                          {item.baselineChanges}
+                        <TableCell align="center">
+                          <Num value={item.rejected} />
+                        </TableCell>
+                        <TableCell align="center">
+                          <Num value={item.baselineChanges} />
                         </TableCell>
                         <TableCell>{date(item.lastChangeAt)}</TableCell>
                       </TableRow>
@@ -529,14 +509,16 @@ const InsightsPage: React.FunctionComponent = () => {
                     <TableHead>
                       <TableRow>
                         <TableCell>{t("insights.check")}</TableCell>
-                        <TableCell align="right">
+                        <TableCell align="center">
                           {t("insights.issues")}
                         </TableCell>
-                        <TableCell align="right">{t("insights.new")}</TableCell>
-                        <TableCell align="right">
+                        <TableCell align="center">
+                          {t("insights.new")}
+                        </TableCell>
+                        <TableCell align="center">
                           {t("insights.bugsFiled")}
                         </TableCell>
-                        <TableCell align="right">
+                        <TableCell align="center">
                           {t("insights.falsePositives")}
                         </TableCell>
                       </TableRow>
@@ -545,7 +527,7 @@ const InsightsPage: React.FunctionComponent = () => {
                       {data.a11yScreens.map((item) => (
                         <TableRow key={checkName(item)} hover>
                           <TableCell>{checkName(item)}</TableCell>
-                          <TableCell align="right">
+                          <TableCell align="center">
                             <Amount
                               value={item.issues}
                               max={largest(
@@ -554,18 +536,15 @@ const InsightsPage: React.FunctionComponent = () => {
                               colour={tokens.a11y}
                             />
                           </TableCell>
-                          <TableCell align="right">
-                            {item.newIssues ? (
-                              <StatusPill
-                                tone="changed"
-                                label={item.newIssues}
-                              />
-                            ) : (
-                              0
-                            )}
+                          <TableCell align="center">
+                            <Num value={item.newIssues} color={tokens.a11y} />
                           </TableCell>
-                          <TableCell align="right">{item.reported}</TableCell>
-                          <TableCell align="right">{item.ignored}</TableCell>
+                          <TableCell align="center">
+                            <Num value={item.reported} />
+                          </TableCell>
+                          <TableCell align="center">
+                            <Num value={item.ignored} />
+                          </TableCell>
                         </TableRow>
                       ))}
                     </TableBody>

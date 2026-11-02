@@ -357,7 +357,13 @@ export const ChangeGroups: React.FunctionComponent<Props> = ({
     return (
       <Box
         aria-busy="true"
-        sx={{ px: 3, py: 2, display: "flex", flexDirection: "column", gap: 2 }}
+        sx={{
+          px: 3,
+          py: 2,
+          display: "flex",
+          flexDirection: "column",
+          gap: 1.75,
+        }}
       >
         {[0, 1, 2].map((i) => (
           <Box key={i} sx={{ ...shimmer, height: 140, borderRadius: 3 }} />
@@ -374,7 +380,7 @@ export const ChangeGroups: React.FunctionComponent<Props> = ({
 
   return (
     <Box
-      sx={{ px: 3, py: 2, display: "flex", flexDirection: "column", gap: 2 }}
+      sx={{ px: 3, py: 2, display: "flex", flexDirection: "column", gap: 1.75 }}
     >
       {groups.map((group, index) => {
         const summary = summaries[group.id];

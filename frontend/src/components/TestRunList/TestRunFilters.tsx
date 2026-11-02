@@ -39,7 +39,7 @@ const TestRunFilters: React.FunctionComponent<IProps> = ({
     name.length > 0 || statuses.length > 0 || tags.length > 0;
 
   return (
-    <Paper variant="outlined" sx={{ p: 2, borderRadius: 2 }}>
+    <Paper variant="outlined" sx={{ p: 2, borderRadius: 3 }}>
       <Grid container spacing={2} alignItems="center" wrap="nowrap">
         <Grid item xs={3}>
           <DebounceInput

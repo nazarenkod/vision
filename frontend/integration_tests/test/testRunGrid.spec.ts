@@ -617,9 +617,9 @@ test("labels its switches in the table's colour", async ({
   page,
 }) => {
   const projectPage = await openProjectPage(project.id, build.id);
-  // the table has no switch of its own, so its column title sets the colour
+  // the table's own text: its column titles are muted on purpose
   const inTable = await colourOf(
-    page.locator(".MuiDataGrid-columnHeaderTitle").first(),
+    page.locator(".MuiDataGrid-cell[data-field='name']").first(),
   );
 
   await projectPage.testRunList.gridViewToggle.click();

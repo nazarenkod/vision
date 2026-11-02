@@ -320,7 +320,7 @@ const ProjectSettingsPage: React.FunctionComponent = () => {
           scrollMarginTop: 16,
           bgcolor: tokens.surface,
           border: `1px solid ${id === "danger" ? tokens.status.failed.bar : tokens.border}`,
-          borderRadius: 3.5,
+          borderRadius: 3,
           px: 2.5,
           pt: 2,
           pb: 2.5,

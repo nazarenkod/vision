@@ -36,7 +36,7 @@ export const Card: React.FunctionComponent<{
         sx={{
           px: 2,
           py: 1.5,
-          fontSize: 14,
+          fontSize: 16,
           fontWeight: 650,
           borderBottom: `1px solid ${tokens.border}`,
         }}
@@ -177,7 +177,8 @@ export const DeviceCell: React.FunctionComponent<{
 
 export interface TileProps {
   key: string;
-  value: number;
+  // a count rolls up to its value; a share or a time shows as it is
+  value: number | string;
   label: string;
   // what the number does not say, such as the progress of the review
   caption?: string;
@@ -244,7 +245,11 @@ export const Tiles: React.FunctionComponent<{
             color: tile.value && tile.color ? tile.color : tokens.text,
           }}
         >
-          <CountUp value={tile.value} />
+          {typeof tile.value === "number" ? (
+            <CountUp value={tile.value} />
+          ) : (
+            tile.value
+          )}
         </Box>
         <Box component="span" sx={{ fontSize: 12.5, fontWeight: 500 }}>
           {tile.label}

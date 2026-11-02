@@ -480,8 +480,17 @@ const TestRunList: React.FunctionComponent = () => {
 
   if (selectedBuild) {
     return (
-      <Box display="flex" flexDirection="column" height="100%">
-        <Box paddingX={2} paddingTop={1} paddingBottom={1}>
+      // the gutters and gaps of the Overview tab beside it
+      <Box
+        display="flex"
+        flexDirection="column"
+        height="100%"
+        paddingX={3}
+        paddingY={2}
+        gap={1.75}
+        boxSizing="border-box"
+      >
+        <Box>
           <TestRunFilters
             tagOptions={tagOptions}
             statusOptions={statusOptions}
@@ -556,7 +565,8 @@ const TestRunList: React.FunctionComponent = () => {
               flexDirection="column"
               border={1}
               borderColor="divider"
-              borderRadius={1}
+              borderRadius={3}
+              overflow="hidden"
               color="text.primary"
             >
               <Toolbar variant="dense">

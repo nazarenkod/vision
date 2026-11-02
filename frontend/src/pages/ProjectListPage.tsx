@@ -161,6 +161,7 @@ const ProjectsListPage = () => {
                     sx={{
                       font: `400 11px ${tokens.mono}`,
                       color: tokens.textMuted,
+                      whiteSpace: "nowrap",
                     }}
                   >
                     {project.id}
@@ -183,7 +184,9 @@ const ProjectsListPage = () => {
                     />
                   )}
                 </TableCell>
-                <TableCell>{formatDate(project.createdAt)}</TableCell>
+                <TableCell sx={{ whiteSpace: "nowrap" }}>
+                  {formatDate(project.createdAt)}
+                </TableCell>
                 <TableCell align="right" sx={{ whiteSpace: "nowrap" }}>
                   <Button
                     size="small"

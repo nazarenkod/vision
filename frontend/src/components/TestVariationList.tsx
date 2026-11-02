@@ -105,12 +105,34 @@ const CheckCard: React.FunctionComponent<{
                 justifyContent: "flex-start",
                 flex: 1,
                 py: 0.25,
-                fontWeight: device.id === shown.id ? 500 : 400,
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "flex-start",
                 color:
                   device.id === shown.id ? tokens.text : tokens.textSecondary,
               }}
             >
-              {deviceLabel(device, undefined, t)}
+              {/* the model, and under it the rest, as the build's tables name a device */}
+              {device.device ? (
+                <>
+                  <Box
+                    component="span"
+                    sx={{ fontWeight: device.id === shown.id ? 600 : 500 }}
+                  >
+                    {device.device}
+                  </Box>
+                  <Box
+                    component="span"
+                    sx={{ fontSize: 11.5, color: tokens.textSecondary }}
+                  >
+                    {[device.os, device.browser, device.viewport]
+                      .filter(Boolean)
+                      .join(" · ")}
+                  </Box>
+                </>
+              ) : (
+                deviceLabel(device, undefined, t)
+              )}
             </ButtonBase>
             <Button
               size="small"

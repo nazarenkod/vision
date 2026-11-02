@@ -276,11 +276,15 @@ function themeFor(mode: ThemeMode): Theme {
           elevation24: { boxShadow: tokens.shadowPop },
         },
       },
+      // cards and their titles as on the build's Overview and Insights
       MuiCard: {
         defaultProps: { variant: "outlined" },
         styleOverrides: {
-          root: { borderRadius: 12, borderColor: tokens.border },
+          root: { borderRadius: 24, borderColor: tokens.border },
         },
+      },
+      MuiCardHeader: {
+        defaultProps: { titleTypographyProps: { variant: "h6" } },
       },
       MuiButton: {
         defaultProps: { disableElevation: true },
@@ -346,15 +350,21 @@ function themeFor(mode: ThemeMode): Theme {
           },
         },
       },
+      // every table reads like the build's Overview: a low header row, 13px rows
       MuiTableCell: {
         styleOverrides: {
           root: { borderBottomColor: tokens.border },
           head: {
             backgroundColor: tokens.subtle,
-            color: tokens.textMuted,
+            color: tokens.textSecondary,
             fontWeight: 600,
-            fontSize: 12.5,
+            fontSize: 11.5,
+            lineHeight: 1.3,
+            whiteSpace: "nowrap",
+            paddingTop: 8,
+            paddingBottom: 8,
           },
+          body: { fontSize: 13 },
         },
       },
       MuiTabs: {
@@ -388,10 +398,22 @@ function themeFor(mode: ThemeMode): Theme {
         styleOverrides: {
           root: {
             border: `1px solid ${tokens.border}`,
+            borderRadius: 24,
+            // our grids carry a toolbar above the header: only the frame is
+            // rounded, and it clips what touches its corners
+            "--unstable_DataGrid-radius": "0px",
+            overflow: "hidden",
             backgroundColor: tokens.surface,
             "--DataGrid-rowBorderColor": tokens.border,
           },
           columnHeaders: { backgroundColor: tokens.subtle },
+          columnHeader: { backgroundColor: tokens.subtle },
+          columnHeaderTitle: {
+            fontSize: 11.5,
+            fontWeight: 600,
+            color: tokens.textSecondary,
+          },
+          cell: { fontSize: 13 },
         },
       },
     },

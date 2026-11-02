@@ -132,7 +132,9 @@ const OverviewTiles: React.FunctionComponent<{
     {
       key: "a11y",
       value: counts.a11yNew,
-      label: t("overview.a11yNew"),
+      // short enough for the strip; what the number counts, on hover
+      label: t("overview.a11y"),
+      hint: t("overview.a11yNew"),
       color: tokens.a11y,
       onClick: () => actions.openTab("a11y"),
     },

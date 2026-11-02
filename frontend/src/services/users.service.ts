@@ -1,5 +1,5 @@
 import { handleResponse, authHeader } from "../_helpers/service.helpers";
-import { Role, User } from "../types/user";
+import { NewAccount, Role, User } from "../types/user";
 import { API_URL } from "../_config/env.config";
 
 const ENDPOINT_URL = "/users";
@@ -32,31 +32,29 @@ function login(email: string, password: string): Promise<User> {
     });
 }
 
-function register(
-  firstName: string,
-  lastName: string,
-  email: string,
-  password: string,
-): Promise<User> {
+/** An account an admin creates in Users (035); the admin stays signed in as themselves. */
+function create(account: NewAccount): Promise<User> {
   const requestOptions = {
     method: "POST",
     headers: {
       ...DEFAULT_HEADERS,
+      ...authHeader(),
     },
-    body: JSON.stringify({
-      firstName,
-      lastName,
-      email,
-      password,
-    }),
+    body: JSON.stringify(account),
   };
 
-  return fetch(`${API_URL}${ENDPOINT_URL}/register`, requestOptions)
-    .then(handleResponse)
-    .then((user) => {
-      setUserInLocalStorage(user);
-      return user;
-    });
+  return fetch(`${API_URL}${ENDPOINT_URL}`, requestOptions).then(
+    handleResponse,
+  );
+}
+
+// With LDAP or SSO accounts come from the first sign-in, so Users cannot make
+// them. Any failure (an older backend) counts as "cannot".
+function accountsEnabled(): Promise<boolean> {
+  return fetch(`${API_URL}${ENDPOINT_URL}/accounts/enabled`)
+    .then((response) => (response.ok ? response.json() : false))
+    .then((enabled) => enabled === true)
+    .catch(() => false);
 }
 
 function update({
@@ -276,7 +274,8 @@ function remove(ids: string[] | number[]): Promise<boolean> {
 export const usersService = {
   login,
   logout,
-  register,
+  create,
+  accountsEnabled,
   update,
   setJira,
   setGemini,

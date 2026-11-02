@@ -13,7 +13,6 @@ import {
 const project = {
   ...TEST_PROJECT,
   jiraUrl: "https://jira.example.com",
-  jiraTokenSet: true,
   uiTreeSettings: JSON.stringify({
     excludeSystemBars: true,
     compensateMoves: false,
@@ -219,8 +218,9 @@ test("saves every field the old dialog had", async ({
     excludeSystemBars: true,
     detectSemanticChanges: false,
   });
-  // the saved token stays as it is: not sent at all
+  // no shared token or email: Jira goes with each person's own (035)
   expect(body).not.toHaveProperty("jiraToken");
+  expect(body).not.toHaveProperty("jiraEmail");
   await expect(page.getByTestId("saveBar")).toHaveAttribute(
     "data-state",
     "saved",
@@ -607,17 +607,10 @@ test("shows saved secrets as Saved and never their value", async ({
     }),
     geminiApiKeySet: true,
   });
-  await expect(page.getByTestId("jiraTokenSaved")).toContainText("Saved");
-  await expect(page.locator("#jiraToken")).toHaveCount(0);
   await expect(page.getByTestId("apiKeySaved")).toContainText("Saved");
   await expect(page.locator("#apiKey")).toHaveCount(0);
 
-  // Replace opens an empty field; Remove empties it on save
-  await page
-    .getByTestId("jiraTokenSaved")
-    .getByRole("button", { name: "Replace" })
-    .click();
-  await expect(page.locator("#jiraToken")).toHaveValue("");
+  // Remove empties it on save
   await page
     .getByTestId("apiKeySaved")
     .getByRole("button", { name: "Remove" })
@@ -631,6 +624,20 @@ test("shows saved secrets as Saved and never their value", async ({
   expect(JSON.parse(request.postDataJSON().imageComparisonConfig).apiKey).toBe(
     "",
   );
+});
+
+test("Jira settings have no shared token or email", async ({
+  page,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  authUser,
+}) => {
+  await open(page);
+  await expect(page.locator("#jiraUrl")).toHaveValue(project.jiraUrl);
+  await expect(page.locator("#jiraIssueType")).toBeVisible();
+  await expect(page.locator("#jiraLinkType")).toBeVisible();
+  await expect(page.locator("#jiraToken")).toHaveCount(0);
+  await expect(page.locator("#jiraEmail")).toHaveCount(0);
+  await expect(page.getByTestId("jiraTokenSaved")).toHaveCount(0);
 });
 
 test("warns when someone saved after the page was opened", async ({

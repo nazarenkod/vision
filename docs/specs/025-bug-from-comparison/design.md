@@ -50,7 +50,7 @@
 | Чернетка AI | `backend/src/visual-bugs/bug-draft.ts` | `draftSchema` (`essence`, `steps[]`, `actual`, `expected`), `draftPrompt` (українською, лише ці поля), `cropAreas` (до 3 областей, найбільші), `draftFields` |
 | Сервіс | `backend/src/visual-bugs/visual-bugs.service.ts` | `prepare`, `file` (створити з міткою `vision` → зв'язати/призначити → прикласти обидва знімки → записати `VisualBug`; збої після створення — `warnings`), `forCheck` (`sameDevice`: позначки лише в пікселях того самого профілю пристрою) |
 | Контролер і DTO | `backend/src/visual-bugs/visual-bugs.controller.ts`, `backend/src/visual-bugs/visual-bug.dto.ts`, `backend/src/visual-bugs/visual-bugs.module.ts` | `POST /test-runs/:id/bug/prepare`, `POST /test-runs/:id/bug` (admin, editor), `GET /test-runs/:id/bugs` |
-| Доступ до Jira | `backend/src/a11y/jira-access.ts` | `jiraAccess(prisma, projectId, userId)`: особистий токен, інакше спільний |
+| Доступ до Jira | `backend/src/a11y/jira-access.ts` | `jiraAccess(prisma, projectId, userId)`: лише особистий токен ([035](../035-admin-accounts/spec.md)) |
 | Поля бага | `backend/src/a11y/jira-bug.ts` | `buildBugFields`: `severity` необов'язкова; `BugInput.role` |
 | AI | `backend/src/ai/ai.service.ts`, `backend/src/ai/ai-features.service.ts`, `backend/src/ai/ai.controller.ts` | `generateJson({ personalGeminiKey })`; `draftBug(request, userId)` → `POST /ai/bug-draft`: ключ людини, вирізки `cropPng`, тайм-аут 30 с → 504 |
 | Ключ у профілі | `backend/src/users/users.controller.ts`, `backend/src/users/dto/user-jira.dto.ts`, `backend/src/users/dto/user.dto.ts` | `PUT /users/gemini` (`geminiApiKey`, порожній рядок видаляє); `UserDto.geminiKeySet` |
@@ -164,7 +164,7 @@ sequenceDiagram
 | REQ-025-02 | `frontend/integration_tests/test/reportBug.spec.ts › opens the bug dialog with B` |
 | REQ-025-03 | `frontend/integration_tests/test/reportBug.spec.ts › opens with the changed area already marked` |
 | REQ-025-04 | `frontend/integration_tests/test/reportBug.spec.ts › offers Report bug after a reject` |
-| REQ-025-05 | `frontend/integration_tests/test/reportBug.spec.ts › disables Report bug without a Jira token` |
+| REQ-025-05 | `frontend/integration_tests/test/reportBug.spec.ts › disables Report bug without a personal Jira token, even with a shared one saved` |
 | REQ-025-10 | `frontend/src/_helpers/bugReport.helper.test.ts › numbers marks and renumbers after removing one`; `frontend/src/_helpers/elementPicking.helper.test.ts › picks the smallest element under the pointer on either screenshot` |
 | REQ-025-11 | manual: у діалозі перемкнути Checkpoint / Baseline — знімок на тому самому місці, позначки лише на чекпоінті |
 | REQ-025-12 | `backend/src/visual-bugs/visual-bugs.service.spec.ts › attaches the marked checkpoint and the plain baseline`; `backend/src/visual-bugs/mark-image.spec.ts › draws a numbered frame and leaves the rest alone` |

@@ -83,7 +83,11 @@ describe("project settings", () => {
     expect(matchSettings("navigation", ukrainian).sections).toEqual(["mobile"]);
     expect(matchSettings("odiff", ukrainian).sections).toEqual(["comparison"]);
     expect(
-      changedSections(project, { ...project, jiraToken: "" }, ukrainian),
+      changedSections(
+        project,
+        { ...project, jiraIssueType: "Story" },
+        ukrainian,
+      ),
     ).toEqual(["Jira"]);
     expect(
       changedSections(project, { ...project, maxBuildAllowed: 5 }, ukrainian),
@@ -127,10 +131,9 @@ describe("project settings", () => {
         }),
       }),
     ).toEqual(["General", "Mobile screens"]);
-    // a token typed in counts though none is ever shown
-    expect(changedSections(project, { ...project, jiraToken: "" })).toEqual([
-      "Jira",
-    ]);
+    expect(
+      changedSections(project, { ...project, jiraIssueType: "Story" }),
+    ).toEqual(["Jira"]);
     // the accessibility norms are the Accessibility section's (REQ-026-17)
     expect(
       changedSections(project, {

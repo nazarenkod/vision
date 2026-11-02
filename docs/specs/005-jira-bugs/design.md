@@ -13,14 +13,14 @@
 |---|---|---|
 | Клієнт | `backend/src/a11y/jira.client.ts` | `getIssue`, `issueTypes`, `createFields` (DC `values`, Cloud `issueTypes`/`fields` з пагінацією, Jira 8 createmeta), `findUsers`, `linkTypes`, `createIssue`, `link`, `assign`, `attach`, `editLabels`, `search` |
 | Текст і поля | `backend/src/a11y/jira-bug.ts` | `functionalBlock`, `bugText`, `defaultIssueType`, `buildBugFields` (S4, «Замовник», копіювання, `inputs`, `missing`, `assignAfter`), `copyValue` |
-| Сервіс | `backend/src/a11y/a11y-issues.service.ts` | `jiraFor` (особистий → спільний токен), `prepareBug`, `fileBug`, `outlineElement` |
+| Сервіс | `backend/src/a11y/a11y-issues.service.ts` | `jiraFor` (лише особистий токен, [035](../035-admin-accounts/spec.md)), `prepareBug`, `fileBug`, `outlineElement` |
 | Токени | `backend/src/users/users.controller.ts` | `PUT /users/jira`; `UserDto.jiraTokenSet` |
 | Діалог | `frontend/src/components/TestDetailsDialog/JiraBugDialog.tsx`, `JiraFieldInput.tsx` | вибір таски, типу, полів; пам'ять у `localStorage` |
 | Профіль | `frontend/src/components/JiraTokenCard.tsx` | особистий токен і email |
 
 ## Дані
 
-`User.jiraToken`, `User.jiraEmail`; `Project.jiraUrl`, `jiraToken` (спільний, необов'язковий),
+`User.jiraToken`, `User.jiraEmail`; `Project.jiraUrl`, `jiraToken` (спільний; з [035](../035-admin-accounts/spec.md) не читається й стирається при старті),
 `jiraEmail`, `jiraIssueType`, `jiraLinkType`. У браузері: таска для екрана, частота типів і
 зв'язків, значення полів (`vision.jira.*`).
 
@@ -28,9 +28,9 @@
 
 | Вимога | Перевірка |
 |---|---|
-| REQ-005-01 | `backend/src/a11y/a11y-problems.service.spec.ts › files as the person with their own token, else with the project` |
+| REQ-005-01 | `backend/src/a11y/a11y-problems.service.spec.ts › files as the person with their own token, never with the project's shared one` |
 | REQ-005-04 | `backend/src/a11y/a11y-issues.spec.ts › uses basic auth when an email is set (Jira Cloud)` |
-| REQ-005-02 | manual: користувач без токена в проєкті без спільного токена → підказка в рев'ю |
+| REQ-005-02 | `backend/src/a11y/jira-access.spec.ts › asks for a personal token when the person has none` |
 | REQ-005-03 | manual: `GET /users/me` повертає `jiraTokenSet` без токена; історія еталонів не віддає рядок користувача |
 | REQ-005-10 | `backend/src/a11y/a11y-issues.spec.ts › reads issue types and create fields from the Jira 9 endpoints`; `backend/src/a11y/a11y-issues.spec.ts › reads Jira Cloud pages: issueTypes and fields lists, paged by total`; `backend/src/a11y/a11y-issues.spec.ts › falls back to the old createmeta call on Jira 8` |
 | REQ-005-11 | `backend/src/a11y/jira-bug.spec.ts › prefers the configured type, then a bug sub-task, then a bug` |

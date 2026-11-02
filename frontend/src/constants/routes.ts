@@ -1,6 +1,7 @@
 export const routes = {
   // open
   LOGIN: "/login",
+  // no sign-up page any more (035): the old link redirects
   REGISTER: "/register",
   // a build's report by its public link (031)
   PUBLIC_REPORT: "/r/:token",

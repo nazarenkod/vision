@@ -83,13 +83,7 @@ export const SETTINGS_SECTIONS = [
   {
     id: "jira",
     title: "section.jira",
-    labels: [
-      "jira.url",
-      "jira.token",
-      "jira.email",
-      "jira.issueType",
-      "jira.linkType",
-    ],
+    labels: ["jira.url", "jira.issueType", "jira.linkType"],
   },
   {
     id: "danger",
@@ -170,7 +164,6 @@ const FIELD_SECTION: Partial<Record<keyof ProjectDto, SectionId>> = {
   imageComparison: "comparison",
   imageComparisonConfig: "comparison",
   jiraUrl: "jira",
-  jiraEmail: "jira",
   jiraIssueType: "jira",
   jiraLinkType: "jira",
 };
@@ -187,8 +180,6 @@ export function changedSections(
     if (!same(saved[key as keyof typeof saved], edited[key]))
       changed.add(section);
   }
-  // a typed token, or an emptied one, is a change even though none is shown
-  if (edited.jiraToken !== undefined) changed.add("jira");
   const before = parse(saved.uiTreeSettings);
   const after = parse(edited.uiTreeSettings);
   for (const key of new Set([...Object.keys(before), ...Object.keys(after)])) {

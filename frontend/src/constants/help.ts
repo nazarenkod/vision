@@ -24,7 +24,7 @@ export const LOGIN_PAGE_STEPS: Step[] = [
   },
   {
     target: `#${LOCATOR_LOGIN_FORM}`,
-    content: "tour.loginRegister",
+    content: "tour.loginNoAccount",
   },
 ];
 

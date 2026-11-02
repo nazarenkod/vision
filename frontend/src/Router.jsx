@@ -5,7 +5,6 @@ import ProjectsListPage from "./pages/ProjectListPage";
 import ProjectPage from "./pages/ProjectPage";
 import PrivateRoute from "./components/PrivateRoute";
 import { routes } from "./constants";
-import RegisterPage from "./pages/RegisterPage";
 import ProfilePage from "./pages/ProfilePage";
 import TestVariationListPage from "./pages/TestVariationListPage";
 import InsightsPage from "./pages/InsightsPage";
@@ -13,16 +12,14 @@ import UserListPage from "./pages/UserListPage";
 import BackupsPage from "./pages/BackupsPage";
 import TestVariationDetailsPage from "./pages/TestVariationDetailsPage";
 import ProjectSettingsPage from "./pages/ProjectSettingsPage";
-import { useOidcEnabled } from "./_helpers/useOidcEnabled";
+import { useUserState } from "./contexts";
 import { PrintReportPage, PublicReportPage } from "./pages/ReportPage";
 
+// Nobody signs themselves up (035): an admin creates accounts in Users. An old
+// sign-up link still leads somewhere useful.
 function RegisterRoute() {
-  const oidcEnabled = useOidcEnabled();
-  if (oidcEnabled === undefined) {
-    return null;
-  }
-  // Accounts are created on the first SSO login when OIDC is enabled.
-  return oidcEnabled ? <Navigate to={routes.LOGIN} /> : <RegisterPage />;
+  const { user } = useUserState();
+  return <Navigate to={user ? routes.HOME : routes.LOGIN} replace />;
 }
 
 function Router() {

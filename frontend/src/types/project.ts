@@ -13,10 +13,8 @@ export interface Project {
   imageComparisonConfig: string;
   maxBuildAllowed: number;
   maxBranchLifetime: number;
-  // Jira for filing accessibility bugs; the token itself never comes back from the API
+  // Jira for filing bugs; everyone goes there with their own token (035)
   jiraUrl?: string | null;
-  jiraEmail?: string | null;
-  jiraTokenSet?: boolean;
   // the Gemini API key is write-only too: the settings come back without it
   geminiApiKeySet?: boolean;
   jiraIssueType?: string | null;
@@ -34,8 +32,5 @@ export interface AllowedDevice {
 
 export type ProjectDto = Omit<
   Project,
-  "updatedAt" | "createdAt" | "builds" | "jiraTokenSet" | "geminiApiKeySet"
-> & {
-  // write-only: undefined keeps the stored token, an empty string removes it
-  jiraToken?: string;
-};
+  "updatedAt" | "createdAt" | "builds" | "geminiApiKeySet"
+>;

@@ -119,7 +119,7 @@ export const en = {
   "section.a11yIntro":
     "What Vision checks on every screen sent with a UI tree, by your team's norms.",
   "section.jiraIntro":
-    "Lets reviewers file accessibility bugs from the review screen. Each person adds their own Jira token in their profile, so bugs are filed as them. A shared token here is used for people who have not added one.",
+    "Lets reviewers file bugs from the review screen. Each person adds their own Jira token in their profile, so bugs are filed as them, with their rights.",
 
   "devices.device": "Device",
   "devices.os": "OS version",
@@ -243,10 +243,8 @@ export const en = {
 
   "jira.title": "Jira",
   "jira.intro":
-    "Lets reviewers file accessibility bugs from the review screen. Each person adds their own Jira token in their profile, so bugs are filed as them. A shared token here is optional: it is used for people who have not added one.",
+    "Lets reviewers file bugs from the review screen. Each person adds their own Jira token in their profile, so bugs are filed as them, with their rights.",
   "jira.url": "Jira URL",
-  "jira.token": "Shared token (optional)",
-  "jira.email": "Shared token's account email (Jira Cloud only)",
   "jira.issueType": "Issue type",
   "jira.linkType": "Link type",
 
@@ -872,7 +870,7 @@ export const en = {
   "profile.tokenReplace": "Saved; type to replace",
   "profile.tokenSaved": "A token is saved. It is never shown again.",
   "profile.tokenNotSet":
-    "Not set: Jira works only where the project has a shared token.",
+    "Not set: you cannot file bugs or look them up in Jira from Vision.",
   "profile.save": "Save",
   "profile.removeToken": "Remove token",
   "profile.geminiIntro":
@@ -900,7 +898,12 @@ export const en = {
 
   // users
   "users.title": "Users",
-  "users.people": { one: "{count} person", other: "{count} people" },
+  "users.newUser": "New user",
+  "users.create": "Create",
+  "users.created": "Account created for {email}",
+  "users.password": "Password",
+  "users.fromSso":
+    "Accounts come from LDAP or SSO: they appear on the first sign-in.",
   "users.search": "Search people",
   "users.email": "Email",
   "users.firstName": "First name",
@@ -978,14 +981,7 @@ export const en = {
   "auth.validEmail": "Enter a valid email.",
   "auth.email": "Email address",
   "auth.signIn": "Sign in",
-  "auth.noAccount": "No account?",
-  "auth.createOne": "Create one",
-  "auth.created": "Successfully created account.",
-  "auth.firstName": "First name",
-  "auth.lastName": "Last name",
-  "auth.createAccount": "Create account",
-  "auth.haveAccount": "Have an account?",
-  "auth.createTitle": "Create an account",
+  "auth.noAccount": "No account? Ask an admin to create one.",
 
   // brand
   "brand.tagline": BRAND.tagline,
@@ -999,7 +995,8 @@ export const en = {
   "tour.skip": "Skip",
   "tour.loginAdmin":
     "Default admin account: visual-regression-tracker@example.com / 123456. Make sure to change default password.",
-  "tour.loginRegister": "Create new account without restrictions.",
+  "tour.loginNoAccount":
+    "No account? Nobody signs up here: an admin creates accounts in Users.",
   "tour.projectListTitle": "Project List",
   "tour.projectList":
     "Default project is created after first start, feel free to edit/add/delete projects.",

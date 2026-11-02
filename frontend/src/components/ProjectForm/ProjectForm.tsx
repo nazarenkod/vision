@@ -28,7 +28,6 @@ import { VlmConfigForm } from "./VlmConfigForm";
 import { getDefaultConfig } from "./utils";
 import { UiTreeSettings, parseUiTreeSettings } from "../../types/insights";
 import { A11yRulesSettings } from "./A11yRulesSettings";
-import { SecretField } from "./SecretField";
 import { MessageKey, useT } from "../../i18n";
 
 // what each engine is for, in one sentence (REQ-018-44)
@@ -393,8 +392,6 @@ export const JiraSettings: React.FunctionComponent<{ bare?: boolean }> = ({
   const { projectEditState: project } = useProjectState();
   const projectDispatch = useProjectDispatch();
   const { t } = useT();
-  // the API never returns the token, only whether one is saved
-  const tokenSaved = !!(project as { jiraTokenSet?: boolean }).jiraTokenSet;
   const update = (patch: Partial<typeof project>) =>
     setProjectEditState(projectDispatch, { ...project, ...patch });
 
@@ -421,20 +418,6 @@ export const JiraSettings: React.FunctionComponent<{ bare?: boolean }> = ({
         size="small"
         value={project.jiraUrl ?? ""}
         onChange={(event) => update({ jiraUrl: event.target.value })}
-      />
-      <SecretField
-        id="jiraToken"
-        label={t("jira.token")}
-        saved={tokenSaved}
-        value={project.jiraToken}
-        onChange={(jiraToken) => update({ jiraToken })}
-      />
-      <TextField
-        id="jiraEmail"
-        label={t("jira.email")}
-        size="small"
-        value={project.jiraEmail ?? ""}
-        onChange={(event) => update({ jiraEmail: event.target.value })}
       />
       <Box sx={{ display: "flex", gap: 1.5 }}>
         <TextField

@@ -1,4 +1,4 @@
-import { User } from "../types";
+import { NewAccount, Role, User } from "../types";
 
 /** People whose first name, last name or email holds the text, any case. */
 export function filterUsers<
@@ -18,3 +18,13 @@ export const lastSignInLabel = (
   // the interface passes its own, in the language picked
   format: (value: string) => string = (date) => new Date(date).toLocaleString(),
 ): string => (value ? format(value) : "—");
+
+const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+/** New user can be saved: a valid email, a role and a password (035). */
+export const canCreateAccount = (
+  account: Pick<NewAccount, "email" | "role" | "password">,
+): boolean =>
+  EMAIL.test(account.email.trim()) &&
+  account.role in Role &&
+  account.password.trim().length > 0;

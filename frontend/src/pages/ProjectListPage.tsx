@@ -172,7 +172,8 @@ const ProjectsListPage = () => {
                 </TableCell>
                 <TableCell>{project.imageComparison}</TableCell>
                 <TableCell>
-                  {project.jiraUrl && project.jiraTokenSet ? (
+                  {/* tokens are personal (035): the URL is the project's whole part */}
+                  {project.jiraUrl ? (
                     <StatusPill
                       tone="passed"
                       label={t("projectList.jiraConnected")}

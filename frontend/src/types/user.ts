@@ -15,6 +15,15 @@ export interface User {
   geminiKeySet?: boolean;
 }
 
+// what an admin fills in to create an account (035)
+export interface NewAccount {
+  email: string;
+  firstName: string;
+  lastName: string;
+  role: keyof typeof Role;
+  password: string;
+}
+
 export enum Role {
   admin = "Admin",
   editor = "Editor",

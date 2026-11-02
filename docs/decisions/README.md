@@ -25,7 +25,7 @@ Architecture Decision Record фіксує важливе рішення: кон�
 | [ADR-0007](0007-deterministic-first-ai-on-demand.md) | Спершу детермінований аналіз, AI — на вимогу | Accepted | 2026-10-24 |
 | [ADR-0008](0008-stable-problem-ids-from-facts.md) | Стабільні ID проблем; ідентичність — з фактів | Accepted | 2026-10-26 |
 | [ADR-0009](0009-jira-mirrors-local-decisions.md) | База Vision — джерело правди, Jira — дзеркало | Accepted | 2026-10-26 |
-| [ADR-0010](0010-personal-jira-tokens.md) | Особисті токени Jira | Accepted | 2026-10-26 |
+| [ADR-0010](0010-personal-jira-tokens.md) | Особисті токени Jira | Superseded by ADR-0025 | 2026-10-26 |
 | [ADR-0011](0011-screenshot-baselines-in-docker.md) | Скриншот-еталони Playwright — лише з Docker | Accepted | 2026-10-24 |
 | [ADR-0012](0012-backups-without-secrets.md) | Бекапи без секретів замість шифрування | Accepted | 2026-10-27 |
 | [ADR-0013](0013-ui-drives-host-scripts-through-files.md) | Інтерфейс керує скриптами хоста через файли | Accepted | 2026-10-27 |
@@ -40,4 +40,4 @@ Architecture Decision Record фіксує важливе рішення: кон�
 | [ADR-0022](0022-public-report-links.md) | Публічний звіт збірки: посилання з токеном, без входу, PDF друком | Accepted | 2026-10-31 |
 | [ADR-0023](0023-events-socket-behind-login.md) | Сокет подій — лише з токеном входу і по кімнатах проєктів | Accepted | 2026-11-01 |
 | [ADR-0024](0024-own-vision-sdk.md) | SDK відходить від upstream кроками; перший — головні класи `Vision` | Accepted | 2026-11-01 |
-| [ADR-0025](0025-admin-made-accounts-personal-tokens.md) | Акаунти лише від адміністратора, токени Jira лише особисті | Proposed | 2026-11-02 |
+| [ADR-0025](0025-admin-made-accounts-personal-tokens.md) | Акаунти лише від адміністратора, токени Jira лише особисті | Accepted | 2026-11-02 |

@@ -20,8 +20,9 @@ import { StructureInfo } from "~client/types";
 const project = {
   ...TEST_PROJECT,
   jiraUrl: "https://jira",
-  jiraTokenSet: true,
 };
+// only the person's own token reaches Jira (035)
+test.use({ userJiraToken: true });
 const build = TEST_BUILD_FAILED;
 const run = TEST_UNRESOLVED;
 const area = { x: 10, y: 20, width: 200, height: 60 };
@@ -83,15 +84,8 @@ const preparation = {
   missing: [],
 };
 
-async function mockApi(
-  page: Page,
-  options: { projectWithToken?: boolean } = {},
-) {
-  await mockGetProjects(page, [
-    options.projectWithToken === false
-      ? { ...project, jiraTokenSet: false }
-      : project,
-  ]);
+async function mockApi(page: Page) {
+  await mockGetProjects(page, [project]);
   await mockGetBuilds(page, project.id, [build]);
   await mockGetBuildDetails(page, build);
   await mockGetTestRuns(page, build.id, [run]);
@@ -137,13 +131,19 @@ test("shows Report bug next to the decisions when Jira is set up", async ({
   await expect(page.getByTestId("reportBug")).toBeEnabled();
 });
 
-test("disables Report bug without a Jira token", async ({
-  openProjectPage,
-  page,
-}) => {
-  await mockApi(page, { projectWithToken: false });
-  await openProjectPage(project.id, build.id, run.id);
-  await expect(page.getByTestId("reportBug")).toBeDisabled();
+test.describe("without a personal Jira token", () => {
+  test.use({ userJiraToken: false });
+
+  test("disables Report bug without a personal Jira token, even with a shared one saved", async ({
+    openProjectPage,
+    page,
+  }) => {
+    // what an older API still sent about a shared token changes nothing
+    await mockApi(page);
+    await mockGetProjects(page, [{ ...project, jiraTokenSet: true } as never]);
+    await openProjectPage(project.id, build.id, run.id);
+    await expect(page.getByTestId("reportBug")).toBeDisabled();
+  });
 });
 
 test("opens the bug dialog with B", async ({ openProjectPage, page }) => {
@@ -209,9 +209,7 @@ test("rejects the checkpoint after filing when the box is ticked", async ({
   await page.getByRole("option", { name: "S4" }).click();
   await page.getByTestId("createBug").click();
 
-  await expect(
-    page.getByText("Filed MOB-77 · screen rejected"),
-  ).toBeVisible();
+  await expect(page.getByText("Filed MOB-77 · screen rejected")).toBeVisible();
   // the customer is not sent: the server copies it from the task
   expect(filed).toMatchObject({
     parentKey: "MOB-1",

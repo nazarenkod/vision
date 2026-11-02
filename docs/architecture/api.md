@@ -71,12 +71,14 @@
 
 | Метод і шлях | Призначення |
 |---|---|
-| `GET /projects` | у налаштуваннях порівняння немає `apiKey` Gemini, є `geminiApiKeySet` (як `jiraTokenSet`) |
+| `GET /projects` | у налаштуваннях порівняння немає `apiKey` Gemini, є `geminiApiKeySet`; спільних `jiraToken`, `jiraEmail`, `jiraTokenSet` немає зовсім ([035](../specs/035-admin-accounts/spec.md)) |
 | `GET /projects/:id/devices` | різні пари `{ device, os }` з варіацій проєкту — підказка для переліку дозволених пристроїв ([029](../specs/029-allowed-devices/spec.md)) |
-| `PUT /projects` | необов'язкові `loadedSettings` (налаштування, як їх завантажила сторінка) і `force`. З `loadedSettings` збереження поверх чужих змін — `409` з `fields`; `force: true` зберігає попри це. `apiKey` Gemini: відсутній — лишити збережений, `""` — видалити. `uiTreeSettings.allowedDevices` із `*` деінде, ніж у кінці OS (`26.*`), — `400` |
+| `PUT /projects` | необов'язкові `loadedSettings` (налаштування, як їх завантажила сторінка) і `force`. З `loadedSettings` збереження поверх чужих змін — `409` з `fields`; `force: true` зберігає попри це. `apiKey` Gemini: відсутній — лишити збережений, `""` — видалити. `uiTreeSettings.allowedDevices` із `*` деінде, ніж у кінці OS (`26.*`), — `400`. `jiraToken` і `jiraEmail` ігноруються |
 | `GET /analytics/:projectId?days=` | Insights за 7–730 днів (типово 90; UI пропонує 30, 90, 180, 365) |
 | `GET /ai/status`, `POST /ai/group-summary`, `POST /ai/a11y-labels` | AI на вимогу |
 | `POST /ai/bug-draft` | чернетка бага з порівняння (`testRunId`, `note`, `marks?`, `changes?`, `attempt?`) на особистому ключі Gemini людини: `{ essence, steps, actual, expected, cached }`. Без ключа — 400, тайм-аут 30 с — 504 ([025](../specs/025-bug-from-comparison/spec.md)) |
+| `POST /users` | лише `admin`: створити акаунт (`email`, `password`, `role`, `firstName?`, `lastName?`). Відповідь — `UserDto` без токена входу. Пошта зайнята (будь-який регістр) — `400`; з LDAP чи SSO — `400`. `POST /users/register` прибрано ([035](../specs/035-admin-accounts/spec.md)) |
+| `GET /users/accounts/enabled` | без входу: чи можна створювати акаунти (лише вхід через базу, не LDAP чи SSO) |
 | `PUT /users/jira` | особистий токен і email Jira (`""` видаляє). Відповідь — `UserDto` з `jiraTokenSet`, без токена |
 | `PUT /users/gemini` | особистий ключ Gemini API (`geminiApiKey`, `""` видаляє). Відповідь — `UserDto` з `geminiKeySet`, без ключа ([ADR-0020](../decisions/0020-personal-gemini-keys.md)) |
 | `GET /users/me` | тепер з `jiraTokenSet` і `jiraEmail` |

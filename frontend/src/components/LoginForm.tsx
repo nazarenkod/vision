@@ -1,6 +1,6 @@
 import React, { useState, useEffect, FormEvent } from "react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Button, Grid, Typography, Box, Link as MuiLink } from "@mui/material";
+import { useLocation, useNavigate } from "react-router-dom";
+import { Button, Grid, Typography, Box } from "@mui/material";
 import { useUserDispatch, login } from "../contexts";
 import { LOCATOR_LOGIN_FORM, routes } from "../constants";
 import { useSnackbar } from "notistack";
@@ -121,10 +121,7 @@ const LoginForm = () => {
             color="textSecondary"
             sx={{ textAlign: "center" }}
           >
-            {t("auth.noAccount")}{" "}
-            <MuiLink component={Link} to={routes.REGISTER}>
-              {t("auth.createOne")}
-            </MuiLink>
+            {t("auth.noAccount")}
           </Typography>
         </Box>
       </Box>

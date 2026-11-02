@@ -248,8 +248,8 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
   const { projectList, selectedProjectId } = useProjectState();
   const project = projectList.find((item) => item.id === selectedProjectId);
   const jiraSet = !!project?.jiraUrl;
-  const jiraReady =
-    jiraSet && (!!user?.jiraTokenSet || !!project?.jiraTokenSet);
+  // only the person's own token reaches Jira (035)
+  const jiraReady = jiraSet && !!user?.jiraTokenSet;
   const [bugDialog, setBugDialog] = useState<{ marks?: BugMark[] } | null>(
     null,
   );

@@ -1,6 +1,5 @@
 import { test as base } from "@playwright/test";
 import { LoginPage, ProfilePage, ProjectListPage, ProjectPage } from "pages";
-import { RegisterPage } from "pages/RegisterPage";
 import { TestVariationDetailsPage } from "pages/TestVariationDetailsPage";
 import { TestVariationListPage } from "pages/TestVariationListPage";
 import { UserListPage } from "pages/UserListPage";
@@ -9,11 +8,13 @@ import type { User } from "~client/types";
 type Options = {
   // the role the signed-in user has; override with test.use({ userRole })
   userRole: User["role"];
+  // whether the signed-in user saved a Jira token in their profile; the only
+  // token that reaches Jira (035). Override with test.use({ userJiraToken })
+  userJiraToken: boolean;
 };
 
 type Fixtures = {
   loginPage: LoginPage;
-  registerPage: RegisterPage;
   openProjectPage: (
     id: string,
     buildId?: string,
@@ -45,6 +46,7 @@ export const AUTH_USER = {
 
 export const test = base.extend<Fixtures & Options>({
   userRole: ["admin", { option: true }],
+  userJiraToken: [false, { option: true }],
   loginPage: async ({ page }, use) => {
     await page.goto("/");
 
@@ -61,11 +63,6 @@ export const test = base.extend<Fixtures & Options>({
     await page.goto("/profile");
 
     await use(new ProfilePage(page));
-  },
-  registerPage: async ({ page }, use) => {
-    await page.goto("/register");
-
-    await use(new RegisterPage(page));
   },
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   userListPage: async ({ page, authUser }, use) => {
@@ -110,7 +107,7 @@ export const test = base.extend<Fixtures & Options>({
   // Seeded before the app's own scripts, so a test can open its page straight
   // away instead of loading "/" first just to reach localStorage. Only once per
   // tab: a 401 logs out and reloads, and seeding again would loop it.
-  authUser: async ({ page, userRole }, use) => {
+  authUser: async ({ page, userRole, userJiraToken }, use) => {
     await page.addInitScript(
       (user) => {
         if (!window.sessionStorage.getItem("authUserSeeded")) {
@@ -118,7 +115,11 @@ export const test = base.extend<Fixtures & Options>({
           window.sessionStorage.setItem("authUserSeeded", "1");
         }
       },
-      JSON.stringify({ ...AUTH_USER, role: userRole }),
+      JSON.stringify({
+        ...AUTH_USER,
+        role: userRole,
+        jiraTokenSet: userJiraToken,
+      }),
     );
 
     await use();

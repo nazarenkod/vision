@@ -1,4 +1,4 @@
-import { filterUsers, lastSignInLabel } from "./users.helper";
+import { canCreateAccount, filterUsers, lastSignInLabel } from "./users.helper";
 
 const people = [
   {
@@ -30,5 +30,23 @@ describe("users", () => {
     expect(lastSignInLabel(null)).toBe("—");
     expect(lastSignInLabel(undefined)).toBe("—");
     expect(lastSignInLabel("2026-10-29T08:00:00Z")).not.toBe("—");
+  });
+});
+
+describe("new account", () => {
+  const filled = {
+    email: " qa.new@example.com ",
+    role: "editor" as const,
+    password: "secret",
+  };
+
+  it("needs a valid email, a role and a password to create an account", () => {
+    expect(canCreateAccount(filled)).toBe(true);
+    expect(canCreateAccount({ ...filled, email: "qa.new" })).toBe(false);
+    expect(canCreateAccount({ ...filled, email: "" })).toBe(false);
+    expect(
+      canCreateAccount({ ...filled, role: "" as unknown as "guest" }),
+    ).toBe(false);
+    expect(canCreateAccount({ ...filled, password: "  " })).toBe(false);
   });
 });

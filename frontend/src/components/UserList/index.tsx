@@ -4,7 +4,6 @@ import {
   DataGrid,
   useGridApiRef,
   GridColDef,
-  GridToolbarDensitySelector,
   GridToolbarFilterButton,
   GridRenderCellParams,
 } from "@mui/x-data-grid";
@@ -138,7 +137,6 @@ const DataGridCustomToolbar: React.FunctionComponent = () => (
   <React.Fragment>
     <Toolbar variant="dense">
       <GridToolbarFilterButton />
-      <GridToolbarDensitySelector />
       <Box marginLeft="auto">
         <ActionButtons />
       </Box>

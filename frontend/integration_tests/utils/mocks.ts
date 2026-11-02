@@ -188,6 +188,12 @@ export const mockGetUsers = async (page: Page, users: User[]) => {
   );
 };
 
+// whether Users can create accounts here: no with LDAP or SSO (035)
+export const mockAccountsEnabled = async (page: Page, enabled: boolean) =>
+  page.route(`${API_URL}/users/accounts/enabled`, (route) =>
+    route.fulfill({ body: JSON.stringify(enabled) }),
+  );
+
 export const mockGetTestVariations = async (
   page: Page,
   projectId: string,

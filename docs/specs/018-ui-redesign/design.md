@@ -74,7 +74,7 @@
 |---|---|---|
 | Сторінка | `frontend/src/pages/ProjectSettingsPage.tsx` | маршрут, зміст, пошук, панель збереження, `useBlocker`, конфлікт |
 | Розділи | `frontend/src/components/ProjectForm/ProjectForm.tsx`, `A11yProblemSettings` (з [026](../026-a11y-rules-settings/spec.md) — `frontend/src/components/ProjectForm/A11yRulesSettings.tsx`) | старий діалог розкладено на `GeneralFields`, `ReviewFields`, `ComparisonFields` (картки движків і параметри лише обраного), `MobileSettings` (`show="mobile"` / `"rules"`, `bare`), `A11yProblemSettings` (нумерація класів, «How matching works»), `JiraSettings`; поля й їхня логіка ті самі |
-| Секрети | `frontend/src/components/ProjectForm/SecretField.tsx`, `frontend/src/components/ProjectForm/GeminiConfigForm.tsx` | «Saved» з Replace і Remove для спільного токена Jira і ключа Gemini |
+| Секрети | `frontend/src/components/ProjectForm/SecretField.tsx`, `frontend/src/components/ProjectForm/GeminiConfigForm.tsx` | «Saved» з Replace і Remove для ключа Gemini (спільного токена Jira з [035](../035-admin-accounts/spec.md) немає) |
 | Чисті функції | `frontend/src/_helpers/projectSettings.helper.ts` | `matchSettings(rows, query)`, `changedSections(saved, edited)`, `ruleSelectorError(text)`, `deleteConfirmed(name, typed)` |
 | Новий проєкт | `frontend/src/components/ProjectForm/ProjectForm.tsx` (`NewProjectFields`), `frontend/src/components/BaseModal.tsx` | три поля → створити → перейти на налаштування; `submitDisabled` для підтвердження назвою |
 | Список проєктів | `frontend/src/pages/ProjectListPage.tsx` | олівець → сторінка; кошик → те саме підтвердження назвою |
@@ -97,7 +97,7 @@
 | Профіль | `frontend/src/pages/ProfilePage.tsx`, `frontend/src/components/JiraTokenCard.tsx` | Appearance, API key із Show і Copy, вкладки прикладів |
 | Користувачі | `frontend/src/pages/UserListPage.tsx`, `frontend/src/components/UserList/index.tsx`, `frontend/src/_helpers/users.helper.ts` | пошук `filterUsers`, колонка Last sign-in |
 | Бекапи | `frontend/src/pages/BackupsPage.tsx`, `frontend/src/components/Backups/DriveCard.tsx`, `frontend/src/_helpers/backups.helper.ts` | три картки, `dayStrip(backups, today, 14)` |
-| Вхід | `frontend/src/components/AuthLayout.tsx`, `frontend/src/components/LoginForm.tsx`, `frontend/src/components/RegisterForm.tsx` | великий знак, піксельна сітка, перехід вхід ↔ реєстрація |
+| Вхід | `frontend/src/components/AuthLayout.tsx`, `frontend/src/components/LoginForm.tsx` | великий знак, піксельна сітка; реєстрації з [035](../035-admin-accounts/spec.md) немає |
 | Ручні перевірки | `frontend/src/components/ManualChecksDialog.tsx` | кроки з копіюванням |
 | Стани | `frontend/src/components/EmptyState.tsx`, `frontend/src/components/RouteError.tsx` | `EmptyState` і `ErrorState` (причина й Try again); `RouteError` замість екрана розробника react-router |
 | Діалоги | `frontend/src/components/motion/GrowFromPointer.tsx` | кожен діалог виростає з точки, де клацнули (тема MUI, `MuiDialog`) |

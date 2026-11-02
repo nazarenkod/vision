@@ -173,9 +173,8 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
   const { user } = useUserState();
   const { projectList, selectedProjectId } = useProjectState();
   const project = projectList.find((p) => p.id === selectedProjectId);
-  // a personal token, or the project's shared one
-  const jiraReady =
-    !!project?.jiraUrl && (!!user?.jiraTokenSet || !!project?.jiraTokenSet);
+  // only the person's own token reaches Jira (035)
+  const jiraReady = !!project?.jiraUrl && !!user?.jiraTokenSet;
   const canEdit = user?.role === "admin" || user?.role === "editor";
   const withUiTree = hasUiTree(testRun);
 

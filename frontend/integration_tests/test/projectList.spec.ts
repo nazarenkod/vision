@@ -153,3 +153,19 @@ test("edits a project", async ({ projectListPage, page }) => {
   await expect(projectListPage.project("Renamed project")).toBeVisible();
   await expect(projectListPage.project(project.name)).toHaveCount(0);
 });
+
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+test("marks Jira as connected by its URL alone", async ({ page, authUser }) => {
+  await mockGetProjects(page, [
+    { ...project, jiraUrl: "https://jira.example.com" },
+    { ...project, id: "no-jira", name: "No Jira", jiraUrl: null },
+  ]);
+  await page.goto("/projects");
+  const rows = page.getByRole("row");
+  await expect(
+    rows.filter({ hasText: project.name }).getByText("Connected"),
+  ).toBeVisible();
+  await expect(
+    rows.filter({ hasText: "No Jira" }).getByText("Not set"),
+  ).toBeVisible();
+});

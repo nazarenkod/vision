@@ -317,6 +317,7 @@ export const en = {
   // runs
   "runs.name": "Name",
   "runs.tags": "Tags",
+  "runs.moreTags": "{count} more: {tags}",
   "runs.status": "Status",
   "runs.noMatch": "No screens match the filters",
   "runs.cardsSelected": {

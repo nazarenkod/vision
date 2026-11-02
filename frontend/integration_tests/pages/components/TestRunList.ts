@@ -38,12 +38,16 @@ export class TestRunList extends Table {
     return this.cards.filter({ hasText: name });
   }
 
-  clickTag(tag: string) {
-    return this.page
-      .getByTestId("cardTag")
-      .filter({ hasText: tag })
-      .first()
-      .click();
+  // a tag that did not fit is behind its card's +N: open that first
+  async clickTag(tag: string) {
+    const tags = this.page
+      .locator(`[data-testid="cardTags"][title*="${tag}"]`)
+      .first();
+    const more = tags.getByTestId("cardTagsMore");
+    if (await more.count()) {
+      await more.click();
+    }
+    return tags.getByTestId("cardTag").filter({ hasText: tag }).first().click();
   }
 
   checkCard(name: string) {

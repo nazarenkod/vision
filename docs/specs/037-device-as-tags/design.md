@@ -30,7 +30,7 @@ Insights отримує пристрій від сервера одним ряд
 |---|---|---|
 | `deviceTagsOf` | `frontend/src/_helpers/device.helper.ts` | значення профілю в порядку тегів |
 | `DeviceTags` | `frontend/src/components/DeviceTags.tsx` | теги, підказки, режим `print` |
-| Картки перевірок | `frontend/src/components/TestRunList/TestRunGrid.tsx` | теги-чипи, клік фільтрує; не більше двох рядків (52 px) |
+| Картки перевірок | `frontend/src/components/TestRunList/TestRunGrid.tsx` | теги-чипи, клік фільтрує; не більше двох рядків (52 px). `CardTags` міряє, скільки вміщається: спершу вкорочує останній тег, потім ховає його за «+N»; клік по «+N» розгортає всі; ширина змінилась (`ResizeObserver`) — міряє знову |
 | Огляд збірки | `frontend/src/components/BuildOverview/index.tsx` | компактні теги + розмір екрана (REQ-037-05); колонки результату й чисел вужчі (56/52/84 px), щоб при 1280 px ОС і модель ішли одним рядком; `DeviceCell` прибрано з `SummaryParts.tsx` |
 | Доступність | `frontend/src/components/A11ySummary.tsx` | теги; колонка пристрою 200 px |
 | Смуга пристроїв | `frontend/src/components/TestDetailsDialog/DeviceStrip.tsx` | крапка статусу + теги, рамка поточного; теги у вікні «Прийняти всі» |
@@ -82,3 +82,4 @@ Insights отримує пристрій від сервера одним ряд
 | REQ-037-07 | manual: відкрити групу змін на двох версіях Android однієї моделі й побачити різні теги ОС |
 | REQ-037-08 | `frontend/src/components/BuildReport/ReportDocument.test.tsx › shows new screenshots without a baseline and names statuses as the app does`; `backend/src/reports/report-links.spec.ts › names the OS of each accessibility row next to its device` |
 | REQ-037-09 | manual: створити баг у Jira й побачити в описі «ОС: … · Пристрій: …», як раніше |
+| REQ-037-10 | `frontend/integration_tests/test/testRunGrid.spec.ts › shows +N for the tags that do not fit in two rows` |

@@ -96,6 +96,8 @@ export interface ReportA11yRow {
   testRunId: string;
   name: string;
   device: string;
+  // absent from a report made before spec 037
+  os?: string;
   newCount: number;
 }
 

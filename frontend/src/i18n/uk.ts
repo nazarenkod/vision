@@ -439,11 +439,6 @@ export const uk: Messages = {
   "baselines.beforeIt": "Попередній",
   "baselines.nothingBefore": "Раніше еталонів не було",
   "baselines.testRun": "Екран",
-  "baselines.tag.os": "ОС",
-  "baselines.tag.device": "Пристрій",
-  "baselines.tag.customTags": "Теги",
-  "baselines.tag.browser": "Браузер",
-  "baselines.tag.viewport": "Розмір екрана",
 
   // filters
   "filters.all": "Усі",
@@ -527,8 +522,7 @@ export const uk: Messages = {
     many: "Прийняти {count} пристроїв?",
     other: "Прийняти {count} пристрою?",
   },
-  "review.approveDevicesText":
-    "Кожен стане еталоном для свого пристрою: {devices}.",
+  "review.approveDevicesText": "Кожен стане еталоном для свого пристрою:",
   "review.comments": "Коментар",
   "review.commentPlaceholder": "Додайте будь-які подробиці",
   "review.save": "Зберегти",

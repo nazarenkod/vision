@@ -38,6 +38,7 @@ import { BugEvidence } from "./BugEvidence";
 import { describeChange } from "../ChangeGroups";
 import { tokens } from "../../theme";
 import { useT } from "../../i18n";
+import { DeviceTags } from "../DeviceTags";
 import {
   JIRA_KEY,
   countUse,
@@ -425,11 +426,18 @@ export const ReportBugDialog: React.FunctionComponent<{
         <Typography variant="h6" sx={{ fontSize: 16, fontWeight: 650 }}>
           {t("reportBug.title")}
         </Typography>
-        <Typography variant="body2" color="textSecondary" noWrap>
-          {[testRun.name, testRun.os, testRun.device]
-            .filter(Boolean)
-            .join(" · ")}
+        <Typography
+          variant="body2"
+          color="textSecondary"
+          noWrap
+          sx={{ minWidth: 0, flexShrink: 1 }}
+        >
+          {testRun.name}
         </Typography>
+        <DeviceTags
+          parts={{ os: testRun.os, device: testRun.device }}
+          sx={{ flexWrap: "nowrap", flexShrink: 0 }}
+        />
         <Box sx={{ flex: 1 }} />
         <IconButton
           aria-label={t("common.cancel")}

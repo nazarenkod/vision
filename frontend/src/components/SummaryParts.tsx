@@ -160,21 +160,6 @@ export const NameCell: React.FunctionComponent<{
   </Typography>
 );
 
-/** A device as the tables name it: the model, and under it what else tells it apart. */
-export const DeviceCell: React.FunctionComponent<{
-  name: string;
-  detail: string;
-}> = ({ name, detail }) => (
-  <Box sx={{ display: "flex", flexDirection: "column", lineHeight: 1.25 }}>
-    <Typography noWrap sx={{ fontSize: 13, fontWeight: 600 }}>
-      {name || "—"}
-    </Typography>
-    <Typography noWrap sx={{ fontSize: 11.5, color: tokens.textSecondary }}>
-      {detail}
-    </Typography>
-  </Box>
-);
-
 export interface TileProps {
   key: string;
   // a count rolls up to its value; a share or a time shows as it is

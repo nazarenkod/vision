@@ -5,6 +5,7 @@ import {
   CardActionArea,
   CardContent,
   Checkbox,
+  Chip,
   Typography,
 } from "@mui/material";
 import TestStatusChip from "../TestStatusChip";
@@ -30,33 +31,8 @@ const clampToLines = (lines: number) => ({
   overflowWrap: "anywhere",
 });
 
-const CAPTION_LINE_HEIGHT = 1.66;
-
-// a button that reads as the caption text around it: inline so the row still
-// wraps, and with the caption's letter-spacing, which a button resets to normal
-const TAG_BUTTON = {
-  display: "inline",
-  font: "inherit",
-  letterSpacing: "inherit",
-  background: "none",
-  border: 0,
-  padding: 0,
-  cursor: "pointer",
-  "&:hover": { textDecoration: "underline" },
-};
-
-/**
- * The same two-line box for a row that holds elements rather than plain text:
- * `-webkit-box` blockifies its children, which would stop the tags from
- * flowing and wrapping as text.
- */
-const clipToLines = (lines: number) => ({
-  display: "block",
-  lineHeight: CAPTION_LINE_HEIGHT,
-  maxHeight: `${lines * CAPTION_LINE_HEIGHT}em`,
-  overflow: "hidden",
-  overflowWrap: "anywhere",
-});
+// two rows of small chips (24px) and the gap between them
+const TAG_ROWS_HEIGHT = 52;
 
 export const TestRunGrid: React.FunctionComponent<{
   runs: TestRun[];
@@ -187,41 +163,34 @@ export const TestRunGrid: React.FunctionComponent<{
                 {run.name}
               </Typography>
               <TestStatusChip status={run.status} />
-              {/* tags as quiet text, not chips: five chips wrap over three lines
-                on a narrow card and drown out the name and the status. Each one
-                filters the list by itself, as a button rather than a span so
-                the keyboard reaches it. */}
-              <Typography
-                variant="caption"
-                color="text.secondary"
-                width="100%"
-                sx={clipToLines(2)}
+              {/* the same grey tags as the table and every other screen (spec 037),
+                at most two rows so a narrow card still leads with the name and the
+                status. Each one filters the list by itself; the filter shows in the
+                Tag field above, the tag itself stays grey (REQ-037-04). */}
+              <Box
                 title={tags.join(" · ")}
                 data-testid="cardTags"
+                sx={{
+                  display: "flex",
+                  flexWrap: "wrap",
+                  gap: 0.5,
+                  width: "100%",
+                  maxHeight: TAG_ROWS_HEIGHT,
+                  overflow: "hidden",
+                }}
               >
-                {tags.map((tag, index) => {
-                  const filteringBy = activeTags.includes(tag);
-
-                  return (
-                    <React.Fragment key={`${index}-${tag}`}>
-                      {index > 0 && " · "}
-                      <Box
-                        component="button"
-                        type="button"
-                        onClick={() => onToggleTag(tag)}
-                        data-testid="cardTag"
-                        sx={{
-                          ...TAG_BUTTON,
-                          color: filteringBy ? "primary.main" : "inherit",
-                          fontWeight: filteringBy ? 600 : undefined,
-                        }}
-                      >
-                        {tag}
-                      </Box>
-                    </React.Fragment>
-                  );
-                })}
-              </Typography>
+                {tags.map((tag, index) => (
+                  <Chip
+                    key={`${index}-${tag}`}
+                    size="small"
+                    label={tag}
+                    onClick={() => onToggleTag(tag)}
+                    aria-pressed={activeTags.includes(tag)}
+                    data-testid="cardTag"
+                    sx={{ maxWidth: "100%" }}
+                  />
+                ))}
+              </Box>
             </CardContent>
           </Card>
         );

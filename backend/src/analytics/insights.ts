@@ -76,6 +76,26 @@ export const deviceOf = (row: {
   viewport?: string | null;
 }) => [row.device, row.os, row.browser, row.viewport].filter(Boolean).join(' · ') || 'No device';
 
+/** The profile field by field, so the UI shows it as tags (spec 037); `device` above stays for the CLI. */
+export interface DeviceProfile {
+  os: string;
+  device: string;
+  browser: string;
+  viewport: string;
+}
+
+export const profileOf = (row: {
+  os?: string | null;
+  device?: string | null;
+  browser?: string | null;
+  viewport?: string | null;
+}): DeviceProfile => ({
+  os: row.os ?? '',
+  device: row.device ?? '',
+  browser: row.browser ?? '',
+  viewport: row.viewport ?? '',
+});
+
 const checkKeyOf = (row: { name: string; customTags?: string | null }) =>
   JSON.stringify([row.name, row.customTags ?? '']);
 
@@ -102,6 +122,7 @@ export function computeInsights(input: InsightsInput) {
       customTags: variation.customTags,
       branchName: variation.branchName,
       device: deviceOf(variation),
+      profile: profileOf(variation),
       hasBaseline: !!variation.baselineName,
       lastUsedAt,
       idleDays: Math.floor((now.getTime() - lastUsedAt.getTime()) / DAY),
@@ -111,7 +132,7 @@ export function computeInsights(input: InsightsInput) {
   type CheckStats = {
     name: string;
     customTags: string;
-    devices: Set<string>;
+    devices: Map<string, DeviceProfile>;
     runs: number;
     changed: number;
     rejected: number;
@@ -129,7 +150,7 @@ export function computeInsights(input: InsightsInput) {
       stats = {
         name: run.name,
         customTags: run.customTags ?? '',
-        devices: new Set(),
+        devices: new Map(),
         runs: 0,
         changed: 0,
         rejected: 0,
@@ -152,7 +173,7 @@ export function computeInsights(input: InsightsInput) {
   for (const run of input.runs) {
     const stats = statsOf(run);
     const device = deviceOf(run);
-    stats.devices.add(device);
+    stats.devices.set(device, profileOf(run));
     stats.runs++;
     const changed = CHANGED.has(run.status) || (run.diffPercent ?? 0) > 0;
     if (changed) {
@@ -211,7 +232,10 @@ export function computeInsights(input: InsightsInput) {
     .map((check) => ({
       name: check.name,
       customTags: check.customTags,
-      devices: [...check.devices].sort(),
+      devices: [...check.devices.keys()].sort(),
+      profiles: [...check.devices.entries()]
+        .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
+        .map(([, profile]) => profile),
       runs: check.runs,
       changedPercent: percent(check.changed, check.runs),
       rejected: check.rejected,
@@ -280,16 +304,19 @@ export function computeInsights(input: InsightsInput) {
   );
   const checksOnMain = new Map<string, { name: string; customTags: string }>();
   const checksByDevice = new Map<string, Set<string>>();
+  const profileByDevice = new Map<string, DeviceProfile>();
   for (const variation of main) {
     const key = checkKeyOf(variation);
     checksOnMain.set(key, { name: variation.name, customTags: variation.customTags });
     const device = deviceOf(variation);
     if (!checksByDevice.has(device)) checksByDevice.set(device, new Set());
+    profileByDevice.set(device, profileOf(variation));
     checksByDevice.get(device).add(key);
   }
   const coverage = [...checksByDevice.entries()]
     .map(([device, keys]) => ({
       device,
+      profile: profileByDevice.get(device),
       checks: keys.size,
       missing: [...checksOnMain.keys()].filter((key) => !keys.has(key)).map((key) => checksOnMain.get(key)),
     }))

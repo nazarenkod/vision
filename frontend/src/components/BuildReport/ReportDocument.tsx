@@ -3,6 +3,7 @@ import { Box, Typography } from "@mui/material";
 import { ArrowForward } from "@mui/icons-material";
 import { tokens } from "../../theme";
 import { BrandMark } from "../BrandMark";
+import { DeviceTags } from "../DeviceTags";
 import { StatusPill } from "../StatusPill";
 import { ResultBar, ResultLegend } from "../BuildOverview/ResultBar";
 import { staticService } from "../../services";
@@ -381,13 +382,19 @@ export const ReportDocument: React.FunctionComponent<{
                     <Typography sx={{ fontSize: 12, fontWeight: 600, mt: 0.5 }}>
                       {change.name}
                     </Typography>
-                    <Typography
-                      sx={{ fontSize: 11.5, color: tokens.textSecondary }}
-                    >
-                      {[change.device, change.os].filter(Boolean).join(" · ")}
-                      {change.diffPercent !== null &&
-                        ` · ${formatFixed(change.diffPercent, 2, language)}%`}
-                    </Typography>
+                    <DeviceTags
+                      print
+                      text={t}
+                      parts={{ os: change.os, device: change.device }}
+                      sx={{ mt: 0.5 }}
+                    />
+                    {change.diffPercent !== null && (
+                      <Typography
+                        sx={{ fontSize: 11.5, color: tokens.textSecondary }}
+                      >
+                        {formatFixed(change.diffPercent, 2, language)}%
+                      </Typography>
+                    )}
                   </Box>
                 </Box>
               ))}
@@ -457,13 +464,16 @@ export const ReportDocument: React.FunctionComponent<{
                   )}
                 >
                   <td>
-                    {row.device}
-                    <span style={{ color: tokens.textSecondary }}>
-                      {[row.os, row.browser, row.viewport || row.screen]
-                        .filter(Boolean)
-                        .map((part) => ` · ${part}`)
-                        .join("")}
-                    </span>
+                    <DeviceTags
+                      print
+                      text={t}
+                      parts={{
+                        os: row.os,
+                        device: row.device,
+                        browser: row.browser,
+                        viewport: row.viewport || row.screen,
+                      }}
+                    />
                   </td>
                   <td>
                     <ResultBar outcome={row} text={t} />
@@ -557,7 +567,13 @@ export const ReportDocument: React.FunctionComponent<{
               {(report.a11y ?? []).map((row) => (
                 <tr key={row.testRunId}>
                   <td>{row.name}</td>
-                  <td>{row.device}</td>
+                  <td>
+                    <DeviceTags
+                      print
+                      text={t}
+                      parts={{ os: row.os, device: row.device }}
+                    />
+                  </td>
                   <td className="r">{row.newCount}</td>
                 </tr>
               ))}

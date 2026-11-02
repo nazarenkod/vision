@@ -8,6 +8,7 @@ import { testRunService } from "../../services";
 import { useUserState } from "../../contexts";
 import { tokens } from "../../theme";
 import { BaseModal } from "../BaseModal";
+import { DeviceTags } from "../DeviceTags";
 import { deviceLabel } from "../../_helpers/device.helper";
 import { labelOf, useT } from "../../i18n";
 
@@ -90,15 +91,19 @@ export const DeviceStrip: React.FunctionComponent<{
               display: "inline-flex",
               alignItems: "center",
               gap: 0.75,
-              height: 26,
-              px: 1.25,
+              minHeight: 32,
+              py: 0.25,
+              pl: 1.25,
+              pr: 0.5,
               borderRadius: 999,
               fontSize: 12.5,
+              // the frame marks the current device; the tags inside stay grey (REQ-037-04)
               border: `1px solid ${current ? tokens.brand : tokens.border}`,
-              bgcolor: current ? tokens.brandSoft : tokens.surface,
+              bgcolor: tokens.surface,
               color: tokens.text,
-              fontWeight: current ? 600 : 400,
             }}
+            aria-label={deviceLabel(run, undefined, t)}
+            aria-current={current || undefined}
           >
             <Box
               component="span"
@@ -109,7 +114,7 @@ export const DeviceStrip: React.FunctionComponent<{
                 bgcolor: dotColor(run.status),
               }}
             />
-            {deviceLabel(run, undefined, t)}
+            <DeviceTags parts={run} />
           </ButtonBase>
         );
       })}
@@ -125,13 +130,14 @@ export const DeviceStrip: React.FunctionComponent<{
         onCancel={() => setConfirm(false)}
         onSubmit={approveAll}
         content={
-          <Typography variant="body2">
-            {t("review.approveDevicesText", {
-              devices: pending
-                .map((run) => deviceLabel(run, undefined, t))
-                .join(", "),
-            })}
-          </Typography>
+          <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
+            <Typography variant="body2">
+              {t("review.approveDevicesText")}
+            </Typography>
+            {pending.map((run) => (
+              <DeviceTags key={run.id} parts={run} />
+            ))}
+          </Box>
         }
       />
     </Box>

@@ -207,11 +207,28 @@ describe('computeInsights', () => {
     expect(result.coverage).toEqual([
       {
         device: 'Galaxy S23 · Android 15',
+        profile: { os: 'Android 15', device: 'Galaxy S23', browser: '', viewport: '' },
         checks: 3,
         missingCount: 1,
         missing: [{ name: 'Profile', customTags: '' }],
       },
     ]);
+  });
+
+  it('gives every device field by field as well, so the UI shows it as tags', () => {
+    const variations = [variation({ id: 'old', name: 'Old promo', device: 'Pixel 7', lastRunAt: daysAgo(120) })];
+    const runs = ['ok', 'unresolved', 'ok', 'unresolved'].map((status, i) =>
+      run({ status, device: 'Pixel 7', os: '15', createdAt: daysAgo(9 - i) })
+    );
+    const result = computeInsights(input({ variations, runs }));
+    expect(result.unused[0]).toMatchObject({
+      device: 'Pixel 7 · Android 15',
+      profile: { os: 'Android 15', device: 'Pixel 7', browser: '', viewport: '' },
+    });
+    expect(result.unstable[0]).toMatchObject({
+      devices: ['Pixel 7 · 15'],
+      profiles: [{ os: '15', device: 'Pixel 7', browser: '', viewport: '' }],
+    });
   });
 
   it('counts reviews waiting for a decision by the newest run of each baseline', () => {

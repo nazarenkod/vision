@@ -78,14 +78,14 @@ const INSIGHTS: ProjectInsights = {
   ],
 };
 
-const openInsights = async (page) => {
+const openInsights = async (page, insights: ProjectInsights = INSIGHTS) => {
   await mockGetProjects(page, [TEST_PROJECT]);
   const requests: string[] = [];
   await page.route(
     `${API_URL}/analytics/${TEST_PROJECT.id}?days=*`,
     (route, request) => {
       requests.push(new URL(request.url()).searchParams.get("days"));
-      return route.fulfill({ body: JSON.stringify(INSIGHTS) });
+      return route.fulfill({ body: JSON.stringify(insights) });
     },
   );
   await page.goto(`/insights/${TEST_PROJECT.id}`);
@@ -100,7 +100,7 @@ test("shows what the project history says", async ({
   await openInsights(page);
 
   await expect(page.getByRole("heading", { name: "Insights" })).toBeVisible();
-  await expect(page.getByText("unused for 90 days")).toBeVisible();
+  await expect(page.getByTestId("insightsTile-unused")).toBeVisible();
   await expect(page.getByRole("row", { name: /Old promo/ })).toContainText(
     "200",
   );
@@ -122,13 +122,26 @@ test("shows what the project history says", async ({
   ).toBeVisible();
 });
 
+test("says from when the history is kept in one line by the period", async ({
+  page,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  authUser,
+}) => {
+  await openInsights(page, { ...INSIGHTS, partialHistory: true });
+
+  const from = page.getByTestId("insightsHistoryFrom");
+  await expect(from).toHaveText(/^History from /);
+  await expect(from).toHaveAttribute("title", /build limit/);
+  await expect(page.getByRole("alert")).toHaveCount(0);
+});
+
 test("asks for the period it shows", async ({
   page,
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   authUser,
 }) => {
   const requests = await openInsights(page);
-  await expect(page.getByText("unused for 90 days")).toBeVisible();
+  await expect(page.getByTestId("insightsTile-unused")).toBeVisible();
 
   await page.getByTestId("insightsPeriod").click();
   await page.getByRole("option", { name: "Last 30 days" }).click();

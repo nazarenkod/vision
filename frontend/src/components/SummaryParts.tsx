@@ -190,16 +190,24 @@ export interface TileProps {
   onClick?: () => void;
 }
 
-/** A row of numbers over the cards; a tile that opens nothing does not look clickable. */
+/**
+ * The numbers over the cards: one strip split into cells, not a row of big
+ * boxes, so a few numbers do not leave most of the width empty. A cell that
+ * opens nothing does not look clickable.
+ */
 export const Tiles: React.FunctionComponent<{
   tiles: TileProps[];
   testId?: string;
 }> = ({ tiles, testId = "overview" }) => (
   <Box
+    {...staggered(1)}
     sx={{
       display: "grid",
       gridTemplateColumns: `repeat(${tiles.length}, minmax(0, 1fr))`,
-      gap: 1.25,
+      bgcolor: tokens.surface,
+      border: `1px solid ${tokens.border}`,
+      borderRadius: 3,
+      overflow: "hidden",
     }}
   >
     {tiles.map((tile, i) => (
@@ -209,37 +217,29 @@ export const Tiles: React.FunctionComponent<{
         disabled={!tile.onClick}
         onClick={tile.onClick}
         title={tile.hint}
-        {...staggered(i + 1)}
         sx={{
-          bgcolor: tokens.surface,
-          border: `1px solid ${tokens.border}`,
-          borderRadius: 3,
-          px: 1.75,
+          px: 2,
           py: 1.25,
           display: "flex",
           flexDirection: "column",
           alignItems: "flex-start",
-          // numbers and labels on one line across the tiles, captions or not
           justifyContent: "flex-start",
-          gap: 0.125,
+          gap: 0.25,
           minWidth: 0,
-          transition: `border-color ${motion.base}ms, transform ${motion.base}ms ${motion.easing}`,
-          // a tile that opens nothing still shows its hints
+          textAlign: "left",
+          borderLeft: i ? `1px solid ${tokens.border}` : 0,
+          transition: `background-color ${motion.base}ms ${motion.easing}`,
+          // a cell that opens nothing still shows its hints
           "&.Mui-disabled": { pointerEvents: "auto", cursor: "default" },
-          ...(tile.onClick && {
-            "&:hover": {
-              borderColor: tokens.brand,
-              transform: "translateY(-1px)",
-            },
-          }),
+          ...(tile.onClick && { "&:hover": { bgcolor: tokens.subtle } }),
         }}
       >
         <Box
           component="span"
           sx={{
-            fontSize: 24,
+            fontSize: 22,
             fontWeight: 650,
-            lineHeight: 1.2,
+            lineHeight: 1.15,
             letterSpacing: "-0.01em",
             fontVariantNumeric: "tabular-nums",
             color: tile.value && tile.color ? tile.color : tokens.text,
@@ -251,26 +251,33 @@ export const Tiles: React.FunctionComponent<{
             tile.value
           )}
         </Box>
-        <Box component="span" sx={{ fontSize: 12.5, fontWeight: 500 }}>
+        <Box
+          component="span"
+          sx={{
+            fontSize: 12,
+            fontWeight: 500,
+            color: tokens.textSecondary,
+            maxWidth: "100%",
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            whiteSpace: "nowrap",
+          }}
+        >
           {tile.label}
+          {tile.caption && (
+            <>
+              {" · "}
+              <Box
+                component="span"
+                data-testid={`${testId}Caption-${tile.key}`}
+                title={tile.captionTitle || undefined}
+                sx={{ color: tokens.textMuted }}
+              >
+                {tile.caption}
+              </Box>
+            </>
+          )}
         </Box>
-        {tile.caption && (
-          <Box
-            component="span"
-            data-testid={`${testId}Caption-${tile.key}`}
-            title={tile.captionTitle || undefined}
-            sx={{
-              fontSize: 11.5,
-              color: tokens.textSecondary,
-              maxWidth: "100%",
-              overflow: "hidden",
-              textOverflow: "ellipsis",
-              whiteSpace: "nowrap",
-            }}
-          >
-            {tile.caption}
-          </Box>
-        )}
       </ButtonBase>
     ))}
   </Box>

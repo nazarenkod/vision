@@ -1,7 +1,6 @@
 import React from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import {
-  Alert,
   Box,
   Button,
   Checkbox,
@@ -230,6 +229,17 @@ const InsightsPage: React.FunctionComponent = () => {
           onProjectSelect={(id) => navigate(`${routes.INSIGHTS_PAGE}/${id}`)}
         />
         <Box sx={{ flex: 1 }} />
+        {/* one line where the period is chosen; why the history is short, on hover */}
+        {data?.partialHistory && (
+          <Typography
+            variant="body2"
+            color="textSecondary"
+            title={t("insights.partial")}
+            data-testid="insightsHistoryFrom"
+          >
+            {t("insights.historyFrom", { date: date(data.historyStart) })}
+          </Typography>
+        )}
         <TextField
           select
           size="small"
@@ -273,12 +283,6 @@ const InsightsPage: React.FunctionComponent = () => {
       )}
       {data && (
         <>
-          {data.partialHistory && (
-            <Alert severity="info">
-              {t("insights.partial", { date: date(data.historyStart) })}
-            </Alert>
-          )}
-
           <Tiles
             testId="insights"
             tiles={[
@@ -301,6 +305,7 @@ const InsightsPage: React.FunctionComponent = () => {
               {
                 key: "flips",
                 label: t("insights.flips"),
+                hint: t("insights.unstableHint"),
                 value: data.summary.flips,
                 color: tokens.status.failed.fg,
               },

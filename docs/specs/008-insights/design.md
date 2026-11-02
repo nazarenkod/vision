@@ -28,4 +28,4 @@
 | REQ-008-04 | `backend/src/analytics/insights.spec.ts › ranks screens by their newest accessibility issues, with the decisions taken on them` |
 | REQ-008-06 | `backend/src/analytics/insights.spec.ts › lists the checks each device is missing on the main branch` |
 | REQ-008-07 | `backend/src/analytics/insights.spec.ts › counts reviews waiting for a decision by the newest run of each baseline` |
-| REQ-008-08 | `backend/src/analytics/insights.spec.ts › judges only the history that is left when older builds were removed` |
+| REQ-008-08 | `backend/src/analytics/insights.spec.ts › judges only the history that is left when older builds were removed`; `frontend/integration_tests/test/insights.spec.ts › says from when the history is kept in one line by the period` |

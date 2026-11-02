@@ -247,6 +247,20 @@ test("opens a build on the Overview tab", async ({ openProjectPage, page }) => {
   expect(new URL(page.url()).searchParams.get("tab")).toBeNull();
 });
 
+test("leaves the decided caption out when nothing needed a decision", async ({
+  openProjectPage,
+  page,
+}) => {
+  await page.route(`${API_URL}/builds/${build.id}/overview`, (route) =>
+    route.fulfill({
+      json: { ...overview, progress: { decided: 0, needed: 0, people: [] } },
+    }),
+  );
+  await openProjectPage(project.id, build.id, undefined, "overview");
+  await expect(page.getByTestId("overviewTile-waiting")).toBeVisible();
+  await expect(page.getByTestId("overviewCaption-waiting")).toHaveCount(0);
+});
+
 test("leaves change groups to the Changes tab", async ({
   openProjectPage,
   page,

@@ -101,10 +101,13 @@ const OverviewTiles: React.FunctionComponent<{
       key: "waiting",
       value: counts.waiting,
       label: t("overview.waiting"),
-      caption: t("overview.decidedOf", {
-        decided: progress.decided,
-        needed: progress.needed,
-      }),
+      // "0 of 0 decided" says nothing: nothing needed a decision
+      caption: progress.needed
+        ? t("overview.decidedOf", {
+            decided: progress.decided,
+            needed: progress.needed,
+          })
+        : undefined,
       captionTitle: progress.people
         .map(
           (person) =>

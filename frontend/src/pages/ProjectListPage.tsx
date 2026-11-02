@@ -14,7 +14,7 @@ import {
   TableHead,
   TableRow,
 } from "@mui/material";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { StatusPill } from "../components/StatusPill";
 import { tokens } from "../theme";
 import {
@@ -62,6 +62,21 @@ const ProjectsListPage = () => {
   useEffect(() => {
     setHelpSteps(helpDispatch, PROJECT_LIST_PAGE_STEPS);
   });
+
+  // "New project" in the project picker lands here with ?create=1: open the
+  // dialog once and drop the flag, so going back does not open it again
+  const [searchParams, setSearchParams] = useSearchParams();
+  const createRequested = searchParams.get("create") === "1";
+  useEffect(() => {
+    if (!createRequested) {
+      return;
+    }
+    if (canEditProjects) {
+      setProjectEditState(projectDispatch);
+      setCreateDialogOpen(true);
+    }
+    setSearchParams({}, { replace: true });
+  }, [createRequested, canEditProjects, projectDispatch, setSearchParams]);
 
   const toggleCreateDialogOpen = () => {
     setCreateDialogOpen(!createDialogOpen);

@@ -2,8 +2,8 @@ import {
   changeRows,
   countRows,
   groupAreas,
+  placeLabel,
   splitElement,
-  whereOn,
 } from "./changedAreas";
 
 const rect = (x: number, y: number, width = 10, height = 10) => ({
@@ -103,15 +103,13 @@ describe("changeRows", () => {
     expect(countRows(rows)).toBe(3);
   });
 
-  it("numbers rows with the same name from the top", () => {
+  it("leaves rows with the same name unnumbered", () => {
     const rows = changeRows(
       [area(0, 300, 'View "Картка m" (cards#PbCard)'), area(0, 100, card)],
       [],
     );
-    expect(rows.map((row) => [row.nth, row.of])).toEqual([
-      [2, 2],
-      [1, 2],
-    ]);
+    expect(rows).toHaveLength(2);
+    expect(rows[0]).not.toHaveProperty("nth");
   });
 
   it("tells what the tree saw in the same row as the element's spots", () => {
@@ -132,11 +130,43 @@ describe("changeRows", () => {
   });
 });
 
-describe("whereOn", () => {
-  it("says where a spot is in thirds of the screen", () => {
-    const size = { width: 1440, height: 3000 };
-    expect(whereOn(rect(56, 1320, 56, 64), size)).toBe("middle.left");
-    expect(whereOn(rect(1328, 2900, 56, 64), size)).toBe("bottom.right");
-    expect(whereOn(rect(700, 10), size)).toBe("top.center");
+describe("placeLabel", () => {
+  const el = (
+    selector: string,
+    bounds: ReturnType<typeof rect>,
+    text?: string,
+    element = `TextView "${text ?? ""}"`,
+  ) => ({ selector, element, bounds, text });
+  const cardRow = 'View "Картка m"';
+  const cardBox = rect(0, 2000, 1000, 400);
+  const balanceNow = el("id:balance", rect(40, 2100, 300, 56), "9 870,00 ₴");
+  const current = [
+    el("id:card", cardBox, undefined, cardRow),
+    balanceNow,
+    el("id:logo", rect(800, 2050, 96, 32), undefined, "ImageView (logo)"),
+  ];
+  const baseline = [
+    // the other card's balance lies farther away: the near one is the twin
+    el("id:balance", rect(40, 2600, 300, 56), "1,00 ₴"),
+    el("id:balance", rect(40, 2110, 300, 56), "12 450,00 ₴"),
+  ];
+
+  it("says what the text was and is when it changed", () => {
+    expect(
+      placeLabel(rect(50, 2110, 100, 30), cardRow, current, baseline),
+    ).toEqual({ now: "9 870,00 ₴", before: "12 450,00 ₴", isText: true });
+  });
+
+  it("names a place without text by the element's type", () => {
+    expect(
+      placeLabel(rect(810, 2055, 20, 20), cardRow, current, baseline),
+    ).toEqual({ now: "ImageView", before: null, isText: false });
+  });
+
+  it("leaves a place on the row's own element, or with no tree, to its size", () => {
+    expect(
+      placeLabel(rect(500, 2300, 50, 50), cardRow, current, baseline),
+    ).toBe(null);
+    expect(placeLabel(rect(50, 2110, 100, 30), cardRow, [], [])).toBe(null);
   });
 });

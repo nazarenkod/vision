@@ -65,11 +65,12 @@ import {
   countRows,
   rowName,
   splitElement,
-  whereOn,
+  placeLabel,
 } from "./changedAreas";
 
 // a long row opens five places at a time, the rest one click away (REQ-036-22)
 const PLACES_SHOWN = 5;
+const LABEL_MAX = 40;
 import { SelectorMatches } from "../../types/insights";
 import { elementLabel } from "../../_helpers/elementPicking.helper";
 
@@ -1060,14 +1061,34 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
     );
     const rows = changeRows(structure.regions, structure.changes);
     const changeCount = countRows(rows);
-    const placeText = (place: Rect) =>
-      t("changes.place", {
-        width: Math.round(place.width),
-        height: Math.round(place.height),
-        where: structure.size
-          ? t(`changes.where.${whereOn(place, structure.size)}` as const)
-          : `${Math.round(place.x)}, ${Math.round(place.y)}`,
-      });
+    // a long text is cut in the row; the whole of it is in the tooltip
+    const clip = (text: string) =>
+      text.length > LABEL_MAX ? `${text.slice(0, LABEL_MAX - 1)}…` : text;
+    const labelOf = (place: Rect, row: ChangeRow) =>
+      placeLabel(
+        place,
+        row.element,
+        structure.elements ?? [],
+        structure.baselineElements ?? [],
+      );
+    // what is in the place, not where on the screen it is (REQ-038-01…03)
+    const placeText = (place: Rect, row: ChangeRow, full = false) => {
+      const label = labelOf(place, row);
+      const fit = full ? (text: string) => text : clip;
+      if (!label)
+        return t("changes.placeArea", {
+          width: Math.round(place.width),
+          height: Math.round(place.height),
+        });
+      if (label.before)
+        return t("changes.placeChanged", {
+          before: fit(label.before),
+          after: fit(label.now ?? ""),
+        });
+      return label.isText
+        ? t("changes.placeText", { text: fit(label.now ?? "") })
+        : (label.now ?? "");
+    };
     const whatChanged = (row: ChangeRow) => {
       const change = row.change;
       if (change && change.kind !== "moved") {
@@ -1078,6 +1099,9 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
         return t(`changes.${change.kind}` as const, params);
       }
       if (!row.element) return t("changes.looseWhat");
+      // one place whose text changed says so instead of counting (REQ-038-04)
+      if (row.places.length === 1 && labelOf(row.places[0], row)?.before)
+        return placeText(row.places[0], row);
       return t("changes.spots", { count: row.places.length });
     };
     return (
@@ -1340,14 +1364,6 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
                           {row.element
                             ? rowName(row.element)
                             : t("changes.loose", { count: row.places.length })}
-                          {row.of > 1 && (
-                            <Box
-                              component="span"
-                              sx={{ color: tokens.textMuted }}
-                            >
-                              {t("changes.nth", { nth: row.nth, of: row.of })}
-                            </Box>
-                          )}
                         </Box>
                         <Box
                           data-testid="changedAreaWhat"
@@ -1423,6 +1439,7 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
                         <Box
                           key={index}
                           data-testid="changedPlace"
+                          title={placeText(place, row, true)}
                           onMouseEnter={() => onPreviewRegion?.(place)}
                           onMouseLeave={() =>
                             row.bounds && onPreviewRegion?.(row.bounds)
@@ -1452,7 +1469,17 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
                               border: `1.5px solid ${tokens.diff}`,
                             }}
                           />
-                          {placeText(place)}
+                          <Box
+                            component="span"
+                            sx={{
+                              minWidth: 0,
+                              overflow: "hidden",
+                              textOverflow: "ellipsis",
+                              whiteSpace: "nowrap",
+                            }}
+                          >
+                            {placeText(place, row)}
+                          </Box>
                         </Box>
                       ))}
                       {shown.length < row.places.length && (

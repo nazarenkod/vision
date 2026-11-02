@@ -23,6 +23,8 @@ import {
   sameDevice,
 } from "../../_helpers/allowedDevices.helper";
 import { MessageKey, useT } from "../../i18n";
+import { DeviceTags } from "../DeviceTags";
+import { tokens } from "../../theme";
 
 const PROBLEM: Record<"missing" | "wildcard", MessageKey> = {
   missing: "devices.missing",
@@ -212,18 +214,21 @@ export const AllowedDevicesSettings: React.FunctionComponent = () => {
                 borderColor: "divider",
               }}
             >
-              <Typography variant="body2" sx={{ flex: 1 }}>
-                {entry.device}
-                <Typography
-                  component="span"
-                  variant="body2"
-                  color="textSecondary"
-                >
-                  {` · ${entry.os}`}
-                </Typography>
-              </Typography>
+              <Box sx={{ flex: 1, minWidth: 0 }}>
+                <DeviceTags parts={entry} />
+              </Box>
               {allowed ? (
-                <Chip size="small" label={t("devices.allowed")} />
+                // text, not a grey chip: a chip would read as one more tag (REQ-036-06)
+                <Typography
+                  variant="body2"
+                  sx={{
+                    color: tokens.status.passed.fg,
+                    fontWeight: 500,
+                    px: 1,
+                  }}
+                >
+                  {t("devices.allowed")}
+                </Typography>
               ) : (
                 <>
                   <Chip

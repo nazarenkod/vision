@@ -6,19 +6,12 @@ import { buildTestRunLocation } from "../_helpers/route.helpers";
 import { StatusPill } from "./StatusPill";
 import { tokens } from "../theme";
 import { EmptyState } from "./EmptyState";
+import { DeviceTags } from "./DeviceTags";
 import { labelOf, useT } from "../i18n";
-import {
-  Card,
-  DeviceCell,
-  Head,
-  NameCell,
-  Num,
-  Row,
-  Tiles,
-} from "./SummaryParts";
+import { Card, Head, NameCell, Num, Row, Tiles } from "./SummaryParts";
 
 // wide enough for "Screenshot" over its status pill
-const COLUMNS = "minmax(0, 1fr) 168px 56px 64px 120px";
+const COLUMNS = "minmax(0, 1fr) 200px 56px 64px 120px";
 
 /**
  * Accessibility of the build, per screenshot that came with a UI tree; laid
@@ -124,12 +117,7 @@ export const A11ySummary: React.FunctionComponent<{ buildId: string }> = ({
             }
           >
             <NameCell name={run.name} />
-            <DeviceCell
-              name={run.device ?? ""}
-              detail={[run.os, run.browser, run.viewport]
-                .filter(Boolean)
-                .join(" · ")}
-            />
+            <DeviceTags parts={run} />
             <Num value={run.a11yNewCount ?? 0} color={tokens.a11y} />
             <Num value={run.a11yTotalCount ?? 0} />
             <Box>

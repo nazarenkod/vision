@@ -122,6 +122,13 @@ describe('report links', () => {
     expect(body).toContain('Anna Petrenko');
   });
 
+  it('names the OS of each accessibility row next to its device', () => {
+    const report = publicReport(overview(), [run('a', { a11yNewCount: 2 })], link);
+    expect(report.a11y).toEqual([
+      { testRunId: 'a', name: 'Screen a', device: 'PIXEL_4_XL', os: 'AOS 14', newCount: 2 },
+    ]);
+  });
+
   it('leaves out the sections the link does not carry', () => {
     const report = publicReport(overview(), [run('a', { a11yNewCount: 2 })], {
       ...link,

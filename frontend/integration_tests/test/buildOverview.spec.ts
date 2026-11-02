@@ -434,12 +434,13 @@ test("shows a device's screen size when the run sent no viewport", async ({
 }) => {
   await openProjectPage(project.id, build.id, undefined, "overview");
   const devices = page.getByTestId("overviewDevice");
-  await expect(devices.filter({ hasText: "Galaxy S23" })).toContainText(
-    "Android 14 · 1080×2340",
-  );
-  await expect(devices.filter({ hasText: "PIXEL_4_XL" })).toContainText(
-    "AOS 14 · browser · viewport",
-  );
+  // one grey tag per value, OS first, the size last (spec 036)
+  await expect(
+    devices.filter({ hasText: "Galaxy S23" }).getByTestId("deviceTag"),
+  ).toHaveText(["Android 14", "Galaxy S23", "1080×2340"]);
+  await expect(
+    devices.filter({ hasText: "PIXEL_4_XL" }).getByTestId("deviceTag"),
+  ).toHaveText(["AOS 14", "PIXEL_4_XL", "browser", "viewport"]);
   await expect(
     page.getByTestId("overviewDevices").getByText("Accessibility"),
   ).toBeVisible();

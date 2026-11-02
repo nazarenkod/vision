@@ -29,6 +29,16 @@ import { ErrorState } from "../components/EmptyState";
 import { shimmer } from "../components/SkeletonList";
 import { barShare, largest } from "../_helpers/insights.helper";
 import { MessageKey, useT } from "../i18n";
+import { DeviceTags } from "../components/DeviceTags";
+import { DeviceProfile } from "../types/insights";
+
+// an older server sends the device as one line only: then it is one tag
+const DeviceOf: React.FunctionComponent<{
+  profile?: DeviceProfile;
+  label: string;
+}> = ({ profile, label }) => (
+  <DeviceTags parts={profile ?? { device: label }} />
+);
 
 const PERIODS = [30, 90, 180, 365];
 const PERIOD_KEY = "vision.insightsDays";
@@ -413,7 +423,12 @@ const InsightsPage: React.FunctionComponent = () => {
                             />
                           )}
                         </TableCell>
-                        <TableCell>{item.device}</TableCell>
+                        <TableCell>
+                          <DeviceOf
+                            profile={item.profile}
+                            label={item.device}
+                          />
+                        </TableCell>
                         <TableCell
                           sx={{ fontFamily: tokens.mono, fontSize: 13 }}
                         >
@@ -464,8 +479,19 @@ const InsightsPage: React.FunctionComponent = () => {
                     {data.unstable.map((item) => (
                       <TableRow key={checkName(item)} hover>
                         <TableCell>{checkName(item)}</TableCell>
-                        <TableCell sx={{ color: tokens.textSecondary }}>
-                          {item.devices.join(", ")}
+                        <TableCell>
+                          {/* a wider gap between devices than between the tags of one */}
+                          <Box
+                            sx={{ display: "flex", flexWrap: "wrap", gap: 1.5 }}
+                          >
+                            {item.devices.map((device, index) => (
+                              <DeviceOf
+                                key={device}
+                                profile={item.profiles?.[index]}
+                                label={device}
+                              />
+                            ))}
+                          </Box>
                         </TableCell>
                         <TableCell align="center">
                           <Num value={item.runs} />
@@ -637,14 +663,23 @@ const InsightsPage: React.FunctionComponent = () => {
               <Empty text={t("insights.fullCoverage")} />
             ) : (
               data.coverage.map((entry) => (
-                <Box key={entry.device}>
-                  <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                    {t("insights.missing", {
-                      device: entry.device,
-                      missing: entry.missingCount,
-                      total: entry.checks + entry.missingCount,
-                    })}
-                  </Typography>
+                <Box key={entry.device} data-testid="insightsCoverage">
+                  <Box
+                    sx={{
+                      display: "flex",
+                      flexWrap: "wrap",
+                      alignItems: "center",
+                      gap: 1,
+                    }}
+                  >
+                    <DeviceOf profile={entry.profile} label={entry.device} />
+                    <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                      {t("insights.missing", {
+                        missing: entry.missingCount,
+                        total: entry.checks + entry.missingCount,
+                      })}
+                    </Typography>
+                  </Box>
                   <Typography variant="body2" color="textSecondary">
                     {entry.missing.map(checkName).join(", ")}
                     {entry.missingCount > entry.missing.length ? "…" : ""}

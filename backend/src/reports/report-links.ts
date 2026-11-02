@@ -64,7 +64,7 @@ export interface PublicReport {
     diffName: string | null;
   }>;
   moreChanges?: number;
-  a11y?: Array<{ testRunId: string; name: string; device: string; newCount: number }>;
+  a11y?: Array<{ testRunId: string; name: string; device: string; os: string; newCount: number }>;
 }
 
 // the order of a report's changes: what waits first, new screens next, rejected last
@@ -160,6 +160,8 @@ export function publicReport(
           testRunId: run.id,
           name: run.name,
           device: run.device ?? '',
+          // the device shows as tags, OS first (spec 036)
+          os: run.os ?? '',
           newCount: run.a11yNewCount ?? 0,
         }))
       : [],

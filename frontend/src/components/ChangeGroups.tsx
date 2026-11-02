@@ -29,6 +29,7 @@ import { motion, tokens } from "../theme";
 import { staggered } from "./motion/Stagger";
 import { shimmer } from "./SkeletonList";
 import { EmptyState } from "./EmptyState";
+import { DeviceTags } from "./DeviceTags";
 import { useDecisionSnackbar } from "./useDecisionSnackbar";
 import { english, MessageKey, Text, useT } from "../i18n";
 
@@ -49,7 +50,7 @@ export const useAiStatus = (): AiStatus | null => {
 };
 
 const variantLabel = (run: TestRun) =>
-  [run.device, run.browser, run.viewport, run.customTags]
+  [run.os, run.device, run.browser, run.viewport, run.customTags]
     .filter(Boolean)
     .join(" · ") || run.name;
 
@@ -155,26 +156,30 @@ const Thumb: React.FunctionComponent<{ run: TestRun; onOpen: () => void }> = ({
           transition: `transform ${motion.base}ms ${motion.easing}`,
         }}
       />
-      <Box
-        sx={{
-          display: "flex",
-          justifyContent: "space-between",
-          gap: 0.5,
-          font: `400 11px ${tokens.mono}`,
-        }}
-      >
-        <Typography
-          noWrap
-          sx={{ font: "inherit", color: tokens.textSecondary }}
+      {/* the OS too: two versions of Android on one model look alike (REQ-036-07) */}
+      <DeviceTags parts={run} dense />
+      {(run.customTags || run.diffPercent > 0) && (
+        <Box
+          sx={{
+            display: "flex",
+            justifyContent: "space-between",
+            gap: 0.5,
+            font: `400 11px ${tokens.mono}`,
+          }}
         >
-          {variantLabel(run)}
-        </Typography>
-        {run.diffPercent > 0 && (
-          <span style={{ color: tokens.diff, flexShrink: 0 }}>
-            {formatFixed(run.diffPercent, 1)}%
-          </span>
-        )}
-      </Box>
+          <Typography
+            noWrap
+            sx={{ font: "inherit", color: tokens.textSecondary }}
+          >
+            {run.customTags}
+          </Typography>
+          {run.diffPercent > 0 && (
+            <span style={{ color: tokens.diff, flexShrink: 0 }}>
+              {formatFixed(run.diffPercent, 1)}%
+            </span>
+          )}
+        </Box>
+      )}
       <RunFlags run={run} />
     </ButtonBase>
   );
@@ -586,7 +591,8 @@ export const ChangeGroups: React.FunctionComponent<Props> = ({
                     display: "flex",
                     flexWrap: "wrap",
                     gap: 1.5,
-                    alignItems: "center",
+                    // the screenshots line up at the top whatever the tags under them
+                    alignItems: "flex-start",
                   }}
                 >
                   {group.testRuns.slice(0, MAX_THUMBS).map((run) => (
@@ -594,7 +600,11 @@ export const ChangeGroups: React.FunctionComponent<Props> = ({
                   ))}
                   {group.testRuns.length > MAX_THUMBS && (
                     <Tooltip title={t("groups.openFirst")}>
-                      <Typography variant="body2" color="textSecondary">
+                      <Typography
+                        variant="body2"
+                        color="textSecondary"
+                        sx={{ alignSelf: "center" }}
+                      >
                         {t("groups.more", {
                           count: group.testRuns.length - MAX_THUMBS,
                         })}

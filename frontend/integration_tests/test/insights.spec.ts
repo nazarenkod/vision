@@ -27,6 +27,12 @@ const INSIGHTS: ProjectInsights = {
       customTags: "",
       branchName: "master",
       device: "Pixel 7 · Android 15",
+      profile: {
+        os: "Android 15",
+        device: "Pixel 7",
+        browser: "",
+        viewport: "",
+      },
       hasBaseline: true,
       lastUsedAt: "2026-04-08T12:00:00.000Z",
       idleDays: 200,
@@ -47,6 +53,9 @@ const INSIGHTS: ProjectInsights = {
       name: "Login",
       customTags: "",
       devices: ["Pixel 7 · Android 15"],
+      profiles: [
+        { os: "Android 15", device: "Pixel 7", browser: "", viewport: "" },
+      ],
       runs: 11,
       changedPercent: 72.7,
       rejected: 0,
@@ -71,6 +80,12 @@ const INSIGHTS: ProjectInsights = {
   coverage: [
     {
       device: "Galaxy S23 · Android 14",
+      profile: {
+        os: "Android 14",
+        device: "Galaxy S23",
+        browser: "",
+        viewport: "",
+      },
       checks: 3,
       missingCount: 1,
       missing: [{ name: "Profile", customTags: "" }],
@@ -115,11 +130,31 @@ test("shows what the project history says", async ({
   await expect(
     page.getByText("4 tiny changes approved in 11 screens"),
   ).toBeVisible();
-  await expect(page.getByText("4 with hidden changes of 8 screens")).toBeVisible();
-  await expect(page.getByText(/taken while loading/)).toHaveCount(0);
   await expect(
-    page.getByText("Galaxy S23 · Android 14: 1 missing of 4"),
+    page.getByText("4 with hidden changes of 8 screens"),
   ).toBeVisible();
+  await expect(page.getByText(/taken while loading/)).toHaveCount(0);
+  await expect(page.getByTestId("insightsCoverage")).toContainText(
+    "1 missing of 4",
+  );
+});
+
+test("shows each device as tags, OS first", async ({
+  page,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  authUser,
+}) => {
+  await openInsights(page);
+
+  const tags = (row: string) =>
+    page.getByRole("row", { name: row }).getByTestId("deviceTag");
+  await expect(tags("Old promo")).toHaveText(["Android 15", "Pixel 7"]);
+  await expect(tags("Login")).toHaveText(["Android 15", "Pixel 7"]);
+  // a server from before the tags sends one line: one tag, not a broken row
+  await expect(tags("Onboarding v1")).toHaveText(["Galaxy S23 · Android 14"]);
+  await expect(
+    page.getByTestId("insightsCoverage").getByTestId("deviceTag"),
+  ).toHaveText(["Android 14", "Galaxy S23"]);
 });
 
 test("says from when the history is kept in one line by the period", async ({

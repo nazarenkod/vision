@@ -19,6 +19,7 @@ import { BaseModal } from "./BaseModal";
 import { motion, tokens } from "../theme";
 import { staggered } from "./motion/Stagger";
 import { EmptyState } from "./EmptyState";
+import { DeviceTags } from "./DeviceTags";
 import { deviceLabel } from "../_helpers/device.helper";
 import { useT } from "../i18n";
 
@@ -104,35 +105,29 @@ const CheckCard: React.FunctionComponent<{
                 textAlign: "left",
                 justifyContent: "flex-start",
                 flex: 1,
-                py: 0.25,
+                minWidth: 0,
+                py: 0.5,
                 display: "flex",
-                flexDirection: "column",
-                alignItems: "flex-start",
-                color:
-                  device.id === shown.id ? tokens.text : tokens.textSecondary,
+                alignItems: "center",
+                gap: 0.75,
               }}
+              aria-label={deviceLabel(device, undefined, t)}
+              aria-pressed={device.id === shown.id}
             >
-              {/* the model, and under it the rest, as the build's tables name a device */}
-              {device.device ? (
-                <>
-                  <Box
-                    component="span"
-                    sx={{ fontWeight: device.id === shown.id ? 600 : 500 }}
-                  >
-                    {device.device}
-                  </Box>
-                  <Box
-                    component="span"
-                    sx={{ fontSize: 11.5, color: tokens.textSecondary }}
-                  >
-                    {[device.os, device.browser, device.viewport]
-                      .filter(Boolean)
-                      .join(" · ")}
-                  </Box>
-                </>
-              ) : (
-                deviceLabel(device, undefined, t)
-              )}
+              {/* the shown device is marked beside its tags, which stay grey (REQ-036-04) */}
+              <Box
+                component="span"
+                sx={{
+                  width: 3,
+                  alignSelf: "stretch",
+                  minHeight: 20,
+                  borderRadius: 1,
+                  flexShrink: 0,
+                  bgcolor:
+                    device.id === shown.id ? tokens.brand : "transparent",
+                }}
+              />
+              <DeviceTags parts={device} sx={{ flex: 1 }} />
             </ButtonBase>
             <Button
               size="small"

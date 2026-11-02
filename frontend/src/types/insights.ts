@@ -415,6 +415,13 @@ export interface SelectorMatches {
   problem: SelectorProblem | null;
 }
 
+export interface DeviceProfile {
+  os: string;
+  device: string;
+  browser: string;
+  viewport: string;
+}
+
 export interface ProjectInsights {
   days: number;
   windowStart: string;
@@ -437,6 +444,8 @@ export interface ProjectInsights {
     customTags: string;
     branchName: string;
     device: string;
+    // field by field, for the tags (spec 036); absent from an older server
+    profile?: DeviceProfile;
     hasBaseline: boolean;
     lastUsedAt: string;
     idleDays: number;
@@ -445,6 +454,7 @@ export interface ProjectInsights {
     name: string;
     customTags: string;
     devices: string[];
+    profiles?: DeviceProfile[];
     runs: number;
     changedPercent: number;
     rejected: number;
@@ -475,6 +485,7 @@ export interface ProjectInsights {
   }>;
   coverage: Array<{
     device: string;
+    profile?: DeviceProfile;
     checks: number;
     missingCount: number;
     missing: Array<{ name: string; customTags: string }>;

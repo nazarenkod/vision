@@ -415,11 +415,6 @@ export const en = {
   "baselines.beforeIt": "Before it",
   "baselines.nothingBefore": "Nothing before it",
   "baselines.testRun": "Screen",
-  "baselines.tag.os": "OS",
-  "baselines.tag.device": "Device",
-  "baselines.tag.customTags": "Custom Tags",
-  "baselines.tag.browser": "Browser",
-  "baselines.tag.viewport": "Viewport",
 
   // filters
   "filters.all": "All",
@@ -499,8 +494,7 @@ export const en = {
     one: "Approve {count} devices?",
     other: "Approve {count} devices?",
   },
-  "review.approveDevicesText":
-    "Each becomes the baseline for its device: {devices}.",
+  "review.approveDevicesText": "Each becomes the baseline for its device:",
   "review.comments": "Comments",
   "review.commentPlaceholder": "Add any additional data here",
   "review.save": "Save",
@@ -819,7 +813,7 @@ export const en = {
   "insights.coverage": "Device coverage",
   "insights.coverageHint": "Main-branch checks a device is missing.",
   "insights.fullCoverage": "Every device runs every check.",
-  "insights.missing": "{device}: {missing} missing of {total}",
+  "insights.missing": "{missing} missing of {total}",
   "insights.deleteTitle": {
     one: "Delete {count} baselines?",
     other: "Delete {count} baselines?",

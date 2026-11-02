@@ -13,10 +13,10 @@ import { buildOverviewService } from "../../services";
 import { BuildOverview as Overview } from "../../types/buildOverview";
 import { StatusPill } from "../StatusPill";
 import { ResultBar } from "./ResultBar";
+import { DeviceTags } from "../DeviceTags";
 import { EmptyState } from "../EmptyState";
 import {
   Card,
-  DeviceCell,
   Head,
   NameCell,
   Num,
@@ -156,7 +156,8 @@ const OverviewTiles: React.FunctionComponent<{
 
 const FEATURE_COLUMNS = "minmax(0, 1fr) 64px 80px 64px 40px";
 // wide enough for "Accessibility" over its numbers
-const DEVICE_COLUMNS = "minmax(0, 1fr) 80px 64px 92px";
+// narrow bars and counts, so a device keeps its OS and model on one line of tags
+const DEVICE_COLUMNS = "minmax(0, 1fr) 56px 52px 84px";
 
 const Devices: React.FunctionComponent<{
   overview: Overview;
@@ -191,11 +192,16 @@ const Devices: React.FunctionComponent<{
                 : undefined
             }
           >
-            <DeviceCell
-              name={row.device}
-              detail={[row.os, row.browser, row.viewport || row.screen]
-                .filter(Boolean)
-                .join(" · ")}
+            {/* compact: the column is a third of half the page at 1280px */}
+            <DeviceTags
+              dense
+              parts={{
+                os: row.os,
+                device: row.device,
+                browser: row.browser,
+                // the size of the screen: what the test sent, else the screenshot's
+                viewport: row.viewport || row.screen,
+              }}
             />
             <ResultBar outcome={row} text={t} hint />
             <Num value={waiting} />

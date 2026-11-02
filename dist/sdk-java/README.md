@@ -1,8 +1,8 @@
 # Vision Java SDK, ready-made jar
 
 `sdk-java-4.3.1-vision.4.jar` is upstream sdk-java 4.3.1 plus two optional fields,
-`CheckOptions.uiTree` and `featureName`; its classes are `Vision`, `VisionConfig`, `CheckOptions`
-and `CheckResult` (upstream: `VisualRegressionTracker`, `VisualRegressionTrackerConfig`,
+`VisionOptions.uiTree` and `featureName`; its classes are `Vision`, `VisionConfig`, `VisionOptions`
+and `VisionResult` (upstream: `VisualRegressionTracker`, `VisualRegressionTrackerConfig`,
 `TestRunOptions`, `TestRunResult`). Same package, methods and other classes, runs on Java 11+. Rebuild with
 `./scripts/build-sdk-jar.sh` (JDK 11–17, Gradle 7).
 

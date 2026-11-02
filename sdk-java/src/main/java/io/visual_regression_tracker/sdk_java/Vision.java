@@ -98,10 +98,10 @@ public class Vision {
         return vrtStopResponse;
     }
 
-    public CheckResult track(String name, String imageBase64, CheckOptions checkOptions)
+    public VisionResult track(String name, String imageBase64, VisionOptions options)
             throws IOException, InterruptedException {
-        log.info("Tracking test run <{}> with options <{}> for buildId <{}>", name, checkOptions, buildId);
-        TestRunResponse testResultDTO = submitTestRun(name, imageBase64, checkOptions);
+        log.info("Tracking test run <{}> with options <{}> for buildId <{}>", name, options, buildId);
+        TestRunResponse testResultDTO = submitTestRun(name, imageBase64, options);
 
         String errorMessage;
         switch (testResultDTO.getStatus()) {
@@ -124,11 +124,11 @@ public class Vision {
             }
         }
 
-        return new CheckResult(testResultDTO, this.paths);
+        return new VisionResult(testResultDTO, this.paths);
     }
 
-    public CheckResult track(String name, String imageBase64) throws IOException, InterruptedException {
-        return track(name, imageBase64, CheckOptions.builder().build());
+    public VisionResult track(String name, String imageBase64) throws IOException, InterruptedException {
+        return track(name, imageBase64, VisionOptions.builder().build());
     }
 
     protected boolean isStarted() {
@@ -136,7 +136,7 @@ public class Vision {
     }
 
     protected TestRunResponse submitTestRun(String name, String imageBase64,
-                                            CheckOptions checkOptions) throws IOException, InterruptedException {
+                                            VisionOptions options) throws IOException, InterruptedException {
         if (!isStarted()) {
             throw new TestRunException(TRACKER_NOT_STARTED);
         }
@@ -147,15 +147,15 @@ public class Vision {
                 .branchName(configuration.getBranchName())
                 .name(name)
                 .imageBase64(imageBase64)
-                .os(checkOptions.getOs())
-                .browser(checkOptions.getBrowser())
-                .viewport(checkOptions.getViewport())
-                .device(checkOptions.getDevice())
-                .customTags(checkOptions.getCustomTags())
-                .diffTollerancePercent(checkOptions.getDiffTollerancePercent())
-                .ignoreAreas(checkOptions.getIgnoreAreas())
-                .uiTree(encodeUiTree(checkOptions.getUiTree()))
-                .featureName(checkOptions.getFeatureName())
+                .os(options.getOs())
+                .browser(options.getBrowser())
+                .viewport(options.getViewport())
+                .device(options.getDevice())
+                .customTags(options.getCustomTags())
+                .diffTollerancePercent(options.getDiffTollerancePercent())
+                .ignoreAreas(options.getIgnoreAreas())
+                .uiTree(encodeUiTree(options.getUiTree()))
+                .featureName(options.getFeatureName())
                 .build();
 
         HttpRequest.BodyPublisher body = HttpRequest.BodyPublishers.ofString(gson.toJson(newTestRun));

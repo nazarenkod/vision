@@ -281,7 +281,7 @@ decisions to problems»).
 изменения по элементам, правила по элементам, а также для названия фичи в багах из сравнения.
 
 Новый SDK — это upstream 4.3.1 плюс два необязательных поля, `uiTree` и `featureName`, а классы
-называются по-своему: `Vision`, `VisionConfig`, `CheckOptions`, `CheckResult` вместо
+называются по-своему: `Vision`, `VisionConfig`, `VisionOptions`, `VisionResult` вместо
 `VisualRegressionTracker`, `VisualRegressionTrackerConfig`, `TestRunOptions`, `TestRunResult`.
 Пакет, методы и остальные классы те же, работает на Java 11+. Готовый jar лежит в репозитории:
 `dist/sdk-java/sdk-java-4.3.1-vision.4.jar`
@@ -289,15 +289,15 @@ decisions to problems»).
 
 ### Обновление с 4.3.1-vision.3
 
-Что нового в `4.3.1-vision.4`: `TestRunOptions` и `TestRunResult` переименованы в `CheckOptions` и
-`CheckResult`. Старых имён в jar нет; поля, методы и их названия те же (`uiTree`, `featureName`,
+Что нового в `4.3.1-vision.4`: `TestRunOptions` и `TestRunResult` переименованы в `VisionOptions` и
+`VisionResult`. Старых имён в jar нет; поля, методы и их названия те же (`uiTree`, `featureName`,
 `getTestRunResponse()`…). Запросы к серверу не изменились, эталоны остаются.
 
 ```java
 // было
 TestRunResult result = vrt.track("Payment", screenshotBase64, TestRunOptions.builder().uiTree(xml).build());
 // стало
-CheckResult result = vrt.track("Payment", screenshotBase64, CheckOptions.builder().uiTree(xml).build());
+VisionResult result = vrt.track("Payment", screenshotBase64, VisionOptions.builder().uiTree(xml).build());
 ```
 
 ### Обновление с 4.3.1-vision.2
@@ -418,7 +418,7 @@ Java:
 vrt.track(
     "Payment",
     screenshotBase64,
-    CheckOptions.builder()
+    VisionOptions.builder()
         .device("Pixel 7 emulator")
         .os("Android 15")
         .uiTree(WebDriverRunner.getWebDriver().getPageSource())
@@ -433,7 +433,7 @@ Kotlin:
 vrt.track(
     "Payment",
     screenshotBase64,
-    CheckOptions.builder()
+    VisionOptions.builder()
         .device("Pixel 7 emulator")
         .os("Android 15")
         .uiTree(WebDriverRunner.getWebDriver().pageSource)

@@ -10,7 +10,7 @@ gzip + base64 у поле `uiTree`. Розбір, формат і щільніс
 
 | Компонент | Шлях | Роль |
 |---|---|---|
-| Параметр | `sdk-java/src/main/java/io/visual_regression_tracker/sdk_java/CheckOptions.java` | `uiTree` |
+| Параметр | `sdk-java/src/main/java/io/visual_regression_tracker/sdk_java/VisionOptions.java` | `uiTree` |
 | Запит | `sdk-java/src/main/java/io/visual_regression_tracker/sdk_java/request/TestRunRequest.java` | стиснення |
 | Збірка | `scripts/build-sdk-jar.sh` | jar і pom → `dist/sdk-java/` (`4.3.1-vision.N`) |
 

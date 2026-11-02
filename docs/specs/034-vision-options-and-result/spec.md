@@ -1,4 +1,4 @@
-# 034 — Vision SDK: `CheckOptions` і `CheckResult` замість `TestRun*`
+# 034 — Vision SDK: `VisionOptions` і `VisionResult` замість `TestRun*`
 
 | | |
 |---|---|
@@ -11,22 +11,23 @@
 ## Контекст і проблема
 
 Після [033](../033-vision-sdk/spec.md) головний об'єкт називається `Vision`, але з ним у кожному
-тесті поруч стоять `TestRunOptions` і `TestRunResult`: термін VRT «test run», а у Vision це
-перевірка (check, [словник](../../product/glossary.md)). Другий крок — ці два класи.
+тесті поруч стоять `TestRunOptions` і `TestRunResult` з терміном VRT «test run». Другий крок — ці
+два класи. Власник обрав назви з тим самим префіксом, що й `Vision` і `VisionConfig`: усі класи, з
+якими працює тест, починаються з `Vision`. Варіант `CheckOptions` / `CheckResult` відхилено.
 
 ## Що змінюється
 
 | Було | Стало |
 |---|---|
-| `TestRunOptions`, `TestRunOptions.builder()` | `CheckOptions`, `CheckOptions.builder()` |
-| `TestRunResult` | `CheckResult` |
+| `TestRunOptions`, `TestRunOptions.builder()` | `VisionOptions`, `VisionOptions.builder()` |
+| `TestRunResult` | `VisionResult` |
 
 Усе інше без змін: поля опцій (`uiTree`, `featureName`, `diffTollerancePercent`…), методи результату
 (`getTestRunResponse()`, `getImageUrl()`…), `TestRunStatus`, `TestRunException`, пакет, методи
 `Vision`, змінні `VRT_*`, `vrt.json`, Maven-координати. Нова версія jar — `4.3.1-vision.4`.
 
 ```java
-CheckResult result = vision.track("Checkout.Payment", screenshotBase64, CheckOptions.builder()
+VisionResult result = vision.track("Checkout.Payment", screenshotBase64, VisionOptions.builder()
         .uiTree(xml)
         .featureName("Checkout")
         .build());
@@ -36,12 +37,12 @@ CheckResult result = vision.track("Checkout.Payment", screenshotBase64, CheckOpt
 
 ### US-1 (P1): Опції й результат перевірки під назвами Vision
 
-Як автоматизатор, я хочу писати `CheckOptions` і `CheckResult`, щоб у тестах не було терміна VRT
-«test run».
+Як автоматизатор, я хочу писати `VisionOptions` і `VisionResult`, щоб класи SDK у тестах
+називались однаково, як наш інструмент, без терміна VRT «test run».
 
 - **Чому P1:** це і є зміна.
-- **Незалежна перевірка:** у тесті замінити `TestRunOptions` на `CheckOptions` і `TestRunResult` на
-  `CheckResult`, підключити jar `4.3.1-vision.4` → тест компілюється й надсилає знімки, як раніше.
+- **Незалежна перевірка:** у тесті замінити `TestRunOptions` на `VisionOptions` і `TestRunResult` на
+  `VisionResult`, підключити jar `4.3.1-vision.4` → тест компілюється й надсилає знімки, як раніше.
 - **Сценарії приймання:**
   1. **Дано** тест на `4.3.1-vision.3`, **коли** jar замінено на `4.3.1-vision.4`, а дві назви
      класів — на нові, **тоді** тест працює як раніше.
@@ -52,8 +53,8 @@ CheckResult result = vision.track("Checkout.Payment", screenshotBase64, CheckOpt
 
 | ID | Історія | Вимога |
 |---|---|---|
-| REQ-034-01 | US-1 | SDK ПОВИНЕН мати класи `CheckOptions` і `CheckResult` замість `TestRunOptions` і `TestRunResult`, без класів зі старими назвами. |
-| REQ-034-02 | US-1 | `CheckOptions` і `CheckResult` ПОВИННІ мати ті самі поля, методи й поведінку, що й класи, які вони замінюють, а `track` — надсилати серверу ті самі запити. |
+| REQ-034-01 | US-1 | SDK ПОВИНЕН мати класи `VisionOptions` і `VisionResult` замість `TestRunOptions` і `TestRunResult`, без класів зі старими назвами. |
+| REQ-034-02 | US-1 | `VisionOptions` і `VisionResult` ПОВИННІ мати ті самі поля, методи й поведінку, що й класи, які вони замінюють, а `track` — надсилати серверу ті самі запити. |
 
 ## Граничні випадки
 

@@ -3,9 +3,9 @@
 Загальні правила — у [../AGENTS.md](../AGENTS.md).
 
 **Головне обмеження:** SDK — це upstream 4.3.1 плюс необов'язкові поля
-`CheckOptions.uiTree` (XML page source; SDK стискає його gzip + base64) і `featureName` (назва фічі
+`VisionOptions.uiTree` (XML page source; SDK стискає його gzip + base64) і `featureName` (назва фічі
 для багів; не входить в ідентичність перевірки), а класи називаються `Vision`, `VisionConfig`,
-`CheckOptions` і `CheckResult`. Будь-яка інша зміна API — лише за специфікацією, затвердженою
+`VisionOptions` і `VisionResult`. Будь-яка інша зміна API — лише за специфікацією, затвердженою
 власником; запити до сервера лишаються сумісними, щоб еталони не скидались. Див.
 [ADR-0024](../docs/decisions/0024-own-vision-sdk.md).
 

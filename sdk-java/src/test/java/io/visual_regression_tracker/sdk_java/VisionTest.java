@@ -175,7 +175,7 @@ public class VisionTest {
         vrt.buildId = BUILD_ID;
         vrt.projectId = PROJECT_ID;
 
-        vrt.submitTestRun(NAME, IMAGE_BASE_64, CheckOptions.builder().uiTree(xml).build());
+        vrt.submitTestRun(NAME, IMAGE_BASE_64, VisionOptions.builder().uiTree(xml).build());
 
         JsonObject body = gson.fromJson(mockWebServer.takeRequest().getBody().readUtf8(), JsonObject.class);
         byte[] gzipped = Base64.getDecoder().decode(body.get("uiTree").getAsString());
@@ -192,7 +192,7 @@ public class VisionTest {
         vrt.buildId = BUILD_ID;
         vrt.projectId = PROJECT_ID;
 
-        vrt.submitTestRun(NAME, IMAGE_BASE_64, CheckOptions.builder().build());
+        vrt.submitTestRun(NAME, IMAGE_BASE_64, VisionOptions.builder().build());
 
         JsonObject body = gson.fromJson(mockWebServer.takeRequest().getBody().readUtf8(), JsonObject.class);
         assertThat(body.has("uiTree"), is(false));
@@ -206,7 +206,7 @@ public class VisionTest {
         vrt.buildId = BUILD_ID;
         vrt.projectId = PROJECT_ID;
 
-        vrt.submitTestRun(NAME, IMAGE_BASE_64, CheckOptions.builder().featureName("Checkout").build());
+        vrt.submitTestRun(NAME, IMAGE_BASE_64, VisionOptions.builder().featureName("Checkout").build());
 
         JsonObject body = gson.fromJson(mockWebServer.takeRequest().getBody().readUtf8(), JsonObject.class);
         assertThat(body.get("featureName").getAsString(), is("Checkout"));
@@ -220,7 +220,7 @@ public class VisionTest {
         vrt.buildId = BUILD_ID;
         vrt.projectId = PROJECT_ID;
 
-        vrt.submitTestRun(NAME, IMAGE_BASE_64, CheckOptions.builder().build());
+        vrt.submitTestRun(NAME, IMAGE_BASE_64, VisionOptions.builder().build());
 
         JsonObject body = gson.fromJson(mockWebServer.takeRequest().getBody().readUtf8(), JsonObject.class);
         assertThat(body.has("featureName"), is(false));
@@ -234,7 +234,7 @@ public class VisionTest {
 
     @Test
     public void shouldSubmitTestRun() throws IOException, InterruptedException {
-        CheckOptions testRunOptions = CheckOptions.builder()
+        VisionOptions testRunOptions = VisionOptions.builder()
                 .device("Device")
                 .os("OS")
                 .browser("Browser")
@@ -329,7 +329,7 @@ public class VisionTest {
         when(vrtMocked.submitTestRun(anyString(), anyString(), any())).thenReturn(testRunResponse);
 
         doCallRealMethod().when(vrtMocked).track(anyString(), anyString(), any());
-        vrtMocked.track("name", "image", CheckOptions.builder().build());
+        vrtMocked.track("name", "image", VisionOptions.builder().build());
     }
 
     @Test(dataProvider = "trackErrorCases")
@@ -351,7 +351,7 @@ public class VisionTest {
         when(vrtMocked.submitTestRun(anyString(), anyString(), any())).thenReturn(testRunResponse);
 
         doCallRealMethod().when(vrtMocked).track(anyString(), anyString(), any());
-        vrtMocked.track("name", "image", CheckOptions.builder().build());
+        vrtMocked.track("name", "image", VisionOptions.builder().build());
 
         assertThat(listAppender.list.get(1).getFormattedMessage(), is(expectedExceptionMessage));
         assertThat(listAppender.list.get(1).getLevel(), is(Level.ERROR));
@@ -397,7 +397,7 @@ public class VisionTest {
         vrtMocked.paths = new PathProvider("http://localhost:4200");
 
         doCallRealMethod().when(vrtMocked).track(anyString(), anyString(), any());
-        CheckResult testRunResult = vrtMocked.track("name", "image", CheckOptions.builder().build());
+        VisionResult testRunResult = vrtMocked.track("name", "image", VisionOptions.builder().build());
 
         assertThat(testRunResult.getTestRunResponse(), is(testRunResponse));
         assertThat(testRunResult.getImageUrl(), is("http://localhost:4200/".concat(testRunResponse.getImageName())));
@@ -410,7 +410,7 @@ public class VisionTest {
         doCallRealMethod().when(vrtMocked).track(anyString(), anyString());
         vrtMocked.track("name", "image");
 
-        verify(vrtMocked, times(1)).track(anyString(), anyString(), any(CheckOptions.class));
+        verify(vrtMocked, times(1)).track(anyString(), anyString(), any(VisionOptions.class));
     }
 
     @DataProvider(name = "shouldReturnIsStartedCases")

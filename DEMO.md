@@ -79,7 +79,7 @@ In project settings: Jira URL and token. Use a personal access token for Server 
 
 ## Send UI trees from tests
 
-Java/Kotlin with Appium and Selenide: add `.uiTree(WebDriverRunner.getWebDriver().getPageSource())` to `CheckOptions` (see `sdk-java/README.md`). It is the SDK's only change and is optional.
+Java/Kotlin with Appium and Selenide: add `.uiTree(WebDriverRunner.getWebDriver().getPageSource())` to `VisionOptions` (see `sdk-java/README.md`). It is the SDK's only change and is optional.
 
 Without a device, upload PNG + XML pairs exported from Appium Inspector:
 

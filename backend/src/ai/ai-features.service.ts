@@ -80,7 +80,7 @@ export class AiFeaturesService {
   async summarizeGroup(buildId: string, groupId: string): Promise<GroupSummary> {
     const group = (await this.changeGroupsService.getGroups(buildId)).find((g) => g.id === groupId);
     if (!group) throw new NotFoundException('Change group not found; the build may have changed, reload it');
-    if (group.kind === 'new') throw new BadRequestException('New screenshots have no change to describe');
+    if (group.kind === 'new') throw new BadRequestException('New screens have no change to describe');
 
     if (group.noise) {
       return {

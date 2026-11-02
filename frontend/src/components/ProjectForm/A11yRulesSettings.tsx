@@ -154,7 +154,7 @@ export const A11yRulesSettings: React.FunctionComponent<{
   const norms = a11yNormsOf(settings);
 
   // only the norms change: the defaults parsing fills in are not written, or
-  // a project saved without them would look changed under Mobile screenshots
+  // a project saved without them would look changed under Mobile screens
   const save = (next: A11yNorms) => {
     let stored: Record<string, unknown> = {};
     try {

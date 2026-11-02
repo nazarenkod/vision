@@ -47,7 +47,7 @@ test("shows the project settings in Ukrainian", async ({ page, authUser }) => {
   await expect(page.getByRole("heading", { level: 1 })).toHaveText(
     "Налаштування",
   );
-  await expect(page.getByTestId("nav-mobile")).toContainText("Мобільні знімки");
+  await expect(page.getByTestId("nav-mobile")).toContainText("Мобільні екрани");
   await expect(
     page.getByText("Не враховувати рядок стану й панель навігації"),
   ).toBeVisible();

@@ -192,7 +192,7 @@ test("switches the frames on the screenshot from the Accessibility tab", async (
   const leftEdge = { x: framed.x - 2, y: framed.y + 20, width: 4, height: 60 };
 
   const panel = page.getByRole("complementary");
-  await expect(panel.getByText("Highlight on screenshot")).toBeVisible();
+  await expect(panel.getByText("Highlight on current")).toBeVisible();
   await expect.poll(() => frameAlpha(page, leftEdge)).toBeGreaterThan(0);
 
   await panel.getByTestId("a11yMarksSwitch").click();

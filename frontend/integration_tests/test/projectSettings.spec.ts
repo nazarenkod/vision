@@ -107,7 +107,7 @@ test("lists the sections and highlights the one in view", async ({
     "General",
     "Review",
     "Image comparison",
-    "Mobile screenshots",
+    "Mobile screens",
     "Accessibility",
     "Jira",
     "Danger zone",
@@ -197,7 +197,7 @@ test("saves every field the old dialog had", async ({
 
   // the save bar names what changed
   await expect(page.getByTestId("saveBar")).toContainText(
-    "General, Review, Image comparison, Mobile screenshots, Jira",
+    "General, Review, Image comparison, Mobile screens, Jira",
   );
   const [request] = await Promise.all([
     putRequest(page),
@@ -351,7 +351,7 @@ test("keeps settings it no longer shows when saving", async ({
     }),
   });
   await page.getByLabel("Send hidden changes to review").uncheck();
-  await expect(page.getByTestId("saveBar")).toContainText("Mobile screenshots");
+  await expect(page.getByTestId("saveBar")).toContainText("Mobile screens");
   const [request] = await Promise.all([
     putRequest(page),
     page.getByTestId("saveSettings").click(),
@@ -480,7 +480,7 @@ test("adds, edits and removes an allowed device", async ({
   await open(page);
   const section = page.getByTestId("allowedDevices");
   await expect(section).toContainText(
-    "No list: snapshots from any device come in.",
+    "No list: screens from any device come in.",
   );
   await expect(page.getByTestId("nav-devices")).toContainText("any device");
 

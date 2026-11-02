@@ -91,7 +91,7 @@ export class ChangeGroupsService {
         b.testRuns.length - a.testRuns.length ||
         a.title.localeCompare(b.title)
     );
-    if (fresh.length) groups.push(this.group('new', 'New screenshots', fresh, [], 'new'));
+    if (fresh.length) groups.push(this.group('new', 'New screens', fresh, [], 'new'));
     return groups;
   }
 

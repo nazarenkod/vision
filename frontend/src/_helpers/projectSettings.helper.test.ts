@@ -126,7 +126,7 @@ describe("project settings", () => {
           elementRules: [{ id: "1", selector: "id:clock", action: "ignore" }],
         }),
       }),
-    ).toEqual(["General", "Mobile screenshots"]);
+    ).toEqual(["General", "Mobile screens"]);
     // a token typed in counts though none is ever shown
     expect(changedSections(project, { ...project, jiraToken: "" })).toEqual([
       "Jira",

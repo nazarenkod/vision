@@ -118,12 +118,12 @@ export function undoBlocker(
   // run of the same screen writes over the variation an earlier one wrote
   finalVariations: Map<string, VariationState> = new Map(item.after.variations.map((v) => [v.id, v]))
 ): string | null {
-  if (!current) return 'The screenshot was deleted after the decision.';
+  if (!current) return 'The screen was deleted after the decision.';
   if (current.status !== item.after.status) {
-    return 'The screenshot was decided again after this decision.';
+    return 'The screen was decided again after this decision.';
   }
   if (current.testVariationId !== item.after.testVariationId) {
-    return 'The screenshot was moved to another baseline after this decision.';
+    return 'The screen was moved to another baseline after this decision.';
   }
   const now = new Map(current.variations.map((v) => [v.id, v]));
   for (const { id } of item.after.variations) {

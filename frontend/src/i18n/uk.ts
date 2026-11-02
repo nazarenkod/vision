@@ -100,18 +100,18 @@ export const uk: Messages = {
   "section.general": "Загальне",
   "section.review": "Перегляд",
   "section.comparison": "Порівняння",
-  "section.mobile": "Мобільні знімки",
+  "section.mobile": "Мобільні екрани",
   "section.a11y": "Доступність",
   "section.jira": "Jira",
   "section.danger": "Небезпечна зона",
   "section.devices": "Пристрої",
   "section.devicesIntro":
-    "Знімки, надіслані з SDK з іншого пристрою чи іншої версії OS, падають у тесті, тож еталони з'являються лише там, де ганяється CI. Ручні перевірки з CLI перелік не обмежує.",
+    "Екрани, надіслані з SDK з іншого пристрою чи іншої версії OS, падають у тесті, тож еталони з'являються лише там, де ганяється CI. Ручні перевірки з CLI перелік не обмежує.",
   "section.comparisonIntro":
-    "Як знімок порівнюється з еталоном. Під способами порівняння — параметри того, який ви виберете.",
-  "section.mobileIntro": "Для знімків, надісланих з Appium page source.",
+    "Як поточний екран порівнюється з еталоном. Під способами порівняння — параметри того, який ви виберете.",
+  "section.mobileIntro": "Для екранів, надісланих з Appium page source.",
   "section.a11yIntro":
-    "Що Vision перевіряє на кожному знімку з UI-деревом, за нормами вашої команди.",
+    "Що Vision перевіряє на кожному екрані з UI-деревом, за нормами вашої команди.",
   "section.jiraIntro":
     "Дає заводити баги доступності просто з екрана перегляду. Кожен додає власний токен Jira у профілі, тож баги заводяться від його імені. Спільний токен тут — для тих, хто свого ще не додав.",
 
@@ -119,15 +119,15 @@ export const uk: Messages = {
   "devices.os": "Версія OS",
   "devices.add": "Додати",
   "devices.remove": "Прибрати",
-  "devices.none": "Переліку немає: приймаються знімки з будь-якого пристрою.",
+  "devices.none": "Переліку немає: приймаються екрани з будь-якого пристрою.",
   "devices.osHint": "Точно, або 26.* для будь-якої 26.x",
   "devices.missing": "Потрібні і пристрій, і OS",
   "devices.wildcard": "* лише в кінці OS, як у 26.*",
   "devices.duplicate": "Уже в переліку",
-  "devices.received": "Пристрої зі знімків",
+  "devices.received": "Пристрої з екранів",
   "devices.receivedHint":
     "Так, як їх надсилають тести. Спершу додайте ті, на яких ганяється CI.",
-  "devices.receivedNone": "Знімків ще немає.",
+  "devices.receivedNone": "Екранів ще немає.",
   "devices.notInList": "не в переліку",
   "devices.allowed": "дозволено",
 
@@ -136,7 +136,7 @@ export const uk: Messages = {
   "general.buildCount": "Скільки збірок зберігати",
   "general.branchLifetime": "Скільки днів зберігати гілку",
   "general.newProjectHint":
-    "Мобільні знімки, доступність і Jira налаштовуються в налаштуваннях проєкту — вони відкриються одразу після створення.",
+    "Мобільні екрани, доступність і Jira налаштовуються в налаштуваннях проєкту — вони відкриються одразу після створення.",
 
   "review.autoApprove": "Автоматично приймати у feature-гілках",
 
@@ -147,7 +147,7 @@ export const uk: Messages = {
   "comparison.lookSameHelp":
     "Не помічає згладжування й курсор у полі. Добре для екранів з великою кількістю тексту.",
   "comparison.odiffHelp":
-    "Найшвидший на великих знімках. Може падати на будь-якій зміні розмітки.",
+    "Найшвидший на великих екранах. Може падати на будь-якій зміні розмітки.",
   "comparison.vlmHelp":
     "Питає візуальну модель, чи важлива зміна. Повільніше; потрібен постачальник моделі.",
   "comparison.allowDiffDimensions": "Порівнювати зображення різного розміру",
@@ -201,7 +201,7 @@ export const uk: Messages = {
   "comparison.useThinking": "Режим міркування",
   "comparison.useThinkingHelp": "Вмикає режим міркування моделі VLM.",
 
-  "mobile.title": "Мобільні знімки (UI-дерево)",
+  "mobile.title": "Мобільні екрани (UI-дерево)",
   "mobile.systemBars": "Не враховувати рядок стану й панель навігації",
   "mobile.systemBarsHelp": "Годинник, батарея й сигнал змінюються щоразу.",
   "mobile.moves": "Порівнювати зсунуті елементи на новому місці",
@@ -225,7 +225,7 @@ export const uk: Messages = {
   "a11y.norm.iosOnly": "лише iOS",
   "a11y.norm.advice": "порада, не рахується",
   "a11y.norm.applies":
-    "Послаблена норма ховає знахідки й на вже отриманих знімках; суворіша знаходить нові з наступних знімків.",
+    "Послаблена норма ховає знахідки й на вже отриманих екранах; суворіша знаходить нові з наступних екранів.",
   "a11y.rule.touchTarget": "Замала область дотику",
   "a11y.rule.lowContrast": "Низький контраст тексту",
   "a11y.rule.missingLabel": "Елемент керування без підпису",
@@ -303,7 +303,7 @@ export const uk: Messages = {
     many: "Видалити {count} збірок?",
     other: "Видалити {count} збірки?",
   },
-  "builds.deleteManyHint": "Разом з ними зникнуть і їхні знімки.",
+  "builds.deleteManyHint": "Разом з ними зникнуть і їхні екрани.",
   "builds.period": "{start} – {end}",
   "builds.statusBar":
     "чекають рішення: {unresolved}, не пройшли: {failed}, пройшли: {passed}",
@@ -323,7 +323,7 @@ export const uk: Messages = {
   "runs.name": "Назва",
   "runs.tags": "Теги",
   "runs.status": "Статус",
-  "runs.noMatch": "Жоден знімок не відповідає фільтрам",
+  "runs.noMatch": "Жоден екран не відповідає фільтрам",
   "runs.cardsSelected": {
     one: "Вибрано {count} картку",
     few: "Вибрано {count} картки",
@@ -332,7 +332,7 @@ export const uk: Messages = {
   },
   "runs.cardsPerPage": "Карток на сторінці:",
   "runs.selectBuild": "Виберіть збірку зі списку",
-  "runs.selectAllRuns": "Вибрати всі знімки",
+  "runs.selectAllRuns": "Вибрати всі екрани",
   "runs.select": "Вибрати {name}",
   "runs.table": "Таблиця",
   "runs.tableView": "Подання таблицею",
@@ -354,50 +354,50 @@ export const uk: Messages = {
 
   // bulk
   "bulk.clearIgnoreTitle": "Прибрати ігноровані області у вибраних",
-  "bulk.approveTitle": "Прийняти знімки",
-  "bulk.rejectTitle": "Відхилити знімки",
-  "bulk.deleteTitle": "Видалити знімки",
-  "bulk.downloadTitle": "Завантажити знімки",
+  "bulk.approveTitle": "Прийняти екрани",
+  "bulk.rejectTitle": "Відхилити екрани",
+  "bulk.deleteTitle": "Видалити екрани",
+  "bulk.downloadTitle": "Завантажити екрани",
   "bulk.approve": "Прийняти",
   "bulk.reject": "Відхилити",
   "bulk.delete": "Видалити",
   "bulk.download": "Завантажити",
   "bulk.clear": "Прибрати",
   "bulk.approveConfirm": {
-    one: "Прийняти {count} знімок?",
-    few: "Прийняти {count} знімки?",
-    many: "Прийняти {count} знімків?",
-    other: "Прийняти {count} знімка?",
+    one: "Прийняти {count} екран?",
+    few: "Прийняти {count} екрани?",
+    many: "Прийняти {count} екранів?",
+    other: "Прийняти {count} екрана?",
   },
   "bulk.rejectConfirm": {
-    one: "Відхилити {count} знімок?",
-    few: "Відхилити {count} знімки?",
-    many: "Відхилити {count} знімків?",
-    other: "Відхилити {count} знімка?",
+    one: "Відхилити {count} екран?",
+    few: "Відхилити {count} екрани?",
+    many: "Відхилити {count} екранів?",
+    other: "Відхилити {count} екрана?",
   },
   "bulk.deleteConfirm": {
-    one: "Видалити {count} знімок?",
-    few: "Видалити {count} знімки?",
-    many: "Видалити {count} знімків?",
-    other: "Видалити {count} знімка?",
+    one: "Видалити {count} екран?",
+    few: "Видалити {count} екрани?",
+    many: "Видалити {count} екранів?",
+    other: "Видалити {count} екрана?",
   },
   "bulk.downloadConfirm": {
-    one: "Завантажити зображення {count} знімка?",
-    few: "Завантажити зображення {count} знімків?",
-    many: "Завантажити зображення {count} знімків?",
-    other: "Завантажити зображення {count} знімка?",
+    one: "Завантажити зображення {count} екрана?",
+    few: "Завантажити зображення {count} екранів?",
+    many: "Завантажити зображення {count} екранів?",
+    other: "Завантажити зображення {count} екрана?",
   },
   "bulk.clearConfirm": {
-    one: "Прибрати ігноровані області в {count} знімку?",
-    few: "Прибрати ігноровані області в {count} знімках?",
-    many: "Прибрати ігноровані області в {count} знімках?",
-    other: "Прибрати ігноровані області в {count} знімка?",
+    one: "Прибрати ігноровані області на {count} екрані?",
+    few: "Прибрати ігноровані області на {count} екранах?",
+    many: "Прибрати ігноровані області на {count} екранах?",
+    other: "Прибрати ігноровані області на {count} екрана?",
   },
   "bulk.processed": {
-    one: "Оброблено {count} знімок.",
-    few: "Оброблено {count} знімки.",
-    many: "Оброблено {count} знімків.",
-    other: "Оброблено {count} знімка.",
+    one: "Оброблено {count} екран.",
+    few: "Оброблено {count} екрани.",
+    many: "Оброблено {count} екранів.",
+    other: "Оброблено {count} екрана.",
   },
   "bulk.approveRows": "Прийняти ті, що чекають рішення, у вибраних рядках.",
   "bulk.approveCards": "Прийняти ті, що чекають рішення, у вибраних картках.",
@@ -424,7 +424,7 @@ export const uk: Messages = {
   "baselines.deleteOf": "Видалити {device}",
   "baselines.empty": "Тут ще немає еталонів",
   "baselines.emptyHint":
-    "Еталони з’являються після першого прийнятого знімка — або жоден не відповідає фільтрам.",
+    "Еталони з’являються після першого прийнятого екрана — або жоден не відповідає фільтрам.",
   "baselines.deleteTitle": "Видалити еталон",
   "baselines.delete": "Видалити",
   "baselines.deleteConfirm": "Видалити еталон «{name}»?",
@@ -439,7 +439,7 @@ export const uk: Messages = {
   "baselines.thisOne": "Вибраний",
   "baselines.beforeIt": "Попередній",
   "baselines.nothingBefore": "Раніше еталонів не було",
-  "baselines.testRun": "Знімок",
+  "baselines.testRun": "Екран",
   "baselines.tag.os": "ОС",
   "baselines.tag.device": "Пристрій",
   "baselines.tag.customTags": "Теги",
@@ -477,7 +477,7 @@ export const uk: Messages = {
   "review.toggleDiffLabel": "Показати різницю",
   "review.step": "Крок {current}/{total}: ",
   "review.fadeHelp":
-    "Зробити знімок прозорим, щоб крізь нього було видно еталон",
+    "Зробити поточний прозорим, щоб крізь нього було видно еталон",
   "review.fade": "Злиття",
   "review.fadeLabel": "Прозорість до еталона",
   "review.blendHelp":
@@ -496,7 +496,7 @@ export const uk: Messages = {
   "review.applyIgnoreConfirm":
     "Усі зображення поточної збірки буде порівняно заново з урахуванням нової ігнорованої області. Продовжити?",
   "review.baseline": "Еталон",
-  "review.checkpoint": "Знімок",
+  "review.checkpoint": "Поточний",
   "review.loading": "Завантаження…",
   "review.branch": "Гілка: {branch}",
   "review.uploadIgnore":
@@ -542,7 +542,7 @@ export const uk: Messages = {
   "panel.noSuggestions": "Пропозицій немає",
   "panel.copied": "Скопійовано",
   "panel.ignoreAreaAdded":
-    "Ігноровану область додано; знімок порівнюється заново",
+    "Ігноровану область додано; екран порівнюється заново",
   "panel.new": "Нова",
   "panel.existing": "Наявна",
   "panel.bug": "Баг ",
@@ -566,10 +566,10 @@ export const uk: Messages = {
   "panel.linkExisting": "Прив’язати наявний",
   "panel.falsePositive": "Хибна знахідка",
   "panel.noTree":
-    "Для аналізу доступності потрібне UI-дерево. Надсилайте зі знімком Appium page source (у Java SDK: {code}).",
+    "Для аналізу доступності потрібне UI-дерево. Надсилайте разом з екраном Appium page source (у Java SDK: {code}).",
   "panel.treeFailed":
-    "Для аналізу доступності потрібне UI-дерево, а дерево цього знімка не вдалося прочитати.",
-  "panel.highlightOnScreenshot": "Підсвічувати на знімку",
+    "Для аналізу доступності потрібне UI-дерево, а дерево цього екрана не вдалося прочитати.",
+  "panel.highlightOnScreenshot": "Підсвічувати на поточному",
   "panel.checkedFrom": "Перевірено за UI-деревом {platform}.",
   "panel.newCount": "нових: {count}",
   "panel.compared":
@@ -595,10 +595,10 @@ export const uk: Messages = {
   "panel.restore": "Повернути",
   "panel.ruleAddedProject":
     "Правило додано для всіх екранів; збірка порівнюється заново",
-  "panel.ruleAdded": "Правило додано; знімок порівнюється заново",
+  "panel.ruleAdded": "Правило додано; екран порівнюється заново",
   "panel.ignore": "Ігнорувати",
   "panel.noDetails": "Подробиць про цю зміну немає.",
-  "panel.invisible": "Зміни, яких не видно на знімку",
+  "panel.invisible": "Зміни, яких не видно в пікселях",
   "panel.ignoreArea": "Ігнорувати область",
   "panel.spots": "Змінено в {count} місцях",
   "panel.areaAt": "{width} × {height} px у точці {x}, {y}",
@@ -631,8 +631,8 @@ export const uk: Messages = {
   "panel.ignoreElement": "Ігнорувати елемент",
   "panel.element": "Елемент",
   "panel.elementPlaceholder": "Почніть вводити: Pay, balance, toolbar…",
-  "panel.foundBy": "Знайдено за {by}, обведено на знімку",
-  "panel.noElements": "На цьому знімку немає елементів для вибору",
+  "panel.foundBy": "Знайдено за {by}, обведено на поточному",
+  "panel.noElements": "На цьому екрані немає елементів для вибору",
   "panel.hideSelector": "Сховати селектор",
   "panel.matchDifferently": "Інший спосіб пошуку",
   "panel.selector": "Селектор",
@@ -660,16 +660,15 @@ export const uk: Messages = {
   "groups.noise": "Мабуть, шум",
   "groups.open": "Відкрити {name} {variant}",
   "groups.hiddenHelp":
-    "Елементи змінилися так, що на знімку цього не видно: підписи, стани, невидимі елементи",
+    "Елементи змінилися так, що в пікселях цього не видно: підписи, стани, невидимі елементи",
   "groups.hidden": "невидимих: {count}",
   "groups.loadFailed": "Не вдалося завантажити групи змін: {error}",
-  "groups.ignoreAdded": "Ігноровану область додано; знімки порівнюються заново",
+  "groups.ignoreAdded": "Ігноровану область додано; екрани порівнюються заново",
   "groups.empty": "У цій збірці нічого не чекає рішення",
-  "groups.emptyHint":
-    "Кожен знімок збігається з еталоном або вже переглянутий.",
+  "groups.emptyHint": "Кожен екран збігається з еталоном або вже переглянутий.",
   "groups.collapse": "Згорнути групу",
   "groups.expand": "Розгорнути групу",
-  "groups.newScreenshots": "Нові знімки",
+  "groups.newScreenshots": "Нові екрани",
   "groups.withoutBaseline": "без еталона: {count}",
   "groups.sameOnScreens": {
     one: "Однаково змінилося на {count} екрані",
@@ -678,12 +677,12 @@ export const uk: Messages = {
     other: "Однаково змінилося на {count} екрана",
   },
   "groups.sameChange": {
-    one: "Однакова зміна в {count} знімку",
-    few: "Однакова зміна в {count} знімках",
-    many: "Однакова зміна в {count} знімках",
-    other: "Однакова зміна в {count} знімка",
+    one: "Однакова зміна на {count} екрані",
+    few: "Однакова зміна на {count} екранах",
+    many: "Однакова зміна на {count} екранах",
+    other: "Однакова зміна на {count} екрана",
   },
-  "groups.oneScreenshot": "1 знімок",
+  "groups.oneScreenshot": "1 екран",
   "groups.screens": {
     one: " · {count} екран",
     few: " · {count} екрани",
@@ -703,16 +702,16 @@ export const uk: Messages = {
   "groups.openFirst": "Відкрийте перший, щоб пройти всі по черзі",
   "groups.more": "і ще {count}",
   "groups.approveTitle": {
-    one: "Прийняти {count} знімок?",
-    few: "Прийняти {count} знімки?",
-    many: "Прийняти {count} знімків?",
-    other: "Прийняти {count} знімка?",
+    one: "Прийняти {count} екран?",
+    few: "Прийняти {count} екрани?",
+    many: "Прийняти {count} екранів?",
+    other: "Прийняти {count} екрана?",
   },
   "groups.rejectTitle": {
-    one: "Відхилити {count} знімок?",
-    few: "Відхилити {count} знімки?",
-    many: "Відхилити {count} знімків?",
-    other: "Відхилити {count} знімка?",
+    one: "Відхилити {count} екран?",
+    few: "Відхилити {count} екрани?",
+    many: "Відхилити {count} екранів?",
+    other: "Відхилити {count} екрана?",
   },
   "groups.approveText":
     "Вони стануть новими еталонами для своїх екранів і пристроїв.",
@@ -748,7 +747,7 @@ export const uk: Messages = {
   "bug.theClass": "цього класу",
   "bug.labels": "Мітки:",
   "bug.description":
-    "Опис: сервіс, екран, фактичний і очікуваний результат, пристрій, елемент; знімок з обведеною проблемою.",
+    "Опис: сервіс, екран, фактичний і очікуваний результат, пристрій, елемент; поточний екран з обведеною проблемою.",
   "bug.onePerProblem":
     " Один баг на проблему: та сама знахідка на кількох елементах одного компонента потрапить в один баг з усіма ними.",
   "bug.existingFiled":
@@ -779,14 +778,14 @@ export const uk: Messages = {
   // a11ySummary
   "a11ySummary.empty": "У цій збірці немає даних про доступність",
   "a11ySummary.emptyHint":
-    "Доступність перевіряється, коли знімок надходить разом з Appium page source. У Java чи Kotlin додайте {code} до TestRunOptions; для ручного тестування скористайтеся CLI (меню довідки, «Ручні перевірки»).",
+    "Доступність перевіряється, коли екран надходить разом з Appium page source. У Java чи Kotlin додайте {code} до TestRunOptions; для ручного тестування скористайтеся CLI (меню довідки, «Ручні перевірки»).",
   "a11ySummary.newHint":
     "Порівняно з еталоном кожного екрана: лише те, що з'явилося в цій збірці. Заведені баги й хибні знахідки не рахуються.",
   "a11ySummary.ofScreenshots": {
-    one: "з {count} знімка",
-    few: "з {count} знімків",
-    many: "з {count} знімків",
-    other: "з {count} знімка",
+    one: "з {count} екрана",
+    few: "з {count} екранів",
+    many: "з {count} екранів",
+    other: "з {count} екрана",
   },
   "a11ySummary.newIssues": "Нові знахідки",
   "a11ySummary.openIssues": "Усі відкриті знахідки",
@@ -796,7 +795,7 @@ export const uk: Messages = {
   "a11ySummary.device": "Пристрій",
   "a11ySummary.new": "Нові",
   "a11ySummary.open": "Відкриті",
-  "a11ySummary.screenshot": "Знімок",
+  "a11ySummary.screenshot": "Статус",
 
   // insights
   "insights.deleted": {
@@ -814,7 +813,7 @@ export const uk: Messages = {
   "insights.historyFrom": "Історія з {date}",
   "insights.baselines": "еталонів",
   "insights.unusedFor": "не використовуються",
-  "insights.changedOf": "з {count} знімків змінилися",
+  "insights.changedOf": "з {count} екранів змінилися",
   "insights.flips": "повернень",
   "insights.a11yIssues": "знахідок доступності",
   "insights.waiting": "чекають рішення",
@@ -840,14 +839,14 @@ export const uk: Messages = {
     "Повернення — екран змінився й знову збігся з еталоном. Анімації, дані, час.",
   "insights.noUnstable": "Нестабільних екранів немає.",
   "insights.devices": "Пристрої",
-  "insights.runs": "Знімки",
+  "insights.runs": "Екрани",
   "insights.changed": "Змінилися",
   "insights.flipsColumn": "Повернення",
   "insights.rejected": "Відхилено",
   "insights.newBaselines": "Нові еталони",
   "insights.lastChange": "Остання зміна",
   "insights.hotspots": "Гарячі точки доступності",
-  "insights.hotspotsHint": "Найбільше знахідок у найновішому знімку.",
+  "insights.hotspotsHint": "Найбільше знахідок в останній версії екрана.",
   "insights.noHotspots": "Знахідок немає або немає UI-дерев.",
   "insights.issues": "Знахідки",
   "insights.new": "Нові",
@@ -861,12 +860,12 @@ export const uk: Messages = {
   "insights.noiseHint":
     "Крихітні зміни (менше 0,2 %), які раз у раз приймають: їх зупинить допуск або правило елемента.",
   "insights.noNoise": "Такого шуму немає.",
-  "insights.tinyApproved": "прийнято крихітних змін: {count} за {runs} знімків",
+  "insights.tinyApproved": "прийнято крихітних змін: {count} за {runs} екранів",
   "insights.quality": "Невидимі зміни",
   "insights.qualityHint": "Елементи змінились, а пікселі — ні.",
   "insights.noQuality": "Жоден екран не вирізняється.",
   "insights.withHidden": "з невидимими змінами: {count}",
-  "insights.ofRuns": "з {count} знімків",
+  "insights.ofRuns": "з {count} екранів",
   "insights.coverage": "Покриття пристроїв",
   "insights.coverageHint": "Перевірки основної гілки, яких бракує на пристрої.",
   "insights.fullCoverage": "Кожен пристрій запускає кожну перевірку.",
@@ -1066,7 +1065,7 @@ export const uk: Messages = {
   "tour.noBuilds":
     "Якщо бачите «Збірок немає», запустіть порівняння зображень з будь-якого клієнта.",
   "tour.buildDetails": "Коротко про вибрану збірку.",
-  "tour.testRuns": "Знімки вибраної збірки.",
+  "tour.testRuns": "Екрани вибраної збірки.",
   "tour.variationsTitle":
     "Уся історія еталонів за назвою, гілкою, ОС, браузером, розміром екрана й пристроєм",
   "tour.variationsProject": "Виберіть проєкт, з яким працюватимете.",
@@ -1080,16 +1079,16 @@ export const uk: Messages = {
   "undo.approved": "Прийнято",
   "undo.rejected": "Відхилено",
   "undo.approvedMany": {
-    one: "Прийнято {count} знімок",
-    few: "Прийнято {count} знімки",
-    many: "Прийнято {count} знімків",
-    other: "Прийнято {count} знімка",
+    one: "Прийнято {count} екран",
+    few: "Прийнято {count} екрани",
+    many: "Прийнято {count} екранів",
+    other: "Прийнято {count} екрана",
   },
   "undo.rejectedMany": {
-    one: "Відхилено {count} знімок",
-    few: "Відхилено {count} знімки",
-    many: "Відхилено {count} знімків",
-    other: "Відхилено {count} знімка",
+    one: "Відхилено {count} екран",
+    few: "Відхилено {count} екрани",
+    many: "Відхилено {count} екранів",
+    other: "Відхилено {count} екрана",
   },
   "undo.undone": "Скасовано",
   "undo.failed": "Не вдалося скасувати: {error}",
@@ -1112,7 +1111,7 @@ export const uk: Messages = {
     "Ключ — ваш власний (сторінка профілю); щоб надсилати, потрібна роль редактора. Перевірки йдуть у гілку «manual» і порівнюються з еталонами основної гілки. Щоб порівнювати з еталонами автотестів піксель за пікселем, додайте --device і --os з тими самими назвами, що в автотестах.",
   "manual.step3": "Перевірте екран",
   "manual.sources":
-    "З підключеного пристрою Android. Інші джерела: --serial для одного з кількох пристроїв, --appium http://127.0.0.1:4723 для сесії Appium (Android чи iOS), --simulator для симулятора iOS (лише знімок), --png file.png --xml file.xml для збережених файлів. Кожен стан екрана — окрема перевірка: «Payment – error».",
+    "З підключеного пристрою Android. Інші джерела: --serial для одного з кількох пристроїв, --appium http://127.0.0.1:4723 для сесії Appium (Android чи iOS), --simulator для симулятора iOS (лише зображення), --png file.png --xml file.xml для збережених файлів. Кожен стан екрана — окрема перевірка: «Payment – error».",
   "manual.many": "Багато екранів в одній збірці",
   "manual.mcp": "З AI-асистента (MCP)",
   "manual.mcpHelp":
@@ -1157,10 +1156,10 @@ export const uk: Messages = {
   // panel
   "panel.removeProjectRuleTitle": "Прибрати правило для всіх екранів?",
   "panel.removeProjectRuleText":
-    "{selector} діє на всіх екранах проєкту. Без нього цей знімок і решту збірки буде порівняно заново.",
+    "{selector} діє на всіх екранах проєкту. Без нього цей екран і решту збірки буде порівняно заново.",
   "panel.removeRule": "Прибрати правило",
 
-  // вибір елементів на знімках (специфікація 024)
+  // вибір елементів на екранах (специфікація 024)
   "select.button": "Обрати елементи",
   "select.hint": "Натисніть на елемент · із Shift — додати ще",
   "select.adding": "Натискайте елементи, щоб додати чи прибрати",
@@ -1184,7 +1183,7 @@ export const uk: Messages = {
   "select.relation.parent": "батько {anchor}",
   "select.relation.ancestor": "предок {anchor}",
   "select.found": "знайдено {count}",
-  "panel.matchCount": "{baseline} на еталоні · {current} на знімку",
+  "panel.matchCount": "{baseline} на еталоні · {current} на поточному",
   "panel.selectorProblem.prefix": "Почніть з id:, class:, text: або xpath:",
   "panel.selectorProblem.syntax": "Цей XPath не розбирається",
   "panel.selectorProblem.anchor":
@@ -1206,12 +1205,12 @@ export const uk: Messages = {
   "select.confirmRemove": "Прибрати на всіх екранах",
   "select.noTree": "Для вибору елементів потрібне UI-дерево",
   "select.added": {
-    one: "Правило додано; знімок порівнюється заново",
-    few: "Додано {count} правила; знімок порівнюється заново",
-    many: "Додано {count} правил; знімок порівнюється заново",
-    other: "Додано {count} правила; знімок порівнюється заново",
+    one: "Правило додано; екран порівнюється заново",
+    few: "Додано {count} правила; екран порівнюється заново",
+    many: "Додано {count} правил; екран порівнюється заново",
+    other: "Додано {count} правила; екран порівнюється заново",
   },
-  "select.removed": "Правило прибрано; знімок порівнюється заново",
+  "select.removed": "Правило прибрано; екран порівнюється заново",
   "select.addMore": "Додати ще елементи",
   "select.addMoreShift": "або Shift + клік",
   "select.variable": "Нестабільний текст",
@@ -1221,9 +1220,9 @@ export const uk: Messages = {
   "select.variablePattern": "Формат: {pattern}",
   "select.variableOther": "{side} тут «{text}» — не підійде.",
   "select.variableSideBaseline": "В еталоні",
-  "select.variableSideCurrent": "На знімку",
+  "select.variableSideCurrent": "На поточному",
   "select.variableNoAnchor":
-    "Наступного прогону цей елемент не знайти: у нього немає id, а в тексті й вище немає нічого незмінного.",
+    "У наступній збірці цей елемент не знайти: у нього немає id, а в тексті й вище немає нічого незмінного.",
   "select.variableNoText": "У елемента немає тексту",
   "select.variableOne": "Нестабільний текст позначається для одного елемента",
   "select.variableSave": "Зберегти",
@@ -1244,7 +1243,7 @@ export const uk: Messages = {
   },
   "selection.removeRules": "Прибрати правила: {count}",
   "selection.rulesRemoved":
-    "Правил прибрано: {count}; знімок порівнюється заново",
+    "Правил прибрано: {count}; екран порівнюється заново",
   "selection.mixed":
     "У них різні правила: щоб прибрати правило, оберіть елемент один",
   "selection.failed": "Правило для {element} не збереглося: {error}",
@@ -1266,9 +1265,9 @@ export const uk: Messages = {
   "areas.save": "Зберегти області",
   "areas.discard": "Відкинути",
   "areas.unsavedTitle": "Зберегти області?",
-  "areas.unsavedText": "Області на цьому знімку змінено, але ще не збережено.",
+  "areas.unsavedText": "Області на цьому екрані змінено, але ще не збережено.",
   "areas.replaced":
-    "Область замінено правилом для {element}; знімок порівнюється заново",
+    "Область замінено правилом для {element}; екран порівнюється заново",
 
   // що порівнюється (специфікація 024)
   "compared.whole": "Увесь екран",
@@ -1308,18 +1307,18 @@ export const uk: Messages = {
   "compared.variable.textDiffers": "текст інший",
   "compared.variable.tooLong": "задовгий",
   "compared.variable.gone": "зник",
-  "compared.variable.notChecked": "не перевірено: у знімку немає UI-дерева",
+  "compared.variable.notChecked": "не перевірено: у поточного немає UI-дерева",
   "compared.variable.overridden": "його ігнорує інше правило",
   "compared.variable.expected": "Очікувалось:",
   "compared.variable.sameShape": "або інше значення такого ж вигляду",
   "compared.variable.more": "і ще {count}",
   "compared.variable.failedHelp":
-    "Якщо це баг, відхиліть знімок. Якщо текст змінився навмисно, оберіть елемент і змініть перевірку: прийняття знімка правило не змінює.",
+    "Якщо це баг, відхиліть екран. Якщо текст змінився навмисно, оберіть елемент і змініть перевірку: прийняття екрана правило не змінює.",
   "compared.outsideHint": "поза порівнюваним",
   "compared.outsideHelp":
     "Вони лежать поза обраними елементами, тож нічого не змінюють. Діятимуть знову, якщо прибрати «Порівнювати лише».",
   "compared.nothingFoundHelp":
-    "Вони нічого не знайшли ні на цьому знімку, ні в еталоні.",
+    "Вони нічого не знайшли ні на поточному, ні в еталоні.",
   "compared.reason.nothingFound": "нічого не знайдено",
   "compared.reason.noTree": "немає UI-дерева",
   "compared.source.screen": "цей екран",
@@ -1329,7 +1328,7 @@ export const uk: Messages = {
   "compared.source.testSetting": "тест",
   "compared.source.projectSetting": "проєкт",
   "compared.systemBars": "Статус-бар і навігаційна панель",
-  "compared.foundBoth": "знайдено в еталоні й на знімку",
+  "compared.foundBoth": "знайдено в еталоні й на поточному",
   "compared.state.same": "без змін",
   "compared.state.changed": "змінено",
   "compared.state.disappeared": "зник",
@@ -1337,14 +1336,14 @@ export const uk: Messages = {
   "compared.state.resized": "змінив розмір",
   "compared.state.nothingFound": "нічого не знайдено",
   "compared.oneTree.baseline":
-    "Елемент знайдено лише на знімку, тому в еталоні порівняно ту саму ділянку екрана. Якщо він зсунувся, це покажеться зміною. Коли приймете знімок, еталон отримає UI-дерево, і далі елемент шукатиметься, де б він не був.",
+    "Елемент знайдено лише на поточному, тому в еталоні порівняно ту саму ділянку екрана. Якщо він зсунувся, це покажеться зміною. Коли приймете екран, еталон отримає UI-дерево, і далі елемент шукатиметься, де б він не був.",
   "compared.oneTree.current":
-    "Елемент знайдено лише в еталоні, тому на знімку порівняно ту саму ділянку екрана. Якщо він зсунувся, це покажеться зміною. Наступний знімок з UI-деревом порівняє його, де б він не був.",
+    "Елемент знайдено лише в еталоні, тому на поточному порівняно ту саму ділянку екрана. Якщо він зсунувся, це покажеться зміною. Наступний екран з UI-деревом порівняє його, де б він не був.",
   "compared.problemHelp":
-    "Якщо це баг, відхиліть знімок. Якщо так і задумано, приберіть його з порівнюваного, і знімок перевіриться знову.",
+    "Якщо це баг, відхиліть екран. Якщо так і задумано, приберіть його з порівнюваного, і екран перевіриться знову.",
   "compared.removeFromCompared": "Прибрати з порівнюваного",
   "compared.removedFromCompared":
-    "Прибрано з порівнюваного; знімок порівнюється заново",
+    "Прибрано з порівнюваного; екран порівнюється заново",
   "compared.map": "Схема екрана: {summary}",
   "compared.changeWhat": "Змінити, що порівнюється:",
   "changes.title": "Що змінилось",
@@ -1363,16 +1362,16 @@ export const uk: Messages = {
   "verdict.noBaselineTree":
     "В еталона немає UI-дерева, тож Vision не може підтвердити, що це той самий елемент.",
   "verdict.noCurrentTree":
-    "Знімок прийшов без UI-дерева, тож Vision не може підтвердити, що це той самий елемент.",
+    "Поточний екран прийшов без UI-дерева, тож Vision не може підтвердити, що це той самий елемент.",
   "verdict.notApplied": "«Порівнювати лише» не застосовано",
   "verdict.notAppliedWhy":
-    "Ні знімок, ні еталон не мають UI-дерева, тож обрані елементи не знайти: порівнюється весь екран.",
+    "Ні поточний, ні еталон не мають UI-дерева, тож обрані елементи не знайти: порівнюється весь екран.",
   "verdict.nothingFound": "Нічого не порівнюється",
   "verdict.nothingFoundWhy":
-    "{selector} нічого не знайшов ні на знімку, ні в еталоні.",
+    "{selector} нічого не знайшов ні на поточному, ні в еталоні.",
   "verdict.disappeared": "Одного з обраних елементів немає",
   "verdict.disappearedWhy":
-    "{element} немає на знімку, тож порівнювати його нема з чим.",
+    "{element} немає на поточному, тож порівнювати його нема з чим.",
   "verdict.appeared": "З'явився новий обраний елемент",
   "verdict.appearedWhy":
     "{element} немає в еталоні, тож порівнювати його нема з чим.",
@@ -1386,7 +1385,7 @@ export const uk: Messages = {
   "verdict.variableWhyExpected": "Зараз «{text}», очікувалось як «{expected}».",
   "verdict.variableWhyMany": "Не пройшли {count} тексти, наприклад «{text}».",
   "verdict.variableGone": "Елемента немає",
-  "verdict.variableGoneWhy": "{element} немає на знімку.",
+  "verdict.variableGoneWhy": "{element} немає на поточному.",
   "compared.found": "{selector} · тут знайдено {current}, в еталоні {baseline}",
   "compared.more": "Інші дії",
   "compared.problem.nothingFound": "{selector} нічого не знайшов",
@@ -1399,15 +1398,15 @@ export const uk: Messages = {
   "reportBug.openHelp": "Завести баг у Jira про цей екран. Клавіша: B",
   "reportBug.needToken":
     "Додайте свій токен Jira в профілі, щоб заводити баги звідси.",
-  "reportBug.checkpoint": "Знімок",
+  "reportBug.checkpoint": "Поточний",
   "reportBug.baseline": "Еталон",
   "reportBug.markArea": "Область",
   "reportBug.pickElement": "Елемент",
   "reportBug.areaAt": "{width} × {height} px у {x}, {y}",
   "reportBug.removeMark": "Прибрати позначку",
   "reportBug.markHint":
-    "Обведіть місце на знімку або виберіть елемент, щоб показати, де проблема.",
-  "reportBug.marksOnCheckpoint": "Позначки ставляться на знімку.",
+    "Обведіть місце на поточному або виберіть елемент, щоб показати, де проблема.",
+  "reportBug.marksOnCheckpoint": "Позначки ставляться на поточному.",
   "reportBug.note": "Що не так? Своїми словами, для AI",
   "reportBug.notePlaceholder":
     "напр. кнопку оплати обрізано знизу; «Total due» — так задумано",
@@ -1420,7 +1419,7 @@ export const uk: Messages = {
   "reportBug.quick.misaligned": "Не вирівняно",
   "reportBug.changesItLooksAt": "Зміни, на які дивиться AI",
   "reportBug.aiGets":
-    "Gemini отримає вашу нотатку, вирізки еталона й знімка навколо {areas} обл., {changes} відмічених змін і назву перевірки. Не цілі знімки й не ваші токени.",
+    "Gemini отримає вашу нотатку, вирізки еталона й поточного навколо {areas} обл., {changes} відмічених змін і назву перевірки. Не цілі зображення й не ваші токени.",
   "reportBug.fillWithAi": "Заповнити з AI",
   "reportBug.askAgain": "Спитати ще раз",
   "reportBug.drafting": "Заповнює…",
@@ -1434,12 +1433,12 @@ export const uk: Messages = {
   "reportBug.field.expected": "Очікуваний результат",
   "reportBug.stepsPlaceholder": "1. …\n2. Відкрити екран фічі",
   "reportBug.screenshots":
-    "Знімок з позначками піде у фактичний результат, еталон — в очікуваний.",
+    "Поточний з позначками піде у фактичний результат, еталон — в очікуваний.",
   "reportBug.screenshotsNoBaseline":
-    "Знімок з позначками піде у фактичний результат; еталона в перевірки ще немає.",
+    "Поточний з позначками піде у фактичний результат; еталона в перевірки ще немає.",
   "reportBug.visionAdds":
     "Vision додасть перевірку, збірку й посилання на це порівняння, поставить мітку «vision» і візьме «Замовника» з таски.",
-  "reportBug.alsoReject": "Також відхилити знімок",
+  "reportBug.alsoReject": "Також відхилити екран",
   "reportBug.missing": {
     one: "Лишилось {count} обов’язкове поле: {fields}",
     few: "Лишилось {count} обов’язкові поля: {fields}",
@@ -1448,9 +1447,9 @@ export const uk: Messages = {
   },
   "reportBug.creating": "Створюю…",
   "reportBug.filed": "Заведено {key}",
-  "reportBug.filedRejected": "Заведено {key} · знімок відхилено",
+  "reportBug.filedRejected": "Заведено {key} · екран відхилено",
   "reportBug.openInJira": "Відкрити в Jira",
-  "reportBug.rejectFailed": "{key} заведено, але знімок не відхилено: {error}",
+  "reportBug.rejectFailed": "{key} заведено, але екран не відхилено: {error}",
   "reportBug.bugsForScreen": "Баги цього екрана",
   "reportBug.filedFrom": "Заведено {date}",
   "reportBug.bugMarks": "Позначки багів",
@@ -1482,7 +1481,7 @@ export const uk: Messages = {
   "overview.decided": "Вирішено",
   "overview.someone": "Хтось",
   "overview.personDecisions": "{approved} прийнято · {rejected} відхилено",
-  "overview.screens": "Знімки",
+  "overview.screens": "Екрани",
   "overview.waiting": "На перегляд",
   "overview.rejected": "Відхилено",
   "overview.a11yNew": "Нові проблеми доступності",
@@ -1581,7 +1580,7 @@ export const uk: Messages = {
   "report.screen": "Екран",
   "report.newIssues": "Нові проблеми",
   "report.baseline": "Еталон",
-  "report.checkpoint": "Знімок",
+  "report.checkpoint": "Поточний",
   "report.textTitle": "{project} · #{number} · {branch}",
   "report.textAsOf": "Стан на {time}",
 };

@@ -18,6 +18,6 @@ describe("undo", () => {
   it("says what was decided and for how many", () => {
     expect(decisionNotice("approve", 1)).toBe("Approved");
     expect(decisionNotice("reject", 1)).toBe("Rejected");
-    expect(decisionNotice("approve", 30)).toBe("Approved 30 screenshots");
+    expect(decisionNotice("approve", 30)).toBe("Approved 30 screens");
   });
 });

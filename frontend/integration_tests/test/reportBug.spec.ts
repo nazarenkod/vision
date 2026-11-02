@@ -210,7 +210,7 @@ test("rejects the checkpoint after filing when the box is ticked", async ({
   await page.getByTestId("createBug").click();
 
   await expect(
-    page.getByText("Filed MOB-77 · checkpoint rejected"),
+    page.getByText("Filed MOB-77 · screen rejected"),
   ).toBeVisible();
   // the customer is not sent: the server copies it from the task
   expect(filed).toMatchObject({

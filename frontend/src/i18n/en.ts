@@ -106,19 +106,18 @@ export const en = {
   "section.general": "General",
   "section.review": "Review",
   "section.comparison": "Image comparison",
-  "section.mobile": "Mobile screenshots",
+  "section.mobile": "Mobile screens",
   "section.a11y": "Accessibility",
   "section.jira": "Jira",
   "section.danger": "Danger zone",
   "section.devices": "Devices",
   "section.devicesIntro":
-    "Snapshots sent with the SDK from any other device or OS version fail in the test, so baselines are only made where CI runs. Manual checks from the CLI are not held to the list.",
+    "Screens sent with the SDK from any other device or OS version fail in the test, so baselines are only made where CI runs. Manual checks from the CLI are not held to the list.",
   "section.comparisonIntro":
-    "How a checkpoint is compared with its baseline. Below the engines: the settings of the one you pick.",
-  "section.mobileIntro":
-    "Applies to screenshots sent with an Appium page source.",
+    "How the current screen is compared with its baseline. Below the engines: the settings of the one you pick.",
+  "section.mobileIntro": "Applies to screens sent with an Appium page source.",
   "section.a11yIntro":
-    "What Vision checks on every screenshot sent with a UI tree, by your team's norms.",
+    "What Vision checks on every screen sent with a UI tree, by your team's norms.",
   "section.jiraIntro":
     "Lets reviewers file accessibility bugs from the review screen. Each person adds their own Jira token in their profile, so bugs are filed as them. A shared token here is used for people who have not added one.",
 
@@ -126,15 +125,15 @@ export const en = {
   "devices.os": "OS version",
   "devices.add": "Add",
   "devices.remove": "Remove",
-  "devices.none": "No list: snapshots from any device come in.",
+  "devices.none": "No list: screens from any device come in.",
   "devices.osHint": "Exact, or 26.* for any 26.x",
   "devices.missing": "Needs both a device and an OS",
   "devices.wildcard": "* only at the end of the OS, as in 26.*",
   "devices.duplicate": "Already in the list",
-  "devices.received": "Devices from snapshots",
+  "devices.received": "Devices from screens",
   "devices.receivedHint":
     "As the tests send them. Add the ones CI runs on before anything else.",
-  "devices.receivedNone": "No snapshots yet.",
+  "devices.receivedNone": "No screens yet.",
   "devices.notInList": "not in the list",
   "devices.allowed": "allowed",
 
@@ -143,7 +142,7 @@ export const en = {
   "general.buildCount": "Number of builds to keep",
   "general.branchLifetime": "Max branch lifetime (days)",
   "general.newProjectHint":
-    "Mobile screenshots, accessibility and Jira are set up in the project's settings, which open right after it is created.",
+    "Mobile screens, accessibility and Jira are set up in the project's settings, which open right after it is created.",
 
   "review.autoApprove": "Auto approve feature",
 
@@ -154,7 +153,7 @@ export const en = {
   "comparison.lookSameHelp":
     "Forgives anti-aliasing and the text caret. Good for text-heavy screens.",
   "comparison.odiffHelp":
-    "The fastest on big screenshots. Can fail on any layout change.",
+    "The fastest on big screens. Can fail on any layout change.",
   "comparison.vlmHelp":
     "Asks a vision model whether a change matters. Slower; needs a provider.",
   "comparison.allowDiffDimensions": "Allow diff dimensions",
@@ -209,7 +208,7 @@ export const en = {
   "comparison.useThinking": "Use Thinking",
   "comparison.useThinkingHelp": "Enable thinking mode for the VLM model.",
 
-  "mobile.title": "Mobile screenshots (UI tree)",
+  "mobile.title": "Mobile screens (UI tree)",
   "mobile.systemBars": "Leave out status and navigation bars",
   "mobile.systemBarsHelp": "Clock, battery and signal change on every run.",
   "mobile.moves": "Compare moved elements at their new place",
@@ -233,7 +232,7 @@ export const en = {
   "a11y.norm.iosOnly": "iOS only",
   "a11y.norm.advice": "advice, not counted",
   "a11y.norm.applies":
-    "A looser norm also hides issues on screenshots already received; a stricter one finds new issues from the next screenshots.",
+    "A looser norm also hides issues on screens already received; a stricter one finds new issues from the next screens.",
   "a11y.rule.touchTarget": "Touch target too small",
   "a11y.rule.lowContrast": "Low text contrast",
   "a11y.rule.missingLabel": "Control has no label",
@@ -305,7 +304,7 @@ export const en = {
     one: "Are you sure you want to delete {count} build(s)?",
     other: "Are you sure you want to delete {count} build(s)?",
   },
-  "builds.deleteManyHint": "This also removes their test runs.",
+  "builds.deleteManyHint": "This also removes their screens.",
   "builds.period": "{start} – {end}",
   "builds.statusBar":
     "{unresolved} unresolved, {failed} failed, {passed} passed",
@@ -320,14 +319,14 @@ export const en = {
   "runs.name": "Name",
   "runs.tags": "Tags",
   "runs.status": "Status",
-  "runs.noMatch": "No test runs match the filters",
+  "runs.noMatch": "No screens match the filters",
   "runs.cardsSelected": {
     one: "{count} card selected",
     other: "{count} cards selected",
   },
   "runs.cardsPerPage": "Cards per page:",
   "runs.selectBuild": "Select build from list",
-  "runs.selectAllRuns": "Select all runs",
+  "runs.selectAllRuns": "Select all screens",
   "runs.select": "Select {name}",
   "runs.table": "Table",
   "runs.tableView": "Table view",
@@ -349,10 +348,10 @@ export const en = {
 
   // bulk
   "bulk.clearIgnoreTitle": "Clear Ignore Area For Selected Items",
-  "bulk.approveTitle": "Approve Test Runs",
-  "bulk.rejectTitle": "Reject Test Runs",
-  "bulk.deleteTitle": "Delete Test Runs",
-  "bulk.downloadTitle": "Download Test Runs",
+  "bulk.approveTitle": "Approve screens",
+  "bulk.rejectTitle": "Reject screens",
+  "bulk.deleteTitle": "Delete screens",
+  "bulk.downloadTitle": "Download screens",
   "bulk.approve": "Approve",
   "bulk.reject": "Reject",
   "bulk.delete": "Delete",
@@ -379,8 +378,8 @@ export const en = {
     other: "Are you sure you want to clear {count} items?",
   },
   "bulk.processed": {
-    one: "{count} test runs processed.",
-    other: "{count} test runs processed.",
+    one: "{count} screen processed.",
+    other: "{count} screens processed.",
   },
   "bulk.approveRows": "Approve unresolved in selected rows.",
   "bulk.approveCards": "Approve unresolved in selected cards.",
@@ -402,7 +401,7 @@ export const en = {
   "baselines.deleteOf": "Delete {device}",
   "baselines.empty": "No baselines here",
   "baselines.emptyHint":
-    "Baselines appear after the first approved screenshot, or none match the filters.",
+    "Baselines appear after the first approved screen, or none match the filters.",
   "baselines.deleteTitle": "Delete baseline",
   "baselines.delete": "Delete",
   "baselines.deleteConfirm": "Are you sure you want to delete: {name}?",
@@ -417,7 +416,7 @@ export const en = {
   "baselines.thisOne": "This one",
   "baselines.beforeIt": "Before it",
   "baselines.nothingBefore": "Nothing before it",
-  "baselines.testRun": "Test Run",
+  "baselines.testRun": "Screen",
   "baselines.tag.os": "OS",
   "baselines.tag.device": "Device",
   "baselines.tag.customTags": "Custom Tags",
@@ -454,7 +453,8 @@ export const en = {
   "review.toggleDiff": "Toggle diff. Hotkey: D",
   "review.toggleDiffLabel": "Toggle diff",
   "review.step": "Step {current}/{total}: ",
-  "review.fadeHelp": "Fade the checkpoint out to see the baseline through it",
+  "review.fadeHelp":
+    "Fade the current screen out to see the baseline through it",
   "review.fade": "Fade",
   "review.fadeLabel": "Fade to the baseline",
   "review.blendHelp":
@@ -473,7 +473,7 @@ export const en = {
   "review.applyIgnoreConfirm":
     "All images in the current build will be re-compared with new ignore area taken into account. Are you sure?",
   "review.baseline": "Baseline",
-  "review.checkpoint": "Checkpoint",
+  "review.checkpoint": "Current",
   "review.loading": "Loading...",
   "review.branch": "Branch: {branch}",
   "review.uploadIgnore":
@@ -515,8 +515,7 @@ export const en = {
   "panel.linked": "Linked {key}",
   "panel.noSuggestions": "No suggestions",
   "panel.copied": "Copied",
-  "panel.ignoreAreaAdded":
-    "Ignore area added; the screenshot is compared again",
+  "panel.ignoreAreaAdded": "Ignore area added; the screen is compared again",
   "panel.new": "New",
   "panel.existing": "Existing",
   "panel.bug": "Bug ",
@@ -540,10 +539,10 @@ export const en = {
   "panel.linkExisting": "Link existing",
   "panel.falsePositive": "False positive",
   "panel.noTree":
-    "Accessibility is checked from the UI tree. Send the Appium page source with the screenshot (in the Java SDK: {code}).",
+    "Accessibility is checked from the UI tree. Send the Appium page source with the screen (in the Java SDK: {code}).",
   "panel.treeFailed":
-    "Accessibility is checked from the UI tree, and this screenshot's tree could not be read.",
-  "panel.highlightOnScreenshot": "Highlight on screenshot",
+    "Accessibility is checked from the UI tree, and this screen's tree could not be read.",
+  "panel.highlightOnScreenshot": "Highlight on current",
   "panel.checkedFrom": "Checked from the {platform} UI tree.",
   "panel.newCount": "{count} new",
   "panel.compared":
@@ -569,10 +568,10 @@ export const en = {
   "panel.restore": "Restore",
   "panel.ruleAddedProject":
     "Rule added for every screen; the build is compared again",
-  "panel.ruleAdded": "Rule added; the screenshot is compared again",
+  "panel.ruleAdded": "Rule added; the screen is compared again",
   "panel.ignore": "Ignore",
   "panel.noDetails": "No details about this change.",
-  "panel.invisible": "Changes the screenshot does not show",
+  "panel.invisible": "Changes the pixels do not show",
   "panel.ignoreArea": "Ignore area",
   "panel.spots": "Changed in {count} spots",
   "panel.areaAt": "{width} × {height} px at {x}, {y}",
@@ -605,8 +604,8 @@ export const en = {
   "panel.ignoreElement": "Ignore element",
   "panel.element": "Element",
   "panel.elementPlaceholder": "Type to search: Pay, balance, toolbar…",
-  "panel.foundBy": "Found by {by}, outlined on the screenshot",
-  "panel.noElements": "This screenshot has no elements to choose from",
+  "panel.foundBy": "Found by {by}, outlined on the current screen",
+  "panel.noElements": "This screen has no elements to choose from",
   "panel.hideSelector": "Hide selector",
   "panel.matchDifferently": "Match differently",
   "panel.selector": "Selector",
@@ -634,26 +633,25 @@ export const en = {
   "groups.noise": "Probably noise",
   "groups.open": "Open {name} {variant}",
   "groups.hiddenHelp":
-    "Elements changed in ways the screenshot does not show: labels, states, invisible controls",
+    "Elements changed in ways the pixels do not show: labels, states, invisible controls",
   "groups.hidden": "{count} hidden",
   "groups.loadFailed": "Cannot load change groups: {error}",
-  "groups.ignoreAdded": "Ignore area added; the screenshots are compared again",
+  "groups.ignoreAdded": "Ignore area added; the screens are compared again",
   "groups.empty": "Nothing needs a decision in this build",
-  "groups.emptyHint":
-    "Every screenshot matches its baseline or has been reviewed.",
+  "groups.emptyHint": "Every screen matches its baseline or has been reviewed.",
   "groups.collapse": "Collapse group",
   "groups.expand": "Expand group",
-  "groups.newScreenshots": "New screenshots",
+  "groups.newScreenshots": "New screens",
   "groups.withoutBaseline": "{count} without a baseline",
   "groups.sameOnScreens": {
     one: "Changed the same way on {count} screens",
     other: "Changed the same way on {count} screens",
   },
   "groups.sameChange": {
-    one: "Same change in {count} screenshots",
-    other: "Same change in {count} screenshots",
+    one: "Same change on {count} screen",
+    other: "Same change on {count} screens",
   },
-  "groups.oneScreenshot": "1 screenshot",
+  "groups.oneScreenshot": "1 screen",
   "groups.screens": { one: " · {count} screens", other: " · {count} screens" },
   "groups.ignoreStatusBar": "Ignore status bar",
   "groups.ignoreArea": "Ignore this area",
@@ -668,12 +666,12 @@ export const en = {
   "groups.openFirst": "Open the first one to step through all of them",
   "groups.more": "+ {count} more",
   "groups.approveTitle": {
-    one: "Approve {count} screenshot?",
-    other: "Approve {count} screenshots?",
+    one: "Approve {count} screen?",
+    other: "Approve {count} screens?",
   },
   "groups.rejectTitle": {
-    one: "Reject {count} screenshot?",
-    other: "Reject {count} screenshots?",
+    one: "Reject {count} screen?",
+    other: "Reject {count} screens?",
   },
   "groups.approveText":
     "They become the new baselines for their screens and devices.",
@@ -707,7 +705,7 @@ export const en = {
   "bug.theClass": "the class",
   "bug.labels": "Labels:",
   "bug.description":
-    "Description: service, screen, actual and expected result, device, element; screenshot with the problem outlined.",
+    "Description: service, screen, actual and expected result, device, element; the current screen with the problem outlined.",
   "bug.onePerProblem":
     " One bug per problem: the same issue on several elements of one component goes into one bug with all of them.",
   "bug.existingFiled":
@@ -736,12 +734,12 @@ export const en = {
   // a11ySummary
   "a11ySummary.empty": "No accessibility data in this build",
   "a11ySummary.emptyHint":
-    "Accessibility is checked when a screenshot comes with its Appium page source. In Java or Kotlin add {code} to the TestRunOptions; for manual testing use the CLI (help menu, Manual checks).",
+    "Accessibility is checked when a screen comes with its Appium page source. In Java or Kotlin add {code} to the TestRunOptions; for manual testing use the CLI (help menu, Manual checks).",
   "a11ySummary.newHint":
     "Compared with each screen's baseline: only issues this build introduced. Filed bugs and false positives do not count.",
   "a11ySummary.ofScreenshots": {
-    one: "of {count} screenshot",
-    other: "of {count} screenshots",
+    one: "of {count} screen",
+    other: "of {count} screens",
   },
   "a11ySummary.newIssues": "New issues",
   "a11ySummary.openIssues": "All open issues",
@@ -751,7 +749,7 @@ export const en = {
   "a11ySummary.device": "Device",
   "a11ySummary.new": "New",
   "a11ySummary.open": "Open issues",
-  "a11ySummary.screenshot": "Screenshot",
+  "a11ySummary.screenshot": "Status",
 
   // insights
   "insights.deleted": {
@@ -767,7 +765,7 @@ export const en = {
   "insights.historyFrom": "History from {date}",
   "insights.baselines": "baselines",
   "insights.unusedFor": "unused",
-  "insights.changedOf": "of {count} runs changed",
+  "insights.changedOf": "of {count} screens changed",
   "insights.flips": "flips",
   "insights.a11yIssues": "accessibility issues",
   "insights.waiting": "waiting for a decision",
@@ -793,14 +791,14 @@ export const en = {
     "Flip: the screen changed, then matched its baseline again. Animations, data, timing.",
   "insights.noUnstable": "No unstable screens.",
   "insights.devices": "Devices",
-  "insights.runs": "Runs",
+  "insights.runs": "Screens",
   "insights.changed": "Changed",
   "insights.flipsColumn": "Flips",
   "insights.rejected": "Rejected",
   "insights.newBaselines": "New baselines",
   "insights.lastChange": "Last change",
   "insights.hotspots": "Accessibility hotspots",
-  "insights.hotspotsHint": "Most issues in the newest screenshot.",
+  "insights.hotspotsHint": "Most issues in the latest version of the screen.",
   "insights.noHotspots": "No issues, or no UI trees.",
   "insights.issues": "Issues",
   "insights.new": "New",
@@ -814,12 +812,12 @@ export const en = {
   "insights.noiseHint":
     "Tiny changes (under 0.2 %) approved again and again: a tolerance or an element rule stops them.",
   "insights.noNoise": "No such noise.",
-  "insights.tinyApproved": "{count} tiny changes approved in {runs} runs",
+  "insights.tinyApproved": "{count} tiny changes approved in {runs} screens",
   "insights.quality": "Hidden changes",
   "insights.qualityHint": "Elements changed where the pixels did not.",
   "insights.noQuality": "No screen stands out.",
   "insights.withHidden": "{count} with hidden changes",
-  "insights.ofRuns": "of {count} runs",
+  "insights.ofRuns": "of {count} screens",
   "insights.coverage": "Device coverage",
   "insights.coverageHint": "Main-branch checks a device is missing.",
   "insights.fullCoverage": "Every device runs every check.",
@@ -1011,7 +1009,7 @@ export const en = {
   "tour.noBuilds":
     "If you see 'No Builds', please run your image comparison from any client.",
   "tour.buildDetails": "Brief details for selected build.",
-  "tour.testRuns": "TestRuns for selected build.",
+  "tour.testRuns": "Screens of the selected build.",
   "tour.variationsTitle":
     "Shows all the historical record of baselines by Name + Branch + OS + Browser + Viewport + Device",
   "tour.variationsProject": "Select the project you want to act on.",
@@ -1025,12 +1023,12 @@ export const en = {
   "undo.approved": "Approved",
   "undo.rejected": "Rejected",
   "undo.approvedMany": {
-    one: "Approved {count} screenshots",
-    other: "Approved {count} screenshots",
+    one: "Approved {count} screen",
+    other: "Approved {count} screens",
   },
   "undo.rejectedMany": {
-    one: "Rejected {count} screenshots",
-    other: "Rejected {count} screenshots",
+    one: "Rejected {count} screen",
+    other: "Rejected {count} screens",
   },
   "undo.undone": "Undone",
   "undo.failed": "Could not undo: {error}",
@@ -1053,7 +1051,7 @@ export const en = {
     "The key is yours (profile page); sending needs the editor role. Checks go to the branch “manual” and are compared with the main branch’s baselines. To compare with the autotests’ baselines pixel by pixel, add --device and --os named as in the autotests.",
   "manual.step3": "Check a screen",
   "manual.sources":
-    "From the connected Android device. Other sources: --serial for one of several devices, --appium http://127.0.0.1:4723 for an Appium session (Android or iOS), --simulator for the iOS simulator (screenshot only), --png file.png --xml file.xml for saved files. A state of a screen is its own check: “Payment – error”.",
+    "From the connected Android device. Other sources: --serial for one of several devices, --appium http://127.0.0.1:4723 for an Appium session (Android or iOS), --simulator for the iOS simulator (image only), --png file.png --xml file.xml for saved files. A state of a screen is its own check: “Payment – error”.",
   "manual.many": "Many screens in one build",
   "manual.mcp": "From an AI assistant (MCP)",
   "manual.mcpHelp":
@@ -1096,10 +1094,10 @@ export const en = {
   // panel
   "panel.removeProjectRuleTitle": "Remove a rule for every screen?",
   "panel.removeProjectRuleText":
-    "{selector} applies to every screen of the project. Without it, this screenshot and the rest of the build are compared again.",
+    "{selector} applies to every screen of the project. Without it, this screen and the rest of the build are compared again.",
   "panel.removeRule": "Remove rule",
 
-  // selecting elements on the screenshots (spec 024)
+  // selecting elements on the screens (spec 024)
   "select.button": "Select elements",
   "select.hint": "Click an element · Shift-click to add more",
   "select.adding": "Click elements to add or take out",
@@ -1123,7 +1121,7 @@ export const en = {
   "select.relation.parent": "parent of {anchor}",
   "select.relation.ancestor": "ancestor of {anchor}",
   "select.found": "{count} found",
-  "panel.matchCount": "{baseline} on baseline · {current} on screenshot",
+  "panel.matchCount": "{baseline} on baseline · {current} on current",
   "panel.selectorProblem.prefix": "Start with id:, class:, text: or xpath:",
   "panel.selectorProblem.syntax": "This XPath does not parse",
   "panel.selectorProblem.anchor":
@@ -1159,7 +1157,7 @@ export const en = {
   "select.variableOther":
     "On the {side} it says “{text}” here — it will not fit.",
   "select.variableSideBaseline": "baseline",
-  "select.variableSideCurrent": "snapshot",
+  "select.variableSideCurrent": "current",
   "select.variableNoAnchor":
     "This element cannot be found next run: it has no id and nothing fixed in its text or above it.",
   "select.variableNoText": "The element has no text",
@@ -1200,8 +1198,7 @@ export const en = {
   "areas.save": "Save areas",
   "areas.discard": "Discard",
   "areas.unsavedTitle": "Save the areas?",
-  "areas.unsavedText":
-    "Areas on this screenshot changed and are not saved yet.",
+  "areas.unsavedText": "Areas on this screen changed and are not saved yet.",
   "areas.replaced": "Area replaced with a rule for {element}; compared again",
 
   // what is compared (spec 024)
@@ -1238,18 +1235,19 @@ export const en = {
   "compared.variable.textDiffers": "text differs",
   "compared.variable.tooLong": "too long",
   "compared.variable.gone": "gone",
-  "compared.variable.notChecked": "not checked: no UI tree on the snapshot",
+  "compared.variable.notChecked":
+    "not checked: the current screen has no UI tree",
   "compared.variable.overridden": "an ignore rule takes it",
   "compared.variable.expected": "Expected:",
   "compared.variable.sameShape": "or another value that looks the same",
   "compared.variable.more": "and {count} more",
   "compared.variable.failedHelp":
-    "If it is a bug, reject the snapshot. If the text changed on purpose, select the element and change the check: accepting the snapshot does not change the rule.",
+    "If it is a bug, reject the screen. If the text changed on purpose, select the element and change the check: accepting the screen does not change the rule.",
   "compared.outsideHint": "outside what is compared",
   "compared.outsideHelp":
     "They lie outside the chosen elements, so they change nothing. They apply again once Compare only is removed.",
   "compared.nothingFoundHelp":
-    "These found nothing on this screenshot or the baseline.",
+    "These found nothing on the current screen or the baseline.",
   "compared.reason.nothingFound": "nothing found",
   "compared.reason.noTree": "no UI tree",
   "compared.source.screen": "this screen",
@@ -1259,7 +1257,7 @@ export const en = {
   "compared.source.testSetting": "test",
   "compared.source.projectSetting": "project",
   "compared.systemBars": "Status and navigation bars",
-  "compared.foundBoth": "found on the baseline and the screenshot",
+  "compared.foundBoth": "found on the baseline and the current screen",
   "compared.state.same": "unchanged",
   "compared.state.changed": "changed",
   "compared.state.disappeared": "gone",
@@ -1267,11 +1265,11 @@ export const en = {
   "compared.state.resized": "resized",
   "compared.state.nothingFound": "nothing found",
   "compared.oneTree.baseline":
-    "The element was found only on the screenshot, so the same part of the baseline was compared. If it moved, that shows as a change. Once you accept this screenshot, the baseline gets the UI tree and the element is followed wherever it goes.",
+    "The element was found only on the current screen, so the same part of the baseline was compared. If it moved, that shows as a change. Once you accept this screen, the baseline gets the UI tree and the element is followed wherever it goes.",
   "compared.oneTree.current":
-    "The element was found only on the baseline, so the same part of this screenshot was compared. If it moved, that shows as a change. The next screenshot with a UI tree compares it wherever it is.",
+    "The element was found only on the baseline, so the same part of the current screen was compared. If it moved, that shows as a change. The next screen with a UI tree compares it wherever it is.",
   "compared.problemHelp":
-    "If this is a bug, reject the screenshot. If it is meant to be, remove it from what is compared and the screenshot is checked again.",
+    "If this is a bug, reject the screen. If it is meant to be, remove it from what is compared and the screen is checked again.",
   "compared.removeFromCompared": "Remove from what is compared",
   "compared.removedFromCompared":
     "Removed from what is compared; compared again",
@@ -1292,16 +1290,16 @@ export const en = {
   "verdict.noBaselineTree":
     "The baseline has no UI tree, so Vision cannot confirm it is the same element.",
   "verdict.noCurrentTree":
-    "This screenshot came without a UI tree, so Vision cannot confirm it is the same element.",
+    "The current screen came without a UI tree, so Vision cannot confirm it is the same element.",
   "verdict.notApplied": "Compare only did not apply",
   "verdict.notAppliedWhy":
-    "Neither the screenshot nor the baseline has a UI tree, so the chosen elements cannot be found: the whole screen is compared.",
+    "Neither the current screen nor the baseline has a UI tree, so the chosen elements cannot be found: the whole screen is compared.",
   "verdict.nothingFound": "Nothing is compared",
   "verdict.nothingFoundWhy":
-    "{selector} found nothing on the screenshot or the baseline.",
+    "{selector} found nothing on the current screen or the baseline.",
   "verdict.disappeared": "One of the chosen elements is gone",
   "verdict.disappearedWhy":
-    "{element} is not on the screenshot, so there is nothing to compare it with.",
+    "{element} is not on the current screen, so there is nothing to compare it with.",
   "verdict.appeared": "A chosen element is new",
   "verdict.appearedWhy":
     "{element} is not on the baseline, so there is nothing to compare it with.",
@@ -1315,7 +1313,7 @@ export const en = {
   "verdict.variableWhyExpected": "Now “{text}”, expected like “{expected}”.",
   "verdict.variableWhyMany": "{count} texts do not hold, for one: “{text}”.",
   "verdict.variableGone": "The element is gone",
-  "verdict.variableGoneWhy": "{element} is not on the snapshot.",
+  "verdict.variableGoneWhy": "{element} is not on the current screen.",
   "compared.found":
     "{selector} · {current} found here, {baseline} on the baseline",
   "compared.more": "More actions",
@@ -1330,15 +1328,15 @@ export const en = {
   "reportBug.openHelp": "File a Jira bug about this screen. Hotkey: B",
   "reportBug.needToken":
     "Add your Jira token in your profile to file bugs from here.",
-  "reportBug.checkpoint": "Checkpoint",
+  "reportBug.checkpoint": "Current",
   "reportBug.baseline": "Baseline",
   "reportBug.markArea": "Area",
   "reportBug.pickElement": "Element",
   "reportBug.areaAt": "{width} × {height} px at {x}, {y}",
   "reportBug.removeMark": "Remove mark",
   "reportBug.markHint":
-    "Drag on the screenshot or pick an element to show where the problem is.",
-  "reportBug.marksOnCheckpoint": "Marks go on the checkpoint.",
+    "Drag on the current screen or pick an element to show where the problem is.",
+  "reportBug.marksOnCheckpoint": "Marks go on the current screen.",
   "reportBug.note": "What is wrong? In your words, for AI",
   "reportBug.notePlaceholder":
     "e.g. the Pay button is cut off at the bottom; “Total due” is intended",
@@ -1351,7 +1349,7 @@ export const en = {
   "reportBug.quick.misaligned": "Not aligned",
   "reportBug.changesItLooksAt": "Changes it looks at",
   "reportBug.aiGets":
-    "Gemini gets your note, the baseline and checkpoint cut around {areas} area(s), {changes} ticked change(s) and the check’s name. Not the whole screenshots, not your tokens.",
+    "Gemini gets your note, the baseline and current cut around {areas} area(s), {changes} ticked change(s) and the check’s name. Not the whole images, not your tokens.",
   "reportBug.fillWithAi": "Fill with AI",
   "reportBug.askAgain": "Ask again",
   "reportBug.drafting": "Drafting…",
@@ -1365,22 +1363,22 @@ export const en = {
   "reportBug.field.expected": "Expected result",
   "reportBug.stepsPlaceholder": "1. …\n2. Open the screen of the feature",
   "reportBug.screenshots":
-    "The marked checkpoint goes into the actual result, the baseline into the expected one.",
+    "The marked current screen goes into the actual result, the baseline into the expected one.",
   "reportBug.screenshotsNoBaseline":
-    "The marked checkpoint goes into the actual result; this check has no baseline yet.",
+    "The marked current screen goes into the actual result; this check has no baseline yet.",
   "reportBug.visionAdds":
     "Vision adds the check, the build and a link back to this review, labels the bug “vision” and copies the customer from the task.",
-  "reportBug.alsoReject": "Also reject the checkpoint",
+  "reportBug.alsoReject": "Also reject the screen",
   "reportBug.missing": {
     one: "1 required field left: {fields}",
     other: "{count} required fields left: {fields}",
   },
   "reportBug.creating": "Creating…",
   "reportBug.filed": "Filed {key}",
-  "reportBug.filedRejected": "Filed {key} · checkpoint rejected",
+  "reportBug.filedRejected": "Filed {key} · screen rejected",
   "reportBug.openInJira": "Open in Jira",
   "reportBug.rejectFailed":
-    "{key} is filed, but the checkpoint was not rejected: {error}",
+    "{key} is filed, but the screen was not rejected: {error}",
   "reportBug.bugsForScreen": "Bugs for this screen",
   "reportBug.filedFrom": "Filed {date}",
   "reportBug.bugMarks": "Bug marks",
@@ -1473,7 +1471,7 @@ export const en = {
   "report.screen": "Screen",
   "report.newIssues": "New issues",
   "report.baseline": "Baseline",
-  "report.checkpoint": "Checkpoint",
+  "report.checkpoint": "Current",
   "report.textTitle": "{project} · #{number} · {branch}",
   "report.textAsOf": "As of {time}",
 } satisfies Record<string, Message>;

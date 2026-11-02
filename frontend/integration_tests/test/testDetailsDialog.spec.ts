@@ -185,7 +185,7 @@ test("keeps the review layout and its keys", async ({
 
   // the same parts in the same places as before the redesign
   await expect(page.getByText("Baseline", { exact: true })).toBeVisible();
-  await expect(page.getByText("Checkpoint", { exact: true })).toBeVisible();
+  await expect(page.getByText("Current", { exact: true })).toBeVisible();
   await expect(page.getByRole("tab", { name: "Accessibility" })).toBeVisible();
   await expect(page.getByRole("tab", { name: "Changes" })).toBeVisible();
   await expect(page.getByTestId("approveButton")).toBeVisible();
@@ -522,7 +522,7 @@ test("says accessibility needs the UI tree when it cannot be read", async ({
   await openProjectPage(project.id, build.id, run.id);
   await expect(
     page.getByText(
-      "Accessibility is checked from the UI tree, and this screenshot's tree could not be read.",
+      "Accessibility is checked from the UI tree, and this screen's tree could not be read.",
     ),
   ).toBeVisible();
 });

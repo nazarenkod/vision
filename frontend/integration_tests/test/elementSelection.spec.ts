@@ -1087,7 +1087,7 @@ test("shows what a typed selector finds and why it cannot be saved", async ({
   await form.getByRole("button", { name: "Match differently" }).click();
   const selector = form.getByLabel("Selector");
   await selector.fill("xpath://*[@resource-id='app:id/card']//*[2]");
-  await expect(form).toContainText("2 on baseline · 1 on screenshot");
+  await expect(form).toContainText("2 on baseline · 1 on current");
   await expect(form.getByRole("button", { name: "Add rule" })).toBeEnabled();
 
   await selector.fill("xpath://*[@text='Pay']/following-sibling::*[1]");

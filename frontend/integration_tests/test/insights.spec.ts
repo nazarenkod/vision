@@ -113,9 +113,9 @@ test("shows what the project history says", async ({
   await expect(page.getByRole("row", { name: /^Payment/ })).toContainText("6");
   await expect(page.getByText("Touch target too small")).toBeVisible();
   await expect(
-    page.getByText("4 tiny changes approved in 11 runs"),
+    page.getByText("4 tiny changes approved in 11 screens"),
   ).toBeVisible();
-  await expect(page.getByText("4 with hidden changes of 8 runs")).toBeVisible();
+  await expect(page.getByText("4 with hidden changes of 8 screens")).toBeVisible();
   await expect(page.getByText(/taken while loading/)).toHaveCount(0);
   await expect(
     page.getByText("Galaxy S23 · Android 14: 1 missing of 4"),

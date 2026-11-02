@@ -323,9 +323,9 @@ test("switches the queue from its menu", async ({ openProjectPage, page }) => {
   await expect(page.getByTestId("queuePosition")).toHaveText("1 / 3");
 
   await page.getByTestId("queueName").click();
-  await page.getByRole("menuitem", { name: /New screenshots/ }).click();
+  await page.getByRole("menuitem", { name: /New screens/ }).click();
 
-  await expect(page.getByTestId("queueName")).toHaveText("New screenshots");
+  await expect(page.getByTestId("queueName")).toHaveText("New screens");
   await expect(page.getByTestId("queuePosition")).toHaveText("1 / 1");
   await expect(page).toHaveURL(/testId=fresh/);
 });
@@ -343,11 +343,11 @@ test("sums up a finished queue and offers the next one", async ({
   await expect(done).toContainText("Image changed · done");
   await expect(done).toContainText("1 approved · 0 rejected");
   await expect(page.getByTestId("queueNext")).toContainText(
-    "Next: New screenshots · 1",
+    "Next: New screens · 1",
   );
 
   await page.keyboard.press("Enter");
-  await expect(page.getByTestId("queueName")).toHaveText("New screenshots");
+  await expect(page.getByTestId("queueName")).toHaveText("New screens");
   await expect(page).toHaveURL(/testId=fresh/);
   void openProjectPage;
 });
@@ -493,7 +493,7 @@ test("lays out the Accessibility tab like the Overview", async ({
     /only issues this build introduced/,
   );
   await expect(page.getByTestId("a11yCaption-checked")).toHaveText(
-    "of 4 screenshots",
+    "of 4 screens",
   );
 
   const rows = page.getByTestId("a11yScreen");

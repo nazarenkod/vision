@@ -427,7 +427,7 @@ test("can download images", async ({ openProjectPage }) => {
   await projectPage.modal.confirmBtn.click();
 
   await expect(projectPage.notification.message).toHaveText(
-    "2 test runs processed.",
+    "2 screens processed.",
   );
 });
 

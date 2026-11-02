@@ -873,7 +873,7 @@ test("dims the screenshot outside the compared elements", async ({
   await openChanges(page);
   // the run's saved and test areas lie outside the button: only it is compared
   await expect(page.getByTestId("comparedSummary")).toHaveText(
-    "Only 1 element",
+    "Only the chosen elements",
   );
 });
 
@@ -934,6 +934,8 @@ test("offers element actions on a changed area", async ({
   });
   await openChanges(page);
   const area = page.getByTestId("changedArea");
+  // the row's actions wait for the pointer (REQ-036-17)
+  await area.hover();
   await expect(area.getByRole("button", { name: "Ignore" })).toBeVisible();
   await area.getByTestId("changedAreaMore").click();
   await page.getByRole("menuitem", { name: "Compare only" }).click();

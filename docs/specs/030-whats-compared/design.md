@@ -82,8 +82,8 @@ flowchart LR
 
 | Вимога | Перевірка |
 |---|---|
-| REQ-030-01 | `frontend/src/_helpers/whatsCompared.helper.test.ts › says what came out and why` |
-| REQ-030-02 | `frontend/src/_helpers/whatsCompared.helper.test.ts › says nothing changed when the compared part matches` |
+| REQ-030-01 | `frontend/src/_helpers/whatsCompared.helper.test.ts › gives the count alone when there are changes` |
+| REQ-030-02 | `frontend/src/_helpers/whatsCompared.helper.test.ts › says nothing changed without a sentence that repeats it` |
 | REQ-030-03 | `frontend/src/_helpers/whatsCompared.helper.test.ts › counts the changes the list shows` |
 | REQ-030-04 | `frontend/src/_helpers/whatsCompared.helper.test.ts › puts a compare-only problem in the heading` |
 | REQ-030-05 | `frontend/integration_tests/test/elementRules.spec.ts › shows the result once, at the top of the Changes tab` |
@@ -104,5 +104,5 @@ flowchart LR
 | REQ-030-33 | `backend/src/ui-tree/compare-only.spec.ts › compares the whole screen when neither side has a tree`; `frontend/src/_helpers/whatsCompared.helper.test.ts › says the whole screen is compared when neither side has a tree`; `backend/src/ui-tree/ui-tree.service.spec.ts › never passes a compare-only run without a UI tree` |
 | REQ-030-40 | `frontend/src/_helpers/whatsCompared.helper.test.ts › tells which compared elements are gone, new or unchanged` |
 | REQ-030-41 | `frontend/integration_tests/test/elementRules.spec.ts › removes a gone element from what is compared, with Undo` |
-| REQ-030-50 | `frontend/integration_tests/test/elementRules.spec.ts › lists every change under one heading with its count` |
+| REQ-030-50 | `frontend/integration_tests/test/elementRules.spec.ts › says the count once and lists the changes straight under it` |
 | REQ-030-51 | `frontend/integration_tests/test/elementSelection.spec.ts › turns on element selection from the Changes tab` |

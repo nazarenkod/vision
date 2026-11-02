@@ -140,7 +140,7 @@ test("lists the rules for this screen and for every screen", async ({
   );
   // a rule that found nothing changes nothing in the summary; the run's saved and test areas count
   await expect(page.getByTestId("comparedSummary")).toHaveText(
-    "Whole screen except 2 places",
+    "Whole screen, with exceptions",
   );
 });
 
@@ -167,51 +167,110 @@ test("shows the result once, at the top of the Changes tab", async ({
   );
 });
 
-test("lists every change under one heading with its count", async ({
+const changed: StructureInfo = {
+  ...structure,
+  size: { width: 1080, height: 2400 },
+  regions: [
+    ...[100, 130, 160, 190, 220, 250, 280].map((y) => ({
+      region: { x: 0, y, width: 50, height: 20 },
+      key: "a",
+      element: 'Button "Next"',
+      resourceId: null,
+    })),
+    {
+      region: { x: 0, y: 900, width: 80, height: 40 },
+      key: null,
+      element: null,
+      resourceId: null,
+    },
+    {
+      region: { x: 1000, y: 900, width: 80, height: 40 },
+      key: null,
+      element: null,
+      resourceId: null,
+    },
+  ],
+  changes: [
+    {
+      kind: "text",
+      key: "balance",
+      element: 'TextView "Balance"',
+      resourceId: "com.bank:id/balance",
+      before: "1 200",
+      after: "1 250",
+      bounds: { x: 0, y: 400, width: 300, height: 40 },
+    },
+  ],
+};
+
+test("says the count once and lists the changes straight under it", async ({
   openProjectPage,
   page,
 }) => {
-  await withStructure(page, {
-    ...structure,
-    regions: [
-      {
-        region: { x: 0, y: 100, width: 50, height: 20 },
-        key: "a",
-        element: 'Button "Next"',
-        resourceId: null,
-      },
-      {
-        region: { x: 0, y: 130, width: 50, height: 20 },
-        key: "a",
-        element: 'Button "Next"',
-        resourceId: null,
-      },
-      {
-        region: { x: 0, y: 900, width: 80, height: 40 },
-        key: null,
-        element: null,
-        resourceId: null,
-      },
-    ],
-    changes: [
-      {
-        kind: "text",
-        key: "balance",
-        element: 'TextView "Balance"',
-        resourceId: "com.bank:id/balance",
-        before: "1 200",
-        after: "1 250",
-        bounds: { x: 0, y: 400, width: 300, height: 40 },
-      },
-    ],
-  });
+  await withStructure(page, changed);
   await openProjectPage(project.id, build.id, testRun.id);
-  await expect(page.getByTestId("verdictTitle")).toHaveText("3 changes");
+  // each spot outside the elements counts, as before (REQ-036-16)
+  await expect(page.getByTestId("verdictTitle")).toHaveText("4 changes");
+  await expect(page.getByTestId("verdictReason")).toHaveCount(0);
   const list = page.getByTestId("whatChanged");
-  await expect(list).toContainText("What changed");
-  await expect(list).toContainText("3");
-  await expect(list.getByTestId("changedArea")).toHaveCount(2);
-  await expect(list).toContainText("1 250");
+  await expect(list).not.toContainText("What changed");
+  await expect(list).not.toContainText("4");
+  const rows = list.getByTestId("changedArea");
+  await expect(rows.getByTestId("changedAreaName")).toHaveText([
+    "Next",
+    "Balance",
+    "2 spots outside elements",
+  ]);
+  await expect(rows.getByTestId("changedAreaWhat")).toHaveText([
+    "Changed in 7 spots",
+    "Text: “1 200” → “1 250”",
+    "Not part of any element",
+  ]);
+  // headings read as sentences, not capitals (REQ-036-30)
+  await expect(page.getByText("Comparison scope")).toHaveText(
+    "Comparison scope",
+    { useInnerText: true },
+  );
+});
+
+test("opens a row into its spots, five at a time", async ({
+  openProjectPage,
+  page,
+}) => {
+  await withStructure(page, changed);
+  await openProjectPage(project.id, build.id, testRun.id);
+  const next = page.getByTestId("changedArea").first();
+  await next.getByTestId("changedAreaToggle").click();
+  await expect(next.getByTestId("changedAreaToggle")).toHaveAttribute(
+    "aria-expanded",
+    "true",
+  );
+  await expect(next.getByTestId("changedPlace")).toHaveCount(5);
+  await expect(next.getByTestId("changedPlace").first()).toHaveText(
+    "50 × 20 px, top left",
+  );
+  await next.getByTestId("changedPlacesMore").click();
+  await expect(next.getByTestId("changedPlace")).toHaveCount(7);
+  await next.getByTestId("changedAreaToggle").click();
+  await expect(next.getByTestId("changedPlace")).toHaveCount(0);
+});
+
+test("folds the comparison scope while there are changes to look at", async ({
+  openProjectPage,
+  page,
+}) => {
+  await withStructure(page, changed);
+  await openProjectPage(project.id, build.id, testRun.id);
+  const toggle = page.getByTestId("comparedToggle");
+  await expect(toggle).toContainText("Comparison scope");
+  await expect(toggle).toHaveAttribute("aria-expanded", "false");
+  await expect(page.getByTestId("elementRule")).toHaveCount(0);
+  await toggle.click();
+  await expect(page.getByTestId("elementRule")).toHaveCount(1);
+  await expect(page.getByTestId("toleratedGroup")).toHaveText(
+    /^Allows changes/,
+  );
+  await expect(page.getByTestId("toleratedGroup")).not.toContainText("· 1");
 });
 
 test("keeps rows outside the compared elements folded", async ({
@@ -221,14 +280,15 @@ test("keeps rows outside the compared elements folded", async ({
   await withStructure(page, compareOnly());
   await openProjectPage(project.id, build.id, testRun.id);
   await expect(page.getByTestId("comparedSummary")).toHaveText(
-    "Only 1 element",
+    "Only the chosen elements",
   );
   await expect(page.getByTestId("comparedElement")).toContainText(
     'Button "Pay"',
   );
   // the run's drawn and test areas lie above the button: they change nothing
-  await expect(page.getByTestId("outsideToggle")).toContainText(
-    "No effect · 2",
+  // the group's name carries no count (REQ-036-33)
+  await expect(page.getByTestId("outsideToggle")).toHaveText(
+    "No effectoutside what is compared",
   );
   await expect(page.getByTestId("comparedArea")).toHaveCount(0);
   await expect(page.getByTestId("comparedTestArea")).toHaveCount(0);

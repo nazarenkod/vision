@@ -2,11 +2,11 @@
 
 | | |
 |---|---|
-| Статус | Draft |
+| Статус | Approved |
 | Власник | Дмитро Назаренко |
 | Оновлено | 2026-11-02 |
-| Дизайн | — (з'являється після `Approved`) |
-| Пов'язане | змінює [005](../005-jira-bugs/spec.md) REQ-005-01, REQ-005-02; змінює [025](../025-bug-from-comparison/spec.md) REQ-025-05; змінює [018](../018-ui-redesign/spec.md) REQ-018-50; [ADR-0010](../../decisions/0010-personal-jira-tokens.md) (спільний токен як запасний — більше ні), [ADR-0020](../../decisions/0020-personal-gemini-keys.md) |
+| Дизайн | [design.md](design.md), [tasks.md](tasks.md) |
+| Пов'язане | [ADR-0025](../../decisions/0025-admin-made-accounts-personal-tokens.md); змінює [005](../005-jira-bugs/spec.md) REQ-005-01, REQ-005-02; змінює [025](../025-bug-from-comparison/spec.md) REQ-025-05; змінює [018](../018-ui-redesign/spec.md) REQ-018-50; [ADR-0010](../../decisions/0010-personal-jira-tokens.md) (спільний токен як запасний — більше ні), [ADR-0020](../../decisions/0020-personal-gemini-keys.md) |
 
 ## Контекст і проблема
 

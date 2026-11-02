@@ -297,6 +297,7 @@ export const TestDetailsDialog: React.FunctionComponent<{
         case "device":
           return key.profile.split("|").filter(Boolean).slice(0, 2).join(" ");
         case "feature":
+        case "check":
           return key.name;
         case "run":
           return allTestRuns.find((run) => run.id === key.id)?.name ?? "";

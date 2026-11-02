@@ -12,19 +12,17 @@ export type QueueKey =
   | { kind: "group"; fingerprint: string }
   | { kind: "device"; profile: string }
   | { kind: "feature"; name: string }
+  // a row of the features table for a check its test gave no feature
+  | { kind: "check"; name: string }
   | { kind: "run"; id: string };
 
 const WAITING: string[] = [TestStatus.unresolved, TestStatus.new];
 export const isWaiting = (run: Pick<TestRun, "status">) =>
   WAITING.includes(run.status);
 
-/** The feature a screenshot belongs to: what the test sent, else the check's name up to its first dot. */
-export const featureOf = (run: Pick<TestRun, "featureName" | "name">) => {
-  const sent = run.featureName?.trim();
-  if (sent) return sent;
-  const dot = run.name.indexOf(".");
-  return (dot > 0 ? run.name.slice(0, dot) : run.name).trim();
-};
+/** The feature the test sent; checks without one are not grouped (REQ-031-09). */
+export const featureOf = (run: Pick<TestRun, "featureName">) =>
+  run.featureName?.trim() ?? "";
 
 export const profileOf = (
   run: Pick<TestRun, "device" | "os" | "browser" | "viewport">,
@@ -43,6 +41,8 @@ export function queueParam(key: QueueKey): string {
       return `device:${key.profile}`;
     case "feature":
       return `feature:${key.name}`;
+    case "check":
+      return `check:${key.name}`;
     case "run":
       return `run:${key.id}`;
   }
@@ -62,6 +62,7 @@ export function parseQueue(param?: string | null): QueueKey | undefined {
     case "device":
       return { kind, profile: value };
     case "feature":
+    case "check":
       return { kind, name: value };
     case "run":
       return { kind, id: value };
@@ -124,7 +125,9 @@ export function queueIds(
       ? (run: TestRun) => profileOf(run) === key.profile
       : key.kind === "feature"
         ? (run: TestRun) => featureOf(run) === key.name
-        : () => true;
+        : key.kind === "check"
+          ? (run: TestRun) => !featureOf(run) && run.name === key.name
+          : () => true;
   return all.filter(keep).map((run) => run.id);
 }
 

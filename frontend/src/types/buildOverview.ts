@@ -22,6 +22,8 @@ export interface DeviceRow extends Outcome {
 
 export interface FeatureRow extends Outcome {
   name: string;
+  // the test sent featureName: the row holds its checks; otherwise it is one check
+  grouped: boolean;
   bugs: number;
 }
 

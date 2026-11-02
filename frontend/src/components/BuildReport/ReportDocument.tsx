@@ -490,8 +490,17 @@ export const ReportDocument: React.FunctionComponent<{
             </thead>
             <tbody>
               {overview.features.map((row) => (
-                <tr key={row.name}>
-                  <td>{row.name}</td>
+                <tr key={`${row.grouped}:${row.name}`}>
+                  <td>
+                    {row.name}
+                    {/* in the text: a column would break the alignment with the other tables */}
+                    {row.grouped && (
+                      <span style={{ color: tokens.textSecondary }}>
+                        {" · "}
+                        {t("overview.checksCount", { count: row.total })}
+                      </span>
+                    )}
+                  </td>
                   <td>
                     <ResultBar outcome={row} text={t} />
                   </td>

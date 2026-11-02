@@ -40,7 +40,7 @@ const report: PublicReport = {
         ...outcome,
       },
     ],
-    features: [{ name: "Checkout", bugs: 1, ...outcome }],
+    features: [{ name: "Checkout", grouped: true, bugs: 1, ...outcome }],
     quietFeatures: { count: 4, screens: 26, features: [] },
     bugs: [
       {
@@ -108,6 +108,34 @@ describe("ReportDocument", () => {
       <ReportDocument report={report} sections={ALL_SECTIONS} language="en" />,
     );
     expect(shown()).toEqual(["sum", "chg", "bugs", "dev", "feat", "a11y"]);
+  });
+
+  it("says how many checks a feature holds and not for a check on its own", () => {
+    const overview = report.overview!;
+    render(
+      <ReportDocument
+        report={{
+          ...report,
+          overview: {
+            ...overview,
+            features: [
+              ...overview.features,
+              {
+                name: "Login. Error state",
+                grouped: false,
+                bugs: 0,
+                ...outcome,
+              },
+            ],
+          },
+        }}
+        sections={ALL_SECTIONS}
+        language="uk"
+      />,
+    );
+    const feat = screen.getByTestId("reportSection-feat");
+    expect(feat).toHaveTextContent("Checkout · 16 перевірок");
+    expect(feat).toHaveTextContent(/Login\. Error state(?! ·)/);
   });
 
   it("renders in the report language, not the interface one", () => {
@@ -204,7 +232,9 @@ describe("ReportDocument", () => {
           ...report,
           overview: {
             ...report.overview!,
-            features: [{ name: "Checkout", bugs: 0, ...outcome }],
+            features: [
+              { name: "Checkout", grouped: true, bugs: 0, ...outcome },
+            ],
           },
         }}
         sections={["dev", "feat"]}

@@ -76,7 +76,7 @@ describe("review queues", () => {
     ]);
   });
 
-  it("keeps only the waiting runs of a group, device or feature", () => {
+  it("keeps only the waiting runs of a group, device, feature or check", () => {
     const decided = runs.map((r) =>
       r.id === "pay-aos" ? { ...r, status: TestStatus.approved } : r,
     );
@@ -87,11 +87,18 @@ describe("review queues", () => {
       queueIds({ kind: "device", profile: profileOf(runs[0]) }, runs, groups),
     ).toEqual(["login-ios", "pay-ios"]);
     expect(
-      queueIds({ kind: "feature", name: "Checkout" }, runs, groups),
-    ).toEqual(["pay-aos", "pay-ios"]);
-    expect(
       queueIds({ kind: "feature", name: "Account" }, runs, groups),
     ).toEqual(["avatar"]);
+    // no featureName: the check stands on its own, its name is not cut at the dot
+    expect(
+      queueIds({ kind: "feature", name: "Checkout" }, runs, groups),
+    ).toEqual([]);
+    expect(
+      queueIds({ kind: "check", name: "Checkout. Pay" }, runs, groups),
+    ).toEqual(["pay-aos", "pay-ios"]);
+    expect(
+      queueIds({ kind: "check", name: "Profile. Avatar" }, runs, groups),
+    ).toEqual([]);
   });
 
   it("starts at the clicked run inside its group", () => {
@@ -124,6 +131,7 @@ describe("review queues", () => {
       "group:moved",
       "device:iPhone 15|iOS 17||",
       "feature:Checkout",
+      "check:Checkout. Pay",
       "run:abc",
     ]) {
       const key = parseQueue(param);

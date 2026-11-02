@@ -31,12 +31,17 @@ const pay = inBuild(TEST_UNRESOLVED, {
   name: "Checkout. Pay",
   device: "PIXEL_4_XL",
   os: "AOS 14",
+  featureName: "Checkout",
+  a11yNewCount: 2,
+  a11yTotalCount: 3,
 });
 const login = inBuild(TEST_UNRESOLVED, {
   id: "login",
   name: "Login. Error",
   device: "iPhone 15",
   os: "iOS 17",
+  a11yNewCount: 0,
+  a11yTotalCount: 1,
 });
 const fresh = inBuild(TEST_RUN_NEW, {
   id: "fresh",
@@ -123,6 +128,7 @@ const overview: BuildOverview = {
   features: [
     {
       name: "Checkout",
+      grouped: true,
       total: 1,
       changed: 1,
       new: 0,
@@ -131,7 +137,8 @@ const overview: BuildOverview = {
       bugs: 1,
     },
     {
-      name: "Login",
+      name: "Login. Error",
+      grouped: false,
       total: 1,
       changed: 1,
       new: 0,
@@ -146,6 +153,7 @@ const overview: BuildOverview = {
     features: [
       {
         name: "Home",
+        grouped: true,
         total: 1,
         changed: 0,
         new: 0,
@@ -154,7 +162,8 @@ const overview: BuildOverview = {
         bugs: 0,
       },
       {
-        name: "Search",
+        name: "Search. Results",
+        grouped: false,
         total: 1,
         changed: 0,
         new: 0,
@@ -374,8 +383,25 @@ test("opens the passed features in place of their folded row", async ({
     /Checkout/,
     /Login/,
     /Home/,
-    /Search/,
+    /Search\. Results/,
   ]);
+});
+
+test("counts the checks of a feature and opens a check on its own", async ({
+  openProjectPage,
+  page,
+}) => {
+  await openProjectPage(project.id, build.id, undefined, "overview");
+  const rows = page.getByTestId("overviewFeature");
+  // the check's full name: no feature is guessed from it
+  await expect(rows).toHaveText([/^Checkout/, /^Login\. Error/]);
+  await expect(rows.first().getByTestId("overviewChecks")).toHaveText("1");
+  await expect(rows.last().getByTestId("overviewChecks")).toHaveCount(0);
+
+  await rows.last().click();
+  await expect(page.getByTestId("queueName")).toHaveText("Login. Error");
+  await expect(page.getByTestId("queuePosition")).toHaveText("1 / 1");
+  await expect(page).toHaveURL(/queue=check%3ALogin/);
 });
 
 test("puts the count of All tests in a pill like the tabs beside it", async ({
@@ -439,4 +465,31 @@ test("says there are no Jira bugs in one line", async ({
   await openProjectPage(project.id, build.id, undefined, "overview");
   const bugs = page.getByTestId("overviewBugs");
   await expect(bugs).toHaveText("No Jira bugs on this build");
+});
+
+test("lays out the Accessibility tab like the Overview", async ({
+  openProjectPage,
+  page,
+}) => {
+  await openProjectPage(project.id, build.id, undefined, "a11y");
+  await expect(page.getByTestId("a11yTile-new")).toContainText("2");
+  await expect(page.getByTestId("a11yTile-new")).toHaveAttribute(
+    "title",
+    /only issues this build introduced/,
+  );
+  await expect(page.getByTestId("a11yCaption-checked")).toHaveText(
+    "of 4 screenshots",
+  );
+
+  const rows = page.getByTestId("a11yScreen");
+  await expect(rows).toHaveCount(2);
+  // the device as the Overview's devices table names it
+  await expect(rows.first()).toContainText("PIXEL_4_XL");
+  await expect(rows.first()).toContainText("AOS 14");
+  await expect(rows.first()).not.toContainText("Device:");
+  // Login has no new issues: a dash rather than a 0
+  await expect(rows.last().getByTestId("overviewNum").first()).toHaveText("—");
+
+  await rows.first().click();
+  await expect(page).toHaveURL(/tab=a11y.*testId=pay$/);
 });

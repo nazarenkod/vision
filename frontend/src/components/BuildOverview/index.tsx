@@ -6,7 +6,7 @@ import {
   ExpandMoreRounded,
   LinkRounded,
 } from "@mui/icons-material";
-import { motion, tokens } from "../../theme";
+import { tokens } from "../../theme";
 import { useT } from "../../i18n";
 import { useTestRunState } from "../../contexts";
 import { buildOverviewService } from "../../services";
@@ -14,8 +14,17 @@ import { BuildOverview as Overview } from "../../types/buildOverview";
 import { StatusPill } from "../StatusPill";
 import { ResultBar } from "./ResultBar";
 import { EmptyState } from "../EmptyState";
-import { CountUp } from "../motion/useCountUp";
-import { staggered } from "../motion/Stagger";
+import {
+  Card,
+  DeviceCell,
+  Head,
+  NameCell,
+  Num,
+  Row,
+  rowSx,
+  TileProps,
+  Tiles,
+} from "../SummaryParts";
 import { BuildTab } from "../../_helpers/route.helpers";
 import { QueueKey } from "../../_helpers/reviewQueue.helper";
 
@@ -74,147 +83,14 @@ export function useBuildOverview(buildId: string | undefined) {
   return { overview, failed };
 }
 
-const Card: React.FunctionComponent<{
-  // tables whose first column names them go without one
-  title?: string;
-  index: number;
-  children: React.ReactNode;
-  testId?: string;
-  id?: string;
-}> = ({ title, index, children, testId, id }) => (
-  <Box
-    component="section"
-    id={id}
-    data-testid={testId}
-    {...staggered(index)}
-    sx={{
-      bgcolor: tokens.surface,
-      border: `1px solid ${tokens.border}`,
-      borderRadius: 3,
-      minWidth: 0,
-      display: "flex",
-      flexDirection: "column",
-      // the header row's fill follows the corners when there is no title
-      overflow: "hidden",
-    }}
-  >
-    {title && (
-      <Typography
-        component="h3"
-        sx={{
-          px: 2,
-          py: 1.5,
-          fontSize: 14,
-          fontWeight: 650,
-          borderBottom: `1px solid ${tokens.border}`,
-        }}
-      >
-        {title}
-      </Typography>
-    )}
-    {children}
-  </Box>
-);
-
-const rowSx = (columns: string, clickable: boolean) => ({
-  display: "grid",
-  gridTemplateColumns: columns,
-  alignItems: "center",
-  gap: 1.5,
-  px: 2,
-  minHeight: 48,
-  width: "100%",
-  // header rows are plain boxes, the others buttons: the same box model for both
-  boxSizing: "border-box" as const,
-  textAlign: "left" as const,
-  borderTop: `1px solid ${tokens.border}`,
-  fontSize: 13,
-  transition: `background-color ${motion.base}ms ${motion.easing}`,
-  "& > *": { minWidth: 0 },
-  ...(clickable && { "&:hover": { bgcolor: tokens.subtle } }),
-});
-
-const Head: React.FunctionComponent<{
-  columns: string;
-  cells: Array<[string, boolean?]>;
-}> = ({ columns, cells }) => (
-  <Box
-    sx={{
-      ...rowSx(columns, false),
-      minHeight: 32,
-      borderTop: 0,
-      bgcolor: tokens.subtle,
-      fontSize: 11.5,
-      fontWeight: 600,
-      color: tokens.textSecondary,
-    }}
-  >
-    {cells.map(([label, right], i) => (
-      <span key={i} style={right ? { textAlign: "right" } : undefined}>
-        {label}
-      </span>
-    ))}
-  </Box>
-);
-
-/** A row that opens something; a plain row when it does not. */
-const Row: React.FunctionComponent<{
-  columns: string;
-  onClick?: () => void;
-  children: React.ReactNode;
-  label?: string;
-  testId?: string;
-}> = ({ columns, onClick, children, label, testId }) =>
-  onClick ? (
-    <ButtonBase
-      onClick={onClick}
-      aria-label={label}
-      data-testid={testId}
-      sx={rowSx(columns, true)}
-    >
-      {children}
-    </ButtonBase>
-  ) : (
-    <Box data-testid={testId} sx={rowSx(columns, false)}>
-      {children}
-    </Box>
-  );
-
-/** A count in a table; nothing to count shows as a dash, so the counts stand out. */
-const Num: React.FunctionComponent<{ value: number }> = ({ value }) => (
-  <Box
-    component="span"
-    data-testid="overviewNum"
-    sx={{
-      textAlign: "right",
-      fontFamily: tokens.mono,
-      fontSize: 12,
-      fontVariantNumeric: "tabular-nums",
-      fontWeight: value ? 600 : 400,
-      color: value ? tokens.text : tokens.textMuted,
-    }}
-  >
-    {value || "—"}
-  </Box>
-);
-
-const Tiles: React.FunctionComponent<{
+const OverviewTiles: React.FunctionComponent<{
   overview: Overview;
   actions: OverviewActions;
 }> = ({ overview, actions }) => {
   const { t } = useT();
   const { counts, progress } = overview;
   const someone = t("overview.someone");
-  const tiles: Array<{
-    key: string;
-    value: number;
-    label: string;
-    // what the number does not say: the progress of the review
-    caption?: string;
-    captionTitle?: string;
-    color?: string;
-    onClick?: () => void;
-  }> = [
+  const tiles: TileProps[] = [
     {
       key: "screens",
       value: counts.total,
@@ -270,81 +146,10 @@ const Tiles: React.FunctionComponent<{
         : undefined,
     },
   ];
-  return (
-    <Box
-      sx={{
-        display: "grid",
-        gridTemplateColumns: "repeat(5, minmax(0, 1fr))",
-        gap: 1.25,
-      }}
-    >
-      {tiles.map((tile, i) => (
-        <ButtonBase
-          key={tile.key}
-          data-testid={`overviewTile-${tile.key}`}
-          disabled={!tile.onClick}
-          onClick={tile.onClick}
-          {...staggered(i + 1)}
-          sx={{
-            bgcolor: tokens.surface,
-            border: `1px solid ${tokens.border}`,
-            borderRadius: 3,
-            px: 1.75,
-            py: 1.25,
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "flex-start",
-            // numbers and labels on one line across the tiles, captions or not
-            justifyContent: "flex-start",
-            gap: 0.125,
-            minWidth: 0,
-            transition: `border-color ${motion.base}ms, transform ${motion.base}ms ${motion.easing}`,
-            "&:hover": {
-              borderColor: tokens.brand,
-              transform: "translateY(-1px)",
-            },
-          }}
-        >
-          <Box
-            component="span"
-            sx={{
-              fontSize: 24,
-              fontWeight: 650,
-              lineHeight: 1.2,
-              letterSpacing: "-0.01em",
-              fontVariantNumeric: "tabular-nums",
-              color: tile.value && tile.color ? tile.color : tokens.text,
-            }}
-          >
-            <CountUp value={tile.value} />
-          </Box>
-          <Box component="span" sx={{ fontSize: 12.5, fontWeight: 500 }}>
-            {tile.label}
-          </Box>
-          {tile.caption && (
-            <Box
-              component="span"
-              data-testid={`overviewCaption-${tile.key}`}
-              title={tile.captionTitle || undefined}
-              sx={{
-                fontSize: 11.5,
-                color: tokens.textSecondary,
-                maxWidth: "100%",
-                overflow: "hidden",
-                textOverflow: "ellipsis",
-                whiteSpace: "nowrap",
-              }}
-            >
-              {tile.caption}
-            </Box>
-          )}
-        </ButtonBase>
-      ))}
-    </Box>
-  );
+  return <Tiles tiles={tiles} />;
 };
 
-const FEATURE_COLUMNS = "minmax(0, 1fr) 80px 64px 40px";
+const FEATURE_COLUMNS = "minmax(0, 1fr) 64px 80px 64px 40px";
 // wide enough for "Accessibility" over its numbers
 const DEVICE_COLUMNS = "minmax(0, 1fr) 80px 64px 92px";
 
@@ -381,25 +186,12 @@ const Devices: React.FunctionComponent<{
                 : undefined
             }
           >
-            <Box
-              sx={{
-                display: "flex",
-                flexDirection: "column",
-                lineHeight: 1.25,
-              }}
-            >
-              <Typography noWrap sx={{ fontSize: 13, fontWeight: 600 }}>
-                {row.device || "—"}
-              </Typography>
-              <Typography
-                noWrap
-                sx={{ fontSize: 11.5, color: tokens.textSecondary }}
-              >
-                {[row.os, row.browser, row.viewport || row.screen]
-                  .filter(Boolean)
-                  .join(" · ")}
-              </Typography>
-            </Box>
+            <DeviceCell
+              name={row.device}
+              detail={[row.os, row.browser, row.viewport || row.screen]
+                .filter(Boolean)
+                .join(" · ")}
+            />
             <ResultBar outcome={row} text={t} hint />
             <Num value={waiting} />
             <Num value={row.a11yNew} />
@@ -416,31 +208,39 @@ const FeatureRows: React.FunctionComponent<{
 }> = ({ rows, actions }) => {
   const { t } = useT();
   return (
-  <>
-    {rows.map((row) => {
-      const waiting = row.changed + row.new;
-      return (
-        <Row
-          key={row.name}
-          columns={FEATURE_COLUMNS}
-          label={row.name}
-          testId="overviewFeature"
-          onClick={
-            waiting
-              ? () => actions.openQueue({ kind: "feature", name: row.name })
-              : undefined
-          }
-        >
-          <Typography noWrap sx={{ fontSize: 13, fontWeight: 600 }}>
-            {row.name}
-          </Typography>
-          <ResultBar outcome={row} text={t} hint />
-          <Num value={waiting} />
-          <Num value={row.bugs} />
-        </Row>
-      );
-    })}
-  </>
+    <>
+      {rows.map((row) => {
+        const waiting = row.changed + row.new;
+        return (
+          <Row
+            key={`${row.grouped}:${row.name}`}
+            columns={FEATURE_COLUMNS}
+            label={row.name}
+            testId="overviewFeature"
+            onClick={
+              waiting
+                ? () =>
+                    actions.openQueue({
+                      kind: row.grouped ? "feature" : "check",
+                      name: row.name,
+                    })
+                : undefined
+            }
+          >
+            <NameCell name={row.name} strong={row.grouped} />
+            {/* a check on its own counts itself: only a feature says how many it holds */}
+            {row.grouped ? (
+              <Num value={row.total} testId="overviewChecks" />
+            ) : (
+              <span />
+            )}
+            <ResultBar outcome={row} text={t} hint />
+            <Num value={waiting} />
+            <Num value={row.bugs} />
+          </Row>
+        );
+      })}
+    </>
   );
 };
 
@@ -457,6 +257,7 @@ const Features: React.FunctionComponent<{
         columns={FEATURE_COLUMNS}
         cells={[
           [t("overview.feature")],
+          [t("overview.checks"), true],
           [t("overview.result")],
           [t("overview.review"), true],
           [t("overview.bugs"), true],
@@ -483,6 +284,7 @@ const Features: React.FunctionComponent<{
             {t("overview.quiet", { count: quietFeatures.count })}
             <ExpandMoreRounded sx={{ fontSize: 18 }} />
           </Box>
+          <span />
           <ResultBar
             outcome={{
               total: quietFeatures.screens,
@@ -634,7 +436,7 @@ export const BuildOverview: React.FunctionComponent<{
         maxWidth: 1240,
       }}
     >
-      <Tiles overview={overview} actions={actions} />
+      <OverviewTiles overview={overview} actions={actions} />
       <Box
         sx={{
           display: "grid",

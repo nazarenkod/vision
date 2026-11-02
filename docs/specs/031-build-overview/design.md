@@ -40,6 +40,7 @@
 | типи | `frontend/src/types/` | `BuildOverview`, `ReportLink`, `PublicReport` |
 | сервіси | `frontend/src/services/` | `frontend/src/services/buildOverview.service.ts`, `frontend/src/services/reports.service.ts` |
 | вкладка Overview | `frontend/src/components/BuildOverview/`, `frontend/src/_helpers/previousBuild.helper.ts` | вердикт, плитки, To decide, Devices, Features, Jira bugs |
+| вкладка Accessibility | `frontend/src/components/A11ySummary.tsx`; спільні з Overview плитки й таблиці — `frontend/src/components/SummaryParts.tsx` | REQ-031-71 |
 | вкладка в адресі | `frontend/src/pages/ProjectPage.tsx`, `frontend/src/_helpers/route.helpers.ts` | `tab` і `queue` у query; без `tab` — Overview |
 | черги (чисте) | `frontend/src/_helpers/reviewQueue.helper.ts` | ключ черги → впорядковані id; меню черг; наступна непорожня |
 | порівняння | `frontend/src/components/TestDetailsDialog/index.tsx` | крокує чергою, якщо вона є, інакше як зараз (список All tests) |
@@ -113,7 +114,7 @@ sequenceDiagram
 | REQ-031-06 | `frontend/integration_tests/test/buildOverview.spec.ts › each number opens its tab or queue` |
 | REQ-031-07 | знято 2026-11-01 — `frontend/integration_tests/test/buildOverview.spec.ts › leaves change groups to the Changes tab` |
 | REQ-031-08 | `backend/src/builds/build-overview.spec.ts › splits the result by device profile`; `backend/src/builds/build-overview.spec.ts › takes the screen size of a device from the screenshots measured`; `backend/src/builds/build-overview.service.spec.ts › reads the screen size of each device from one of its screenshots`; `backend/src/builds/build-overview.service.spec.ts › leaves the screen size out when the screenshot cannot be read`; `frontend/integration_tests/test/buildOverview.spec.ts › shows a device's screen size when the run sent no viewport` |
-| REQ-031-09 | `backend/src/builds/build-overview.spec.ts › names a feature by featureName or the check up to the first dot`; `backend/src/builds/build-overview.spec.ts › folds quiet features into one row`; `frontend/integration_tests/test/buildOverview.spec.ts › opens the passed features in place of their folded row`; `frontend/src/components/BuildReport/ReportDocument.test.tsx › Short has Summary, Changes and Jira bugs; Full adds the rest` |
+| REQ-031-09 | `backend/src/builds/build-overview.spec.ts › groups checks by featureName only and keeps the others one per check`; `backend/src/builds/build-overview.spec.ts › keeps a feature and a check of the same name apart`; `backend/src/builds/build-overview.spec.ts › folds quiet features into one row`; `frontend/integration_tests/test/buildOverview.spec.ts › opens the passed features in place of their folded row`; `frontend/src/components/BuildReport/ReportDocument.test.tsx › Short has Summary, Changes and Jira bugs; Full adds the rest` |
 | REQ-031-10 | `backend/src/builds/build-overview.spec.ts › marks bugs filed from this build New and older ones Known` |
 | REQ-031-11 | `backend/src/builds/build-overview.spec.ts › compares with the previous build of the branch`; `frontend/src/_helpers/previousBuild.helper.test.ts › says what changed since the previous build, leaving out zeros` |
 | REQ-031-12 | `backend/src/builds/build-overview.spec.ts › says first build when the branch has no earlier one`; `frontend/src/components/BuildReport/ReportDocument.test.tsx › says first build on the branch when there is no earlier one` |
@@ -124,8 +125,10 @@ sequenceDiagram
 | REQ-031-17 | `frontend/integration_tests/test/buildOverview.spec.ts › shows a device's screen size when the run sent no viewport`; `frontend/src/components/BuildReport/ReportDocument.test.tsx › summary names the project, build, branch, time, devices and numbers` |
 | REQ-031-18 | `frontend/integration_tests/test/buildOverview.spec.ts › puts the count of All tests in a pill like the tabs beside it` |
 | REQ-031-19 | `frontend/integration_tests/test/buildOverview.spec.ts › explains a result bar and leaves zeros out of the counts`; `frontend/integration_tests/test/buildOverview.spec.ts › says there are no Jira bugs in one line`; `frontend/src/components/BuildReport/ReportDocument.test.tsx › explains the bars and leaves zeros out of the tables` |
+| REQ-031-70 | `frontend/integration_tests/test/buildOverview.spec.ts › counts the checks of a feature and opens a check on its own`; `frontend/src/components/BuildReport/ReportDocument.test.tsx › says how many checks a feature holds and not for a check on its own` |
+| REQ-031-71 | `frontend/integration_tests/test/buildOverview.spec.ts › lays out the Accessibility tab like the Overview` |
 | REQ-031-20 | `frontend/src/_helpers/reviewQueue.helper.test.ts › puts all waiting in the order of the groups, new last`; `frontend/integration_tests/test/buildOverview.spec.ts › names the review button without a count` |
-| REQ-031-21 | `frontend/src/_helpers/reviewQueue.helper.test.ts › keeps only the waiting runs of a group, device or feature` |
+| REQ-031-21 | `frontend/src/_helpers/reviewQueue.helper.test.ts › keeps only the waiting runs of a group, device, feature or check`; `frontend/integration_tests/test/buildOverview.spec.ts › counts the checks of a feature and opens a check on its own` |
 | REQ-031-22 | знято 2026-11-01 — перевірки немає |
 | REQ-031-23 | `frontend/src/_helpers/reviewQueue.helper.test.ts › opens the run a bug was filed from, decided or not` |
 | REQ-031-24 | `frontend/integration_tests/test/buildOverview.spec.ts › shows the queue name and position instead of Step` |

@@ -2,7 +2,6 @@
 // page say about one build, worked out from rows the service loads. Pure, so
 // the three agree and the numbers are tested without a database.
 import { TestStatus } from '@prisma/client';
-import { featureOf } from '../visual-bugs/visual-bug';
 
 export type Verdict = 'running' | 'waiting' | 'reviewed' | 'passed';
 
@@ -72,6 +71,8 @@ export interface DeviceRow extends Outcome {
 
 export interface FeatureRow extends Outcome {
   name: string;
+  // the test sent featureName: the row holds its checks; otherwise it is one check by its full name
+  grouped: boolean;
   bugs: number;
 }
 
@@ -179,18 +180,30 @@ function devicesOf(runs: OverviewRun[], screenSizes: Map<string, string> = new M
   return [...rows.values()].sort((a, b) => a.device.localeCompare(b.device) || a.os.localeCompare(b.os));
 }
 
+/**
+ * The row of the features table a run belongs to. Only featureName groups:
+ * guessing a feature from the check's name joined checks that have nothing in
+ * common, so a check without one stands on its own.
+ */
+function featureRowOf(run: Pick<OverviewRun, 'featureName' | 'name'>) {
+  const feature = run.featureName?.trim();
+  return feature
+    ? { key: `f\u0000${feature}`, name: feature, grouped: true }
+    : { key: `c\u0000${run.name}`, name: run.name, grouped: false };
+}
+
 function featuresOf(runs: OverviewRun[], bugs: OverviewBugInput[]) {
   const runsById = new Map(runs.map((run) => [run.id, run]));
   const rows = new Map<string, FeatureRow>();
   for (const run of runs) {
-    const name = featureOf(run);
-    const row = rows.get(name) ?? { name, bugs: 0, ...emptyOutcome() };
+    const { key, name, grouped } = featureRowOf(run);
+    const row = rows.get(key) ?? { name, grouped, bugs: 0, ...emptyOutcome() };
     count(row, run.status);
-    rows.set(name, row);
+    rows.set(key, row);
   }
   for (const bug of bugs) {
     const run = runsById.get(bug.testRunId);
-    if (run) rows.get(featureOf(run)).bugs += 1;
+    if (run) rows.get(featureRowOf(run).key).bugs += 1;
   }
   const all = [...rows.values()];
   const quiet = all.filter((row) => !waiting(row) && !row.rejected && !row.bugs);

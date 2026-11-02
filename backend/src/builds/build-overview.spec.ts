@@ -153,38 +153,58 @@ describe('buildOverview', () => {
     ]);
   });
 
-  it('names a feature by featureName or the check up to the first dot', () => {
+  it('groups checks by featureName only and keeps the others one per check', () => {
     const runs = [
       run({ status: TestStatus.unresolved }),
+      run({ name: 'Checkout. Saved cards', status: TestStatus.unresolved }),
       run({ name: 'Login. Error state', featureName: 'Sign in', status: TestStatus.unresolved }),
+      run({ name: 'Login. Empty', featureName: ' Sign in ', status: TestStatus.unresolved }),
+      run({ name: 'Login. Error state', featureName: 'Sign in', device: 'iPhone 15', status: TestStatus.unresolved }),
     ];
-    expect(buildOverview(input({ runs })).features.map((row) => row.name)).toEqual(['Checkout', 'Sign in']);
+    const { features } = buildOverview(input({ runs }));
+    expect(features.map((row) => [row.name, row.grouped, row.total])).toEqual([
+      ['Sign in', true, 3],
+      ['Checkout. Payment sheet', false, 1],
+      ['Checkout. Saved cards', false, 1],
+    ]);
+  });
+
+  it('keeps a feature and a check of the same name apart', () => {
+    const runs = [
+      run({ name: 'Sign in', status: TestStatus.unresolved }),
+      run({ name: 'Login. Error', featureName: 'Sign in', status: TestStatus.failed }),
+    ];
+    const bugs = [bug({ testRunId: runs[1].id })];
+    expect(buildOverview(input({ runs, bugs })).features.map((row) => [row.name, row.grouped, row.bugs])).toEqual([
+      ['Sign in', false, 0],
+      ['Sign in', true, 1],
+    ]);
   });
 
   it('folds quiet features into one row', () => {
     const runs = [
-      run({ name: 'Home. Feed' }),
-      run({ name: 'Home. Banner' }),
+      run({ name: 'Home. Feed', featureName: 'Home' }),
+      run({ name: 'Home. Banner', featureName: 'Home' }),
       run({ name: 'Search. Results', status: TestStatus.approved }),
       run({ name: 'Cart. Empty' }),
       run({ name: 'Login. Error', status: TestStatus.failed }),
       run({ name: 'Profile. Avatar' }),
-      run({ status: TestStatus.unresolved }),
-      run({ status: TestStatus.unresolved }),
+      run({ status: TestStatus.unresolved, featureName: 'Checkout' }),
+      run({ status: TestStatus.unresolved, featureName: 'Checkout' }),
     ];
     const bugs = [bug({ testRunId: runs[5].id })];
     const overview = buildOverview(input({ runs, bugs }));
     expect(overview.features.map((row) => [row.name, row.changed, row.rejected, row.bugs])).toEqual([
       ['Checkout', 2, 0, 0],
-      ['Login', 0, 1, 0],
-      ['Profile', 0, 0, 1],
+      ['Login. Error', 0, 1, 0],
+      ['Profile. Avatar', 0, 0, 1],
     ]);
     expect(overview.quietFeatures).toMatchObject({ count: 3, screens: 4 });
     // the folded row opens into them (REQ-031-09)
     expect(overview.quietFeatures.features.map((row) => [row.name, row.total])).toEqual([
-      ['Cart', 1],
+      ['Cart. Empty', 1],
       ['Home', 2],
-      ['Search', 1],
+      ['Search. Results', 1],
     ]);
   });
 

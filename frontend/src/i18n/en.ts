@@ -737,8 +737,12 @@ export const en = {
   "a11ySummary.empty": "No accessibility data in this build",
   "a11ySummary.emptyHint":
     "Accessibility is checked when a screenshot comes with its Appium page source. In Java or Kotlin add {code} to the TestRunOptions; for manual testing use the CLI (help menu, Manual checks).",
-  "a11ySummary.intro":
-    "{checked} of {total} screenshots came with a UI tree. Issues are compared with each screen's baseline, so only issues this build introduced count as new. Filed bugs and false positives do not count.",
+  "a11ySummary.newHint":
+    "Compared with each screen's baseline: only issues this build introduced. Filed bugs and false positives do not count.",
+  "a11ySummary.ofScreenshots": {
+    one: "of {count} screenshot",
+    other: "of {count} screenshots",
+  },
   "a11ySummary.newIssues": "New issues",
   "a11ySummary.openIssues": "All open issues",
   "a11ySummary.screensChecked": "Screens checked",
@@ -1412,6 +1416,11 @@ export const en = {
   "overview.review": "Review",
   "overview.a11y": "Accessibility",
   "overview.feature": "Feature",
+  "overview.checks": "Checks",
+  "overview.checksCount": {
+    one: "{count} check",
+    other: "{count} checks",
+  },
   "overview.bugs": "Bugs",
   "overview.quiet": "+{count} passed",
   "overview.key": "Key",

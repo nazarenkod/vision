@@ -780,8 +780,14 @@ export const uk: Messages = {
   "a11ySummary.empty": "У цій збірці немає даних про доступність",
   "a11ySummary.emptyHint":
     "Доступність перевіряється, коли знімок надходить разом з Appium page source. У Java чи Kotlin додайте {code} до TestRunOptions; для ручного тестування скористайтеся CLI (меню довідки, «Ручні перевірки»).",
-  "a11ySummary.intro":
-    "UI-дерево надійшло з {checked} з {total} знімків. Знахідки порівнюються з еталоном кожного екрана, тож новими вважаються лише ті, що з’явилися в цій збірці. Заведені баги й хибні знахідки не рахуються.",
+  "a11ySummary.newHint":
+    "Порівняно з еталоном кожного екрана: лише те, що з'явилося в цій збірці. Заведені баги й хибні знахідки не рахуються.",
+  "a11ySummary.ofScreenshots": {
+    one: "з {count} знімка",
+    few: "з {count} знімків",
+    many: "з {count} знімків",
+    other: "з {count} знімка",
+  },
   "a11ySummary.newIssues": "Нові знахідки",
   "a11ySummary.openIssues": "Усі відкриті знахідки",
   "a11ySummary.screensChecked": "Перевірено екранів",
@@ -1492,6 +1498,13 @@ export const uk: Messages = {
   "overview.review": "Перегляд",
   "overview.a11y": "Доступність",
   "overview.feature": "Функціонал",
+  "overview.checks": "Перевірки",
+  "overview.checksCount": {
+    one: "{count} перевірка",
+    few: "{count} перевірки",
+    many: "{count} перевірок",
+    other: "{count} перевірки",
+  },
   "overview.bugs": "Баги",
   "overview.quiet": "+{count} без змін",
   "overview.key": "Ключ",

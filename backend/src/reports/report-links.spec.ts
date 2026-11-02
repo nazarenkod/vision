@@ -23,7 +23,7 @@ const overview = (): BuildOverviewResponse => ({
       passed: 1,
     },
   ],
-  features: [{ name: 'Checkout', total: 3, changed: 1, new: 0, rejected: 1, passed: 1, bugs: 1 }],
+  features: [{ name: 'Checkout', grouped: true, total: 3, changed: 1, new: 0, rejected: 1, passed: 1, bugs: 1 }],
   quietFeatures: { count: 0, screens: 0, features: [] },
   bugs: [
     {

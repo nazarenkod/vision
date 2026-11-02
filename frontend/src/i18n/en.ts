@@ -287,6 +287,7 @@ export const en = {
   "builds.loadFailed": "Builds could not be loaded",
   "builds.noMatch": 'No builds match "{search}"',
   "builds.empty": "No builds",
+  "builds.actions": "Build actions",
   "builds.stop": "Stop",
   "builds.editCiBuild": "Edit CI Build",
   "builds.delete": "Delete",
@@ -434,6 +435,7 @@ export const en = {
   "filters.reset": "Reset",
   "filters.project": "Project",
   "filters.selectProject": "Select project",
+  "projectSelect.newProject": "New project",
 
   // review
   "review.applyIgnoreArea":
@@ -1048,8 +1050,6 @@ export const en = {
   "device.viewport": "Viewport: {value}",
 
   // builds
-  "builds.summary": "{changed} changed · {passed} passed",
-  "builds.summaryFailed": " · {count} failed",
 
   // review
   "review.tolerance": "tolerance {value}%",

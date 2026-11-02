@@ -23,6 +23,8 @@ import subprocess
 import sys
 
 SEGMENT = re.compile(r"\|\||&&|;|\||\n|\$\(|`")
+# shell redirections such as 2>&1, >log or <input: they go to the shell, not to the command
+REDIRECTION = re.compile(r"^\d*(>>?|<)(&\d+|&-)?$|^\d*(>>?|<|&>)\S+$")
 
 # Vision's own repository: in a cloud session's clone "origin" points here, not at upstream VRT
 VISION_REPO = re.compile(r"github\.com[:/]nazarenkod/vision(\.git)?/?$")
@@ -69,6 +71,8 @@ def positional(tokens: list[str]) -> list[str]:
             continue
         if token in {"-c", "-C", "--git-dir", "--work-tree"}:
             skip = True
+            continue
+        if REDIRECTION.match(token):
             continue
         if not token.startswith("-"):
             out.append(token)

@@ -2,7 +2,6 @@ src/_test/test.data.helper.ts: TS2741
 src/_test/test.data.helper.ts: TS2741
 src/_test/test.data.helper.ts: TS2741
 src/components/ProjectForm/ProjectForm.tsx: TS2322
-src/components/ProjectSelect.tsx: TS2322
 src/components/TestDetailsDialog/DrawArea.tsx: TS2345
 src/components/TestVariationMergeForm.tsx: TS2322
 src/components/TestVariationMergeForm.tsx: TS7006

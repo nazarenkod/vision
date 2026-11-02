@@ -67,7 +67,7 @@ ADR не потрібен: модель даних і поведінка пор�
 | REQ-036-11 | `frontend/integration_tests/test/elementRules.spec.ts › says the count once and lists the changes straight under it` |
 | REQ-036-12 | `manual: навести на рядок — тип і id у підказці; розгорнути — тип і id над місцями` |
 | REQ-036-13 | `frontend/src/components/TestDetailsDialog/changedAreas.test.ts › keeps the id apart from a name that runs over several lines` |
-| REQ-036-14 | `frontend/src/components/TestDetailsDialog/changedAreas.test.ts › numbers rows with the same name from the top` |
+| REQ-036-14 | `frontend/src/components/TestDetailsDialog/changedAreas.test.ts › leaves rows with the same name unnumbered` |
 | REQ-036-15 | `frontend/src/components/TestDetailsDialog/changedAreas.test.ts › puts the spots no element wraps in one last row…` |
 | REQ-036-16 | `frontend/src/components/TestDetailsDialog/changedAreas.test.ts › puts the spots no element wraps in one last row…` |
 | REQ-036-17 | `frontend/integration_tests/test/elementSelection.spec.ts › offers element actions on a changed area` |

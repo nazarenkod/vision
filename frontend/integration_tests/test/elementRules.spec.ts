@@ -247,12 +247,56 @@ test("opens a row into its spots, five at a time", async ({
   );
   await expect(next.getByTestId("changedPlace")).toHaveCount(5);
   await expect(next.getByTestId("changedPlace").first()).toHaveText(
-    "50 × 20 px, top left",
+    "area 50 × 20 px",
   );
   await next.getByTestId("changedPlacesMore").click();
   await expect(next.getByTestId("changedPlace")).toHaveCount(7);
   await next.getByTestId("changedAreaToggle").click();
   await expect(next.getByTestId("changedPlace")).toHaveCount(0);
+});
+
+test("names a changed place by the text in it, as it was and is", async ({
+  openProjectPage,
+  page,
+}) => {
+  const card = 'View "Card"';
+  const cardBox = { x: 0, y: 1800, width: 1080, height: 400 };
+  const balance = { x: 40, y: 1900, width: 400, height: 60 };
+  await withStructure(page, {
+    ...changed,
+    regions: [
+      {
+        region: { x: 50, y: 1910, width: 120, height: 40 },
+        key: "card",
+        element: card,
+        resourceId: null,
+      },
+    ],
+    changes: [],
+    elements: [
+      { selector: "id:card", element: card, bounds: cardBox },
+      {
+        selector: "id:balance",
+        element: 'TextView "9 870,00 ₴"',
+        bounds: balance,
+        text: "9 870,00 ₴",
+      },
+    ],
+    baselineElements: [
+      {
+        selector: "id:balance",
+        element: 'TextView "12 450,00 ₴"',
+        bounds: balance,
+        text: "12 450,00 ₴",
+      },
+    ],
+  });
+  await openProjectPage(project.id, build.id, testRun.id);
+  // one place whose text changed says so instead of "Changed in 1 spot" (REQ-038-04)
+  await expect(page.getByTestId("changedAreaWhat")).toHaveText(
+    "“12 450,00 ₴” → “9 870,00 ₴”",
+  );
+  await expect(page.getByTestId("changedAreaName")).toHaveText("Card");
 });
 
 test("folds the comparison scope while there are changes to look at", async ({

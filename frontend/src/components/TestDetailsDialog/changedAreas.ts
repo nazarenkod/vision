@@ -1,4 +1,10 @@
-import { Rect, StructuralChange, StructureInfo } from "../../types";
+import {
+  PickableElement,
+  Rect,
+  StructuralChange,
+  StructureInfo,
+} from "../../types";
+import { elementAt } from "../../_helpers/elementPicking.helper";
 
 type Area = StructureInfo["regions"][number];
 
@@ -70,9 +76,6 @@ export interface ChangeRow {
   change: StructuralChange | null;
   places: Rect[];
   bounds: Rect | null;
-  // "2 of 2" when another row bears the same name (REQ-036-14)
-  nth: number;
-  of: number;
 }
 
 /** What the row is called on screen: the name, else the type. */
@@ -106,8 +109,6 @@ export function changeRows(
       change: null,
       places: group.regions,
       bounds: group.bounds,
-      nth: 1,
-      of: 1,
     }));
   for (const change of changes) {
     if (change.kind === "moved") continue;
@@ -125,25 +126,8 @@ export function changeRows(
       change,
       places: [],
       bounds: change.bounds ?? null,
-      nth: 1,
-      of: 1,
     });
   }
-  const top = (row: ChangeRow) => row.bounds?.y ?? Number.MAX_SAFE_INTEGER;
-  const byName = new Map<string, ChangeRow[]>();
-  rows.forEach((row) => {
-    const name = rowName(row.element ?? "");
-    byName.set(name, [...(byName.get(name) ?? []), row]);
-  });
-  byName.forEach((same) => {
-    if (same.length < 2) return;
-    [...same]
-      .sort((a, b) => top(a) - top(b))
-      .forEach((row, index) => {
-        row.nth = index + 1;
-        row.of = same.length;
-      });
-  });
   const loose = groups.filter((group) => !group.element);
   if (loose.length) {
     const places = loose.flatMap((group) => group.regions);
@@ -154,8 +138,6 @@ export function changeRows(
       change: null,
       places,
       bounds: union(places),
-      nth: 1,
-      of: 1,
     });
   }
   return rows;
@@ -165,21 +147,48 @@ export function changeRows(
 export const countRows = (rows: ChangeRow[]) =>
   rows.reduce((sum, row) => sum + (row.element ? 1 : row.places.length), 0);
 
-export type Where =
-  `${"top" | "middle" | "bottom"}.${"left" | "center" | "right"}`;
+export interface PlaceLabel {
+  // what the place shows now: a text, else a name or a type
+  now: string | null;
+  // the text the baseline showed there, when it differs (REQ-038-02)
+  before: string | null;
+  // a text goes in quotes; a name or a type does not
+  isText: boolean;
+}
 
-/** Where a spot sits on the screen, in thirds, so a place reads without coordinates. */
-export function whereOn(
-  rect: Rect,
-  size: { width: number; height: number },
-): Where {
-  const third = (at: number, of: number) =>
-    at < of / 3 ? 0 : at < (of * 2) / 3 ? 1 : 2;
-  const v = (["top", "middle", "bottom"] as const)[
-    third(rect.y + rect.height / 2, size.height)
-  ];
-  const h = (["left", "center", "right"] as const)[
-    third(rect.x + rect.width / 2, size.width)
-  ];
-  return `${v}.${h}`;
+const center = (rect: Rect) => ({
+  x: rect.x + rect.width / 2,
+  y: rect.y + rect.height / 2,
+});
+const distance = (a: Rect, b: Rect) =>
+  Math.hypot(center(a).x - center(b).x, center(a).y - center(b).y);
+
+/**
+ * What a changed place is on the screen (REQ-038-01…03): the smallest element
+ * of the current tree under its middle. The row's own element tells nothing
+ * new, so it, like no element at all, leaves the place to its size.
+ */
+export function placeLabel(
+  place: Rect,
+  rowElement: string | null,
+  elements: PickableElement[],
+  baselineElements: PickableElement[],
+): PlaceLabel | null {
+  const found = elementAt(center(place), elements);
+  if (!found || found.element === rowElement) return null;
+  const text = found.text?.replace(/\s+/g, " ").trim() || null;
+  const parts = splitElement(found.element);
+  const now = text ?? parts.name ?? parts.type;
+  const twin = baselineElements
+    .filter((item) => item.selector === found.selector)
+    .sort(
+      (a, b) =>
+        distance(a.bounds, found.bounds) - distance(b.bounds, found.bounds),
+    )[0];
+  const was = twin?.text?.replace(/\s+/g, " ").trim() || null;
+  return {
+    now,
+    before: text && was && was !== text ? was : null,
+    isText: !!text,
+  };
 }

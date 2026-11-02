@@ -20,6 +20,7 @@ import {
 import { CreateTestRequestDto } from './dto/create-test-request.dto';
 import { IgnoreAreaDto } from './dto/ignore-area.dto';
 import { compareOnlyStatus } from '../ui-tree/compare-only';
+import { partsProblem, variableTextStatus } from '../ui-tree/variable-text';
 import { StaticService } from '../static/static.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { Baseline, Prisma, TestRun, TestStatus, TestVariation } from '@prisma/client';
@@ -367,6 +368,15 @@ export class TestRunsService {
       this.eventsGateway.testRunUpdated(saved);
     }
 
+    // a variable text that does not hold cannot pass on its pixels either (spec 033)
+    if (saved && variableTextStatus(saved.status, fromTree.variableProblems) !== saved.status) {
+      saved = await this.prismaService.testRun.update({
+        where: { id: saved.id },
+        data: { status: TestStatus.unresolved },
+      });
+      this.eventsGateway.testRunUpdated(saved);
+    }
+
     previous.forEach((name) => this.staticService.deleteImage(name));
 
     // A re-comparison (new rule, ignore area) moves the changed areas, and with
@@ -524,6 +534,10 @@ export class TestRunsService {
     if (dto.action === 'compare' && dto.scope === 'project') {
       throw new BadRequestException('Compare only applies to one screen');
     }
+    if (dto.action === 'variable') {
+      const problem = partsProblem(dto.parts);
+      if (problem) throw new BadRequestException(problem);
+    }
     const testRun = await this.findOne(id);
     if (!testRun) throw new NotFoundException('Test run not found');
     const rule: ElementRule = {
@@ -531,9 +545,14 @@ export class TestRunsService {
       selector: dto.selector.trim(),
       action: dto.action,
       ...(dto.action === 'tolerate' ? { maxDiffPercent: dto.maxDiffPercent ?? 5 } : {}),
+      ...(dto.action === 'variable' ? { parts: dto.parts } : {}),
       ...(dto.note ? { note: dto.note } : {}),
     };
-    await this.updateRules(testRun, dto.scope, (rules) => [...rules, rule]);
+    // "check the text" and "change" swap a rule in one write, so the run is never compared without either (REQ-033-14)
+    await this.updateRules(testRun, dto.scope, (rules) => [
+      ...rules.filter((item) => !dto.replacesRuleId || item.id !== dto.replacesRuleId),
+      rule,
+    ]);
     await this.recompareAfterRuleChange(testRun, dto.scope);
     return rule;
   }

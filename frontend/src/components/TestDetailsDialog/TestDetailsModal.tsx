@@ -75,6 +75,7 @@ import {
   Rect,
   RuleScope,
   ScreenRule,
+  TextPart,
   SelectorVariant,
 } from "../../types/insights";
 import {
@@ -541,7 +542,8 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
 
   const showRuleSnack = useRuleSnackbar(enqueueSnackbar);
   const act = async (action: ElementRuleAction, scope: RuleScope) => {
-    if (!selection) return;
+    // Variable text is marked in the popover first, for one element (spec 033)
+    if (!selection || action === "variable") return;
     // those under a rule already keep it (REQ-028-30)
     const { free } = sortSelected(
       selection.selected,
@@ -605,6 +607,75 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
       );
     }
     setRuleBusy(false);
+  };
+  // a variable-text rule, in place of the rule it replaces if any (REQ-033-11, 14)
+  const actVariable = async ({
+    parts,
+    scope,
+    selector,
+    replaces,
+  }: {
+    parts: TextPart[];
+    scope: RuleScope;
+    selector: string;
+    replaces?: ScreenRule;
+  }) => {
+    setRuleBusy(true);
+    try {
+      const rule = await insightsService.addElementRule(testRun.id, {
+        scope,
+        selector,
+        action: "variable",
+        parts,
+        ...(replaces ? { replacesRuleId: replaces.id } : {}),
+      });
+      setSelection(undefined);
+      loadStructure();
+      showRuleSnack(t("select.added", { count: 1 }), async () => {
+        await insightsService.removeElementRule(testRun.id, scope, rule.id);
+        // the rule it took the place of comes back as it was
+        if (replaces)
+          await insightsService.addElementRule(testRun.id, {
+            scope: replaces.scope,
+            selector: replaces.selector,
+            action: replaces.action,
+            ...(replaces.maxDiffPercent !== undefined
+              ? { maxDiffPercent: replaces.maxDiffPercent }
+              : {}),
+            ...(replaces.parts ? { parts: replaces.parts } : {}),
+          });
+        loadStructure();
+      });
+    } catch (error) {
+      enqueueSnackbar(String(error), { variant: "error" });
+    } finally {
+      setRuleBusy(false);
+    }
+  };
+  // what a variable-text rule would find here: by id or by its text pattern; a path is the server's to follow
+  const countFor = (side: Side) => (selector: string) => {
+    const regex = /^text:\/(.+)\/u$/.exec(selector);
+    if (regex) {
+      try {
+        const pattern = new RegExp(regex[1], "u");
+        return elementsOf(side).filter(
+          (element) => element.text && pattern.test(element.text.trim()),
+        ).length;
+      } catch {
+        return null;
+      }
+    }
+    return selector.startsWith("id:")
+      ? countBySelector(selector, elementsOf(side))
+      : null;
+  };
+  // the same element on the other screenshot, by the selector it was picked with
+  const otherText = (side: Side, element: PickableElement) => {
+    const otherSide: Side = side === "current" ? "baseline" : "current";
+    const twin = elementsOf(otherSide).find(
+      (item) => item.selector === element.selector,
+    );
+    return twin?.text ? { side: otherSide, text: twin.text } : undefined;
   };
   // the rules of every selected element come off together (REQ-028-31)
   const removeRules = async (rules: ScreenRule[]) => {
@@ -706,23 +777,42 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
               }))
             : []),
           ...structure.rules.flatMap((rule) =>
-            (rule.found?.[side] ?? []).map((rect, i) => ({
-              id: `${ruleMarkId(rule.id)}:${i}`,
-              ...rect,
-              color:
-                rule.action === "ignore"
-                  ? canvas.status.neutral.fg
-                  : rule.action === "compare"
-                    ? canvas.brand
-                    : canvas.status.new.fg,
-              hatched: rule.action === "ignore",
-              dashed: rule.action === "tolerate",
-              label:
-                rule.action === "tolerate"
-                  ? `±${rule.maxDiffPercent ?? 5}%`
-                  : rule.selector,
-              labelOnHighlight: rule.action !== "tolerate",
-            })),
+            (rule.found?.[side] ?? []).map((rect, i) => {
+              // a text that does not hold is drawn like a gone element: red, dashed (REQ-033-30)
+              const failed =
+                rule.action === "variable" &&
+                side === "current" &&
+                !!rule.check?.items.some(
+                  (item) =>
+                    !item.ok &&
+                    item.bounds.x === rect.x &&
+                    item.bounds.y === rect.y,
+                );
+              return {
+                id: `${ruleMarkId(rule.id)}:${i}`,
+                ...rect,
+                color: failed
+                  ? canvas.status.failed.fg
+                  : rule.action === "ignore"
+                    ? canvas.status.neutral.fg
+                    : rule.action === "compare"
+                      ? canvas.brand
+                      : rule.action === "variable"
+                        ? canvas.variable
+                        : canvas.status.new.fg,
+                hatched:
+                  rule.action === "ignore" ||
+                  (rule.action === "variable" && !failed),
+                dashed: rule.action === "tolerate" || failed,
+                label:
+                  rule.action === "tolerate"
+                    ? `±${rule.maxDiffPercent ?? 5}%`
+                    : rule.action === "variable"
+                      ? t("select.ruleVariable")
+                      : rule.selector,
+                labelOnHighlight: rule.action !== "tolerate",
+              };
+            }),
           ),
           ...(side === "current" && previewMark?.startsWith("area:")
             ? ignoreAreas
@@ -1924,6 +2014,10 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
           onAddMore={() =>
             setSelection((current) => current && { ...current, adding: true })
           }
+          onVariable={actVariable}
+          other={otherText(selection.side, selection.picked.element)}
+          countFor={countFor(selection.side)}
+          onDrawArea={toggleAreas}
         />
       )}
       <Dialog

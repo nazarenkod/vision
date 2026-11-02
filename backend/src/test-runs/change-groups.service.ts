@@ -7,11 +7,11 @@ import { parseConfig } from '../compare/utils';
 import { DEFAULT_CONFIG } from '../compare/libs/pixelmatch/pixelmatch.service';
 import { PixelmatchConfig } from '../compare/libs/pixelmatch/pixelmatch.types';
 import { signaturesMatch } from '../compare/libs/pixelmatch/signature.core';
-import { UiTreeService, parseRegions, pngSize } from '../ui-tree/ui-tree.service';
+import { UiTreeService, outsideAreas, parseRegions, pngSize } from '../ui-tree/ui-tree.service';
 import { changeFingerprint, diffTrees, elementsUnderRegions, StructuralChange } from '../ui-tree/structure-diff';
 import { findNoiseHints, NoiseHint } from '../ui-tree/noise-hints';
 import { ComponentChange } from '../ui-tree/screen-checks';
-import { parseJsonArray } from '../ui-tree/comparison-inputs';
+import { parseJsonArray, parseUiTreeSettings, variableTextAreas } from '../ui-tree/comparison-inputs';
 import { TestRunDto } from './dto/testRun.dto';
 import { magnitudesSimilar, mapWithConcurrency, SIGNATURE_CONCURRENCY, TestRunsService } from './test-runs.service';
 
@@ -158,13 +158,17 @@ export class ChangeGroupsService {
 
   private async structuralGroups(runs: TestRun[]): Promise<ChangeGroup[]> {
     const withTrees = runs.filter((run) => run.uiTreeName && run.baselineUiTreeName);
+    if (!withTrees.length) return [];
+    const project = await this.prismaService.project.findUnique({ where: { id: withTrees[0].projectId } });
+    const settings = parseUiTreeSettings(project?.uiTreeSettings);
     const keyed = await mapWithConcurrency(withTrees, SIGNATURE_CONCURRENCY, async (run) => {
       const [tree, baseline] = await Promise.all([
         this.uiTreeService.load(run.uiTreeName),
         this.uiTreeService.load(run.baselineUiTreeName),
       ]);
       if (!tree || !baseline) return null;
-      const changes = diffTrees(baseline, tree);
+      // a new date in a marked text would make every screen a group of its own (REQ-033-33)
+      const changes = outsideAreas(diffTrees(baseline, tree), variableTextAreas(settings, run, [tree, baseline]));
       const fingerprint = changeFingerprint(changes);
       if (!fingerprint) return null;
       // Every changed area has to sit on an element the tree says changed.

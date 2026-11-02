@@ -412,3 +412,106 @@ describe("what is compared", () => {
     ).toBe(true);
   });
 });
+
+describe("variable text (spec 033)", () => {
+  const updated = rect(40, 400, 300, 40);
+  const dates = [rect(80, 600), rect(80, 700), rect(80, 800)];
+  const variable = (
+    id: string,
+    current: Rect[],
+    check?: ScreenRule["check"],
+  ) => ({
+    ...rule(id, "variable", current),
+    parts: [
+      { text: "Updated at " },
+      { pattern: "\\d+:\\d{2}", sample: "14:07" },
+    ],
+    ...(check ? { check } : {}),
+  });
+
+  it("puts variable-text rules in their own group", () => {
+    const result = overview(
+      structure({
+        rules: [
+          variable("updated", [updated]),
+          rule("clock", "ignore", [rect(0, 0)]),
+          {
+            ...variable("taken", [rect(0, 900)]),
+            check: { items: [], gone: false, overridden: true },
+          },
+        ],
+      }),
+      [],
+      [],
+    );
+    expect(result.variable.map((row) => row.key)).toEqual(["rule:updated"]);
+    expect(result.ignored.map((row) => row.key)).toEqual(["rule:clock"]);
+    // an ignore rule takes the element: the variable-text rule has no effect (REQ-033-22)
+    expect(result.outside).toEqual([
+      expect.objectContaining({ key: "rule:taken", effect: "overridden" }),
+    ]);
+  });
+
+  it("counts each variable-text element as one place", () => {
+    const result = overview(
+      structure({
+        rules: [variable("dates", dates), variable("updated", [updated])],
+      }),
+      [],
+      [],
+    );
+    expect(result.summary).toEqual({ kind: "except", count: 4 });
+  });
+
+  it("puts a failed variable text first in the verdict", () => {
+    const failed = {
+      ruleId: "updated",
+      kind: "failed" as const,
+      element: "TextView «Updated at undefined»",
+      text: "Updated at undefined",
+      reason: "pattern" as const,
+      bounds: updated,
+    };
+    expect(
+      verdict({
+        problems: [],
+        variableProblems: [failed],
+        changes: 3,
+        hasDiff: true,
+        only: false,
+      }),
+    ).toEqual({
+      tone: "failed",
+      title: "Does not fit the pattern",
+      reason: "Now it says “Updated at undefined”.",
+    });
+    expect(
+      verdict({
+        problems: [],
+        variableProblems: [{ ...failed, reason: "text" }],
+        changes: 0,
+        hasDiff: false,
+        only: false,
+      }).title,
+    ).toBe("The text around the value changed");
+    expect(
+      verdict({
+        problems: [],
+        variableProblems: [
+          {
+            ruleId: "updated",
+            kind: "gone",
+            element: "id:tv_updated",
+            bounds: updated,
+          },
+        ],
+        changes: 0,
+        hasDiff: false,
+        only: false,
+      }),
+    ).toMatchObject({
+      title: "The element is gone",
+      reason: "id:tv_updated is not on the snapshot.",
+    });
+  });
+});

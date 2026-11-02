@@ -20,8 +20,10 @@ upstream VRT, а згодом зможе працювати й на живій.
 [021](../specs/021-fixed-a11y-grouping/spec.md) задавали групування проблем, переживають збереження,
 але ніхто їх не читає. Так само з [020](../specs/020-remove-reference-device/spec.md) — `detectLoading`, `detectScreenMismatch` і
 `referenceDevice`.
-Правило елемента має дію `ignore`, `tolerate` або `compare`; `compare` («порівнювати лише»,
-[015](../specs/015-compare-selected-elements/spec.md)) лежить лише в `checkRules` перевірки.
+Правило елемента має дію `ignore`, `tolerate`, `compare` або `variable`; `compare` («порівнювати лише»,
+[015](../specs/015-compare-selected-elements/spec.md)) лежить лише в `checkRules` перевірки. `variable`
+(нестабільний текст, [033](../specs/033-variable-text/spec.md)) має `parts`: незмінний текст
+`{ text }` і місця `{ pattern, sample }` з регулярним виразом і значенням, з якого його побудовано.
 
 ## Нові таблиці
 

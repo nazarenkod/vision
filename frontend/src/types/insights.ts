@@ -92,7 +92,37 @@ export interface NoiseHint {
   element?: { selector: string; element: string };
 }
 
-export type ElementRuleAction = "ignore" | "tolerate" | "compare";
+// variable: the pixels are left out and the text is checked against parts (spec 033)
+export type ElementRuleAction = "ignore" | "tolerate" | "compare" | "variable";
+
+/** A part of a checked text: fixed text, or a place that fits a pattern (spec 033). */
+export type TextPart = { text: string } | { pattern: string; sample?: string };
+
+export type VariableTextReason = "text" | "pattern" | "too-long";
+
+/** How the texts a variable-text rule found on the snapshot fared. */
+export interface VariableCheck {
+  items: Array<{
+    text: string;
+    ok: boolean;
+    reason?: VariableTextReason;
+    bounds: Rect;
+    element: string;
+  }>;
+  // found in the baseline, nowhere in the snapshot
+  gone: boolean;
+  // an ignore rule takes every element it found
+  overridden: boolean;
+}
+
+export interface VariableTextProblem {
+  ruleId: string;
+  kind: "failed" | "gone";
+  element: string;
+  text?: string;
+  reason?: VariableTextReason;
+  bounds: Rect;
+}
 
 export interface ElementRule {
   id: string;
@@ -100,6 +130,8 @@ export interface ElementRule {
   // compare: only the elements such rules match are compared on this screen
   action: ElementRuleAction;
   maxDiffPercent?: number;
+  // variable: the text as fixed parts and places with a pattern
+  parts?: TextPart[];
   note?: string;
 }
 
@@ -200,6 +232,8 @@ export const DEFAULT_UI_TREE_SETTINGS: UiTreeSettings = {
 };
 
 export interface StructureInfo {
+  // variable texts that did not hold (spec 033); absent from older servers
+  variableProblems?: VariableTextProblem[];
   hasUiTree: boolean;
   hasBaselineUiTree: boolean;
   changes: StructuralChange[];
@@ -247,6 +281,8 @@ export type ScreenRule = ElementRule & {
   matches: number;
   // what the rule matched on each screenshot
   found?: { current: Rect[]; baseline: Rect[] };
+  // a variable-text rule: how its texts fared (spec 033)
+  check?: VariableCheck;
 };
 
 export interface ComparedElement {
@@ -341,6 +377,10 @@ export interface PickableElement {
   // no id or text of its own: found by a path from a stable element (spec 027)
   nameless?: boolean;
   variants?: SelectorVariant[];
+  // its text or label, to mark the part that changes (spec 033)
+  text?: string;
+  // a text without an id: a path down from the nearest id (REQ-033-27)
+  stableSelector?: string;
 }
 
 /** A way to find a nameless element: down from a stable ancestor or up from a stable descendant. */

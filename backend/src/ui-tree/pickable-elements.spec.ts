@@ -132,3 +132,16 @@ describe('pickableElements: elements with no name (spec 027)', () => {
     expect(Date.now() - started).toBeLessThan(500);
   });
 });
+
+describe('pickableElements: texts for variable-text rules (spec 033)', () => {
+  it('offers a path from the nearest id for a text without an id', () => {
+    const elements = pickableElements(parse(xml));
+    const template = elements.find((e) => e.text === 'Use template');
+    expect(template?.selector).toBe('text:Use template');
+    expect(template?.stableSelector).toMatch(/^xpath:.*row_template/);
+    // an element with its own id needs no path
+    const fee = elements.find((e) => e.selector === 'id:tv_fee');
+    expect(fee).toMatchObject({ text: 'Commission 0 UAH' });
+    expect(fee?.stableSelector).toBeUndefined();
+  });
+});

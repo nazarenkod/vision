@@ -119,7 +119,7 @@
 | REQ-033-24 | `backend/src/ui-tree/variable-text.spec.ts › does not check a text longer than 2000 characters` |
 | REQ-033-25 | `frontend/src/_helpers/variableText.helper.test.ts › finds by id, else by the text pattern, else by a path from an id` |
 | REQ-033-26 | `backend/src/ui-tree/comparison-inputs.spec.ts › finds an element by a text pattern with letters classes` |
-| REQ-033-27 | `backend/src/ui-tree/ui-tree.service.spec.ts › offers a path from the nearest id for a text without an id` |
+| REQ-033-27 | `backend/src/ui-tree/pickable-elements.spec.ts › offers a path from the nearest id for a text without an id` |
 | REQ-033-28 | `frontend/src/_helpers/variableText.helper.test.ts › has no way to find a whole text without an id above it` |
 | REQ-033-29 | `manual: позначити дату в рядку списку → у заголовку «4 на цьому екрані»` |
 | REQ-033-30 | `manual: знімок із правилом, що пройшло, і правилом, що ні → фіолетова штриховка й червоний пунктир на обох знімках` |

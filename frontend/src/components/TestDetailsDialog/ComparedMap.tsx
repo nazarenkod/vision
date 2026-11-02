@@ -14,7 +14,7 @@ interface ComparedMapProps {
   width?: number;
 }
 
-type Layer = "keep" | "ignore" | "tolerate" | "change";
+type Layer = "keep" | "ignore" | "tolerate" | "variable" | "change";
 
 const layerSx = (layer: Layer) => {
   switch (layer) {
@@ -30,6 +30,11 @@ const layerSx = (layer: Layer) => {
       };
     case "tolerate":
       return { border: `1.5px dashed ${tokens.status.new.bar}` };
+    case "variable":
+      return {
+        outline: `1px solid ${tokens.variable}`,
+        background: `repeating-linear-gradient(135deg, ${tokens.variable} 0 1.5px, transparent 1.5px 4px)`,
+      };
     case "change":
       return {
         bgcolor: tokens.status.changed.bg,
@@ -64,6 +69,7 @@ export const ComparedMap: React.FunctionComponent<ComparedMapProps> = ({
   const applying = [
     ...overview.ignored,
     ...overview.tolerated,
+    ...overview.variable,
     ...overview.compared.flatMap((element) => element.inside),
   ];
   const layers: Array<{ layer: Layer; rect: Rect }> = [
@@ -73,7 +79,9 @@ export const ComparedMap: React.FunctionComponent<ComparedMapProps> = ({
         layer:
           row.action === "tolerate"
             ? ("tolerate" as const)
-            : ("ignore" as const),
+            : row.action === "variable"
+              ? ("variable" as const)
+              : ("ignore" as const),
         rect,
       })),
     ),

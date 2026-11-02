@@ -50,6 +50,35 @@ describe('ChangeGroupsService', () => {
     expect(groups[0].changes[0]).toMatchObject({ kind: 'text', before: 'Pay', after: 'Send' });
   });
 
+  it('leaves variable-text changes out of the fingerprint', async () => {
+    const base = tree(xml);
+    // the same button change on both screens, each with its own fee shown
+    const withFee = (fee: string) =>
+      tree(xml.replace('text="Pay"', 'text="Send"').replace('text="Commission 0 UAH"', `text="Commission ${fee} UAH"`));
+    const runs = [
+      run('a', { name: 'Payment', uiTreeName: 'ta', baselineUiTreeName: 'base' }),
+      run('b', { name: 'Payment', uiTreeName: 'tb', baselineUiTreeName: 'base', device: 'Galaxy' }),
+    ];
+    const settings = {
+      elementRules: [
+        {
+          id: 'fee',
+          selector: 'id:tv_fee',
+          action: 'variable',
+          parts: [{ text: 'Commission ' }, { pattern: '\\d+' }, { text: ' UAH' }],
+        },
+      ],
+    };
+    const service = setup(runs, { base, ta: withFee('12'), tb: withFee('30') }, {});
+    service['prismaService'].project.findUnique = jest
+      .fn()
+      .mockResolvedValue({ ...TEST_PROJECT, uiTreeSettings: JSON.stringify(settings) });
+
+    const groups = await service.getGroups('build');
+
+    expect(groups.map((g) => [g.kind, g.testRuns.map((r) => r.id)])).toEqual([['structural', ['a', 'b']]]);
+  });
+
   it('leaves a run out of a structural group when part of its change is invisible to the tree', async () => {
     const base = tree(xml);
     const payRenamed = tree(xml.replace('text="Pay"', 'text="Send"'));

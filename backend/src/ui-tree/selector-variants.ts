@@ -90,6 +90,21 @@ function stepTo(tree: UiTree, node: UiNode): string {
 }
 
 /**
+ * A path down to a node from its nearest ancestor with an app id, built
+ * without evaluating it: a text whose value changes is found next run by
+ * where it is, not by what it says (REQ-033-27). Null without such an ancestor.
+ */
+export function pathFromIdAbove(tree: UiTree, node: UiNode): string | null {
+  const above = [...ancestors(tree, node)].find((index) => stableKind(tree.nodes[index]) === 'id');
+  if (above === undefined) return null;
+  const step = anchorStep(tree, tree.nodes[above]);
+  if (!step) return null;
+  const path: string[] = [];
+  for (let at = node; at.index !== above; at = tree.nodes[at.parent]) path.unshift(stepTo(tree, at));
+  return `${XPATH_PREFIX}${step}${path.join('')}`;
+}
+
+/**
  * Selectors for an element with no name: down from its nearest stable
  * ancestor (REQ-027-11) and up from its nearest stable descendant
  * (REQ-027-15), best first (REQ-027-16). A variant that would not find the

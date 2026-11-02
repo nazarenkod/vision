@@ -236,6 +236,8 @@ export const SelectionPanel: React.FunctionComponent<SelectionPanelProps> = ({
               onAct={onAct}
               row
               compareLabel={t("selection.compareSelected")}
+              // one text is marked at a time (REQ-033-09)
+              variableBlocked={t("select.variableOne")}
             />
             <Box sx={{ ml: "auto", minWidth: 210 }}>
               <ScopeToggle scope={scope} onScope={setScope} />

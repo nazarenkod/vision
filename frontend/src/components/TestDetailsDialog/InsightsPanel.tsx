@@ -1099,6 +1099,7 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
             verdict={verdict(
               {
                 problems: structure.compareOnly?.problems ?? [],
+                variableProblems: structure.variableProblems ?? [],
                 changes: changeCount,
                 hasDiff: !!testRun.diffName,
                 only: compared.only,

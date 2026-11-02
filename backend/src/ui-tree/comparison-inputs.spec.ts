@@ -10,6 +10,8 @@ import {
   parseUiTreeSettings,
   resolveRules,
 } from './comparison-inputs';
+import { diffTrees } from './structure-diff';
+import { outsideAreas } from './ui-tree.service';
 import { applyTolerance, computePixelmatchDiff, shiftBaseline } from '../compare/libs/pixelmatch/pixelmatch.core';
 
 const xml = readFileSync(path.join(__dirname, '__fixtures__', 'android-payment.xml'), 'utf8');
@@ -285,5 +287,69 @@ describe('parseUiTreeSettings: settings no longer read', () => {
     };
     const settings = parseUiTreeSettings(JSON.stringify(old));
     expect(JSON.parse(JSON.stringify(settings))).toMatchObject(old);
+  });
+});
+
+describe('resolveRules: variable text (spec 033)', () => {
+  const withFee = (text: string) => parse(xml.replace('text="Commission 0 UAH"', `text="${text}"`));
+  const parts = [{ text: 'Commission ' }, { pattern: '\\d+' }, { text: ' UAH' }];
+  const variable = { id: 'v', selector: 'id:tv_fee', action: 'variable' as const, parts };
+  const feeBounds = (tree: ReturnType<typeof parse>) =>
+    tree.nodes.find((node) => node.resourceId.endsWith('tv_fee')).bounds;
+
+  it('leaves a variable-text element out of the pixels where it was and where it is', () => {
+    const current = withFee('Commission 15 UAH');
+    const baseline = withFee('Commission 0 UAH');
+    const resolved = resolveRules([variable], [current, baseline]);
+    const { x, y, width, height } = feeBounds(current);
+    expect(resolved.ignore).toEqual([
+      { x: x - 2, y: y - 2, width: width + 4, height: height + 4 },
+      { x: x - 2, y: y - 2, width: width + 4, height: height + 4 },
+    ]);
+    expect(resolved.variable.v).toMatchObject({ gone: false, overridden: false, items: [{ ok: true }] });
+  });
+
+  it('keeps the text change of a variable-text element out of the element changes', () => {
+    const current = withFee('Commission 15 UAH');
+    const baseline = withFee('Commission 0 UAH');
+    const changes = diffTrees(baseline, current);
+    expect(changes.some((change) => change.resourceId.endsWith('tv_fee'))).toBe(true);
+    const resolved = resolveRules([variable], [current, baseline]);
+    expect(outsideAreas(changes, resolved.ignore).some((change) => change.resourceId.endsWith('tv_fee'))).toBe(false);
+  });
+
+  it('says why a text does not hold', () => {
+    const resolved = resolveRules([variable], [withFee('Commission NaN UAH'), withFee('Commission 0 UAH')]);
+    expect(resolved.variable.v.items).toEqual([
+      expect.objectContaining({ ok: false, reason: 'pattern', text: 'Commission NaN UAH' }),
+    ]);
+  });
+
+  it('reports a variable-text element that is gone from the snapshot', () => {
+    const gone = parse(xml.replace('com.bank.app:id/tv_fee', 'com.bank.app:id/tv_other'));
+    const resolved = resolveRules([variable], [gone, withFee('Commission 0 UAH')]);
+    expect(resolved.variable.v).toMatchObject({ gone: true, items: [] });
+  });
+
+  it('checks every element a variable-text rule finds', () => {
+    const tree = parse(xml);
+    const words = { id: 'w', selector: 'text:/^Next$/', action: 'variable' as const, parts: [{ pattern: '\\p{L}+' }] };
+    const digits = { id: 'd', selector: 'text:/^Next$/', action: 'variable' as const, parts: [{ pattern: '\\d+' }] };
+    const resolved = resolveRules([words, digits], [tree, tree]);
+    expect(resolved.variable.w.items.map((item) => item.ok)).toEqual([true, true]);
+    expect(resolved.variable.d.items.map((item) => item.ok)).toEqual([false, false]);
+  });
+
+  it('lets an ignore rule win over a variable-text rule on the same element', () => {
+    const tree = withFee('Commission NaN UAH');
+    const ignore = { id: 'i', selector: 'id:tv_fee', action: 'ignore' as const };
+    const resolved = resolveRules([ignore, variable], [tree, tree]);
+    expect(resolved.variable.v).toMatchObject({ overridden: true, items: [] });
+  });
+
+  it('finds an element by a text pattern with letters classes', () => {
+    const tree = withFee('Комісія 15 грн');
+    const find = (selector: string) => tree.nodes.filter((node) => matchesSelector(node, parseSelector(selector)));
+    expect(find('text:/^\\p{L}+\\s+.*?\\s+\\p{L}+$/u')).toHaveLength(1);
   });
 });

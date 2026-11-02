@@ -13,7 +13,8 @@ import { ComponentChange, componentChanges, invisibleChanges } from './screen-ch
 import { PrismaService } from '../prisma/prisma.service';
 import { CompareOnlyPlan, ComparedElement, insideCompared, planCompareOnly } from './compare-only';
 import { elementForArea } from './area-elements';
-import { addsSomething, selectorVariants, SelectorVariant } from './selector-variants';
+import { addsSomething, pathFromIdAbove, selectorVariants, SelectorVariant, stableKind } from './selector-variants';
+import { insideKeep, VariableTextProblem } from './variable-text';
 import {
   checkKey,
   computeMoves,
@@ -25,6 +26,7 @@ import {
   resolveRules,
   ResolvedRules,
   UiTreeSettings,
+  VariableCheck,
 } from './comparison-inputs';
 
 const GZIP_MAGIC = [0x1f, 0x8b];
@@ -51,6 +53,8 @@ export interface ComparisonInputs {
   settings: UiTreeSettings | null;
   // only some elements are compared (spec 015); inactive otherwise
   compareOnly: CompareOnlyPlan;
+  // variable texts that did not hold: each sends the run to review (spec 033)
+  variableProblems: VariableTextProblem[];
 }
 
 export interface UiTreeOptions {
@@ -80,8 +84,12 @@ export interface StructureInfo {
       matches: number;
       // what the rule matched on each screenshot, for drawing it there
       found: { current: Rect[]; baseline: Rect[] };
+      // a variable-text rule: how its texts on the snapshot fared (spec 033)
+      check?: VariableCheck;
     }
   >;
+  // variable texts that did not hold, worst first in the Changes tab (REQ-033-34)
+  variableProblems: VariableTextProblem[];
   // what is compared when the check names its elements, and what the pixels cannot vouch for
   compareOnly: Pick<CompareOnlyPlan, 'active' | 'keep' | 'problems'> & {
     compared: Array<Omit<ComparedElement, 'shift'> & { shiftDp?: { dx: number; dy: number } }>;
@@ -112,10 +120,24 @@ export interface PickableElement {
   // no id or text of its own: found by a path from a stable element, best first (spec 027)
   nameless?: boolean;
   variants?: SelectorVariant[];
+  // its text or label, for marking the part that changes (spec 033)
+  text?: string;
+  // a text with no id of its own: a path down from the nearest id, which a new value does not break (REQ-033-27)
+  stableSelector?: string;
 }
 
 // an element covering nearly the whole screen is a container, not something to pick
 const MAX_PICKABLE_SCREEN_SHARE = 0.9;
+
+/** A text element's text and, without an id of its own, a path to it from an id above. */
+function textFields(tree: UiTree, node: UiNode): Pick<PickableElement, 'text' | 'stableSelector'> {
+  const text = (node.text || node.label).trim();
+  if (!text) return {};
+  if (stableKind(node) === 'id') return { text };
+  // built, not evaluated: checking a path costs a walk of the tree, for every text on screen
+  const fromId = pathFromIdAbove(tree, node);
+  return fromId ? { text, stableSelector: fromId } : { text };
+}
 
 /** How a rule finds this element: its own id, else its text or label. */
 export function selectorForNode(node: UiNode): string | null {
@@ -155,6 +177,7 @@ export function pickableElements(tree: UiTree): PickableElement[] {
             element: describeNode(node),
             bounds: node.bounds,
             ...(named[i] ? {} : { nameless: true, variants: variants[i] }),
+            ...textFields(tree, node),
           },
         ]
       : []
@@ -164,6 +187,34 @@ export function pickableElements(tree: UiTree): PickableElement[] {
 /** Width and height from a PNG's IHDR chunk, without decoding the image. */
 export function pngSize(buffer: Buffer): { width: number; height: number } {
   return { width: buffer.readUInt32BE(16), height: buffer.readUInt32BE(20) };
+}
+
+/** Variable texts that did not hold, inside the compared elements when only some are compared (REQ-033-18…21). */
+export function variableProblems(
+  rules: ElementRule[],
+  resolved: ResolvedRules,
+  compareOnly: CompareOnlyPlan
+): VariableTextProblem[] {
+  const problems: VariableTextProblem[] = [];
+  for (const rule of rules) {
+    const check = resolved.variable[rule.id];
+    if (!check) continue;
+    for (const item of check.items) {
+      if (!item.ok) {
+        problems.push({
+          ruleId: rule.id,
+          kind: 'failed',
+          element: item.element,
+          text: item.text,
+          reason: item.reason,
+          bounds: item.bounds,
+        });
+      }
+    }
+    const was = resolved.found[rule.id]?.baseline[0];
+    if (check.gone && was) problems.push({ ruleId: rule.id, kind: 'gone', element: rule.selector, bounds: was });
+  }
+  return insideKeep(problems, compareOnly.active ? compareOnly.keep : null);
 }
 
 /** Element changes outside the ignored areas (element rules, system bars). */
@@ -416,6 +467,7 @@ export class UiTreeService {
         scope,
         matches: inputs.rules.matches[rule.id] ?? 0,
         found: inputs.rules.found[rule.id] ?? { current: [], baseline: [] },
+        ...(inputs.rules.variable[rule.id] ? { check: inputs.rules.variable[rule.id] } : {}),
       }));
     const elements = tree ? pickableElements(tree) : [];
     const nodesByKey = new Map((tree?.nodes ?? []).map((node) => [node.key, node]));
@@ -454,6 +506,7 @@ export class UiTreeService {
           dyDp: Math.round((move.to.y - move.from.y) / ppd),
         };
       }),
+      variableProblems: inputs.variableProblems,
       compareOnly: {
         active: inputs.compareOnly.active,
         keep: inputs.compareOnly.keep,
@@ -518,9 +571,10 @@ export class UiTreeService {
       moves: [],
       systemBars: [],
       systemBarsFrom: null,
-      rules: { ignore: [], tolerate: [], matches: {}, found: {} },
+      rules: { ignore: [], tolerate: [], matches: {}, found: {}, variable: {} },
       settings: null,
       compareOnly: planCompareOnly([], null, null),
+      variableProblems: [],
     };
     const [tree, baselineTree, project] = await Promise.all([
       this.load(testRun.uiTreeName),
@@ -572,6 +626,7 @@ export class UiTreeService {
       rules: resolved,
       settings,
       compareOnly,
+      variableProblems: variableProblems(rules, resolved, compareOnly),
     };
   }
 

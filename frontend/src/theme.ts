@@ -32,6 +32,9 @@ export type Palette = {
   a11y: string;
   a11ySoft: string;
   a11yExisting: string;
+  // a text whose marked part may change (spec 033): not a rule colour any other uses
+  variable: string;
+  variableSoft: string;
   // the field screenshots lie on
   lightbox: string;
   scrim: string;
@@ -65,6 +68,8 @@ export const palettes: Record<ThemeMode, Palette> = {
     a11y: "#DC6803",
     a11ySoft: "rgba(220, 104, 3, 0.10)",
     a11yExisting: "#98A2B3",
+    variable: "#6941C6",
+    variableSoft: "#F4EBFF",
     lightbox: "#F0F3F1",
     scrim: "rgba(8, 14, 11, 0.42)",
     shadowPop: "0 16px 40px -12px rgba(16, 24, 20, 0.28)",
@@ -95,6 +100,8 @@ export const palettes: Record<ThemeMode, Palette> = {
     a11y: "#F79009",
     a11ySoft: "rgba(247, 144, 9, 0.16)",
     a11yExisting: "#7D8984",
+    variable: "#B692F6",
+    variableSoft: "rgba(182, 146, 246, 0.16)",
     lightbox: "radial-gradient(120% 90% at 50% 40%, #2A3330 0%, #171C1A 70%)",
     scrim: "rgba(0, 0, 0, 0.62)",
     shadowPop: "0 18px 50px -12px rgba(0, 0, 0, 0.7)",

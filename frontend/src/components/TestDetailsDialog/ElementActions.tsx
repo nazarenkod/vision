@@ -24,6 +24,14 @@ export const swatch = (action: ElementRuleAction, size = 16) => {
     };
   if (action === "compare")
     return { ...base, border: `2px solid ${tokens.brand}` };
+  // hatched like ignore, in a colour of its own: left out, but checked (REQ-033-30)
+  if (action === "variable")
+    return {
+      ...base,
+      outline: `1.5px solid ${tokens.variable}`,
+      outlineOffset: -1.5,
+      background: `repeating-linear-gradient(135deg, ${tokens.variable} 0 2px, transparent 2px 5px)`,
+    };
   return { ...base, border: `1.5px dashed ${tokens.status.new.fg}` };
 };
 
@@ -31,6 +39,7 @@ const ACTIONS: Array<{ action: ElementRuleAction; key: string }> = [
   { action: "ignore", key: "I" },
   { action: "compare", key: "C" },
   { action: "tolerate", key: "T" },
+  { action: "variable", key: "V" },
 ];
 
 interface ActionButtonsProps {
@@ -41,6 +50,8 @@ interface ActionButtonsProps {
   row?: boolean;
   // "Compare only this" next to one element, "Compare only these" for several
   compareLabel: string;
+  // why Variable text cannot be chosen here: several elements, or no text (REQ-033-01, 09)
+  variableBlocked?: string;
 }
 
 /** Ignore, Compare only, Allow: the same next to one element and for several. */
@@ -50,6 +61,7 @@ export const ActionButtons: React.FunctionComponent<ActionButtonsProps> = ({
   onAct,
   row,
   compareLabel,
+  variableBlocked,
 }) => {
   const { t } = useT();
   const label = (action: ElementRuleAction) =>
@@ -57,12 +69,16 @@ export const ActionButtons: React.FunctionComponent<ActionButtonsProps> = ({
       ? t("select.ignore")
       : action === "compare"
         ? compareLabel
-        : t("select.allow", { percent: ALLOW_PERCENT });
+        : action === "variable"
+          ? t("select.variable")
+          : t("select.allow", { percent: ALLOW_PERCENT });
   return (
     <>
       {ACTIONS.map(({ action, key }) => {
         // compare only names the elements of one check (REQ-024-16)
-        const blocked = action === "compare" && scope === "project";
+        const blocked =
+          (action === "compare" && scope === "project") ||
+          (action === "variable" && !!variableBlocked);
         const button = (
           <ButtonBase
             key={action}
@@ -97,7 +113,14 @@ export const ActionButtons: React.FunctionComponent<ActionButtonsProps> = ({
           </ButtonBase>
         );
         return blocked ? (
-          <Tooltip key={action} title={t("select.compareOneScreen")}>
+          <Tooltip
+            key={action}
+            title={
+              action === "variable"
+                ? variableBlocked
+                : t("select.compareOneScreen")
+            }
+          >
             <span>{button}</span>
           </Tooltip>
         ) : (
@@ -153,12 +176,14 @@ interface ActionKeys {
   onUp?: () => void;
   onDown?: () => void;
   onClose: () => void;
+  // Enter, where something waits to be saved (REQ-033-10)
+  onEnter?: () => void;
   scope: RuleScope;
   busy: boolean;
 }
 
 /**
- * I, C and T act, Esc closes; ↑ and ↓ only where they are given, as they
+ * I, C, T and V act, Esc closes; Enter, ↑ and ↓ only where they are given, as they
  * step through one element's parents (REQ-024-04, REQ-028-15).
  */
 export function useActionKeys(keys: ActionKeys) {
@@ -168,11 +193,13 @@ export function useActionKeys(keys: ActionKeys) {
     const onKey = (event: KeyboardEvent) => {
       const target = event.target as HTMLElement | null;
       if (target?.closest("input, textarea, [contenteditable=true]")) return;
-      const { onAct, onUp, onDown, onClose, scope, busy } = latest.current;
+      const { onAct, onUp, onDown, onClose, onEnter, scope, busy } =
+        latest.current;
       const act: Record<string, ElementRuleAction> = {
         i: "ignore",
         c: "compare",
         t: "tolerate",
+        v: "variable",
       };
       const key = event.key.toLowerCase();
       if (act[key] && onAct && !event.metaKey && !event.ctrlKey && !busy) {
@@ -180,6 +207,10 @@ export function useActionKeys(keys: ActionKeys) {
         event.preventDefault();
         event.stopPropagation();
         onAct(act[key], scope);
+      } else if (event.key === "Enter" && onEnter && !busy) {
+        event.preventDefault();
+        event.stopPropagation();
+        onEnter();
       } else if (event.key === "ArrowUp" && onUp) {
         event.preventDefault();
         event.stopPropagation();

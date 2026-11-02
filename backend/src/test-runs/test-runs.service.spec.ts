@@ -110,7 +110,8 @@ const initService = async ({
             toleranceAreas: [],
             moves: [],
             systemBars: [],
-            rules: { ignore: [], tolerate: [], matches: {}, found: {} },
+            rules: { ignore: [], tolerate: [], matches: {}, found: {}, variable: {} },
+            variableProblems: [],
             settings: null,
             compareOnly: { active: false, moves: [], keep: [], compared: [], ignoreOutside: [], problems: [] },
           }),
@@ -416,7 +417,8 @@ describe('TestRunsService', () => {
       toleranceAreas: [],
       moves: [],
       systemBars: [],
-      rules: { ignore: [], tolerate: [], matches: {}, found: {} },
+      rules: { ignore: [], tolerate: [], matches: {}, found: {}, variable: {} },
+      variableProblems: [],
       settings: null,
       compareOnly: {
         active: true,
@@ -457,7 +459,8 @@ describe('TestRunsService', () => {
       moves: [],
       systemBars: [],
       systemBarsFrom: null,
-      rules: { ignore: [], tolerate: [], matches: {}, found: {} },
+      rules: { ignore: [], tolerate: [], matches: {}, found: {}, variable: {} },
+      variableProblems: [],
       settings: null,
       compareOnly: {
         active: true,
@@ -510,6 +513,54 @@ describe('TestRunsService', () => {
       // the other devices of the check in the build are compared again
       expect(testRunFindManyMock.mock.calls[0][0].where).toMatchObject({ name: 'Payment', customTags: '' });
       expect(testRunFindManyMock.mock.calls[0][0].where.testVariationId).toBeUndefined();
+    });
+  });
+
+  describe('variable text (spec 033)', () => {
+    const parts = [{ text: 'Updated at ' }, { pattern: '\\d+:\\d{2}', sample: '14:07' }];
+
+    it('refuses a variable-text rule without a place to check', async () => {
+      service = await initService({});
+      service.findOne = jest.fn();
+      await expect(
+        service.addElementRule('run', {
+          scope: 'screen',
+          selector: 'id:tv_updated',
+          action: 'variable',
+          parts: [{ text: 'Updated at 14:07' }],
+        })
+      ).rejects.toThrow('Mark at least one place that changes');
+      expect(service.findOne).not.toHaveBeenCalled();
+    });
+
+    it('replaces the rule it names in the same write', async () => {
+      const testRun = generateTestRun({ name: 'Payment', customTags: '' });
+      const projectUpdateMock = jest.fn().mockResolvedValue({});
+      service = await initService({
+        projectFindUniqueMock: jest.fn().mockResolvedValue({ uiTreeSettings: null }),
+        testRunFindManyMock: jest.fn().mockResolvedValue([]),
+      });
+      service.findOne = jest.fn().mockResolvedValue(testRun);
+      service.calculateDiff = jest.fn().mockResolvedValue(testRun);
+      service['prismaService'].project['update'] = projectUpdateMock;
+      service['prismaService'].testVariation['updateMany'] = jest.fn().mockResolvedValue({ count: 0 });
+      service['uiTreeService'].checkRules = jest
+        .fn()
+        .mockResolvedValue([{ id: 'ignored', selector: 'id:tv_updated', action: 'ignore' }]);
+
+      const rule = await service.addElementRule(testRun.id, {
+        scope: 'screen',
+        selector: 'id:tv_updated',
+        action: 'variable',
+        parts,
+        replacesRuleId: 'ignored',
+      });
+
+      expect(projectUpdateMock).toHaveBeenCalledTimes(1);
+      const settings = JSON.parse(projectUpdateMock.mock.calls[0][0].data.uiTreeSettings);
+      expect(settings.checkRules['["Payment",""]']).toEqual([
+        { id: rule.id, selector: 'id:tv_updated', action: 'variable', parts },
+      ]);
     });
   });
 

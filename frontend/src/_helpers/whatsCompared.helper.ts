@@ -5,6 +5,7 @@ import {
   Rect,
   ScreenRule,
   StructureInfo,
+  VariableTextProblem,
 } from "../types/insights";
 import { IgnoreArea } from "../types/ignoreArea";
 import { english, Text } from "../i18n";
@@ -48,7 +49,13 @@ export type RowSource =
  * compared elements, it found nothing, or (a compare-only rule without any
  * UI tree) it could not apply.
  */
-export type RowEffect = "applies" | "outside" | "nothing-found" | "no-tree";
+export type RowEffect =
+  | "applies"
+  | "outside"
+  | "nothing-found"
+  | "no-tree"
+  // a variable text an ignore rule takes over (REQ-033-22)
+  | "overridden";
 
 export interface CompareRow {
   // the mark it lights on the screenshots (REQ-024-24)
@@ -86,6 +93,8 @@ export interface Overview {
   compared: ComparedRow[];
   ignored: CompareRow[];
   tolerated: CompareRow[];
+  // texts whose marked part may change (spec 033)
+  variable: CompareRow[];
   // outside the compared elements, rules that found nothing, compare-only without a tree
   outside: CompareRow[];
   keep: Rect[];
@@ -121,7 +130,11 @@ function ruleRow(rule: ScreenRule): CompareRow {
     kind: "rule",
     action: rule.action,
     source: rule.scope,
-    effect: nothing ? "nothing-found" : "applies",
+    effect: nothing
+      ? "nothing-found"
+      : rule.check?.overridden
+        ? "overridden"
+        : "applies",
     rects,
     rule,
   };
@@ -262,9 +275,16 @@ export function overview(
 
   const ignored: CompareRow[] = [];
   const tolerated: CompareRow[] = [];
+  const variable: CompareRow[] = [];
   const outside: CompareRow[] = [];
+  const groupOf = (row: CompareRow) =>
+    row.action === "tolerate"
+      ? tolerated
+      : row.action === "variable"
+        ? variable
+        : ignored;
   for (const row of rows) {
-    if (row.effect === "nothing-found") {
+    if (row.effect === "nothing-found" || row.effect === "overridden") {
       outside.push(row);
       continue;
     }
@@ -279,13 +299,13 @@ export function overview(
       } else if (
         row.rects.some((rect) => keep.some((k) => overlaps(rect, k)))
       ) {
-        (row.action === "tolerate" ? tolerated : ignored).push(row);
+        groupOf(row).push(row);
       } else {
         outside.push({ ...row, effect: "outside" });
       }
       continue;
     }
-    (row.action === "tolerate" ? tolerated : ignored).push(row);
+    groupOf(row).push(row);
   }
   // without any UI tree a compare-only rule names nothing (REQ-030-33)
   if (plan?.active && !only) {
@@ -296,7 +316,8 @@ export function overview(
   }
 
   const elements = compared.filter((row) => row.state !== "nothing-found");
-  const places = ignored.reduce(
+  // each element a variable-text rule found is a place of its own (REQ-033-32)
+  const places = [...ignored, ...variable].reduce(
     (sum, row) => sum + (row.kind === "rule" ? row.rects.length || 1 : 1),
     0,
   );
@@ -308,7 +329,16 @@ export function overview(
       ? { kind: "except", count: places }
       : { kind: "whole", count: 0 };
 
-  return { only, summary, compared, ignored, tolerated, outside, keep };
+  return {
+    only,
+    summary,
+    compared,
+    ignored,
+    tolerated,
+    variable,
+    outside,
+    keep,
+  };
 }
 
 /** Rows of "What changed": changed spots by element, then changes the UI tree shows (REQ-030-50). */
@@ -346,6 +376,8 @@ const PROBLEM_ORDER: CompareOnlyProblem["kind"][] = [
 export function verdict(
   input: {
     problems: CompareOnlyProblem[];
+    // variable texts that did not hold (spec 033)
+    variableProblems?: VariableTextProblem[];
     changes: number;
     // the comparison produced a diff the panel has no rows for
     hasDiff: boolean;
@@ -396,6 +428,33 @@ export function verdict(
           reason: text("verdict.resizedWhy", { element: problem.element }),
         };
     }
+  }
+  // why the run waits for a person comes before how much changed (REQ-033-34)
+  const variable = input.variableProblems ?? [];
+  const failed = variable.filter((item) => item.kind === "failed");
+  if (variable.length) {
+    const first = failed[0] ?? variable[0];
+    if (first.kind === "gone") {
+      return {
+        tone: "failed",
+        title: text("verdict.variableGone"),
+        reason: text("verdict.variableGoneWhy", { element: first.element }),
+      };
+    }
+    return {
+      tone: "failed",
+      title: text(
+        first.reason === "text"
+          ? "verdict.variableText"
+          : first.reason === "too-long"
+            ? "verdict.variableTooLong"
+            : "verdict.variablePattern",
+      ),
+      reason: text(
+        failed.length > 1 ? "verdict.variableWhyMany" : "verdict.variableWhy",
+        { text: first.text ?? "", count: failed.length },
+      ),
+    };
   }
   if (problems.some((item) => item.kind === "no-tree")) {
     return {

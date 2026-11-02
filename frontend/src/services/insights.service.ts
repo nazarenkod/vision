@@ -8,6 +8,7 @@ import {
   ChangeGroup,
   ElementRule,
   ElementRuleAction,
+  TextPart,
   GroupSummary,
   JiraBugPreparation,
   JiraUser,
@@ -112,6 +113,9 @@ export const insightsService = {
       selector: string;
       action: ElementRuleAction;
       maxDiffPercent?: number;
+      parts?: TextPart[];
+      // the rule this one takes the place of, in the same write (REQ-033-14)
+      replacesRuleId?: string;
     },
   ) => post<ElementRule>(`/test-runs/${testRunId}/element-rules`, rule),
   // what a selector would find, before the rule is saved (REQ-027-32)

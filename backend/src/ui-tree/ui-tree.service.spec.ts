@@ -231,7 +231,8 @@ describe('UiTreeService, compare only', () => {
       moves: [],
       systemBars: [],
       systemBarsFrom: null,
-      rules: { ignore: [], tolerate: [], matches: {}, found: {} },
+      rules: { ignore: [], tolerate: [], matches: {}, found: {}, variable: {} },
+      variableProblems: [],
       settings: null,
       compareOnly: { active: false, moves: [], keep: [], compared: [], ignoreOutside: [], problems: [] },
     });

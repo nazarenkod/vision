@@ -16,6 +16,7 @@ import {
   foundOn,
   Overview,
 } from "../../_helpers/whatsCompared.helper";
+import { placesIn } from "../../_helpers/variableText.helper";
 import { ComparedMap } from "./ComparedMap";
 import { tokens } from "../../theme";
 import { Text, useT } from "../../i18n";
@@ -44,7 +45,7 @@ interface WhatsComparedProps {
   onPreview: (id: string | undefined) => void;
 }
 
-type Swatch = "compare" | "ignore" | "tolerate" | "gone" | "off";
+type Swatch = "compare" | "ignore" | "tolerate" | "variable" | "gone" | "off";
 
 const swatchSx = (swatch: Swatch) => {
   const base = {
@@ -68,6 +69,13 @@ const swatchSx = (swatch: Swatch) => {
       };
     case "tolerate":
       return { ...base, border: `1.5px dashed ${tokens.status.new.fg}` };
+    case "variable":
+      return {
+        ...base,
+        outline: `1.5px solid ${tokens.variable}`,
+        outlineOffset: -1.5,
+        background: `repeating-linear-gradient(135deg, ${tokens.variable} 0 2px, transparent 2px 5px)`,
+      };
     case "off":
       return { ...base, border: `1px dashed ${tokens.borderStrong}` };
   }
@@ -289,13 +297,17 @@ export const WhatsCompared: React.FunctionComponent<WhatsComparedProps> = ({
         ? "tolerate"
         : item.action === "compare"
           ? "compare"
-          : "ignore";
+          : item.action === "variable"
+            ? "variable"
+            : "ignore";
     const reason =
       item.effect === "nothing-found"
         ? t("compared.reason.nothingFound")
         : item.effect === "no-tree"
           ? t("compared.reason.noTree")
-          : null;
+          : item.effect === "overridden"
+            ? t("compared.variable.overridden")
+            : null;
     const opens = item.kind === "area" || item.kind === "testArea";
     const open = () => {
       if (item.kind === "area" && item.area) onOpenArea(String(item.area.id));
@@ -503,6 +515,144 @@ export const WhatsCompared: React.FunctionComponent<WhatsComparedProps> = ({
     ).values(),
   ];
 
+  // a text with its marked part: what it says now, highlighted, and whether it holds (REQ-033-31)
+  const variableRow = (item: CompareRow) => {
+    const rule = item.rule as ScreenRule;
+    const check = rule.check;
+    const items = check?.items ?? [];
+    const failed = items.filter((entry) => !entry.ok);
+    const shown = failed[0] ?? items[0];
+    const parts = rule.parts ?? [];
+    const segments = shown
+      ? placesIn(parts, shown.text)
+      : [
+          {
+            text: parts
+              .map((part) =>
+                "text" in part ? part.text : (part.sample ?? "…"),
+              )
+              .join(""),
+            place: false,
+          },
+        ];
+    const patterns = parts
+      .flatMap((part) => ("pattern" in part ? [part.pattern] : []))
+      .join(" · ");
+    const bad = !!check && (check.gone || failed.length > 0);
+    const tag = !check
+      ? t("compared.variable.notChecked")
+      : check.gone
+        ? t("compared.variable.gone")
+        : items.length > 1
+          ? t("compared.variable.someFit", {
+              ok: items.length - failed.length,
+              count: items.length,
+            })
+          : failed.length
+            ? t(
+                shown?.reason === "text"
+                  ? "compared.variable.textDiffers"
+                  : shown?.reason === "too-long"
+                    ? "compared.variable.tooLong"
+                    : "compared.variable.notFit",
+              )
+            : t("compared.variable.fits");
+    const tone = !check
+      ? tokens.status.neutral
+      : bad
+        ? tokens.status.failed
+        : tokens.status.passed;
+    const others = items.filter((entry) => entry !== shown);
+    const fact =
+      failed.length && shown?.reason === "pattern"
+        ? t("compared.variable.expected", { pattern: patterns })
+        : others.length
+          ? [
+              ...others.slice(0, 2).map((entry) => entry.text),
+              ...(others.length > 2
+                ? [t("compared.variable.more", { count: others.length - 2 })]
+                : []),
+            ].join(" · ")
+          : null;
+    return (
+      <Box key={item.key} sx={{ display: "flex", flexDirection: "column" }}>
+        <Tooltip placement="left" title={patterns}>
+          <Box
+            data-testid="variableRule"
+            data-state={!check ? "unchecked" : bad ? "failed" : "fits"}
+            onMouseEnter={() => onPreview(item.key)}
+            onMouseLeave={() => onPreview(undefined)}
+            sx={{
+              ...rowSx,
+              bgcolor: bad ? tokens.status.failed.bg : "transparent",
+            }}
+          >
+            <Box sx={swatchSx(bad ? "gone" : "variable")} />
+            <Box component="span" sx={nameSx}>
+              {segments.map((segment, i) =>
+                segment.place ? (
+                  <Box
+                    key={i}
+                    component="span"
+                    sx={{
+                      fontWeight: 600,
+                      color: bad ? tokens.status.failed.fg : tokens.variable,
+                      bgcolor: bad ? "transparent" : tokens.variableSoft,
+                      borderRadius: "4px",
+                      px: 0.5,
+                    }}
+                  >
+                    {segment.text}
+                  </Box>
+                ) : (
+                  <span key={i}>{segment.text}</span>
+                ),
+              )}
+            </Box>
+            <Box
+              component="span"
+              sx={{
+                fontSize: 12,
+                fontWeight: 600,
+                borderRadius: "999px",
+                px: 0.9,
+                flexShrink: 0,
+                color: tone.fg,
+                bgcolor: tone.bg,
+              }}
+            >
+              {tag}
+            </Box>
+            <Chip>{sourceText(item)}</Chip>
+            {removeButton(rule)}
+          </Box>
+        </Tooltip>
+        {fact && (
+          <Box
+            sx={{
+              fontSize: 12.5,
+              color: tokens.textMuted,
+              pl: 3,
+              mt: -0.25,
+              mb: 0.5,
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              whiteSpace: "nowrap",
+            }}
+          >
+            {fact}
+          </Box>
+        )}
+      </Box>
+    );
+  };
+  const variableFailed = overview.variable.filter(
+    (item) =>
+      !!item.rule?.check &&
+      (item.rule.check.gone ||
+        item.rule.check.items.some((entry) => !entry.ok)),
+  );
+
   const group = (title: string, rows: CompareRow[], testId: string) =>
     rows.length > 0 && (
       <Box
@@ -627,6 +777,57 @@ export const WhatsCompared: React.FunctionComponent<WhatsComparedProps> = ({
                 >
                   {t("compared.removeFromCompared")}
                   {removable.length > 1 ? `: ${element.element}` : ""}
+                </Button>
+              ))}
+            </Box>
+          )}
+        </Box>
+      )}
+
+      {overview.variable.length > 0 && (
+        <Box
+          data-testid="variableGroup"
+          sx={{ display: "flex", flexDirection: "column" }}
+        >
+          <Box sx={{ ...groupTitleSx, mb: 0.5 }}>
+            {t("compared.group.variable")} ·{" "}
+            {overview.variable.reduce(
+              (sum, item) => sum + (item.rects.length || 1),
+              0,
+            )}
+          </Box>
+          {overview.variable.map(variableRow)}
+        </Box>
+      )}
+
+      {variableFailed.length > 0 && (
+        <Box
+          data-testid="variableProblem"
+          sx={{
+            display: "flex",
+            flexDirection: "column",
+            gap: 1,
+            fontSize: 13,
+            lineHeight: 1.5,
+            borderRadius: "8px",
+            px: 1.5,
+            py: 1.25,
+            bgcolor: tokens.status.failed.bg,
+            color: tokens.text,
+          }}
+        >
+          <span>{t("compared.variable.failedHelp")}</span>
+          {canEdit && (
+            <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
+              {variableFailed.map((item) => (
+                <Button
+                  key={item.key}
+                  size="small"
+                  variant="outlined"
+                  disabled={busy}
+                  onClick={() => item.rule && onRemove(item.rule)}
+                >
+                  {t("select.remove")}
                 </Button>
               ))}
             </Box>

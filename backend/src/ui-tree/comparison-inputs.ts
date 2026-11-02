@@ -2,9 +2,11 @@ import { Rect, UiNode, UiTree } from './ui-tree.types';
 import { A11yNorms, DEFAULT_A11Y_NORMS, parseA11yNorms } from '../a11y/a11y-norms';
 import { AllowedDevice, parseAllowedDevices } from '../projects/allowed-devices';
 import { evaluateXpath, isXpathSelector, parseXpath, XPATH_PREFIX, XpathProblem, xpathProblem } from './xpath-selector';
+import { checkVariableText, TextPart, VariableTextReason } from './variable-text';
 
 // compare: only the elements the check's compare rules match are compared (spec 015)
-export type ElementRuleAction = 'ignore' | 'tolerate' | 'compare';
+// variable: pixels left out, the text checked against parts with patterns (spec 033)
+export type ElementRuleAction = 'ignore' | 'tolerate' | 'compare' | 'variable';
 
 /**
  * A rule about elements, kept on the project (every screen) or on one screen.
@@ -21,6 +23,8 @@ export interface ElementRule {
   action: ElementRuleAction;
   // tolerate: changes covering at most this share of the element's pixels are not counted
   maxDiffPercent?: number;
+  // variable: the text as fixed parts and places with a pattern
+  parts?: TextPart[];
   note?: string;
 }
 
@@ -107,7 +111,9 @@ export function parseSelector(selector: string): Selector | null {
     const regex = /^\/(.+)\/([a-z]*)$/.exec(raw);
     if (regex) {
       try {
-        return { by: 'text', value: new RegExp(regex[1], regex[2].includes('i') ? 'i' : '') };
+        // u lets a pattern name letters of any alphabet (\p{L}), as variable texts do (spec 033)
+        const flags = ['i', 'u'].filter((flag) => regex[2].includes(flag)).join('');
+        return { by: 'text', value: new RegExp(regex[1], flags) };
       } catch {
         return null;
       }
@@ -168,6 +174,15 @@ const pad = (rect: Rect, padding: number): Rect => ({
   height: rect.height + 2 * padding,
 });
 
+/** What a variable-text rule found on the snapshot and whether each text holds (spec 033). */
+export interface VariableCheck {
+  items: Array<{ text: string; ok: boolean; reason?: VariableTextReason; bounds: Rect; element: string }>;
+  // found in the baseline, nowhere in the snapshot's tree (REQ-033-19)
+  gone: boolean;
+  // found, but an ignore rule takes every element it found (REQ-033-22)
+  overridden: boolean;
+}
+
 export interface ResolvedRules {
   ignore: Rect[];
   tolerate: Array<Rect & { maxDiffPercent: number }>;
@@ -175,15 +190,28 @@ export interface ResolvedRules {
   matches: Record<string, number>;
   // per rule, what it matched on each side, for drawing it on both screenshots
   found: Record<string, { current: Rect[]; baseline: Rect[] }>;
+  // per variable-text rule, how its texts on the snapshot fared
+  variable: Record<string, VariableCheck>;
 }
+
+const textOf = (node: UiNode) => node.text || node.label;
 
 /**
  * Areas the rules cover, taken from both trees (current first, then the
  * baseline): an element that moved is covered where it was and where it is.
  * Compare-only rules cover nothing here; planCompareOnly works them out.
+ * A variable text is covered like an ignored element and its text checked
+ * instead, unless an ignore rule takes the same element (REQ-033-22).
  */
 export function resolveRules(rules: ElementRule[], trees: Array<UiTree | null>): ResolvedRules {
-  const result: ResolvedRules = { ignore: [], tolerate: [], matches: {}, found: {} };
+  const result: ResolvedRules = { ignore: [], tolerate: [], matches: {}, found: {}, variable: {} };
+  const current = trees[0] ?? null;
+  const ignored = new Set<UiNode>();
+  for (const rule of rules) {
+    if (rule.action === 'ignore' && current && !selectorProblem(rule.selector)) {
+      findBySelector(current, rule.selector).forEach((node) => ignored.add(node));
+    }
+  }
   for (const rule of rules) {
     if (selectorProblem(rule.selector)) continue;
     const sides: Rect[][] = [];
@@ -191,7 +219,7 @@ export function resolveRules(rules: ElementRule[], trees: Array<UiTree | null>):
       const bounds: Rect[] = [];
       for (const node of tree ? findBySelector(tree, rule.selector) : []) {
         bounds.push(node.bounds);
-        if (rule.action === 'ignore') {
+        if (rule.action === 'ignore' || rule.action === 'variable') {
           result.ignore.push(pad(node.bounds, RULE_PADDING_PX));
         } else if (rule.action === 'tolerate') {
           result.tolerate.push({ ...node.bounds, maxDiffPercent: rule.maxDiffPercent ?? 5 });
@@ -202,8 +230,39 @@ export function resolveRules(rules: ElementRule[], trees: Array<UiTree | null>):
     // the same element is usually in both trees, so the count is the larger of the two
     result.matches[rule.id] = Math.max(0, ...sides.map((bounds) => bounds.length));
     result.found[rule.id] = { current: sides[0] ?? [], baseline: sides[1] ?? [] };
+    if (rule.action === 'variable' && rule.parts?.length && current) {
+      const nodes = findBySelector(current, rule.selector).filter((node) => !ignored.has(node));
+      result.variable[rule.id] = {
+        items: nodes.map((node) => ({
+          text: textOf(node),
+          bounds: node.bounds,
+          element: `${shortClass(node.className)} «${textOf(node)}»`,
+          ...checkVariableText(rule.parts, textOf(node)),
+        })),
+        gone: !result.found[rule.id].current.length && !!result.found[rule.id].baseline.length,
+        overridden: !nodes.length && !!result.found[rule.id].current.length,
+      };
+    }
   }
   return result;
+}
+
+/**
+ * Where a check's variable-text rules found elements, on both trees: a change
+ * there is not a change of the screen (REQ-033-16, 33). Rules come from the
+ * project and the check's own, as saved in the settings.
+ */
+export function variableTextAreas(
+  settings: UiTreeSettings,
+  check: { name: string; customTags?: string | null },
+  trees: Array<UiTree | null>
+): Rect[] {
+  const rules = [...settings.elementRules, ...(settings.checkRules[checkKey(check)] ?? [])].filter(
+    (rule) => rule.action === 'variable'
+  );
+  if (!rules.length) return [];
+  const resolved = resolveRules(rules, trees);
+  return Object.values(resolved.found).flatMap((found) => [...found.current, ...found.baseline]);
 }
 
 const STATUS_BAR_IDS = ['android:id/statusBarBackground', 'android:id/navigationBarBackground'];

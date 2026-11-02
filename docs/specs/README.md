@@ -102,6 +102,7 @@ docs/specs/NNN-коротка-назва/
 | [033](033-vision-sdk/spec.md) | Vision SDK: головні класи під назвою Vision | Implemented |
 | [034](034-vision-options-and-result/spec.md) | Vision SDK: `VisionOptions` і `VisionResult` замість `TestRun*` | Implemented |
 | [035](035-admin-accounts/spec.md) | Акаунти створює адміністратор, токени — лише особисті | Implemented |
+| [036](036-changes-tab-redesign/spec.md) | Вкладка «Зміни» без повторів: результат, перелік змін, що порівнюється | Draft |
 
 Статусу `Verified` поки немає в жодної: інтеграцію з реальною Jira Cloud і прогони на сервері
 команда ще не підтвердила.

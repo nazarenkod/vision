@@ -52,7 +52,7 @@
      Це перенесення даних застосунком при старті, як `moveIssueStates` (ADR-0003); міграції немає.
    - Фронтенд: `JiraSettings` — лише `jiraUrl`, `jiraIssueType`, `jiraLinkType`, новий текст
      `jira.intro` / `section.jiraIntro`; `InsightsPanel` і `TestDetailsModal` перевіряють лише
-     `user.jiraTokenSet`; `ProjectListPage` позначає Jira за `project.jiraUrl` (REQ-035-34);
+     `user.jiraTokenSet`; `ProjectListPage` не показує стан Jira (REQ-035-34);
      `profile.tokenNotSet` більше не згадує спільний токен; `Project` у `types/project.ts` — без
      `jiraToken`, `jiraEmail`, `jiraTokenSet`.
    - REQ-035-33 уже виконується: `PUT /users/jira` і `PUT /users/gemini` пишуть лише в рядок
@@ -139,5 +139,5 @@ sequenceDiagram
 | REQ-035-31 | `backend/src/a11y/jira-access.spec.ts › never falls back to the project's shared token` |
 | REQ-035-32 | `backend/src/a11y/jira-access.spec.ts › asks for a personal token when the person has none`; `frontend/integration_tests/test/reportBug.spec.ts › disables Report bug without a personal Jira token, even with a shared one saved` |
 | REQ-035-33 | `backend/src/users/users.controller.spec.ts › writes Jira and Gemini secrets only to the signed-in person` |
-| REQ-035-34 | `frontend/integration_tests/test/projectList.spec.ts › marks Jira as connected by its URL alone` |
+| REQ-035-34 | `frontend/integration_tests/test/projectList.spec.ts › does not show a Jira status in the project list` |
 | REQ-035-35 | `backend/src/projects/shared-jira-credentials.spec.ts › wipes stored shared Jira tokens and emails, and only them` |

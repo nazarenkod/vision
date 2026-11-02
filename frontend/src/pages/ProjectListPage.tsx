@@ -15,7 +15,6 @@ import {
   TableRow,
 } from "@mui/material";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
-import { StatusPill } from "../components/StatusPill";
 import { tokens } from "../theme";
 import {
   useProjectState,
@@ -156,7 +155,6 @@ const ProjectsListPage = () => {
               <TableCell>{t("projectList.project")}</TableCell>
               <TableCell>{t("projectList.mainBranch")}</TableCell>
               <TableCell>{t("projectList.comparison")}</TableCell>
-              <TableCell>{t("projectList.jira")}</TableCell>
               <TableCell>{t("projectList.created")}</TableCell>
               <TableCell align="right">{t("projectList.actions")}</TableCell>
             </TableRow>
@@ -186,20 +184,6 @@ const ProjectsListPage = () => {
                   {project.mainBranchName}
                 </TableCell>
                 <TableCell>{project.imageComparison}</TableCell>
-                <TableCell>
-                  {/* tokens are personal (035): the URL is the project's whole part */}
-                  {project.jiraUrl ? (
-                    <StatusPill
-                      tone="passed"
-                      label={t("projectList.jiraConnected")}
-                    />
-                  ) : (
-                    <StatusPill
-                      tone="neutral"
-                      label={t("projectList.jiraNotSet")}
-                    />
-                  )}
-                </TableCell>
                 <TableCell sx={{ whiteSpace: "nowrap" }}>
                   {formatDate(project.createdAt)}
                 </TableCell>

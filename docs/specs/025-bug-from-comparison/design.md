@@ -61,7 +61,7 @@
 
 | Компонент | Шлях | Роль |
 |---|---|---|
-| Опції й запит | `sdk-java/src/main/java/io/visual_regression_tracker/sdk_java/TestRunOptions.java`, `sdk-java/src/main/java/io/visual_regression_tracker/sdk_java/request/TestRunRequest.java`, `sdk-java/src/main/java/io/visual_regression_tracker/sdk_java/Vision.java` | `featureName`; у JSON лише коли задано (Gson пропускає `null`, REQ-025-73) |
+| Опції й запит | `sdk-java/src/main/java/io/visual_regression_tracker/sdk_java/VisionOptions.java`, `sdk-java/src/main/java/io/visual_regression_tracker/sdk_java/request/TestRunRequest.java`, `sdk-java/src/main/java/io/visual_regression_tracker/sdk_java/Vision.java` | `featureName`; у JSON лише коли задано (Gson пропускає `null`, REQ-025-73) |
 | Збірка | `scripts/build-sdk-jar.sh`, `sdk-java/build.gradle`, `dist/sdk-java/` | версія `4.3.1-vision.2` |
 
 ### Фронтенд

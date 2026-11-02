@@ -99,6 +99,7 @@ docs/specs/NNN-коротка-назва/
 | [030](030-whats-compared/spec.md) | Зрозуміла вкладка «Зміни»: що вийшло, що порівнювали, що змінилось | Implemented |
 | [032](032-authenticated-events/spec.md) | Події наживо лише для тих, хто увійшов, і лише свого проєкту | Implemented |
 | [033](033-vision-sdk/spec.md) | Vision SDK: головні класи під назвою Vision | Implemented |
+| [034](034-vision-options-and-result/spec.md) | Vision SDK: `VisionOptions` і `VisionResult` замість `TestRun*` | Implemented |
 
 Статусу `Verified` поки немає в жодної: інтеграцію з реальною Jira Cloud і прогони на сервері
 команда ще не підтвердила.

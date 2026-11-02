@@ -174,5 +174,7 @@ test("shows the reason and Try again when a page fails to load", async ({
   failing = false;
   await error.getByRole("button", { name: "Try again" }).click();
   await expect(error).toBeHidden();
-  await expect(page.getByText("baselines", { exact: true })).toBeVisible();
+  await expect(
+    page.getByText("Stale baselines", { exact: true }),
+  ).toBeVisible();
 });

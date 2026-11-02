@@ -443,6 +443,84 @@ test("lines the Project label up with the select under it", async ({
   expect(label.x).toBe(select.x);
 });
 
+test("shows a build as its number, date, branch and status", async ({
+  openProjectPage,
+}) => {
+  const projectPage = await openProjectPage(project.id);
+  const card = projectPage.buildList.getCard(TEST_BUILD_FAILED.number);
+
+  await expect(card).toContainText(`#${TEST_BUILD_FAILED.number}`);
+  await expect(card).toContainText(TEST_BUILD_FAILED.ciBuildId);
+  await expect(card.getByTestId("buildDate")).toHaveText(/2020/);
+  await expect(card.getByTestId("buildBranch")).toHaveText(
+    TEST_BUILD_FAILED.branchName,
+  );
+  await expect(card).toContainText("failed");
+  // the counts live in the build's header, not on the card
+  await expect(card).not.toContainText("passed");
+});
+
+test("keeps the build menu at the card's right edge", async ({
+  openProjectPage,
+}) => {
+  const projectPage = await openProjectPage(project.id);
+  const card = projectPage.buildList.getCard(TEST_BUILD_PASSED.number);
+  const menu = card.getByTestId("buildMenu");
+
+  await expect(menu).toBeHidden();
+  await card.hover();
+  await expect(menu).toBeVisible();
+
+  const cardBox = await card.boundingBox();
+  const menuBox = await menu.boundingBox();
+  expect(cardBox.x + cardBox.width - (menuBox.x + menuBox.width)).toBeLessThan(
+    8,
+  );
+});
+
+test("lists projects by name only in the project picker", async ({
+  openProjectPage,
+  page,
+}) => {
+  await openProjectPage(project.id);
+  await page.locator("#project-select").click();
+
+  // the avatar's letter reads before the name
+  await expect(page.getByRole("option")).toHaveText([
+    `P${project.name}`,
+    "New project",
+  ]);
+  await expect(page.getByRole("listbox")).not.toContainText(
+    project.mainBranchName,
+  );
+});
+
+test("opens the new project dialog from the project picker", async ({
+  openProjectPage,
+  page,
+}) => {
+  await openProjectPage(project.id);
+  await page.locator("#project-select").click();
+  await page.getByTestId("projectSelectCreate").click();
+
+  await expect(page).toHaveURL(/\/projects$/);
+  await expect(page.getByRole("dialog")).toContainText("New project");
+});
+
+test.describe("as a guest", () => {
+  test.use({ userRole: "guest" });
+
+  test("offers no new project in the project picker", async ({
+    openProjectPage,
+    page,
+  }) => {
+    await openProjectPage(project.id);
+    await page.locator("#project-select").click();
+
+    await expect(page.getByRole("option")).toHaveText([`P${project.name}`]);
+  });
+});
+
 const openDialogWithoutDiff = async (openProjectPage, page) => {
   const noDiff = { ...TEST_UNRESOLVED, diffName: null };
   await mockGetTestRuns(page, TEST_BUILD_FAILED.id, [noDiff]);

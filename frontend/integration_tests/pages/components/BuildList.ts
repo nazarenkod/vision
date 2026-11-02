@@ -18,6 +18,12 @@ export class BuildList {
     return this.buildList.getByText(`#${number}`);
   }
 
+  getCard(number: number) {
+    return this.buildList
+      .locator(".MuiListItemButton-root")
+      .filter({ hasText: `#${number}` });
+  }
+
   goToPage(page: number) {
     return this.buildList.getByLabel(`Go to page ${page}`).click();
   }

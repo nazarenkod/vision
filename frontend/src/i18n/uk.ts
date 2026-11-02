@@ -284,6 +284,7 @@ export const uk: Messages = {
   "builds.loadFailed": "Не вдалося завантажити збірки",
   "builds.noMatch": "Немає збірок, що містять «{search}»",
   "builds.empty": "Збірок немає",
+  "builds.actions": "Дії зі збіркою",
   "builds.stop": "Зупинити",
   "builds.editCiBuild": "Змінити id збірки в CI",
   "builds.delete": "Видалити",
@@ -457,6 +458,7 @@ export const uk: Messages = {
   "filters.reset": "Скинути",
   "filters.project": "Проєкт",
   "filters.selectProject": "Виберіть проєкт",
+  "projectSelect.newProject": "Новий проєкт",
 
   // review
   "review.applyIgnoreArea":
@@ -1135,8 +1137,6 @@ export const uk: Messages = {
   "device.viewport": "Розмір екрана: {value}",
 
   // builds
-  "builds.summary": "змінено:\u00a0{changed} · пройшли:\u00a0{passed}",
-  "builds.summaryFailed": " · не\u00a0пройшли:\u00a0{count}",
 
   // review
   "review.tolerance": "допуск {value}%",

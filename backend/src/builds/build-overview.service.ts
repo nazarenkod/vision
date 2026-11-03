@@ -38,7 +38,7 @@ export interface BuildOverviewResponse extends BuildOverview {
     createdAt: Date;
     updatedAt: Date;
   };
-  // the Overview's accessibility card (038); not in the public report (REQ-038-09)
+  // the Overview's accessibility card (039); not in the public report (REQ-039-09)
   a11y: OverviewA11y;
   // when the state shown was last true: the latest change of the build or its runs
   asOf: Date;

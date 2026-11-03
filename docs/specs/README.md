@@ -104,7 +104,8 @@ docs/specs/NNN-коротка-назва/
 | [035](035-admin-accounts/spec.md) | Акаунти створює адміністратор, токени — лише особисті | Implemented |
 | [036](036-changes-tab-redesign/spec.md) | Вкладка «Зміни» без повторів: результат, перелік змін, що порівнюється | Implemented |
 | [037](037-device-as-tags/spec.md) | Пристрій скрізь тегами | Implemented |
-| [038](038-overview-polish/spec.md) | Огляд збірки: тихі нулі, усі фічі, проблеми доступності | Implemented |
+| [038](038-place-labels/spec.md) | Місця змін названі за тим, що в них на екрані | Implemented |
+| [039](039-overview-polish/spec.md) | Огляд збірки: тихі нулі, усі фічі, проблеми доступності | Implemented |
 
 Статусу `Verified` поки немає в жодної: інтеграцію з реальною Jira Cloud і прогони на сервері
 команда ще не підтвердила.

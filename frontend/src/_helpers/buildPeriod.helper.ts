@@ -36,7 +36,7 @@ export function buildPeriod(
 }
 
 /**
- * How long the build ran: "3 min 34 s", "12 min", "1 h 5 min", "45 s" (038).
+ * How long the build ran: "3 min 34 s", "12 min", "1 h 5 min", "45 s" (039).
  * Null for a build that has not run on since it started.
  */
 export function buildDuration(

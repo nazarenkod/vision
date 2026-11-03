@@ -1,4 +1,4 @@
-// Mirrors GET /builds/:id/overview and the public report (031, 038).
+// Mirrors GET /builds/:id/overview and the public report (031, 039).
 import { A11yRule } from "./insights";
 
 export type Verdict = "running" | "waiting" | "reviewed" | "passed";
@@ -48,7 +48,7 @@ export interface OverviewA11yProblem {
   os: string;
 }
 
-// the Overview's accessibility card (038); not in a public report
+// the Overview's accessibility card (039); not in a public report
 export interface OverviewA11y {
   // some screenshot came with a UI tree
   checked: boolean;

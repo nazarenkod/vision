@@ -489,12 +489,13 @@ test("shows the tags on the cards", async ({ openProjectPage, page }) => {
   const projectPage = await openProjectPage(project.id, build.id);
   await projectPage.testRunList.gridViewToggle.click();
 
-  // every card carries all of its own tags, the locale among them
-  await expect(projectPage.testRunList.getCard("Screen B")).toContainText(
-    "en_US",
-  );
+  // every card carries all of its own tags, the locale among them: shown, or
+  // behind its +N and in the hint over the tags
   await expect(
-    projectPage.testRunList.getCard("Screen A").filter({ hasText: "de_DE" }),
+    projectPage.testRunList.getCard("Screen B").getByTestId("cardTags"),
+  ).toHaveAttribute("title", /en_US/);
+  await expect(
+    page.locator('[data-testid="cardTags"][title*="de_DE"]'),
   ).toHaveCount(1);
   // the fixture's device tag
   await expect(projectPage.testRunList.getCard("Screen B")).toContainText(
@@ -520,6 +521,62 @@ test("calls the things you tick cards, not rows", async ({
     page.getByLabel("Approve unresolved in selected cards."),
   ).toBeVisible();
   await expect(page.getByLabel("Delete selected cards.")).toBeVisible();
+});
+
+test("shows +N for the tags that do not fit in two rows", async ({
+  openProjectPage,
+  page,
+}) => {
+  const many = {
+    ...TEST_UNRESOLVED,
+    id: "many",
+    name: "Checkout",
+    os: "17.5",
+    device: "iPhone_15_Pro_Max_simulator",
+    browser: "safari",
+    viewport: "1179x2556",
+    customTags: "Onboarding · ru_RU",
+  };
+  const few = {
+    ...many,
+    id: "few",
+    name: "Login",
+    browser: "",
+    viewport: "",
+    customTags: "",
+  };
+  await mockGetTestRuns(page, build.id, [many, few]);
+  const projectPage = await openProjectPage(project.id, build.id);
+  await projectPage.testRunList.gridViewToggle.click();
+  await projectPage.testRunList.compactDensity.click();
+
+  const card = (name: string) => projectPage.testRunList.getCard(name);
+  const more = card("Checkout").getByTestId("cardTagsMore");
+  await expect(more).toBeVisible();
+  // the shown tags and the count add up to all five, and the rest are named
+  const shown = await card("Checkout").getByTestId("cardTag").count();
+  await expect(more).toHaveText(`+${5 - shown}`);
+  await expect(more).toHaveAttribute(
+    "aria-label",
+    /more: .*Onboarding · ru_RU/,
+  );
+  // nothing hidden, no +N
+  await expect(card("Login").getByTestId("cardTagsMore")).toHaveCount(0);
+  await expect(card("Login").getByTestId("cardTag")).toHaveCount(2);
+
+  // +N opens the rest, so each can still filter the list
+  await more.click();
+  await expect(card("Checkout").getByTestId("cardTag")).toHaveCount(5);
+  await expect(more).toHaveCount(0);
+
+  // a wider card measures again: folded back, the count still adds up and the
+  // tags still sit in two rows
+  await projectPage.testRunList.comfortableDensity.click();
+  await expect(more).toBeVisible();
+  const wide = await card("Checkout").getByTestId("cardTag").count();
+  await expect(more).toHaveText(`+${5 - wide}`);
+  const box = await card("Checkout").getByTestId("cardTags").boundingBox();
+  expect(box?.height).toBeLessThanOrEqual(52);
 });
 
 test("wraps a long name and its tags rather than cutting them off", async ({

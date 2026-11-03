@@ -138,7 +138,7 @@ test("shows stale baselines, unstable screens and accessibility, nothing else", 
   await expect(page.getByText("Touch target too small")).toBeVisible();
 });
 
-test("shows each device as tags, OS first", async ({
+test("shows each device as tags, model first", async ({
   page,
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   authUser,
@@ -147,8 +147,8 @@ test("shows each device as tags, OS first", async ({
 
   const tags = (row: string) =>
     page.getByRole("row", { name: row }).getByTestId("deviceTag");
-  await expect(tags("Old promo")).toHaveText(["Android 15", "Pixel 7"]);
-  await expect(tags("Login")).toHaveText(["Android 15", "Pixel 7"]);
+  await expect(tags("Old promo")).toHaveText(["Pixel 7", "Android 15"]);
+  await expect(tags("Login")).toHaveText(["Pixel 7", "Android 15"]);
   // a server from before the tags sends one line: one tag, not a broken row
   await expect(tags("Onboarding v1")).toHaveText(["Galaxy S23 · Android 14"]);
 });

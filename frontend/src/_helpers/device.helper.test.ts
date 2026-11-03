@@ -17,7 +17,7 @@ describe("deviceLabel", () => {
 });
 
 describe("deviceTagsOf", () => {
-  it("puts the OS first, then the model, browser and viewport", () => {
+  it("puts the model first, then the OS, browser and viewport", () => {
     expect(
       deviceTagsOf({
         viewport: "1080x2280",
@@ -25,7 +25,7 @@ describe("deviceTagsOf", () => {
         browser: "chrome",
         os: "15",
       }).map((tag) => tag.value),
-    ).toEqual(["15", "PIXEL_4_XL", "chrome", "1080x2280"]);
+    ).toEqual(["PIXEL_4_XL", "15", "chrome", "1080x2280"]);
   });
 
   it("leaves out empty values but keeps repeated ones apart", () => {

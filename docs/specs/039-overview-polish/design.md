@@ -1,4 +1,4 @@
-# 038 — Дизайн
+# 039 — Дизайн
 
 ## Підхід
 
@@ -46,7 +46,7 @@
 
 Схема бази не змінюється. `GET /builds/:id/overview` отримує поле
 `a11y: { checked, problems: [{ testRunId, rule, element, isNew, check, device, os }], more }`.
-Назва елемента — дані з UI-дерева знімка, тож у публічний звіт поле не йде (REQ-038-09).
+Назва елемента — дані з UI-дерева знімка, тож у публічний звіт поле не йде (REQ-039-09).
 
 Ключі словника: `builds.duration*`, `overview.a11yState`, `overview.a11yIssueNew`,
 `overview.a11yIssueKnown`, `overview.noA11y`, `overview.a11yMore`.
@@ -60,12 +60,12 @@
 
 | Вимога | Перевірка |
 |---|---|
-| REQ-038-01 | `frontend/integration_tests/test/buildOverview.spec.ts › lets the tiles with nothing to see step back` |
-| REQ-038-02 | `frontend/integration_tests/test/buildOverview.spec.ts › shows every feature at once, those with changes first` |
-| REQ-038-03 | `frontend/integration_tests/test/buildOverview.spec.ts › explains a result bar and shows zeros as a faint 0` |
-| REQ-038-04 | `frontend/src/_helpers/buildPeriod.helper.test.ts › says hours and minutes, minutes and seconds, or seconds alone`; `frontend/src/_helpers/buildPeriod.helper.test.ts › says nothing for a build that has not run on since it started` |
-| REQ-038-05 | `backend/src/a11y/a11y-issues.spec.ts › lists the counted problems, new only when nobody acted on them`; `backend/src/a11y/a11y-issues.spec.ts › leaves false positives out`; `backend/src/a11y/a11y-issues.spec.ts › names the element by its label, else its id without the package, else its class`; `backend/src/builds/build-overview.spec.ts › lists every problem of every screenshot with its check and device, new first`; `frontend/integration_tests/test/buildOverview.spec.ts › lists the accessibility problems, new first, and opens one on its tab` |
-| REQ-038-06 | `backend/src/builds/build-overview.spec.ts › shows 20 problems, new first, and counts the rest`; `frontend/integration_tests/test/buildOverview.spec.ts › counts the accessibility problems past twenty and opens the tab for them` |
-| REQ-038-07 | `frontend/integration_tests/test/buildOverview.spec.ts › lists the accessibility problems, new first, and opens one on its tab` |
-| REQ-038-08 | `backend/src/builds/build-overview.spec.ts › says nothing was checked when no screenshot came with a UI tree`; `frontend/integration_tests/test/buildOverview.spec.ts › says there are no accessibility problems in one line, and nothing without UI trees` |
-| REQ-038-09 | `backend/src/reports/report-links.spec.ts › leaves the accessibility problems of the overview out of a public report` |
+| REQ-039-01 | `frontend/integration_tests/test/buildOverview.spec.ts › lets the tiles with nothing to see step back` |
+| REQ-039-02 | `frontend/integration_tests/test/buildOverview.spec.ts › shows every feature at once, those with changes first` |
+| REQ-039-03 | `frontend/integration_tests/test/buildOverview.spec.ts › explains a result bar and shows zeros as a faint 0` |
+| REQ-039-04 | `frontend/src/_helpers/buildPeriod.helper.test.ts › says hours and minutes, minutes and seconds, or seconds alone`; `frontend/src/_helpers/buildPeriod.helper.test.ts › says nothing for a build that has not run on since it started` |
+| REQ-039-05 | `backend/src/a11y/a11y-issues.spec.ts › lists the counted problems, new only when nobody acted on them`; `backend/src/a11y/a11y-issues.spec.ts › leaves false positives out`; `backend/src/a11y/a11y-issues.spec.ts › names the element by its label, else its id without the package, else its class`; `backend/src/builds/build-overview.spec.ts › lists every problem of every screenshot with its check and device, new first`; `frontend/integration_tests/test/buildOverview.spec.ts › lists the accessibility problems, new first, and opens one on its tab` |
+| REQ-039-06 | `backend/src/builds/build-overview.spec.ts › shows 20 problems, new first, and counts the rest`; `frontend/integration_tests/test/buildOverview.spec.ts › counts the accessibility problems past twenty and opens the tab for them` |
+| REQ-039-07 | `frontend/integration_tests/test/buildOverview.spec.ts › lists the accessibility problems, new first, and opens one on its tab` |
+| REQ-039-08 | `backend/src/builds/build-overview.spec.ts › says nothing was checked when no screenshot came with a UI tree`; `frontend/integration_tests/test/buildOverview.spec.ts › says there are no accessibility problems in one line, and nothing without UI trees` |
+| REQ-039-09 | `backend/src/reports/report-links.spec.ts › leaves the accessibility problems of the overview out of a public report` |

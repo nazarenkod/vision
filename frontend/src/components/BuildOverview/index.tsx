@@ -33,7 +33,7 @@ const REFRESH_DELAY_MS = 400;
 export interface OverviewActions {
   openTab: (tab: BuildTab, status?: string) => void;
   openQueue: (key: QueueKey, runId?: string) => void;
-  // a screenshot on the Accessibility tab (REQ-038-07)
+  // a screenshot on the Accessibility tab (REQ-039-07)
   openA11y: (runId: string) => void;
 }
 
@@ -152,7 +152,7 @@ const OverviewTiles: React.FunctionComponent<{
         : undefined,
     },
   ];
-  // a zero says nothing needs doing: it steps back, the screens count never does (REQ-038-01)
+  // a zero says nothing needs doing: it steps back, the screens count never does (REQ-039-01)
   return (
     <Tiles
       tiles={tiles.map((tile) => ({
@@ -269,7 +269,7 @@ const Features: React.FunctionComponent<{
   actions: OverviewActions;
 }> = ({ overview, actions }) => {
   const { t } = useT();
-  // every feature at once: those with something to look at first, then the rest (REQ-038-02)
+  // every feature at once: those with something to look at first, then the rest (REQ-039-02)
   const rows = [
     ...overview.features,
     // an older server folded them without listing them
@@ -321,7 +321,7 @@ const EmptyLine: React.FunctionComponent<{
 const A11Y_COLUMNS = "minmax(0, 1fr) minmax(0, auto) 72px";
 
 /**
- * The accessibility problems of the build's screenshots (038): a row per
+ * The accessibility problems of the build's screenshots (039): a row per
  * problem per screenshot, new first, each opening its screenshot on the
  * Accessibility tab.
  */

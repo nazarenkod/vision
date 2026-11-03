@@ -82,7 +82,7 @@ const BuildDetails: React.FunctionComponent<{
               formatDate,
               t,
             }),
-            // how long it ran, without counting it up from the times (REQ-038-04)
+            // how long it ran, without counting it up from the times (REQ-039-04)
             buildDuration(selectedBuild.createdAt, selectedBuild.updatedAt, t),
           ]
             .filter(Boolean)

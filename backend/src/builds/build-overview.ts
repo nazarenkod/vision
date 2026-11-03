@@ -257,11 +257,11 @@ export function buildOverview(input: OverviewInput): BuildOverview {
   };
 }
 
-// enough for an overview; the rest are on the Accessibility tab (REQ-038-06)
+// enough for an overview; the rest are on the Accessibility tab (REQ-039-06)
 export const A11Y_PROBLEMS_SHOWN = 20;
 
 export interface OverviewA11yProblem extends A11yFinding {
-  // the run to open on the Accessibility tab (REQ-038-07)
+  // the run to open on the Accessibility tab (REQ-039-07)
   testRunId: string;
   check: string;
   device: string;
@@ -269,7 +269,7 @@ export interface OverviewA11yProblem extends A11yFinding {
 }
 
 export interface OverviewA11y {
-  // some screenshot of the build came with a UI tree: without one there is nothing to say (REQ-038-08)
+  // some screenshot of the build came with a UI tree: without one there is nothing to say (REQ-039-08)
   checked: boolean;
   problems: OverviewA11yProblem[];
   // problems past the ones shown
@@ -277,7 +277,7 @@ export interface OverviewA11y {
 }
 
 /**
- * The accessibility card of the Overview (038): a row per problem per
+ * The accessibility card of the Overview (039): a row per problem per
  * screenshot, so the new rows add up to the tile; new first.
  */
 export function a11yOf(

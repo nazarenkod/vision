@@ -117,7 +117,7 @@ export const Row: React.FunctionComponent<{
 
 /**
  * A count in a table; nothing to count is faint, so the counts stand out: a
- * dash, or a faint 0 where the table should read as numbers (Overview, 038).
+ * dash, or a faint 0 where the table should read as numbers (Overview, 039).
  */
 export const Num: React.FunctionComponent<{
   value: number;
@@ -177,7 +177,7 @@ export interface TileProps {
   hint?: string;
   // the number's colour when it is not zero
   color?: string;
-  // nothing to see: no fill, a dashed border and a grey number, so the tiles with something stand out (038)
+  // nothing to see: no fill, a dashed border and a grey number, so the tiles with something stand out (039)
   quiet?: boolean;
   onClick?: () => void;
 }

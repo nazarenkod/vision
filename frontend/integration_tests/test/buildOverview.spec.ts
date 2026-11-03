@@ -463,8 +463,8 @@ test("lists the accessibility problems, new first, and opens one on its tab", as
   await expect(rows.first()).toContainText("Checkout. Pay · Pay");
   await expect(rows.first()).toContainText("New");
   await expect(rows.first().getByTestId("deviceTag")).toHaveText([
-    "AOS 14",
     "PIXEL_4_XL",
+    "AOS 14",
   ]);
   await expect(rows.last()).toContainText("Control has no label");
   await expect(rows.last()).toContainText("Known");
@@ -542,13 +542,13 @@ test("shows a device's screen size when the run sent no viewport", async ({
 }) => {
   await openProjectPage(project.id, build.id, undefined, "overview");
   const devices = page.getByTestId("overviewDevice");
-  // one grey tag per value, OS first, the size last (spec 037)
+  // one grey tag per value, model first, the size last (spec 037)
   await expect(
     devices.filter({ hasText: "Galaxy S23" }).getByTestId("deviceTag"),
-  ).toHaveText(["Android 14", "Galaxy S23", "1080×2340"]);
+  ).toHaveText(["Galaxy S23", "Android 14", "1080×2340"]);
   await expect(
     devices.filter({ hasText: "PIXEL_4_XL" }).getByTestId("deviceTag"),
-  ).toHaveText(["AOS 14", "PIXEL_4_XL", "browser", "viewport"]);
+  ).toHaveText(["PIXEL_4_XL", "AOS 14", "browser", "viewport"]);
   await expect(
     page.getByTestId("overviewDevices").getByText("Accessibility"),
   ).toBeVisible();
@@ -570,7 +570,7 @@ test("explains a result bar and shows zeros as a faint 0", async ({
   const login = page
     .getByTestId("overviewFeature")
     .filter({ hasText: "Login" });
-  // Login has no bugs: a faint 0, so the column reads as numbers (038)
+  // Login has no bugs: a faint 0, so the column reads as numbers (039)
   await expect(login.getByTestId("overviewNum").last()).toHaveText("0");
 
   await login.getByTestId("resultBar").hover();

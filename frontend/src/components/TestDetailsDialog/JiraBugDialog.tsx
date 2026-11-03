@@ -24,6 +24,7 @@ import {
 import { ChosenValue, JiraFieldInput } from "./JiraFieldInput";
 import { tokens } from "../../theme";
 import { useT } from "../../i18n";
+import { a11yTitle } from "../../_helpers/a11yText.helper";
 
 import {
   JIRA_KEY,
@@ -212,7 +213,9 @@ export const JiraBugDialog: React.FunctionComponent<{
           }),
         );
       } catch (e) {
-        enqueueSnackbar(`${problem[0].title}: ${e}`, { variant: "error" });
+        enqueueSnackbar(`${a11yTitle(t, problem[0])}: ${e}`, {
+          variant: "error",
+        });
       }
       setProgress(created.length + linked.length);
     }

@@ -1,5 +1,5 @@
 import { TestStatus } from '@prisma/client';
-import { buildOverview, OverviewBugInput, OverviewInput, OverviewRun } from './build-overview';
+import { a11yOf, buildOverview, OverviewBugInput, OverviewInput, OverviewRun } from './build-overview';
 
 let seq = 0;
 const run = (over: Partial<OverviewRun> = {}): OverviewRun => ({
@@ -259,5 +259,49 @@ describe('buildOverview', () => {
 
   it('says first build when the branch has no earlier one', () => {
     expect(buildOverview(input({ runs: [run()] })).previous).toBeNull();
+  });
+});
+
+describe('a11yOf', () => {
+  const pixel = { id: 'p', name: 'Checkout', device: 'PIXEL_4_XL', os: 'AOS 15', a11yTotalCount: 3 };
+  const iphone = { id: 'i', name: 'Checkout', device: 'iPhone 15', os: 'iOS 18', a11yTotalCount: 1 };
+
+  it('lists every problem of every screenshot with its check and device, new first', () => {
+    const a11y = a11yOf(
+      [pixel, iphone],
+      [
+        { testRunId: 'i', rule: 'missing-label', element: 'Scan', isNew: false },
+        { testRunId: 'p', rule: 'touch-target', element: 'Pay', isNew: true },
+        { testRunId: 'p', rule: 'missing-label', element: 'Scan', isNew: false },
+      ]
+    );
+
+    expect(a11y.checked).toBe(true);
+    expect(a11y.more).toBe(0);
+    expect(a11y.problems.map((p) => [p.rule, p.element, p.check, p.device, p.os, p.isNew])).toEqual([
+      ['touch-target', 'Pay', 'Checkout', 'PIXEL_4_XL', 'AOS 15', true],
+      ['missing-label', 'Scan', 'Checkout', 'iPhone 15', 'iOS 18', false],
+      ['missing-label', 'Scan', 'Checkout', 'PIXEL_4_XL', 'AOS 15', false],
+    ]);
+  });
+
+  it('shows 20 problems, new first, and counts the rest', () => {
+    const findings = Array.from({ length: 25 }, (_, i) => ({
+      testRunId: 'p',
+      rule: 'touch-target' as const,
+      element: `e${i}`,
+      isNew: i === 24,
+    }));
+
+    const a11y = a11yOf([pixel], findings);
+
+    expect(a11y.problems).toHaveLength(20);
+    expect(a11y.problems[0]).toMatchObject({ element: 'e24', isNew: true });
+    expect(a11y.more).toBe(5);
+  });
+
+  it('says nothing was checked when no screenshot came with a UI tree', () => {
+    expect(a11yOf([{ ...pixel, a11yTotalCount: null }], [])).toEqual({ checked: false, problems: [], more: 0 });
+    expect(a11yOf([{ ...pixel, a11yTotalCount: 0 }], [])).toEqual({ checked: true, problems: [], more: 0 });
   });
 });

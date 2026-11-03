@@ -1,6 +1,6 @@
 import { A11yIssueState, A11yProblem } from '@prisma/client';
 import { PNG } from 'pngjs';
-import { reviewReport, ReviewContext } from './a11y-issues';
+import { elementNameOf, findingsOf, reviewReport, ReviewContext } from './a11y-issues';
 import { facetsOf, problemCode } from './a11y-problems';
 import { A11yReport, A11yViolation } from './a11y.types';
 import { JiraClient, JiraError } from './jira.client';
@@ -95,6 +95,41 @@ describe('reviewReport', () => {
     expect(reviewed.resolved).toEqual([
       { violationId: 'missing-label|gone', jiraKey: 'MOB-7', jiraUrl: 'https://jira/browse/MOB-7' },
     ]);
+  });
+});
+
+describe('findingsOf', () => {
+  const stored = report([
+    { ...violation('missing-label|a', { label: 'Scan' }), status: 'new' },
+    { ...violation('touch-target|b', { rule: 'touch-target', severity: 'warning' }), status: 'existing' },
+    { ...violation('low-contrast|c', { rule: 'low-contrast' }), status: 'new' },
+    { ...violation('redundant-role|d', { rule: 'redundant-role', severity: 'info' }), status: 'new' },
+  ]);
+
+  it('lists the counted problems, new only when nobody acted on them', () => {
+    const reviewed = reviewReport(stored, ctx([state('low-contrast|c', 'reported', 'MOB-1')]));
+
+    expect(findingsOf(reviewed)).toEqual([
+      { rule: 'missing-label', element: 'Scan', isNew: true },
+      { rule: 'touch-target', element: 'btn_scan_qr', isNew: false },
+      { rule: 'low-contrast', element: 'btn_scan_qr', isNew: false },
+    ]);
+  });
+
+  it('leaves false positives out', () => {
+    const reviewed = reviewReport(stored, ctx([state('missing-label|a', 'ignored')]));
+
+    expect(findingsOf(reviewed).map((finding) => finding.rule)).toEqual(['touch-target', 'low-contrast']);
+  });
+
+  it('names the element by its label, else its id without the package, else its class', () => {
+    expect(elementNameOf({ label: ' Pay ', resourceId: 'com.app:id/pay', className: 'android.widget.Button' })).toBe(
+      'Pay'
+    );
+    expect(elementNameOf({ label: '', resourceId: 'com.app:id/pay', className: 'android.widget.Button' })).toBe('pay');
+    expect(elementNameOf({ label: '', resourceId: '', className: 'XCUIElementTypeButton' })).toBe(
+      'XCUIElementTypeButton'
+    );
   });
 });
 

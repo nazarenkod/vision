@@ -115,12 +115,16 @@ export const Row: React.FunctionComponent<{
     </Box>
   );
 
-/** A count in a table; nothing to count shows as a dash, so the counts stand out. */
+/**
+ * A count in a table; nothing to count is faint, so the counts stand out: a
+ * dash, or a faint 0 where the table should read as numbers (Overview, 038).
+ */
 export const Num: React.FunctionComponent<{
   value: number;
   color?: string;
   testId?: string;
-}> = ({ value, color, testId = "overviewNum" }) => (
+  zero?: string;
+}> = ({ value, color, testId = "overviewNum", zero = "—" }) => (
   <Box
     component="span"
     data-testid={testId}
@@ -132,9 +136,10 @@ export const Num: React.FunctionComponent<{
       fontVariantNumeric: "tabular-nums",
       fontWeight: value ? 600 : 400,
       color: value ? (color ?? tokens.text) : tokens.textMuted,
+      opacity: value ? 1 : 0.6,
     }}
   >
-    {value || "—"}
+    {value || zero}
   </Box>
 );
 
@@ -172,6 +177,8 @@ export interface TileProps {
   hint?: string;
   // the number's colour when it is not zero
   color?: string;
+  // nothing to see: no fill, a dashed border and a grey number, so the tiles with something stand out (038)
+  quiet?: boolean;
   onClick?: () => void;
 }
 
@@ -195,9 +202,10 @@ export const Tiles: React.FunctionComponent<{
         onClick={tile.onClick}
         title={tile.hint}
         {...staggered(i + 1)}
+        data-quiet={tile.quiet || undefined}
         sx={{
-          bgcolor: tokens.surface,
-          border: `1px solid ${tokens.border}`,
+          bgcolor: tile.quiet ? "transparent" : tokens.surface,
+          border: `1px ${tile.quiet ? "dashed" : "solid"} ${tokens.border}`,
           borderRadius: 3,
           px: 1.75,
           py: 1.25,
@@ -223,11 +231,15 @@ export const Tiles: React.FunctionComponent<{
           component="span"
           sx={{
             fontSize: 24,
-            fontWeight: 650,
+            fontWeight: tile.quiet ? 600 : 650,
             lineHeight: 1.2,
             letterSpacing: "-0.01em",
             fontVariantNumeric: "tabular-nums",
-            color: tile.value && tile.color ? tile.color : tokens.text,
+            color: tile.quiet
+              ? tokens.textMuted
+              : tile.value && tile.color
+                ? tile.color
+                : tokens.text,
           }}
         >
           {typeof tile.value === "number" ? (
@@ -236,7 +248,14 @@ export const Tiles: React.FunctionComponent<{
             tile.value
           )}
         </Box>
-        <Box component="span" sx={{ fontSize: 12.5, fontWeight: 500 }}>
+        <Box
+          component="span"
+          sx={{
+            fontSize: 12.5,
+            fontWeight: 500,
+            color: tile.quiet ? tokens.textSecondary : undefined,
+          }}
+        >
           {tile.label}
         </Box>
         {tile.caption && (

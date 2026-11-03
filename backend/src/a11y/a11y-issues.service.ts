@@ -15,8 +15,10 @@ import { UiTreeService } from '../ui-tree/ui-tree.service';
 import { A11yReport, A11yViolation } from './a11y.types';
 import { applyNorms } from './a11y-norms';
 import {
+  A11yFinding,
   A11yIssueStatus,
   decidingProblem,
+  findingsOf,
   indexProblems,
   ProblemIndex,
   ReviewContext,
@@ -237,26 +239,30 @@ export class A11yIssuesService implements OnModuleInit {
   }
 
   /**
-   * The Jira bugs of the problems still found on these runs (031), each once, on
-   * the first run it is found on. Reads only runs with counted issues: the rest
-   * have no report worth opening.
+   * What the build overview says about accessibility (031, 038): the Jira bugs
+   * of the problems still found on these runs, each once, on the first run it is
+   * found on; and every counted problem, per run. Reads only runs with counted
+   * issues: the rest have no report worth opening.
    */
-  async jiraBugsOn(
+  async findingsOn(
     runs: Array<Pick<TestRun, 'id' | 'projectId' | 'name' | 'uiTreeName' | 'a11yReportName' | 'a11yTotalCount'>>
-  ): Promise<
-    Array<{ jiraKey: string; jiraUrl: string | null; title: string; testRunId: string; problemCode: string }>
-  > {
+  ): Promise<{
+    bugs: Array<{ jiraKey: string; jiraUrl: string | null; title: string; testRunId: string; problemCode: string }>;
+    problems: Array<A11yFinding & { testRunId: string }>;
+  }> {
     const bugs = new Map<
       string,
       { jiraKey: string; jiraUrl: string | null; title: string; testRunId: string; problemCode: string }
     >();
+    const problems: Array<A11yFinding & { testRunId: string }> = [];
     const withIssues = runs.filter((run) => run.a11yReportName && run.a11yTotalCount);
-    if (!withIssues.length) return [];
+    if (!withIssues.length) return { bugs: [], problems };
     const settings = await this.settingsFor(withIssues[0].projectId);
     for (const run of withIssues) {
       const report = await this.reportOf(run, settings);
       if (!report) continue;
       const reviewed = await this.review(run, report);
+      problems.push(...findingsOf(reviewed).map((finding) => ({ ...finding, testRunId: run.id })));
       for (const violation of reviewed.violations) {
         const jiraKey = violation.issue?.jiraKey;
         if (!jiraKey || bugs.has(jiraKey)) continue;
@@ -269,7 +275,7 @@ export class A11yIssuesService implements OnModuleInit {
         });
       }
     }
-    return [...bugs.values()];
+    return { bugs: [...bugs.values()], problems };
   }
 
   /** Counts to keep on the row: new issues nobody has acted on, and all counted issues. */

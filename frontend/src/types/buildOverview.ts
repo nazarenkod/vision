@@ -1,4 +1,5 @@
-// Mirrors GET /builds/:id/overview and the public report (031).
+// Mirrors GET /builds/:id/overview and the public report (031, 038).
+import { A11yRule } from "./insights";
 
 export type Verdict = "running" | "waiting" | "reviewed" | "passed";
 
@@ -36,6 +37,25 @@ export interface OverviewBug {
   isNew: boolean;
 }
 
+export interface OverviewA11yProblem {
+  testRunId: string;
+  rule: A11yRule;
+  element: string;
+  // new, and nobody has acted on it: what the tile counts
+  isNew: boolean;
+  check: string;
+  device: string;
+  os: string;
+}
+
+// the Overview's accessibility card (038); not in a public report
+export interface OverviewA11y {
+  // some screenshot came with a UI tree
+  checked: boolean;
+  problems: OverviewA11yProblem[];
+  more: number;
+}
+
 export interface BuildOverview {
   verdict: Verdict;
   counts: Outcome & { waiting: number; a11yNew: number; bugs: number };
@@ -64,6 +84,8 @@ export interface BuildOverview {
     createdAt: string;
     updatedAt: string;
   };
+  // only from GET /builds/:id/overview
+  a11y?: OverviewA11y;
   // the time of the state shown
   asOf: string;
 }

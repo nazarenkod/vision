@@ -27,7 +27,7 @@ import {
 } from "../../types/insights";
 import { MessageKey, useT } from "../../i18n";
 
-const RULE_LABEL: Record<A11yRule, MessageKey> = {
+export const RULE_LABEL: Record<A11yRule, MessageKey> = {
   "touch-target": "a11y.rule.touchTarget",
   "low-contrast": "a11y.rule.lowContrast",
   "missing-label": "a11y.rule.missingLabel",

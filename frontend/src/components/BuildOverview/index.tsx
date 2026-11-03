@@ -1,9 +1,8 @@
 import React from "react";
-import { Box, ButtonBase, Link, Typography } from "@mui/material";
+import { Box, Link, Typography } from "@mui/material";
 import {
   AccessibilityNewOutlined,
   BugReportOutlined,
-  ExpandMoreRounded,
   LinkRounded,
 } from "@mui/icons-material";
 import { tokens } from "../../theme";
@@ -11,6 +10,7 @@ import { useT } from "../../i18n";
 import { useTestRunState } from "../../contexts";
 import { buildOverviewService } from "../../services";
 import { BuildOverview as Overview } from "../../types/buildOverview";
+import { RULE_LABEL } from "../ProjectForm/A11yRulesSettings";
 import { StatusPill } from "../StatusPill";
 import { ResultBar } from "./ResultBar";
 import { DeviceTags } from "../DeviceTags";
@@ -21,7 +21,6 @@ import {
   NameCell,
   Num,
   Row,
-  rowSx,
   TileProps,
   Tiles,
 } from "../SummaryParts";
@@ -34,6 +33,8 @@ const REFRESH_DELAY_MS = 400;
 export interface OverviewActions {
   openTab: (tab: BuildTab, status?: string) => void;
   openQueue: (key: QueueKey, runId?: string) => void;
+  // a screenshot on the Accessibility tab (REQ-038-07)
+  openA11y: (runId: string) => void;
 }
 
 /** Fetches the build overview (031) and asks again when a run of the build changes. */
@@ -151,7 +152,15 @@ const OverviewTiles: React.FunctionComponent<{
         : undefined,
     },
   ];
-  return <Tiles tiles={tiles} />;
+  // a zero says nothing needs doing: it steps back, the screens count never does (REQ-038-01)
+  return (
+    <Tiles
+      tiles={tiles.map((tile) => ({
+        ...tile,
+        quiet: tile.key !== "screens" && tile.value === 0,
+      }))}
+    />
+  );
 };
 
 const FEATURE_COLUMNS = "minmax(0, 1fr) 64px 80px 64px 40px";
@@ -204,8 +213,8 @@ const Devices: React.FunctionComponent<{
               }}
             />
             <ResultBar outcome={row} text={t} hint />
-            <Num value={waiting} />
-            <Num value={row.a11yNew} />
+            <Num value={waiting} zero="0" />
+            <Num value={row.a11yNew} zero="0" />
           </Row>
         );
       })}
@@ -246,8 +255,8 @@ const FeatureRows: React.FunctionComponent<{
               <span />
             )}
             <ResultBar outcome={row} text={t} hint />
-            <Num value={waiting} />
-            <Num value={row.bugs} />
+            <Num value={waiting} zero="0" />
+            <Num value={row.bugs} zero="0" />
           </Row>
         );
       })}
@@ -260,8 +269,12 @@ const Features: React.FunctionComponent<{
   actions: OverviewActions;
 }> = ({ overview, actions }) => {
   const { t } = useT();
-  const { features, quietFeatures } = overview;
-  const [quietOpen, setQuietOpen] = React.useState(false);
+  // every feature at once: those with something to look at first, then the rest (REQ-038-02)
+  const rows = [
+    ...overview.features,
+    // an older server folded them without listing them
+    ...(overview.quietFeatures.features ?? []),
+  ];
   return (
     <Card index={8} testId="overviewFeatures">
       <Head
@@ -274,50 +287,133 @@ const Features: React.FunctionComponent<{
           [t("overview.bugs"), true],
         ]}
       />
-      <FeatureRows rows={features} actions={actions} />
-      {/* opened, the row gives its place to the features it folded */}
-      {quietFeatures.count > 0 && !quietOpen && (
-        <ButtonBase
-          data-testid="overviewQuietFeatures"
-          aria-expanded={false}
-          onClick={() => setQuietOpen(true)}
-          sx={rowSx(FEATURE_COLUMNS, true)}
-        >
-          <Box
-            component="span"
-            sx={{
-              display: "flex",
-              alignItems: "center",
-              gap: 0.5,
-              color: tokens.textSecondary,
-            }}
-          >
-            {t("overview.quiet", { count: quietFeatures.count })}
-            <ExpandMoreRounded sx={{ fontSize: 18 }} />
-          </Box>
-          <span />
-          <ResultBar
-            outcome={{
-              total: quietFeatures.screens,
-              changed: 0,
-              new: 0,
-              rejected: 0,
-              passed: quietFeatures.screens,
-            }}
-            text={t}
-          />
-          <span />
-          <span />
-        </ButtonBase>
-      )}
-      {quietOpen && (
-        <FeatureRows rows={quietFeatures.features ?? []} actions={actions} />
-      )}
+      <FeatureRows rows={rows} actions={actions} />
     </Card>
   );
 };
 
 const BUG_COLUMNS = "24px 104px minmax(0, 1fr) auto";
+
+/** A card with nothing to list: one line, not a title and a table header over nothing. */
+const EmptyLine: React.FunctionComponent<{
+  testId: string;
+  icon: typeof BugReportOutlined;
+  children: React.ReactNode;
+}> = ({ testId, icon: Icon, children }) => (
+  <Box
+    data-testid={testId}
+    sx={{
+      px: 2,
+      minHeight: 48,
+      display: "flex",
+      alignItems: "center",
+      gap: 1.25,
+      color: tokens.textSecondary,
+      fontSize: 13,
+    }}
+  >
+    <Icon sx={{ fontSize: 18, color: tokens.textMuted }} />
+    {children}
+  </Box>
+);
+
+// the problem, the device's tags, then New or Known pinned to the right edge
+const A11Y_COLUMNS = "minmax(0, 1fr) minmax(0, auto) 72px";
+
+/**
+ * The accessibility problems of the build's screenshots (038): a row per
+ * problem per screenshot, new first, each opening its screenshot on the
+ * Accessibility tab.
+ */
+const A11yProblems: React.FunctionComponent<{
+  overview: Overview;
+  actions: OverviewActions;
+}> = ({ overview, actions }) => {
+  const { t } = useT();
+  const a11y = overview.a11y;
+  // no screenshot came with a UI tree: nothing was checked, nothing to say
+  if (!a11y?.checked) return null;
+  if (!a11y.problems.length) {
+    return (
+      <Card index={10} testId="overviewA11y">
+        <EmptyLine testId="overviewNoA11y" icon={AccessibilityNewOutlined}>
+          {t("overview.noA11y")}
+        </EmptyLine>
+      </Card>
+    );
+  }
+  return (
+    <Card index={10} testId="overviewA11y">
+      <Head
+        columns={A11Y_COLUMNS}
+        cells={[
+          [t("overview.a11y")],
+          [t("overview.device")],
+          [t("overview.a11yState"), true],
+        ]}
+      />
+      {a11y.problems.map((problem, i) => {
+        const rule = RULE_LABEL[problem.rule]
+          ? t(RULE_LABEL[problem.rule])
+          : problem.rule;
+        return (
+          <Row
+            key={`${problem.testRunId}:${problem.rule}:${problem.element}:${i}`}
+            columns={A11Y_COLUMNS}
+            label={`${rule} ${problem.check} ${problem.element}`}
+            testId="overviewA11yProblem"
+            onClick={() => actions.openA11y(problem.testRunId)}
+          >
+            <Box sx={{ minWidth: 0 }}>
+              <Typography
+                noWrap
+                sx={{
+                  fontSize: 13,
+                  fontWeight: 500,
+                  color: problem.isNew ? tokens.text : tokens.textSecondary,
+                }}
+              >
+                {rule}
+              </Typography>
+              <Typography
+                noWrap
+                title={`${problem.check} · ${problem.element}`}
+                sx={{ fontSize: 11.5, color: tokens.textMuted }}
+              >
+                {[problem.check, problem.element].filter(Boolean).join(" · ")}
+              </Typography>
+            </Box>
+            <DeviceTags
+              dense
+              parts={{ os: problem.os, device: problem.device }}
+            />
+            <Box sx={{ justifySelf: "end" }}>
+              <StatusPill
+                tone={problem.isNew ? "changed" : "neutral"}
+                label={t(
+                  problem.isNew
+                    ? "overview.a11yIssueNew"
+                    : "overview.a11yIssueKnown",
+                )}
+              />
+            </Box>
+          </Row>
+        );
+      })}
+      {a11y.more > 0 && (
+        <Row
+          columns="minmax(0, 1fr)"
+          testId="overviewA11yMore"
+          onClick={() => actions.openTab("a11y")}
+        >
+          <Box component="span" sx={{ color: tokens.textSecondary }}>
+            {t("overview.a11yMore", { count: a11y.more })}
+          </Box>
+        </Row>
+      )}
+    </Card>
+  );
+};
 
 const Bugs: React.FunctionComponent<{
   overview: Overview;
@@ -328,12 +424,9 @@ const Bugs: React.FunctionComponent<{
   if (overview.bugs.length === 0) {
     return (
       <Card index={9} testId="overviewBugs" id="overview-bugs">
-        <Box
-          data-testid="overviewNoBugs"
-          sx={{ px: 2, py: 1.5, color: tokens.textSecondary, fontSize: 13 }}
-        >
+        <EmptyLine testId="overviewNoBugs" icon={BugReportOutlined}>
           {t("overview.noBugs")}
-        </Box>
+        </EmptyLine>
       </Card>
     );
   }
@@ -473,6 +566,7 @@ export const BuildOverview: React.FunctionComponent<{
         >
           <Devices overview={overview} actions={actions} />
           <Bugs overview={overview} actions={actions} />
+          <A11yProblems overview={overview} actions={actions} />
         </Box>
       </Box>
     </Box>

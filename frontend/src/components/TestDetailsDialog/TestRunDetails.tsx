@@ -39,8 +39,8 @@ export const TestRunDetails: React.FunctionComponent<IProps> = ({
   const { t } = useT();
 
   const attributes = [
-    { name: t("review.attr.os"), value: testRun.os },
     { name: t("review.attr.device"), value: testRun.device },
+    { name: t("review.attr.os"), value: testRun.os },
     { name: t("review.attr.browser"), value: testRun.browser },
     { name: t("review.attr.viewport"), value: testRun.viewport },
     { name: t("review.attr.customTags"), value: testRun.customTags },

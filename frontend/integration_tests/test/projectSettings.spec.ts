@@ -535,8 +535,8 @@ test("marks received devices outside the list and adds one in a click", async ({
   await expect(iphone.getByRole("button", { name: "Add" })).toHaveCount(0);
   // the device as grey tags, and "allowed" as text beside them, not one more grey chip
   await expect(iphone.getByTestId("deviceTag")).toHaveText([
-    "26.2",
     "iPhone 17",
+    "26.2",
   ]);
   await expect(
     iphone.locator(".MuiChip-root", { hasText: "allowed" }),

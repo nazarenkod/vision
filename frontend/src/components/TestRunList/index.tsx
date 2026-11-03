@@ -127,9 +127,10 @@ const buildColumns = (t: Text): GridColDef[] => [
   },
 ];
 
+// the model first, as every screen shows a device (REQ-037-11)
 const TAG_FIELDS: Array<keyof TestRun> = [
-  "os",
   "device",
+  "os",
   "browser",
   "viewport",
   "customTags",

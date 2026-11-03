@@ -33,8 +33,9 @@ export interface DeviceTag {
   value: string;
 }
 
-// the order the test run table shows its tags in, which every screen follows (REQ-037-01)
-const DEVICE_FIELDS: DeviceField[] = ["os", "device", "browser", "viewport"];
+// the model first: it names the device, the OS only tells two of a model apart
+// (REQ-037-11); the test run table shows its tags in the same order
+const DEVICE_FIELDS: DeviceField[] = ["device", "os", "browser", "viewport"];
 
 /** The profile's non-empty values, one tag each, in the table's order. */
 export const deviceTagsOf = (parts: DeviceParts): DeviceTag[] =>

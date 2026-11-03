@@ -224,7 +224,7 @@ describe("ReportDocument", () => {
       within(changed)
         .getAllByTestId("deviceTag")
         .map((tag) => tag.textContent),
-    ).toEqual(["iOS 17", "iPhone 15"]);
+    ).toEqual(["iPhone 15", "iOS 17"]);
     expect(changed).toHaveTextContent("6,40%");
     expect(fresh).toHaveTextContent("новий");
     expect(fresh.querySelectorAll("img")).toHaveLength(1);
@@ -252,13 +252,13 @@ describe("ReportDocument", () => {
       screen.getAllByRole("img", { name: "2 змінені · 14 без змін" }),
     ).not.toHaveLength(0);
     const devices = screen.getByTestId("reportSection-dev");
-    // tags OS first, outlined so they print without backgrounds (spec 037)
+    // tags model first, outlined so they print without backgrounds (spec 037)
     expect(
       within(devices)
         .getAllByTestId("deviceTag")
         .map((tag) => tag.textContent),
-    ).toEqual(["AOS 14", "PIXEL_4_XL", "1080×2400"]);
-    expect(within(devices).getAllByTestId("deviceTag")[0]).toHaveAttribute(
+    ).toEqual(["PIXEL_4_XL", "AOS 14", "1080×2400"]);
+    expect(within(devices).getAllByTestId("deviceTag")[1]).toHaveAttribute(
       "title",
       "ОС",
     );

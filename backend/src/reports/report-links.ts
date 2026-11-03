@@ -160,7 +160,7 @@ export function publicReport(
           testRunId: run.id,
           name: run.name,
           device: run.device ?? '',
-          // the device shows as tags, OS first (spec 037)
+          // the device shows as tags, the OS next to its model (spec 037)
           os: run.os ?? '',
           newCount: run.a11yNewCount ?? 0,
         }))

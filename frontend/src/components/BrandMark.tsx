@@ -136,7 +136,7 @@ export const Wordmark: React.FunctionComponent<{
       sx={{
         position: "absolute",
         left: "50%",
-        top: "0.1em",
+        top: "0.04em",
         width: "0.2em",
         height: "0.2em",
         ml: "-0.1em",

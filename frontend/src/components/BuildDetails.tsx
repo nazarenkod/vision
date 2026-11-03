@@ -6,7 +6,7 @@ import { LOCATOR_BUILD_DETAILS } from "../constants/help";
 import { Tooltip } from "./Tooltip";
 import { motion, tokens } from "../theme";
 import { useT } from "../i18n";
-import { buildPeriod } from "../_helpers/buildPeriod.helper";
+import { buildDuration, buildPeriod } from "../_helpers/buildPeriod.helper";
 
 /**
  * Build header: identity, when it ran and a bar of how the screenshots came
@@ -77,10 +77,16 @@ const BuildDetails: React.FunctionComponent<{
           color="textSecondary"
           data-testid="buildPeriod"
         >
-          {buildPeriod(selectedBuild.createdAt, selectedBuild.updatedAt, {
-            formatDate,
-            t,
-          })}
+          {[
+            buildPeriod(selectedBuild.createdAt, selectedBuild.updatedAt, {
+              formatDate,
+              t,
+            }),
+            // how long it ran, without counting it up from the times (REQ-039-04)
+            buildDuration(selectedBuild.createdAt, selectedBuild.updatedAt, t),
+          ]
+            .filter(Boolean)
+            .join(" · ")}
         </Typography>
         {actions && (
           <Box sx={{ ml: "auto", display: "flex", gap: 1 }}>{actions}</Box>

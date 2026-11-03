@@ -2,6 +2,7 @@
 // page say about one build, worked out from rows the service loads. Pure, so
 // the three agree and the numbers are tested without a database.
 import { TestStatus } from '@prisma/client';
+import { A11yFinding } from '../a11y/a11y-issues';
 
 export type Verdict = 'running' | 'waiting' | 'reviewed' | 'passed';
 
@@ -253,5 +254,54 @@ export function buildOverview(input: OverviewInput): BuildOverview {
     ...featuresOf(input.runs, bugs),
     bugs,
     previous: previousOf(input.runs, input.previous),
+  };
+}
+
+// enough for an overview; the rest are on the Accessibility tab (REQ-039-06)
+export const A11Y_PROBLEMS_SHOWN = 20;
+
+export interface OverviewA11yProblem extends A11yFinding {
+  // the run to open on the Accessibility tab (REQ-039-07)
+  testRunId: string;
+  check: string;
+  device: string;
+  os: string;
+}
+
+export interface OverviewA11y {
+  // some screenshot of the build came with a UI tree: without one there is nothing to say (REQ-039-08)
+  checked: boolean;
+  problems: OverviewA11yProblem[];
+  // problems past the ones shown
+  more: number;
+}
+
+/**
+ * The accessibility card of the Overview (039): a row per problem per
+ * screenshot, so the new rows add up to the tile; new first.
+ */
+export function a11yOf(
+  runs: Array<Pick<OverviewRun, 'id' | 'name' | 'device' | 'os'> & { a11yTotalCount: number | null }>,
+  findings: Array<A11yFinding & { testRunId: string }>,
+  limit = A11Y_PROBLEMS_SHOWN
+): OverviewA11y {
+  const runsById = new Map(runs.map((run) => [run.id, run]));
+  const problems = findings
+    .filter((finding) => runsById.has(finding.testRunId))
+    .map((finding): OverviewA11yProblem => {
+      const run = runsById.get(finding.testRunId);
+      return { ...finding, check: run.name, device: run.device ?? '', os: run.os ?? '' };
+    })
+    .sort(
+      (a, b) =>
+        Number(b.isNew) - Number(a.isNew) ||
+        a.check.localeCompare(b.check) ||
+        a.device.localeCompare(b.device) ||
+        a.rule.localeCompare(b.rule)
+    );
+  return {
+    checked: runs.some((run) => run.a11yTotalCount !== null),
+    problems: problems.slice(0, limit),
+    more: Math.max(0, problems.length - limit),
   };
 }

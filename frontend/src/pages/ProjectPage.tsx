@@ -68,6 +68,11 @@ const ProjectPage = () => {
         navigate(
           buildTestRunLocation(selectedBuild.id, undefined, { tab, status }),
         ),
+      openA11y: (runId) =>
+        selectedBuild &&
+        navigate(
+          buildTestRunLocation(selectedBuild.id, runId, { tab: "a11y" }),
+        ),
       openQueue: (key, runId) => {
         if (!selectedBuild) return;
         const ids = queueIds(key, testRuns, groups ?? []);

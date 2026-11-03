@@ -4,7 +4,16 @@ import { PrismaService } from '../prisma/prisma.service';
 import { A11yIssuesService } from '../a11y/a11y-issues.service';
 import { StaticService } from '../static/static.service';
 import { pngSize } from '../ui-tree/ui-tree.service';
-import { buildOverview, BuildOverview, deviceKey, OverviewBugInput, OverviewRun } from './build-overview';
+import {
+  a11yOf,
+  buildOverview,
+  BuildOverview,
+  deviceKey,
+  OverviewA11y,
+  OverviewBugInput,
+  OverviewRun,
+} from './build-overview';
+import { A11yFinding } from '../a11y/a11y-issues';
 
 // a11y bugs are worked out from report files; the overview asks again on every
 // event of the build, so they are kept until a run of the build changes, and a
@@ -12,6 +21,11 @@ import { buildOverview, BuildOverview, deviceKey, OverviewBugInput, OverviewRun 
 const A11Y_CACHE_MS = 60_000;
 // stored screenshots never change, so their sizes are kept; the cap only bounds memory
 const SCREEN_CACHE_SIZE = 5_000;
+
+interface A11yFindings {
+  bugs: OverviewBugInput[];
+  problems: Array<A11yFinding & { testRunId: string }>;
+}
 
 export interface BuildOverviewResponse extends BuildOverview {
   build: {
@@ -24,6 +38,8 @@ export interface BuildOverviewResponse extends BuildOverview {
     createdAt: Date;
     updatedAt: Date;
   };
+  // the Overview's accessibility card (039); not in the public report (REQ-039-09)
+  a11y: OverviewA11y;
   // when the state shown was last true: the latest change of the build or its runs
   asOf: Date;
 }
@@ -52,7 +68,7 @@ const RUN_FIELDS = {
 /** Loads what the build overview (031) needs and hands it to `buildOverview`. No AI here (REQ-031-48). */
 @Injectable()
 export class BuildOverviewService {
-  private a11yCache = new Map<string, { key: string; at: number; bugs: OverviewBugInput[] }>();
+  private a11yCache = new Map<string, { key: string; at: number; findings: A11yFindings }>();
   private screenCache = new Map<string, string>();
 
   constructor(
@@ -81,7 +97,7 @@ export class BuildOverviewService {
 
     // approvals made before runs kept who decided them name their author through the baseline they made
     const unattributed = runs.filter((run) => run.status === TestStatus.approved && !run.decidedById).map((r) => r.id);
-    const [previousRuns, baselines, visualBugs, a11yBugs, screenSizes] = await Promise.all([
+    const [previousRuns, baselines, visualBugs, a11y, screenSizes] = await Promise.all([
       previousBuild
         ? this.prismaService.testRun.findMany({
             where: { buildId: previousBuild.id },
@@ -104,7 +120,7 @@ export class BuildOverviewService {
           })
         : [],
       this.visualBugs(build.projectId, runs),
-      this.a11yBugs(buildId, build.createdAt, runs),
+      this.a11yFindings(buildId, build.createdAt, runs),
       this.screenSizes(runs),
     ]);
 
@@ -126,12 +142,13 @@ export class BuildOverviewService {
       previous: previousBuild ? { number: previousBuild.number, runs: previousRuns } : null,
       approvedBy,
       people,
-      bugs: [...visualBugs, ...a11yBugs],
+      bugs: [...visualBugs, ...a11y.bugs],
       screenSizes,
     });
     const asOf = runs.reduce((latest, run) => (run.updatedAt > latest ? run.updatedAt : latest), build.updatedAt);
     return {
       ...summary,
+      a11y: a11yOf(runs, a11y.problems),
       build: {
         id: build.id,
         number: build.number,
@@ -220,32 +237,35 @@ export class BuildOverviewService {
     return sizes;
   }
 
-  private async a11yBugs(
+  private async a11yFindings(
     buildId: string,
     buildCreatedAt: Date,
-    runs: Array<Parameters<A11yIssuesService['jiraBugsOn']>[0][number] & { updatedAt: Date }>
-  ): Promise<OverviewBugInput[]> {
+    runs: Array<Parameters<A11yIssuesService['findingsOn']>[0][number] & { updatedAt: Date }>
+  ): Promise<A11yFindings> {
     const key = `${runs.length}:${Math.max(0, ...runs.map((run) => run.updatedAt.getTime()))}`;
     const cached = this.a11yCache.get(buildId);
-    if (cached && cached.key === key && Date.now() - cached.at < A11Y_CACHE_MS) return cached.bugs;
+    if (cached && cached.key === key && Date.now() - cached.at < A11Y_CACHE_MS) return cached.findings;
 
-    const found = await this.a11yIssuesService.jiraBugsOn(runs);
-    const filed = found.length
+    const found = await this.a11yIssuesService.findingsOn(runs);
+    const filed = found.bugs.length
       ? await this.prismaService.a11yProblem.findMany({
-          where: { projectId: runs[0].projectId, code: { in: found.map((bug) => bug.problemCode) } },
+          where: { projectId: runs[0].projectId, code: { in: found.bugs.map((bug) => bug.problemCode) } },
           select: { code: true, createdAt: true },
         })
       : [];
     const filedAt = new Map(filed.map((problem) => [problem.code, problem.createdAt]));
-    const bugs = found.map((bug): OverviewBugInput => ({
-      kind: 'a11y',
-      jiraKey: bug.jiraKey,
-      jiraUrl: bug.jiraUrl,
-      summary: bug.title,
-      testRunId: bug.testRunId,
-      isNew: (filedAt.get(bug.problemCode) ?? new Date(0)) >= buildCreatedAt,
-    }));
-    this.a11yCache.set(buildId, { key, at: Date.now(), bugs });
-    return bugs;
+    const findings: A11yFindings = {
+      bugs: found.bugs.map((bug): OverviewBugInput => ({
+        kind: 'a11y',
+        jiraKey: bug.jiraKey,
+        jiraUrl: bug.jiraUrl,
+        summary: bug.title,
+        testRunId: bug.testRunId,
+        isNew: (filedAt.get(bug.problemCode) ?? new Date(0)) >= buildCreatedAt,
+      })),
+      problems: found.problems,
+    };
+    this.a11yCache.set(buildId, { key, at: Date.now(), findings });
+    return findings;
   }
 }

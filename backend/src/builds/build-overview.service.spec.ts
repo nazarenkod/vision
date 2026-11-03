@@ -82,7 +82,12 @@ const setup = () => {
       ]),
     },
   };
-  const a11y = { jiraBugsOn: jest.fn().mockResolvedValue([]) };
+  const a11y = {
+    findingsOn: jest.fn().mockResolvedValue({
+      bugs: [],
+      problems: [{ testRunId: 'b', rule: 'touch-target', element: 'Pay', isNew: true }],
+    }),
+  };
   // a PNG header: signature, IHDR length and type, then width and height
   const png = (width: number, height: number) => {
     const buffer = Buffer.alloc(24);
@@ -126,6 +131,9 @@ describe('BuildOverviewService', () => {
     expect(overview.previous).toEqual({ number: 127, changed: 1, added: 2, gone: 1 });
     expect(overview.asOf).toEqual(new Date('2026-10-31T11:05:00Z'));
     expect(overview.build.projectName).toBe('Mobile Shop');
+    expect(overview.a11y.problems).toEqual([
+      expect.objectContaining({ testRunId: 'b', rule: 'touch-target', isNew: true }),
+    ]);
     // names only: no email, no keys
     expect(prisma.user.findMany).toHaveBeenCalledWith(
       expect.objectContaining({ select: { id: true, firstName: true, lastName: true } })

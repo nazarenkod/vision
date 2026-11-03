@@ -1,5 +1,5 @@
 import { A11yIssueState, A11yProblem } from '@prisma/client';
-import { A11yReport } from './a11y.types';
+import { A11yReport, A11yRule, A11yViolation } from './a11y.types';
 import { facetsFromKey, facetsOf, problemCode, problemKeyOf, ProblemFacets } from './a11y-problems';
 
 export type A11yIssueStatus = 'reported' | 'ignored';
@@ -175,4 +175,32 @@ export function reviewReport(report: A11yReport, context: ReviewContext): Review
       total: counted.length,
     },
   };
+}
+
+/** A problem a reviewed report counts, as the build overview lists it (039). */
+export interface A11yFinding {
+  rule: A11yRule;
+  element: string;
+  // what the build's count of new problems counts: new, and nobody has acted on it
+  isNew: boolean;
+}
+
+/** What people know the element by: what a screen reader says, else its id without the package, else its class. */
+export function elementNameOf(violation: Pick<A11yViolation, 'label' | 'resourceId' | 'className'>): string {
+  const label = violation.label?.trim();
+  if (label) return label;
+  const id = violation.resourceId?.split(':id/').pop()?.trim();
+  if (id) return id;
+  return violation.className?.split('.').pop() ?? '';
+}
+
+/** The counted problems of a reviewed report, one per issue; advice and false positives are not counted. */
+export function findingsOf(reviewed: Pick<ReviewedA11yReport, 'violations'>): A11yFinding[] {
+  return reviewed.violations
+    .filter((violation) => violation.severity !== 'info')
+    .map((violation) => ({
+      rule: violation.rule,
+      element: elementNameOf(violation),
+      isNew: !violation.issue && violation.status === 'new',
+    }));
 }

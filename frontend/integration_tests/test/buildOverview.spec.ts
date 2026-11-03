@@ -184,6 +184,30 @@ const overview: BuildOverview = {
     },
   ],
   previous: { number: 127, changed: 2, added: 1, gone: 0 },
+  a11y: {
+    checked: true,
+    problems: [
+      {
+        testRunId: "pay",
+        rule: "touch-target",
+        element: "Pay",
+        isNew: true,
+        check: "Checkout. Pay",
+        device: "PIXEL_4_XL",
+        os: "AOS 14",
+      },
+      {
+        testRunId: "login",
+        rule: "missing-label",
+        element: "btn_scan",
+        isNew: false,
+        check: "Login. Error",
+        device: "iPhone 15",
+        os: "iOS 17",
+      },
+    ],
+    more: 0,
+  },
   build: {
     id: build.id,
     number: 128,
@@ -235,9 +259,7 @@ test("opens a build on the Overview tab", async ({ openProjectPage, page }) => {
     "1 of 4 decided\nOleh Koval: 1 approved · 0 rejected",
   );
   await expect(page.getByTestId("overviewDevice")).toHaveCount(3);
-  await expect(page.getByTestId("overviewQuietFeatures")).toContainText(
-    "+2 passed",
-  );
+  await expect(page.getByTestId("overviewFeature")).toHaveCount(4);
   // the tables name themselves in their first column
   await expect(page.getByRole("heading", { name: "Features" })).toHaveCount(0);
   await expect(page.getByRole("heading", { name: "Devices" })).toHaveCount(0);
@@ -385,14 +407,11 @@ test("keeps the counts out of the build header on every tab", async ({
   await expect(page.getByTestId("buildCounts")).toHaveCount(0);
 });
 
-test("opens the passed features in place of their folded row", async ({
+test("shows every feature at once, those with changes first", async ({
   openProjectPage,
   page,
 }) => {
   await openProjectPage(project.id, build.id, undefined, "overview");
-  await expect(page.getByTestId("overviewFeature")).toHaveCount(2);
-
-  await page.getByTestId("overviewQuietFeatures").click();
   await expect(page.getByTestId("overviewQuietFeatures")).toHaveCount(0);
   await expect(page.getByTestId("overviewFeature")).toHaveText([
     /Checkout/,
@@ -402,6 +421,94 @@ test("opens the passed features in place of their folded row", async ({
   ]);
 });
 
+test("lets the tiles with nothing to see step back", async ({
+  openProjectPage,
+  page,
+}) => {
+  await page.route(`${API_URL}/builds/${build.id}/overview`, (route) =>
+    route.fulfill({
+      json: {
+        ...overview,
+        counts: { ...overview.counts, rejected: 0, bugs: 0 },
+      },
+    }),
+  );
+  await openProjectPage(project.id, build.id, undefined, "overview");
+  await expect(page.getByTestId("overviewTile-rejected")).toHaveAttribute(
+    "data-quiet",
+    "true",
+  );
+  await expect(page.getByTestId("overviewTile-bugs")).toHaveAttribute(
+    "data-quiet",
+    "true",
+  );
+  await expect(page.getByTestId("overviewTile-waiting")).not.toHaveAttribute(
+    "data-quiet",
+    "true",
+  );
+  await expect(page.getByTestId("overviewTile-screens")).not.toHaveAttribute(
+    "data-quiet",
+    "true",
+  );
+});
+
+test("lists the accessibility problems, new first, and opens one on its tab", async ({
+  openProjectPage,
+  page,
+}) => {
+  await openProjectPage(project.id, build.id, undefined, "overview");
+  const rows = page.getByTestId("overviewA11yProblem");
+  await expect(rows).toHaveCount(2);
+  await expect(rows.first()).toContainText("Touch target too small");
+  await expect(rows.first()).toContainText("Checkout. Pay · Pay");
+  await expect(rows.first()).toContainText("New");
+  await expect(rows.first().getByTestId("deviceTag")).toHaveText([
+    "PIXEL_4_XL",
+    "AOS 14",
+  ]);
+  await expect(rows.last()).toContainText("Control has no label");
+  await expect(rows.last()).toContainText("Known");
+
+  await rows.last().click();
+  await expect(page).toHaveURL(/tab=a11y.*testId=login$/);
+});
+
+test("counts the accessibility problems past twenty and opens the tab for them", async ({
+  openProjectPage,
+  page,
+}) => {
+  await page.route(`${API_URL}/builds/${build.id}/overview`, (route) =>
+    route.fulfill({
+      json: { ...overview, a11y: { ...overview.a11y, more: 7 } },
+    }),
+  );
+  await openProjectPage(project.id, build.id, undefined, "overview");
+  await expect(page.getByTestId("overviewA11yMore")).toHaveText(
+    "+7 more on the Accessibility tab",
+  );
+  await page.getByTestId("overviewA11yMore").click();
+  await expect(page).toHaveURL(/tab=a11y/);
+});
+
+test("says there are no accessibility problems in one line, and nothing without UI trees", async ({
+  openProjectPage,
+  page,
+}) => {
+  let a11y: BuildOverview["a11y"] = { checked: true, problems: [], more: 0 };
+  await page.route(`${API_URL}/builds/${build.id}/overview`, (route) =>
+    route.fulfill({ json: { ...overview, a11y } }),
+  );
+  await openProjectPage(project.id, build.id, undefined, "overview");
+  await expect(page.getByTestId("overviewA11y")).toHaveText(
+    "No accessibility problems",
+  );
+
+  a11y = { checked: false, problems: [], more: 0 };
+  await page.reload();
+  await expect(page.getByTestId("overviewFeatures")).toBeVisible();
+  await expect(page.getByTestId("overviewA11y")).toHaveCount(0);
+});
+
 test("counts the checks of a feature and opens a check on its own", async ({
   openProjectPage,
   page,
@@ -409,11 +516,12 @@ test("counts the checks of a feature and opens a check on its own", async ({
   await openProjectPage(project.id, build.id, undefined, "overview");
   const rows = page.getByTestId("overviewFeature");
   // the check's full name: no feature is guessed from it
-  await expect(rows).toHaveText([/^Checkout/, /^Login\. Error/]);
+  const login = rows.nth(1);
+  await expect(login).toHaveText(/^Login\. Error/);
   await expect(rows.first().getByTestId("overviewChecks")).toHaveText("1");
-  await expect(rows.last().getByTestId("overviewChecks")).toHaveCount(0);
+  await expect(login.getByTestId("overviewChecks")).toHaveCount(0);
 
-  await rows.last().click();
+  await login.click();
   await expect(page.getByTestId("queueName")).toHaveText("Login. Error");
   await expect(page.getByTestId("queuePosition")).toHaveText("1 / 1");
   await expect(page).toHaveURL(/queue=check%3ALogin/);
@@ -454,7 +562,7 @@ test("names the review button without a count", async ({
   await expect(page.getByTestId("reviewWaiting")).toHaveText("Review");
 });
 
-test("explains a result bar and leaves zeros out of the counts", async ({
+test("explains a result bar and shows zeros as a faint 0", async ({
   openProjectPage,
   page,
 }) => {
@@ -462,8 +570,8 @@ test("explains a result bar and leaves zeros out of the counts", async ({
   const login = page
     .getByTestId("overviewFeature")
     .filter({ hasText: "Login" });
-  // Login has no bugs: a dash rather than a 0
-  await expect(login.getByTestId("overviewNum").last()).toHaveText("—");
+  // Login has no bugs: a faint 0, so the column reads as numbers (039)
+  await expect(login.getByTestId("overviewNum").last()).toHaveText("0");
 
   await login.getByTestId("resultBar").hover();
   await expect(page.getByRole("tooltip")).toHaveText("1 changed");

@@ -36,6 +36,21 @@ const overview = (): BuildOverviewResponse => ({
     },
   ],
   previous: null,
+  a11y: {
+    checked: true,
+    problems: [
+      {
+        testRunId: 'a',
+        rule: 'touch-target',
+        element: 'Pay',
+        isNew: true,
+        check: 'Screen a',
+        device: 'PIXEL_4_XL',
+        os: 'AOS 14',
+      },
+    ],
+    more: 0,
+  },
   build: {
     id: 'b',
     number: 128,
@@ -120,6 +135,12 @@ describe('report links', () => {
     const body = JSON.stringify(publicReport(leaky, [run('a', { a11yNewCount: 2 })], link));
     expect(body).not.toMatch(/email|apiKey|jiraToken|secret|password/i);
     expect(body).toContain('Anna Petrenko');
+  });
+
+  it('leaves the accessibility problems of the overview out of a public report', () => {
+    const report = publicReport(overview(), [run('a', { a11yNewCount: 2 })], link);
+    expect(report.overview).not.toHaveProperty('a11y');
+    expect(JSON.stringify(report)).not.toContain('Pay');
   });
 
   it('names the OS of each accessibility row next to its device', () => {

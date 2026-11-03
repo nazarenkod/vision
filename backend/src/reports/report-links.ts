@@ -44,7 +44,7 @@ export interface PublicReport {
   sections?: Section[];
   language?: ReportLanguage;
   createdBy?: string | null;
-  overview?: Omit<BuildOverviewResponse, 'build'> & {
+  overview?: Omit<BuildOverviewResponse, 'build' | 'a11y'> & {
     build: Pick<
       BuildOverviewResponse['build'],
       'id' | 'number' | 'branchName' | 'ciBuildId' | 'projectName' | 'createdAt' | 'updatedAt'

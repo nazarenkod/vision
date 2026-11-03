@@ -34,3 +34,31 @@ export function buildPeriod(
     end: formatDate(end, sameDay ? TIME : undefined),
   });
 }
+
+/**
+ * How long the build ran: "3 min 34 s", "12 min", "1 h 5 min", "45 s" (039).
+ * Null for a build that has not run on since it started.
+ */
+export function buildDuration(
+  start: string | Date,
+  end: string | Date | null | undefined,
+  t: Text = english,
+): string | null {
+  if (!end) return null;
+  const seconds = Math.floor(
+    (new Date(end).getTime() - new Date(start).getTime()) / 1000,
+  );
+  if (seconds < 1) return null;
+  const hours = Math.floor(seconds / 3600);
+  const minutes = Math.floor((seconds % 3600) / 60);
+  const rest = seconds % 60;
+  if (hours)
+    return minutes
+      ? t("builds.durationHours", { hours, minutes })
+      : t("builds.durationHoursOnly", { hours });
+  if (minutes)
+    return rest
+      ? t("builds.durationMinutes", { minutes, seconds: rest })
+      : t("builds.durationMinutesOnly", { minutes });
+  return t("builds.durationSeconds", { seconds: rest });
+}

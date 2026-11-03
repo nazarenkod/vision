@@ -230,6 +230,21 @@ export const uk: Messages = {
   "a11y.rule.duplicateLabel": "Однаковий підпис у кількох елементів",
   "a11y.rule.redundantRole": "Підпис повторює роль",
   "a11y.rule.notAccessible": "Елемент прихований від VoiceOver",
+  "a11y.msg.touchTarget":
+    "{element}: {width} × {height} {unit}, мінімум — {min} × {min} {unit}.",
+  "a11y.msg.lowContrast": "{element}: {ratio} : 1, потрібно {required} : 1.",
+  "a11y.msg.missingLabel": "{element}: {reader} не має що озвучити.",
+  "a11y.msg.inputWithoutLabel": "{element}: не зрозуміло, що вводити.",
+  "a11y.msg.duplicateLabel": {
+    one: "{count} елемент озвучується як «{label}»; користувач не відрізнить їх.",
+    few: "{count} елементи озвучуються як «{label}»; користувач не відрізнить їх.",
+    many: "{count} елементів озвучуються як «{label}»; користувач не відрізнить їх.",
+    other:
+      "{count} елемента озвучуються як «{label}»; користувач не відрізнить їх.",
+  },
+  "a11y.msg.redundantRole":
+    "«{label}»: роль і так озвучується; приберіть слова на кшталт «кнопка» чи «зображення».",
+  "a11y.msg.notAccessible": "{element}: isAccessibilityElement = false.",
 
   "jira.title": "Jira",
   "jira.intro":

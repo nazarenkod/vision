@@ -46,6 +46,7 @@ import { describeChange } from "../ChangeGroups";
 import { JiraBugDialog } from "./JiraBugDialog";
 import { motion, tokens } from "../../theme";
 import { labelOf, useT } from "../../i18n";
+import { a11yMessage, a11yTitle } from "../../_helpers/a11yText.helper";
 import { WhatsCompared } from "./WhatsCompared";
 import { ComparisonVerdict } from "./ComparisonVerdict";
 import { overview, verdict } from "../../_helpers/whatsCompared.helper";
@@ -417,7 +418,7 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
           <Typography
             sx={{ fontWeight: 600, fontSize: 14, flex: 1, minWidth: 0 }}
           >
-            {violation.title}
+            {a11yTitle(t, violation)}
           </Typography>
           <Typography
             sx={{
@@ -473,14 +474,14 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
                   }}
                 >
                   <b style={{ color: tokens.text }}>{numberOf.get(item.id)}</b>
-                  <span>{item.message}</span>
+                  <span>{a11yMessage(t, item)}</span>
                 </Box>
               ))}
             </Box>
           </>
         ) : (
           <Typography sx={{ fontSize: 13, color: tokens.textSecondary }}>
-            {violation.message}
+            {a11yMessage(t, violation)}
           </Typography>
         )}
         <Box
@@ -813,7 +814,7 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
                 sx={{ display: "flex", alignItems: "center", gap: 1, mt: 1 }}
               >
                 <span style={{ flex: 1 }}>
-                  {violation.title} ·{" "}
+                  {a11yTitle(t, violation)} ·{" "}
                   {violation.label ||
                     shortId(violation.resourceId) ||
                     violation.className}

@@ -237,6 +237,19 @@ export const en = {
   "a11y.rule.duplicateLabel": "Same label on several controls",
   "a11y.rule.redundantRole": "Label repeats the role",
   "a11y.rule.notAccessible": "Control hidden from VoiceOver",
+  "a11y.msg.touchTarget":
+    "{element} is {width} × {height} {unit}, minimum is {min} × {min} {unit}.",
+  "a11y.msg.lowContrast": "{element}: {ratio} : 1, needs {required} : 1.",
+  "a11y.msg.missingLabel": "{element} has nothing for {reader} to read out.",
+  "a11y.msg.inputWithoutLabel": "{element} gives no clue what to enter.",
+  "a11y.msg.duplicateLabel": {
+    one: '{count} control is announced as "{label}"; users cannot tell them apart.',
+    other:
+      '{count} controls are announced as "{label}"; users cannot tell them apart.',
+  },
+  "a11y.msg.redundantRole":
+    '"{label}" already gets its role announced; drop words like "button" or "image".',
+  "a11y.msg.notAccessible": "{element} has isAccessibilityElement = false.",
 
   "jira.title": "Jira",
   "jira.intro":

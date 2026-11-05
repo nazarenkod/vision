@@ -108,10 +108,10 @@ docs/specs/NNN-коротка-назва/
 | [039](039-overview-polish/spec.md) | Огляд збірки: тихі нулі, усі фічі, проблеми доступності | Implemented |
 | [040](040-uitree-limits-and-sdk-names/spec.md) | Безпечний прийом UI-дерева і власні назви SDK | Implemented |
 | [041](041-vision-names/spec.md) | Інтерфейс і налаштування під назвою Vision | Implemented |
-| [042](042-project-access/spec.md) | Доступ до проєктів: кожен бачить свої, адмін — усе | Draft |
-| [043](043-protected-images/spec.md) | Знімки лише з входом або за посиланням з терміном дії | Draft |
-| [044](044-secrets-at-rest/spec.md) | Секрети в базі: зашифровані токени, хеші ключів, Jira лише на дозволених хостах | Draft |
-| [045](045-sign-in-and-api-hardening/spec.md) | Вхід через LDAP/SSO і локальні акаунти разом; захист входу й API | Draft |
+| [042](042-project-access/spec.md) | Доступ до проєктів: кожен бачить свої, адмін — усе | Approved |
+| [043](043-protected-images/spec.md) | Знімки лише з входом або за підписаним посиланням | Approved |
+| [044](044-secrets-at-rest/spec.md) | Секрети в базі: зашифровані токени, хеші ключів, Jira лише на дозволених хостах | Approved |
+| [045](045-sign-in-and-api-hardening/spec.md) | Корпоративний вхід разом з локальними акаунтами; захист входу й API | Draft |
 
 Статусу `Verified` поки немає в жодної: інтеграцію з реальною Jira Cloud і прогони на сервері
 команда ще не підтвердила.

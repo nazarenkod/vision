@@ -37,11 +37,13 @@ export const requestWithApiKey = (
 export const haveUserLogged = async (usersService: UsersService, role: Role = 'admin') => {
   const password = '123456';
   const user = await usersService.createAccount(generateUser(password, role));
-
-  return usersService.login({
+  const login = await usersService.login({
     email: user.email,
     password,
   });
+  // the key is shown only when it is made (044): make one, as the profile does
+  const apiKey = await usersService.generateNewApiKey({ id: user.id } as never);
+  return { ...login, apiKey };
 };
 
 export const haveTestRunCreated = async (

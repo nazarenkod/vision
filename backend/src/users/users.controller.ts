@@ -27,6 +27,7 @@ import { Role, User } from '@prisma/client';
 import { RoleGuard } from '../auth/guards/role.guard';
 import { Roles } from '../shared/roles.decorator';
 import { PrismaService } from '../prisma/prisma.service';
+import { sealSecret } from '../shared/secret-box';
 import { AssignRoleDto } from './dto/assign-role.dto';
 import { Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
@@ -197,9 +198,11 @@ export class UsersController {
   @UseGuards(JwtAuthGuard)
   async setJira(@CurrentUser() user: User, @Body() dto: UserJiraDto): Promise<UserDto> {
     const value = (text: string | undefined) => (text === undefined ? undefined : text.trim() || null);
+    const token = value(dto.jiraToken);
     const updated = await this.prismaService.user.update({
       where: { id: user.id },
-      data: { jiraToken: value(dto.jiraToken), jiraEmail: value(dto.jiraEmail) },
+      // the token is stored sealed (044); the email is no secret
+      data: { jiraToken: token ? sealSecret(token) : token, jiraEmail: value(dto.jiraEmail) },
     });
     return new UserDto(updated);
   }
@@ -212,7 +215,7 @@ export class UsersController {
     if (dto.geminiApiKey === undefined) return new UserDto(user);
     const updated = await this.prismaService.user.update({
       where: { id: user.id },
-      data: { geminiApiKey: dto.geminiApiKey.trim() || null },
+      data: { geminiApiKey: dto.geminiApiKey.trim() ? sealSecret(dto.geminiApiKey.trim()) : null },
     });
     return new UserDto(updated);
   }

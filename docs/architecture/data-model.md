@@ -11,7 +11,7 @@ upstream VRT, а згодом зможе працювати й на живій.
 | `TestRun` | `uiTreeName`, `baselineUiTreeName`, `uiTreeOptions`, `a11yReportName`, `a11yNewCount`, `a11yTotalCount`, `diffRegions`, `changeSignature`, `imageThumbnailName`, `diffThumbnailName`, `captureWarnings`, `semanticChangeCount`, `componentChanges`, `featureName`, `decidedById` | результати аналізу дерева: файли й лічильники; назва фічі з SDK для назви бага, поза ключем варіації ([ADR-0019](../decisions/0019-sdk-upstream-plus-ui-tree-and-feature.md)); хто прийняв чи відхилив прогон в інтерфейсі, Undo стирає — для прогресу рев'ю в огляді збірки ([031](../specs/031-build-overview/spec.md)); `captureWarnings` з [020](../specs/020-remove-reference-device/spec.md) не пишеться й не читається |
 | `TestVariation`, `Baseline` | `baselineUiTreeName` / `uiTreeName` | дерево еталона йде разом із картинкою |
 | `Project` | `jiraUrl`, `jiraToken`, `jiraEmail` (спільні; з [035](../specs/035-admin-accounts/spec.md) не читаються й не пишуться, значення стирає застосунок при старті), `jiraIssueType`, `jiraLinkType`, `uiTreeSettings` (JSON); `bulkApproveVariations`, `bulkApproveGroupBy` — від прибраних груп варіацій ([022](../specs/022-remove-variation-groups/spec.md)), лишаються в рядку, але не читаються й не віддаються API | Jira і налаштування мобільного порівняння, заголовок екрана |
-| `User` | `jiraToken`, `jiraEmail`, `geminiApiKey`, `lastSignInAt` | особистий токен Jira ([ADR-0010](../decisions/0010-personal-jira-tokens.md)); особистий ключ Gemini для чернеток багів, лише записується ([ADR-0020](../decisions/0020-personal-gemini-keys.md)); останній вхід в інтерфейс паролем чи SSO, для сторінки Users ([018](../specs/018-ui-redesign/spec.md)) |
+| `User` | `apiKey` (`sha256:` ключа), `apiKeyEnding`, `jiraToken`, `jiraEmail`, `geminiApiKey`, `lastSignInAt` | API-ключ лише хешем і його останні 4 символи; токен і ключ Gemini зашифровані `VISION_SECRET_KEY` (`enc:v1:`), відкриті значення старих версій шифрує й анулює `SecretsAtRestService` при старті ([044](../specs/044-secrets-at-rest/spec.md)); особистий токен Jira ([ADR-0010](../decisions/0010-personal-jira-tokens.md)); особистий ключ Gemini для чернеток багів, лише записується ([ADR-0020](../decisions/0020-personal-gemini-keys.md)); останній вхід в інтерфейс паролем чи SSO, для сторінки Users ([018](../specs/018-ui-redesign/spec.md)) |
 
 `uiTreeSettings` — JSON, який читає `parseUiTreeSettings` (`ui-tree/comparison-inputs.ts`):
 системні бари, зсуви, приховані зміни, правила елементів, `screenTitle` (селектори заголовка; з [026](../specs/026-a11y-rules-settings/spec.md)
@@ -50,7 +50,7 @@ upstream VRT, а згодом зможе працювати й на живій.
 
 | Файл | Що |
 |---|---|
-| `demo-data/backups/vision-<UTC>.tar` | бекап: `db.dump` (без рядків `User` і `Project`), `user.csv`, `project.csv` (без паролів і токенів Jira), `manifest.txt` (схема й кількість рядків); `.uploaded` поруч — уже в Google Drive; `vision-<UTC>.images.txt` — перелік картинок на момент бекапу (за ним чистяться картинки в Drive) |
+| `demo-data/backups/vision-<UTC>.tar` | бекап: `db.dump` (без рядків `User` і `Project`), `user.csv`, `project.csv` (без паролів, токенів Jira й ключів Gemini; API-ключі — хешами), `manifest.txt` (схема й кількість рядків); `.uploaded` поруч — уже в Google Drive; `vision-<UTC>.images.txt` — перелік картинок на момент бекапу (за ним чистяться картинки в Drive) |
 | `demo-data/backup-status/status.json` | стан останнього бекапу (і `runningSince`, поки йде); API читає його як `BACKUP_STATUS_FILE` |
 | `demo-data/backup-config/` | пише API зі сторінки Backups ([017](../specs/017-backup-settings-ui/spec.md)): `drive.json` і `rclone.conf` (600, секрети підключення), `settings.json`, `backup-requested` |
 
@@ -74,3 +74,4 @@ upstream VRT, а згодом зможе працювати й на живій.
 | `20261029210000_add_user_gemini_key` | `User.geminiApiKey` |
 | `20261031100000_add_ai_result_personal` | `AiResult.personal` |
 | `20261031120000_add_report_links` | `TestRun.decidedById`, `ReportLink` |
+| `20261105120000_add_user_api_key_ending` | `User.apiKeyEnding` |

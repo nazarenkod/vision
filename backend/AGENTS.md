@@ -10,7 +10,8 @@
 | `src/a11y/a11y.rules.ts` | правила доступності | [003](../docs/specs/003-accessibility-checks/spec.md) |
 | `src/a11y/a11y-norms.ts` | норми проєкту (зона тапу, контраст, вимкнені правила); `applyNorms` — звіт за поточними нормами всюди, де його показують чи рахують | [026](../docs/specs/026-a11y-rules-settings/spec.md) |
 | `src/a11y/a11y-problems.ts`, `a11y-issues*.ts` | проблеми, їхні ID і факти, групування, маркери, рішення, пошук у Jira | [004](../docs/specs/004-a11y-problems/spec.md), [021](../docs/specs/021-fixed-a11y-grouping/spec.md) |
-| `src/a11y/jira*.ts` | клієнт Jira, поля й текст бага | [005](../docs/specs/005-jira-bugs/spec.md) |
+| `src/a11y/jira*.ts` | клієнт Jira, поля й текст бага; `jira-hosts.ts` — лише хости з `VISION_JIRA_HOSTS`, перевірка в `jiraAccess` і при збереженні проєкту | [005](../docs/specs/005-jira-bugs/spec.md), [044](../docs/specs/044-secrets-at-rest/spec.md) |
+| `src/shared/secret-box.ts`, `api-key-hash.ts`, `secrets-at-rest.service.ts` | секрети в базі: токени й ключі Gemini — `sealSecret`/`openSecret` (AES-256-GCM ключем `VISION_SECRET_KEY`, без нього API не стартує), API-ключі — `sha256:`; при старті відкриті значення шифруються, а відкриті API-ключі анулюються | [044](../docs/specs/044-secrets-at-rest/spec.md) |
 | `src/test-runs/change-groups.service.ts` | групи змін збірки | [006](../docs/specs/006-change-groups/spec.md) |
 | `src/test-runs/decision-undo*.ts` | журнал Approve і Reject та Undo з нього ([ADR-0014](../docs/decisions/0014-undo-through-decision-journal.md)); тест відновлення ганяє справжній upstream approve | [018](../docs/specs/018-ui-redesign/spec.md) |
 | `src/projects/allowed-devices.ts` | дозволені пристрої проєкту: збіг пристрою й OS (`26.*`), текст відмови 422 для SDK; CLI (`User-Agent: vision-cli/…`) не перевіряється | [029](../docs/specs/029-allowed-devices/spec.md) |
@@ -53,6 +54,8 @@ npm run test:e2e / test:acceptance         # потрібні запущені P
   пускає лише тих, хто увійшов, і кожен отримує свій проєкт ([ADR-0023](../docs/decisions/0023-events-socket-behind-login.md)).
 - **Не повертай рядок `User` цілком** (хеш пароля, API-ключ, токен Jira): лише `select` потрібних
   полів або `UserDto`.
+- **Новий секрет у базі** — через `sealSecret` при записі й `openSecret` лише там, де він іде назовні;
+  у тестах ключ задає `src/jest.setup.ts`.
 - Коментарі пояснюють *чому*, а не *що*.
 
 ## Пастки

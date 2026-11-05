@@ -72,6 +72,9 @@ export class Normalizer {
         } else if (key === 'stack' && typeof item === 'string') {
           // server paths of the machine that ran it; whether a stack is sent at all stays visible
           out[key] = '<stack>';
+        } else if (key === 'apiKeyEnding' && typeof item === 'string') {
+          // the end of a random key: whether one is set, and that it stays the same, are what count
+          out[key] = this.label('keyEnding', item);
         } else if (key === 'token' && typeof item === 'string' && /^[\w-]{40,}$/.test(item)) {
           out[key] = this.label('reportToken', item);
         } else {

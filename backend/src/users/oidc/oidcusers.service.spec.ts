@@ -30,6 +30,7 @@ const user: User = {
   firstName: 'John',
   lastName: 'Doe',
   apiKey: 'generatedApiKey',
+  apiKeyEnding: null,
   password: 'encryptedPassword',
   isActive: true,
   jiraToken: null,
@@ -69,7 +70,8 @@ const configService = {
 } as unknown as ConfigService;
 
 const authService = {
-  generateApiKey: jest.fn(() => 'generatedApiKey'),
+  generateApiKey: jest.fn(() => ({ key: 'newKey', stored: { apiKey: 'sha256:hash', apiKeyEnding: 'wKey' } })),
+  unknownApiKey: jest.fn(() => 'generatedApiKey'),
   encryptPassword: jest.fn(() => 'encryptedPassword'),
   signToken: jest.fn(() => 'vision-jwt'),
 } as unknown as AuthService;

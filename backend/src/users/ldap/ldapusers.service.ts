@@ -86,17 +86,17 @@ export class LdapUsersService implements Users {
   }
 
   private async createUserFromLdapEntry(ldapEntry: LdapEntry): Promise<User> {
-    const userForVRTDb = {
+    const userForDb = {
       email: ldapEntry[this.ldapConfig.attributeMail].toString().trim().toLowerCase(),
       firstName: ldapEntry[this.ldapConfig.attributeFirstName].toString(),
       lastName: ldapEntry[this.ldapConfig.attributeLastName].toString(),
-      apiKey: this.authService.generateApiKey(),
+      apiKey: this.authService.unknownApiKey(),
       password: await this.authService.encryptPassword(genSaltSync(1).slice(-12)),
       role: Role.editor,
     };
 
     return this.prismaService.user.create({
-      data: userForVRTDb,
+      data: userForDb,
     });
   }
 

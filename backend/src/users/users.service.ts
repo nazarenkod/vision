@@ -61,7 +61,7 @@ export class UsersService {
         firstName: dto.firstName?.trim() ?? '',
         lastName: dto.lastName?.trim() ?? '',
         role: dto.role,
-        apiKey: this.authService.generateApiKey(),
+        apiKey: this.authService.unknownApiKey(),
         password: await this.authService.encryptPassword(dto.password),
       },
     });
@@ -164,14 +164,10 @@ export class UsersService {
     return new UserDto(user);
   }
 
+  // the key is returned this once; the database keeps only its hash and ending (044)
   async generateNewApiKey(user: User): Promise<string> {
-    const newApiKey = this.authService.generateApiKey();
-    await this.prismaService.user.update({
-      where: { id: user.id },
-      data: {
-        apiKey: newApiKey,
-      },
-    });
-    return newApiKey;
+    const { key, stored } = this.authService.generateApiKey();
+    await this.prismaService.user.update({ where: { id: user.id }, data: stored });
+    return key;
   }
 }

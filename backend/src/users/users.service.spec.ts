@@ -18,6 +18,7 @@ const user: User = {
   firstName: 'John',
   lastName: 'Doe',
   apiKey: 'generatedApiKey',
+  apiKeyEnding: null,
   password: 'encryptedPassword',
   isActive: true,
   jiraToken: null,
@@ -60,7 +61,8 @@ describe('UsersService with DbUserService implementation', () => {
         {
           provide: AuthService,
           useValue: {
-            generateApiKey: jest.fn(() => 'generatedApiKey'),
+            generateApiKey: jest.fn(() => ({ key: 'newKey', stored: { apiKey: 'sha256:hash', apiKeyEnding: 'wKey' } })),
+            unknownApiKey: jest.fn(() => 'generatedApiKey'),
             encryptPassword: jest.fn(() => 'encryptedPassword'),
             compare: jest.fn(() => true),
             signToken: jest.fn(() => 'token'),
@@ -98,8 +100,11 @@ describe('UsersService with DbUserService implementation', () => {
     const result = await service.generateNewApiKey(user);
 
     // Assert
-    expect(prismaUserUpdateMock).toHaveBeenCalled();
-    expect(typeof result).toBe('string');
+    expect(prismaUserUpdateMock).toHaveBeenCalledWith({
+      where: { id: user.id },
+      data: { apiKey: 'sha256:hash', apiKeyEnding: 'wKey' },
+    });
+    expect(result).toBe('newKey');
   });
 
   it('creates an account with the role the admin chose and no sign-in token', async () => {

@@ -40,7 +40,7 @@
 | Вимога | Перевірка |
 |---|---|
 | REQ-041-01 | `frontend/src/constants/help.test.ts › names no account and no password in the login tour` |
-| REQ-041-02 | `frontend/integration_tests/test/profile.spec.ts › shows the API key and puts it in the config examples` |
+| REQ-041-02 | `frontend/integration_tests/test/profile.spec.ts › shows a new API key once and only its ending later` |
 | REQ-041-03 | `frontend/src/services/static.service.test.ts › saves the chosen images as vision_images.zip` |
 | REQ-041-04 | `frontend/integration_tests/test/guidedTour.spec.ts › shows the Vision version in the help menu` |
 | REQ-041-05 | `backend/src/swagger.spec.ts › names the API documentation Vision` |

@@ -18,7 +18,7 @@ describe('TestVariations (e2e)', () => {
   let usersService: UsersService;
   let projecstService: ProjectsService;
   let buildsService: BuildsService;
-  let user: UserLoginResponseDto;
+  let user: UserLoginResponseDto & { apiKey: string };
   let project: Project;
   let testVariationsService: TestVariationsService;
 

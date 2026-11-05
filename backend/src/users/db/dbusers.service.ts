@@ -21,7 +21,7 @@ export class DbUsersService implements Users {
       email: createUserDto.email.trim().toLowerCase(),
       firstName: createUserDto.firstName,
       lastName: createUserDto.lastName,
-      apiKey: this.authService.generateApiKey(),
+      apiKey: this.authService.unknownApiKey(),
       password: await this.authService.encryptPassword(createUserDto.password),
     };
 

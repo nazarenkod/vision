@@ -49,6 +49,10 @@ services:
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-vision}
       JWT_SECRET: ${JWT_SECRET:?set JWT_SECRET in .env.demo}
+      # seals Jira tokens and Gemini keys in the database (044): keep it, a new one makes people enter them again
+      VISION_SECRET_KEY: ${VISION_SECRET_KEY:?set VISION_SECRET_KEY in .env.demo}
+      # Jira hosts a token may go to, comma-separated (044); empty: Vision calls no Jira
+      VISION_JIRA_HOSTS: ${VISION_JIRA_HOSTS:-}
       JWT_LIFE_TIME: ${JWT_LIFE_TIME:-1d}
       APP_FRONTEND_URL: ${DEMO_UI_URL:-http://localhost:18080}
       BODY_PARSER_JSON_LIMIT: ${BODY_PARSER_JSON_LIMIT:-20mb}
@@ -99,7 +103,7 @@ services:
       DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-vision}
       DEFAULT_USER_EMAIL: ${DEFAULT_USER_EMAIL:-admin@vision.local}
       DEFAULT_USER_PASSWORD: ${DEFAULT_USER_PASSWORD:-123456}
-      DEFAULT_USER_API_KEY: ${DEFAULT_USER_API_KEY:-DEFAULTUSERAPIKEYTOBECHANGED}
+      DEFAULT_USER_API_KEY: ${DEFAULT_USER_API_KEY:-}
     depends_on:
       postgres:
         condition: service_healthy

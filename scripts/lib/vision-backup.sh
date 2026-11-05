@@ -10,7 +10,8 @@
 # projects always find them.
 #
 # Secrets never enter a backup (ADR-0012). Add every new secret column here.
-VB_SECRET_COLUMNS="User.password=!restored User.jiraToken= Project.jiraToken="
+# API keys stay: they are stored as hashes (044), and CI keeps working after a restore
+VB_SECRET_COLUMNS="User.password=!restored User.jiraToken= User.geminiApiKey= Project.jiraToken="
 
 # Call after vision_load_env: paths and the database come from .env.demo.
 vb_init() {

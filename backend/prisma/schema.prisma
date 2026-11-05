@@ -175,7 +175,10 @@ model User {
   password  String
   firstName String?
   lastName  String?
+  // the SHA-256 of the key, never the key itself (044)
   apiKey    String     @unique
+  // the key's last characters, to tell it apart in the profile; null: no key shown to anyone yet
+  apiKeyEnding String?
   isActive  Boolean    @default(true)
   role      Role       @default(guest)
   // personal Jira credentials: bugs are filed as this person (email only for Jira Cloud)

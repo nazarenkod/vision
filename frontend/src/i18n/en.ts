@@ -834,10 +834,13 @@ export const en = {
   "profile.envHelp": "Add Environment variables inside CI environment",
   "profile.apiKey": "Api key",
   "profile.apiKeyHelp": "For the SDK, the CLI and the MCP server.",
-  "profile.hide": "Hide",
-  "profile.show": "Show",
-  "profile.hideKey": "Hide API key",
-  "profile.showKey": "Show API key",
+  "profile.newApiKey": "New API key",
+  "profile.noApiKey":
+    "No key yet: make one for the SDK, the CLI and the MCP server",
+  "profile.newKeyOnce":
+    "Copy it now: Vision shows the key only once. The previous key no longer works.",
+  "profile.newKeyConfirm":
+    "The current key stops working in the SDK, the CLI and the MCP server that use it. Make a new one?",
   "profile.copied": "Copied",
   "profile.copy": "Copy",
   "profile.copyKey": "Copy API key",
@@ -974,8 +977,7 @@ export const en = {
   "tour.last": "Last",
   "tour.next": "Next",
   "tour.skip": "Skip",
-  "tour.loginAdmin":
-    "Sign in with the email and password an admin gave you.",
+  "tour.loginAdmin": "Sign in with the email and password an admin gave you.",
   "tour.loginNoAccount":
     "No account? Nobody signs up here: an admin creates accounts in Users.",
   "tour.projectListTitle": "Project List",

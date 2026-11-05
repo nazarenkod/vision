@@ -8,25 +8,23 @@ import {
   Tooltip,
   Typography,
 } from "@mui/material";
-import {
-  Check,
-  ContentCopy,
-  Visibility,
-  VisibilityOff,
-} from "@mui/icons-material";
+import { Autorenew, Check, ContentCopy } from "@mui/icons-material";
 import { motion, tokens } from "../theme";
 import { useT } from "../i18n";
 
-/** All but the last four characters hidden (REQ-018-68). */
-export const maskKey = (key: string | undefined): string =>
-  key ? `${"•".repeat(Math.max(4, key.length - 4))}${key.slice(-4)}` : "";
+/** A key known only by its ending: the server keeps no more of it (044). */
+export const endingOnly = (ending: string): string =>
+  `${"•".repeat(24)}${ending}`;
 
-/** The API key, hidden until asked for, with a copy button. */
+/**
+ * The API key. The server stores only its hash, so a key is shown in full once, when it is
+ * made; afterwards only its ending tells it apart (REQ-044-05).
+ */
 export const ApiKeyCard: React.FunctionComponent<{
-  apiKey?: string;
-  revealed: boolean;
-  onReveal: (revealed: boolean) => void;
-}> = ({ apiKey, revealed, onReveal }) => {
+  ending?: string | null;
+  newKey?: string;
+  onNewKey: () => void;
+}> = ({ ending, newKey, onNewKey }) => {
   const [copied, setCopied] = React.useState(false);
   const { t } = useT();
   React.useEffect(() => {
@@ -35,11 +33,17 @@ export const ApiKeyCard: React.FunctionComponent<{
     return () => clearTimeout(timer);
   }, [copied]);
   const copy = () => {
-    if (!apiKey) return;
+    if (!newKey) return;
     navigator.clipboard
-      ?.writeText(apiKey)
+      ?.writeText(newKey)
       .then(() => setCopied(true))
-      .catch(() => onReveal(true));
+      .catch(() => undefined);
+  };
+  const makeNew = () => {
+    // a key in use stops working: CI and the CLI need the new one
+    if ((ending || newKey) && !window.confirm(t("profile.newKeyConfirm")))
+      return;
+    onNewKey();
   };
   return (
     <Card variant="outlined" data-testid="apiKeyCard">
@@ -67,52 +71,61 @@ export const ApiKeyCard: React.FunctionComponent<{
             sx={{
               flex: 1,
               minWidth: 0,
-              fontFamily: tokens.mono,
+              fontFamily: newKey || ending ? tokens.mono : undefined,
               fontSize: 13,
               overflowWrap: "anywhere",
             }}
           >
-            {revealed ? apiKey : maskKey(apiKey)}
+            {newKey ?? (ending ? endingOnly(ending) : t("profile.noApiKey"))}
           </Typography>
-          <Tooltip title={t(revealed ? "profile.hide" : "profile.show")}>
+          {newKey && (
+            <Tooltip title={t(copied ? "profile.copied" : "profile.copy")}>
+              <IconButton
+                size="small"
+                aria-label={t("profile.copyKey")}
+                data-testid="copyApiKey"
+                data-copied={copied ? "true" : "false"}
+                onClick={copy}
+                sx={{ color: copied ? tokens.brand : undefined }}
+              >
+                {copied ? (
+                  <Check
+                    fontSize="small"
+                    sx={{
+                      "@keyframes v-copied": {
+                        from: { transform: "scale(.4)", opacity: 0 },
+                        to: { transform: "none", opacity: 1 },
+                      },
+                      animation: `v-copied ${motion.base}ms ${motion.spring}`,
+                    }}
+                  />
+                ) : (
+                  <ContentCopy fontSize="small" />
+                )}
+              </IconButton>
+            </Tooltip>
+          )}
+          <Tooltip title={t("profile.newApiKey")}>
             <IconButton
               size="small"
-              aria-label={t(revealed ? "profile.hideKey" : "profile.showKey")}
-              onClick={() => onReveal(!revealed)}
+              aria-label={t("profile.newApiKey")}
+              data-testid="newApiKey"
+              onClick={makeNew}
             >
-              {revealed ? (
-                <VisibilityOff fontSize="small" />
-              ) : (
-                <Visibility fontSize="small" />
-              )}
-            </IconButton>
-          </Tooltip>
-          <Tooltip title={t(copied ? "profile.copied" : "profile.copy")}>
-            <IconButton
-              size="small"
-              aria-label={t("profile.copyKey")}
-              data-testid="copyApiKey"
-              data-copied={copied ? "true" : "false"}
-              onClick={copy}
-              sx={{ color: copied ? tokens.brand : undefined }}
-            >
-              {copied ? (
-                <Check
-                  fontSize="small"
-                  sx={{
-                    "@keyframes v-copied": {
-                      from: { transform: "scale(.4)", opacity: 0 },
-                      to: { transform: "none", opacity: 1 },
-                    },
-                    animation: `v-copied ${motion.base}ms ${motion.spring}`,
-                  }}
-                />
-              ) : (
-                <ContentCopy fontSize="small" />
-              )}
+              <Autorenew fontSize="small" />
             </IconButton>
           </Tooltip>
         </Box>
+        {newKey && (
+          <Typography
+            variant="body2"
+            color="warning.main"
+            sx={{ mt: 1 }}
+            data-testid="apiKeyOnce"
+          >
+            {t("profile.newKeyOnce")}
+          </Typography>
+        )}
       </CardContent>
     </Card>
   );

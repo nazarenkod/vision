@@ -235,7 +235,7 @@ Undo на сервері дозволене до 30 s після рішення:
 | REQ-018-65 | `frontend/integration_tests/test/roles.spec.ts › account menu shows Users and Backups only to admins` |
 | REQ-018-66 | `frontend/integration_tests/test/errors.spec.ts › shows the reason and Try again when a page fails to load` |
 | REQ-018-67 | `frontend/integration_tests/test/guidedTour.spec.ts › should display all tour steps` |
-| REQ-018-68 | `frontend/integration_tests/test/profile.spec.ts › hides the API key until Show and copies it` |
+| REQ-018-68 | `frontend/integration_tests/test/profile.spec.ts › shows a new API key once and only its ending later` |
 | REQ-018-69 | `frontend/src/_helpers/backups.helper.test.ts › marks each of the last 14 days with or without a backup` |
 | REQ-018-70 | `frontend/src/_helpers/undo.helper.test.ts › offers Undo for 8 seconds` |
 | REQ-018-71 | `backend/src/test-runs/decision-undo.spec.ts › restores status and baseline as they were before approve` |

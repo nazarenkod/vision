@@ -10,6 +10,7 @@ import { HttpsOptions } from '@nestjs/common/interfaces/external/https-options.i
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { HDD_IMAGE_PATH } from './static/hdd/constants';
 import { RedisIoAdapter } from './redis-io.adapter';
+import { serverSecretKey } from './shared/secret-box';
 
 function getHttpsOptions(): HttpsOptions | null {
   const keyPath = './secrets/ssl.key';
@@ -25,6 +26,13 @@ function getHttpsOptions(): HttpsOptions | null {
 }
 
 async function bootstrap() {
+  // before anything else: without the key, stored tokens could be neither sealed nor read (044)
+  try {
+    serverSecretKey();
+  } catch (error) {
+    Logger.error((error as Error).message, 'Bootstrap');
+    process.exit(1);
+  }
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {
     cors: true,
     httpsOptions: getHttpsOptions(),

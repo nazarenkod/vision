@@ -245,16 +245,16 @@ export class OidcUsersService implements Users {
   }
 
   private async createUserFromClaims(claims: Record<string, unknown>, email: string, role: Role): Promise<User> {
-    const userForVRTDb = {
+    const userForDb = {
       email,
       firstName: this.claimToString(claims, this.oidcConfig.attributeFirstName) ?? email,
       lastName: this.claimToString(claims, this.oidcConfig.attributeLastName) ?? '',
-      apiKey: this.authService.generateApiKey(),
+      apiKey: this.authService.unknownApiKey(),
       password: await this.authService.encryptPassword(genSaltSync(1).slice(-12)),
       role,
     };
 
-    return this.prismaService.user.create({ data: userForVRTDb });
+    return this.prismaService.user.create({ data: userForDb });
   }
 
   private claimToString(claims: Record<string, unknown>, name: string): string | null {

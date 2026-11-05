@@ -20,7 +20,7 @@ describe('Builds (e2e)', () => {
   let projecstService: ProjectsService;
   let usersService: UsersService;
   let testRunsService: TestRunsService;
-  let user: UserLoginResponseDto;
+  let user: UserLoginResponseDto & { apiKey: string };
   let project: Project;
 
   beforeAll(async () => {

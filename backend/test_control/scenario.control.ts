@@ -10,6 +10,7 @@
  */
 import { join } from 'path';
 import { gzipSync } from 'zlib';
+import { Client } from 'pg';
 import { API, Answer, FakeJira, Normalizer, call, fixture, run, screenFor, writeWork } from './harness';
 
 const norm = new Normalizer();
@@ -139,7 +140,8 @@ it('01 sign-in and accounts', async () => {
     { email: 'editor@control.test', password: 'editor-password' }
   );
   state.editorToken = editorLogin.body.token;
-  state.editorKey = editorLogin.body.apiKey;
+  // the key is shown only when it is made (044): login answers carry its ending only
+  state.editorKey = (await call<string>('GET', '/users/newApiKey', { token: state.editorToken })).body;
   state.guestToken = (
     await call('POST', '/users/login', {}, { email: 'guest@control.test', password: 'guest-password' })
   ).body.token;
@@ -592,4 +594,26 @@ it('19 hostile UI trees', async () => {
       real: { status: realAnswer.status, result: realAnswer.body.status, hasUiTree: await hasTree(realAnswer) },
     })
   ).toMatchSnapshot();
+});
+
+it('20 no secret readable in the database', async () => {
+  // SC-044-01: what a dump of the database gives
+  const db = new Client({ connectionString: process.env.DATABASE_URL?.replace(/\?schema=.*$/, '') });
+  await db.connect();
+  try {
+    const users = (await db.query('SELECT "apiKey", "apiKeyEnding", "jiraToken", "geminiApiKey" FROM "User"')).rows;
+    const projects = (await db.query('SELECT "imageComparisonConfig", "jiraToken" FROM "Project"')).rows;
+    const dump = JSON.stringify([users, projects]);
+    expect(dump).not.toContain(PERSONAL_JIRA_TOKEN);
+    expect(dump).not.toContain(state.editorKey);
+    expect(
+      record({
+        apiKeys: [...new Set(users.map((user) => (/^sha256:[0-9a-f]{64}$/.test(user.apiKey) ? 'hash' : 'readable')))],
+        jiraTokens: [...new Set(users.map((user) => (user.jiraToken ? user.jiraToken.slice(0, 7) : null)))].sort(),
+        editorKeyEnding: users.some((user) => user.apiKeyEnding === state.editorKey!.slice(-4)),
+      })
+    ).toMatchSnapshot();
+  } finally {
+    await db.end();
+  }
 });

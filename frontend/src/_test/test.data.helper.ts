@@ -21,7 +21,7 @@ export const TEST_PROJECT: Project = {
 export const TEST_USER: User = {
   id: "1",
   token: "123567",
-  apiKey: "SOME KEY SECRET",
+  apiKeyEnding: "CRET",
   email: "some@email.com",
   firstName: "First name",
   lastName: "Last name",
@@ -31,7 +31,7 @@ export const TEST_USER: User = {
 export const GUEST_USER: User = {
   id: "2",
   token: "123567",
-  apiKey: "SOME KEY SECRET",
+  apiKeyEnding: "CRET",
   email: "guest@email.com",
   firstName: "Guest name",
   lastName: "Guest name",
@@ -41,7 +41,7 @@ export const GUEST_USER: User = {
 export const EDITOR_USER: User = {
   id: "3",
   token: "123567",
-  apiKey: "SOME KEY SECRET",
+  apiKeyEnding: "CRET",
   email: "guest@email.com",
   firstName: "Editor name",
   lastName: "Editor name",

@@ -1,3 +1,4 @@
+import { sealSecret } from '../shared/secret-box';
 import { PNG } from 'pngjs';
 import { VisualBugsService } from './visual-bugs.service';
 
@@ -76,9 +77,9 @@ function setup(options: { labelsOnScreen?: boolean; refuse?: (url: string, init:
     user: {
       findUnique: jest.fn(async ({ where }) =>
         where.id === 'with-token'
-          ? { id: 'with-token', jiraToken: 'mine', jiraEmail: null }
+          ? { id: 'with-token', jiraToken: sealSecret('mine'), jiraEmail: null }
           : where.id === 'reviewer'
-            ? { id: 'reviewer', jiraToken: 'theirs', jiraEmail: null }
+            ? { id: 'reviewer', jiraToken: sealSecret('theirs'), jiraEmail: null }
             : { id: where.id }
       ),
     },

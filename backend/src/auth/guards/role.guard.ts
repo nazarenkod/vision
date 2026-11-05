@@ -3,6 +3,7 @@ import { Role, User } from '@prisma/client';
 import { Request } from 'express';
 import { PrismaService } from '../../prisma/prisma.service';
 import { Reflector } from '@nestjs/core';
+import { hashApiKey } from '../../shared/api-key-hash';
 
 @Injectable()
 export class RoleGuard implements CanActivate {
@@ -34,8 +35,6 @@ export class RoleGuard implements CanActivate {
       return null;
     }
 
-    return this.prismaService.user.findUnique({
-      where: { apiKey },
-    });
+    return this.prismaService.user.findUnique({ where: { apiKey: hashApiKey(apiKey) } });
   };
 }

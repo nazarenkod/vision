@@ -142,9 +142,9 @@ cat > "$FAKE_CRONTAB_FILE"
 '''
 
 SEED = textwrap.dedent('''
-    INSERT INTO "User" (id, email, password, "apiKey", role, "jiraToken", "jiraEmail", "updatedAt") VALUES
-      ('u1', 'owner@bank.test', '$2a$10$abcdefghijklmnopqrstuuTnJ8s4Yyq6CzXqH3XoWg0b2eV8b5G1i', 'KEY-OWNER-1', 'admin', 'jira-secret-owner', 'owner@bank.test', now()),
-      ('u2', 'qa@bank.test', '$2a$10$abcdefghijklmnopqrstuuTnJ8s4Yyq6CzXqH3XoWg0b2eV8b5G1j', 'KEY-QA-2', 'editor', 'jira-secret-qa', null, now());
+    INSERT INTO "User" (id, email, password, "apiKey", role, "jiraToken", "jiraEmail", "geminiApiKey", "updatedAt") VALUES
+      ('u1', 'owner@bank.test', '$2a$10$abcdefghijklmnopqrstuuTnJ8s4Yyq6CzXqH3XoWg0b2eV8b5G1i', 'KEY-OWNER-1', 'admin', 'jira-secret-owner', 'owner@bank.test', 'gemini-secret-owner', now()),
+      ('u2', 'qa@bank.test', '$2a$10$abcdefghijklmnopqrstuuTnJ8s4Yyq6CzXqH3XoWg0b2eV8b5G1j', 'KEY-QA-2', 'editor', 'jira-secret-qa', null, null, now());
     INSERT INTO "Project" (id, name, "jiraUrl", "jiraToken", "uiTreeSettings", "updatedAt") VALUES
       ('p1', 'Android app', 'https://bank.atlassian.net', 'jira-secret-project', '{"elementRules": [{"id": "r1", "selector": "id:clock", "action": "ignore"}]}', now());
     INSERT INTO "Build" (id, "projectId", "userId", "updatedAt") VALUES ('b1', 'p1', 'u1', now());
@@ -273,7 +273,8 @@ class VisionBackupTest(unittest.TestCase):
         tar = self.drive / "vision-backups" / "db" / self.remote_dumps()[0]
         unpacked = self.unpack(tar)
         everything = b"".join(p.read_bytes() for p in unpacked.iterdir())
-        for secret in (b"jira-secret-owner", b"jira-secret-qa", b"jira-secret-project", b"$2a$10$abcdefghij"):
+        for secret in (b"jira-secret-owner", b"jira-secret-qa", b"jira-secret-project", b"gemini-secret-owner",
+                       b"$2a$10$abcdefghij"):
             self.assertNotIn(secret, everything)
         users = (unpacked / "user.csv").read_text()
         self.assertIn("!restored", users)
@@ -499,6 +500,9 @@ class VisionBackupTest(unittest.TestCase):
         role, password_hash = row.split(" ")
         self.assertEqual(role, "admin")
         self.assertTrue(self.password_matches(MASTER_PASSWORD, password_hash))
+        # a new master's API key is stored as the API stores keys: a hash nobody can use
+        self.assertRegex(psql(db, """select "apiKey" from "User" where email = 'master@bank.test'"""),
+                         r"^sha256:[0-9a-f]{64}$")
         # an existing user named as the master keeps their id and API key and becomes an admin
         env["VISION_ENV_FILE"] = str(self.write_env(db, data).with_name("env-existing"))
         pathlib.Path(env["VISION_ENV_FILE"]).write_text(

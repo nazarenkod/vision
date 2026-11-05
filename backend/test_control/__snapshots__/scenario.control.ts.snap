@@ -4,7 +4,7 @@ exports[`01 sign-in and accounts 1`] = `
 {
   "adminLogin": {
     "body": {
-      "apiKey": "CONTROLADMINAPIKEY000000000000",
+      "apiKeyEnding": null,
       "email": "admin@control.test",
       "firstName": "fname",
       "geminiKeySet": false,
@@ -21,7 +21,7 @@ exports[`01 sign-in and accounts 1`] = `
   "all": {
     "body": [
       {
-        "apiKey": "CONTROLADMINAPIKEY000000000000",
+        "apiKeyEnding": null,
         "email": "admin@control.test",
         "firstName": "fname",
         "geminiKeySet": false,
@@ -33,7 +33,7 @@ exports[`01 sign-in and accounts 1`] = `
         "role": "admin",
       },
       {
-        "apiKey": "<apikey1>",
+        "apiKeyEnding": "<keyEnding1>",
         "email": "editor@control.test",
         "firstName": "Eda",
         "geminiKeySet": false,
@@ -45,7 +45,7 @@ exports[`01 sign-in and accounts 1`] = `
         "role": "editor",
       },
       {
-        "apiKey": "<apikey2>",
+        "apiKeyEnding": null,
         "email": "guest@control.test",
         "firstName": "Gus",
         "geminiKeySet": false,
@@ -76,7 +76,7 @@ exports[`01 sign-in and accounts 1`] = `
   },
   "editor": {
     "body": {
-      "apiKey": "<apikey1>",
+      "apiKeyEnding": null,
       "email": "editor@control.test",
       "firstName": "Eda",
       "geminiKeySet": false,
@@ -91,7 +91,7 @@ exports[`01 sign-in and accounts 1`] = `
   },
   "editorLogin": {
     "body": {
-      "apiKey": "<apikey1>",
+      "apiKeyEnding": null,
       "email": "editor@control.test",
       "firstName": "Eda",
       "geminiKeySet": false,
@@ -111,7 +111,7 @@ exports[`01 sign-in and accounts 1`] = `
   },
   "guest": {
     "body": {
-      "apiKey": "<apikey2>",
+      "apiKeyEnding": null,
       "email": "guest@control.test",
       "firstName": "Gus",
       "geminiKeySet": false,
@@ -126,7 +126,7 @@ exports[`01 sign-in and accounts 1`] = `
   },
   "jira": {
     "body": {
-      "apiKey": "<apikey1>",
+      "apiKeyEnding": "<keyEnding1>",
       "email": "editor@control.test",
       "firstName": "Eda",
       "geminiKeySet": false,
@@ -141,7 +141,7 @@ exports[`01 sign-in and accounts 1`] = `
   },
   "me": {
     "body": {
-      "apiKey": "<apikey1>",
+      "apiKeyEnding": "<keyEnding1>",
       "email": "editor@control.test",
       "firstName": "Eda",
       "geminiKeySet": false,
@@ -160,7 +160,7 @@ exports[`01 sign-in and accounts 1`] = `
   },
   "profile": {
     "body": {
-      "apiKey": "<apikey1>",
+      "apiKeyEnding": "<keyEnding1>",
       "email": "editor@control.test",
       "firstName": "Eda",
       "geminiKeySet": false,
@@ -658,7 +658,7 @@ exports[`06 review: details, structure, groups, overview 1`] = `
   "details": {
     "body": {
       "a11yNewCount": 0,
-      "a11yReportName": "<apikey3>.a11y.json",
+      "a11yReportName": "<apikey1>.a11y.json",
       "a11yTotalCount": 8,
       "baselineBranchName": "master",
       "baselineName": "<file6>",
@@ -2025,7 +2025,7 @@ exports[`07 element rules and ignore areas 1`] = `
   "afterRule": {
     "body": {
       "a11yNewCount": 0,
-      "a11yReportName": "<apikey3>.a11y.json",
+      "a11yReportName": "<apikey1>.a11y.json",
       "a11yTotalCount": 8,
       "baselineBranchName": "master",
       "baselineName": "<file6>",
@@ -2093,7 +2093,7 @@ exports[`07 element rules and ignore areas 1`] = `
   "offers": {
     "body": {
       "a11yNewCount": 0,
-      "a11yReportName": "<apikey4>.a11y.json",
+      "a11yReportName": "<apikey2>.a11y.json",
       "a11yTotalCount": 14,
       "baselineBranchName": "master",
       "baselineName": "<file4>",
@@ -3497,7 +3497,7 @@ exports[`13 Insights and test variations 1`] = `
           "id": "<id22>",
           "testRun": {
             "a11yNewCount": 9,
-            "a11yReportName": "<apikey5>.a11y.json",
+            "a11yReportName": "<apikey3>.a11y.json",
             "a11yTotalCount": 9,
             "baselineBranchName": "master",
             "baselineName": null,
@@ -4352,7 +4352,7 @@ exports[`18 a build is approved as a whole and deleted 1`] = `
       "testRuns": [
         {
           "a11yNewCount": 14,
-          "a11yReportName": "<apikey6>.a11y.json",
+          "a11yReportName": "<apikey4>.a11y.json",
           "a11yTotalCount": 14,
           "baselineBranchName": "master",
           "baselineName": null,
@@ -4395,7 +4395,7 @@ exports[`18 a build is approved as a whole and deleted 1`] = `
         },
         {
           "a11yNewCount": 9,
-          "a11yReportName": "<apikey5>.a11y.json",
+          "a11yReportName": "<apikey3>.a11y.json",
           "a11yTotalCount": 9,
           "baselineBranchName": "master",
           "baselineName": null,
@@ -4519,5 +4519,18 @@ exports[`19 hostile UI trees 1`] = `
     "result": "new",
     "status": 201,
   },
+}
+`;
+
+exports[`20 no secret readable in the database 1`] = `
+{
+  "apiKeys": [
+    "hash",
+  ],
+  "editorKeyEnding": true,
+  "jiraTokens": [
+    "enc:v1:",
+    null,
+  ],
 }
 `;

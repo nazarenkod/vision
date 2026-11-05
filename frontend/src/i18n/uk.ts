@@ -886,10 +886,13 @@ export const uk: Messages = {
   "profile.envHelp": "Додайте змінні середовища в CI",
   "profile.apiKey": "Ключ API",
   "profile.apiKeyHelp": "Для SDK, CLI та MCP-сервера.",
-  "profile.hide": "Сховати",
-  "profile.show": "Показати",
-  "profile.hideKey": "Сховати ключ API",
-  "profile.showKey": "Показати ключ API",
+  "profile.newApiKey": "Новий ключ API",
+  "profile.noApiKey":
+    "Ключа ще немає: створіть його для SDK, CLI та MCP-сервера",
+  "profile.newKeyOnce":
+    "Скопіюйте його зараз: Vision показує ключ лише раз. Попередній ключ більше не діє.",
+  "profile.newKeyConfirm":
+    "Поточний ключ перестане діяти в SDK, CLI та MCP-сервері, що ним користуються. Створити новий?",
   "profile.copied": "Скопійовано",
   "profile.copy": "Копіювати",
   "profile.copyKey": "Скопіювати ключ API",
@@ -1029,8 +1032,7 @@ export const uk: Messages = {
   "tour.last": "Готово",
   "tour.next": "Далі",
   "tour.skip": "Пропустити",
-  "tour.loginAdmin":
-    "Увійдіть з email і паролем, які вам видав адміністратор.",
+  "tour.loginAdmin": "Увійдіть з email і паролем, які вам видав адміністратор.",
   "tour.loginNoAccount":
     "Немає облікового запису? Самому зареєструватися не можна: облікові записи створює адміністратор у Users.",
   "tour.projectListTitle": "Список проєктів",

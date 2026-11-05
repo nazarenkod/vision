@@ -1,7 +1,8 @@
 # API Vision
 
 Тут лише ендпоінти, які додав або змінив Vision. Повний перелік зі схемами дає Swagger API
-(`/api`). Автентифікація: JWT користувача або API-ключ (`apiKey`), як в upstream. Дії, що
+(`/api`). Автентифікація: JWT користувача або API-ключ (`apiKey`); сервер шукає ключ за його
+SHA-256 і сам ключ не зберігає ([044](../specs/044-secrets-at-rest/spec.md)). Дії, що
 змінюють рішення, доступні ролям `admin` і `editor`.
 
 ## Події наживо (socket.io)
@@ -73,13 +74,14 @@
 |---|---|
 | `GET /projects` | у налаштуваннях порівняння немає `apiKey` Gemini, є `geminiApiKeySet`; спільних `jiraToken`, `jiraEmail`, `jiraTokenSet` немає зовсім ([035](../specs/035-admin-accounts/spec.md)) |
 | `GET /projects/:id/devices` | різні пари `{ device, os }` з варіацій проєкту — підказка для переліку дозволених пристроїв ([029](../specs/029-allowed-devices/spec.md)) |
-| `PUT /projects` | необов'язкові `loadedSettings` (налаштування, як їх завантажила сторінка) і `force`. З `loadedSettings` збереження поверх чужих змін — `409` з `fields`; `force: true` зберігає попри це. `apiKey` Gemini: відсутній — лишити збережений, `""` — видалити. `uiTreeSettings.allowedDevices` із `*` деінде, ніж у кінці OS (`26.*`), — `400`. `jiraToken` і `jiraEmail` ігноруються |
+| `PUT /projects` | необов'язкові `loadedSettings` (налаштування, як їх завантажила сторінка) і `force`. З `loadedSettings` збереження поверх чужих змін — `409` з `fields`; `force: true` зберігає попри це. `apiKey` Gemini: відсутній — лишити збережений, `""` — видалити; зберігається зашифрованим. `jiraUrl` на хості не з `VISION_JIRA_HOSTS` — `400` з переліком дозволених ([044](../specs/044-secrets-at-rest/spec.md)). `uiTreeSettings.allowedDevices` із `*` деінде, ніж у кінці OS (`26.*`), — `400`. `jiraToken` і `jiraEmail` ігноруються |
 | `GET /analytics/:projectId?days=` | Insights за 7–730 днів (типово 90; UI пропонує 30, 90, 180, 365); пристрій — рядком `device`/`devices` і по полях `profile`/`profiles` для тегів ([036](../specs/037-device-as-tags/spec.md)) |
 | `GET /ai/status`, `POST /ai/group-summary`, `POST /ai/a11y-labels` | AI на вимогу |
 | `POST /ai/bug-draft` | чернетка бага з порівняння (`testRunId`, `note`, `marks?`, `changes?`, `attempt?`) на особистому ключі Gemini людини: `{ essence, steps, actual, expected, cached }`. Без ключа — 400, тайм-аут 30 с — 504 ([025](../specs/025-bug-from-comparison/spec.md)) |
 | `POST /users` | лише `admin`: створити акаунт (`email`, `password`, `role`, `firstName?`, `lastName?`). Відповідь — `UserDto` без токена входу. Пошта зайнята (будь-який регістр) — `400`; з LDAP чи SSO — `400`. `POST /users/register` прибрано ([035](../specs/035-admin-accounts/spec.md)) |
 | `GET /users/accounts/enabled` | без входу: чи можна створювати акаунти (лише вхід через базу, не LDAP чи SSO) |
-| `PUT /users/jira` | особистий токен і email Jira (`""` видаляє). Відповідь — `UserDto` з `jiraTokenSet`, без токена |
+| `PUT /users/jira` | особистий токен і email Jira (`""` видаляє), токен зберігається зашифрованим. Відповідь — `UserDto` з `jiraTokenSet`, без токена |
+| `GET /users/newApiKey` | новий API-ключ текстом — єдиний раз, коли його видно; попередній перестає діяти. `UserDto` далі має лише `apiKeyEnding` (останні 4 символи, `null` — ключа ніхто не бачив) замість `apiKey` ([044](../specs/044-secrets-at-rest/spec.md)) |
 | `PUT /users/gemini` | особистий ключ Gemini API (`geminiApiKey`, `""` видаляє). Відповідь — `UserDto` з `geminiKeySet`, без ключа ([ADR-0020](../decisions/0020-personal-gemini-keys.md)) |
 | `GET /users/me` | тепер з `jiraTokenSet` і `jiraEmail` |
 | `GET /users/all` | тепер з `lastSignInAt` (null — не входив відтоді, як це записується) |

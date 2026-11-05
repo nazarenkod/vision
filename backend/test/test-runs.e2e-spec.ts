@@ -20,7 +20,7 @@ describe('TestRuns (e2e)', () => {
   let projecstService: ProjectsService;
   let buildsService: BuildsService;
   let testVariationsService: TestVariationsService;
-  let user: UserLoginResponseDto;
+  let user: UserLoginResponseDto & { apiKey: string };
   let project: Project;
 
   const image_v1 = './test/image.png';

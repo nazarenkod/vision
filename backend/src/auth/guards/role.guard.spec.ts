@@ -2,6 +2,7 @@ import { ExecutionContext } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { Role, User } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
+import { hashApiKey } from '../../shared/api-key-hash';
 import { RoleGuard } from './role.guard';
 
 const userWithRole = (role: Role): User => ({ id: '1', role }) as User;
@@ -71,7 +72,7 @@ describe('RoleGuard', () => {
     prismaService.user.findUnique.mockResolvedValue(userWithRole(Role.admin));
 
     await expect(guard.canActivate(context(undefined, 'api-key'))).resolves.toBe(true);
-    expect(prismaService.user.findUnique).toHaveBeenCalledWith({ where: { apiKey: 'api-key' } });
+    expect(prismaService.user.findUnique).toHaveBeenCalledWith({ where: { apiKey: hashApiKey('api-key') } });
   });
 
   it('rejects when the api key does not belong to a user', async () => {

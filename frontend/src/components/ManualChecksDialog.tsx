@@ -11,9 +11,8 @@ import {
   Typography,
 } from "@mui/material";
 import { Check, ContentCopy } from "@mui/icons-material";
-import { maskKey } from "./ApiKeyCard";
 import { API_URL } from "../_config/env.config";
-import { useProjectState, useUserState } from "../contexts";
+import { useProjectState } from "../contexts";
 import { BRAND } from "../constants/brand";
 import { tokens } from "../theme";
 import { useT } from "../i18n";
@@ -109,13 +108,13 @@ const Step: React.FunctionComponent<{
 
 /**
  * How a manual tester sends the screen in front of them to Vision: the CLI
- * served by this UI, with this user's key and the selected project filled in.
+ * served by this UI, with the selected project filled in; the key is the
+ * person's own, made in the profile.
  */
 export const ManualChecksDialog: React.FunctionComponent<{
   open: boolean;
   onClose: () => void;
 }> = ({ open, onClose }) => {
-  const { user } = useUserState();
   const { projectList, selectedProjectId } = useProjectState();
   const { t } = useT();
   const project =
@@ -135,9 +134,9 @@ export const ManualChecksDialog: React.FunctionComponent<{
         <Step number={1}>{t("manual.step1")}</Step>
         <Command text={`curl -fsSLO ${cliUrl}`} />
         <Step number={2}>{t("manual.step2")}</Step>
+        {/* the key is shown only when it is made (044), so the command names its place */}
         <Command
-          text={`python3 vision.py config --api ${apiUrl} --key ${user?.apiKey ?? "YOUR_API_KEY"} --project ${quote(project?.name ?? "Project name")}`}
-          shown={`python3 vision.py config --api ${apiUrl} --key ${user?.apiKey ? maskKey(user.apiKey) : "YOUR_API_KEY"} --project ${quote(project?.name ?? "Project name")}`}
+          text={`python3 vision.py config --api ${apiUrl} --key YOUR_API_KEY --project ${quote(project?.name ?? "Project name")}`}
         />
         <Typography variant="body2" color="textSecondary">
           {t("manual.keyHelp")}

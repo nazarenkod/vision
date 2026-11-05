@@ -4,7 +4,8 @@ export interface User {
   firstName: string;
   lastName: string;
   token: string;
-  apiKey: string;
+  // the API key itself is shown once, when it is made (044); afterwards only its ending
+  apiKeyEnding?: string | null;
   role: keyof typeof Role;
   // the last sign-in to the web interface; null: not signed in since it is kept
   lastSignInAt?: string | null;

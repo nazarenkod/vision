@@ -33,6 +33,7 @@ const mockDefaultUser = {
   lastName: 'lname',
   role: 'admin',
   apiKey: 'DEFAULTUSERAPIKEYTOBECHANGED',
+  apiKeyEnding: null,
   password: 'password.hashed',
   isActive: true,
   // fields Vision added to User; the seed leaves them empty

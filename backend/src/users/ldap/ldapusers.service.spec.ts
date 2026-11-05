@@ -42,6 +42,7 @@ const user: User = {
   firstName: 'John',
   lastName: 'Doe',
   apiKey: 'generatedApiKey',
+  apiKeyEnding: null,
   password: 'encryptedPassword',
   isActive: true,
   jiraToken: null,
@@ -83,7 +84,8 @@ describe('LdapUsersService match from ldap', () => {
         {
           provide: AuthService,
           useValue: {
-            generateApiKey: jest.fn(() => 'generatedApiKey'),
+            generateApiKey: jest.fn(() => ({ key: 'newKey', stored: { apiKey: 'sha256:hash', apiKeyEnding: 'wKey' } })),
+            unknownApiKey: jest.fn(() => 'generatedApiKey'),
             encryptPassword: jest.fn(() => 'encryptedPassword'),
             signToken: jest.fn(() => 'token'),
           },
@@ -144,7 +146,8 @@ describe('LdapUsersService with no results from ldap', () => {
         {
           provide: AuthService,
           useValue: {
-            generateApiKey: jest.fn(() => 'generatedApiKey'),
+            generateApiKey: jest.fn(() => ({ key: 'newKey', stored: { apiKey: 'sha256:hash', apiKeyEnding: 'wKey' } })),
+            unknownApiKey: jest.fn(() => 'generatedApiKey'),
             encryptPassword: jest.fn(() => 'encryptedPassword'),
           },
         },

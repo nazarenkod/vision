@@ -87,55 +87,55 @@ test("changes the password", async ({ profilePage, page }) => {
   await expect(profilePage.password).toHaveValue("");
 });
 
-test("shows the API key and puts it in the config examples", async ({
-  profilePage,
-}) => {
-  await profilePage.page.getByRole("button", { name: "Show API key" }).click();
-  await expect(profilePage.apiKeyCard).toContainText(AUTH_USER.apiKey);
-  await expect(profilePage.configFile).toHaveValue(
-    new RegExp(`"apiKey": "${AUTH_USER.apiKey}"`),
-  );
-  await expect(
-    profilePage.page.getByText(/Save as vision\.json/),
-  ).toBeVisible();
-
-  await profilePage.envVariablesTab.click();
-
-  await expect(profilePage.envVariables).toHaveValue(
-    new RegExp(`VISION_APIKEY="${AUTH_USER.apiKey}"`),
-  );
-  // the names SDK 1.0.0 reads (040); the old VRT_* ones it ignores
-  await expect(profilePage.envVariables).not.toHaveValue(/VRT_/);
-});
-
-test("hides the API key until Show and copies it", async ({
+test("shows a new API key once and only its ending later", async ({
   profilePage,
   page,
   context,
 }) => {
+  const newKey = "NEWKEY0123456789ABCDEFGHJKMN";
   await context.grantPermissions(["clipboard-read", "clipboard-write"]);
-  const value = page.getByTestId("apiKeyValue");
-  const lastFour = AUTH_USER.apiKey.slice(-4);
-
-  // hidden, in the examples as well
-  await expect(value).not.toContainText(AUTH_USER.apiKey);
-  await expect(value).toContainText(`•${lastFour}`);
-  await expect(profilePage.configFile).not.toHaveValue(
-    new RegExp(AUTH_USER.apiKey),
+  await page.route(`${API_URL}/users/newApiKey`, (route) =>
+    route.fulfill({ status: 200, contentType: "text/html", body: newKey }),
   );
+  const value = page.getByTestId("apiKeyValue");
 
-  await page.getByRole("button", { name: "Show API key" }).click();
-  await expect(value).toHaveText(AUTH_USER.apiKey);
-  await page.getByRole("button", { name: "Hide API key" }).click();
-  await expect(value).not.toContainText(AUTH_USER.apiKey);
+  // the server keeps only the hash: the ending, and the examples name the key's place
+  await expect(value).toHaveText(`${"•".repeat(24)}${AUTH_USER.apiKeyEnding}`);
+  await expect(profilePage.configFile).toHaveValue(/"apiKey": "YOUR_API_KEY"/);
+  await expect(page.getByTestId("copyApiKey")).toHaveCount(0);
 
-  // copying needs no Show
+  // replacing a key in use asks first
+  page.once("dialog", (dialog) => dialog.accept());
+  await page.getByRole("button", { name: "New API key" }).click();
+
+  await expect(value).toHaveText(newKey);
+  await expect(page.getByTestId("apiKeyOnce")).toContainText(
+    "Vision shows the key only once",
+  );
+  await expect(profilePage.configFile).toHaveValue(
+    new RegExp(`"apiKey": "${newKey}"`),
+  );
+  await expect(
+    profilePage.page.getByText(/Save as vision\.json/),
+  ).toBeVisible();
+  await profilePage.envVariablesTab.click();
+  await expect(profilePage.envVariables).toHaveValue(
+    new RegExp(`VISION_APIKEY="${newKey}"`),
+  );
+  // the names SDK 1.0.0 reads (040); the old VRT_* ones it ignores
+  await expect(profilePage.envVariables).not.toHaveValue(/VRT_/);
+
   await page.getByTestId("copyApiKey").click();
   await expect(page.getByTestId("copyApiKey")).toHaveAttribute(
     "data-copied",
     "true",
   );
   expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(
-    AUTH_USER.apiKey,
+    newKey,
   );
+
+  // back on the page later: only the new ending
+  await page.reload();
+  await expect(value).toHaveText(`${"•".repeat(24)}${newKey.slice(-4)}`);
+  await expect(page.getByText(newKey)).toHaveCount(0);
 });

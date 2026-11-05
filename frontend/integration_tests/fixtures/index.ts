@@ -39,7 +39,7 @@ export const AUTH_USER = {
   email: "admin@vision.local",
   firstName: "fname",
   lastName: "lname",
-  apiKey: "ASJDHGAKJSDGASD",
+  apiKeyEnding: "GASD",
   role: "admin",
   token: "eyJsgOE8Bw2bFwhZAugRRGm8U",
 };

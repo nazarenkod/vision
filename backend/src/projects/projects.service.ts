@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ConflictException,
   forwardRef,
   HttpException,
@@ -19,14 +20,23 @@ import { settingsConflict } from './settings-conflict';
 import { hideConfigSecrets, keepConfigSecrets } from './project-secrets';
 import { AllowedDevice, invalidAllowedDevice } from './allowed-devices';
 import { wipeSharedJiraCredentials } from './shared-jira-credentials';
+import { sealSecret } from '../shared/secret-box';
+import { allowedJiraHosts, JIRA_HOSTS_VARIABLE, jiraHostProblem } from '../a11y/jira-hosts';
 
 const blankToNull = (value: string | null | undefined) =>
   value === undefined ? undefined : value?.trim() ? value.trim() : null;
 
-/** Jira settings from a create/update payload: undefined keeps a value, empty clears it. */
+/**
+ * Jira settings from a create/update payload: undefined keeps a value, empty clears it. An
+ * address goes in only on a host the server allows (044): the person filing a bug sends their
+ * token there.
+ */
 function jiraFields(dto: Partial<CreateProjectDto>) {
+  const jiraUrl = blankToNull(dto.jiraUrl);
+  const hostProblem = jiraUrl && jiraHostProblem(jiraUrl, allowedJiraHosts(process.env[JIRA_HOSTS_VARIABLE]));
+  if (hostProblem) throw new BadRequestException(hostProblem);
   return {
-    jiraUrl: blankToNull(dto.jiraUrl),
+    jiraUrl,
     jiraIssueType: blankToNull(dto.jiraIssueType),
     jiraLinkType: blankToNull(dto.jiraLinkType),
     // stored only when it parses, so a bad value can never break comparisons
@@ -118,7 +128,7 @@ export class ProjectsService implements OnModuleInit {
         mainBranchName: projectDto.mainBranchName,
         autoApproveFeature: projectDto.autoApproveFeature,
         imageComparison: projectDto.imageComparison,
-        imageComparisonConfig: projectDto.imageComparisonConfig,
+        imageComparisonConfig: keepConfigSecrets(projectDto.imageComparisonConfig, null, sealSecret),
         maxBuildAllowed: projectDto.maxBuildAllowed,
         maxBranchLifetime: projectDto.maxBranchLifetime,
         ...jiraFields(projectDto),
@@ -174,7 +184,11 @@ export class ProjectsService implements OnModuleInit {
         imageComparison: projectDto.imageComparison,
         maxBuildAllowed: projectDto.maxBuildAllowed,
         maxBranchLifetime: projectDto.maxBranchLifetime,
-        imageComparisonConfig: keepConfigSecrets(projectDto.imageComparisonConfig, stored?.imageComparisonConfig),
+        imageComparisonConfig: keepConfigSecrets(
+          projectDto.imageComparisonConfig,
+          stored?.imageComparisonConfig,
+          sealSecret
+        ),
         ...fields,
       },
     });

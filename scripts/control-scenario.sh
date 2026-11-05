@@ -136,12 +136,14 @@ if $IMAGES; then
     -p "127.0.0.1:$API_PORT:3000" -v "$WORK/api:/imageUploads" --add-host host.docker.internal:host-gateway \
     -e DATABASE_URL="postgresql://control:control@postgres:5432/control?schema=public" \
     -e JWT_SECRET="control-jwt-secret" -e JWT_LIFE_TIME="1d" -e APP_FRONTEND_URL="http://vision.control.test" \
+    -e VISION_SECRET_KEY="control-secret-key" -e VISION_JIRA_HOSTS="host.docker.internal" \
     -e BODY_PARSER_JSON_LIMIT="20mb" -e TZ="UTC" vision-control-api >/dev/null
 else
 (
   cd "$WORK/api"
   env -i PATH="$PATH" HOME="$WORK/api" DATABASE_URL="$DB_URL" APP_PORT="$API_PORT" \
     JWT_SECRET="control-jwt-secret" JWT_LIFE_TIME="1d" APP_FRONTEND_URL="http://vision.control.test" \
+    VISION_SECRET_KEY="control-secret-key" VISION_JIRA_HOSTS="127.0.0.1" \
     BODY_PARSER_JSON_LIMIT="20mb" TZ="UTC" \
     node "$MAIN_JS" >"$WORK/api.log" 2>&1
 ) &

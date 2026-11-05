@@ -11,7 +11,7 @@
 | `vision-backup.sh` | бекап бази Vision без секретів і картинок у Google Drive (`rclone`); `--scheduled` з cron кожні 5 хв бере час і запити зі сторінки Backups ([013](../docs/specs/013-backups-and-secrets/spec.md), [017](../docs/specs/017-backup-settings-ui/spec.md)) |
 | `vision-restore.sh` | відновлення з бекапу, майстер-адміністратор |
 | `lib/vision-backup.sh` | спільне для бекапу: секретні колонки, дамп в одному знімку бази |
-| `build-sdk-jar.sh` | збирає jar SDK `ua.vision:vision-sdk` (версія з `sdk-java/build.gradle`) у `dist/sdk-java/`, прибирає звідти старі jar; `VISION_GRADLE_FLAGS=--offline` — без мережі |
+| `build-sdk-jar.sh` | збирає jar SDK `ua.vision:vision-sdk` (версія з `sdk-java/build.gradle`) у `dist/sdk-java/` (не в git), прибирає звідти старі jar; `VISION_GRADLE_FLAGS=--offline` — без мережі |
 | `upload-uitree-samples.py` | надсилає пари PNG + XML з папки як перевірки (для демо без пристрою) |
 | `seed-insights-demo.py` | штучна історія в окремому проєкті «Insights demo»: екрани йдуть через API Vision (лише якщо API — справді Vision), потім дати саме цих рядків зсуваються в Postgres Vision через `vision.sh`, щоб наповнити всі блоки Insights |
 | `verify.py` | усі перевірки зміни однією командою: unit-тести, Playwright без скриншотів, `tsc` проти `baselines/`, eslint, міграції, тести скриптів, `check-docs.py` — `python3 -I scripts/verify.py` |

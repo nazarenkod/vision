@@ -62,7 +62,7 @@
 | Компонент | Шлях | Роль |
 |---|---|---|
 | Опції й запит | `sdk-java/src/main/java/ua/vision/sdk/VisionOptions.java`, `sdk-java/src/main/java/ua/vision/sdk/request/TestRunRequest.java`, `sdk-java/src/main/java/ua/vision/sdk/Vision.java` | `featureName`; у JSON лише коли задано (Gson пропускає `null`, REQ-025-73) |
-| Збірка | `scripts/build-sdk-jar.sh`, `sdk-java/build.gradle`, `dist/sdk-java/` | версія `4.3.1-vision.2` |
+| Збірка | `scripts/build-sdk-jar.sh`, `sdk-java/build.gradle`, dist/sdk-java/ (збирає скрипт, не в git) | версія `4.3.1-vision.2` |
 
 ### Фронтенд
 

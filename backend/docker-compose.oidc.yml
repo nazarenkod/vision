@@ -31,7 +31,7 @@ services:
     # See https://github.com/navikt/mock-oauth2-server
     # Interactive login: http://host.docker.internal:8090/default/debugger
     # Default users: 'admin' (role admin) and any other username (role editor).
-    image: ghcr.io/navikt/mock-oauth2-server:6.1.0
+    image: ghcr.io/navikt/mock-oauth2-server:6.1.0@sha256:ae4bacd3e5b08cd7ad12281e4524403290848a3358a29e4f7356c029b36ebe0b
     hostname: host.docker.internal
     restart: always
     environment:

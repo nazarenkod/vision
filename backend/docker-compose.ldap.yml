@@ -21,7 +21,7 @@ services:
     # See https://github.com/docker-ThoTeam/slapd-server-mock/tree/main
     # Default users in LDAP: https://github.com/docker-ThoTeam/slapd-server-mock/blob/main/bootstrap/data.ldif.TEMPLATE
     # e.g.: developer.one@ldapmock.local:password
-    image: thoteam/slapd-server-mock:latest
+    image: thoteam/slapd-server-mock@sha256:f1f976cab47facefc1128d7ebd6b26e20c725fbb990b07e40e79801ec8b77b1f
     restart: always
     ports:
       - "636:636"

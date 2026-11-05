@@ -17,7 +17,7 @@
 | Опції | `sdk-java/src/main/java/ua/vision/sdk/VisionOptions.java` | колишній `TestRunOptions` |
 | Результат | `sdk-java/src/main/java/ua/vision/sdk/VisionResult.java` | колишній `TestRunResult` |
 | Версія | `sdk-java/build.gradle`, `scripts/build-sdk-jar.sh` | `4.3.1-vision.4` |
-| Jar | `dist/sdk-java/` | jar і pom `4.3.1-vision.4` |
+| Jar | dist/sdk-java/ (збирає скрипт, не в git) | jar і pom `4.3.1-vision.4` |
 
 ## Перевірка вимог
 

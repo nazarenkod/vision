@@ -285,8 +285,8 @@ decisions to problems»).
 
 SDK Vision — `ua.vision:vision-sdk`, версия `1.0.0`. Нужен для отправки XML-дерева экрана
 (доступность, изменения и правила по элементам) и названия фичи в багах из сравнения. Работает на
-Java 11+. Готовый jar лежит в репозитории: `dist/sdk-java/vision-sdk-1.0.0.jar` (рядом его pom).
-Пересобрать: `./scripts/build-sdk-jar.sh` (JDK 11–17, Gradle 7).
+Java 11+. Jar собирается из исходников: `./scripts/build-sdk-jar.sh` (JDK 11–17, Gradle 7) кладёт
+`dist/sdk-java/vision-sdk-1.0.0.jar` и его pom; в репозитории готового jar нет.
 
 Классы `Vision`, `VisionConfig`, `VisionOptions`, `VisionResult` в пакете `ua.vision.sdk`.
 Настройки — переменные `VISION_*` или файл `vision.json`. Дерево больше 10 МБ SDK не отправляет:

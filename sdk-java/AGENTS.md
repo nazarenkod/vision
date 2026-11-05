@@ -20,4 +20,5 @@ gradle test                       # TestNG + MockHttpClient; потрібні JD
 ## Правила
 
 - Тест на кожну зміну запиту: перевіряємо JSON, який іде на сервер (`MockHttpClient`).
-- Після зміни — перезібрати jar у `dist/sdk-java/` і оновити `dist/sdk-java/README.md`.
+- Готового jar у репозиторії немає: його збирає `scripts/build-sdk-jar.sh` у `dist/sdk-java/`
+  (git його ігнорує). Як перейти на нову версію — `DEPLOY.md` §7.

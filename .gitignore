@@ -9,3 +9,8 @@ demo-data/
 
 # Python bytecode from running the scripts and CLI tests
 __pycache__/
+
+# settings and secrets of a checkout; examples are .env.example and .env.demo.example
+.env
+# built SDK jar (./scripts/build-sdk-jar.sh)
+dist/

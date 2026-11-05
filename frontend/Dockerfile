@@ -32,7 +32,8 @@ WORKDIR /usr/share/nginx/html
 COPY --from=builder /app/build .
 # env.sh writes env-config.js here at start, as the nginx user
 COPY --chmod=755 ./env.sh .
-COPY .env .
+# the settings env.sh writes into env-config.js, with their defaults (no secrets)
+COPY env.defaults .
 USER root
 RUN chown -R nginx:nginx /usr/share/nginx/html
 USER nginx

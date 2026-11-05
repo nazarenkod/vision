@@ -5,8 +5,8 @@ Vision. Runs on Java 11+; build with JDK 11–17 and Gradle 7.
 
 ## Get it
 
-A ready jar and pom are in `dist/sdk-java/` of this repository (`./scripts/build-sdk-jar.sh`
-rebuilds them). Install into the local Maven repository:
+`./scripts/build-sdk-jar.sh` builds the jar and pom into `dist/sdk-java/` (the repository keeps
+no built jar). Install into the local Maven repository:
 
 ```bash
 mvn install:install-file -Dfile=vision-sdk-1.0.0.jar -DpomFile=vision-sdk-1.0.0.pom

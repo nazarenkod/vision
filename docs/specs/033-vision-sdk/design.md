@@ -16,7 +16,7 @@
 | Головний клас | `sdk-java/src/main/java/ua/vision/sdk/Vision.java` | колишній `VisualRegressionTracker` |
 | Налаштування | `sdk-java/src/main/java/ua/vision/sdk/VisionConfig.java` | колишній `VisualRegressionTrackerConfig` |
 | Версія | `sdk-java/build.gradle`, `scripts/build-sdk-jar.sh` | `4.3.1-vision.3` |
-| Jar | `dist/sdk-java/` | jar і pom `4.3.1-vision.3` |
+| Jar | dist/sdk-java/ (збирає скрипт, не в git) | jar і pom `4.3.1-vision.3` |
 
 ## Ризики
 

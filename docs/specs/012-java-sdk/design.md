@@ -12,7 +12,7 @@ gzip + base64 у поле `uiTree`. Розбір, формат і щільніс
 |---|---|---|
 | Параметр | `sdk-java/src/main/java/ua/vision/sdk/VisionOptions.java` | `uiTree` |
 | Запит | `sdk-java/src/main/java/ua/vision/sdk/request/TestRunRequest.java` | стиснення |
-| Збірка | `scripts/build-sdk-jar.sh` | jar і pom → `dist/sdk-java/` (`4.3.1-vision.N`) |
+| Збірка | `scripts/build-sdk-jar.sh` | jar і pom → dist/sdk-java/ (збирає скрипт, не в git) (`4.3.1-vision.N`) |
 
 ## Перевірка вимог
 

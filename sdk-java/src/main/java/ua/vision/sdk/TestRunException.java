@@ -1,4 +1,4 @@
-package io.visual_regression_tracker.sdk_java;
+package ua.vision.sdk;
 
 public class TestRunException extends RuntimeException {
     public TestRunException(String errorMessage) {

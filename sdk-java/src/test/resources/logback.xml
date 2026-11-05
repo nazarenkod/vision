@@ -9,7 +9,7 @@
         </layout>
     </appender>
 
-    <logger name="io.visual_regression_tracker" level="info" additivity="false">
+    <logger name="ua.vision" level="info" additivity="false">
         <appender-ref ref="CONSOLE"/>
     </logger>
 

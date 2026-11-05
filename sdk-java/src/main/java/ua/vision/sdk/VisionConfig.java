@@ -1,4 +1,4 @@
-package io.visual_regression_tracker.sdk_java;
+package ua.vision.sdk;
 
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
@@ -51,7 +51,7 @@ public class VisionConfig {
 
         private File configFile;
 
-        private static final String VRT_ENV_VARIABLE_PREFIX = "VRT_";
+        private static final String ENV_VARIABLE_PREFIX = "VISION_";
         private static final boolean DEFAULT_SOFT_ASSERTION_STATE = false;
         private static final int DEFAULT_HTTP_TIMEOUT_SECONDS = 10;
 
@@ -144,7 +144,7 @@ public class VisionConfig {
                 return (T) propertyValue;
             }
 
-            String environmentVariableName = VRT_ENV_VARIABLE_PREFIX +  propertyName.toUpperCase();
+            String environmentVariableName = ENV_VARIABLE_PREFIX +  propertyName.toUpperCase();
             propertyValue = System.getenv(environmentVariableName);
             if (propertyValue != null) {
                 log.debug("Value of '{}' resolved from environment variable {}", propertyName, environmentVariableName);

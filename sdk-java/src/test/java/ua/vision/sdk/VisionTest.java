@@ -1,4 +1,4 @@
-package io.visual_regression_tracker.sdk_java;
+package ua.vision.sdk;
 
 import com.google.gson.JsonObject;
 import java.io.ByteArrayInputStream;
@@ -10,10 +10,10 @@ import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.read.ListAppender;
 import com.google.gson.Gson;
-import io.visual_regression_tracker.sdk_java.request.BuildRequest;
-import io.visual_regression_tracker.sdk_java.request.TestRunRequest;
-import io.visual_regression_tracker.sdk_java.response.BuildResponse;
-import io.visual_regression_tracker.sdk_java.response.TestRunResponse;
+import ua.vision.sdk.request.BuildRequest;
+import ua.vision.sdk.request.TestRunRequest;
+import ua.vision.sdk.response.BuildResponse;
+import ua.vision.sdk.response.TestRunResponse;
 import lombok.SneakyThrows;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
@@ -57,8 +57,8 @@ public class VisionTest {
 
     private VisionConfig config;
     private MockWebServer mockWebServer;
-    private Vision vrt;
-    private Vision vrtMocked;
+    private Vision vision;
+    private Vision visionMocked;
 
     @SneakyThrows
     @BeforeMethod
@@ -75,22 +75,22 @@ public class VisionTest {
                 CI_BUILD_ID,
                 false,
                 HTTP_TIMEOUT);
-        vrt = new Vision(config);
-        vrtMocked = mock(Vision.class);
-        vrtMocked.paths = new PathProvider("baseApiUrl");
+        vision = new Vision(config);
+        visionMocked = mock(Vision.class);
+        visionMocked.paths = new PathProvider("baseApiUrl");
     }
 
     @SneakyThrows
     @AfterMethod
     public void tearDown() {
         mockWebServer.shutdown();
-        reset(vrtMocked);
+        reset(visionMocked);
     }
 
     // teams move to the new names in one step: the old ones must not linger in the jar
     @Test(dataProvider = "oldClassNames", expectedExceptions = ClassNotFoundException.class)
     public void noClassKeepsTheOldVisualRegressionTrackerName(String oldName) throws ClassNotFoundException {
-        Class.forName("io.visual_regression_tracker.sdk_java." + oldName);
+        Class.forName("ua.vision.sdk." + oldName);
     }
 
     @DataProvider(name = "oldClassNames")
@@ -100,7 +100,7 @@ public class VisionTest {
 
     @Test(dataProvider = "oldTestRunClassNames", expectedExceptions = ClassNotFoundException.class)
     public void noClassKeepsTheOldTestRunName(String oldName) throws ClassNotFoundException {
-        Class.forName("io.visual_regression_tracker.sdk_java." + oldName);
+        Class.forName("ua.vision.sdk." + oldName);
     }
 
     @DataProvider(name = "oldTestRunClassNames")
@@ -124,14 +124,14 @@ public class VisionTest {
                 .setResponseCode(200)
                 .setBody(gson.toJson(buildResponse)));
 
-        BuildResponse result = vrt.start();
+        BuildResponse result = vision.start();
 
         RecordedRequest recordedRequest = mockWebServer.takeRequest();
         assertThat(recordedRequest.getHeader(Vision.API_KEY_HEADER), is(config.getApiKey()));
         assertThat(recordedRequest.getHeader(Vision.PROJECT_HEADER), is(config.getProject()));
         assertThat(recordedRequest.getBody().readUtf8(), is(gson.toJson(buildRequest)));
-        assertThat(vrt.buildId, is(BUILD_ID));
-        assertThat(vrt.projectId, is(PROJECT_ID));
+        assertThat(vision.buildId, is(BUILD_ID));
+        assertThat(vision.projectId, is(PROJECT_ID));
         assertThat(result.getId(), is(BUILD_ID));
         assertThat(result.getProjectId(), is(PROJECT_ID));
         assertThat(result.getCiBuildId(), is(CI_BUILD_ID));
@@ -139,8 +139,8 @@ public class VisionTest {
 
     @Test
     public void shouldStopBuild() throws IOException, InterruptedException {
-        vrt.buildId = BUILD_ID;
-        vrt.projectId = PROJECT_ID;
+        vision.buildId = BUILD_ID;
+        vision.projectId = PROJECT_ID;
         BuildResponse buildResponse = BuildResponse.builder()
                 .id(BUILD_ID)
                 .passedCount(1)
@@ -152,7 +152,7 @@ public class VisionTest {
                 .setResponseCode(200)
                 .setBody(gson.toJson(buildResponse)));
 
-        BuildResponse actualBuildResponse = vrt.stop();
+        BuildResponse actualBuildResponse = vision.stop();
 
         RecordedRequest recordedRequest = mockWebServer.takeRequest();
         assertThat(recordedRequest.getMethod(), is("PATCH"));
@@ -172,10 +172,10 @@ public class VisionTest {
         mockWebServer.enqueue(new MockResponse().setBody(gson.toJson(TestRunResponse.builder()
                 .status(TestRunStatus.OK)
                 .build())));
-        vrt.buildId = BUILD_ID;
-        vrt.projectId = PROJECT_ID;
+        vision.buildId = BUILD_ID;
+        vision.projectId = PROJECT_ID;
 
-        vrt.submitTestRun(NAME, IMAGE_BASE_64, VisionOptions.builder().uiTree(xml).build());
+        vision.submitTestRun(NAME, IMAGE_BASE_64, VisionOptions.builder().uiTree(xml).build());
 
         JsonObject body = gson.fromJson(mockWebServer.takeRequest().getBody().readUtf8(), JsonObject.class);
         byte[] gzipped = Base64.getDecoder().decode(body.get("uiTree").getAsString());
@@ -184,15 +184,93 @@ public class VisionTest {
         }
     }
 
+    // a tree padded with a long text to exactly the given number of UTF-8 bytes
+    private static String treeOf(int bytes) {
+        String head = "<hierarchy><node text=\"";
+        String tail = "\"/></hierarchy>";
+        return head + "x".repeat(bytes - head.length() - tail.length()) + tail;
+    }
+
+    private JsonObject sentBodyFor(String uiTree) throws IOException, InterruptedException {
+        mockWebServer.enqueue(new MockResponse().setBody(gson.toJson(TestRunResponse.builder()
+                .status(TestRunStatus.OK)
+                .build())));
+        vision.buildId = BUILD_ID;
+        vision.projectId = PROJECT_ID;
+        vision.submitTestRun(NAME, IMAGE_BASE_64, VisionOptions.builder().uiTree(uiTree).build());
+        return gson.fromJson(mockWebServer.takeRequest().getBody().readUtf8(), JsonObject.class);
+    }
+
+    private ListAppender<ILoggingEvent> visionLog() {
+        ListAppender<ILoggingEvent> appender = new ListAppender<>();
+        appender.start();
+        ((Logger) LoggerFactory.getLogger(Vision.class)).addAppender(appender);
+        return appender;
+    }
+
+    @Test
+    public void sendsUiTreeAtTheLimit() throws IOException, InterruptedException {
+        String xml = treeOf(Vision.UI_TREE_MAX_BYTES);
+
+        JsonObject body = sentBodyFor(xml);
+
+        byte[] gzipped = Base64.getDecoder().decode(body.get("uiTree").getAsString());
+        try (GZIPInputStream in = new GZIPInputStream(new ByteArrayInputStream(gzipped))) {
+            assertThat(new String(in.readAllBytes(), StandardCharsets.UTF_8), is(xml));
+        }
+    }
+
+    // the server would leave it out anyway; the test must not fail because of the tree
+    @Test
+    public void leavesOutUiTreeOverTheLimit() throws IOException, InterruptedException {
+        ListAppender<ILoggingEvent> log = visionLog();
+
+        JsonObject body = sentBodyFor(treeOf(Vision.UI_TREE_MAX_BYTES + 1));
+
+        assertThat(body.has("uiTree"), is(false));
+        assertThat(body.get("name").getAsString(), is(NAME));
+        ILoggingEvent warning = log.list.stream().filter(e -> e.getLevel() == Level.WARN).findFirst().orElseThrow();
+        assertThat(warning.getFormattedMessage(), containsString(NAME));
+        assertThat(warning.getFormattedMessage(), containsString(String.valueOf(Vision.UI_TREE_MAX_BYTES + 1)));
+    }
+
+    // teams import ua.vision.sdk only: nothing is left under the old package
+    @Test
+    public void livesInTheVisionPackageOnly() {
+        assertThat(Vision.class.getPackageName(), is("ua.vision.sdk"));
+        for (String old : new String[]{"Vision", "VisionConfig", "VisionOptions", "VisionResult", "TestRunStatus"}) {
+            try {
+                Class.forName("io.visual_regression_tracker.sdk_java." + old);
+                throw new AssertionError(old + " is still in the old package");
+            } catch (ClassNotFoundException expected) {
+                // as it should be
+            }
+        }
+    }
+
+    @Test
+    public void logsUnderTheVisionName() throws IOException, InterruptedException {
+        ListAppender<ILoggingEvent> log = visionLog();
+        mockWebServer.enqueue(new MockResponse().setBody(gson.toJson(BuildResponse.builder()
+                .id(BUILD_ID)
+                .projectId(PROJECT_ID)
+                .build())));
+
+        vision.start();
+
+        assertThat(log.list.stream().anyMatch(e -> e.getFormattedMessage().startsWith("Starting Vision for project")), is(true));
+        assertThat(log.list.stream().noneMatch(e -> e.getFormattedMessage().contains("Visual Regression Tracker")), is(true));
+    }
+
     @Test
     public void shouldLeaveTheUiTreeOutWhenNotGiven() throws IOException, InterruptedException {
         mockWebServer.enqueue(new MockResponse().setBody(gson.toJson(TestRunResponse.builder()
                 .status(TestRunStatus.OK)
                 .build())));
-        vrt.buildId = BUILD_ID;
-        vrt.projectId = PROJECT_ID;
+        vision.buildId = BUILD_ID;
+        vision.projectId = PROJECT_ID;
 
-        vrt.submitTestRun(NAME, IMAGE_BASE_64, VisionOptions.builder().build());
+        vision.submitTestRun(NAME, IMAGE_BASE_64, VisionOptions.builder().build());
 
         JsonObject body = gson.fromJson(mockWebServer.takeRequest().getBody().readUtf8(), JsonObject.class);
         assertThat(body.has("uiTree"), is(false));
@@ -203,10 +281,10 @@ public class VisionTest {
         mockWebServer.enqueue(new MockResponse().setBody(gson.toJson(TestRunResponse.builder()
                 .status(TestRunStatus.OK)
                 .build())));
-        vrt.buildId = BUILD_ID;
-        vrt.projectId = PROJECT_ID;
+        vision.buildId = BUILD_ID;
+        vision.projectId = PROJECT_ID;
 
-        vrt.submitTestRun(NAME, IMAGE_BASE_64, VisionOptions.builder().featureName("Checkout").build());
+        vision.submitTestRun(NAME, IMAGE_BASE_64, VisionOptions.builder().featureName("Checkout").build());
 
         JsonObject body = gson.fromJson(mockWebServer.takeRequest().getBody().readUtf8(), JsonObject.class);
         assertThat(body.get("featureName").getAsString(), is("Checkout"));
@@ -217,19 +295,19 @@ public class VisionTest {
         mockWebServer.enqueue(new MockResponse().setBody(gson.toJson(TestRunResponse.builder()
                 .status(TestRunStatus.OK)
                 .build())));
-        vrt.buildId = BUILD_ID;
-        vrt.projectId = PROJECT_ID;
+        vision.buildId = BUILD_ID;
+        vision.projectId = PROJECT_ID;
 
-        vrt.submitTestRun(NAME, IMAGE_BASE_64, VisionOptions.builder().build());
+        vision.submitTestRun(NAME, IMAGE_BASE_64, VisionOptions.builder().build());
 
         JsonObject body = gson.fromJson(mockWebServer.takeRequest().getBody().readUtf8(), JsonObject.class);
         assertThat(body.has("featureName"), is(false));
     }
 
     @Test(expectedExceptions = TestRunException.class,
-            expectedExceptionsMessageRegExp = "Visual Regression Tracker has not been started")
+            expectedExceptionsMessageRegExp = "Vision has not been started")
     public void stopShouldThrowExceptionIfNotStarted() throws IOException, InterruptedException {
-        vrt.stop();
+        vision.stop();
     }
 
     @Test
@@ -266,10 +344,10 @@ public class VisionTest {
                 .status(TestRunStatus.UNRESOLVED)
                 .build();
         mockWebServer.enqueue(new MockResponse().setBody(gson.toJson(testRunResponse)));
-        vrt.buildId = BUILD_ID;
-        vrt.projectId = PROJECT_ID;
+        vision.buildId = BUILD_ID;
+        vision.projectId = PROJECT_ID;
 
-        TestRunResponse result = vrt.submitTestRun(NAME, IMAGE_BASE_64, testRunOptions);
+        TestRunResponse result = vision.submitTestRun(NAME, IMAGE_BASE_64, testRunOptions);
 
         RecordedRequest request = mockWebServer.takeRequest();
         assertThat(request.getHeader(Vision.API_KEY_HEADER), is(config.getApiKey()));
@@ -279,12 +357,12 @@ public class VisionTest {
     }
 
     @Test(expectedExceptions = TestRunException.class,
-            expectedExceptionsMessageRegExp = "Visual Regression Tracker has not been started")
+            expectedExceptionsMessageRegExp = "Vision has not been started")
     public void submitTestRunShouldThrowIfNotStarted() throws IOException, InterruptedException {
-        when(vrtMocked.isStarted()).thenReturn(false);
+        when(visionMocked.isStarted()).thenReturn(false);
 
-        doCallRealMethod().when(vrtMocked).submitTestRun(anyString(), any(), any());
-        vrtMocked.submitTestRun("name", null, null);
+        doCallRealMethod().when(visionMocked).submitTestRun(anyString(), any(), any());
+        visionMocked.submitTestRun("name", null, null);
     }
 
     @DataProvider(name = "trackErrorCases")
@@ -317,7 +395,7 @@ public class VisionTest {
             expectedExceptions = TestRunException.class,
             expectedExceptionsMessageRegExp = "^(Difference found: https://someurl.com/test/123123|No baseline: https://someurl.com/test/123123)$")
     public void trackShouldThrowException(TestRunResponse testRunResponse, String expectedExceptionMessage) throws IOException, InterruptedException {
-        vrtMocked.configuration = VisionConfig.builder()
+        visionMocked.configuration = VisionConfig.builder()
                 .apiUrl("")
                 .project("")
                 .apiKey("")
@@ -326,10 +404,10 @@ public class VisionTest {
                 .ciBuildId("")
                 .build();
 
-        when(vrtMocked.submitTestRun(anyString(), anyString(), any())).thenReturn(testRunResponse);
+        when(visionMocked.submitTestRun(anyString(), anyString(), any())).thenReturn(testRunResponse);
 
-        doCallRealMethod().when(vrtMocked).track(anyString(), anyString(), any());
-        vrtMocked.track("name", "image", VisionOptions.builder().build());
+        doCallRealMethod().when(visionMocked).track(anyString(), anyString(), any());
+        visionMocked.track("name", "image", VisionOptions.builder().build());
     }
 
     @Test(dataProvider = "trackErrorCases")
@@ -340,7 +418,7 @@ public class VisionTest {
         listAppender.start();
         // add the appender to the logger
         loggerMock.addAppender(listAppender);
-        vrtMocked.configuration = VisionConfig.builder()
+        visionMocked.configuration = VisionConfig.builder()
                 .apiUrl("")
                 .project("")
                 .apiKey("")
@@ -348,10 +426,10 @@ public class VisionTest {
                 .enableSoftAssert(true)
                 .ciBuildId("")
                 .build();
-        when(vrtMocked.submitTestRun(anyString(), anyString(), any())).thenReturn(testRunResponse);
+        when(visionMocked.submitTestRun(anyString(), anyString(), any())).thenReturn(testRunResponse);
 
-        doCallRealMethod().when(vrtMocked).track(anyString(), anyString(), any());
-        vrtMocked.track("name", "image", VisionOptions.builder().build());
+        doCallRealMethod().when(visionMocked).track(anyString(), anyString(), any());
+        visionMocked.track("name", "image", VisionOptions.builder().build());
 
         assertThat(listAppender.list.get(1).getFormattedMessage(), is(expectedExceptionMessage));
         assertThat(listAppender.list.get(1).getLevel(), is(Level.ERROR));
@@ -393,11 +471,11 @@ public class VisionTest {
 
     @Test(dataProvider = "shouldTrackPassCases")
     public void shouldTrackPass(TestRunResponse testRunResponse) throws IOException, InterruptedException {
-        when(vrtMocked.submitTestRun(anyString(), anyString(), any())).thenReturn(testRunResponse);
-        vrtMocked.paths = new PathProvider("http://localhost:4200");
+        when(visionMocked.submitTestRun(anyString(), anyString(), any())).thenReturn(testRunResponse);
+        visionMocked.paths = new PathProvider("http://localhost:4200");
 
-        doCallRealMethod().when(vrtMocked).track(anyString(), anyString(), any());
-        VisionResult testRunResult = vrtMocked.track("name", "image", VisionOptions.builder().build());
+        doCallRealMethod().when(visionMocked).track(anyString(), anyString(), any());
+        VisionResult testRunResult = visionMocked.track("name", "image", VisionOptions.builder().build());
 
         assertThat(testRunResult.getTestRunResponse(), is(testRunResponse));
         assertThat(testRunResult.getImageUrl(), is("http://localhost:4200/".concat(testRunResponse.getImageName())));
@@ -407,10 +485,10 @@ public class VisionTest {
 
     @Test()
     public void shouldTrackOverload() throws IOException, InterruptedException {
-        doCallRealMethod().when(vrtMocked).track(anyString(), anyString());
-        vrtMocked.track("name", "image");
+        doCallRealMethod().when(visionMocked).track(anyString(), anyString());
+        visionMocked.track("name", "image");
 
-        verify(vrtMocked, times(1)).track(anyString(), anyString(), any(VisionOptions.class));
+        verify(visionMocked, times(1)).track(anyString(), anyString(), any(VisionOptions.class));
     }
 
     @DataProvider(name = "shouldReturnIsStartedCases")
@@ -425,10 +503,10 @@ public class VisionTest {
 
     @Test(dataProvider = "shouldReturnIsStartedCases")
     public void shouldReturnIsStarted(String buildId, String projectId, boolean expectedResult) {
-        vrt.buildId = buildId;
-        vrt.projectId = projectId;
+        vision.buildId = buildId;
+        vision.projectId = projectId;
 
-        boolean result = vrt.isStarted();
+        boolean result = vision.isStarted();
 
         assertThat(result, is(expectedResult));
     }
@@ -445,7 +523,7 @@ public class VisionTest {
             //A mock client is needed to create a mock response
             HttpClient httpClient = new MockHttpClient(404, error);
             HttpResponse httpResponse = httpClient.send(null, null);
-            vrt.handleResponse(httpResponse, Object.class);
+            vision.handleResponse(httpResponse, Object.class);
         } catch (TestRunException | InterruptedException ex) {
             exceptionMessage = ex.getMessage();
         }
@@ -461,22 +539,22 @@ public class VisionTest {
                 .ciBuildId(CI_BUILD_ID)
                 .build();
         String json = gson.toJson(buildResponse);
-        //body size is 97 bytes, http timeout is 1s, set body read delay to 0.5s, wait that vrt get all values correctly
+        //body size is 97 bytes, http timeout is 1s, set body read delay to 0.5s, wait that vision get all values correctly
         mockWebServer.enqueue(new MockResponse().throttleBody(json.length(), HTTP_TIMEOUT * 1000 - 500, TimeUnit.MILLISECONDS)
                 .setResponseCode(200)
                 .setBody(json));
 
-        vrt.start();
+        vision.start();
 
         mockWebServer.takeRequest();
 
-        assertThat(vrt.buildId, is(BUILD_ID));
-        assertThat(vrt.projectId, is(PROJECT_ID));
+        assertThat(vision.buildId, is(BUILD_ID));
+        assertThat(vision.projectId, is(PROJECT_ID));
     }
 
     @Test(expectedExceptions = UnsupportedOperationException.class, expectedExceptionsMessageRegExp = "This method is not yet supported.")
     public void methodNotSupported() {
-        vrt.getRequest(METHOD.GET, null, null);
+        vision.getRequest(METHOD.GET, null, null);
     }
 
     @Test(expectedExceptions = HttpTimeoutException.class,
@@ -494,7 +572,7 @@ public class VisionTest {
                 .setResponseCode(200)
                 .setBody(json));
 
-        vrt.start();
+        vision.start();
 
         mockWebServer.takeRequest();
     }

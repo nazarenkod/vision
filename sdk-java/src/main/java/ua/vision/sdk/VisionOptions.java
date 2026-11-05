@@ -1,4 +1,4 @@
-package io.visual_regression_tracker.sdk_java;
+package ua.vision.sdk;
 
 import java.util.List;
 

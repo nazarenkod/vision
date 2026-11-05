@@ -1,4 +1,4 @@
-package io.visual_regression_tracker.sdk_java.request;
+package ua.vision.sdk.request;
 
 import lombok.Builder;
 import lombok.Getter;

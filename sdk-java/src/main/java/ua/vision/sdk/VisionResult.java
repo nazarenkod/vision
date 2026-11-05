@@ -1,6 +1,6 @@
-package io.visual_regression_tracker.sdk_java;
+package ua.vision.sdk;
 
-import io.visual_regression_tracker.sdk_java.response.TestRunResponse;
+import ua.vision.sdk.response.TestRunResponse;
 import lombok.Getter;
 
 @Getter

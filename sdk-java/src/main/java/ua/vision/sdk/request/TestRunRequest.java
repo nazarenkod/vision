@@ -1,8 +1,8 @@
-package io.visual_regression_tracker.sdk_java.request;
+package ua.vision.sdk.request;
 
 import java.util.List;
 
-import io.visual_regression_tracker.sdk_java.IgnoreAreas;
+import ua.vision.sdk.IgnoreAreas;
 import lombok.Builder;
 import lombok.Getter;
 

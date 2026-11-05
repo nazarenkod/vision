@@ -1,11 +1,11 @@
-package io.visual_regression_tracker.sdk_java;
+package ua.vision.sdk;
 
 import com.google.gson.Gson;
-import io.visual_regression_tracker.sdk_java.request.BuildRequest;
-import io.visual_regression_tracker.sdk_java.request.ModifyBuildRequest;
-import io.visual_regression_tracker.sdk_java.request.TestRunRequest;
-import io.visual_regression_tracker.sdk_java.response.BuildResponse;
-import io.visual_regression_tracker.sdk_java.response.TestRunResponse;
+import ua.vision.sdk.request.BuildRequest;
+import ua.vision.sdk.request.ModifyBuildRequest;
+import ua.vision.sdk.request.TestRunRequest;
+import ua.vision.sdk.response.BuildResponse;
+import ua.vision.sdk.response.TestRunResponse;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.ByteArrayOutputStream;
@@ -30,8 +30,10 @@ enum METHOD {
 @Slf4j
 public class Vision {
 
-    private static final String TRACKER_NOT_STARTED = "Visual Regression Tracker has not been started";
-    private static final String CONFIG_FILE_NAME = "vrt.json";
+    private static final String TRACKER_NOT_STARTED = "Vision has not been started";
+    private static final String CONFIG_FILE_NAME = "vision.json";
+    /** The largest UI tree sent, unpacked; the same limit as the server's. */
+    public static final int UI_TREE_MAX_BYTES = 10 * 1024 * 1024;
     protected static final String API_KEY_HEADER = "apiKey";
     protected static final String PROJECT_HEADER = "project";
     protected Gson gson;
@@ -67,7 +69,7 @@ public class Vision {
                 .project(projectName)
                 .ciBuildId(ciBuildId)
                 .build();
-        log.info("Starting Visual Regression Tracker for project <{}> and branch <{}>", projectName, branch);
+        log.info("Starting Vision for project <{}> and branch <{}>", projectName, branch);
         HttpRequest.BodyPublisher body = HttpRequest.BodyPublishers.ofString(gson.toJson(newBuild));
         HttpResponse<String> response = getResponse(METHOD.POST, paths.getBuildPath(), body);
         BuildResponse buildResponse = handleResponse(response, BuildResponse.class);
@@ -75,7 +77,7 @@ public class Vision {
         buildId = buildResponse.getId();
         projectId = buildResponse.getProjectId();
 
-        log.info("Visual Regression Tracker is started for project <{}>: projectId: <{}>, buildId: <{}>, ciBuildId: <{}>",
+        log.info("Vision is started for project <{}>: projectId: <{}>, buildId: <{}>, ciBuildId: <{}>",
                 projectName, projectId, buildId, buildResponse.getCiBuildId());
         return buildResponse;
     }
@@ -85,17 +87,17 @@ public class Vision {
             throw new TestRunException(TRACKER_NOT_STARTED);
         }
 
-        log.info("Stopping Visual Regression Tracker for buildId <{}>", buildId);
+        log.info("Stopping Vision for buildId <{}>", buildId);
 
         ModifyBuildRequest stopBuildRequest = ModifyBuildRequest.builder()
                 .isRunning(false)
                 .build();
         HttpRequest.BodyPublisher body = HttpRequest.BodyPublishers.ofString(gson.toJson(stopBuildRequest));
         HttpResponse<String> response = getResponse(METHOD.PATCH, paths.getBuildPathForBuild(buildId), body);
-        BuildResponse vrtStopResponse = handleResponse(response, BuildResponse.class);
+        BuildResponse stopResponse = handleResponse(response, BuildResponse.class);
 
-        log.info("Visual Regression Tracker is stopped for buildId <{}>", buildId);
-        return vrtStopResponse;
+        log.info("Vision is stopped for buildId <{}>", buildId);
+        return stopResponse;
     }
 
     public VisionResult track(String name, String imageBase64, VisionOptions options)
@@ -154,7 +156,7 @@ public class Vision {
                 .customTags(options.getCustomTags())
                 .diffTollerancePercent(options.getDiffTollerancePercent())
                 .ignoreAreas(options.getIgnoreAreas())
-                .uiTree(encodeUiTree(options.getUiTree()))
+                .uiTree(encodeUiTree(name, options.getUiTree()))
                 .featureName(options.getFeatureName())
                 .build();
 
@@ -164,13 +166,20 @@ public class Vision {
     }
 
     // page sources are large and repetitive: gzip keeps them well under the request size limit
-    static String encodeUiTree(String uiTree) {
+    static String encodeUiTree(String name, String uiTree) {
         if (uiTree == null || uiTree.isEmpty()) {
+            return null;
+        }
+        byte[] xml = uiTree.getBytes(StandardCharsets.UTF_8);
+        // the server leaves out anything bigger anyway (040): no point sending it
+        if (xml.length > UI_TREE_MAX_BYTES) {
+            log.warn("UI tree of <{}> is {} bytes, over the limit of {}: sending the screenshot without it",
+                    name, xml.length, UI_TREE_MAX_BYTES);
             return null;
         }
         ByteArrayOutputStream bytes = new ByteArrayOutputStream();
         try (GZIPOutputStream gzip = new GZIPOutputStream(bytes)) {
-            gzip.write(uiTree.getBytes(StandardCharsets.UTF_8));
+            gzip.write(xml);
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }

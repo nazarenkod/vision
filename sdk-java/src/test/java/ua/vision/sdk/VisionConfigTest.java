@@ -1,4 +1,4 @@
-package io.visual_regression_tracker.sdk_java;
+package ua.vision.sdk;
 
 import org.testng.annotations.Test;
 import uk.org.webcompere.systemstubs.environment.EnvironmentVariables;
@@ -42,7 +42,7 @@ public class VisionConfigTest {
 
     @Test
     public void shouldBeCreatedFromConfigFile() {
-        File configFile = new File("src/test/resources/vrt_config_example.json");
+        File configFile = new File("src/test/resources/vision_config_example.json");
 
         VisionConfig config = VisionConfig.builder()
                 .configFile(configFile)
@@ -50,7 +50,7 @@ public class VisionConfigTest {
 
         assertThat(config.getApiKey(), is("SECRET"));
         assertThat(config.getApiUrl(), is("http://162.243.161.172:4200"));
-        assertThat(config.getProject(), is("VRT"));
+        assertThat(config.getProject(), is("Vision"));
         assertThat(config.getBranchName(), is("master"));
         assertThat(config.getEnableSoftAssert(), is(false));
         assertThat(config.getCiBuildId(), is("SOME_UNIQUE_ID"));
@@ -58,12 +58,12 @@ public class VisionConfigTest {
 
     @Test
     public void shouldBeCreatedFromEnvironment() throws Exception {
-        EnvironmentVariables environmentVariables = new EnvironmentVariables("VRT_APIKEY", "SECRET")
-                .set("VRT_APIURL", "http://162.243.161.172:4200")
-                .set("VRT_PROJECT", "VRT")
-                .set("VRT_BRANCHNAME", "master")
-                .set("VRT_ENABLESOFTASSERT", "false")
-                .set("VRT_CIBUILDID", "SOME_UNIQUE_ID");
+        EnvironmentVariables environmentVariables = new EnvironmentVariables("VISION_APIKEY", "SECRET")
+                .set("VISION_APIURL", "http://162.243.161.172:4200")
+                .set("VISION_PROJECT", "Vision")
+                .set("VISION_BRANCHNAME", "master")
+                .set("VISION_ENABLESOFTASSERT", "false")
+                .set("VISION_CIBUILDID", "SOME_UNIQUE_ID");
 
         VisionConfig config = environmentVariables.execute(() ->
                 VisionConfig.builder()
@@ -72,17 +72,28 @@ public class VisionConfigTest {
 
         assertThat(config.getApiKey(), is("SECRET"));
         assertThat(config.getApiUrl(), is("http://162.243.161.172:4200"));
-        assertThat(config.getProject(), is("VRT"));
+        assertThat(config.getProject(), is("Vision"));
         assertThat(config.getBranchName(), is("master"));
         assertThat(config.getEnableSoftAssert(), is(false));
         assertThat(config.getCiBuildId(), is("SOME_UNIQUE_ID"));
     }
 
+    // a test left on the old VRT_* names fails at start, saying which setting is missing
+    @Test(expectedExceptions = NullPointerException.class,
+            expectedExceptionsMessageRegExp = "apiUrl is marked non-null but is null")
+    public void ignoresVrtVariables() throws Exception {
+        EnvironmentVariables environmentVariables = new EnvironmentVariables("VRT_APIKEY", "SECRET")
+                .set("VRT_APIURL", "http://162.243.161.172:4200")
+                .set("VRT_PROJECT", "Vision");
+
+        environmentVariables.execute(() -> VisionConfig.builder().build());
+    }
+
     @Test
     public void shouldResolveFinalValuesInTheRightOrder() throws Exception {
-        EnvironmentVariables environmentVariables = new EnvironmentVariables("VRT_APIKEY", "ENV_SECRET")
-                .set("VRT_APIURL", "http://162.243.161.172:4201");
-        File configFile = new File("src/test/resources/vrt_config_example.json");
+        EnvironmentVariables environmentVariables = new EnvironmentVariables("VISION_APIKEY", "ENV_SECRET")
+                .set("VISION_APIURL", "http://162.243.161.172:4201");
+        File configFile = new File("src/test/resources/vision_config_example.json");
 
         VisionConfig config = environmentVariables.execute(() ->
                 VisionConfig.builder()
@@ -93,7 +104,7 @@ public class VisionConfigTest {
 
         assertThat(config.getApiKey(), is("ENV_SECRET"));
         assertThat(config.getApiUrl(), is("http://localhost:4200"));
-        assertThat(config.getProject(), is("VRT"));
+        assertThat(config.getProject(), is("Vision"));
         assertThat(config.getBranchName(), is("master"));
         assertThat(config.getEnableSoftAssert(), is(false));
         assertThat(config.getCiBuildId(), is("SOME_UNIQUE_ID"));

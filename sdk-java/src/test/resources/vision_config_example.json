@@ -1,6 +1,6 @@
 {
   "apiUrl": "http://162.243.161.172:4200",
-  "project": "VRT",
+  "project": "Vision",
   "apiKey": "SECRET",
   "branchName": "master",
   "enableSoftAssert": false,

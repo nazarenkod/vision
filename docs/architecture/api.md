@@ -5,6 +5,11 @@
 SHA-256 і сам ключ не зберігає ([044](../specs/044-secrets-at-rest/spec.md)). Дії, що
 змінюють рішення, доступні ролям `admin` і `editor`.
 
+**Помилки ([045](../specs/045-sign-in-and-api-hardening/spec.md)).** Відповідь — `{ statusCode, message, path }`,
+для конфлікту налаштувань ще `fields`; без stack trace і об'єкта винятку, неочікувана помилка — «Internal
+server error». CORS — лише для origin `APP_FRONTEND_URL`; Swagger (`/api`) — лише з `VISION_SWAGGER=true`;
+кожна відповідь має `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy: no-referrer`.
+
 **Доступ до проєктів ([042](../specs/042-project-access/spec.md)).** Адмін бачить усі проєкти; решта
 (і їхні API-ключі) — лише ті, до яких дали доступ. Будь-який маршрут з даними чужого проєкту
 відповідає `404 Not found`; `POST /builds`, `POST /test-runs`, `/test-runs/multipart` —
@@ -13,7 +18,7 @@ SHA-256 і сам ключ не зберігає ([044](../specs/044-secrets-at-
 ## Події наживо (socket.io)
 
 Шлях `/socket.io`, той самий порт, що й API ([032](../specs/032-authenticated-events/spec.md),
-[ADR-0023](../decisions/0023-events-socket-behind-login.md)). В upstream сокет був відкритий усім.
+[ADR-0023](../decisions/0023-events-socket-behind-login.md)). У вихідному проєкті сокет був відкритий усім.
 
 | Що | Як |
 |---|---|
@@ -38,7 +43,7 @@ SHA-256 і сам ключ не зберігає ([044](../specs/044-secrets-at-
 | `GET /test-runs/:id/selector-matches?selector=…` | скільки елементів селектор знаходить на еталоні й на знімку (`current`, `baseline`) або чому його не можна вжити (`problem`: `prefix`, `syntax`, `anchor`, `attribute`, `axis`, `function`, `or`, `mixed`); лише читає ([027](../specs/027-nameless-elements/spec.md)) |
 | `POST /test-runs/:id/ignore-areas/replace-with-element` | `{ areaId, selector }`: прибрати збережену область і додати правило «ігнорувати» для елемента, порівняти знімок один раз; відповідь `{ rule, area }` для Undo ([024](../specs/024-elements-instead-of-areas/spec.md)) |
 | `GET /test-runs/:id/a11y` | звіт доступності з рішеннями; заодно шукає в Jira незаведені проблеми (від імені того, хто дивиться) |
-| `POST /test-runs/approve`, `POST /test-runs/reject` | як в upstream, але відповідь тепер `{ decisionId }`: запис журналу для Undo ([018](../specs/018-ui-redesign/spec.md)) |
+| `POST /test-runs/approve`, `POST /test-runs/reject` | як у вихідному проєкті, але відповідь тепер `{ decisionId }`: запис журналу для Undo ([018](../specs/018-ui-redesign/spec.md)) |
 | `POST /test-runs/undo/:decisionId` | скасувати рішення, прийняте не раніше ніж 30 s тому, лише тим, хто його прийняв: статуси й еталони — як до рішення, все або нічого. `409` — рішення вже скасоване, застаре або після нього хтось змінив знімок чи еталон (причина в `message`); `403` — рішення чуже |
 
 ## Знімки ([043](../specs/043-protected-images/spec.md))
@@ -96,8 +101,9 @@ SHA-256 і сам ключ не зберігає ([044](../specs/044-secrets-at-
 | `GET /analytics/:projectId?days=` | Insights за 7–730 днів (типово 90; UI пропонує 30, 90, 180, 365); пристрій — рядком `device`/`devices` і по полях `profile`/`profiles` для тегів ([036](../specs/037-device-as-tags/spec.md)) |
 | `GET /ai/status`, `POST /ai/group-summary`, `POST /ai/a11y-labels` | AI на вимогу |
 | `POST /ai/bug-draft` | чернетка бага з порівняння (`testRunId`, `note`, `marks?`, `changes?`, `attempt?`) на особистому ключі Gemini людини: `{ essence, steps, actual, expected, cached }`. Без ключа — 400, тайм-аут 30 с — 504 ([025](../specs/025-bug-from-comparison/spec.md)) |
-| `POST /users` | лише `admin`: створити акаунт (`email`, `password`, `role`, `firstName?`, `lastName?`). Відповідь — `UserDto` без токена входу. Пошта зайнята (будь-який регістр) — `400`; з LDAP чи SSO — `400`. `POST /users/register` прибрано ([035](../specs/035-admin-accounts/spec.md)) |
-| `GET /users/accounts/enabled` | без входу: чи можна створювати акаунти (лише вхід через базу, не LDAP чи SSO) |
+| `POST /users` | лише `admin`: створити акаунт (`email`, `password`, `role`, `firstName?`, `lastName?`). Відповідь — `UserDto` без токена входу. Пошта зайнята (будь-який регістр) — `400`; пароль коротший за 12 символів — `400`. Працює й з LDAP чи SSO ([045](../specs/045-sign-in-and-api-hardening/spec.md)). `POST /users/register` прибрано ([035](../specs/035-admin-accounts/spec.md)) |
+| `GET /users/accounts/enabled` | без входу: чи можна створювати акаунти; з 045 — завжди `true` |
+| `POST /users/login` | з LDAP: спершу каталог, кого там немає — локальний пароль; з SSO — лише локальні акаунти. 5 невдалих спроб для email за 15 хвилин — `429` на 15 хвилин ([045](../specs/045-sign-in-and-api-hardening/spec.md)) |
 | `PUT /users/jira` | особистий токен і email Jira (`""` видаляє), токен зберігається зашифрованим. Відповідь — `UserDto` з `jiraTokenSet`, без токена |
 | `GET /users/newApiKey` | новий API-ключ текстом — єдиний раз, коли його видно; попередній перестає діяти. `UserDto` далі має лише `apiKeyEnding` (останні 4 символи, `null` — ключа ніхто не бачив) замість `apiKey` ([044](../specs/044-secrets-at-rest/spec.md)) |
 | `PUT /users/gemini` | особистий ключ Gemini API (`geminiApiKey`, `""` видаляє). Відповідь — `UserDto` з `geminiKeySet`, без ключа ([ADR-0020](../decisions/0020-personal-gemini-keys.md)) |

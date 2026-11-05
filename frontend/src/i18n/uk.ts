@@ -270,6 +270,7 @@ export const uk: Messages = {
   "secret.undo": "Повернути",
   "secret.keepSaved": "Лишіть порожнім, щоб не змінювати збережений",
 
+  "validation.passwordLength": "Щонайменше {count} символів.",
   "validation.twoCharacters": "Введіть щонайменше два символи.",
   "validation.greaterThan": "Введіть число, більше за {min}",
   "validation.lessThan": "Введіть число, менше за {max}",
@@ -1029,6 +1030,7 @@ export const uk: Messages = {
   "backups.open": "Відкрити резервні копії",
 
   // auth
+  "auth.orLocal": "Або локальним акаунтом:",
   "auth.sso": "Увійти через SSO",
   "auth.validEmail": "Введіть правильну адресу email.",
   "auth.email": "Email",

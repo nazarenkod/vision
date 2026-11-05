@@ -47,7 +47,7 @@ Vision ставится на ту же машину, что и рабочий VR
   Postgres — 1 CPU и 1 ГБ, UI — 0.5 CPU (настраивается в `.env.demo`).
 - **Перед копированием** скрипт показывает, что прочитает и что заменит, и ждёт `yes`.
 
-Проверено на стенде с upstream VRT 5.6.3 на postgres:12. Сняли «отпечаток» прода (хеши
+Проверено на стенде с VRT 5.6.3 на postgres:12. Сняли «отпечаток» прода (хеши
 содержимого всех таблиц, хеши всех картинок, время запуска контейнеров) до и после:
 - отказов защиты (чужой проект `vision`, чужая `COMPOSE_PROJECT_NAME`);
 - двух копирований (копия и ссылки);
@@ -181,6 +181,13 @@ successfully applied`:
 проектов не видят, пока админ не даст. Editor, создавший проект, видит его сразу.
 
 ## 6. Настройки в Vision
+
+**Вход** ([045](docs/specs/045-sign-in-and-api-hardening/spec.md)). LDAP или SSO включаются в `.env.demo`
+(`LDAP_*` или `OIDC_*`, пример — в `.env.demo.example`), и локальные аккаунты от админа работают
+рядом: LDAP решает за тех, кто есть в каталоге, остальные входят своим паролем; с SSO форма пароля —
+под кнопкой SSO, а при `REACT_APP_OIDC_AUTO_REDIRECT` — по адресу `/login?local`. Пароль локального
+аккаунта — от 12 символов; 5 неверных попыток подряд закрывают вход для этого email на 15 минут.
+Документация API (`/api`) выключена, пока `VISION_SWAGGER=true`.
 
 Projects → карандаш у проекта:
 - **Jira**: URL Jira — только на хосте из `VISION_JIRA_HOSTS`. Токен у каждого свой: **Profile → Jira** (Server/DC — personal access
@@ -648,7 +655,7 @@ Drive рабочего аккаунта администратора ([013](docs
 | «containers that were not created from …» | в проекте `vision` есть чужие контейнеры. Скрипт ничего не сделал. Выясните, чьи они (`docker ps -a --filter label=com.docker.compose.project=vision`), не удаляйте вслепую |
 | «Not enough disk …» | освободите место (`docker system df`, `docker builder prune`) или, для картинок, `PROD_IMAGES_MODE=link` |
 | «production VRT is older than 5.x» | сначала обновите прод, или запускайте Vision на пустой базе (без шага 4) |
-| «Production has migrations this fork does not know» | прод новее форка: нужно подтянуть upstream в форк |
+| «Production has migrations Vision does not know» | схема прода новее Vision: нужна миграция в Vision под неё |
 | `migration` в состоянии Exited (1) | `./scripts/vision.sh logs migration` |
 | `docker-credential-desktop: executable file not found` | на macOS `vision.sh` сам добавляет в `PATH` папку Docker Desktop (`/Applications/Docker.app/Contents/Resources/bin`); если Docker стоит в другом месте, укажите её в `VISION_DOCKER_APP_BIN` |
 | Сборка `up -d --build` идёт много минут без вывода | выбран сборщик в отдельном контейнере (`docker buildx ls`, звёздочка у `docker-container`): `vision.sh` сам собирает встроенным сборщиком Docker и пишет об этом; свой сборщик — через `BUILDX_BUILDER` |

@@ -171,7 +171,7 @@ export const en = {
   "comparison.ignoreAntialiasing": "Ignore anti-aliasing",
   "comparison.ignoreAntialiasingHelp":
     "Ignore detecting and ignoring anti-aliased pixels.",
-  // upstream's spelling, kept so English reads as before
+  // the original spelling, kept so English reads as before
   "comparison.ignoreAntialiasingLooksSame": "Ignore anti-alliasing",
   "comparison.threshold": "Pixel diff threshold",
   "comparison.thresholdHelp":
@@ -275,6 +275,7 @@ export const en = {
   "secret.undo": "Undo",
   "secret.keepSaved": "Leave empty to keep the saved one",
 
+  "validation.passwordLength": "Use at least {count} characters.",
   "validation.twoCharacters": "Enter at least two characters.",
   "validation.greaterThan": "Enter greater than {min}",
   "validation.lessThan": "Enter less than {max}",
@@ -975,6 +976,7 @@ export const en = {
   "backups.open": "Open Backups",
 
   // auth
+  "auth.orLocal": "Or with a local account:",
   "auth.sso": "Sign in with SSO",
   "auth.validEmail": "Enter a valid email.",
   "auth.email": "Email address",

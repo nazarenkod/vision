@@ -2,11 +2,11 @@
 
 | | |
 |---|---|
-| Статус | Draft |
+| Статус | Implemented |
 | Власник | Дмитро Назаренко |
 | Оновлено | 2026-11-05 |
-| Дизайн | `design.md` — після `Approved` |
-| Пов'язане | [аудит](../../security/audit-2026-11-04.md) S-6, S-7, S-15, [план](../../security/bank-readiness-plan.md) 2.4, 2.5; [035](../035-admin-accounts/spec.md) (акаунти від адміна) |
+| Дизайн | [design.md](design.md) |
+| Пов'язане | [аудит](../../security/audit-2026-11-04.md) S-6, S-7, S-15, [план](../../security/bank-readiness-plan.md) 2.4, 2.5; [035](../035-admin-accounts/spec.md) (акаунти від адміна); змінює [035](../035-admin-accounts/spec.md): REQ-035-16 (локальні акаунти й з LDAP чи SSO) |
 
 ## Контекст і проблема
 

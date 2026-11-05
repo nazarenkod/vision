@@ -9,6 +9,7 @@ import { HttpsOptions } from '@nestjs/common/interfaces/external/https-options.i
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { RedisIoAdapter } from './redis-io.adapter';
 import { serverSecretKey } from './shared/secret-box';
+import { allowOwnInterface, securityHeaders, swaggerEnabled } from './security';
 
 function getHttpsOptions(): HttpsOptions | null {
   const keyPath = './secrets/ssl.key';
@@ -32,9 +33,12 @@ async function bootstrap() {
     process.exit(1);
   }
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {
-    cors: true,
+    // only Vision's own interface reads answers in a browser (045); the public report reads its ETag
+    cors: { origin: allowOwnInterface, exposedHeaders: ['ETag'] },
     httpsOptions: getHttpsOptions(),
   });
+  app.disable('x-powered-by');
+  app.use(securityHeaders);
   app.useGlobalPipes(new ValidationPipe());
 
   // Large builds return multi-megabyte test-run lists; gzip shrinks them ~10x.
@@ -44,7 +48,8 @@ async function bootstrap() {
     compression({ filter: (req, res) => compression.filter(req, res) && res.getHeader('Content-Type') !== 'image/png' })
   );
 
-  setupSwagger(app);
+  // the API documentation only where it is turned on (045)
+  if (swaggerEnabled()) setupSwagger(app);
 
   // Fan out socket.io events across API instances when running multiple
   // replicas. Without REDIS_URL the default in-memory adapter is used.

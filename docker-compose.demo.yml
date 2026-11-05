@@ -65,8 +65,33 @@ services:
       AI_DAILY_CALL_LIMIT: ${AI_DAILY_CALL_LIMIT:-500}
       # image comparisons run in this many worker threads
       DIFF_WORKERS_COUNT: ${DEMO_DIFF_WORKERS:-2}
+      # corporate sign-in beside local accounts (045): every setting, with the API's own defaults
       OIDC_ENABLED: ${OIDC_ENABLED:-false}
+      OIDC_ISSUER_URL: ${OIDC_ISSUER_URL:-}
+      OIDC_CLIENT_ID: ${OIDC_CLIENT_ID:-}
+      OIDC_CLIENT_SECRET: ${OIDC_CLIENT_SECRET:-}
+      OIDC_REDIRECT_URI: ${OIDC_REDIRECT_URI:-${DEMO_API_URL:-http://localhost:14200}/users/oidc/callback}
+      OIDC_SCOPES: ${OIDC_SCOPES:-openid profile email}
+      OIDC_ATTRIBUTE_MAIL: ${OIDC_ATTRIBUTE_MAIL:-email}
+      OIDC_ATTRIBUTE_FIRST_NAME: ${OIDC_ATTRIBUTE_FIRST_NAME:-given_name}
+      OIDC_ATTRIBUTE_LAST_NAME: ${OIDC_ATTRIBUTE_LAST_NAME:-family_name}
+      OIDC_ROLE_CLAIM: ${OIDC_ROLE_CLAIM:-groups}
+      OIDC_ADMIN_VALUES: ${OIDC_ADMIN_VALUES:-vision-admin,admin}
+      OIDC_DEFAULT_ROLE: ${OIDC_DEFAULT_ROLE:-editor}
+      OIDC_REQUIRE_VERIFIED_EMAIL: ${OIDC_REQUIRE_VERIFIED_EMAIL:-true}
+      OIDC_TLS_NO_VERIFY: ${OIDC_TLS_NO_VERIFY:-false}
       LDAP_ENABLED: ${LDAP_ENABLED:-false}
+      LDAP_URL: ${LDAP_URL:-}
+      LDAP_BIND_USER: ${LDAP_BIND_USER:-}
+      LDAP_BIND_PASSWORD: ${LDAP_BIND_PASSWORD:-}
+      LDAP_SEARCH_DN: ${LDAP_SEARCH_DN:-}
+      LDAP_USERS_SEARCH_FILTER: ${LDAP_USERS_SEARCH_FILTER:-}
+      LDAP_ATTRIBUTE_MAIL: ${LDAP_ATTRIBUTE_MAIL:-mail}
+      LDAP_ATTRIBUTE_FIRST_NAME: ${LDAP_ATTRIBUTE_FIRST_NAME:-givenName}
+      LDAP_ATTRIBUTE_LAST_NAME: ${LDAP_ATTRIBUTE_LAST_NAME:-sn}
+      LDAP_TLS_NO_VERIFY: ${LDAP_TLS_NO_VERIFY:-false}
+      # the API documentation at /api, off unless asked for (045)
+      VISION_SWAGGER: ${VISION_SWAGGER:-false}
       # backups (ADR-0013): the API writes the Backups page settings for scripts/vision-backup.sh
       # and reads its status; admins are warned only once backups are set up
       BACKUP_STATUS_FILE: /backup-status/status.json

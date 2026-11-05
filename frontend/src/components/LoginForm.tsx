@@ -32,15 +32,17 @@ const LoginForm = () => {
   useEffect(() => {
     // Do not auto-redirect while a callback result (token/error) is being
     // processed by LoginPage, otherwise we would bounce back to the IdP.
+    // /login?local keeps the form for a local account beside SSO (045)
     if (
       oidcEnabled &&
       OIDC_AUTO_REDIRECT &&
+      !new URLSearchParams(location.search).has("local") &&
       !isOidcCallback &&
       !usersService.isOidcLoggedOut()
     ) {
       usersService.startOidcLogin();
     }
-  }, [oidcEnabled, isOidcCallback]);
+  }, [oidcEnabled, isOidcCallback, location.search]);
 
   const handleSubmit = (event: FormEvent) => {
     event.preventDefault();
@@ -60,26 +62,33 @@ const LoginForm = () => {
     return null;
   }
 
-  if (oidcEnabled) {
-    return (
-      <Box id={LOCATOR_LOGIN_FORM}>
-        <Button
-          color="primary"
-          variant="contained"
-          size="large"
-          fullWidth
-          data-testid="oidcLoginBtn"
-          onClick={() => usersService.startOidcLogin()}
-        >
-          {t("auth.sso")}
-        </Button>
-      </Box>
-    );
-  }
+  // with SSO, its button first; the form below is for local accounts (045)
+  const sso = oidcEnabled && (
+    <Box sx={{ display: "flex", flexDirection: "column", gap: 2, mb: 3 }}>
+      <Button
+        color="primary"
+        variant="contained"
+        size="large"
+        fullWidth
+        data-testid="oidcLoginBtn"
+        onClick={() => usersService.startOidcLogin()}
+      >
+        {t("auth.sso")}
+      </Button>
+      <Typography
+        variant="body2"
+        color="textSecondary"
+        sx={{ textAlign: "center" }}
+      >
+        {t("auth.orLocal")}
+      </Typography>
+    </Box>
+  );
 
   return (
     <ValidatorForm onSubmit={handleSubmit} instantValidate>
       <Box id={LOCATOR_LOGIN_FORM}>
+        {sso}
         <Grid container direction="column" spacing={2}>
           <Grid item>
             <TextValidator
@@ -109,7 +118,7 @@ const LoginForm = () => {
           <Button
             type="submit"
             color="primary"
-            variant="contained"
+            variant={oidcEnabled ? "outlined" : "contained"}
             size="large"
             fullWidth
             data-testid="loginBtn"

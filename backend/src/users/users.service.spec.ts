@@ -1,3 +1,4 @@
+import { HttpException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { UsersService } from './users.service';
 import { AuthService } from '../auth/auth.service';
@@ -10,6 +11,7 @@ import { AssignRoleDto } from './dto/assign-role.dto';
 import { randomUUID } from 'crypto';
 import { UserDto } from './dto/user.dto';
 import { UpdateUserDto } from './dto/user-update.dto';
+import { LdapUsersService } from './ldap/ldapusers.service';
 import { OidcUsersService } from './oidc/oidcusers.service';
 
 const user: User = {
@@ -115,7 +117,7 @@ describe('UsersService with DbUserService implementation', () => {
       firstName: ' Ann ',
       lastName: 'Lee',
       role: Role.editor,
-      password: 'secret-1',
+      password: 'long-secret-1',
     });
 
     expect(create).toHaveBeenCalledWith({
@@ -136,7 +138,7 @@ describe('UsersService with DbUserService implementation', () => {
 
   it('creates an account without names', async () => {
     const create = jest.spyOn(prismaService.user, 'create').mockResolvedValueOnce(user);
-    await service.createAccount({ email: 'a@example.com', role: Role.guest, password: 'secret-1' });
+    await service.createAccount({ email: 'a@example.com', role: Role.guest, password: 'long-secret-1' });
     expect(create.mock.calls[0][0].data).toMatchObject({ firstName: '', lastName: '', role: Role.guest });
   });
 
@@ -145,7 +147,7 @@ describe('UsersService with DbUserService implementation', () => {
     const create = jest.spyOn(prismaService.user, 'create');
 
     await expect(
-      service.createAccount({ email: 'Test@Example.com', role: Role.guest, password: 'secret-1' })
+      service.createAccount({ email: 'Test@Example.com', role: Role.guest, password: 'long-secret-1' })
     ).rejects.toThrow('This email is already taken');
     expect(findFirst).toHaveBeenCalledWith({
       where: { email: { equals: 'test@example.com', mode: 'insensitive' } },
@@ -160,6 +162,32 @@ describe('UsersService with DbUserService implementation', () => {
       'Password is required'
     );
     expect(create).not.toHaveBeenCalled();
+  });
+
+  it('takes a local password of 12 characters or more only', async () => {
+    for (const short of ['', '   ', 'eleven-char']) {
+      await expect(
+        service.createAccount({ email: 'a@example.com', role: Role.guest, password: short })
+      ).rejects.toThrow(short.trim() ? 'at least 12 characters' : 'Password is required');
+      await expect(service.setPassword('2', short)).rejects.toThrow(HttpException);
+      await expect(service.changePassword(user, short)).rejects.toThrow(HttpException);
+    }
+    // signing in does not check it: a short password set before keeps working
+    jest.spyOn(prismaService.user, 'findUnique').mockResolvedValueOnce(user);
+    await expect(service.login({ email: user.email, password: 'short' })).resolves.toBeDefined();
+  });
+
+  it('closes an email after 5 wrong passwords, the right one too', async () => {
+    const auth = (service as unknown as { authService: { compare: jest.Mock } }).authService;
+    auth.compare.mockResolvedValue(false);
+    jest.spyOn(prismaService.user, 'findUnique').mockResolvedValue(user);
+    for (let i = 0; i < 5; i++) {
+      await expect(service.login({ email: 'guess@example.com', password: 'wrong' })).rejects.toThrow('Invalid');
+    }
+    auth.compare.mockResolvedValue(true);
+    await expect(service.login({ email: 'guess@example.com', password: 'right' })).rejects.toThrow(
+      'Too many attempts: try again in 15 minutes'
+    );
   });
 
   it('lets accounts be created when sign-in goes through the database', () => {
@@ -191,7 +219,7 @@ describe('UsersService with DbUserService implementation', () => {
     prismaUserUpdateMock.mockResolvedValueOnce(user);
 
     // Act
-    const result = await service.changePassword(user, 'newPassword');
+    const result = await service.changePassword(user, 'new-password-1');
 
     // Assert
     expect(result).toEqual(true);
@@ -303,11 +331,31 @@ describe('UsersService with OidcUsersService implementation', () => {
     prismaService = module.get<PrismaService>(PrismaService);
   });
 
-  it('refuses to create accounts when sign-in goes through LDAP or SSO', async () => {
-    expect(service.canCreateAccounts()).toBe(false);
-    await expect(
-      service.createAccount({ email: 'a@example.com', role: Role.guest, password: 'secret-1' })
-    ).rejects.toThrow('Accounts come from LDAP or SSO');
+  it('signs in a local account beside LDAP and SSO', async () => {
+    // an admin creates local accounts in any mode (REQ-045-01, replaces REQ-035-16)
+    expect(service.canCreateAccounts()).toBe(true);
+    const local = { ...user, email: 'contractor@bank.test', password: 'hash' };
+    const findUnique = jest.fn().mockResolvedValue(local);
+    Object.assign(prismaService.user, { findUnique });
+    const auth = (service as unknown as { authService: object }).authService as Record<string, unknown>;
+    Object.assign(auth, { compare: jest.fn(async () => true), signToken: jest.fn(() => 'jwt') });
+    const signedIn = await service.login({ email: 'contractor@bank.test', password: 'their-password' });
+    expect(signedIn.token).toBe('jwt');
+    expect(findUnique).toHaveBeenCalledWith({ where: { email: 'contractor@bank.test' } });
+
+    // beside LDAP: the directory decides for its people, a local password for the rest
+    const ldap = Object.assign(Object.create(LdapUsersService.prototype), {
+      isInDirectory: jest.fn(async (email: string) => email === 'ann@bank.test'),
+      login: jest.fn(async () => ({ id: 'ann', token: 'from-ldap' })),
+    });
+    const withLdap = new UsersService(
+      { getUsersService: () => ldap } as never,
+      { user: { findUnique, update: jest.fn() } } as never,
+      auth as never
+    );
+    expect((await withLdap.login({ email: 'ann@bank.test', password: 'x' })).token).toBe('from-ldap');
+    expect((await withLdap.login({ email: 'contractor@bank.test', password: 'x' })).token).toBe('jwt');
+    expect(ldap.login).toHaveBeenCalledTimes(1);
   });
 
   it('reports OIDC as enabled', () => {

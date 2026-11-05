@@ -221,6 +221,7 @@ const ProfilePage = () => {
                       <Grid container spacing={2}>
                         <Grid item xs={12}>
                           <PasswordField
+                            isNew
                             password={password}
                             setPassword={setPassword}
                             label={t("profile.newPassword")}

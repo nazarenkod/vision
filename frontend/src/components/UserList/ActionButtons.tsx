@@ -72,6 +72,7 @@ export const ActionButtons: React.FunctionComponent = () => {
         }
         content={
           <PasswordField
+            isNew
             password={password}
             setPassword={setPassword}
             label={t("users.newPassword")}

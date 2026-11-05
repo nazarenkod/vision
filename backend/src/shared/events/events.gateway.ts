@@ -17,13 +17,15 @@ import { AuthService } from '../../auth/auth.service';
 import { msUntilExpiry, tokenFromHandshake } from './events-auth';
 import { groupByProject, projectRoom } from './events-rooms';
 import { serverFileLinkKey, signFile, withFileSignatures } from '../../static/file-links';
+import { allowOwnInterface } from '../../security';
 
 // The message a rejected client gets in connect_error; the UI signs out on it.
 export const UNAUTHORIZED = 'unauthorized';
 
 // Only signed-in users get events, and only of the project they subscribed to
 // (spec 032, ADR-0023), never to anyone listening.
-@WebSocketGateway({ cors: true })
+// the same origin as the REST API: only Vision's own interface (045)
+@WebSocketGateway({ cors: { origin: allowOwnInterface } })
 export class EventsGateway implements OnGatewayInit, OnModuleDestroy {
   private readonly logger = new Logger(EventsGateway.name);
   private readonly fileKey = serverFileLinkKey();

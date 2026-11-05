@@ -21,10 +21,14 @@ export const lastSignInLabel = (
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-/** New user can be saved: a valid email, a role and a password (035). */
+/** As the server checks a local account's password (045). */
+export const MIN_PASSWORD_LENGTH = 12;
+
+/** New user can be saved: a valid email, a role and a password of 12 characters or more (035, 045). */
 export const canCreateAccount = (
   account: Pick<NewAccount, "email" | "role" | "password">,
 ): boolean =>
   EMAIL.test(account.email.trim()) &&
   account.role in Role &&
-  account.password.trim().length > 0;
+  account.password.trim().length > 0 &&
+  account.password.length >= MIN_PASSWORD_LENGTH;

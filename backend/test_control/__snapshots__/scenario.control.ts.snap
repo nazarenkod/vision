@@ -64,16 +64,9 @@ exports[`01 sign-in and accounts 1`] = `
   },
   "duplicate": {
     "body": {
-      "exception": {
-        "message": "This email is already taken",
-        "name": "HttpException",
-        "response": "This email is already taken",
-        "status": 400,
-      },
       "message": "This email is already taken",
-      "name": "HttpException",
       "path": "/users",
-      "stack": "<stack>",
+      "statusCode": 400,
     },
     "status": 400,
   },
@@ -179,16 +172,9 @@ exports[`01 sign-in and accounts 1`] = `
   },
   "wrongPassword": {
     "body": {
-      "exception": {
-        "message": "Invalid email or password.",
-        "name": "HttpException",
-        "response": "Invalid email or password.",
-        "status": 400,
-      },
       "message": "Invalid email or password.",
-      "name": "HttpException",
       "path": "/users/login",
-      "stack": "<stack>",
+      "statusCode": 400,
     },
     "status": 400,
   },
@@ -4233,41 +4219,17 @@ exports[`16 images 1`] = `
 {
   "anotherFilesSignature": {
     "body": {
-      "exception": {
-        "message": "Image not found: <file12>",
-        "name": "NotFoundException",
-        "options": {},
-        "response": {
-          "error": "Not Found",
-          "message": "Image not found: <file12>",
-          "statusCode": 404,
-        },
-        "status": 404,
-      },
       "message": "Image not found: <file12>",
-      "name": "NotFoundException",
       "path": "/images/<file12>?sig=<signature>",
-      "stack": "<stack>",
+      "statusCode": 404,
     },
     "status": 404,
   },
   "bad": {
     "body": {
-      "exception": {
-        "message": "Invalid image name",
-        "name": "BadRequestException",
-        "options": {},
-        "response": {
-          "error": "Bad Request",
-          "message": "Invalid image name",
-          "statusCode": 400,
-        },
-        "status": 400,
-      },
       "message": "Invalid image name",
-      "name": "BadRequestException",
       "path": "/images/..%2Fetc%2Fpasswd/download?sig=<signature>",
-      "stack": "<stack>",
+      "statusCode": 400,
     },
     "status": 400,
   },
@@ -4290,21 +4252,9 @@ exports[`16 images 1`] = `
   },
   "staticFile": {
     "body": {
-      "exception": {
-        "message": "Cannot GET /<file12>",
-        "name": "NotFoundException",
-        "options": {},
-        "response": {
-          "error": "Not Found",
-          "message": "Cannot GET /<file12>",
-          "statusCode": 404,
-        },
-        "status": 404,
-      },
       "message": "Cannot GET /<file12>",
-      "name": "NotFoundException",
       "path": "/<file12>",
-      "stack": "<stack>",
+      "statusCode": 404,
     },
     "headers": {
       "content-type": "application/json",
@@ -4313,41 +4263,17 @@ exports[`16 images 1`] = `
   },
   "unsigned": {
     "body": {
-      "exception": {
-        "message": "Image not found: <file12>",
-        "name": "NotFoundException",
-        "options": {},
-        "response": {
-          "error": "Not Found",
-          "message": "Image not found: <file12>",
-          "statusCode": 404,
-        },
-        "status": 404,
-      },
       "message": "Image not found: <file12>",
-      "name": "NotFoundException",
       "path": "/images/<file12>",
-      "stack": "<stack>",
+      "statusCode": 404,
     },
     "status": 404,
   },
   "unsignedDownload": {
     "body": {
-      "exception": {
-        "message": "Image not found: <file12>",
-        "name": "NotFoundException",
-        "options": {},
-        "response": {
-          "error": "Not Found",
-          "message": "Image not found: <file12>",
-          "statusCode": 404,
-        },
-        "status": 404,
-      },
       "message": "Image not found: <file12>",
-      "name": "NotFoundException",
       "path": "/images/<file12>/download",
-      "stack": "<stack>",
+      "statusCode": 404,
     },
     "status": 404,
   },
@@ -4358,21 +4284,9 @@ exports[`17 who may do what 1`] = `
 {
   "badKey": {
     "body": {
-      "exception": {
-        "message": "Forbidden resource",
-        "name": "ForbiddenException",
-        "options": {},
-        "response": {
-          "error": "Forbidden",
-          "message": "Forbidden resource",
-          "statusCode": 403,
-        },
-        "status": 403,
-      },
       "message": "You do not have permission to perform this operation.",
-      "name": "ForbiddenException",
       "path": "/test-runs/<id15>/structure",
-      "stack": "<stack>",
+      "statusCode": 403,
     },
     "status": 403,
   },
@@ -4380,21 +4294,9 @@ exports[`17 who may do what 1`] = `
   "editorCreatesAccount": 403,
   "guestApproves": {
     "body": {
-      "exception": {
-        "message": "Forbidden resource",
-        "name": "ForbiddenException",
-        "options": {},
-        "response": {
-          "error": "Forbidden",
-          "message": "Forbidden resource",
-          "statusCode": 403,
-        },
-        "status": 403,
-      },
       "message": "You do not have permission to perform this operation.",
-      "name": "ForbiddenException",
       "path": "/test-runs/approve?merge=false",
-      "stack": "<stack>",
+      "statusCode": 403,
     },
     "status": 403,
   },
@@ -4413,20 +4315,9 @@ exports[`17 who may do what 1`] = `
   },
   "noLogin": {
     "body": {
-      "exception": {
-        "message": "Unauthorized",
-        "name": "UnauthorizedException",
-        "options": {},
-        "response": {
-          "message": "Unauthorized",
-          "statusCode": 401,
-        },
-        "status": 401,
-      },
       "message": "Unauthorized",
-      "name": "UnauthorizedException",
       "path": "/projects",
-      "stack": "<stack>",
+      "statusCode": 401,
     },
     "status": 401,
   },
@@ -4722,42 +4613,18 @@ exports[`21 each person sees only their projects 1`] = `
     ],
     "autotestStarts": {
       "body": {
-        "exception": {
-          "message": "No access to this project: ask an admin of Vision to add you to it",
-          "name": "ForbiddenException",
-          "options": {},
-          "response": {
-            "error": "Forbidden",
-            "message": "No access to this project: ask an admin of Vision to add you to it",
-            "statusCode": 403,
-          },
-          "status": 403,
-        },
         "message": "No access to this project: ask an admin of Vision to add you to it",
-        "name": "ForbiddenException",
         "path": "/builds",
-        "stack": "<stack>",
+        "statusCode": 403,
       },
       "status": 403,
     },
     "buildsMade": 0,
     "editorReadsBuilds": {
       "body": {
-        "exception": {
-          "message": "Not found",
-          "name": "NotFoundException",
-          "options": {},
-          "response": {
-            "error": "Not Found",
-            "message": "Not found",
-            "statusCode": 404,
-          },
-          "status": 404,
-        },
         "message": "Not found",
-        "name": "NotFoundException",
         "path": "/builds?projectId=<id27>&take=10&skip=0",
-        "stack": "<stack>",
+        "statusCode": 404,
       },
       "status": 404,
     },
@@ -4767,21 +4634,9 @@ exports[`21 each person sees only their projects 1`] = `
     ],
     "guestReadsTheEditorsProject": {
       "body": {
-        "exception": {
-          "message": "Not found",
-          "name": "NotFoundException",
-          "options": {},
-          "response": {
-            "error": "Not Found",
-            "message": "Not found",
-            "statusCode": 404,
-          },
-          "status": 404,
-        },
         "message": "Not found",
-        "name": "NotFoundException",
         "path": "/builds?projectId=<id4>&take=10&skip=0",
-        "stack": "<stack>",
+        "statusCode": 404,
       },
       "status": 404,
     },
@@ -4807,6 +4662,51 @@ exports[`21 each person sees only their projects 1`] = `
       ],
       "status": 200,
     },
+  },
+}
+`;
+
+exports[`22 the API towards browsers, errors and password guessing 1`] = `
+{
+  "apiDocumentation": 404,
+  "badRequest": {
+    "body": {
+      "message": "Validation failed (uuid is expected)",
+      "path": "/projects/not-a-uuid/devices",
+      "statusCode": 400,
+    },
+    "status": 400,
+  },
+  "guesses": [
+    400,
+    400,
+    400,
+    400,
+    400,
+  ],
+  "headers": {
+    "referrer-policy": "no-referrer",
+    "x-content-type-options": "nosniff",
+    "x-frame-options": "DENY",
+    "x-powered-by": null,
+  },
+  "missing": {
+    "body": {
+      "message": "Internal server error",
+      "path": "/builds/<id28>",
+      "statusCode": 500,
+    },
+    "status": 500,
+  },
+  "otherSite": null,
+  "ownInterface": "http://vision.control.test",
+  "rightAfterGuesses": {
+    "body": {
+      "message": "Too many attempts: try again in 15 minutes",
+      "path": "/users/login",
+      "statusCode": 429,
+    },
+    "status": 429,
   },
 }
 `;

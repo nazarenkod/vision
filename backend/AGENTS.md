@@ -13,7 +13,7 @@
 | `src/a11y/jira*.ts` | клієнт Jira, поля й текст бага; `jira-hosts.ts` — лише хости з `VISION_JIRA_HOSTS`, перевірка в `jiraAccess` і при збереженні проєкту | [005](../docs/specs/005-jira-bugs/spec.md), [044](../docs/specs/044-secrets-at-rest/spec.md) |
 | `src/shared/secret-box.ts`, `api-key-hash.ts`, `secrets-at-rest.service.ts` | секрети в базі: токени й ключі Gemini — `sealSecret`/`openSecret` (AES-256-GCM ключем `VISION_SECRET_KEY`, без нього API не стартує), API-ключі — `sha256:`; при старті відкриті значення шифруються, а відкриті API-ключі анулюються | [044](../docs/specs/044-secrets-at-rest/spec.md) |
 | `src/test-runs/change-groups.service.ts` | групи змін збірки | [006](../docs/specs/006-change-groups/spec.md) |
-| `src/test-runs/decision-undo*.ts` | журнал Approve і Reject та Undo з нього ([ADR-0014](../docs/decisions/0014-undo-through-decision-journal.md)); тест відновлення ганяє справжній upstream approve | [018](../docs/specs/018-ui-redesign/spec.md) |
+| `src/test-runs/decision-undo*.ts` | журнал Approve і Reject та Undo з нього ([ADR-0014](../docs/decisions/0014-undo-through-decision-journal.md)); тест відновлення ганяє справжній успадкований approve | [018](../docs/specs/018-ui-redesign/spec.md) |
 | `src/projects/allowed-devices.ts` | дозволені пристрої проєкту: збіг пристрою й OS (`26.*`), текст відмови 422 для SDK; CLI (`User-Agent: vision-cli/…`) не перевіряється | [029](../docs/specs/029-allowed-devices/spec.md) |
 | `src/projects/settings-conflict.ts`, `project-secrets.ts` | збереження налаштувань поверх чужих змін (409), ключ Gemini лише на запис | [018](../docs/specs/018-ui-redesign/spec.md) |
 | `src/analytics/` | Insights | [008](../docs/specs/008-insights/spec.md) |
@@ -22,7 +22,8 @@
 | `src/builds/build-overview*.ts` | зведення збірки для Overview і звіту: чиста `buildOverview`, сервіс вантажить рядки; баги й проблеми доступності (`a11yOf`, лише Overview, не публічний звіт) — з файлів звітів за один прохід, кеш за збіркою | [031](../docs/specs/031-build-overview/spec.md), [039](../docs/specs/039-overview-polish/spec.md) |
 | `src/reports/` | публічні посилання на звіт, `report-links.ts` — білий список полів публічного звіту; `GET /public/reports/:token` — єдиний маршрут з даними без входу ([ADR-0022](../docs/decisions/0022-public-report-links.md)) | [031](../docs/specs/031-build-overview/spec.md) |
 | `src/projects/project-access*.ts` | доступ до проєктів: `@ProjectFrom(...)` / `@NoProjectData()` на кожному маршруті, `ProjectAccessInterceptor` перевіряє до обробника (адмін — усе, решта — рядок `ProjectAccess`), `404`, для автотестів `403` | [042](../docs/specs/042-project-access/spec.md) |
-| `src/compare/` | піксельне порівняння (upstream + області змін, пул воркерів) | — |
+| `src/users/sign-in-limit.ts`, `account.ts`, `src/security.ts`, `src/http-exception.filter.ts` | вхід і API назовні: 5 спроб за 15 хв, пароль ≥ 12, LDAP чи SSO поряд з локальними акаунтами; CORS лише для `APP_FRONTEND_URL`, Swagger за `VISION_SWAGGER`, заголовки безпеки; помилка — `{ statusCode, message, path }` | [045](../docs/specs/045-sign-in-and-api-hardening/spec.md) |
+| `src/compare/` | піксельне порівняння (успадковане + області змін, пул воркерів) | — |
 | `src/static/file-links*.ts`, `static.controller.ts` | знімки лише за підписом: `FileLinksInterceptor` додає `fileSignatures` у відповіді маршрутів з guard-ом, сокет і публічний звіт — самі; `/images/:name?sig=` віддає PNG, решта — 404 | [043](../docs/specs/043-protected-images/spec.md) |
 | `src/shared/events/` | сокет подій: вхід JWT на рукостисканні (`events-auth.ts`, `AuthService.verifyToken`), розрив на `exp`, підписка `subscribe` і розсилка в кімнату проєкту (`events-rooms.ts`) | [032](../docs/specs/032-authenticated-events/spec.md) |
 | `src/backups/` | сторінка Backups: стан бекапу, вхід у Google Drive кодом, розклад і запит на бекап у файлах для `scripts/vision-backup.sh` (ADR-0013) | [013](../docs/specs/013-backups-and-secrets/spec.md), [017](../docs/specs/017-backup-settings-ui/spec.md) |
@@ -83,7 +84,7 @@ npm run test:e2e / test:acceptance         # потрібні запущені P
   онови й парсер, і його тест (`comparison-inputs.spec.ts`).
 - Нове поле в публічному звіті (`src/reports/report-links.ts`) бачать люди без акаунта: лише
   свідомо, з рядком у білому списку й тестом «keeps emails, keys and tokens out…».
-- Approve upstream змінить щось нове (поле варіації, ще одну таблицю) — онови `decision-undo.ts`;
+- Approve вихідного проєкту змінить щось нове (поле варіації, ще одну таблицю) — онови `decision-undo.ts`;
   `decision-undo.spec.ts` порівнює стан до approve і після undo й про це скаже.
 - Кеш індексу проблем (`A11yIssuesService.indexFor`) скидається після кожного запису в цьому
   сервісі. Пишеш в `A11yProblem` деінде — виклич `forget(projectId)` або перевір версію.

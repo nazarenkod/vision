@@ -51,6 +51,11 @@ export class LdapUsersService implements Users {
     });
   }
 
+  /** Whether the directory has this person: then it decides their sign-in, not a local password (045). */
+  async isInDirectory(email: string): Promise<boolean> {
+    return !!(await this.findUserInLdap(email));
+  }
+
   private async findUserInLdap(email: string): Promise<LdapEntry> {
     //escape the email address for LDAP search
     email = this.escapeLdap(email.trim());

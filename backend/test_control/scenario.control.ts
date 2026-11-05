@@ -134,7 +134,7 @@ it('01 sign-in and accounts', async () => {
     duplicate: strip(
       await call('POST', '/users', admin, {
         email: 'EDITOR@control.test',
-        password: 'x-password',
+        password: 'x-password-long',
         role: 'guest',
       })
     ),
@@ -690,4 +690,44 @@ it('21 each person sees only their projects', async () => {
   };
   await call('DELETE', `/projects/${privateId}`, admin);
   expect(record({ before, whileGiven, afterTaken })).toMatchSnapshot();
+});
+
+it('22 the API towards browsers, errors and password guessing', async () => {
+  // 045: only Vision's interface reads answers in a browser; errors say no more than needed
+  const withOrigin = async (origin: string) =>
+    (await fetch(`${API}/health`, { headers: { Origin: origin } })).headers.get('access-control-allow-origin');
+  const health = await fetch(`${API}/health`);
+  const badRequest = await call('GET', '/projects/not-a-uuid/devices', { token: state.editorToken });
+  const missing = await call('GET', `/builds/${'0'.repeat(8)}-0000-4000-8000-${'0'.repeat(12)}`, {
+    token: state.editorToken,
+  });
+  const guess = () => call('POST', '/users/login', {}, { email: 'guest@control.test', password: 'wrong' });
+  const guesses = [];
+  for (let i = 0; i < 5; i++) guesses.push((await guess()).status);
+  const rightAfterGuesses = await call(
+    'POST',
+    '/users/login',
+    {},
+    { email: 'guest@control.test', password: 'guest-password' }
+  );
+  const answers = [badRequest, missing, rightAfterGuesses];
+  // SC-045-01
+  expect(JSON.stringify(answers.map((answer) => answer.body))).not.toMatch(/stack|exception/i);
+  expect(
+    record({
+      ownInterface: await withOrigin('http://vision.control.test'),
+      otherSite: await withOrigin('https://evil.example'),
+      headers: Object.fromEntries(
+        ['x-content-type-options', 'x-frame-options', 'referrer-policy', 'x-powered-by'].map((name) => [
+          name,
+          health.headers.get(name),
+        ])
+      ),
+      apiDocumentation: (await call('GET', '/api')).status,
+      badRequest: strip(badRequest),
+      missing: strip(missing),
+      guesses,
+      rightAfterGuesses: strip(rightAfterGuesses),
+    })
+  ).toMatchSnapshot();
 });

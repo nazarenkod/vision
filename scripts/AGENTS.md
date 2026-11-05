@@ -15,7 +15,7 @@
 | `upload-uitree-samples.py` | надсилає пари PNG + XML з папки як перевірки (для демо без пристрою) |
 | `seed-insights-demo.py` | штучна історія в окремому проєкті «Insights demo»: екрани йдуть через API Vision (лише якщо API — справді Vision), потім дати саме цих рядків зсуваються в Postgres Vision через `vision.sh`, щоб наповнити всі блоки Insights |
 | `verify.py` | усі перевірки зміни однією командою: unit-тести, Playwright без скриншотів, `tsc` проти `baselines/`, eslint, міграції, тести скриптів, `check-docs.py` — `python3 -I scripts/verify.py` |
-| `control-scenario.sh` | контрольний сценарій: тимчасовий Postgres `vision-control-pg-*`, сервер і SDK з цього коду, увесь робочий шлях проти еталона в `backend/test_control/` ([testing](../docs/guides/testing.md#контрольний-сценарій)); `--update` — перезаписати еталон |
+| `control-scenario.sh` | контрольний сценарій: тимчасовий Postgres `vision-control-pg-*`, сервер і SDK з цього коду, увесь робочий шлях проти еталона в `backend/test_control/` ([testing](../docs/guides/testing.md#контрольний-сценарій)); `--update` — перезаписати еталон, `--images` — проти Docker-образів |
 | `baselines/*-tsc.txt` | відомі помилки `tsc` upstream; оновлює `verify.py --update-baselines` |
 | `check-docs.py` | перевірка документації: посилання, статуси, вимоги ↔ тести, шляхи, ADR — `python3 -I scripts/check-docs.py` |
 | `tests/test_seed_insights_demo.py` | тести `seed-insights-demo.py`: фейковий API, відмова без Vision, SQL зсуву дат на локальному Postgres (без нього пропускаються) |

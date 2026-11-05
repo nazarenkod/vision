@@ -376,7 +376,9 @@ it('10 a bug from the comparison', async () => {
 });
 
 it('11 what Vision sent to Jira', async () => {
-  expect(record(jira.log)).toMatchSnapshot();
+  // sorted: Vision sends some of these in parallel, and their order on arrival is not behaviour
+  const calls = (record(jira.log) as unknown[]).map((call) => JSON.stringify(call));
+  expect(calls.sort().map((call) => JSON.parse(call))).toMatchSnapshot();
 });
 
 it('12 report links', async () => {

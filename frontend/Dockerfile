@@ -1,46 +1,40 @@
-### STAGE 1: Build ###
-# This image is around 50 megabytes
-# The built ui is static files, so build it once on the native platform for every target platform
-FROM --platform=$BUILDPLATFORM node:20-alpine AS builder
+# syntax=docker/dockerfile:1
+# Pinned by digest: a rebuild gets the same base, and a scanner sees one exact image.
+ARG NODE_IMAGE=node:24.22.2-alpine@sha256:8a32c8cf649a49915a66e81e7a609223c708d0adabf288ee3f4077d765542f85
+# nginx that runs as its own unprivileged user and listens on 8080
+ARG NGINX_IMAGE=nginxinc/nginx-unprivileged:1.30.6-alpine@sha256:f5116ed4606f3eb015dd4a8e28cb9b351476dc0ad4bc6e9f93b19cec130cdf03
 
-# Create app directory
+### Build: static files, so built once on the native platform for every target platform
+FROM --platform=$BUILDPLATFORM ${NODE_IMAGE} AS builder
 WORKDIR /app
+# A mirror of the npm registry (e.g. the bank's); empty: the public one
+ARG NPM_REGISTRY=
 
 # Dependencies first: a change in the code then keeps the cached npm ci
 COPY package*.json .
 # overrides point a dev dependency at a patched copy here (vendor/deepmerge/README.md)
 COPY vendor ./vendor
-RUN npm ci --verbose
+# TLS is verified; a re-signing proxy is trusted through the build secret "extra_ca"
+RUN --mount=type=secret,id=extra_ca,required=false \
+    if [ -s /run/secrets/extra_ca ]; then export NODE_EXTRA_CA_CERTS=/run/secrets/extra_ca; fi; \
+    if [ -n "$NPM_REGISTRY" ]; then npm config set registry "$NPM_REGISTRY"; fi; \
+    npm ci
 
 COPY /public ./public
 COPY /src ./src
-COPY index.html .
-COPY tsconfig.json .
-COPY vite.config.ts .
-
-# Build the ui
+COPY index.html tsconfig.json vite.config.ts ./
 RUN npm run build
 
-### STAGE 2: Run ###
-# This image is around 5 megabytes
-FROM nginx:1.25-alpine3.17-slim
-
+### Run
+FROM ${NGINX_IMAGE}
 COPY /nginx /etc/nginx/conf.d
-
-EXPOSE 8080
-EXPOSE 443
-
 WORKDIR /usr/share/nginx/html
-
-# Copy built source
 COPY --from=builder /app/build .
-
-# Copy override ENV script with default values
-COPY ./env.sh .
+# env.sh writes env-config.js here at start, as the nginx user
+COPY --chmod=755 ./env.sh .
 COPY .env .
-
-# Make our shell script executable
-RUN chmod +x env.sh
-
-# Start Nginx server with override ENV variables script
+USER root
+RUN chown -R nginx:nginx /usr/share/nginx/html
+USER nginx
+EXPOSE 8080
 CMD ["/bin/sh", "-c", "/usr/share/nginx/html/env.sh && nginx -g \"daemon off;\""]

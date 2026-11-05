@@ -71,13 +71,19 @@ Vision ставится на ту же машину, что и рабочий VR
 - Docker с Compose v2 (`docker compose version`), git, bash, rsync.
 - Место на диске: около 6 ГБ под образы, плюс 2× размер базы, плюс размер картинок (в режиме
   `copy`). Скрипты посчитают сами.
-- Свободные порты: 18080 (UI), 14200 (API), 15432 (Postgres, только localhost). Меняются в
+- Свободные порты: 18080 (UI), 14200 (API); Postgres наружу не публикуется. Меняются в
   `.env.demo`.
 - Имя Docker-контейнера с базой прода (`docker ps`) или строка подключения к ней.
 - Папка картинок прода: то, что смонтировано в его API как `/imageUploads`. Если прод хранит
   картинки в S3, см. раздел 12.
 
 Прод должен быть VRT 5.x и не новее форка. Скрипт проверит это сам.
+
+Образы собираются из этого репозитория на Node 24 (база закреплена по digest), все процессы
+работают не от root: API — от пользователя, который запускает `vision.sh`, UI — от `nginx`.
+TLS проверяется всегда. В закрытой сети (прокси переподписывает TLS, нет доступа к
+registry.npmjs.org или binaries.prisma.sh) задайте в `.env.demo` `VISION_EXTRA_CA_FILE` (CA
+прокси, PEM), `VISION_NPM_REGISTRY` и `VISION_PRISMA_ENGINES_MIRROR` — зеркала, например в Nexus.
 
 ## 2. Код
 
@@ -500,6 +506,15 @@ git pull
 ```
 
 Новые миграции применятся сами, данные Vision останутся.
+
+**Если Vision до этого работал от root** (образы до Node 24): API теперь пишет картинки и файлы
+бэкапа от вашего пользователя, а старые файлы в `demo-data` принадлежат root. Один раз после
+`./scripts/vision.sh build` и до запуска верните их себе (образ `vision-api` уже собран, ничего
+не скачивается):
+
+```bash
+docker run --rm --user 0 --entrypoint chown -v "$PWD/demo-data:/data" vision-api -R "$(id -u):$(id -g)" /data/imageUploads /data/backup-config /data/backup-status
+```
 
 ## 12. Бэкапы
 

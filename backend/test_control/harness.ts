@@ -138,8 +138,10 @@ export class FakeJira {
         response.end(body === undefined ? '' : JSON.stringify(body));
       });
     });
-    await new Promise<void>((resolve) => this.server!.listen(0, '127.0.0.1', resolve));
-    this.url = `http://127.0.0.1:${(this.server!.address() as AddressInfo).port}`;
+    // the API in a container reaches the host as host.docker.internal: then all interfaces
+    const host = process.env.CONTROL_JIRA_HOST || '127.0.0.1';
+    await new Promise<void>((resolve) => this.server!.listen(0, host === '127.0.0.1' ? host : '0.0.0.0', resolve));
+    this.url = `http://${host}:${(this.server!.address() as AddressInfo).port}`;
   }
 
   async stop(): Promise<void> {

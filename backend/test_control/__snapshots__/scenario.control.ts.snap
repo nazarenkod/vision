@@ -2921,101 +2921,43 @@ exports[`11 what Vision sent to Jira 1`] = `
 [
   {
     "auth": "Bearer <personal-jira-token>",
-    "body": undefined,
-    "method": "GET",
-    "path": "/rest/api/2/search/jql?jql=((labels = "a11y-<problem1>" OR summary ~ "\\"a11y-<problem1>\\"" OR (labels = "a11y-missing-label" AND labels = "a11y-component-btn_scan_qr")) OR (labels = "a11y-<problem2>" OR summary ~ "\\"a11y-<problem2>\\"" OR (labels = "a11y-touch-target" AND labels = "a11y-component-btn_help" AND labels = "a11y-value-36x36")) OR (labels = "a11y-<problem3>" OR summary ~ "\\"a11y-<problem3>\\"" OR (labels = "a11y-low-contrast" AND labels = "a11y-component-toolbar_title" AND labels = "a11y-value-3.0")) OR (labels = "a11y-<problem4>" OR summary ~ "\\"a11y-<problem4>\\"" OR (labels = "a11y-touch-target" AND labels = "a11y-component-btn_scan_qr" AND labels = "a11y-value-34x34")) OR (labels = "a11y-<problem5>" OR summary ~ "\\"a11y-<problem5>\\"" OR (labels = "a11y-input-without-label" AND labels = "a11y-component-et_amount")) OR (labels = "a11y-<problem6>" OR summary ~ "\\"a11y-<problem6>\\"") OR (labels = "a11y-<problem7>" OR summary ~ "\\"a11y-<problem7>\\"") OR (labels = "a11y-<problem8>" OR summary ~ "\\"a11y-<problem8>\\"" OR (labels = "a11y-low-contrast" AND labels = "a11y-component-btn_pay" AND labels = "a11y-value-1.8")) OR (labels = "a11y-<problem9>" OR summary ~ "\\"a11y-<problem9>\\"" OR (labels = "a11y-redundant-role" AND labels = "a11y-component-btn_close"))) ORDER BY created DESC&maxResults=100&fields=summary,status,labels",
-  },
-  {
-    "auth": "Bearer <personal-jira-token>",
-    "body": undefined,
-    "method": "GET",
-    "path": "/rest/api/2/issue/QA-1",
-  },
-  {
-    "auth": "Bearer <personal-jira-token>",
     "body": {
-      "update": {
+      "fields": {
+        "description": "h3. Оточення
+Pixel 7, Android 14
+
+h3. Кроки
+1. Open Payment
+2. Enter 100
+
+h3. Фактичний результат
+Commission 5 UAH
+!checkpoint.png|thumbnail!
+
+h3. Очікуваний результат
+Commission 0 UAH
+!baseline.png|thumbnail!
+
+----
+Перевірка: Payment · збірка #2
+[Відкрити у Vision|http://vision.control.test/<id4>?buildId=<id14>&testId=<id16>]",
+        "issuetype": {
+          "id": "10002",
+        },
         "labels": [
-          {
-            "add": "a11y-<problem2>",
-          },
-          {
-            "add": "a11y-touch-target",
-          },
-          {
-            "add": "a11y-component-btn_help",
-          },
-          {
-            "add": "a11y-value-36x36",
-          },
-          {
-            "remove": "a11y-unlinked-<problem2>",
-          },
+          "vision",
         ],
+        "parent": {
+          "key": "QA-1",
+        },
+        "project": {
+          "key": "QA",
+        },
+        "summary": "[Automation] [Payment] Fee shows 5 UAH instead of 0",
       },
     },
-    "method": "PUT",
-    "path": "/rest/api/2/issue/QA-1",
-  },
-  {
-    "auth": "Bearer <personal-jira-token>",
-    "body": undefined,
-    "method": "GET",
-    "path": "/rest/api/2/issue/QA-1",
-  },
-  {
-    "auth": "Bearer <personal-jira-token>",
-    "body": undefined,
-    "method": "GET",
-    "path": "/rest/api/2/issue/createmeta/QA/issuetypes?startAt=0&maxResults=200",
-  },
-  {
-    "auth": "Bearer <personal-jira-token>",
-    "body": undefined,
-    "method": "GET",
-    "path": "/rest/api/2/issueLinkType",
-  },
-  {
-    "auth": "Bearer <personal-jira-token>",
-    "body": undefined,
-    "method": "GET",
-    "path": "/rest/api/2/search/jql?jql=project = "QA" AND (labels = "a11y-<problem3>" OR summary ~ "\\"a11y-<problem3>\\"" OR (labels = "a11y-low-contrast" AND labels = "a11y-component-toolbar_title" AND labels = "a11y-value-3.0")) ORDER BY created DESC&maxResults=10&fields=summary,status,labels",
-  },
-  {
-    "auth": "Bearer <personal-jira-token>",
-    "body": undefined,
-    "method": "GET",
-    "path": "/rest/api/2/issue/createmeta/QA/issuetypes/10002?startAt=0&maxResults=200",
-  },
-  {
-    "auth": "Bearer <personal-jira-token>",
-    "body": undefined,
-    "method": "GET",
-    "path": "/rest/api/2/user/picker?query=qa&maxResults=20",
-  },
-  {
-    "auth": "Bearer <personal-jira-token>",
-    "body": undefined,
-    "method": "GET",
-    "path": "/rest/api/2/issue/QA-1",
-  },
-  {
-    "auth": "Bearer <personal-jira-token>",
-    "body": undefined,
-    "method": "GET",
-    "path": "/rest/api/2/search/jql?jql=project = "QA" AND (labels = "a11y-<problem3>" OR summary ~ "\\"a11y-<problem3>\\"" OR (labels = "a11y-low-contrast" AND labels = "a11y-component-toolbar_title" AND labels = "a11y-value-3.0")) ORDER BY created DESC&maxResults=10&fields=summary,status,labels",
-  },
-  {
-    "auth": "Bearer <personal-jira-token>",
-    "body": undefined,
-    "method": "GET",
-    "path": "/rest/api/2/issue/createmeta/QA/issuetypes?startAt=0&maxResults=200",
-  },
-  {
-    "auth": "Bearer <personal-jira-token>",
-    "body": undefined,
-    "method": "GET",
-    "path": "/rest/api/2/issue/createmeta/QA/issuetypes/10002?startAt=0&maxResults=200",
+    "method": "POST",
+    "path": "/rest/api/2/issue",
   },
   {
     "auth": "Bearer <personal-jira-token>",
@@ -3088,85 +3030,17 @@ h3. Очікуваний результат
   },
   {
     "auth": "Bearer <personal-jira-token>",
-    "body": undefined,
-    "method": "GET",
-    "path": "/rest/api/2/issue/QA-1",
-  },
-  {
-    "auth": "Bearer <personal-jira-token>",
-    "body": undefined,
-    "method": "GET",
-    "path": "/rest/api/2/issue/createmeta/QA/issuetypes?startAt=0&maxResults=200",
-  },
-  {
-    "auth": "Bearer <personal-jira-token>",
-    "body": undefined,
-    "method": "GET",
-    "path": "/rest/api/2/issueLinkType",
-  },
-  {
-    "auth": "Bearer <personal-jira-token>",
-    "body": undefined,
-    "method": "GET",
-    "path": "/rest/api/2/issue/createmeta/QA/issuetypes/10002?startAt=0&maxResults=200",
-  },
-  {
-    "auth": "Bearer <personal-jira-token>",
-    "body": undefined,
-    "method": "GET",
-    "path": "/rest/api/2/issue/QA-1",
-  },
-  {
-    "auth": "Bearer <personal-jira-token>",
-    "body": undefined,
-    "method": "GET",
-    "path": "/rest/api/2/issue/createmeta/QA/issuetypes?startAt=0&maxResults=200",
-  },
-  {
-    "auth": "Bearer <personal-jira-token>",
-    "body": undefined,
-    "method": "GET",
-    "path": "/rest/api/2/issue/createmeta/QA/issuetypes/10002?startAt=0&maxResults=200",
-  },
-  {
-    "auth": "Bearer <personal-jira-token>",
     "body": {
-      "fields": {
-        "description": "h3. Оточення
-Pixel 7, Android 14
-
-h3. Кроки
-1. Open Payment
-2. Enter 100
-
-h3. Фактичний результат
-Commission 5 UAH
-!checkpoint.png|thumbnail!
-
-h3. Очікуваний результат
-Commission 0 UAH
-!baseline.png|thumbnail!
-
-----
-Перевірка: Payment · збірка #2
-[Відкрити у Vision|http://vision.control.test/<id4>?buildId=<id14>&testId=<id16>]",
-        "issuetype": {
-          "id": "10002",
+      "files": [
+        {
+          "contentType": "image/png",
+          "fileName": "baseline.png",
+          "pixels": "1080x2400",
         },
-        "labels": [
-          "vision",
-        ],
-        "parent": {
-          "key": "QA-1",
-        },
-        "project": {
-          "key": "QA",
-        },
-        "summary": "[Automation] [Payment] Fee shows 5 UAH instead of 0",
-      },
+      ],
     },
     "method": "POST",
-    "path": "/rest/api/2/issue",
+    "path": "/rest/api/2/issue/QA-101/attachments",
   },
   {
     "auth": "Bearer <personal-jira-token>",
@@ -3185,16 +3059,123 @@ Commission 0 UAH
   {
     "auth": "Bearer <personal-jira-token>",
     "body": {
-      "files": [
-        {
-          "contentType": "image/png",
-          "fileName": "baseline.png",
-          "pixels": "1080x2400",
-        },
-      ],
+      "update": {
+        "labels": [
+          {
+            "add": "a11y-<problem2>",
+          },
+          {
+            "add": "a11y-touch-target",
+          },
+          {
+            "add": "a11y-component-btn_help",
+          },
+          {
+            "add": "a11y-value-36x36",
+          },
+          {
+            "remove": "a11y-unlinked-<problem2>",
+          },
+        ],
+      },
     },
-    "method": "POST",
-    "path": "/rest/api/2/issue/QA-101/attachments",
+    "method": "PUT",
+    "path": "/rest/api/2/issue/QA-1",
+  },
+  {
+    "auth": "Bearer <personal-jira-token>",
+    "method": "GET",
+    "path": "/rest/api/2/issue/QA-1",
+  },
+  {
+    "auth": "Bearer <personal-jira-token>",
+    "method": "GET",
+    "path": "/rest/api/2/issue/QA-1",
+  },
+  {
+    "auth": "Bearer <personal-jira-token>",
+    "method": "GET",
+    "path": "/rest/api/2/issue/QA-1",
+  },
+  {
+    "auth": "Bearer <personal-jira-token>",
+    "method": "GET",
+    "path": "/rest/api/2/issue/QA-1",
+  },
+  {
+    "auth": "Bearer <personal-jira-token>",
+    "method": "GET",
+    "path": "/rest/api/2/issue/QA-1",
+  },
+  {
+    "auth": "Bearer <personal-jira-token>",
+    "method": "GET",
+    "path": "/rest/api/2/issue/createmeta/QA/issuetypes/10002?startAt=0&maxResults=200",
+  },
+  {
+    "auth": "Bearer <personal-jira-token>",
+    "method": "GET",
+    "path": "/rest/api/2/issue/createmeta/QA/issuetypes/10002?startAt=0&maxResults=200",
+  },
+  {
+    "auth": "Bearer <personal-jira-token>",
+    "method": "GET",
+    "path": "/rest/api/2/issue/createmeta/QA/issuetypes/10002?startAt=0&maxResults=200",
+  },
+  {
+    "auth": "Bearer <personal-jira-token>",
+    "method": "GET",
+    "path": "/rest/api/2/issue/createmeta/QA/issuetypes/10002?startAt=0&maxResults=200",
+  },
+  {
+    "auth": "Bearer <personal-jira-token>",
+    "method": "GET",
+    "path": "/rest/api/2/issue/createmeta/QA/issuetypes?startAt=0&maxResults=200",
+  },
+  {
+    "auth": "Bearer <personal-jira-token>",
+    "method": "GET",
+    "path": "/rest/api/2/issue/createmeta/QA/issuetypes?startAt=0&maxResults=200",
+  },
+  {
+    "auth": "Bearer <personal-jira-token>",
+    "method": "GET",
+    "path": "/rest/api/2/issue/createmeta/QA/issuetypes?startAt=0&maxResults=200",
+  },
+  {
+    "auth": "Bearer <personal-jira-token>",
+    "method": "GET",
+    "path": "/rest/api/2/issue/createmeta/QA/issuetypes?startAt=0&maxResults=200",
+  },
+  {
+    "auth": "Bearer <personal-jira-token>",
+    "method": "GET",
+    "path": "/rest/api/2/issueLinkType",
+  },
+  {
+    "auth": "Bearer <personal-jira-token>",
+    "method": "GET",
+    "path": "/rest/api/2/issueLinkType",
+  },
+  {
+    "auth": "Bearer <personal-jira-token>",
+    "method": "GET",
+    "path": "/rest/api/2/search/jql?jql=((labels = "a11y-<problem1>" OR summary ~ "\\"a11y-<problem1>\\"" OR (labels = "a11y-missing-label" AND labels = "a11y-component-btn_scan_qr")) OR (labels = "a11y-<problem2>" OR summary ~ "\\"a11y-<problem2>\\"" OR (labels = "a11y-touch-target" AND labels = "a11y-component-btn_help" AND labels = "a11y-value-36x36")) OR (labels = "a11y-<problem3>" OR summary ~ "\\"a11y-<problem3>\\"" OR (labels = "a11y-low-contrast" AND labels = "a11y-component-toolbar_title" AND labels = "a11y-value-3.0")) OR (labels = "a11y-<problem4>" OR summary ~ "\\"a11y-<problem4>\\"" OR (labels = "a11y-touch-target" AND labels = "a11y-component-btn_scan_qr" AND labels = "a11y-value-34x34")) OR (labels = "a11y-<problem5>" OR summary ~ "\\"a11y-<problem5>\\"" OR (labels = "a11y-input-without-label" AND labels = "a11y-component-et_amount")) OR (labels = "a11y-<problem6>" OR summary ~ "\\"a11y-<problem6>\\"") OR (labels = "a11y-<problem7>" OR summary ~ "\\"a11y-<problem7>\\"") OR (labels = "a11y-<problem8>" OR summary ~ "\\"a11y-<problem8>\\"" OR (labels = "a11y-low-contrast" AND labels = "a11y-component-btn_pay" AND labels = "a11y-value-1.8")) OR (labels = "a11y-<problem9>" OR summary ~ "\\"a11y-<problem9>\\"" OR (labels = "a11y-redundant-role" AND labels = "a11y-component-btn_close"))) ORDER BY created DESC&maxResults=100&fields=summary,status,labels",
+  },
+  {
+    "auth": "Bearer <personal-jira-token>",
+    "method": "GET",
+    "path": "/rest/api/2/search/jql?jql=project = "QA" AND (labels = "a11y-<problem3>" OR summary ~ "\\"a11y-<problem3>\\"" OR (labels = "a11y-low-contrast" AND labels = "a11y-component-toolbar_title" AND labels = "a11y-value-3.0")) ORDER BY created DESC&maxResults=10&fields=summary,status,labels",
+  },
+  {
+    "auth": "Bearer <personal-jira-token>",
+    "method": "GET",
+    "path": "/rest/api/2/search/jql?jql=project = "QA" AND (labels = "a11y-<problem3>" OR summary ~ "\\"a11y-<problem3>\\"" OR (labels = "a11y-low-contrast" AND labels = "a11y-component-toolbar_title" AND labels = "a11y-value-3.0")) ORDER BY created DESC&maxResults=10&fields=summary,status,labels",
+  },
+  {
+    "auth": "Bearer <personal-jira-token>",
+    "method": "GET",
+    "path": "/rest/api/2/user/picker?query=qa&maxResults=20",
   },
 ]
 `;

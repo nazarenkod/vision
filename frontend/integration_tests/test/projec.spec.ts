@@ -440,7 +440,9 @@ test("lines the Project label up with the select under it", async ({
   const label = await page.locator("#projectSelect").boundingBox();
   const select = await page.locator("#project-select").boundingBox();
 
-  expect(label.x).toBe(select.x);
+  // in the sidebar the caption sits where the item labels start (spec 046)
+  expect(label.x).toBe(select.x + 8);
+  expect(label.y).toBeLessThan(select.y);
 });
 
 test("shows a build as its number, date, branch and status", async ({

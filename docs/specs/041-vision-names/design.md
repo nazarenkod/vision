@@ -17,7 +17,7 @@
 | тур входу | `frontend/src/i18n/en.ts`, `uk.ts` (`tour.loginAdmin`) | текст без акаунта |
 | профіль | `frontend/src/pages/ProfilePage.tsx`, `profile.configHelp` | `VISION_*`, `vision.json` |
 | архів | `frontend/src/services/static.service.ts` | `vision_images.zip` |
-| версія | `frontend/src/components/Header.tsx`, `_config/env.config.ts`, `env.defaults` | `VISION_VERSION` |
+| версія | `frontend/src/components/SideNav.tsx`, `_config/env.config.ts`, `env.defaults` | `VISION_VERSION` |
 | документація API | `backend/src/swagger.ts` | назва «Vision» |
 | перший адмін | `backend/prisma/seed.ts`, `docker-compose.demo.yml`, `backend/.env.example` | `admin@vision.local` |
 | групи адмінів SSO | `backend/src/users/oidc/oidcusers.service.ts` | `vision-admin,admin` |

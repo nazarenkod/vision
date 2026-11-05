@@ -3,8 +3,7 @@ import { SnackbarProvider, closeSnackbar } from "notistack";
 import { Box, GlobalStyles, IconButton } from "@mui/material";
 import { Close } from "@mui/icons-material";
 import { ThemeProvider, StyledEngineProvider } from "@mui/material/styles";
-import Header from "./components/Header";
-import NavRail from "./components/NavRail";
+import SideNav from "./components/SideNav";
 import { BackupWarning } from "./components/BackupWarning";
 import { createAppTheme, cssVariables, motion, tokens } from "./theme";
 import { useUserState } from "./contexts";
@@ -22,7 +21,7 @@ import { useLocation } from "react-router-dom";
 import Router from "./Router";
 import { LanguageProvider, useT } from "./i18n";
 
-// Top bar, left rail for signed-in users, and the page filling the rest.
+// The sidebar for signed-in users (ADR-0028) and the page filling the rest.
 const Shell: React.FunctionComponent = () => {
   const { loggedIn } = useUserState();
   // a report, by its link or to print, is the sheet alone (031)
@@ -35,12 +34,18 @@ const Shell: React.FunctionComponent = () => {
     );
   }
   return (
-    <Box sx={{ height: "100%", display: "flex", flexDirection: "column" }}>
-      <Header />
-      <BackupWarning />
-      <Box sx={{ flex: 1, minHeight: 0, display: "flex" }}>
-        {loggedIn && <NavRail />}
-        <Box component="main" sx={{ flex: 1, minWidth: 0, overflow: "auto" }}>
+    <Box sx={{ height: "100%", display: "flex" }}>
+      {loggedIn && <SideNav />}
+      <Box
+        sx={{
+          flex: 1,
+          minWidth: 0,
+          display: "flex",
+          flexDirection: "column",
+        }}
+      >
+        <BackupWarning />
+        <Box component="main" sx={{ flex: 1, minHeight: 0, overflow: "auto" }}>
           <Router />
         </Box>
       </Box>

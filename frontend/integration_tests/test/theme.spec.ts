@@ -46,11 +46,16 @@ test("switches theme with the header button and with Shift+D, and remembers it",
   ).toBeVisible();
   await expect.poll(() => shownTheme(page)).toBe("light");
 
-  await page.getByTestId("themeToggle").click();
+  // the theme switch lives in the account menu of the sidebar (spec 046)
+  await projectListPage.sideNav.openAvatarMenu();
+  const toggle = page.getByTestId("themeToggle");
+  await toggle.getByRole("button", { name: "Dark" }).click();
   await expect.poll(() => shownTheme(page)).toBe("dark");
-  await expect(page.getByTestId("themeToggle")).toHaveAccessibleName(
-    "Light theme",
+  await expect(toggle.getByRole("button", { name: "Dark" })).toHaveAttribute(
+    "aria-pressed",
+    "true",
   );
+  await page.keyboard.press("Escape");
 
   await page.reload();
   await expect.poll(() => shownTheme(page)).toBe("dark");
@@ -71,9 +76,17 @@ test("the account menu switches theme too", async ({
   page,
 }) => {
   await page.emulateMedia({ colorScheme: "light" });
-  await projectListPage.header.openAvatarMenu();
-  await page.getByTestId("themeMenuItem").click();
+  await projectListPage.sideNav.openAvatarMenu();
+  await page
+    .getByTestId("themeMenuItem")
+    .getByRole("button", { name: "Dark" })
+    .click();
   await expect.poll(() => shownTheme(page)).toBe("dark");
+  await page
+    .getByTestId("themeMenuItem")
+    .getByRole("button", { name: "System" })
+    .click();
+  await expect.poll(() => shownTheme(page)).toBe("light");
 });
 
 test("screenshots keep their pixels in the dark theme", async ({

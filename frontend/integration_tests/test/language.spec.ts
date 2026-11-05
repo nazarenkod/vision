@@ -21,7 +21,10 @@ test("switches the header and the page to Ukrainian and keeps it after a reload"
 }) => {
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("Projects");
 
+  // the language switch lives in the account menu of the sidebar (spec 046)
+  await projectListPage.sideNav.openAvatarMenu();
   await page.getByRole("button", { name: "Українська" }).click();
+  await page.keyboard.press("Escape");
 
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("Проєкти");
   await expect(page.locator("html")).toHaveAttribute("lang", "uk");
@@ -35,7 +38,9 @@ test("switches the header and the page to Ukrainian and keeps it after a reload"
   await page.reload();
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("Проєкти");
 
+  await projectListPage.sideNav.openAvatarMenu();
   await page.getByRole("button", { name: "English" }).click();
+  await page.keyboard.press("Escape");
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("Projects");
 });
 

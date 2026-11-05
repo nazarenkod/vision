@@ -8,7 +8,9 @@ export const LOCATOR_RESET_FILTER = "reset-filter";
 export const LOCATOR_TEST_VARIATION_SELECT_BRANCH = "select-branch";
 export const LOCATOR_TEST_VARIATION_MERGE_TOGGLE = "merge-branches";
 export const LOCATOR_PROJECT_LIST_PAGE_PROJECT_LIST = "projectlist-1";
-export const LOCATOR_PROJECT_PAGE_SELECT_PROJECT = "select-project";
+// the project switcher of the sidebar (spec 046) serves every project page
+export const LOCATOR_SIDE_NAV_PROJECT = "sidenav-project";
+export const LOCATOR_PROJECT_PAGE_SELECT_PROJECT = LOCATOR_SIDE_NAV_PROJECT;
 export const LOCATOR_PROJECT_PAGE_BUILD_LIST = "build-list";
 export const LOCATOR_PROJECT_PAGE_BUILD_DETAILS = "build-details";
 export const LOCATOR_PROJECT_PAGE_TEST_RUN_LIST = "test-run-list";
@@ -61,7 +63,7 @@ export const PROJECT_PAGE_STEPS: Step[] = [
 
 export const TEST_VARIATION_LIST_PAGE = [
   {
-    target: `#${LOCATOR_TEST_VARIATION_LIST_PAGE_SELECT_PROJECT}`,
+    target: `#${LOCATOR_SIDE_NAV_PROJECT}`,
     title: "tour.variationsTitle",
     content: "tour.variationsProject",
   },

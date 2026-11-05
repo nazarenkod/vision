@@ -53,8 +53,8 @@
 
 | Компонент | Шлях | Роль |
 |---|---|---|
-| Шапка | `frontend/src/components/Header.tsx` | знак, кнопка теми, меню «?» (Guided tour, Manual checks, Report a problem, версія), меню акаунта (ім'я, пошта, роль, Profile, Users, Backups, тема з ⇧D, Log out) |
-| Ліва навігація | `frontend/src/components/NavRail.tsx` | підсвітка, що переїжджає |
+| Шапка (з 046 — бічне меню, [ADR-0028](../../decisions/0028-sidebar-instead-of-top-bar.md)) | `frontend/src/components/SideNav.tsx`, `frontend/src/components/AccountMenu.tsx` | знак, кнопка теми, меню «?» (Guided tour, Manual checks, Report a problem, версія), меню акаунта (ім'я, пошта, роль, Profile, Users, Backups, тема з ⇧D, Log out) |
+| Ліва навігація | `frontend/src/components/SideNav.tsx` | підсвітка, що переїжджає |
 | Тур | `frontend/src/components/GuidedTour.tsx`, `frontend/src/components/GuidedTour.locators.ts` | кроки під нові елементи |
 
 ### Порівняння (розкладка без змін)

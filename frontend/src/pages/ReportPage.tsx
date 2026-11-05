@@ -2,7 +2,7 @@ import React from "react";
 import { Box, Button, Typography } from "@mui/material";
 import { DownloadRounded, LinkOffRounded } from "@mui/icons-material";
 import { useLocation, useParams } from "react-router-dom";
-import { tokens } from "../theme";
+import { tokens, type, radius } from "../theme";
 import { BrandMark } from "../components/BrandMark";
 import {
   ReportDocument,
@@ -56,8 +56,8 @@ const Gone: React.FunctionComponent<{ title: string; hint: string }> = ({
       gap: 1.25,
     }}
   >
-    <LinkOffRounded sx={{ fontSize: 32, color: tokens.textMuted }} />
-    <Typography component="h1" sx={{ fontSize: 18, fontWeight: 650 }}>
+    <LinkOffRounded sx={{ fontSize: type.page, color: tokens.textMuted }} />
+    <Typography component="h1" sx={{ fontSize: type.section, fontWeight: 600 }}>
       {title}
     </Typography>
     <Typography sx={{ color: tokens.textSecondary }}>{hint}</Typography>
@@ -133,7 +133,7 @@ export const PublicReportPage: React.FunctionComponent = () => {
             sx={{
               width: 7,
               height: 7,
-              borderRadius: "50%",
+              borderRadius: radius.pill,
               bgcolor: tokens.status.passed.bar,
             }}
           />

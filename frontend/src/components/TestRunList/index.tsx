@@ -56,6 +56,7 @@ import {
 } from "../../_helpers/testRunStatus.helper";
 import { tagsOf } from "../../_helpers/testRunTags.helper";
 import { Text, useT } from "../../i18n";
+import { radius } from "../../theme";
 
 // https://mui.com/x/react-data-grid/column-definition/
 const buildColumns = (t: Text): GridColDef[] => [
@@ -566,7 +567,7 @@ const TestRunList: React.FunctionComponent = () => {
               flexDirection="column"
               border={1}
               borderColor="divider"
-              borderRadius={3}
+              borderRadius={radius.card}
               overflow="hidden"
               color="text.primary"
             >

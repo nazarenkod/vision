@@ -1,6 +1,6 @@
 import React from "react";
 import { Box } from "@mui/material";
-import { tokens } from "../theme";
+import { radius, tokens, type } from "../theme";
 
 // soft pairs the theme already has, so the letter reads in both themes
 const TONES = [
@@ -36,8 +36,9 @@ export const ProjectAvatar: React.FunctionComponent<{
         flexShrink: 0,
         display: "inline-grid",
         placeItems: "center",
-        borderRadius: `${Math.round(size / 3.5)}px`,
-        fontSize: Math.round(size * 0.45),
+        borderRadius: radius.control,
+        // the letter keeps to the type scale: small squares take the caption size
+        fontSize: size >= 28 ? type.small : type.caption,
         fontWeight: 700,
         lineHeight: 1,
         color: tone.fg,

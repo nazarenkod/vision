@@ -36,7 +36,7 @@ import {
 import { ChosenValue, JiraFieldInput } from "./JiraFieldInput";
 import { BugEvidence } from "./BugEvidence";
 import { describeChange } from "../ChangeGroups";
-import { tokens } from "../../theme";
+import { tokens, type, radius } from "../../theme";
 import { useT } from "../../i18n";
 import { DeviceTags } from "../DeviceTags";
 import {
@@ -350,7 +350,7 @@ export const ReportBugDialog: React.FunctionComponent<{
         sx={{
           height: 18,
           ml: 0.75,
-          fontSize: 10,
+          fontSize: type.caption,
           fontWeight: 700,
           bgcolor: tokens.brandSoft,
           color: tokens.brand,
@@ -423,7 +423,7 @@ export const ReportBugDialog: React.FunctionComponent<{
         }}
       >
         <BugReport sx={{ color: tokens.brand }} />
-        <Typography variant="h6" sx={{ fontSize: 16, fontWeight: 650 }}>
+        <Typography variant="h6" sx={{ fontSize: 16, fontWeight: 600 }}>
           {t("reportBug.title")}
         </Typography>
         <Typography
@@ -638,7 +638,7 @@ export const ReportBugDialog: React.FunctionComponent<{
                   gap: 1,
                   alignItems: "flex-start",
                   bgcolor: tokens.status.new.bg,
-                  borderRadius: 2,
+                  borderRadius: radius.card,
                   px: 1.5,
                   py: 1,
                 }}
@@ -711,9 +711,9 @@ export const ReportBugDialog: React.FunctionComponent<{
                     component="span"
                     sx={{
                       fontFamily: tokens.mono,
-                      fontSize: 11.5,
+                      fontSize: type.caption,
                       bgcolor: tokens.subtle,
-                      borderRadius: 1,
+                      borderRadius: radius.control,
                       px: 0.75,
                       py: 0.25,
                       color: tokens.textMuted,

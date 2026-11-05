@@ -140,6 +140,8 @@ export const Wordmark: React.FunctionComponent<{
         width: "0.2em",
         height: "0.2em",
         ml: "-0.1em",
+        // the mark is drawn in em, not a control: its corner scales with the letters
+        // eslint-disable-next-line no-restricted-syntax
         borderRadius: "0.035em",
         background: tokens.brand,
         animation:

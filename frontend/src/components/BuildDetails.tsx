@@ -4,7 +4,7 @@ import { BuildStatusChip } from "./BuildStatusChip";
 import { useBuildState } from "../contexts";
 import { LOCATOR_BUILD_DETAILS } from "../constants/help";
 import { Tooltip } from "./Tooltip";
-import { motion, tokens } from "../theme";
+import { motion, tokens, radius } from "../theme";
 import { useT } from "../i18n";
 import { buildDuration, buildPeriod } from "../_helpers/buildPeriod.helper";
 
@@ -107,7 +107,7 @@ const BuildDetails: React.FunctionComponent<{
           sx={{
             display: "flex",
             height: 6,
-            borderRadius: 999,
+            borderRadius: radius.pill,
             overflow: "hidden",
             gap: "2px",
             bgcolor: tokens.subtle,

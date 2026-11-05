@@ -9,7 +9,7 @@ import {
   Typography,
 } from "@mui/material";
 import { Autorenew, Check, ContentCopy } from "@mui/icons-material";
-import { motion, tokens } from "../theme";
+import { motion, tokens, radius } from "../theme";
 import { useT } from "../i18n";
 
 /** A key known only by its ending: the server keeps no more of it (044). */
@@ -61,7 +61,7 @@ export const ApiKeyCard: React.FunctionComponent<{
             pl: 1.5,
             pr: 0.5,
             py: 0.5,
-            borderRadius: 2,
+            borderRadius: radius.control,
             bgcolor: tokens.subtle,
             border: `1px solid ${tokens.border}`,
           }}

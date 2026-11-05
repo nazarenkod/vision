@@ -98,7 +98,7 @@ import { SelectionPanel } from "./SelectionPanel";
 import { AreaKind, AreasMenu } from "./AreasMenu";
 import { areaMarkId, ruleMarkId, testAreaMarkId } from "./WhatsCompared";
 import { useRuleSnackbar } from "../useRuleSnackbar";
-import { motion, tokens } from "../../theme";
+import { motion, tokens, type, radius } from "../../theme";
 import { StepDots } from "./StepDots";
 import { prefersReducedMotion } from "../../_helpers/motion.helper";
 import { BaseModal } from "../BaseModal";
@@ -1284,7 +1284,7 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
                 height: 34,
                 px: 1.25,
                 gap: 1,
-                fontSize: 13.5,
+                fontSize: type.small,
                 fontWeight: 600,
                 color: pickMode ? tokens.brandDark : tokens.text,
                 borderColor: pickMode ? tokens.brand : tokens.border,
@@ -1302,11 +1302,11 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
                 component="kbd"
                 aria-hidden="true"
                 sx={{
-                  font: `500 11px/16px ${tokens.mono}`,
+                  font: `500 ${type.caption}px/16px ${tokens.mono}`,
                   minWidth: 18,
                   px: 0.5,
                   textAlign: "center",
-                  borderRadius: "4px",
+                  borderRadius: radius.control,
                   border: `1px solid ${tokens.border}`,
                   borderBottomWidth: 2,
                   bgcolor: tokens.subtle,
@@ -1722,7 +1722,7 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
               pl: 1.75,
               pr: 1,
               py: 0.75,
-              borderRadius: "10px",
+              borderRadius: radius.control,
               bgcolor: tokens.text,
               color: tokens.surface,
               boxShadow: tokens.shadowPop,
@@ -1940,9 +1940,9 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
                       sx={{
                         ml: 1,
                         fontFamily: tokens.mono,
-                        fontSize: 10.5,
+                        fontSize: type.caption,
                         border: "1px solid currentColor",
-                        borderRadius: 0.5,
+                        borderRadius: radius.control,
                         px: 0.5,
                         opacity: 0.75,
                       }}

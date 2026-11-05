@@ -43,13 +43,13 @@ import {
   DarkModeOutlined,
   LightModeOutlined,
 } from "@mui/icons-material";
-import { motion, tokens } from "../theme";
+import { motion, tokens, type, radius } from "../theme";
 
 const menuPaper = {
   paper: { sx: { minWidth: 240, p: 0.75, mt: 0.5 } },
 };
 const itemSx = {
-  borderRadius: 1.5,
+  borderRadius: radius.control,
   minHeight: 38,
   gap: 1.25,
   px: 1.25,
@@ -207,7 +207,7 @@ const Header: FunctionComponent = () => {
           sx={{
             ml: "auto",
             fontFamily: tokens.mono,
-            fontSize: 11,
+            fontSize: type.caption,
             color: tokens.textMuted,
           }}
         >

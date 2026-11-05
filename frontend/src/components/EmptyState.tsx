@@ -1,7 +1,7 @@
 import React from "react";
 import { Box, Button, Typography } from "@mui/material";
 import { RefreshOutlined } from "@mui/icons-material";
-import { tokens } from "../theme";
+import { tokens, radius } from "../theme";
 import { useT } from "../i18n";
 
 // The logo's story in a still: a grid of pixels, one set back into place.
@@ -28,7 +28,7 @@ const PixelGrid: React.FunctionComponent = () => (
         sx={{
           width: 14,
           height: 14,
-          borderRadius: "3px",
+          borderRadius: radius.control,
           bgcolor: i === 6 ? tokens.brand : tokens.border,
           animation:
             i === 6
@@ -103,7 +103,7 @@ export const ErrorState: React.FunctionComponent<{
       sx={{
         width: 44,
         height: 44,
-        borderRadius: 3,
+        borderRadius: radius.card,
         display: "grid",
         placeItems: "center",
         bgcolor: tokens.status.failed.bg,

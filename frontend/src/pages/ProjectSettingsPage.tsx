@@ -28,7 +28,7 @@ import {
 import { projectsService, SettingsConflict } from "../services";
 import { Project, ProjectDto } from "../types";
 import { routes } from "../constants";
-import { motion, tokens } from "../theme";
+import { motion, tokens, radius } from "../theme";
 import {
   changedSections,
   deleteConfirmed,
@@ -328,7 +328,7 @@ const ProjectSettingsPage: React.FunctionComponent = () => {
           scrollMarginTop: 16,
           bgcolor: tokens.surface,
           border: `1px solid ${id === "danger" ? tokens.status.failed.bar : tokens.border}`,
-          borderRadius: 3,
+          borderRadius: radius.card,
           px: 2.5,
           pt: 2,
           pb: 2.5,
@@ -438,7 +438,7 @@ const ProjectSettingsPage: React.FunctionComponent = () => {
                   right: 0,
                   top: 0,
                   height: 36,
-                  borderRadius: 2,
+                  borderRadius: radius.control,
                   bgcolor: tokens.brandSoft,
                   transform: `translateY(${navButtons.current[active]?.offsetTop ?? 0}px)`,
                   transition: `transform ${motion.nav}ms ${motion.easing}`,
@@ -460,7 +460,7 @@ const ProjectSettingsPage: React.FunctionComponent = () => {
                       position: "relative",
                       height: 36,
                       px: 1.25,
-                      borderRadius: 2,
+                      borderRadius: radius.control,
                       display: "flex",
                       justifyContent: "space-between",
                       gap: 1,
@@ -486,7 +486,7 @@ const ProjectSettingsPage: React.FunctionComponent = () => {
                             height: 6,
                             ml: 0.75,
                             mb: "2px",
-                            borderRadius: "50%",
+                            borderRadius: radius.pill,
                             bgcolor: tokens.status.changed.bar,
                           }}
                         />
@@ -497,7 +497,7 @@ const ProjectSettingsPage: React.FunctionComponent = () => {
                       variant="caption"
                       noWrap
                       sx={{
-                        fontFamily: tokens.mono,
+                        fontVariantNumeric: "tabular-nums",
                         color: tokens.textMuted,
                         flexShrink: 0,
                       }}
@@ -521,7 +521,7 @@ const ProjectSettingsPage: React.FunctionComponent = () => {
               "& .v-hit": {
                 bgcolor: tokens.brandSoft,
                 boxShadow: `0 0 0 3px ${tokens.brandSoft}`,
-                borderRadius: "4px",
+                borderRadius: radius.control,
               },
             }}
           >
@@ -585,7 +585,7 @@ const ProjectSettingsPage: React.FunctionComponent = () => {
                 py: 1,
                 // a floating card like the Areas menu: a black bar was the one
                 // dark slab on the light page
-                borderRadius: "14px",
+                borderRadius: radius.card,
                 border: `1px solid ${justSaved ? tokens.brand : tokens.border}`,
                 bgcolor: justSaved ? tokens.brandSoft : tokens.surface,
                 color: justSaved ? tokens.brandDark : tokens.text,
@@ -614,7 +614,7 @@ const ProjectSettingsPage: React.FunctionComponent = () => {
                       sx={{
                         width: 8,
                         height: 8,
-                        borderRadius: "50%",
+                        borderRadius: radius.pill,
                         flexShrink: 0,
                         bgcolor: tokens.status.changed.bar,
                       }}

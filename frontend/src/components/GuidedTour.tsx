@@ -5,6 +5,7 @@ import { useHelpState, useTokens } from "../contexts";
 import { ExploreOutlined } from "@mui/icons-material";
 import { TAKE_TOUR_BUTTON_TEST_ID } from "./GuidedTour.locators";
 import { isMessageKey, useT } from "../i18n";
+import { radius } from "../theme";
 
 const GuidedTour: FunctionComponent = () => {
   const [run, setRun] = React.useState(false);
@@ -93,11 +94,11 @@ const GuidedTour: FunctionComponent = () => {
           overlayColor: colours.scrim,
         }}
         styles={{
-          tooltip: { borderRadius: 14, boxShadow: colours.shadowPop },
+          tooltip: { borderRadius: radius.card, boxShadow: colours.shadowPop },
           buttonPrimary: {
             color: colours.brandInk,
             backgroundColor: colours.brand,
-            borderRadius: 8,
+            borderRadius: radius.control,
             fontWeight: 600,
           },
           buttonBack: { color: colours.brand },

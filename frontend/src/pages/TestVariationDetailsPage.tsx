@@ -5,7 +5,7 @@ import { testVariationService, staticService } from "../services";
 import { Box, Button, ButtonBase, Typography } from "@mui/material";
 import { ArrowBack } from "@mui/icons-material";
 import { routes } from "../constants";
-import { motion, tokens } from "../theme";
+import { motion, tokens, radius } from "../theme";
 import { staggered } from "../components/motion/Stagger";
 import {
   buildProjectPageUrl,
@@ -107,7 +107,7 @@ const TestVariationDetailsPage: React.FunctionComponent = () => {
               maxHeight: 640,
               objectFit: "contain",
               boxShadow: tokens.shadowShot,
-              borderRadius: 1,
+              borderRadius: radius.control,
             }}
           />
         ) : (
@@ -168,7 +168,7 @@ const TestVariationDetailsPage: React.FunctionComponent = () => {
                 p: 1,
                 bgcolor: tokens.surface,
                 border: `1px solid ${tokens.border}`,
-                borderRadius: 3,
+                borderRadius: radius.card,
                 position: "relative",
                 // the line the record dots sit on
                 "&::before": {
@@ -196,7 +196,7 @@ const TestVariationDetailsPage: React.FunctionComponent = () => {
                       alignItems: "flex-start",
                       gap: 1,
                       p: 1,
-                      borderRadius: 2,
+                      borderRadius: radius.control,
                       bgcolor: on ? tokens.brandSoft : "transparent",
                       transition: `background-color ${motion.base}ms ${motion.easing}`,
                       "&:hover": {
@@ -211,7 +211,7 @@ const TestVariationDetailsPage: React.FunctionComponent = () => {
                         height: 10,
                         mt: 0.75,
                         ml: 0.5,
-                        borderRadius: "3px",
+                        borderRadius: radius.control,
                         flexShrink: 0,
                         position: "relative",
                         zIndex: 1,
@@ -232,7 +232,7 @@ const TestVariationDetailsPage: React.FunctionComponent = () => {
                         alignItems: "flex-start",
                         textAlign: "left",
                         gap: 0.25,
-                        borderRadius: 1,
+                        borderRadius: radius.control,
                       }}
                     >
                       <Box
@@ -280,7 +280,7 @@ const TestVariationDetailsPage: React.FunctionComponent = () => {
                 gap: "1px",
                 bgcolor: tokens.border,
                 border: `1px solid ${tokens.border}`,
-                borderRadius: 3,
+                borderRadius: radius.card,
                 overflow: "hidden",
               }}
             >

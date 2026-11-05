@@ -23,7 +23,7 @@ import { insightsService, testVariationService } from "../services";
 import { ProjectInsights } from "../types";
 import { useUserState } from "../contexts";
 import { routes } from "../constants";
-import { motion, tokens } from "../theme";
+import { motion, tokens, radius } from "../theme";
 import { Num } from "../components/SummaryParts";
 import { ErrorState } from "../components/EmptyState";
 import { shimmer } from "../components/SkeletonList";
@@ -78,7 +78,7 @@ const Section: React.FunctionComponent<{
     sx={{
       bgcolor: tokens.surface,
       border: `1px solid ${tokens.border}`,
-      borderRadius: 3,
+      borderRadius: radius.card,
       p: 2.5,
       display: "flex",
       flexDirection: "column",
@@ -123,7 +123,7 @@ const Amount: React.FunctionComponent<{
       sx={{
         flex: 1,
         height: 6,
-        borderRadius: 3,
+        borderRadius: radius.card,
         bgcolor: tokens.subtle,
         overflow: "hidden",
       }}
@@ -133,7 +133,7 @@ const Amount: React.FunctionComponent<{
         style={{ width: `${barShare(value, max)}%` }}
         sx={{
           height: "100%",
-          borderRadius: 3,
+          borderRadius: radius.card,
           bgcolor: colour,
           animation: `v-fill 700ms ${motion.easing} both 200ms`,
         }}
@@ -274,8 +274,8 @@ const InsightsPage: React.FunctionComponent = () => {
           aria-busy="true"
           sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}
         >
-          <Box sx={{ ...shimmer, height: 240, borderRadius: 3 }} />
-          <Box sx={{ ...shimmer, height: 240, borderRadius: 3 }} />
+          <Box sx={{ ...shimmer, height: 240, borderRadius: radius.card }} />
+          <Box sx={{ ...shimmer, height: 240, borderRadius: radius.card }} />
         </Box>
       )}
       {data === null && (

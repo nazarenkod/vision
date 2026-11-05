@@ -5,7 +5,7 @@ import {
   BugReportOutlined,
   LinkRounded,
 } from "@mui/icons-material";
-import { tokens } from "../../theme";
+import { tokens, type, radius } from "../../theme";
 import { useT } from "../../i18n";
 import { useTestRunState } from "../../contexts";
 import { buildOverviewService } from "../../services";
@@ -312,7 +312,7 @@ const EmptyLine: React.FunctionComponent<{
       fontSize: 13,
     }}
   >
-    <Icon sx={{ fontSize: 18, color: tokens.textMuted }} />
+    <Icon sx={{ fontSize: type.title, color: tokens.textMuted }} />
     {children}
   </Box>
 );
@@ -378,7 +378,7 @@ const A11yProblems: React.FunctionComponent<{
               <Typography
                 noWrap
                 title={`${problem.check} · ${problem.element}`}
-                sx={{ fontSize: 11.5, color: tokens.textMuted }}
+                sx={{ fontSize: type.caption, color: tokens.textMuted }}
               >
                 {[problem.check, problem.element].filter(Boolean).join(" · ")}
               </Typography>
@@ -462,7 +462,7 @@ const Bugs: React.FunctionComponent<{
               sx={{
                 width: 24,
                 height: 24,
-                borderRadius: 1.75,
+                borderRadius: radius.control,
                 display: "grid",
                 placeItems: "center",
                 bgcolor:
@@ -470,7 +470,7 @@ const Bugs: React.FunctionComponent<{
                 color: bug.kind === "a11y" ? tokens.a11y : tokens.diff,
               }}
             >
-              <Icon sx={{ fontSize: 15 }} />
+              <Icon sx={{ fontSize: type.body }} />
             </Box>
             {bug.jiraUrl ? (
               <Link
@@ -480,9 +480,9 @@ const Bugs: React.FunctionComponent<{
                 onClick={(event) => event.stopPropagation()}
                 sx={{
                   fontFamily: tokens.mono,
-                  fontSize: 11.5,
+                  fontSize: type.caption,
                   fontWeight: 600,
-                  color: tokens.status.new.fg,
+                  color: tokens.brand,
                 }}
               >
                 {bug.jiraKey}
@@ -492,9 +492,9 @@ const Bugs: React.FunctionComponent<{
                 component="span"
                 sx={{
                   fontFamily: tokens.mono,
-                  fontSize: 11.5,
+                  fontSize: type.caption,
                   fontWeight: 600,
-                  color: tokens.status.new.fg,
+                  color: tokens.brand,
                 }}
               >
                 {bug.jiraKey}

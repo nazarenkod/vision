@@ -15,7 +15,7 @@ import {
   useUserState,
   selectProject,
 } from "../contexts";
-import { tokens } from "../theme";
+import { tokens, type, radius } from "../theme";
 import { pillField } from "./pillField";
 import { ProjectAvatar } from "./ProjectAvatar";
 import { routes } from "../constants";
@@ -129,7 +129,7 @@ const ProjectSelect: FunctionComponent<{
         sx={{
           display: "block",
           mb: 0.75,
-          fontSize: 11,
+          fontSize: type.caption,
           fontWeight: 600,
           letterSpacing: "0.06em",
           textTransform: "uppercase",
@@ -168,7 +168,7 @@ const ProjectSelect: FunctionComponent<{
             paper: {
               sx: {
                 mt: 0.75,
-                borderRadius: "10px",
+                borderRadius: radius.control,
                 border: `1px solid ${tokens.border}`,
                 boxShadow: tokens.shadowPop,
                 "& .MuiMenuItem-root.Mui-selected": {
@@ -179,7 +179,7 @@ const ProjectSelect: FunctionComponent<{
           },
         }}
         sx={{
-          borderRadius: "10px",
+          borderRadius: radius.control,
           bgcolor: tokens.surface,
           "& .MuiSelect-select": { py: 1, pl: 1.25 },
           "& .MuiOutlinedInput-notchedOutline": { borderColor: tokens.border },

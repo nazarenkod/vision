@@ -1,9 +1,8 @@
 import React from "react";
 import { Box, Chip, Tooltip } from "@mui/material";
 import { TestVariation } from "../types";
-import { tokens } from "../theme";
 import { useT } from "../i18n";
-import { DeviceTags } from "./DeviceTags";
+import { BranchTag, DeviceTags } from "./DeviceTags";
 
 interface IProps {
   testVariation: TestVariation;
@@ -34,16 +33,7 @@ export const TestVariationDetails: React.FunctionComponent<IProps> = ({
           />
         </Tooltip>
       )}
-      <Chip
-        size="small"
-        label={testVariation.branchName}
-        sx={{
-          ml: 0.5,
-          borderRadius: 1.5,
-          fontFamily: tokens.mono,
-          fontSize: 11.5,
-        }}
-      />
+      <BranchTag branch={testVariation.branchName} sx={{ ml: 0.5 }} />
     </Box>
   );
 };

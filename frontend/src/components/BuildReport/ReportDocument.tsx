@@ -1,7 +1,7 @@
 import React from "react";
 import { Box, Typography } from "@mui/material";
 import { ArrowForward } from "@mui/icons-material";
-import { tokens } from "../../theme";
+import { tokens, type, radius } from "../../theme";
 import { BrandMark } from "../BrandMark";
 import { DeviceTags } from "../DeviceTags";
 import { StatusPill } from "../StatusPill";
@@ -43,8 +43,8 @@ const Section: React.FunctionComponent<{
     <Typography
       component="h5"
       sx={{
-        fontFamily: tokens.mono,
-        fontSize: 10.5,
+        fontSize: type.caption,
+        fontWeight: 600,
         letterSpacing: "0.07em",
         textTransform: "uppercase",
         color: tokens.textSecondary,
@@ -65,7 +65,7 @@ const tableSx = {
   "& th": {
     textAlign: "left",
     fontWeight: 600,
-    fontSize: 10.5,
+    fontSize: type.caption,
     color: tokens.textSecondary,
     p: "5px 6px",
     borderBottom: `1px solid ${tokens.borderStrong}`,
@@ -104,7 +104,7 @@ const STATUS_TONE = {
   failed: "failed",
 } as const;
 
-const SHOT_SX = { width: 72, borderRadius: 1, flexShrink: 0 };
+const SHOT_SX = { width: 72, borderRadius: radius.control, flexShrink: 0 };
 
 /** A screenshot of the report; one whose file is gone shows as an empty frame. */
 const Shot: React.FunctionComponent<{ name: string | null; alt: string }> = ({
@@ -173,7 +173,7 @@ export const ReportDocument: React.FunctionComponent<{
       sx={{
         bgcolor: tokens.surface,
         color: tokens.text,
-        borderRadius: 2.5,
+        borderRadius: radius.card,
         boxShadow: tokens.shadowShot,
         p: "26px 30px 22px",
         display: "flex",
@@ -198,8 +198,8 @@ export const ReportDocument: React.FunctionComponent<{
         <Box sx={{ flex: 1, minWidth: 0 }}>
           <Typography
             sx={{
-              fontFamily: tokens.mono,
-              fontSize: 10.5,
+              fontSize: type.caption,
+              fontWeight: 600,
               letterSpacing: "0.06em",
               textTransform: "uppercase",
               color: tokens.textSecondary,
@@ -207,7 +207,10 @@ export const ReportDocument: React.FunctionComponent<{
           >
             {t("report.buildReport")}
           </Typography>
-          <Typography component="h2" sx={{ fontSize: 22, fontWeight: 650 }}>
+          <Typography
+            component="h2"
+            sx={{ fontSize: type.section, fontWeight: 600 }}
+          >
             {t("report.textTitle", {
               project: build.projectName,
               number: build.number ?? "",
@@ -250,7 +253,7 @@ export const ReportDocument: React.FunctionComponent<{
           />
           <Typography
             data-testid="reportAsOf"
-            sx={{ fontSize: 11, color: tokens.textSecondary }}
+            sx={{ fontSize: type.caption, color: tokens.textSecondary }}
           >
             {t("report.textAsOf", {
               time: formatDate(overview.asOf, language, {
@@ -271,7 +274,7 @@ export const ReportDocument: React.FunctionComponent<{
               display: "grid",
               gridTemplateColumns: "repeat(5, minmax(0, 1fr))",
               border: `1px solid ${tokens.border}`,
-              borderRadius: 2,
+              borderRadius: radius.card,
               overflow: "hidden",
             }}
           >
@@ -286,15 +289,17 @@ export const ReportDocument: React.FunctionComponent<{
               >
                 <Typography
                   sx={{
-                    fontSize: 19,
-                    fontWeight: 650,
+                    fontSize: type.section,
+                    fontWeight: 600,
                     fontVariantNumeric: "tabular-nums",
                     color: value && color ? color : tokens.text,
                   }}
                 >
                   {value}
                 </Typography>
-                <Typography sx={{ fontSize: 11, color: tokens.textSecondary }}>
+                <Typography
+                  sx={{ fontSize: type.caption, color: tokens.textSecondary }}
+                >
                   {label}
                 </Typography>
               </Box>
@@ -332,7 +337,7 @@ export const ReportDocument: React.FunctionComponent<{
                   data-testid="reportChange"
                   sx={{
                     border: `1px solid ${tokens.border}`,
-                    borderRadius: 2,
+                    borderRadius: radius.card,
                     p: 1.25,
                     display: "flex",
                     flexDirection: "column",
@@ -347,7 +352,7 @@ export const ReportDocument: React.FunctionComponent<{
                       alignItems: "center",
                       justifyContent: "center",
                       bgcolor: tokens.lightbox,
-                      borderRadius: 1.5,
+                      borderRadius: radius.card,
                       p: 1,
                     }}
                   >
@@ -368,7 +373,7 @@ export const ReportDocument: React.FunctionComponent<{
                       alt={t("report.checkpoint")}
                     />
                   </Box>
-                  <Box sx={{ fontSize: 11.5 }}>
+                  <Box sx={{ fontSize: type.caption }}>
                     <StatusPill
                       tone={
                         STATUS_TONE[
@@ -390,7 +395,10 @@ export const ReportDocument: React.FunctionComponent<{
                     />
                     {change.diffPercent !== null && (
                       <Typography
-                        sx={{ fontSize: 11.5, color: tokens.textSecondary }}
+                        sx={{
+                          fontSize: type.caption,
+                          color: tokens.textSecondary,
+                        }}
                       >
                         {formatFixed(change.diffPercent, 2, language)}%
                       </Typography>
@@ -428,7 +436,7 @@ export const ReportDocument: React.FunctionComponent<{
                   sx={{
                     fontFamily: tokens.mono,
                     fontWeight: 600,
-                    color: tokens.status.new.fg,
+                    color: tokens.brand,
                     whiteSpace: "nowrap",
                   }}
                 >
@@ -588,11 +596,10 @@ export const ReportDocument: React.FunctionComponent<{
           display: "flex",
           justifyContent: "space-between",
           gap: 1.25,
-          fontSize: 10.5,
+          fontSize: type.caption,
           color: tokens.textSecondary,
           borderTop: `1px solid ${tokens.border}`,
           pt: 1.25,
-          fontFamily: tokens.mono,
         }}
       >
         <span>Vision</span>

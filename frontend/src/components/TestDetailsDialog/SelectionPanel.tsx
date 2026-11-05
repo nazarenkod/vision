@@ -8,7 +8,7 @@ import {
   ScreenRule,
 } from "../../types/insights";
 import { elementLabel } from "../../_helpers/elementPicking.helper";
-import { tokens } from "../../theme";
+import { tokens, type, radius } from "../../theme";
 import { useT } from "../../i18n";
 import {
   ActionButtons,
@@ -85,7 +85,7 @@ export const SelectionPanel: React.FunctionComponent<SelectionPanelProps> = ({
         ...(side === "bottom" ? { bottom: 16 } : { top: 8 }),
         zIndex: 3,
         width: "min(680px, calc(100% - 32px))",
-        borderRadius: "14px",
+        borderRadius: radius.card,
         boxShadow: tokens.shadowPop,
         overflow: "hidden",
         userSelect: "none",
@@ -102,10 +102,12 @@ export const SelectionPanel: React.FunctionComponent<SelectionPanelProps> = ({
           pb: 0.75,
         }}
       >
-        <Box sx={{ fontSize: 14.5, fontWeight: 600 }}>
+        <Box sx={{ fontSize: type.body, fontWeight: 600 }}>
           {t("select.selected", { count: selected.length })}
         </Box>
-        <Box sx={{ fontSize: 12.5, color: tokens.textMuted, flexGrow: 1 }}>
+        <Box
+          sx={{ fontSize: type.small, color: tokens.textMuted, flexGrow: 1 }}
+        >
           {t("selection.eachRule")}
         </Box>
         <Button
@@ -119,7 +121,7 @@ export const SelectionPanel: React.FunctionComponent<SelectionPanelProps> = ({
             component="span"
             sx={{
               ml: 1,
-              fontSize: 11,
+              fontSize: type.caption,
               fontWeight: 500,
               color: tokens.textMuted,
             }}
@@ -151,7 +153,7 @@ export const SelectionPanel: React.FunctionComponent<SelectionPanelProps> = ({
                 borderRadius: "999px",
                 border: `1px ${rule ? "dashed" : "solid"} ${tokens.border}`,
                 bgcolor: rule ? "transparent" : tokens.subtle,
-                fontSize: 12.5,
+                fontSize: type.small,
                 fontWeight: 500,
               }}
             >
@@ -159,11 +161,11 @@ export const SelectionPanel: React.FunctionComponent<SelectionPanelProps> = ({
                 sx={{
                   width: 18,
                   height: 18,
-                  borderRadius: "50%",
+                  borderRadius: radius.pill,
                   display: "grid",
                   placeItems: "center",
                   flexShrink: 0,
-                  fontSize: 11,
+                  fontSize: type.caption,
                   fontWeight: 700,
                   bgcolor: rule ? tokens.status.neutral.bar : tokens.brand,
                   color: tokens.brandInk,
@@ -200,7 +202,7 @@ export const SelectionPanel: React.FunctionComponent<SelectionPanelProps> = ({
           sx={{
             px: 2,
             py: 0.75,
-            fontSize: 12.5,
+            fontSize: type.small,
             color: tokens.status.changed.fg,
             bgcolor: tokens.status.changed.bg,
             borderTop: `1px solid ${tokens.border}`,
@@ -252,7 +254,7 @@ export const SelectionPanel: React.FunctionComponent<SelectionPanelProps> = ({
               everyScreen && !confirming ? setConfirming(true) : onRemoveRules()
             }
             sx={{
-              borderRadius: "8px",
+              borderRadius: radius.control,
               px: 1.25,
               py: 1,
               font: "inherit",

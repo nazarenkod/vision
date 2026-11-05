@@ -14,7 +14,7 @@ import { CARD_SIZE_BY_DENSITY, TestRunDensity } from "./TestRunListControls";
 import { thumbnailFor } from "../../_helpers/testRunImage.helper";
 import { tagValuesOf } from "../../_helpers/testRunTags.helper";
 import { TestRun } from "../../types";
-import { motion, tokens } from "../../theme";
+import { motion, tokens, radius } from "../../theme";
 import { staggered } from "../motion/Stagger";
 import { useT } from "../../i18n";
 
@@ -232,7 +232,7 @@ export const TestRunGrid: React.FunctionComponent<{
                   top: 4,
                   left: 4,
                   padding: 0.25,
-                  borderRadius: 1,
+                  borderRadius: radius.control,
                   // legible over a screenshot of any colour; shown on hover or when ticked
                   backgroundColor: tokens.surface,
                   opacity: selected ? 1 : 0,

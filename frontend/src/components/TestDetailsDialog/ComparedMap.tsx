@@ -2,7 +2,7 @@ import React from "react";
 import { Box } from "@mui/material";
 import { Rect } from "../../types/insights";
 import { Overview } from "../../_helpers/whatsCompared.helper";
-import { tokens } from "../../theme";
+import { tokens, radius } from "../../theme";
 
 interface ComparedMapProps {
   size: { width: number; height: number };
@@ -98,7 +98,7 @@ export const ComparedMap: React.FunctionComponent<ComparedMapProps> = ({
         flexShrink: 0,
         width,
         height,
-        borderRadius: "8px",
+        borderRadius: radius.control,
         overflow: "hidden",
         border: `1.5px solid ${overview.only ? tokens.borderStrong : tokens.brand}`,
         // dimmed where nothing is compared
@@ -112,7 +112,7 @@ export const ComparedMap: React.FunctionComponent<ComparedMapProps> = ({
           sx={{
             position: "absolute",
             boxSizing: "border-box",
-            borderRadius: "2px",
+            borderRadius: radius.control,
             ...place(rect),
             ...layerSx(layer),
           }}

@@ -1,7 +1,7 @@
 import React from "react";
 import { Box } from "@mui/material";
 import { StepState, stepStates } from "../../_helpers/review.helper";
-import { motion, tokens } from "../../theme";
+import { motion, tokens, radius } from "../../theme";
 import { useT } from "../../i18n";
 
 const COLOUR: Record<StepState, string> = {
@@ -47,7 +47,7 @@ export const StepDots: React.FunctionComponent<{
             flex: asBar ? 1 : "none",
             width: asBar ? "auto" : 8,
             height: asBar ? 6 : 8,
-            borderRadius: asBar ? "1px" : "50%",
+            borderRadius: asBar ? radius.control : radius.pill,
             bgcolor: COLOUR[state],
             transform: state === "current" && !asBar ? "scale(1.25)" : "none",
             transition: `background-color ${motion.base}ms ${motion.easing}, transform ${motion.base}ms ${motion.spring}`,

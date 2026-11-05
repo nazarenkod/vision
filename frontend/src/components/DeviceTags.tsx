@@ -1,6 +1,7 @@
 import React from "react";
 import { Box, Chip, SxProps, Theme, Tooltip } from "@mui/material";
-import { tokens } from "../theme";
+import { AltRoute } from "@mui/icons-material";
+import { tokens, type, radius } from "../theme";
 import { useT } from "../i18n";
 import type { Text } from "../i18n/dictionaries";
 import {
@@ -74,10 +75,10 @@ export const DeviceTags: React.FunctionComponent<Props> = ({
               alignItems: "center",
               height: 18,
               px: 0.75,
-              borderRadius: 9,
+              borderRadius: radius.control,
               // a fill is lost when the page prints without backgrounds
               border: `1px solid ${tokens.borderStrong}`,
-              fontSize: 11,
+              fontSize: type.caption,
               lineHeight: 1,
               whiteSpace: "nowrap",
             }}
@@ -100,7 +101,7 @@ export const DeviceTags: React.FunctionComponent<Props> = ({
                 maxWidth: "100%",
                 ...(dense && {
                   height: 20,
-                  fontSize: 11.5,
+                  fontSize: type.caption,
                   "& .MuiChip-label": { px: 0.75 },
                 }),
               }}
@@ -111,3 +112,42 @@ export const DeviceTags: React.FunctionComponent<Props> = ({
     </Box>
   );
 };
+
+/**
+ * The branch as a tag: the same grey chip as a device or a tag, with a branch
+ * icon, in mono because a branch is a name from git (spec 046).
+ */
+export const BranchTag = React.forwardRef<
+  HTMLSpanElement,
+  {
+    branch: string;
+    testId?: string;
+    sx?: SxProps<Theme>;
+  } & Omit<React.HTMLAttributes<HTMLSpanElement>, "color" | "children">
+>(function BranchTag({ branch, testId = "branchTag", sx, ...rest }, ref) {
+  // a tooltip around it hands its listeners and ref down through here
+  return (
+    <Chip
+      {...rest}
+      ref={ref}
+      component="span"
+      size="small"
+      icon={<AltRoute />}
+      label={branch}
+      data-testid={testId}
+      sx={[
+        {
+          maxWidth: "100%",
+          fontFamily: tokens.mono,
+          fontSize: type.caption,
+          "& .MuiChip-icon": {
+            fontSize: type.caption,
+            color: tokens.textMuted,
+            ml: 0.75,
+          },
+        },
+        ...(Array.isArray(sx) ? sx : [sx]),
+      ]}
+    />
+  );
+});

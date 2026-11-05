@@ -34,7 +34,7 @@ import {
   splitPieces,
   variableSelector,
 } from "../../_helpers/variableText.helper";
-import { tokens } from "../../theme";
+import { tokens, type, radius } from "../../theme";
 import { useT } from "../../i18n";
 import {
   ActionButtons,
@@ -199,7 +199,7 @@ export const ElementPopover: React.FunctionComponent<ElementPopoverProps> = ({
         data-testid="elementPopover"
         sx={{
           width: 256,
-          borderRadius: "14px",
+          borderRadius: radius.card,
           boxShadow: tokens.shadowPop,
           overflow: "hidden",
         }}
@@ -218,7 +218,7 @@ export const ElementPopover: React.FunctionComponent<ElementPopoverProps> = ({
           <Box sx={{ flexGrow: 1, minWidth: 0 }}>
             <Typography
               noWrap
-              sx={{ fontSize: 14.5, fontWeight: 600 }}
+              sx={{ fontSize: type.body, fontWeight: 600 }}
               title={element.selector}
             >
               {name}
@@ -304,7 +304,7 @@ export const ElementPopover: React.FunctionComponent<ElementPopoverProps> = ({
                     display: "flex",
                     gap: 1,
                     width: "100%",
-                    borderRadius: "8px",
+                    borderRadius: radius.control,
                     px: 1.25,
                     py: 0.75,
                     font: "inherit",
@@ -329,7 +329,7 @@ export const ElementPopover: React.FunctionComponent<ElementPopoverProps> = ({
                   </Box>
                   <Box
                     component="span"
-                    sx={{ fontSize: 11, color: tokens.textMuted }}
+                    sx={{ fontSize: type.caption, color: tokens.textMuted }}
                   >
                     {t("select.found", { count: item.count })}
                   </Box>
@@ -350,7 +350,7 @@ export const ElementPopover: React.FunctionComponent<ElementPopoverProps> = ({
                   gap: 1.25,
                   justifyContent: "flex-start",
                   width: "100%",
-                  borderRadius: "8px",
+                  borderRadius: radius.control,
                   px: 1.25,
                   py: 1,
                   font: "inherit",
@@ -373,7 +373,7 @@ export const ElementPopover: React.FunctionComponent<ElementPopoverProps> = ({
                 <Box
                   component="span"
                   sx={{
-                    fontSize: 11,
+                    fontSize: type.caption,
                     fontWeight: 500,
                     color: tokens.textMuted,
                   }}
@@ -452,7 +452,7 @@ export const ElementPopover: React.FunctionComponent<ElementPopoverProps> = ({
                     lineHeight: 1.4,
                     color: tokens.status.changed.fg,
                     bgcolor: tokens.status.changed.bg,
-                    borderRadius: "8px",
+                    borderRadius: radius.control,
                     px: 1.25,
                     py: 1,
                   }}
@@ -478,7 +478,7 @@ export const ElementPopover: React.FunctionComponent<ElementPopoverProps> = ({
                       lineHeight: 1.4,
                       color: tokens.status.changed.fg,
                       bgcolor: tokens.status.changed.bg,
-                      borderRadius: "8px",
+                      borderRadius: radius.control,
                       px: 1.25,
                       py: 1,
                     }}
@@ -556,7 +556,7 @@ export const ElementPopover: React.FunctionComponent<ElementPopoverProps> = ({
             </Box>
             {rule.action === "variable" && rule.parts && text && (
               <Typography
-                sx={{ fontSize: 13.5 }}
+                sx={{ fontSize: type.small }}
                 data-testid="variableRuleText"
               >
                 {placesIn(rule.parts, text).map((segment, i) =>
@@ -568,7 +568,7 @@ export const ElementPopover: React.FunctionComponent<ElementPopoverProps> = ({
                         fontWeight: 600,
                         color: tokens.variable,
                         bgcolor: tokens.variableSoft,
-                        borderRadius: "4px",
+                        borderRadius: radius.control,
                         px: 0.5,
                       }}
                     >
@@ -638,7 +638,7 @@ export const ElementPopover: React.FunctionComponent<ElementPopoverProps> = ({
                 display: "flex",
                 gap: 1,
                 width: "100%",
-                borderRadius: "8px",
+                borderRadius: radius.control,
                 border: `1px dashed ${tokens.borderStrong}`,
                 px: 1.25,
                 py: 0.75,
@@ -658,7 +658,7 @@ export const ElementPopover: React.FunctionComponent<ElementPopoverProps> = ({
               <Box
                 component="span"
                 sx={{
-                  fontSize: 11.5,
+                  fontSize: type.caption,
                   fontWeight: 500,
                   color: tokens.textMuted,
                 }}

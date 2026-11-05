@@ -1,6 +1,6 @@
 import React, { FunctionComponent } from "react";
 import { makeStyles, createStyles } from "@mui/styles";
-import { tokens } from "../../theme";
+import { tokens, type, radius } from "../../theme";
 import { staggered } from "../motion/Stagger";
 import {
   List,
@@ -28,6 +28,7 @@ import {
   useProjectState,
 } from "../../contexts";
 import { BuildStatusChip } from "../BuildStatusChip";
+import { BranchTag } from "../DeviceTags";
 import { SkeletonList } from "../SkeletonList";
 import { useSnackbar } from "notistack";
 import { TextValidator } from "react-material-ui-form-validator";
@@ -57,7 +58,7 @@ const useStyles = makeStyles(() =>
     listItem: {
       paddingRight: 36,
       margin: "2px 8px",
-      borderRadius: 8,
+      borderRadius: radius.control,
       alignItems: "flex-start",
       "&:hover $listItemSecondaryAction, &.Mui-selected $listItemSecondaryAction":
         {
@@ -372,7 +373,7 @@ const BuildList: FunctionComponent = () => {
                         <Typography
                           variant="subtitle2"
                           sx={{
-                            fontSize: 15,
+                            fontSize: type.body,
                             fontVariantNumeric: "tabular-nums",
                             overflowWrap: "anywhere",
                           }}
@@ -405,7 +406,7 @@ const BuildList: FunctionComponent = () => {
                           <Typography
                             variant="caption"
                             sx={{
-                              fontSize: 12.5,
+                              fontSize: type.small,
                               color: tokens.textMuted,
                               fontVariantNumeric: "tabular-nums",
                             }}
@@ -422,27 +423,11 @@ const BuildList: FunctionComponent = () => {
                             }}
                           >
                             <Tooltip title={build.branchName}>
-                              <Box
-                                component="span"
-                                data-testid="buildBranch"
-                                sx={{
-                                  minWidth: 0,
-                                  px: 1,
-                                  py: 0.25,
-                                  borderRadius: 999,
-                                  border: `1px solid ${tokens.border}`,
-                                  bgcolor: tokens.subtle,
-                                  color: tokens.textSecondary,
-                                  fontFamily: tokens.mono,
-                                  fontSize: 12,
-                                  lineHeight: 1.4,
-                                  whiteSpace: "nowrap",
-                                  overflow: "hidden",
-                                  textOverflow: "ellipsis",
-                                }}
-                              >
-                                {build.branchName}
-                              </Box>
+                              <BranchTag
+                                branch={build.branchName}
+                                testId="buildBranch"
+                                sx={{ minWidth: 0 }}
+                              />
                             </Tooltip>
                             <BuildStatusChip status={build.status} />
                           </Box>

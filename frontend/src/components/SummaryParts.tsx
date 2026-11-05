@@ -2,7 +2,7 @@
 // tiles of numbers over cards with tables, so the tabs read as one page.
 import React from "react";
 import { Box, ButtonBase, Typography } from "@mui/material";
-import { motion, tokens } from "../theme";
+import { motion, tokens, type, radius } from "../theme";
 import { CountUp } from "./motion/useCountUp";
 import { staggered } from "./motion/Stagger";
 
@@ -22,7 +22,7 @@ export const Card: React.FunctionComponent<{
     sx={{
       bgcolor: tokens.surface,
       border: `1px solid ${tokens.border}`,
-      borderRadius: 3,
+      borderRadius: radius.card,
       minWidth: 0,
       display: "flex",
       flexDirection: "column",
@@ -37,7 +37,7 @@ export const Card: React.FunctionComponent<{
           px: 2,
           py: 1.5,
           fontSize: 16,
-          fontWeight: 650,
+          fontWeight: 600,
           borderBottom: `1px solid ${tokens.border}`,
         }}
       >
@@ -79,7 +79,7 @@ export const Head: React.FunctionComponent<{
       minHeight: 32,
       borderTop: 0,
       bgcolor: tokens.subtle,
-      fontSize: 11.5,
+      fontSize: type.caption,
       fontWeight: 600,
       color: tokens.textSecondary,
     }}
@@ -131,8 +131,7 @@ export const Num: React.FunctionComponent<{
     sx={{
       // under the middle of its header: short numbers under long headers read as one column
       textAlign: "center",
-      fontFamily: tokens.mono,
-      fontSize: 12,
+      fontSize: type.small,
       fontVariantNumeric: "tabular-nums",
       fontWeight: value ? 600 : 400,
       color: value ? (color ?? tokens.text) : tokens.textMuted,
@@ -206,7 +205,7 @@ export const Tiles: React.FunctionComponent<{
         sx={{
           bgcolor: tile.quiet ? "transparent" : tokens.surface,
           border: `1px ${tile.quiet ? "dashed" : "solid"} ${tokens.border}`,
-          borderRadius: 3,
+          borderRadius: radius.card,
           px: 1.75,
           py: 1.25,
           display: "flex",
@@ -230,8 +229,8 @@ export const Tiles: React.FunctionComponent<{
         <Box
           component="span"
           sx={{
-            fontSize: 24,
-            fontWeight: tile.quiet ? 600 : 650,
+            fontSize: type.page,
+            fontWeight: tile.quiet ? 600 : 600,
             lineHeight: 1.2,
             letterSpacing: "-0.01em",
             fontVariantNumeric: "tabular-nums",
@@ -251,7 +250,7 @@ export const Tiles: React.FunctionComponent<{
         <Box
           component="span"
           sx={{
-            fontSize: 12.5,
+            fontSize: type.small,
             fontWeight: 500,
             color: tile.quiet ? tokens.textSecondary : undefined,
           }}
@@ -264,7 +263,7 @@ export const Tiles: React.FunctionComponent<{
             data-testid={`${testId}Caption-${tile.key}`}
             title={tile.captionTitle || undefined}
             sx={{
-              fontSize: 11.5,
+              fontSize: type.caption,
               color: tokens.textSecondary,
               maxWidth: "100%",
               overflow: "hidden",

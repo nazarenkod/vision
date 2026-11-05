@@ -15,7 +15,7 @@ import {
   TableRow,
 } from "@mui/material";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
-import { tokens } from "../theme";
+import { tokens, radius, type } from "../theme";
 import {
   useProjectState,
   useProjectDispatch,
@@ -146,7 +146,7 @@ const ProjectsListPage = () => {
         sx={{
           bgcolor: tokens.surface,
           border: `1px solid ${tokens.border}`,
-          borderRadius: 3,
+          borderRadius: radius.card,
         }}
       >
         <Table>
@@ -172,7 +172,7 @@ const ProjectsListPage = () => {
                   </MuiLink>
                   <Typography
                     sx={{
-                      font: `400 11px ${tokens.mono}`,
+                      font: `400 ${type.caption}px ${tokens.mono}`,
                       color: tokens.textMuted,
                       whiteSpace: "nowrap",
                     }}
@@ -180,7 +180,9 @@ const ProjectsListPage = () => {
                     {project.id}
                   </Typography>
                 </TableCell>
-                <TableCell sx={{ fontFamily: tokens.mono, fontSize: 13 }}>
+                <TableCell
+                  sx={{ fontFamily: tokens.mono, fontSize: type.small }}
+                >
                   {project.mainBranchName}
                 </TableCell>
                 <TableCell>{project.imageComparison}</TableCell>

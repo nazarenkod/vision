@@ -6,7 +6,7 @@ import { TestRun } from "../../types";
 import { TestStatus } from "../../types/testStatus";
 import { testRunService } from "../../services";
 import { useUserState } from "../../contexts";
-import { tokens } from "../../theme";
+import { tokens, type, radius } from "../../theme";
 import { BaseModal } from "../BaseModal";
 import { DeviceTags } from "../DeviceTags";
 import { deviceLabel } from "../../_helpers/device.helper";
@@ -95,8 +95,8 @@ export const DeviceStrip: React.FunctionComponent<{
               py: 0.25,
               pl: 1.25,
               pr: 0.5,
-              borderRadius: 999,
-              fontSize: 12.5,
+              borderRadius: radius.pill,
+              fontSize: type.small,
               // the frame marks the current device; the tags inside stay grey (REQ-037-04)
               border: `1px solid ${current ? tokens.brand : tokens.border}`,
               bgcolor: tokens.surface,
@@ -110,7 +110,7 @@ export const DeviceStrip: React.FunctionComponent<{
               sx={{
                 width: 8,
                 height: 8,
-                borderRadius: "50%",
+                borderRadius: radius.pill,
                 bgcolor: dotColor(run.status),
               }}
             />

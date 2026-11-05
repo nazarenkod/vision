@@ -1,7 +1,7 @@
 import React from "react";
 import { Box, Button, ListSubheader, Menu, MenuItem } from "@mui/material";
 import { Check, ExpandMore } from "@mui/icons-material";
-import { tokens } from "../../theme";
+import { tokens, type } from "../../theme";
 import { useT } from "../../i18n";
 import {
   QueueChoice,
@@ -41,7 +41,11 @@ export const QueueHeader: React.FunctionComponent<{
       <Box sx={{ flex: 1, minWidth: 0 }}>{labelOf(choice)}</Box>
       <Box
         component="span"
-        sx={{ fontFamily: tokens.mono, fontSize: 12, color: tokens.textMuted }}
+        sx={{
+          fontSize: type.caption,
+          fontVariantNumeric: "tabular-nums",
+          color: tokens.textMuted,
+        }}
       >
         {choice.waiting}
       </Box>
@@ -66,8 +70,7 @@ export const QueueHeader: React.FunctionComponent<{
         component="span"
         data-testid="queuePosition"
         sx={{
-          fontFamily: tokens.mono,
-          fontSize: 12,
+          fontSize: type.caption,
           color: tokens.textSecondary,
           fontVariantNumeric: "tabular-nums",
         }}

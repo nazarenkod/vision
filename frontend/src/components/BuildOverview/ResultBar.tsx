@@ -1,6 +1,6 @@
 import React from "react";
 import { Box } from "@mui/material";
-import { tokens } from "../../theme";
+import { tokens, type, radius } from "../../theme";
 import { english, Text } from "../../i18n";
 import { Outcome } from "../../types/buildOverview";
 import { Tooltip } from "../Tooltip";
@@ -47,7 +47,7 @@ export const ResultBar: React.FunctionComponent<{
         display: "flex",
         height: 6,
         gap: "2px",
-        borderRadius: 999,
+        borderRadius: radius.pill,
         overflow: "hidden",
         bgcolor: tokens.subtle,
       }}
@@ -77,7 +77,7 @@ export const ResultLegend: React.FunctionComponent<{ text?: Text }> = ({
       display: "flex",
       flexWrap: "wrap",
       gap: "4px 14px",
-      fontSize: 11,
+      fontSize: type.caption,
       color: tokens.textSecondary,
     }}
   >
@@ -92,7 +92,7 @@ export const ResultLegend: React.FunctionComponent<{ text?: Text }> = ({
           sx={{
             width: 10,
             height: 6,
-            borderRadius: 999,
+            borderRadius: radius.pill,
             bgcolor: colorOf[part],
             // printed without backgrounds the swatch would vanish
             printColorAdjust: "exact",

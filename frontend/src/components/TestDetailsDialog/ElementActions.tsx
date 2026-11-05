@@ -1,7 +1,7 @@
 import React from "react";
 import { Box, ButtonBase, Tooltip } from "@mui/material";
 import { ElementRuleAction, RuleScope } from "../../types/insights";
-import { tokens } from "../../theme";
+import { tokens, type, radius } from "../../theme";
 import { useT } from "../../i18n";
 
 // what Allow takes here; another share goes through the full rule form
@@ -12,7 +12,7 @@ export const swatch = (action: ElementRuleAction, size = 16) => {
   const base = {
     width: size,
     height: size,
-    borderRadius: "4px",
+    borderRadius: radius.control,
     boxSizing: "border-box",
     flexShrink: 0,
   } as const;
@@ -90,7 +90,7 @@ export const ActionButtons: React.FunctionComponent<ActionButtonsProps> = ({
               gap: 1.25,
               justifyContent: "flex-start",
               width: row ? "auto" : "100%",
-              borderRadius: "8px",
+              borderRadius: radius.control,
               px: 1.25,
               py: 1,
               font: "inherit",
@@ -106,7 +106,11 @@ export const ActionButtons: React.FunctionComponent<ActionButtonsProps> = ({
             </Box>
             <Box
               component="span"
-              sx={{ fontSize: 11, fontWeight: 500, color: tokens.textMuted }}
+              sx={{
+                fontSize: type.caption,
+                fontWeight: 500,
+                color: tokens.textMuted,
+              }}
             >
               {key}
             </Box>
@@ -146,7 +150,7 @@ export const ScopeToggle: React.FunctionComponent<{
         borderRadius: "6px",
         py: 0.5,
         font: "inherit",
-        fontSize: 12.5,
+        fontSize: type.small,
         fontWeight: scope === value ? 600 : 500,
         color: scope === value ? tokens.text : tokens.textSecondary,
         bgcolor: scope === value ? tokens.surface : "transparent",
@@ -161,7 +165,7 @@ export const ScopeToggle: React.FunctionComponent<{
       sx={{
         display: "flex",
         bgcolor: tokens.subtle,
-        borderRadius: "8px",
+        borderRadius: radius.control,
         p: "2px",
       }}
     >

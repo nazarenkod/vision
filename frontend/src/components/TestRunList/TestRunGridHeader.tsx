@@ -1,5 +1,5 @@
 import React from "react";
-import { tokens } from "../../theme";
+import { tokens, type } from "../../theme";
 import { Box, Button, Checkbox } from "@mui/material";
 import { ArrowDownward, ArrowUpward } from "@mui/icons-material";
 import { TestRunDensity } from "./TestRunListControls";
@@ -81,7 +81,7 @@ export const TestRunGridHeader: React.FunctionComponent<{
         // the data grid's column titles, so both views share one header
         sx={{
           textTransform: "none",
-          fontSize: 11.5,
+          fontSize: type.caption,
           fontWeight: 600,
           color: tokens.textSecondary,
         }}

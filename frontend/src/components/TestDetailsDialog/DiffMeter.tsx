@@ -1,7 +1,7 @@
 import React from "react";
 import { Box, Typography } from "@mui/material";
 import { diffMeter } from "../../_helpers/review.helper";
-import { motion, tokens } from "../../theme";
+import { motion, tokens, radius } from "../../theme";
 import { Tooltip } from "../Tooltip";
 import { useT } from "../../i18n";
 
@@ -35,7 +35,6 @@ export const DiffMeter: React.FunctionComponent<{
           variant="caption"
           data-testid="diffValue"
           sx={{
-            fontFamily: tokens.mono,
             fontWeight: 600,
             color: meter.over ? tokens.diff : tokens.text,
             fontVariantNumeric: "tabular-nums",
@@ -49,7 +48,7 @@ export const DiffMeter: React.FunctionComponent<{
             position: "relative",
             width: 64,
             height: 6,
-            borderRadius: 3,
+            borderRadius: radius.pill,
             bgcolor: tokens.subtle,
             boxShadow: `inset 0 0 0 1px ${tokens.border}`,
           }}
@@ -60,7 +59,7 @@ export const DiffMeter: React.FunctionComponent<{
             sx={{
               position: "absolute",
               inset: "0 auto 0 0",
-              borderRadius: 3,
+              borderRadius: radius.pill,
               bgcolor: meter.over ? tokens.diff : tokens.textMuted,
               transformOrigin: "left",
               animation: `v-fill ${motion.slow * 2}ms ${motion.easing} both`,
@@ -75,7 +74,7 @@ export const DiffMeter: React.FunctionComponent<{
               bottom: -4,
               width: 2,
               ml: "-1px",
-              borderRadius: 1,
+              borderRadius: radius.control,
               bgcolor: tokens.text,
             }}
           />

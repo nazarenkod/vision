@@ -1,7 +1,7 @@
 import React from "react";
 import { Box, Typography } from "@mui/material";
 import { BrandLockup } from "./BrandMark";
-import { tokens } from "../theme";
+import { tokens, radius } from "../theme";
 import { useT } from "../i18n";
 
 // One pixel off the grid that settles back: the logo's story, once, quietly.
@@ -14,7 +14,7 @@ const StrayPixel: React.FunctionComponent = () => (
       top: "calc(50% - 222px)",
       width: 27,
       height: 27,
-      borderRadius: "3px",
+      borderRadius: radius.control,
       bgcolor: tokens.brand,
       opacity: 0.16,
       "@keyframes v-stray-auth": {
@@ -99,7 +99,7 @@ export const AuthLayout: React.FunctionComponent<{
         sx={{
           bgcolor: tokens.surface,
           border: `1px solid ${tokens.border}`,
-          borderRadius: 4,
+          borderRadius: radius.card,
           boxShadow: tokens.shadowShot,
           p: 3,
           display: "flex",

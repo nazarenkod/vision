@@ -7,7 +7,7 @@ import {
   HourglassEmptyRounded,
 } from "@mui/icons-material";
 import { Verdict } from "../../_helpers/whatsCompared.helper";
-import { tokens } from "../../theme";
+import { tokens, type, radius } from "../../theme";
 
 /**
  * What came out of the comparison and why, first in the Changes tab
@@ -25,9 +25,9 @@ export const ComparisonVerdict: React.FunctionComponent<{
     ) : verdict.tone === "failed" ? (
       <ErrorOutlineRounded sx={{ fontSize: 20 }} />
     ) : changes ? (
-      <DifferenceOutlined sx={{ fontSize: 19 }} />
+      <DifferenceOutlined sx={{ fontSize: type.section }} />
     ) : (
-      <HourglassEmptyRounded sx={{ fontSize: 19 }} />
+      <HourglassEmptyRounded sx={{ fontSize: type.section }} />
     );
   return (
     <Box
@@ -46,7 +46,7 @@ export const ComparisonVerdict: React.FunctionComponent<{
           width: 36,
           height: 36,
           flexShrink: 0,
-          borderRadius: "10px",
+          borderRadius: radius.control,
           bgcolor: status.bg,
           color: status.fg,
           display: "flex",
@@ -67,7 +67,7 @@ export const ComparisonVerdict: React.FunctionComponent<{
         <Typography
           component="h3"
           data-testid="verdictTitle"
-          sx={{ fontSize: 17, fontWeight: 650, lineHeight: 1.3 }}
+          sx={{ fontSize: type.title, fontWeight: 600, lineHeight: 1.3 }}
         >
           {verdict.title}
         </Typography>
@@ -75,7 +75,7 @@ export const ComparisonVerdict: React.FunctionComponent<{
           <Typography
             data-testid="verdictReason"
             sx={{
-              fontSize: 13.5,
+              fontSize: type.small,
               color: tokens.textSecondary,
               lineHeight: 1.45,
             }}

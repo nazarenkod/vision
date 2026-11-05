@@ -4,7 +4,7 @@ import { makeStyles } from "@mui/styles";
 import { TestRun } from "../../types";
 import { Tooltip } from "../Tooltip";
 import { DiffMeter } from "./DiffMeter";
-import { tokens } from "../../theme";
+import { radius, tokens } from "../../theme";
 import { useT } from "../../i18n";
 
 const useStyles = makeStyles((theme: Theme) => ({
@@ -12,8 +12,8 @@ const useStyles = makeStyles((theme: Theme) => ({
     padding: theme.spacing(1.5),
     marginTop: theme.spacing(1),
     backgroundColor: tokens.subtle,
-    borderLeft: "3px solid",
-    borderColor: theme.palette.primary.main,
+    // a tinted block, not a coloured edge: no card carries a side stripe (spec 046)
+    borderRadius: radius.control,
   },
   vlmLabel: {
     fontWeight: 600,

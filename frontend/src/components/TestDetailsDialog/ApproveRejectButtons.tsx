@@ -1,6 +1,6 @@
 import { Chip, Button } from "@mui/material";
 import { Check } from "@mui/icons-material";
-import { motion, tokens } from "../../theme";
+import { motion, tokens, type, radius } from "../../theme";
 import { REVIEW_KEYS } from "../../_helpers/review.helper";
 import { useDialogSnackbar } from "./useDialogSnackbar";
 import { useDecisionSnackbar } from "../useDecisionSnackbar";
@@ -19,12 +19,12 @@ const keycap = (key: string) => ({
     content: `"${key}"`,
     marginLeft: "10px",
     fontFamily: tokens.mono,
-    fontSize: 10.5,
+    fontSize: type.caption,
     fontWeight: 500,
     lineHeight: "16px",
     padding: "0 4px",
     border: "1px solid currentColor",
-    borderRadius: "4px",
+    borderRadius: radius.control,
     opacity: 0.7,
   },
 });

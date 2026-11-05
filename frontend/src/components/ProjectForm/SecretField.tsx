@@ -1,7 +1,7 @@
 import React from "react";
 import { Box, Button, TextField, Typography } from "@mui/material";
 import { Check } from "@mui/icons-material";
-import { tokens } from "../../theme";
+import { tokens, radius } from "../../theme";
 import { useT } from "../../i18n";
 
 /**
@@ -38,7 +38,7 @@ export const SecretField: React.FunctionComponent<{
             height: 24,
             pl: 0.75,
             pr: 1,
-            borderRadius: 999,
+            borderRadius: radius.pill,
             fontSize: 12,
             fontWeight: 500,
             color: tokens.status.passed.fg,

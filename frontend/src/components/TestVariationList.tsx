@@ -16,10 +16,10 @@ import { Link } from "react-router-dom";
 import { routes } from "../constants";
 import { Delete } from "@mui/icons-material";
 import { BaseModal } from "./BaseModal";
-import { motion, tokens } from "../theme";
+import { motion, tokens, type, radius } from "../theme";
 import { staggered } from "./motion/Stagger";
 import { EmptyState } from "./EmptyState";
-import { DeviceTags } from "./DeviceTags";
+import { BranchTag, DeviceTags } from "./DeviceTags";
 import { deviceLabel } from "../_helpers/device.helper";
 import { useT } from "../i18n";
 
@@ -83,14 +83,8 @@ const CheckCard: React.FunctionComponent<{
       <CardContent sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
         <Typography sx={{ fontWeight: 600 }}>{check.name}</Typography>
         <Box sx={{ display: "flex", gap: 0.5, flexWrap: "wrap" }}>
-          <Chip
-            size="small"
-            label={check.branchName}
-            sx={{ fontFamily: tokens.mono, fontSize: 11.5, borderRadius: 1.5 }}
-          />
-          {check.customTags && (
-            <Chip size="small" variant="outlined" label={check.customTags} />
-          )}
+          <BranchTag branch={check.branchName} />
+          {check.customTags && <Chip size="small" label={check.customTags} />}
         </Box>
         {devices.map((device) => (
           <Box
@@ -100,7 +94,7 @@ const CheckCard: React.FunctionComponent<{
             <ButtonBase
               onClick={() => setShownId(device.id)}
               sx={{
-                fontSize: 12.5,
+                fontSize: type.small,
                 lineHeight: 1.35,
                 textAlign: "left",
                 justifyContent: "flex-start",
@@ -121,7 +115,7 @@ const CheckCard: React.FunctionComponent<{
                   width: 3,
                   alignSelf: "stretch",
                   minHeight: 20,
-                  borderRadius: 1,
+                  borderRadius: radius.control,
                   flexShrink: 0,
                   bgcolor:
                     device.id === shown.id ? tokens.brand : "transparent",

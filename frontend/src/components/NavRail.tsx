@@ -11,7 +11,7 @@ import {
 } from "@mui/icons-material";
 import { useProjectState, useUserState } from "../contexts";
 import { routes } from "../constants";
-import { motion, tokens } from "../theme";
+import { motion, tokens, radius } from "../theme";
 import { useT } from "../i18n";
 
 interface RailItem {
@@ -112,7 +112,7 @@ const NavRail: React.FunctionComponent = () => {
           top: 0,
           width: 40,
           height: 40,
-          borderRadius: 2,
+          borderRadius: radius.control,
           bgcolor: tokens.brandSoft,
           opacity: indicatorTop === null ? 0 : 1,
           transform: `translateY(${indicatorTop ?? 0}px)`,
@@ -137,7 +137,7 @@ const NavRail: React.FunctionComponent = () => {
               sx={{
                 width: 40,
                 height: 40,
-                borderRadius: 2,
+                borderRadius: radius.control,
                 color: active ? tokens.brand : tokens.textMuted,
                 transition: `color ${motion.nav}ms ${motion.easing}, background-color ${motion.fast}ms`,
                 "&:hover": {

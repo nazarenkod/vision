@@ -24,7 +24,7 @@
   Так працюють журнал рішень і Undo ([ADR-0014](../../decisions/0014-undo-through-decision-journal.md)), а
   збій відхилення не скасовує бага (REQ-025-30, REQ-025-32).
 - **Назва фічі** — nullable-колонка прогону поза ключем варіації
-  ([ADR-0019](../../decisions/0019-sdk-upstream-plus-ui-tree-and-feature.md)); без неї —
+  ([ADR-0019](../../decisions/0019-sdk-base-plus-ui-tree-and-feature.md)); без неї —
   `functionalBlock(name)` з [005](../005-jira-bugs/design.md).
 - **AI — Gemini на особистому ключі** ([ADR-0020](../../decisions/0020-personal-gemini-keys.md)).
   Ключ лежить у `User.geminiApiKey`, API повертає лише `geminiKeySet`. `AiService.generateJson`
@@ -93,7 +93,7 @@ ALTER TABLE "TestRun" ADD COLUMN "featureName" TEXT;
 -- особистий ключ Gemini; лише записується (ADR-0020)
 ALTER TABLE "User" ADD COLUMN "geminiApiKey" TEXT;
 
--- нова таблиця без зовнішніх ключів: видалення прогонів і варіацій upstream-кодом її не чіпає
+-- нова таблиця без зовнішніх ключів: видалення прогонів і варіацій успадкованим кодом її не чіпає
 CREATE TABLE "VisualBug" (
   "id" TEXT PRIMARY KEY,
   "projectId" TEXT NOT NULL,

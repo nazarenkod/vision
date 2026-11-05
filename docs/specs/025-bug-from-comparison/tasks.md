@@ -9,7 +9,7 @@
   - Файли: `sdk-java/src/main/java/...`, `sdk-java/src/test/java/.../VisualRegressionTrackerTest.java`,
     `scripts/build-sdk-jar.sh`, `sdk-java/AGENTS.md`, `DEPLOY.md` (приклади з `.featureName(...)`).
   - Готово, коли: `gradle test` зелений, тест без `featureName` бачить запит без цього ключа; `git diff`
-    `sdk-java/` проти upstream містить лише `uiTree` і `featureName`.
+    `sdk-java/` проти вихідного проєкту містить лише `uiTree` і `featureName`.
 - [x] **T2** [P] (REQ-025-71, REQ-025-72) Бекенд: міграція `TestRun.featureName` і таблиця
   `VisualBug`, `prisma generate`; `featureName` у DTO прийому (JSON і multipart), у рядку прогону й
   `TestRunDto`; пошук варіації не змінюється.

@@ -11,7 +11,7 @@ const KEEP_JOURNAL_MS = 7 * 24 * 60 * 60 * 1000;
 
 /**
  * Approve and reject with a journal, and Undo from it (018, ADR-0014). The
- * decisions themselves are upstream's; this only records what they changed.
+ * decisions themselves are the inherited code's; this only records what they changed.
  */
 @Injectable()
 export class DecisionUndoService {

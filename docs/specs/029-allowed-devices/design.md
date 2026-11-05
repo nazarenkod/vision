@@ -2,7 +2,7 @@
 
 ## Підхід
 
-Уся фіча — на сервері; SDK не змінюється ([ADR-0019](../../decisions/0019-sdk-upstream-plus-ui-tree-and-feature.md)):
+Уся фіча — на сервері; SDK не змінюється ([ADR-0019](../../decisions/0019-sdk-base-plus-ui-tree-and-feature.md)):
 на будь-яку відповідь не 2xx `handleResponse` кидає `TestRunException` з тілом відповіді, і
 робить це до перевірки soft assert (REQ-029-08).
 
@@ -19,7 +19,7 @@
   Обидва ендпоінти прийому (`POST /test-runs` і `/test-runs/multipart`) проходять через неї.
 - **Хто перевіряється** — контролер передає в сервіс `checkDevice`. CLI і MCP (`vision.py`)
   надсилають `User-Agent: vision-cli/<версія>`; для них перевірки немає (REQ-029-12), для всіх
-  інших клієнтів (Java SDK, upstream SDK) — є. Це захист від помилки, а не від зловмисника:
+  інших клієнтів (Java SDK, вихідний SDK) — є. Це захист від помилки, а не від зловмисника:
   підробити заголовок можна, але для цього треба хотіти обійти правило.
 - **Відповідь** — `422 Unprocessable Entity`, `message` англійською (REQ-029-07):
 
@@ -112,7 +112,7 @@ sequenceDiagram
 | REQ-029-05 | `backend/src/projects/allowed-devices.spec.ts › rejects a device or OS that matches no entry`; `backend/src/test-runs/test-runs.service.spec.ts › rejects a device not allowed without creating a variation or run` |
 | REQ-029-06 | `backend/src/projects/allowed-devices.spec.ts › rejects a snapshot without a device or OS` |
 | REQ-029-07 | `backend/src/projects/allowed-devices.spec.ts › names the check, what was sent, the allowed list and the project` |
-| REQ-029-08 | `sdk-java/src/test/java/ua/vision/sdk/VisionTest.java › handleRequestShouldThrowIfNotSuccess` (upstream; `handleResponse` не читає soft assert); manual: проєкт з переліком, тест з `enableSoftAssert(true)` на недозволеному пристрої → тест падає з `TestRunException`, у тексті — повідомлення сервера (перевірено 2026-10-30 на jar `4.3.1-vision.2` проти сервера, що відповідає 422) |
+| REQ-029-08 | `sdk-java/src/test/java/ua/vision/sdk/VisionTest.java › handleRequestShouldThrowIfNotSuccess` (успадковане; `handleResponse` не читає soft assert); manual: проєкт з переліком, тест з `enableSoftAssert(true)` на недозволеному пристрої → тест падає з `TestRunException`, у тексті — повідомлення сервера (перевірено 2026-10-30 на jar `4.3.1-vision.2` проти сервера, що відповідає 422) |
 | REQ-029-09 | `backend/src/projects/allowed-devices.spec.ts › ignores case and surrounding spaces` |
 | REQ-029-10 | `backend/src/test-runs/test-runs.service.spec.ts › accepts an allowed device in the same build after a rejection` |
 | REQ-029-11 | `backend/src/projects/projects.controller.spec.ts › lists the devices the project received snapshots from`; `frontend/integration_tests/test/projectSettings.spec.ts › marks received devices outside the list and adds one in a click` |

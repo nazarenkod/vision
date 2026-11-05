@@ -4,7 +4,7 @@
 
 Команди QA мобільного банкінгу (окремі проєкти для Android «AOS» та iOS) знімають скриншоти в
 автотестах на Appium + Selenide. Кожен екран має еталони на емуляторі або симуляторі та на
-пристрої BrowserStack. Upstream VRT порівнює лише пікселі, тож:
+пристрої BrowserStack. Вихідний проєкт порівнює лише пікселі, тож:
 
 - рев'ю тоне в шумі: годинник у статус-барі, суми, зсув списку банером, згладжування;
 - одна зміна спільного компонента дає десятки однакових карток;
@@ -37,7 +37,7 @@ Vision додає до знімка **UI-дерево** (Appium page source) і 
 | Ручні перевірки | `vision.py`: adb, Appium, симулятор, файли; режим MCP | [009](../specs/009-manual-checks-cli-mcp/spec.md) |
 | Дешевий AI | підсумок групи, підписи для іконок; кеш і денний ліміт | [010](../specs/010-ai-assist/spec.md) |
 | Безпечне розгортання | поруч із продом на копії даних, лише через `vision.sh` | [011](../specs/011-deployment-safety/spec.md) |
-| Java SDK | upstream + `uiTree` і `featureName` ([ADR-0019](../decisions/0019-sdk-upstream-plus-ui-tree-and-feature.md)) | [012](../specs/012-java-sdk/spec.md) |
+| Java SDK | вихідний SDK + `uiTree` і `featureName` ([ADR-0019](../decisions/0019-sdk-base-plus-ui-tree-and-feature.md)) | [012](../specs/012-java-sdk/spec.md) |
 | Бекапи | щоночі в Google Drive без паролів і токенів; сторінка Backups: вхід у Drive кодом, розклад, «Back up now»; відновлення з майстер-логіном | [013](../specs/013-backups-and-secrets/spec.md), [017](../specs/017-backup-settings-ui/spec.md) |
 | Мова інтерфейсу | англійська за замовчуванням, українська — перемикачем EN/UK у шапці; дані не перекладаються | [023](../specs/023-ukrainian-ui/spec.md) |
 

@@ -31,7 +31,7 @@ npm install
 REACT_APP_API_URL=http://localhost:14201 sh ./env.sh && cp env-config.js public/ && npx vite --port 5173
 ```
 
-Першого користувача створює seed upstream (див. `backend/prisma/seed.ts`) або реєстрація в UI.
+Першого користувача створює успадкований seed (див. `backend/prisma/seed.ts`) або реєстрація в UI.
 
 ## Дані для перевірки
 

@@ -150,18 +150,18 @@ docker exec -i "$DEMO_PG" psql -v ON_ERROR_STOP=1 -q -U "$POSTGRES_USER" -d "$PO
 docker exec -i "$DEMO_PG" pg_restore --no-owner --no-privileges -U "$POSTGRES_USER" -d "$POSTGRES_DB" < "$DUMP_FILE" ||
   echo "    pg_restore reported warnings (see above); the checks below tell whether the copy is usable"
 
-# The fork's migrations continue from the squashed upstream baseline of July 2023.
+# Vision's migrations continue from the baseline schema of July 2023.
 if ! demo_sql "select 1 from _prisma_migrations where migration_name = '20230730154101_init'" | grep -q 1; then
   vision_die "The copy has no 20230730154101_init migration: production VRT is older than 5.x. Upgrade production first, or start Vision on an empty database."
 fi
-# A production newer than the fork has migrations the fork does not know.
+# A production newer than Vision has migrations Vision does not know.
 KNOWN="$(ls "$VISION_ROOT/backend/prisma/migrations" | grep -v migration_lock)"
 UNKNOWN="$(demo_sql "select migration_name from _prisma_migrations where finished_at is not null order by 1" |
   grep -v '^$' | grep -vxF "$KNOWN" || true)"
 if [ -n "$UNKNOWN" ]; then
-  echo "!!  Production has migrations this fork does not know (production VRT is newer):" >&2
+  echo "!!  Production has migrations Vision does not know (production VRT is newer):" >&2
   echo "$UNKNOWN" | sed 's/^/!!    /' >&2
-  vision_die "Pull the newer upstream into the fork first (git subtree pull), then run this again."
+  vision_die "Vision needs a migration for that schema first; then run this again. Nothing was copied."
 fi
 echo "    production schema: $(demo_sql "select max(migration_name) from _prisma_migrations where finished_at is not null")"
 COPIED_PROJECTS="$(demo_sql 'select count(*) from "Project"' | tr -d '[:space:]')"

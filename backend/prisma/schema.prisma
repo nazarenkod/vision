@@ -336,7 +336,7 @@ enum Role {
 }
 
 // What an approve or reject changed, so it can be undone for a short while
-// (018, ADR-0014). No foreign keys: upstream code deletes runs and variations
+// (018, ADR-0014). No foreign keys: the inherited code deletes runs and variations
 // freely, and a journal row must never stop it.
 model ReviewDecision {
   id        String    @id @default(uuid())
@@ -352,7 +352,7 @@ model ReviewDecision {
 }
 
 // A Jira bug filed from the comparison (025): shown on every run of its check.
-// No foreign keys, like ReviewDecision: upstream deletes runs freely.
+// No foreign keys, like ReviewDecision: the inherited code deletes runs freely.
 model VisualBug {
   id         String   @id @default(uuid())
   projectId  String
@@ -374,7 +374,7 @@ model VisualBug {
 }
 
 // A public link to a build's report (031, ADR-0022). No relations on purpose:
-// upstream deletes builds and users, and a foreign key would stop it; a link to a
+// the inherited code deletes builds and users, and a foreign key would stop it; a link to a
 // deleted build says so instead.
 model ReportLink {
   id          String    @id @default(uuid())

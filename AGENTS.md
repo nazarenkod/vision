@@ -23,7 +23,7 @@ Selenide): порівняння знімків з урахуванням UI-де
 3. **Міграції лише додавальні:** нова таблиця, nullable-колонка, індекс; без змін enum, видалень,
    перейменувань ([ADR-0003](docs/decisions/0003-additive-schema-only.md)).
 4. **Жодних скидань і видалень бази** (`prisma migrate reset`, `DROP DATABASE`, `dropdb`).
-5. **SDK змінюється лише за специфікацією:** зараз це upstream + `VisionOptions.uiTree` (до 10 МиБ), `featureName`,
+5. **SDK змінюється лише за специфікацією:** зараз це вихідний SDK + `VisionOptions.uiTree` (до 10 МиБ), `featureName`,
    класи `Vision`, `VisionConfig`, `VisionOptions`, `VisionResult` у пакеті `ua.vision.sdk` (`ua.vision:vision-sdk`), налаштування `VISION_*`;
    запити до сервера не ламаємо ([ADR-0024](docs/decisions/0024-own-vision-sdk.md), [ADR-0026](docs/decisions/0026-sdk-own-package-and-versions.md)).
 6. **LLM — лише на вимогу,** ніколи при прийомі знімків ([ADR-0007](docs/decisions/0007-deterministic-first-ai-on-demand.md)).
@@ -45,7 +45,7 @@ Selenide): порівняння знімків з урахуванням UI-де
 |---|---|---|
 | `backend/` | NestJS 12 + Prisma 7 + Postgres (Node 24): API, UI-дерево, доступність, Jira, AI | [backend/AGENTS.md](backend/AGENTS.md) |
 | `frontend/` | React 18 + MUI 5 + Vite, Playwright; CLI `public/cli/vision.py` | [frontend/AGENTS.md](frontend/AGENTS.md) |
-| `sdk-java/` | Java SDK (upstream + `uiTree`, `featureName`) | [sdk-java/AGENTS.md](sdk-java/AGENTS.md) |
+| `sdk-java/` | Java SDK (вихідний + `uiTree`, `featureName`) | [sdk-java/AGENTS.md](sdk-java/AGENTS.md) |
 | `scripts/` | `vision.sh`, копія даних проду, jar SDK, перевірка документації | [scripts/AGENTS.md](scripts/AGENTS.md) |
 | `docs/` | специфікації, рішення, архітектура, гайди | [docs/README.md](docs/README.md) |
 | `DEPLOY.md`, `DEMO.md` | розгортання поруч із продом (рос.), демо (англ.) | — |

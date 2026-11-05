@@ -75,7 +75,7 @@ cd /tmp/pwsnap/frontend && ./test-docker.sh <spec> --update-snapshots
 
 ## Базові лінії
 
-- `tsc`: відомі помилки upstream — у `scripts/baselines/{backend,frontend}-tsc.txt`, `verify.py`
+- `tsc`: відомі помилки успадкованого коду — у `scripts/baselines/{backend,frontend}-tsc.txt`, `verify.py`
   показує лише нові. Нова — твоя; виправив відому — `python3 -I scripts/verify.py --update-baselines`.
 - Скриншот-тести поза Docker падають завжди (macOS, хмарна сесія), тому `verify.py` запускає
   Playwright з `--ignore-snapshots`. Функціональні мусять проходити.

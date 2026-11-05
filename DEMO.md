@@ -126,6 +126,6 @@ Sources: the only adb device (default), `--serial`, `--appium http://127.0.0.1:4
 
 MCP: `claude mcp add vision -- python3 /path/to/vision.py mcp` (any MCP client can run `python3 vision.py mcp` over stdio). Tools: `vision_check`, `vision_devices`, `vision_session`.
 
-## Changes against upstream
+## Changes against the original project
 
-All schema changes are additive (nullable columns, new tables `A11yIssueState`, `A11yProblem`, `A11yDecision`, `AiResult` and `CrossDeviceCheck`, personal Jira fields on `User`, indexes), so the fork can later run on a live database too. Specs, decisions and the data model are in [docs/](docs/README.md). The Java SDK differs from upstream by one optional field, `TestRunOptions.uiTree`; servers without UI tree support ignore it. Code is in `backend/`, `frontend/` and `sdk-java/`, imported with `git subtree` from the upstream repositories.
+All schema changes are additive (nullable columns, new tables `A11yIssueState`, `A11yProblem`, `A11yDecision`, `AiResult` and `CrossDeviceCheck`, personal Jira fields on `User`, indexes), so the fork can later run on a live database too. Specs, decisions and the data model are in [docs/](docs/README.md). The Java SDK differs from the original project's by one optional field, `TestRunOptions.uiTree`; servers without UI tree support ignore it. Code is in `backend/`, `frontend/` and `sdk-java/`, imported with `git subtree` from the original project's repositories.

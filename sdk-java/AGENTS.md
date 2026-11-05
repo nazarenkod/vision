@@ -2,7 +2,7 @@
 
 Загальні правила — у [../AGENTS.md](../AGENTS.md).
 
-**Головне обмеження:** SDK — `ua.vision:vision-sdk`, пакет `ua.vision.sdk`: upstream 4.3.1 плюс
+**Головне обмеження:** SDK — `ua.vision:vision-sdk`, пакет `ua.vision.sdk`: вихідний SDK 4.3.1 плюс
 необов'язкові поля `VisionOptions.uiTree` (XML page source; SDK стискає його gzip + base64 і не
 надсилає понад 10 МиБ) і `featureName` (назва фічі для багів; не входить в ідентичність перевірки),
 класи `Vision`, `VisionConfig`, `VisionOptions`, `VisionResult`, налаштування `VISION_*` і

@@ -263,7 +263,7 @@ export class TestRunsController {
     @Query('merge', new ParseBoolPipe()) merge: boolean
   ): Promise<{ decisionId: string }> {
     this.logger.debug(`Going to approve TestRuns: ${ids}`);
-    // the same upstream approve, with a journal entry for Undo
+    // the same inherited approve, with a journal entry for Undo
     return this.decisionUndoService.approve(ids, merge, user.id);
   }
 

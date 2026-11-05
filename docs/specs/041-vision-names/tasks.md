@@ -3,5 +3,5 @@
 - [x] **T1** (REQ-041-01…04) Тексти й налаштування інтерфейсу: тур, профіль, архів, версія.
 - [x] **T2** [P] (REQ-041-05…07) Backend: назва документації API, перший адмін, групи SSO.
 - [x] **T3** [P] (REQ-041-08) Значення за замовчуванням і приклади; тест `test_vision_names.py`.
-- [x] **T4** README, `NOTICE`, ADR-0027; прибрати workflow upstream, `.all-contributorsrc`, `jitpack.yml`.
+- [x] **T4** README, `NOTICE`, ADR-0027; прибрати workflow вихідного проєкту, `.all-contributorsrc`, `jitpack.yml`.
 - [x] **T5** `/verify`, контрольний сценарій, скриншот-еталони в Docker.

@@ -6,7 +6,7 @@
 | Власник | Дмитро Назаренко |
 | Оновлено | 2026-11-02 |
 | Дизайн | [design.md](design.md) |
-| Пов'язане | [ADR-0024](../../decisions/0024-own-vision-sdk.md) (SDK відходить від upstream кроками), [033](../033-vision-sdk/spec.md) (попередній крок: `Vision`, `VisionConfig`), [012](../012-java-sdk/spec.md) |
+| Пов'язане | [ADR-0024](../../decisions/0024-own-vision-sdk.md) (SDK відходить від вихідного проєкту кроками), [033](../033-vision-sdk/spec.md) (попередній крок: `Vision`, `VisionConfig`), [012](../012-java-sdk/spec.md) |
 
 ## Контекст і проблема
 

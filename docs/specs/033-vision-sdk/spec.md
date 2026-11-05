@@ -6,11 +6,11 @@
 | Власник | Дмитро Назаренко |
 | Оновлено | 2026-11-01 |
 | Дизайн | [design.md](design.md) |
-| Пов'язане | [ADR-0024](../../decisions/0024-own-vision-sdk.md) (замінює [ADR-0019](../../decisions/0019-sdk-upstream-plus-ui-tree-and-feature.md)); змінює [012](../012-java-sdk/spec.md) REQ-012-01; [025](../025-bug-from-comparison/spec.md) (назва фічі) |
+| Пов'язане | [ADR-0024](../../decisions/0024-own-vision-sdk.md) (замінює [ADR-0019](../../decisions/0019-sdk-base-plus-ui-tree-and-feature.md)); змінює [012](../012-java-sdk/spec.md) REQ-012-01; [025](../025-bug-from-comparison/spec.md) (назва фічі) |
 
 ## Контекст і проблема
 
-Автотести надсилають знімки через форк upstream Java SDK VRT 4.3.1 з двома доданими полями
+Автотести надсилають знімки через форк вихідного Java SDK 4.3.1 з двома доданими полями
 ([012](../012-java-sdk/spec.md)). Головний об'єкт у кожному тесті — `VisualRegressionTracker`, а
 його налаштування — `VisualRegressionTrackerConfig`: у коді видно назву чужого продукту. Власник
 вирішив відв'язуватися від VRT поступово, і перший крок — лише ці два класи.

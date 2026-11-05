@@ -47,7 +47,7 @@
 | Бічне меню | `frontend/src/components/SideNav.tsx` (новий) | пункти, вибір проєкту, Help, версія, згортання |
 | Меню акаунта | `frontend/src/components/AccountMenu.tsx` (новий) | Profile, мова, тема, Log out — з `Header.tsx` |
 | Стан меню | `frontend/src/_helpers/sideNav.helper.ts` (новий) | чисті функції: пункти за роллю, активний, підпис вибору проєкту |
-| Старі шапка й рейка | `frontend/src/components/Header.tsx`, `NavRail.tsx` | видаляються; Help-меню й тур переїжджають у `SideNav` |
+| Старі шапка й рейка | `Header.tsx`, `NavRail.tsx` | видалено; Help-меню й тур переїжджають у `SideNav` |
 | Вхід | `frontend/src/components/AuthLayout.tsx`, `LoginForm.tsx` | дві половини, мова й тема в куті, SSO першим |
 | Тулбар порівняння | `frontend/src/components/TestDetailsDialog/CompareToolbar.tsx` (новий) | групи, `DiffMeter`, вигляд, Highlight diff, Select elements, Areas |
 | Прогрес черги | `frontend/src/components/TestDetailsDialog/StepProgress.tsx` (новий) | «N of M», сегменти, «K decided · L left» |

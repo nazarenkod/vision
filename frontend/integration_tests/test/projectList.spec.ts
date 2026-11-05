@@ -89,7 +89,10 @@ test("creates a project from three fields and opens its settings", async ({
   // the rest is set up on its settings page
   await expect(page).toHaveURL("/projects/createdProjectId/settings");
   await expect(page.getByRole("heading", { name: "Settings" })).toBeVisible();
-  await expect(page.getByText("New project", { exact: true })).toBeVisible();
+  // in the page, not in the sidebar's switcher that names the project too
+  await expect(
+    page.getByRole("main").getByText("New project", { exact: true }),
+  ).toBeVisible();
 });
 
 test("does not create a project with too short a name", async ({

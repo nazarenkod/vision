@@ -3,7 +3,6 @@ import { Box, Button, Tab, Tabs } from "@mui/material";
 import { DescriptionOutlined, VisibilityOutlined } from "@mui/icons-material";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import BuildList from "../components/BuildList";
-import ProjectSelect from "../components/ProjectSelect";
 import TestRunList from "../components/TestRunList";
 import BuildDetails from "../components/BuildDetails";
 import { TestDetailsDialog } from "../components/TestDetailsDialog";
@@ -22,16 +21,17 @@ import {
   setHelpSteps,
   useBuildState,
   useTestRunState,
+  useProjectDispatch,
+  useProjectState,
+  selectProject,
 } from "../contexts";
 import {
   PROJECT_PAGE_STEPS,
   LOCATOR_PROJECT_PAGE_BUILD_LIST,
-  LOCATOR_PROJECT_PAGE_SELECT_PROJECT,
   LOCATOR_PROJECT_PAGE_TEST_RUN_LIST,
 } from "../constants";
 import {
   BuildTab,
-  buildProjectPageUrl,
   buildTestRunLocation,
   getQueryParams,
 } from "../_helpers/route.helpers";
@@ -60,6 +60,15 @@ const ProjectPage = () => {
   useEffect(() => {
     setHelpSteps(helpDispatch, PROJECT_PAGE_STEPS);
   });
+
+  // the project in the address is the one the sidebar's switcher shows
+  const { selectedProjectId } = useProjectState();
+  const projectDispatch = useProjectDispatch();
+  useEffect(() => {
+    if (projectId && projectId !== selectedProjectId) {
+      selectProject(projectDispatch, projectId);
+    }
+  }, [projectId, selectedProjectId, projectDispatch]);
 
   const actions: OverviewActions = React.useMemo(
     () => ({
@@ -114,12 +123,6 @@ const ProjectPage = () => {
             borderRight: `1px solid ${tokens.border}`,
           }}
         >
-          <Box id={LOCATOR_PROJECT_PAGE_SELECT_PROJECT} sx={{ px: 1, pt: 1 }}>
-            <ProjectSelect
-              projectId={projectId}
-              onProjectSelect={(id) => navigate(buildProjectPageUrl(id))}
-            />
-          </Box>
           <Box flex={1} minHeight={0} id={LOCATOR_PROJECT_PAGE_BUILD_LIST}>
             <BuildList />
           </Box>

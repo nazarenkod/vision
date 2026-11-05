@@ -11,7 +11,7 @@
 | `src/components/BrandMark.tsx` | знак «Гніздо» і словесний знак; favicon — `public/favicon.svg`, PNG — `scripts/render-favicon.mjs` |
 | `src/components/motion/` | `useCountUp`, `staggered(i)` (каскад), `GrowFromPointer` (діалоги ростуть з точки кліку), `SlidingToggleGroup` (замість `ToggleButtonGroup`: підсвітка переїжджає) |
 | `src/pages/ProjectSettingsPage.tsx` | налаштування проєкту окремою сторінкою; розділи — у `components/ProjectForm/` |
-| `src/i18n/` | мови інтерфейсу: словники `en.ts`/`uk.ts`, `useT()`, перемикач EN/UK у шапці |
+| `src/i18n/` | мови інтерфейсу: словники `en.ts`/`uk.ts`, `useT()`, перемикач EN/UK у меню акаунта бічного меню (`components/AccountMenu.tsx`) |
 | `src/constants/brand.ts` | назва продукту (Vision) і слоган — лише тут |
 | `src/components/TestDetailsDialog/` | ревю скриншота: `InsightsPanel` (доступність, зміни), `JiraBugDialog`, `ReportBugDialog` і `BugEvidence` (баг із порівняння, [025](../docs/specs/025-bug-from-comparison/spec.md)), `DeviceStrip`; вибір елементів: `ElementPopover` (один; режим «Нестабільний текст», [033](../docs/specs/033-variable-text/spec.md), шматки й вирази — `_helpers/variableText.helper.ts`), `SelectionPanel` (2–3, [028](../docs/specs/028-several-elements/spec.md)), спільні дії й клавіші — `ElementActions` |
 | `src/components/ProjectForm/` | налаштування проєкту, зокрема `A11yRulesSettings` (норми й увімкнені правила доступності, [026](../docs/specs/026-a11y-rules-settings/spec.md)) і `AllowedDevicesSettings` (дозволені пристрої, [029](../docs/specs/029-allowed-devices/spec.md)) |

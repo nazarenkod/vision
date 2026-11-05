@@ -100,7 +100,7 @@ SC-023-03).
 | Словники разом | `frontend/src/i18n/dictionaries.ts` | `DICTIONARIES`, `english` для хелперів |
 | Контекст | `frontend/src/i18n/LanguageProvider.tsx` | мова, `localStorage`, `<html lang>`, `useT()` |
 | Перемикач | `frontend/src/i18n/LanguageSwitch.tsx` | EN / UK у шапці |
-| Шапка | `frontend/src/components/Header.tsx` | перемикач, меню й підписи через `t()` |
+| Шапка (з 046 — меню акаунта) | `frontend/src/components/AccountMenu.tsx` | перемикач, меню й підписи через `t()` |
 | Пошук налаштувань | `frontend/src/_helpers/projectSettings.helper.ts` | ключі розділів, пошук двома мовами |
 | Сторінка налаштувань | `frontend/src/pages/ProjectSettingsPage.tsx`, `frontend/src/components/ProjectForm/` | розділи, панель збереження, діалоги |
 | Список проєктів | `frontend/src/pages/ProjectListPage.tsx` | таблиця, створення й видалення |

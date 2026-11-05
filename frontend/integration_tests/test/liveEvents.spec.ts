@@ -68,8 +68,8 @@ test("signing out closes the connection and signing in opens one with the new to
   const { sent } = await mockSocket(page);
   await expect.poll(() => sent).toContain(handshake(AUTH_USER.token));
 
-  await projectListPage.header.openAvatarMenu();
-  await projectListPage.header.avatarMenuItem("Logout").click();
+  await projectListPage.sideNav.openAvatarMenu();
+  await projectListPage.sideNav.avatarMenuItem("Log out").click();
   // the client leaves the namespace as it closes the connection
   await expect.poll(() => sent).toContain("41");
 

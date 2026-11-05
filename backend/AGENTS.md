@@ -33,6 +33,7 @@ npx eslint src
 npx prettier --write <змінені файли>       # не по всьому src: не чіпаємо чужий код
 npx prisma generate                        # після зміни schema.prisma
 npm run test:e2e / test:acceptance         # потрібні запущені Postgres і API, див. docs/guides/testing.md
+../scripts/control-scenario.sh             # контрольний сценарій test_control/ проти еталона (Docker, Java)
 ```
 
 ## Правила

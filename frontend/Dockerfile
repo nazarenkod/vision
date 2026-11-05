@@ -8,6 +8,8 @@ WORKDIR /app
 
 # Dependencies first: a change in the code then keeps the cached npm ci
 COPY package*.json .
+# overrides point a dev dependency at a patched copy here (vendor/deepmerge/README.md)
+COPY vendor ./vendor
 RUN npm ci --verbose
 
 COPY /public ./public

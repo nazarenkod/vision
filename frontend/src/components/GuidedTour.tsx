@@ -1,5 +1,5 @@
 import React, { FunctionComponent } from "react";
-import Joyride, { CallBackProps, STATUS, Step } from "react-joyride";
+import { EventData, Joyride, STATUS, Step } from "react-joyride";
 import { Button } from "@mui/material";
 import { useHelpState, useTokens } from "../contexts";
 import { ExploreOutlined } from "@mui/icons-material";
@@ -25,12 +25,11 @@ const GuidedTour: FunctionComponent = () => {
       ...step,
       content: text(step.content),
       title: text(step.title),
-      disableBeacon: true,
-      hideCloseButton: true,
+      skipBeacon: true,
     }));
   }, [helpSteps, t]);
 
-  const handleJoyrideCallback = ({ status }: CallBackProps) => {
+  const handleJoyrideEvent = ({ status }: EventData) => {
     if (status === STATUS.FINISHED || status === STATUS.SKIPPED) {
       setRun(false);
     }
@@ -69,15 +68,10 @@ const GuidedTour: FunctionComponent = () => {
       }}
     >
       <Joyride
-        callback={handleJoyrideCallback}
+        onEvent={handleJoyrideEvent}
         continuous={true}
         run={run}
         scrollToFirstStep={true}
-        // left on, Joyride writes overflow: initial into <main> whenever a page
-        // is too short to scroll, and later long pages scroll the whole window
-        disableScrollParentFix={true}
-        showProgress={true}
-        showSkipButton={true}
         steps={getHelpSteps()}
         locale={{
           back: t("tour.back"),
@@ -86,18 +80,21 @@ const GuidedTour: FunctionComponent = () => {
           next: t("tour.next"),
           skip: t("tour.skip"),
         }}
-        disableCloseOnEsc={true}
+        options={{
+          // no close button: the tour ends with Skip or on the last step
+          buttons: ["back", "skip", "primary"],
+          showProgress: true,
+          dismissKeyAction: false,
+          zIndex: 10000,
+          primaryColor: colours.brand,
+          backgroundColor: colours.surface,
+          textColor: colours.text,
+          arrowColor: colours.surface,
+          overlayColor: colours.scrim,
+        }}
         styles={{
-          options: {
-            zIndex: 10000,
-            primaryColor: colours.brand,
-            backgroundColor: colours.surface,
-            textColor: colours.text,
-            arrowColor: colours.surface,
-            overlayColor: colours.scrim,
-          },
           tooltip: { borderRadius: 14, boxShadow: colours.shadowPop },
-          buttonNext: {
+          buttonPrimary: {
             color: colours.brandInk,
             backgroundColor: colours.brand,
             borderRadius: 8,

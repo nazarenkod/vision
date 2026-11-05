@@ -10,6 +10,8 @@
 | `demo-clone-from-prod.sh` | лише **читає** прод: `pg_dump` бази й копія або жорсткі посилання на картинки → у Vision |
 | `vision-backup.sh` | бекап бази Vision без секретів і картинок у Google Drive (`rclone`); `--scheduled` з cron кожні 5 хв бере час і запити зі сторінки Backups ([013](../docs/specs/013-backups-and-secrets/spec.md), [017](../docs/specs/017-backup-settings-ui/spec.md)) |
 | `vision-restore.sh` | відновлення з бекапу, майстер-адміністратор |
+| `vision-convert-env.py` | налаштування старішого Vision для цієї версії: `VRT_*` → `VISION_*`, `VISION_SECRET_KEY`, `VISION_JIRA_HOSTS`, новий `JWT_SECRET`, колишня `POSTGRES_DB`; показує зміни без секретів, пише лише після `yes`, старий файл лишає поруч |
+| `vision-check-cutover.sh` | після першого старту на копії VRT: `/health`, міграції, кількості рядків проти проду (лише `SELECT`), чи анульовані ключі й зашифровані токени |
 | `lib/vision-backup.sh` | спільне для бекапу: секретні колонки, дамп в одному знімку бази |
 | `build-sdk-jar.sh` | збирає jar SDK `ua.vision:vision-sdk` (версія з `sdk-java/build.gradle`) у `dist/sdk-java/` (не в git), прибирає звідти старі jar; `VISION_GRADLE_FLAGS=--offline` — без мережі |
 | `upload-uitree-samples.py` | надсилає пари PNG + XML з папки як перевірки (для демо без пристрою) |
@@ -25,7 +27,8 @@
 | `tests/test_verify.py` | тести `verify.py`: відомі помилки `tsc`, міграції, змінені файли |
 | `tests/test_vision_sh.py` | `vision.sh` при збірці: вбудований збирач Docker замість `docker-container`, помічник облікових даних Docker Desktop поза `PATH` (замінник `docker`) |
 | `tests/test_build_sdk_jar.py` | справжня збірка SDK у копії репозиторію: координати й версія в pom, лише новий jar у `dist/`, у класах немає назв VRT; без Gradle пропускається |
-| `tests/test_prod_read_only.py` | копія з проду лише читає VRT (`SELECT` і `pg_dump`), картинки VRT не змінюються, запобіжники зупиняють до запису; замінник `docker`, працює й на macOS |
+| `tests/test_prod_read_only.py` | копія з проду лише читає VRT (`SELECT` і `pg_dump`), картинки VRT не змінюються, запобіжники зупиняють до запису; замінник `docker`, працює й на macOS; так само перевірка після переходу (`vision-check-cutover.sh`) |
+| `tests/test_vision_convert_env.py` | конвертація налаштувань: перейменування, ключі, база, без секретів у виводі, копія старого файла |
 | `tests/test_project_access_migration.py` | міграція доступу до проєктів дає кожному наявному кожен наявний проєкт і нічого більше (042); на локальному Postgres, без нього пропускається |
 | `tests/test_protected_images.py` | жодної прямої видачі збережених файлів: ні статики в API, ні `/static/imageUploads` в nginx, ні тому картинок у контейнері `ui` (043) |
 | `tests/test_vision_backup.py` | бекап, відновлення й бекап перед копією проду на локальному Postgres (замінники `docker`, `rclone`) |

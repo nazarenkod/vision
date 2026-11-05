@@ -29,15 +29,9 @@ mkdir -p "$DATA_DIR" "$DEMO_IMAGES_DIR"
 
 # ---- what will be read, and how much space it needs --------------------------------
 
-# Read-only SQL against production, as the production container's own user. The database
-# is PROD_DB_NAME when set, else the container's POSTGRES_DB (the VRT default).
+# read-only SQL against production (lib/vision-safety.sh)
 prod_sql() {
-  if [ -n "${PROD_PG_CONTAINER:-}" ]; then
-    docker exec -e VISION_PROD_DB="${PROD_DB_NAME:-}" "$PROD_PG_CONTAINER" sh -c \
-      'psql -X -U "${POSTGRES_USER:-postgres}" -d "${VISION_PROD_DB:-${POSTGRES_DB:-postgres}}" -tAc "$0"' "$1"
-  else
-    docker run --rm --network host postgres:16-alpine psql -X "$PROD_DATABASE_URL" -tAc "$1"
-  fi
+  vision_prod_sql "$1"
 }
 
 if [ -n "${PROD_PG_CONTAINER:-}" ]; then

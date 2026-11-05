@@ -528,6 +528,40 @@ git pull
 docker run --rm --user 0 --entrypoint chown -v "$PWD/demo-data:/data" vision-api -R "$(id -u):$(id -g)" /data/imageUploads /data/backup-config /data/backup-status
 ```
 
+### Переход на версию для банка (с версии до 1.0.0 SDK)
+
+Новая версия шифрует секреты, закрывает снимки подписью и делит проекты по доступу
+([042](docs/specs/042-project-access/spec.md)–[044](docs/specs/044-secrets-at-rest/spec.md)), поэтому
+переход — по шагам, а не одним `git pull`. Прод VRT при этом только читается.
+
+1. Остановить старый Vision: `./scripts/vision.sh stop`.
+2. Забрать код: `git pull`.
+3. Перевести настройки (покажет изменения, спросит `yes`, старый файл сохранит рядом):
+
+   ```bash
+   python3 -I scripts/vision-convert-env.py --jira-hosts jira.bank.example
+   ```
+
+   Появятся `VISION_SECRET_KEY` (храните его: без него токены Jira не прочитать), `VISION_JIRA_HOSTS`,
+   новый `JWT_SECRET`; `POSTGRES_DB` останется прежней базой.
+4. Собрать образы: `./scripts/vision.sh build`; один раз вернуть себе файлы `demo-data` (команда `chown`
+   выше).
+5. Свежая копия прода, как обычно: `./scripts/demo-clone-from-prod.sh`.
+6. Запустить: `./scripts/vision.sh up -d`. На первом старте применятся миграции, все получат доступ
+   ко всем проектам, токены зашифруются, API-ключи из копии VRT перестанут работать.
+7. Проверить (только чтение, сверка с VRT):
+
+   ```bash
+   ./scripts/vision-check-cutover.sh
+   ```
+
+8. Каждый создаёт новый API-ключ в профиле и прописывает его в CI; тестовые проекты — на jar SDK
+   1.0.0 (раздел 7).
+
+**Откат:** `./scripts/vision.sh stop`, `git checkout` прежнего коммита, старый `.env.demo` из
+сохранённой копии (`.env.demo.before-vision-…`), `./scripts/demo-clone-from-prod.sh`,
+`./scripts/vision.sh up -d --build`. Прод не менялся, поэтому откат — та же копия.
+
 ## 12. Бэкапы
 
 Каждую ночь база Vision и новые картинки уходят в папку `vision-backups` на «Моём диске» Google

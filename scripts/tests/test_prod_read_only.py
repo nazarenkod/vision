@@ -23,6 +23,8 @@ SCRIPTS = ROOT / "scripts"
 COMPOSE_FILE = ROOT / "docker-compose.demo.yml"
 MIGRATIONS = sorted(p.name for p in (ROOT / "backend" / "prisma" / "migrations").iterdir() if p.is_dir())
 
+FAKE_CURL = "#!/bin/sh\n[ \"$FAKE_HEALTH\" = 0 ] && exit 7 || exit 0\n"
+
 FAKE_DOCKER = r'''#!/usr/bin/env python3
 import json, os, sys
 args = sys.argv[1:]
@@ -32,6 +34,15 @@ env = os.environ
 
 def answer_sql(sql, side):
     sql = " ".join(sql.split())
+    # the checks after a cut-over (vision-check-cutover.sh)
+    for marker in ("plain_keys", "plain_secrets", "without_access"):
+        if marker in sql:
+            return env.get("FAKE_" + marker.upper(), "0")
+    if "latest_applied" in sql:
+        return "1"
+    for table in ("Build", "TestVariation", "Baseline", "TestRun"):
+        if f'count(*) from "{table}"' in sql:
+            return env.get(f"FAKE_{side.upper()}_{table.upper()}", "5")
     if "pg_database_size" in sql:
         return "1048576"
     if "current_database()" in sql:
@@ -109,6 +120,9 @@ class ProdIsReadOnly(unittest.TestCase):
         docker = bin_dir / "docker"
         docker.write_text(FAKE_DOCKER)
         docker.chmod(docker.stat().st_mode | stat.S_IEXEC)
+        curl = bin_dir / "curl"
+        curl.write_text(FAKE_CURL)
+        curl.chmod(curl.stat().st_mode | stat.S_IEXEC)
         self.log = self.tmp / "docker.log"
         self.prod_images = self.tmp / "prod-images"
         self.prod_images.mkdir()
@@ -140,6 +154,14 @@ class ProdIsReadOnly(unittest.TestCase):
     def clone(self, extra_env=None, env_file_extra=""):
         env = dict(self.env, VISION_ENV_FILE=str(self.write_env(env_file_extra)), **(extra_env or {}))
         return subprocess.run(["bash", str(SCRIPTS / "demo-clone-from-prod.sh"), "--yes"],
+                              capture_output=True, text=True, env=env, timeout=60, stdin=subprocess.DEVNULL)
+
+    def check_cutover(self, extra_env=None):
+        env = dict(self.env, VISION_ENV_FILE=str(self.write_env()), FAKE_MIGRATIONS=",".join(MIGRATIONS),
+                   **(extra_env or {}))
+        # Vision holds the copy already
+        (self.tmp / "docker.log.restored").touch()
+        return subprocess.run(["bash", str(SCRIPTS / "vision-check-cutover.sh")],
                               capture_output=True, text=True, env=env, timeout=60, stdin=subprocess.DEVNULL)
 
     def commands(self):
@@ -216,6 +238,26 @@ class ProdIsReadOnly(unittest.TestCase):
         self.assertNotEqual(done.returncode, 0)
         self.assertIn("are the same container", done.stderr)
         self.assertFalse(any("pg_dump" in " ".join(c) or "DROP SCHEMA" in " ".join(c) for c in self.commands()))
+
+    def test_compares_with_production_after_the_cutover_and_only_reads(self):
+        done = self.check_cutover({"FAKE_PROD_TESTRUN": "7"})
+        self.assertEqual(done.returncode, 0, done.stdout + done.stderr)
+        self.assertIn("production has 2 more since the copy", done.stdout)
+        self.assertIn("no API key from VRT works here", done.stdout)
+        self.assertIn("Vision is ready", done.stdout)
+        for command in self.commands():
+            if command[0] != "exec":
+                continue
+            sql = " ".join(command[-1].split()).lower()
+            self.assertTrue(sql.startswith("select"), f"not a read: {sql}")
+
+    def test_stops_on_what_the_first_start_left_undone(self):
+        done = self.check_cutover({"FAKE_PLAIN_KEYS": "3", "FAKE_HEALTH": "0", "FAKE_VISION_BUILD": "0"})
+        self.assertNotEqual(done.returncode, 0)
+        self.assertIn("3 API key(s) are stored readable", done.stdout)
+        self.assertIn("does not answer", done.stdout)
+        self.assertIn('"Build" is empty in Vision', done.stdout)
+        self.assertIn("Production was only read", done.stderr)
 
 
 if __name__ == "__main__":

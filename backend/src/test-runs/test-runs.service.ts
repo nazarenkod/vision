@@ -128,7 +128,8 @@ export class TestRunsService {
             densityDpi: createTestRequestDto.deviceDensity,
             activity: createTestRequestDto.uiActivity,
           },
-          imageBuffer
+          imageBuffer,
+          { name: createTestRequestDto.name, projectId: createTestRequestDto.projectId }
         )
       : null;
 

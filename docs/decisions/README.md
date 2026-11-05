@@ -41,3 +41,4 @@ Architecture Decision Record фіксує важливе рішення: кон�
 | [ADR-0023](0023-events-socket-behind-login.md) | Сокет подій — лише з токеном входу і по кімнатах проєктів | Accepted | 2026-11-01 |
 | [ADR-0024](0024-own-vision-sdk.md) | SDK відходить від upstream кроками; перший — головні класи `Vision` | Accepted | 2026-11-01 |
 | [ADR-0025](0025-admin-made-accounts-personal-tokens.md) | Акаунти лише від адміністратора, токени Jira лише особисті | Accepted | 2026-11-02 |
+| [ADR-0026](0026-sdk-own-package-and-versions.md) | SDK — власний пакет, координати й нумерація, без старих назв | Accepted | 2026-11-05 |

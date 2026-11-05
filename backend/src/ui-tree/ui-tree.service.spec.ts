@@ -246,3 +246,24 @@ describe('UiTreeService, compare only', () => {
     );
   });
 });
+
+describe('UiTreeService.store', () => {
+  it('logs which check and project lost its tree, and why', async () => {
+    const saveFile = jest.fn();
+    const instance = new UiTreeService({ saveFile } as never, {} as never);
+    const warn = jest.spyOn(instance['logger'], 'warn').mockImplementation(() => undefined);
+    const laughs = Buffer.from('<!DOCTYPE x [<!ENTITY a "aaaa">]><hierarchy><node text="&a;"/></hierarchy>').toString(
+      'base64'
+    );
+
+    const stored = await instance.store(laughs, {}, Buffer.alloc(0), { name: 'Payment', projectId: 'p1' });
+
+    expect(stored).toBeNull();
+    expect(saveFile).not.toHaveBeenCalled();
+    expect(warn).toHaveBeenCalledWith(
+      'UI tree of "Payment" in project p1 left out (declares-entities): has a DOCTYPE or ENTITY declaration'
+    );
+    // the log names the check, never what the tree held
+    expect(warn.mock.calls[0][0]).not.toContain('&a;');
+  });
+});

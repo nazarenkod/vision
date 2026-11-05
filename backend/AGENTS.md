@@ -21,6 +21,7 @@
 | `src/visual-bugs/` | баг із порівняння: назва, опис із розділами, позначки на знімку, баги перевірки | [025](../docs/specs/025-bug-from-comparison/spec.md) |
 | `src/builds/build-overview*.ts` | зведення збірки для Overview і звіту: чиста `buildOverview`, сервіс вантажить рядки; баги й проблеми доступності (`a11yOf`, лише Overview, не публічний звіт) — з файлів звітів за один прохід, кеш за збіркою | [031](../docs/specs/031-build-overview/spec.md), [039](../docs/specs/039-overview-polish/spec.md) |
 | `src/reports/` | публічні посилання на звіт, `report-links.ts` — білий список полів публічного звіту; `GET /public/reports/:token` — єдиний маршрут з даними без входу ([ADR-0022](../docs/decisions/0022-public-report-links.md)) | [031](../docs/specs/031-build-overview/spec.md) |
+| `src/projects/project-access*.ts` | доступ до проєктів: `@ProjectFrom(...)` / `@NoProjectData()` на кожному маршруті, `ProjectAccessInterceptor` перевіряє до обробника (адмін — усе, решта — рядок `ProjectAccess`), `404`, для автотестів `403` | [042](../docs/specs/042-project-access/spec.md) |
 | `src/compare/` | піксельне порівняння (upstream + області змін, пул воркерів) | — |
 | `src/static/file-links*.ts`, `static.controller.ts` | знімки лише за підписом: `FileLinksInterceptor` додає `fileSignatures` у відповіді маршрутів з guard-ом, сокет і публічний звіт — самі; `/images/:name?sig=` віддає PNG, решта — 404 | [043](../docs/specs/043-protected-images/spec.md) |
 | `src/shared/events/` | сокет подій: вхід JWT на рукостисканні (`events-auth.ts`, `AuthService.verifyToken`), розрив на `exp`, підписка `subscribe` і розсилка в кімнату проєкту (`events-rooms.ts`) | [032](../docs/specs/032-authenticated-events/spec.md) |
@@ -57,6 +58,9 @@ npm run test:e2e / test:acceptance         # потрібні запущені P
   полів або `UserDto`.
 - **Новий секрет у базі** — через `sealSecret` при записі й `openSecret` лише там, де він іде назовні;
   у тестах ключ задає `src/jest.setup.ts`.
+- **Новий маршрут — з `@ProjectFrom(...)` або `@NoProjectData()`** (`src/projects/project-access.ts`):
+  `project-access.routes.spec.ts` падає на маршруті без позначки й перевіряє відмову на кожному.
+  Маршрут, що читає тіло пізніше (multipart), додає `ProjectAccessInterceptor` після свого (042).
 - **Нове поле з іменем знімка** — додай його в `FILE_FIELDS` (`src/static/file-links.ts`), інакше
   інтерфейс не відкриє файл. Маршрут без guard-а підписів не отримує (043).
 - Коментарі пояснюють *чому*, а не *що*.

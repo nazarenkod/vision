@@ -1,3 +1,5 @@
+import { ProjectAccessService } from './project-access.service';
+import { EventsGateway } from '../shared/events/events.gateway';
 import { Test, TestingModule } from '@nestjs/testing';
 import { PrismaService } from '../prisma/prisma.service';
 import { ProjectsController } from './projects.controller';
@@ -16,6 +18,8 @@ describe('Projects Controller', () => {
         { provide: ProjectsService, useValue: {} },
         { provide: PrismaService, useValue: {} },
         { provide: A11yIssuesService, useValue: {} },
+        { provide: ProjectAccessService, useValue: {} },
+        { provide: EventsGateway, useValue: {} },
       ],
     }).compile();
 
@@ -39,6 +43,8 @@ describe('Projects Controller', () => {
         ProjectsService,
         { provide: PrismaService, useValue: { testVariation: { findMany } } },
         { provide: A11yIssuesService, useValue: {} },
+        { provide: ProjectAccessService, useValue: {} },
+        { provide: EventsGateway, useValue: {} },
         { provide: BuildsService, useValue: {} },
         { provide: TestVariationsService, useValue: {} },
       ],
@@ -56,5 +62,43 @@ describe('Projects Controller', () => {
         distinct: ['device', 'os'],
       })
     );
+  });
+
+  const withAccess = (granted: string[]) => {
+    const projects = [
+      { id: 'a', name: 'Android' },
+      { id: 'b', name: 'iOS' },
+    ];
+    const projectsService = {
+      findAll: jest.fn().mockResolvedValue(projects),
+      create: jest.fn(async (dto) => ({ id: 'new', ...dto })),
+    };
+    const access = { grantedTo: jest.fn().mockResolvedValue(new Set(granted)), grant: jest.fn() };
+    return {
+      controller: new ProjectsController(projectsService as never, {} as never, access as never, {} as never),
+      access,
+    };
+  };
+
+  it('lists only the projects a person has access to', async () => {
+    const { controller } = withAccess(['b']);
+    const editor = { id: 'u', role: 'editor' } as never;
+    expect((await controller.getAll(editor)).map((project) => project.name)).toEqual(['iOS']);
+    // with none, the list is empty: the page asks them to turn to an admin
+    expect(await withAccess([]).controller.getAll(editor)).toEqual([]);
+    // an admin sees every project, given or not
+    const admin = { id: 'admin', role: 'admin' } as never;
+    expect((await withAccess([]).controller.getAll(admin)).map((project) => project.name)).toEqual(['Android', 'iOS']);
+  });
+
+  it('gives an editor access to the project they create', async () => {
+    const { controller, access } = withAccess([]);
+    const editor = { id: 'u', role: 'editor' };
+    await controller.create(editor as never, { name: 'Web' } as never);
+    expect(access.grant).toHaveBeenCalledWith('new', 'u', editor);
+
+    const admin = withAccess([]);
+    await admin.controller.create({ id: 'admin', role: 'admin' } as never, { name: 'Web' } as never);
+    expect(admin.access.grant).not.toHaveBeenCalled();
   });
 });

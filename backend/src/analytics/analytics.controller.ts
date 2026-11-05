@@ -2,12 +2,14 @@ import { Controller, Get, Param, ParseUUIDPipe, Query, UseGuards } from '@nestjs
 import { ApiBearerAuth, ApiOkResponse, ApiQuery, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/guards/auth.guard';
 import { AnalyticsService } from './analytics.service';
+import { ProjectFrom, inParam } from '../projects/project-access';
 
 @ApiTags('analytics')
 @Controller('analytics')
 export class AnalyticsController {
   constructor(private analyticsService: AnalyticsService) {}
 
+  @ProjectFrom(inParam('projectId', 'project'))
   @Get(':projectId')
   @ApiQuery({ name: 'days', required: false, description: 'Window in days, 7 to 730 (default 90)' })
   @ApiOkResponse({

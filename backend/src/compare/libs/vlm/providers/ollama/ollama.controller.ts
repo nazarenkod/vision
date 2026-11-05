@@ -18,6 +18,7 @@ import { RoleGuard } from '../../../../../auth/guards/role.guard';
 import { Roles } from '../../../../../shared/roles.decorator';
 import { VlmProviderResponse } from '../../vlm-provider.interface';
 import { OllamaVlmConfig } from '../../vlm.types';
+import { NoProjectData } from '../../../../../projects/project-access';
 
 @ApiTags('Ollama')
 @Controller('ollama')
@@ -27,11 +28,13 @@ import { OllamaVlmConfig } from '../../vlm.types';
 export class OllamaController {
   constructor(private readonly ollamaService: OllamaService) {}
 
+  @NoProjectData()
   @Get('models')
   async listModels() {
     return { models: await this.ollamaService.listModels() };
   }
 
+  @NoProjectData()
   @Post('compare')
   @ApiConsumes('multipart/form-data')
   @ApiBody({

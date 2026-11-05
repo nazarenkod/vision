@@ -38,6 +38,7 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { CreateTestRequestBase64Dto } from './dto/create-test-request-base64.dto';
 import { CreateTestRequestMultipartDto } from './dto/create-test-request-multipart.dto';
 import { FileToBodyInterceptor } from '../shared/fite-to-body.interceptor';
+import { ProjectAccessInterceptor } from '../projects/project-access.interceptor';
 import { UpdateIgnoreAreasDto } from './dto/update-ignore-area.dto';
 import { UpdateTestRunDto } from './dto/update-test.dto';
 import { CurrentUser } from '../shared/current-user.decorator';
@@ -55,6 +56,7 @@ import {
   LinkA11yIssueDto,
   issueIds,
 } from '../a11y/a11y-issue.dto';
+import { ProjectFrom, ProjectFromForAutotests, inBody, inParam, inQuery } from '../projects/project-access';
 
 @ApiTags('test-runs')
 @Controller('test-runs')
@@ -68,6 +70,7 @@ export class TestRunsController {
     private decisionUndoService: DecisionUndoService
   ) {}
 
+  @ProjectFrom(inQuery('buildId', 'build'))
   @Get()
   @ApiOkResponse({ type: TestRunDto, isArray: true })
   @ApiBearerAuth()
@@ -76,6 +79,7 @@ export class TestRunsController {
     return this.testRunsService.findMany(buildId);
   }
 
+  @ProjectFrom(inQuery('buildId', 'build'))
   @Get('groups')
   @ApiOkResponse({ description: 'Screenshots of the build that need a decision, grouped by the change they carry' })
   @ApiBearerAuth()
@@ -84,6 +88,7 @@ export class TestRunsController {
     return this.changeGroupsService.getGroups(buildId);
   }
 
+  @ProjectFrom(inParam('id', 'testRun'))
   @Get(':id')
   @ApiOkResponse({ type: TestRunDto })
   @ApiBearerAuth()
@@ -92,6 +97,7 @@ export class TestRunsController {
     return this.testRunsService.findOne(id);
   }
 
+  @ProjectFrom(inParam('id', 'testRun'))
   @Get(':id/a11y')
   @ApiOkResponse({ description: 'Accessibility report built from the UI tree; null when none was sent' })
   @ApiBearerAuth()
@@ -100,6 +106,7 @@ export class TestRunsController {
     return this.testRunsService.getAccessibilityReport(id, user?.id);
   }
 
+  @ProjectFrom(inParam('id', 'testRun'))
   @Post(':id/a11y/ignore')
   @ApiOkResponse({ description: 'Marks the issue as a false positive on this screen' })
   @ApiBearerAuth()
@@ -113,6 +120,7 @@ export class TestRunsController {
     return this.a11yIssuesService.ignore(id, issueIds(body), body.comment, user?.id);
   }
 
+  @ProjectFrom(inParam('id', 'testRun'))
   @Post(':id/a11y/reset')
   @ApiOkResponse({ description: 'Forgets the decision on the issue' })
   @ApiBearerAuth()
@@ -126,6 +134,7 @@ export class TestRunsController {
     return this.a11yIssuesService.reset(id, issueIds(body), user?.id);
   }
 
+  @ProjectFrom(inParam('id', 'testRun'))
   @Post(':id/a11y/link')
   @ApiOkResponse({ description: 'Records an existing Jira issue for the problem' })
   @ApiBearerAuth()
@@ -139,6 +148,7 @@ export class TestRunsController {
     return this.a11yIssuesService.link(id, issueIds(body), body.jiraKey, user?.id);
   }
 
+  @ProjectFrom(inParam('id', 'testRun'))
   @Post(':id/a11y/jira/prepare')
   @ApiOkResponse({
     description: "Issue and link types of the task's Jira project, and the fields a bug under the task would get",
@@ -161,6 +171,7 @@ export class TestRunsController {
     );
   }
 
+  @ProjectFrom(inParam('id', 'testRun'))
   @Get(':id/a11y/jira/users')
   @ApiOkResponse({ description: "People in the project's Jira matching a name, for user fields of a bug" })
   @ApiBearerAuth()
@@ -170,6 +181,7 @@ export class TestRunsController {
     return this.a11yIssuesService.findJiraUsers(id, query.slice(0, 100), user?.id);
   }
 
+  @ProjectFrom(inParam('id', 'testRun'))
   @Post(':id/a11y/jira')
   @ApiOkResponse({ description: 'Files a Jira bug for the issue under the given task' })
   @ApiBearerAuth()
@@ -189,6 +201,7 @@ export class TestRunsController {
     );
   }
 
+  @ProjectFrom(inParam('id', 'testRun'))
   @Post(':id/element-rules')
   @ApiOkResponse({ description: 'Adds an element rule to the screen or the project and compares again' })
   @ApiBearerAuth()
@@ -198,6 +211,7 @@ export class TestRunsController {
     return this.testRunsService.addElementRule(id, body);
   }
 
+  @ProjectFrom(inParam('id', 'testRun'))
   @Post(':id/element-rules/remove')
   @ApiOkResponse({ description: 'Removes an element rule and compares again' })
   @ApiBearerAuth()
@@ -207,6 +221,7 @@ export class TestRunsController {
     return this.testRunsService.removeElementRule(id, body);
   }
 
+  @ProjectFrom(inParam('id', 'testRun'))
   @Post(':id/ignore-areas/replace-with-element')
   @ApiOkResponse({ description: 'Replaces a saved ignore area with an ignore rule for the element it covers' })
   @ApiBearerAuth()
@@ -216,6 +231,7 @@ export class TestRunsController {
     return this.testRunsService.replaceAreaWithElement(id, body);
   }
 
+  @ProjectFrom(inParam('id', 'testRun'))
   @Get(':id/selector-matches')
   @ApiOkResponse({ description: 'How many elements a selector finds on the baseline and the screenshot' })
   @ApiQuery({ name: 'selector', required: true })
@@ -225,6 +241,7 @@ export class TestRunsController {
     return this.testRunsService.selectorMatches(id, selector);
   }
 
+  @ProjectFrom(inParam('id', 'testRun'))
   @Get(':id/structure')
   @ApiOkResponse({ description: 'Element-level changes, elements under changed areas and noise hints' })
   @ApiBearerAuth()
@@ -233,6 +250,7 @@ export class TestRunsController {
     return this.testRunsService.getStructure(id);
   }
 
+  @ProjectFrom(inBody(undefined, 'testRuns'))
   @Post('approve')
   @ApiQuery({ name: 'merge', required: false })
   @ApiOkResponse({ type: undefined })
@@ -249,6 +267,7 @@ export class TestRunsController {
     return this.decisionUndoService.approve(ids, merge, user.id);
   }
 
+  @ProjectFrom(inBody(undefined, 'testRuns'))
   @Post('reject')
   @ApiOkResponse({ type: undefined })
   @ApiBearerAuth()
@@ -259,6 +278,7 @@ export class TestRunsController {
     return this.decisionUndoService.reject(ids, user.id);
   }
 
+  @ProjectFrom(inParam('decisionId', 'decision'))
   @Post('undo/:decisionId')
   @ApiOperation({
     summary: 'Undo an approve or reject made in the last few seconds',
@@ -273,6 +293,7 @@ export class TestRunsController {
     return this.decisionUndoService.undo(decisionId, user.id);
   }
 
+  @ProjectFrom(inBody(undefined, 'testRuns'))
   @Post('delete')
   @ApiOkResponse({ type: undefined })
   @ApiBearerAuth()
@@ -285,6 +306,7 @@ export class TestRunsController {
     }
   }
 
+  @ProjectFrom(inBody('ids', 'testRuns'))
   @Post('ignoreAreas/update')
   @ApiOkResponse({ type: undefined })
   @ApiBearerAuth()
@@ -297,6 +319,7 @@ export class TestRunsController {
     }
   }
 
+  @ProjectFrom(inBody('ids', 'testRuns'))
   @Post('ignoreAreas/add')
   @ApiOkResponse({ type: undefined })
   @ApiBearerAuth()
@@ -309,6 +332,7 @@ export class TestRunsController {
     }
   }
 
+  @ProjectFrom(inParam('testRunId', 'testRun'))
   @Patch('update/:testRunId')
   @ApiParam({ name: 'testRunId', required: true })
   @ApiOkResponse({ type: TestRunDto })
@@ -320,6 +344,7 @@ export class TestRunsController {
     return this.testRunsService.update(id, body);
   }
 
+  @ProjectFromForAutotests(inBody('buildId', 'build'), inBody('projectId', 'project'))
   @Post()
   @ApiSecurity('api_key')
   @ApiOkResponse({ type: TestRunResultDto })
@@ -337,6 +362,7 @@ export class TestRunsController {
     });
   }
 
+  @ProjectFromForAutotests(inBody('buildId', 'build'), inBody('projectId', 'project'))
   @Post('/multipart')
   @ApiSecurity('api_key')
   @ApiBody({ type: CreateTestRequestMultipartDto })
@@ -344,7 +370,8 @@ export class TestRunsController {
   @ApiConsumes('multipart/form-data')
   @UseGuards(ApiGuard, RoleGuard)
   @Roles(Role.admin, Role.editor)
-  @UseInterceptors(FileInterceptor('image'), FileToBodyInterceptor)
+  // the form is read by these, after the global interceptors: access is checked once it is (042)
+  @UseInterceptors(FileInterceptor('image'), FileToBodyInterceptor, ProjectAccessInterceptor)
   @UsePipes(new ValidationPipe({ transform: true, forbidUnknownValues: true }))
   postTestRunMultipart(
     @Body() createTestRequestDto: CreateTestRequestMultipartDto,

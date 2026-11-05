@@ -244,7 +244,10 @@ const ProjectsListPage = () => {
                 >
                   {search
                     ? t("projectList.noMatch", { search })
-                    : t("projectList.empty")}
+                    : user?.role === "admin"
+                      ? t("projectList.empty")
+                      : // a person sees only the projects they were given (042)
+                        t("projectList.noAccess")}
                 </TableCell>
               </TableRow>
             )}

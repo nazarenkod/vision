@@ -31,7 +31,9 @@ describe("project settings", () => {
     });
     expect(matchSettings("JIRA").sections).toEqual(["jira"]);
     expect(matchSettings("tolerance").sections).toEqual(["comparison"]);
-    expect(matchSettings("").sections).toHaveLength(8);
+    expect(matchSettings("").sections).toHaveLength(9);
+    // access is found by its words too; only an admin sees the section (042)
+    expect(matchSettings("give access").sections).toEqual(["access"]);
     expect(matchSettings("OS version").sections).toEqual(["devices"]);
     // element rules live on the review screen only (REQ-019-01)
     expect(matchSettings("element rule").sections).toEqual([]);

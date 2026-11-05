@@ -121,6 +121,11 @@ export const test = base.extend<Fixtures & Options>({
         jiraTokenSet: userJiraToken,
       }),
     );
+    // an admin's settings page lists who has access (042); a test that cares mocks its own
+    await page.route(
+      (url) => /^\/projects\/[^/]+\/access$/.test(url.pathname),
+      (route) => route.fulfill({ body: "[]" }),
+    );
 
     await use();
   },

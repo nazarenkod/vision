@@ -51,6 +51,7 @@ model Project {
   builds                Build[]
   TestRun               TestRun[]
   testVariations        TestVariation[]
+  access                ProjectAccess[]
 }
 
 model TestRun {
@@ -193,6 +194,22 @@ model User {
   createdAt DateTime   @default(now())
   baselines Baseline[]
   builds    Build[]
+  access    ProjectAccess[]
+}
+
+// Who may see and work in a project (042); an admin needs no row. Rows go with the person and
+// with the project.
+model ProjectAccess {
+  userId      String
+  projectId   String
+  // the admin who gave it; null for what the migration gave everyone
+  grantedById String?
+  createdAt   DateTime @default(now())
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@id([userId, projectId])
+  @@index([projectId])
 }
 
 model A11yIssueState {

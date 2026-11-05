@@ -14,6 +14,8 @@ export interface User {
   jiraEmail?: string | null;
   // a personal Gemini key for drafting bugs with AI (025): only whether one is set
   geminiKeySet?: boolean;
+  // the projects this person was given, on the admin's Users page (042)
+  projects?: Array<{ id: string; name: string }>;
 }
 
 // what an admin fills in to create an account (035)

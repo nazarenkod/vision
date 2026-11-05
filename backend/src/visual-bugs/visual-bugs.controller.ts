@@ -7,12 +7,14 @@ import { CurrentUser } from '../shared/current-user.decorator';
 import { Roles } from '../shared/roles.decorator';
 import { FileVisualBugDto, PrepareVisualBugDto } from './visual-bug.dto';
 import { VisualBugsService } from './visual-bugs.service';
+import { ProjectFrom, inParam } from '../projects/project-access';
 
 @Controller('test-runs')
 @ApiTags('test-runs')
 export class VisualBugsController {
   constructor(private visualBugsService: VisualBugsService) {}
 
+  @ProjectFrom(inParam('id', 'testRun'))
   @Post(':id/bug/prepare')
   @ApiOkResponse({ description: 'The task, its issue and link types, and what a bug from the comparison asks for' })
   @ApiBearerAuth()
@@ -22,6 +24,7 @@ export class VisualBugsController {
     return this.visualBugsService.prepare(id, body, user?.id);
   }
 
+  @ProjectFrom(inParam('id', 'testRun'))
   @Post(':id/bug')
   @ApiOkResponse({ description: 'Files a Jira bug about this screenshot under the given task' })
   @ApiBearerAuth()
@@ -31,6 +34,7 @@ export class VisualBugsController {
     return this.visualBugsService.file(id, body, user?.id);
   }
 
+  @ProjectFrom(inParam('id', 'testRun'))
   @Get(':id/bugs')
   @ApiOkResponse({ description: 'Bugs filed from the comparison for this check, on every device and build' })
   @ApiBearerAuth()

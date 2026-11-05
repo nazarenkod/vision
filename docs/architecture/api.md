@@ -5,6 +5,11 @@
 SHA-256 і сам ключ не зберігає ([044](../specs/044-secrets-at-rest/spec.md)). Дії, що
 змінюють рішення, доступні ролям `admin` і `editor`.
 
+**Доступ до проєктів ([042](../specs/042-project-access/spec.md)).** Адмін бачить усі проєкти; решта
+(і їхні API-ключі) — лише ті, до яких дали доступ. Будь-який маршрут з даними чужого проєкту
+відповідає `404 Not found`; `POST /builds`, `POST /test-runs`, `/test-runs/multipart` —
+`403` «No access to this project: ask an admin of Vision to add you to it».
+
 ## Події наживо (socket.io)
 
 Шлях `/socket.io`, той самий порт, що й API ([032](../specs/032-authenticated-events/spec.md),
@@ -14,7 +19,7 @@ SHA-256 і сам ключ не зберігає ([044](../specs/044-secrets-at-
 |---|---|
 | Рукостискання | `auth: { token: <JWT входу> }` — той самий токен, що в `Authorization: Bearer`. Немає, чужий підпис, термін сплив, користувача немає — `connect_error` з `message: "unauthorized"`. `apiKey` не приймається. Роль не перевіряється |
 | Термін токена | коли спливає `exp`, сервер розриває з'єднання (`io server disconnect`); повторна спроба з тим самим токеном отримує `unauthorized` |
-| `subscribe` `{ projectId }` | підписка на проєкт, одна на з'єднання: попередня знімається. Ack `{ ok: true }`; `{ ok: false }` — проєкту чи користувача немає. `projectId: null` — лише відписатися |
+| `subscribe` `{ projectId }` | підписка на проєкт, одна на з'єднання: попередня знімається. Ack `{ ok: true }`; `{ ok: false }` — проєкту чи користувача немає або немає доступу до проєкту (042). `projectId: null` — лише відписатися |
 | Події | `build_created`, `build_deleted` (один `Build`), `build_updated`, `testRun_created`, `testRun_updated`, `testRun_deleted` (масиви) — лише в кімнату проєкту запису, з `fileSignatures` знімків ([043](../specs/043-protected-images/spec.md)). Без підписки подій немає |
 
 ## Прийом
@@ -97,7 +102,10 @@ SHA-256 і сам ключ не зберігає ([044](../specs/044-secrets-at-
 | `GET /users/newApiKey` | новий API-ключ текстом — єдиний раз, коли його видно; попередній перестає діяти. `UserDto` далі має лише `apiKeyEnding` (останні 4 символи, `null` — ключа ніхто не бачив) замість `apiKey` ([044](../specs/044-secrets-at-rest/spec.md)) |
 | `PUT /users/gemini` | особистий ключ Gemini API (`geminiApiKey`, `""` видаляє). Відповідь — `UserDto` з `geminiKeySet`, без ключа ([ADR-0020](../decisions/0020-personal-gemini-keys.md)) |
 | `GET /users/me` | тепер з `jiraTokenSet` і `jiraEmail` |
-| `GET /users/all` | тепер з `lastSignInAt` (null — не входив відтоді, як це записується) |
+| `GET /users/all` | тепер з `lastSignInAt` (null — не входив відтоді, як це записується) і `projects: [{ id, name }]` — до чого дали доступ (адміну не потрібно) |
+| `GET /projects` | лише проєкти з доступом; адміну — усі |
+| `GET /projects/:id/access` | лише `admin`: кому дали проєкт (`userId`, `email`, імена, `role`, `createdAt`); адмінів немає в переліку |
+| `PUT`, `DELETE /projects/:id/access/:userId` | лише `admin`: дати чи забрати доступ; відповідь — новий перелік. Забрали — сокети людини виходять з кімнати проєкту |
 | `PUT /users/:id/password` | лише `admin`: задати пароль користувачу (`password`), зокрема після відновлення з бекапу ([013](../specs/013-backups-and-secrets/spec.md)) |
 | `GET /backups/status` | лише `admin`: `{ configured, lastSuccessAt, warning }`; `warning` — коли останньому бекапу понад 26 год |
 | `GET /backups` | лише `admin`: стан, підключення Drive без секретів (`connected`, `email`, `folderName`), розклад, бекапи в Drive ([017](../specs/017-backup-settings-ui/spec.md)) |

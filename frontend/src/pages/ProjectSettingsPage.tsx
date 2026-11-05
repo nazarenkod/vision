@@ -23,6 +23,7 @@ import {
   setProjectEditState,
   useProjectDispatch,
   useProjectState,
+  useUserState,
 } from "../contexts";
 import { projectsService, SettingsConflict } from "../services";
 import { Project, ProjectDto } from "../types";
@@ -52,6 +53,7 @@ import { A11yRulesSettings } from "../components/ProjectForm/A11yRulesSettings";
 import { AllowedDevicesSettings } from "../components/ProjectForm/AllowedDevicesSettings";
 import { allowedDevicesOf } from "../_helpers/allowedDevices.helper";
 import { EmptyState } from "../components/EmptyState";
+import { ProjectAccessSettings } from "../components/ProjectForm/ProjectAccessSettings";
 import { MessageKey, Text, useT } from "../i18n";
 
 const DESCRIPTION: Partial<Record<SectionId, MessageKey>> = {
@@ -60,6 +62,7 @@ const DESCRIPTION: Partial<Record<SectionId, MessageKey>> = {
   devices: "section.devicesIntro",
   a11y: "section.a11yIntro",
   jira: "section.jiraIntro",
+  access: "section.accessIntro",
 };
 
 const asDto = (project: Project): ProjectDto => ({ ...project });
@@ -107,6 +110,11 @@ const ProjectSettingsPage: React.FunctionComponent = () => {
   const { enqueueSnackbar } = useSnackbar();
   const { t, tx, language } = useT();
   const { projectList, projectEditState: edited } = useProjectState();
+  // only an admin gives and takes access (REQ-042-05)
+  const isAdmin = useUserState().user?.role === "admin";
+  const sections = SETTINGS_SECTIONS.filter(
+    ({ id }) => id !== "access" || isAdmin,
+  );
   const projectDispatch = useProjectDispatch();
   const saved = projectList.find((project) => project.id === projectId);
 
@@ -436,7 +444,7 @@ const ProjectSettingsPage: React.FunctionComponent = () => {
                   transition: `transform ${motion.nav}ms ${motion.easing}`,
                 }}
               />
-              {SETTINGS_SECTIONS.map(({ id, title }) => {
+              {sections.map(({ id, title }) => {
                 const found = match.sections.includes(id);
                 const isChanged = changed.includes(t(title));
                 return (
@@ -529,6 +537,11 @@ const ProjectSettingsPage: React.FunctionComponent = () => {
             {section("devices", <AllowedDevicesSettings />)}
             {section("a11y", <A11yRulesSettings bare />)}
             {section("jira", <JiraSettings bare />)}
+            {isAdmin &&
+              section(
+                "access",
+                <ProjectAccessSettings projectId={edited.id} />,
+              )}
             {section(
               "danger",
               <Box

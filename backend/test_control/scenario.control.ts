@@ -641,3 +641,53 @@ it('20 no secret readable in the database', async () => {
     await db.end();
   }
 });
+
+it('21 each person sees only their projects', async () => {
+  // 042: an admin reaches every project; anyone else only the ones they were given
+  const admin = { token: state.adminToken };
+  const editor = { token: state.editorToken };
+  const guest = { token: state.guestToken };
+  const key = { apiKey: state.editorKey };
+  const editorId = (await call('GET', '/users/me', editor)).body.id;
+  const made = await call('POST', '/projects', admin, {
+    name: 'Private app',
+    mainBranchName: 'master',
+    autoApproveFeature: false,
+    imageComparison: 'pixelmatch',
+    maxBuildAllowed: 100,
+    maxBranchLifetime: 30,
+    imageComparisonConfig: '{"threshold":0.1,"ignoreAntialiasing":true,"allowDiffDimensions":false}',
+  });
+  expect(made.status).toBe(201);
+  const privateId = made.body.id;
+  const names = async (who: { token?: string }) =>
+    ((await call('GET', '/projects', who)).body as Array<{ name: string }>).map((project) => project.name).sort();
+  const builds = (who: object, projectId = privateId) =>
+    call('GET', `/builds?projectId=${projectId}&take=10&skip=0`, who);
+
+  const before = {
+    adminSees: await names(admin),
+    editorSees: await names(editor),
+    guestSees: await names(guest),
+    editorReadsBuilds: strip(await builds(editor)),
+    editorReadsInsights: (await call('GET', `/analytics/${privateId}`, editor)).status,
+    guestReadsTheEditorsProject: strip(await builds(guest, state.projectId)),
+    autotestStarts: strip(await call('POST', '/builds', key, { project: 'Private app', branchName: 'ci' })),
+    buildsMade: (await builds(admin)).body.total,
+  };
+  const given = await call('PUT', `/projects/${privateId}/access/${editorId}`, admin);
+  const whileGiven = {
+    given: strip(given),
+    editorSees: await names(editor),
+    editorReadsBuilds: (await builds(editor)).status,
+    editorAsksWhoHasAccess: (await call('GET', `/projects/${privateId}/access`, editor)).status,
+  };
+  const taken = await call('DELETE', `/projects/${privateId}/access/${editorId}`, admin);
+  const afterTaken = {
+    taken: strip(taken),
+    editorSees: await names(editor),
+    editorReadsBuilds: (await builds(editor)).status,
+  };
+  await call('DELETE', `/projects/${privateId}`, admin);
+  expect(record({ before, whileGiven, afterTaken })).toMatchSnapshot();
+});

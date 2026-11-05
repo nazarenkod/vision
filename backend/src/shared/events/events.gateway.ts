@@ -8,7 +8,7 @@ import {
 } from '@nestjs/websockets';
 import { Logger, OnModuleDestroy } from '@nestjs/common';
 import { Server, Socket } from 'socket.io';
-import { TestRun } from '@prisma/client';
+import { Role, TestRun } from '@prisma/client';
 import { BuildDto } from '../../builds/dto/build.dto';
 import { getBuildsStats } from '../../builds/build-stats';
 import { debounce } from 'lodash';
@@ -92,16 +92,34 @@ export class EventsGateway implements OnGatewayInit, OnModuleDestroy {
     }
     if (!projectId) return { ok: true };
 
+    // only a project the person may reach (042): an admin any, anyone else one they were given
     const allowed = await Promise.all([
       this.prismaService.project.findUnique({ where: { id: projectId }, select: { id: true } }),
-      this.prismaService.user.findUnique({ where: { id: socket.data.userId }, select: { id: true } }),
+      this.prismaService.user.findUnique({ where: { id: socket.data.userId }, select: { id: true, role: true } }),
+      this.prismaService.projectAccess.findUnique({
+        where: { userId_projectId: { userId: socket.data.userId, projectId } },
+        select: { projectId: true },
+      }),
     ]).then(
-      ([project, user]) => !!project && !!user,
+      ([project, user, access]) => !!project && !!user && (user.role === Role.admin || !!access),
       () => false
     );
     if (!allowed) return { ok: false };
     if (socket.data.projectId === projectId) socket.join(projectRoom(projectId));
     return { ok: true };
+  }
+
+  /** Access was taken away: that person's sockets stop getting the project's events now. */
+  leaveProject(userId: string, projectId: string): void {
+    this.server
+      .in(projectRoom(projectId))
+      .fetchSockets()
+      .then((sockets) =>
+        sockets
+          .filter((socket) => socket.data.userId === userId)
+          .forEach((socket) => socket.leave(projectRoom(projectId)))
+      )
+      .catch((error) => this.logger.warn(`Could not stop events of ${projectId} for ${userId}: ${error}`));
   }
 
   buildCreated(build: BuildDto): void {

@@ -1,12 +1,13 @@
 import { expect, Page } from "@playwright/test";
 import { test } from "fixtures";
-import { TEST_PROJECT } from "~client/_test/test.data.helper";
+import { TEST_PROJECT, TEST_USER } from "~client/_test/test.data.helper";
 import { ImageComparison } from "~client/types/imageComparison";
 import {
   API_URL,
   inUkrainian,
   mockGetDevices,
   mockGetProjects,
+  mockGetUsers,
   mockSaveProject,
 } from "utils/mocks";
 
@@ -698,4 +699,87 @@ test("deletes the project only after its exact name", async ({
   await page.getByTestId("deleteConfirmName").fill(project.name);
   await forever.click();
   await expect(page).toHaveURL("/projects");
+});
+
+test("lets an admin give and take access to the project", async ({
+  page,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  authUser,
+}) => {
+  const anna = {
+    ...TEST_USER,
+    id: "anna",
+    email: "anna@bank.test",
+    firstName: "Anna",
+    lastName: "Koval",
+    role: "editor" as const,
+  };
+  const ivan = {
+    ...TEST_USER,
+    id: "ivan",
+    email: "ivan@bank.test",
+    firstName: "Ivan",
+    lastName: "Lis",
+    role: "guest" as const,
+  };
+  const member = (user: typeof anna | typeof ivan) => ({
+    userId: user.id,
+    email: user.email,
+    firstName: user.firstName,
+    lastName: user.lastName,
+    role: user.role,
+    createdAt: "2026-11-05T10:00:00.000Z",
+  });
+  let members = [member(anna)];
+  await mockGetUsers(page, [TEST_USER, anna, ivan]);
+  await page.route(`${API_URL}/projects/${project.id}/access`, (route) =>
+    route.fulfill({ body: JSON.stringify(members) }),
+  );
+  await page.route(`${API_URL}/projects/${project.id}/access/*`, (route) => {
+    const userId = route.request().url().split("/").pop();
+    members =
+      route.request().method() === "PUT"
+        ? [...members, member(ivan)]
+        : members.filter((one) => one.userId !== userId);
+    return route.fulfill({ body: JSON.stringify(members) });
+  });
+  await open(page);
+
+  const list = page.getByTestId("projectAccess");
+  await expect(page.getByTestId("nav-access")).toBeVisible();
+  await expect(list).toContainText("anna@bank.test");
+
+  // admins are not offered: they reach every project; nor is who has access already
+  await page.getByTestId("accessPick").click();
+  await expect(page.getByRole("option")).toHaveText([/ivan@bank\.test/]);
+  await page.getByRole("option", { name: /ivan@bank\.test/ }).click();
+  const [given] = await Promise.all([
+    page.waitForRequest(
+      (request) =>
+        request.method() === "PUT" && request.url().includes("/access/"),
+    ),
+    page.getByTestId("accessAdd").click(),
+  ]);
+  expect(given.url()).toBe(`${API_URL}/projects/${project.id}/access/ivan`);
+  await expect(list).toContainText("ivan@bank.test");
+
+  const [taken] = await Promise.all([
+    page.waitForRequest((request) => request.method() === "DELETE"),
+    page
+      .getByRole("button", { name: "Take access away from Anna Koval" })
+      .click(),
+  ]);
+  expect(taken.url()).toBe(`${API_URL}/projects/${project.id}/access/anna`);
+  await expect(list).not.toContainText("anna@bank.test");
+});
+
+test.describe("as an editor", () => {
+  test.use({ userRole: "editor" });
+
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  test("shows no access section", async ({ page, authUser }) => {
+    await open(page);
+    await expect(page.getByTestId("nav-access")).toHaveCount(0);
+    await expect(page.getByTestId("projectAccess")).toHaveCount(0);
+  });
 });

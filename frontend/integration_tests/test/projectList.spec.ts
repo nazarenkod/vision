@@ -169,3 +169,19 @@ test("does not show a Jira status in the project list", async ({
   await expect(page.getByText("Connected")).toHaveCount(0);
   await expect(page.getByText("Not set")).toHaveCount(0);
 });
+
+test.describe("as an editor without projects", () => {
+  test.use({ userRole: "editor" });
+
+  // a person sees only the projects they were given (042)
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  test("asks them to turn to an admin", async ({ page, authUser }) => {
+    await mockGetProjects(page, []);
+    await page.goto("/projects");
+    await expect(
+      page.getByText(
+        "No projects for you yet: ask an admin of Vision to add you to one",
+      ),
+    ).toBeVisible();
+  });
+});

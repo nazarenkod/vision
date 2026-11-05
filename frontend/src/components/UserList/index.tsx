@@ -52,6 +52,23 @@ const columnsFor = (
     ),
   },
   {
+    // the projects this person was given; an admin reaches every one (REQ-042-06)
+    field: "projects",
+    headerName: t("users.projects"),
+    flex: 2,
+    sortable: false,
+    filterable: false,
+    valueGetter: (params) =>
+      params.row.role === "admin"
+        ? t("users.allProjects")
+        : (params.row.projects ?? [])
+            .map((project: { name: string }) => project.name)
+            .join(", ") || "—",
+    renderCell: (params: GridRenderCellParams) => (
+      <span data-testid="userProjects">{params.value}</span>
+    ),
+  },
+  {
     field: "role",
     headerName: t("users.role"),
     type: "singleSelect",

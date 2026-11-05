@@ -86,6 +86,11 @@ export const SETTINGS_SECTIONS = [
     labels: ["jira.url", "jira.issueType", "jira.linkType"],
   },
   {
+    id: "access",
+    title: "section.access",
+    labels: ["access.pick", "access.add"],
+  },
+  {
     id: "danger",
     title: "section.danger",
     labels: ["settings.deleteProject"],

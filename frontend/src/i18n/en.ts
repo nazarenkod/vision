@@ -50,6 +50,8 @@ export const en = {
   "projectList.editOf": "Edit {name}",
   "projectList.deleteOf": "Delete {name}",
   "projectList.noMatch": 'No projects match "{search}"',
+  "projectList.noAccess":
+    "No projects for you yet: ask an admin of Vision to add you to one",
   "projectList.empty": "No projects yet",
   "projectList.createTitle": "New project",
   "projectList.create": "Create project",
@@ -106,6 +108,7 @@ export const en = {
   "section.mobile": "Mobile screens",
   "section.a11y": "Accessibility",
   "section.jira": "Jira",
+  "section.access": "Access",
   "section.danger": "Danger zone",
   "section.devices": "Devices",
   "section.devicesIntro":
@@ -115,6 +118,15 @@ export const en = {
   "section.mobileIntro": "Applies to screens sent with an Appium page source.",
   "section.a11yIntro":
     "What Vision checks on every screen sent with a UI tree, by your team's norms.",
+  "section.accessIntro":
+    "Who sees and works in this project. Admins reach every project and are not listed.",
+  "access.pick": "Person",
+  "access.add": "Give access",
+  "access.remove": "Take access away",
+  "access.removeOf": "Take access away from {name}",
+  "access.none": "Nobody yet: only admins see this project.",
+  "access.added": "{name} now has access",
+  "access.removed": "{name} no longer has access",
   "section.jiraIntro":
     "Lets reviewers file bugs from the review screen. Each person adds their own Jira token in their profile, so bugs are filed as them, with their rights.",
 
@@ -893,6 +905,8 @@ export const en = {
   "users.firstName": "First name",
   "users.lastName": "Last name",
   "users.lastSignIn": "Last sign-in",
+  "users.projects": "Projects",
+  "users.allProjects": "All, as an admin",
   "users.role": "Role",
   "users.updated": "Updated",
   "users.setPasswordHelp":

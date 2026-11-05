@@ -9,6 +9,7 @@ import { ProjectsModule } from './projects/projects.module';
 import { TestRunsModule } from './test-runs/test-runs.module';
 import { TestVariationsModule } from './test-variations/test-variations.module';
 import { PrismaModule } from './prisma/prisma.module';
+import { ProjectAccessModule } from './projects/project-access.module';
 import { ConfigModule } from '@nestjs/config';
 import { APP_FILTER } from '@nestjs/core';
 import { HttpExceptionFilter } from './http-exception.filter';
@@ -24,6 +25,7 @@ import { VisualBugsModule } from './visual-bugs/visual-bugs.module';
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
     PrismaModule,
+    ProjectAccessModule,
     ScheduleModule.forRoot(),
     AuthModule,
     UsersModule,

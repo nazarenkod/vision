@@ -5,6 +5,7 @@ import { JwtAuthGuard } from '../auth/guards/auth.guard';
 import { RoleGuard } from '../auth/guards/role.guard';
 import { Roles } from '../shared/roles.decorator';
 import { BackupsService } from './backups.service';
+import { NoProjectData } from '../projects/project-access';
 
 // Backups hold every project's data, so only admins see or change them.
 @ApiTags('backups')
@@ -15,48 +16,56 @@ import { BackupsService } from './backups.service';
 export class BackupsController {
   constructor(private backupsService: BackupsService) {}
 
+  @NoProjectData()
   @Get('status')
   @ApiOkResponse({ description: 'Whether backups are set up, the last successful one, and a warning for admins' })
   status() {
     return this.backupsService.status();
   }
 
+  @NoProjectData()
   @Get()
   @ApiOkResponse({ description: 'Status, Google Drive connection (no secrets), settings and the backups in Drive' })
   overview() {
     return this.backupsService.overview();
   }
 
+  @NoProjectData()
   @Post('drive/connect')
   @ApiOkResponse({ description: 'A code to enter at the verification URL with the Google account' })
   connect(@Body() body: { clientId: string; clientSecret: string }) {
     return this.backupsService.connect(body?.clientId, body?.clientSecret);
   }
 
+  @NoProjectData()
   @Post('drive/poll')
   @ApiOkResponse({ description: 'pending, connected (with the email) or failed (with the reason)' })
   poll() {
     return this.backupsService.poll();
   }
 
+  @NoProjectData()
   @Post('drive/test')
   @ApiOkResponse({ description: 'Whether the backup folder in Drive is reachable' })
   test() {
     return this.backupsService.test();
   }
 
+  @NoProjectData()
   @Delete('drive')
   @ApiOkResponse({ description: 'Forgets the Google Drive connection' })
   disconnect() {
     return this.backupsService.disconnect();
   }
 
+  @NoProjectData()
   @Put('settings')
   @ApiOkResponse({ description: 'Daily time (HH:MM, server time zone) and database backups kept in Drive' })
   saveSettings(@Body() body: { time: string; keep: number }) {
     return this.backupsService.saveSettings(body);
   }
 
+  @NoProjectData()
   @Post('run')
   @ApiOkResponse({ description: 'Asks the host script to back up within 5 minutes' })
   run() {

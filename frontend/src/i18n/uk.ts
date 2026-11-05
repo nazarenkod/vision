@@ -45,6 +45,8 @@ export const uk: Messages = {
   "projectList.editOf": "Налаштування {name}",
   "projectList.deleteOf": "Видалити {name}",
   "projectList.noMatch": "Немає проєктів, що містять «{search}»",
+  "projectList.noAccess":
+    "У вас ще немає проєктів: попросіть адміна Vision додати вас до потрібного",
   "projectList.empty": "Проєктів ще немає",
   "projectList.createTitle": "Новий проєкт",
   "projectList.create": "Створити проєкт",
@@ -100,6 +102,7 @@ export const uk: Messages = {
   "section.mobile": "Мобільні екрани",
   "section.a11y": "Доступність",
   "section.jira": "Jira",
+  "section.access": "Доступ",
   "section.danger": "Небезпечна зона",
   "section.devices": "Пристрої",
   "section.devicesIntro":
@@ -109,6 +112,15 @@ export const uk: Messages = {
   "section.mobileIntro": "Для екранів, надісланих з Appium page source.",
   "section.a11yIntro":
     "Що Vision перевіряє на кожному екрані з UI-деревом, за нормами вашої команди.",
+  "section.accessIntro":
+    "Хто бачить цей проєкт і працює в ньому. Адміни мають доступ до всіх проєктів і тут не показані.",
+  "access.pick": "Людина",
+  "access.add": "Дати доступ",
+  "access.remove": "Забрати доступ",
+  "access.removeOf": "Забрати доступ у {name}",
+  "access.none": "Поки нікого: цей проєкт бачать лише адміни.",
+  "access.added": "{name} тепер має доступ",
+  "access.removed": "{name} більше не має доступу",
   "section.jiraIntro":
     "Дає заводити баги просто з екрана перегляду. Кожен додає власний токен Jira у профілі, тож баги заводяться від його імені й з його правами.",
 
@@ -944,6 +956,8 @@ export const uk: Messages = {
   "users.firstName": "Ім’я",
   "users.lastName": "Прізвище",
   "users.lastSignIn": "Останній вхід",
+  "users.projects": "Проєкти",
+  "users.allProjects": "Усі, як адмін",
   "users.role": "Роль",
   "users.updated": "Збережено",
   "users.setPasswordHelp":

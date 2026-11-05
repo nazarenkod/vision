@@ -6,6 +6,7 @@ import { StaticService } from './static.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { linkState } from '../reports/report-links';
 import { readFileSignature, serverFileLinkKey } from './file-links';
+import { NoProjectData } from '../projects/project-access';
 
 // Shorter than the window a signed storage URL is minted for (URL_WINDOW_SECONDS), so a cached
 // redirect always still points at a URL that works.
@@ -29,6 +30,7 @@ export class StaticController {
     private prismaService: PrismaService
   ) {}
 
+  @NoProjectData()
   @Get('/:fileName')
   @ApiQuery({ name: 'sig', required: true })
   @ApiOkResponse()
@@ -52,6 +54,7 @@ export class StaticController {
    * The bytes from this origin, for the interface's bulk download: a pre-signed S3 URL answers
    * without CORS headers, so a browser `fetch` of the redirect would be blocked.
    */
+  @NoProjectData()
   @Get('/:fileName/download')
   @ApiQuery({ name: 'sig', required: true })
   @ApiOkResponse()

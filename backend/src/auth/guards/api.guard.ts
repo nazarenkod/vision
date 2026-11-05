@@ -13,6 +13,8 @@ export class ApiGuard implements CanActivate {
       const key = request.header('apiKey');
       if (!key) return false;
       const user = await this.prismaService.user.findUnique({ where: { apiKey: hashApiKey(key) } });
+      // the key's owner acts, with their access to projects (042)
+      if (user) (request as Request & { user?: unknown }).user = user;
       return !!user;
     } catch {
       throw new UnauthorizedException();

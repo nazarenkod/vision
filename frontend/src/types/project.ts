@@ -24,6 +24,16 @@ export interface Project {
 }
 
 /** A device SDK snapshots may come from: as the test sends `device` and `os` (029). */
+/** A person given the project (042); admins reach every project and are not listed. */
+export interface ProjectMember {
+  userId: string;
+  email: string;
+  firstName: string | null;
+  lastName: string | null;
+  role: "admin" | "editor" | "guest";
+  createdAt: string;
+}
+
 export interface AllowedDevice {
   device: string;
   // exact, or ending in ".*" for any version under it

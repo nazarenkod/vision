@@ -28,6 +28,7 @@ import { ProjectsService } from '../projects/projects.service';
 import { RoleGuard } from '../auth/guards/role.guard';
 import { Roles } from '../shared/roles.decorator';
 import { BuildOverviewResponse, BuildOverviewService } from './build-overview.service';
+import { ProjectFrom, ProjectFromForAutotests, inBody, inParam, inQuery } from '../projects/project-access';
 
 @Controller('builds')
 @ApiTags('builds')
@@ -39,6 +40,7 @@ export class BuildsController {
     private buildOverviewService: BuildOverviewService
   ) {}
 
+  @ProjectFrom(inQuery('projectId', 'project'))
   @Get()
   @ApiOkResponse({ type: PaginatedBuildDto })
   @ApiQuery({ name: 'ciBuildId', required: false, description: 'Case insensitive substring of the CI build id' })
@@ -59,6 +61,7 @@ export class BuildsController {
     return this.buildsService.findMany(projectId, take, skip, ciBuildId, aroundBuildId);
   }
 
+  @ProjectFrom(inParam('id', 'build'))
   @Get(':id')
   @ApiOkResponse({ type: BuildDto })
   @ApiBearerAuth()
@@ -68,6 +71,7 @@ export class BuildsController {
   }
 
   // the build's Overview tab and report (031)
+  @ProjectFrom(inParam('id', 'build'))
   @Get(':id/overview')
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
@@ -75,6 +79,7 @@ export class BuildsController {
     return this.buildOverviewService.overview(id);
   }
 
+  @ProjectFrom(inParam('id', 'build'))
   @Delete(':id')
   @ApiOkResponse({ type: BuildDto })
   @ApiBearerAuth()
@@ -84,6 +89,7 @@ export class BuildsController {
     return this.buildsService.remove(id);
   }
 
+  @ProjectFromForAutotests(inBody('project', 'project'))
   @Post()
   @ApiOkResponse({ type: BuildDto })
   @ApiSecurity('api_key')
@@ -100,6 +106,7 @@ export class BuildsController {
     return new BuildDto(build);
   }
 
+  @ProjectFromForAutotests(inParam('id', 'build'))
   @Patch(':id')
   @ApiOkResponse({ type: BuildDto })
   @ApiSecurity('api_key')
@@ -115,6 +122,7 @@ export class BuildsController {
     return this.buildsService.update(id, modifyBuildDto);
   }
 
+  @ProjectFrom(inParam('id', 'build'))
   @Patch(':id/approve')
   @ApiOkResponse({ type: BuildDto })
   @ApiBearerAuth()

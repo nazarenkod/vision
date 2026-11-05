@@ -1,3 +1,4 @@
+import { Global, Module } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
@@ -12,6 +13,11 @@ import { GeminiService } from './libs/vlm/providers/gemini/gemini.service';
 import { StaticModule } from '../static/static.module';
 import { ImageComparison } from '@prisma/client';
 import * as utils from '../static/utils';
+
+// StaticController checks report links (043); the app has PrismaService globally
+@Global()
+@Module({ providers: [{ provide: PrismaService, useValue: {} }], exports: [PrismaService] })
+class PrismaForStatic {}
 
 jest.mock('zod/v3', () => {
   const actualZod = jest.requireActual('zod');
@@ -43,7 +49,7 @@ describe('CompareService', () => {
           },
         },
       ],
-      imports: [StaticModule],
+      imports: [StaticModule, PrismaForStatic],
     }).compile();
 
     service = module.get<CompareService>(CompareService);

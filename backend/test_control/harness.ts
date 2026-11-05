@@ -55,6 +55,7 @@ export class Normalizer {
         .replace(/\beyJ[\w-]+\.[\w-]+\.[\w-]+\b/g, '<jwt>')
         .replace(/\b[0-9A-Z]{7}-[0-9A-Z]{7}-[0-9A-Z]{7}-[0-9A-Z]{7}\b/g, (m) => this.label('apikey', m))
         .replace(/\b[0-9A-Z]{28}\b/g, (m) => this.label('apikey', m))
+        .replace(/([?&]sig=)[\w.%-]+/g, '$1<signature>')
         .replace(/\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?Z/g, '<time>')
     );
   }
@@ -72,6 +73,16 @@ export class Normalizer {
         } else if (key === 'stack' && typeof item === 'string') {
           // server paths of the machine that ran it; whether a stack is sent at all stays visible
           out[key] = '<stack>';
+        } else if (key === 'fileSignatures' && item && typeof item === 'object') {
+          // random file names, signed: which files are signed, and how, is what counts
+          out[key] = Object.fromEntries(
+            Object.entries(item as Record<string, string>)
+              .map(([name, signature]) => [
+                this.text(name),
+                signature.includes('.') ? '<reportSignature>' : '<signature>',
+              ])
+              .sort(([a], [b]) => a.localeCompare(b))
+          );
         } else if (key === 'apiKeyEnding' && typeof item === 'string') {
           // the end of a random key: whether one is set, and that it stays the same, are what count
           out[key] = this.label('keyEnding', item);

@@ -8,10 +8,13 @@ import { RoleGuard } from '../auth/guards/role.guard';
 import { Roles } from '../shared/roles.decorator';
 import { CurrentUser } from '../shared/current-user.decorator';
 import { ReportLinkDto, ReportsService } from './reports.service';
+import { serverFileLinkKey, signReportFile, withFileSignatures } from '../static/file-links';
 
 @Controller()
 @ApiTags('reports')
 export class ReportsController {
+  private readonly fileKey = serverFileLinkKey();
+
   constructor(private reportsService: ReportsService) {}
 
   // only editors and admins put a build in front of people without an account (REQ-031-69)
@@ -59,7 +62,8 @@ export class ReportsController {
     @Res() res: Response
   ): Promise<void> {
     const report = await this.reportsService.publicReport(token);
-    const body = JSON.stringify(report);
+    // its screens open with the report's own signature, and only while the link is valid (REQ-043-06)
+    const body = JSON.stringify(withFileSignatures(report, (name) => signReportFile(token, name, this.fileKey)));
     const etag = `"${createHash('sha1').update(body).digest('base64url')}"`;
     res.setHeader('ETag', etag);
     // the page is served from another origin than the API: let it read the tag

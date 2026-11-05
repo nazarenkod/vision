@@ -16,6 +16,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { AuthService } from '../../auth/auth.service';
 import { msUntilExpiry, tokenFromHandshake } from './events-auth';
 import { groupByProject, projectRoom } from './events-rooms';
+import { serverFileLinkKey, signFile, withFileSignatures } from '../../static/file-links';
 
 // The message a rejected client gets in connect_error; the UI signs out on it.
 export const UNAUTHORIZED = 'unauthorized';
@@ -25,6 +26,7 @@ export const UNAUTHORIZED = 'unauthorized';
 @WebSocketGateway({ cors: true })
 export class EventsGateway implements OnGatewayInit, OnModuleDestroy {
   private readonly logger = new Logger(EventsGateway.name);
+  private readonly fileKey = serverFileLinkKey();
 
   @WebSocketServer()
   server: Server;
@@ -103,7 +105,10 @@ export class EventsGateway implements OnGatewayInit, OnModuleDestroy {
   }
 
   buildCreated(build: BuildDto): void {
-    this.server.to(projectRoom(build.projectId)).emit('build_created', build);
+    this.server.to(projectRoom(build.projectId)).emit(
+      'build_created',
+      withFileSignatures(build, (name) => signFile(name, this.fileKey))
+    );
   }
 
   buildUpdated(id: string): void {
@@ -137,7 +142,11 @@ export class EventsGateway implements OnGatewayInit, OnModuleDestroy {
 
   private emitToProjects<T>(event: string, items: T[], projectOf: (item: T) => string | null | undefined): void {
     for (const [projectId, group] of groupByProject(items, projectOf)) {
-      this.server.to(projectRoom(projectId)).emit(event, group);
+      // members of the room see these rows in the interface, with their images (043)
+      this.server.to(projectRoom(projectId)).emit(
+        event,
+        withFileSignatures(group, (name) => signFile(name, this.fileKey))
+      );
     }
   }
 

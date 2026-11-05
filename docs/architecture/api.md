@@ -15,7 +15,7 @@ SHA-256 і сам ключ не зберігає ([044](../specs/044-secrets-at-
 | Рукостискання | `auth: { token: <JWT входу> }` — той самий токен, що в `Authorization: Bearer`. Немає, чужий підпис, термін сплив, користувача немає — `connect_error` з `message: "unauthorized"`. `apiKey` не приймається. Роль не перевіряється |
 | Термін токена | коли спливає `exp`, сервер розриває з'єднання (`io server disconnect`); повторна спроба з тим самим токеном отримує `unauthorized` |
 | `subscribe` `{ projectId }` | підписка на проєкт, одна на з'єднання: попередня знімається. Ack `{ ok: true }`; `{ ok: false }` — проєкту чи користувача немає. `projectId: null` — лише відписатися |
-| Події | `build_created`, `build_deleted` (один `Build`), `build_updated`, `testRun_created`, `testRun_updated`, `testRun_deleted` (масиви) — лише в кімнату проєкту запису. Без підписки подій немає |
+| Події | `build_created`, `build_deleted` (один `Build`), `build_updated`, `testRun_created`, `testRun_updated`, `testRun_deleted` (масиви) — лише в кімнату проєкту запису, з `fileSignatures` знімків ([043](../specs/043-protected-images/spec.md)). Без підписки подій немає |
 
 ## Прийом
 
@@ -36,6 +36,19 @@ SHA-256 і сам ключ не зберігає ([044](../specs/044-secrets-at-
 | `POST /test-runs/approve`, `POST /test-runs/reject` | як в upstream, але відповідь тепер `{ decisionId }`: запис журналу для Undo ([018](../specs/018-ui-redesign/spec.md)) |
 | `POST /test-runs/undo/:decisionId` | скасувати рішення, прийняте не раніше ніж 30 s тому, лише тим, хто його прийняв: статуси й еталони — як до рішення, все або нічого. `409` — рішення вже скасоване, застаре або після нього хтось змінив знімок чи еталон (причина в `message`); `403` — рішення чуже |
 
+## Знімки ([043](../specs/043-protected-images/spec.md))
+
+Кожна JSON-відповідь маршруту з входом чи API-ключем, де є `imageName`, `diffName`,
+`baselineName`, `imageThumbnailName` або `diffThumbnailName`, має поруч `fileSignatures:
+{ <ім'я файла>: <підпис> }`. Підпис — HMAC імені ключем, виведеним з `VISION_SECRET_KEY`: діє,
+доки файл існує, лише для нього. Інших шляхів до файлів немає: ні `/<ім'я>` в API, ні
+`/static/imageUploads` в nginx інтерфейсу.
+
+| Метод і шлях | Призначення |
+|---|---|
+| `GET /images/:name?sig=` | PNG за підписом: `Cache-Control: private, max-age=31536000, immutable`, `Access-Control-Allow-Origin` — лише `APP_FRONTEND_URL`. Без підпису, з чужим чи для не-PNG — `404`, ім'я зі шляхом — `400`. Сховище S3 — перенаправлення на підписану адресу |
+| `GET /images/:name/download?sig=` | ті самі байти вкладенням, для zip в інтерфейсі |
+
 ## Огляд і звіт збірки ([031](../specs/031-build-overview/spec.md))
 
 | Метод і шлях | Призначення |
@@ -45,7 +58,7 @@ SHA-256 і сам ключ не зберігає ([044](../specs/044-secrets-at-
 | `GET /builds/:id/report-links` | невідкликані публічні посилання збірки з автором і датою |
 | `POST /builds/:id/report-links` | `admin`, `editor`: `{ sections, language }` → посилання з `token`, без терміну дії |
 | `DELETE /report-links/:id` | відкликати: автор або `admin`, інакше `403` |
-| `GET /public/reports/:token` | **без входу** ([ADR-0022](../decisions/0022-public-report-links.md)): звіт із розділами й мовою посилання, лише білий список полів; `{ state: "expired" }` або `{ state: "gone" }` без даних збірки. `ETag`; той самий `If-None-Match` — `304` |
+| `GET /public/reports/:token` | **без входу** ([ADR-0022](../decisions/0022-public-report-links.md)): звіт із розділами й мовою посилання, лише білий список полів; `fileSignatures` знімків — підписами звіту, що діють, доки посилання чинне ([043](../specs/043-protected-images/spec.md)); `{ state: "expired" }` або `{ state: "gone" }` без даних збірки. `ETag`; той самий `If-None-Match` — `304` |
 
 ## Рішення щодо проблем доступності
 

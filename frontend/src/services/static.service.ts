@@ -1,4 +1,5 @@
-import { API_URL, STATIC_URL } from "../_config/env.config";
+import { API_URL } from "../_config/env.config";
+import { fileSignature } from "../_helpers/fileSignatures";
 import noImage from "../static/no-image.png";
 import JSZip from "jszip";
 import FileSaver from "file-saver";
@@ -6,19 +7,19 @@ import FileSaver from "file-saver";
 // Takes a nullable name because most of them are: a run has no diff until it
 // has been compared, and no thumbnail unless one was made. The placeholder
 // answer for that was always here; only the signature disagreed.
+// The server opens an image only with the signature it sent beside its name (043).
+const signed = (name: string) =>
+  `?sig=${encodeURIComponent(fileSignature(name) ?? "")}`;
+
 function getImage(name: string | null | undefined): string {
   if (!name) return noImage;
-  // Prefer the static host: the API serves images from the same single-threaded
-  // process that computes image diffs, so under ingestion load image requests
-  // queue behind CPU-bound work.
-  if (STATIC_URL) return `${STATIC_URL}/${name}`;
-  return `${API_URL}/images/${name}`;
+  return `${API_URL}/images/${name}${signed(name)}`;
 }
 
 // Bytes served by the API itself: getImage redirects to storage, and a
 // pre-signed S3 URL answers without CORS headers, which blocks the fetch below.
 function getImageDownloadUrl(name: string): string {
-  return `${API_URL}/images/${name}/download`;
+  return `${API_URL}/images/${name}/download${signed(name)}`;
 }
 
 // The download route serves the bytes from the API's own origin. An API without

@@ -29,8 +29,7 @@ services:
       secrets: [extra_ca]
     ports:
       - "${DEMO_UI_PORT:-18080}:8080"
-    volumes:
-      - ./demo-data/imageUploads:/usr/share/nginx/html/static/imageUploads
+    # no images in the UI container: the API serves them, only with a signature (043)
     environment:
       REACT_APP_API_URL: ${DEMO_API_URL:-http://localhost:14200}
       VISION_VERSION: demo

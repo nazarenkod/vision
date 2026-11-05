@@ -1,5 +1,6 @@
 import { handleResponse, authHeader } from "../_helpers/service.helpers";
 import { API_URL } from "../_config/env.config";
+import { rememberFileSignatures } from "../_helpers/fileSignatures";
 import {
   PublicReport,
   ReportLink,
@@ -47,8 +48,11 @@ export const reportsService = {
     );
     if (response.status === 304) return null;
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const report = await response.json();
+    // the report's own signatures: its screens open while the link is valid (043)
+    rememberFileSignatures(report);
     return {
-      report: await response.json(),
+      report,
       etag: response.headers.get("ETag") ?? undefined,
     };
   },

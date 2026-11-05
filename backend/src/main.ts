@@ -2,13 +2,11 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { setupSwagger } from './swagger';
 import { Logger, ValidationPipe } from '@nestjs/common';
-import { join } from 'path';
 import * as bodyParser from 'body-parser';
 import compression from 'compression';
 import { readFileSync, existsSync } from 'fs';
 import { HttpsOptions } from '@nestjs/common/interfaces/external/https-options.interface';
 import { NestExpressApplication } from '@nestjs/platform-express';
-import { HDD_IMAGE_PATH } from './static/hdd/constants';
 import { RedisIoAdapter } from './redis-io.adapter';
 import { serverSecretKey } from './shared/secret-box';
 
@@ -56,14 +54,7 @@ async function bootstrap() {
     app.use(bodyParser.json({ limit: process.env.BODY_PARSER_JSON_LIMIT }));
   }
 
-  app.useStaticAssets(join(process.cwd(), HDD_IMAGE_PATH), {
-    maxAge: 31536000,
-    // allow cors
-    setHeaders: (res) => {
-      res.set('Access-Control-Allow-Origin', '*');
-    },
-  });
-
+  // no folder of stored files is served as it is: images go through /images with a signature (043)
   await app.listen(process.env.APP_PORT || 3000);
 }
 bootstrap();

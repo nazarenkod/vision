@@ -25,7 +25,13 @@ const state: {
   projectId?: string;
   build1?: string;
   build2?: string;
-  runs2?: Array<{ id: string; name: string; status: string; imageName: string }>;
+  runs2?: Array<{
+    id: string;
+    name: string;
+    status: string;
+    imageName: string;
+    fileSignatures: Record<string, string>;
+  }>;
 } = {};
 
 const record = (answer: Answer | unknown) => norm.value(answer);
@@ -388,14 +394,20 @@ it('12 report links', async () => {
   const created = await call('POST', `/builds/${state.build2}/report-links`, editor, { language: 'en' });
   const token = (created.body as { token: string }).token;
   const id = (created.body as { id: string }).id;
+  const publicReport = await call('GET', `/public/reports/${token}`);
+  const [shown, signature] = Object.entries<string>(publicReport.body.changes[0].fileSignatures)[0];
+  const reportImage = `/images/${shown}?sig=${encodeURIComponent(signature)}`;
   expect(
     record({
       created: strip(created),
       report: strip(await call('GET', `/builds/${state.build2}/report`, editor)),
       list: strip(await call('GET', `/builds/${state.build2}/report-links`, editor)),
-      publicReport: strip(await call('GET', `/public/reports/${token}`)),
+      publicReport: strip(publicReport),
+      reportImage: (await call('GET', reportImage)).status,
       revoke: strip(await call('DELETE', `/report-links/${id}`, editor)),
       afterRevoke: strip(await call('GET', `/public/reports/${token}`)),
+      // the report's images close with its link (REQ-043-06)
+      reportImageAfterRevoke: (await call('GET', reportImage)).status,
     })
   ).toMatchSnapshot();
 });
@@ -486,15 +498,27 @@ it('15 the MCP server lists and runs its tools', async () => {
 });
 
 it('16 images', async () => {
+  // only with the signature the answers carry (043): unsigned, the same 404 as a missing file
   const payment = runNamed('Payment');
-  const redirect = await call('GET', `/images/${payment.imageName}`);
-  const download = await call('GET', `/images/${payment.imageName}/download`);
-  const bad = await call('GET', `/images/${encodeURIComponent('../etc/passwd')}/download`);
+  const sig = `?sig=${encodeURIComponent(payment.fileSignatures[payment.imageName])}`;
+  const other = runNamed('Offers');
+  const shown = await call('GET', `/images/${payment.imageName}${sig}`);
+  const download = await call('GET', `/images/${payment.imageName}/download${sig}`);
+  const unsigned = await call('GET', `/images/${payment.imageName}`);
+  const unsignedDownload = await call('GET', `/images/${payment.imageName}/download`);
+  const anotherFilesSignature = await call(
+    'GET',
+    `/images/${payment.imageName}?sig=${encodeURIComponent(other.fileSignatures[other.imageName])}`
+  );
+  const bad = await call('GET', `/images/${encodeURIComponent('../etc/passwd')}/download${sig}`);
   const staticFile = await call('GET', `/${payment.imageName}`);
   expect(
     record({
-      redirect: { status: redirect.status, headers: redirect.headers },
+      shown: { status: shown.status, headers: shown.headers, body: shown.body },
       download: { status: download.status, headers: download.headers, body: download.body },
+      unsigned: strip(unsigned),
+      unsignedDownload: strip(unsignedDownload),
+      anotherFilesSignature: strip(anotherFilesSignature),
       bad: strip(bad),
       staticFile: { status: staticFile.status, headers: staticFile.headers, body: staticFile.body },
     })

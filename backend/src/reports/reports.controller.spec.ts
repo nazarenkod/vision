@@ -5,6 +5,7 @@ import { ReportsController } from './reports.controller';
 import { ReportsService } from './reports.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { BuildOverviewService } from '../builds/build-overview.service';
+import { readFileSignature, serverFileLinkKey } from '../static/file-links';
 
 const now = new Date();
 
@@ -107,6 +108,33 @@ describe('ReportsController', () => {
     const again = setup();
     await again.controller.publicReport('t', etag, again.res as never);
     expect(again.res.status).toHaveBeenCalledWith(304);
+  });
+
+  it("signs the report's own screens while its link is valid", async () => {
+    const { controller, prisma, res } = setup();
+    prisma.testRun.findMany.mockResolvedValue([
+      {
+        id: 'r1',
+        name: 'Payment',
+        device: null,
+        os: null,
+        status: 'unresolved',
+        diffPercent: 3,
+        imageName: 'new.png',
+        baselineName: 'base.png',
+        diffName: 'diff.png',
+        a11yNewCount: 0,
+      },
+    ]);
+    await controller.publicReport('t', undefined, res as never);
+
+    const signatures = sent(res).changes[0].fileSignatures;
+    const key = serverFileLinkKey();
+    expect(Object.keys(signatures).sort()).toEqual(['base.png', 'diff.png', 'new.png']);
+    for (const [name, signature] of Object.entries<string>(signatures)) {
+      // the report's signature, tied to its token: it opens the file only while the link lives
+      expect(readFileSignature(name, signature, key)).toEqual({ kind: 'report', token: 't' });
+    }
   });
 
   it('says the build is gone when it was deleted', async () => {

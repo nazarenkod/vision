@@ -1,6 +1,7 @@
 import { routes } from "../constants";
 import { usersService } from "../services";
 import { User } from "../types";
+import { rememberFileSignatures } from "./fileSignatures";
 
 // the jwt of the signed-in user, read fresh so a new login is picked up
 export function storedToken(): string | undefined {
@@ -49,6 +50,7 @@ export function handleResponse(response: Response) {
       return Promise.reject(error);
     }
 
+    rememberFileSignatures(data);
     return data;
   });
 }

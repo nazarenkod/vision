@@ -18,6 +18,10 @@ import { useProjectState } from "./project.context";
 import { useUserState } from "./user.context";
 import { logoutAndReload } from "../_helpers/service.helpers";
 import { followProject, onRejected } from "./socket.events";
+import { rememberFileSignatures } from "../_helpers/fileSignatures";
+
+const rememberLive = (_event: string, payload: unknown) =>
+  rememberFileSignatures(payload);
 
 interface IConnectAction {
   type: "connect";
@@ -97,6 +101,9 @@ function SocketProvider({ children }: SocketProviderProps) {
     if (state.socket) {
       // by name: connect, connect_error and disconnect have handlers of their own
       LIVE_EVENTS.forEach((event) => state.socket?.off(event));
+      // rows that arrive live carry the signatures of their images (043)
+      state.socket.offAny(rememberLive);
+      state.socket.onAny(rememberLive);
 
       state.socket.on("build_created", function (build: Build) {
         if (build.projectId === selectedProjectId) {

@@ -40,6 +40,8 @@ upstream VRT, а згодом зможе працювати й на живій.
 
 ## Файли (`imageUploads` або S3)
 
+Назовні — лише через `GET /images/:name?sig=` ([043](../specs/043-protected-images/spec.md)).
+
 | Файл | Що |
 |---|---|
 | `*.png` | скриншоти, діфи, мініатюри (upstream) |

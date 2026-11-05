@@ -309,6 +309,9 @@ exports[`03 first SDK build: new screens 1`] = `
         "diffThumbnailName": null,
         "diffTollerancePercent": 0,
         "featureName": null,
+        "fileSignatures": {
+          "<file1>": "<signature>",
+        },
         "hasUiTree": true,
         "id": "<id7>",
         "ignoreAreas": "[]",
@@ -340,6 +343,9 @@ exports[`03 first SDK build: new screens 1`] = `
         "diffThumbnailName": null,
         "diffTollerancePercent": 0,
         "featureName": null,
+        "fileSignatures": {
+          "<file2>": "<signature>",
+        },
         "hasUiTree": true,
         "id": "<id9>",
         "ignoreAreas": "[]",
@@ -371,6 +377,9 @@ exports[`03 first SDK build: new screens 1`] = `
         "diffThumbnailName": null,
         "diffTollerancePercent": 0,
         "featureName": null,
+        "fileSignatures": {
+          "<file3>": "<signature>",
+        },
         "hasUiTree": false,
         "id": "<id11>",
         "ignoreAreas": "[]",
@@ -451,6 +460,9 @@ exports[`04 approve the first build 1`] = `
         "customTags": "",
         "device": "Pixel 7",
         "elementRules": null,
+        "fileSignatures": {
+          "<file4>": "<signature>",
+        },
         "id": "<id8>",
         "ignoreAreas": "[]",
         "name": "Offers",
@@ -469,6 +481,9 @@ exports[`04 approve the first build 1`] = `
         "customTags": "",
         "device": "Pixel 7",
         "elementRules": null,
+        "fileSignatures": {
+          "<file6>": "<signature>",
+        },
         "id": "<id10>",
         "ignoreAreas": "[]",
         "name": "Payment",
@@ -487,6 +502,9 @@ exports[`04 approve the first build 1`] = `
         "customTags": "",
         "device": "Pixel 7",
         "elementRules": null,
+        "fileSignatures": {
+          "<file8>": "<signature>",
+        },
         "id": "<id12>",
         "ignoreAreas": "[]",
         "name": "Splash",
@@ -521,6 +539,10 @@ exports[`05 second SDK build: a changed fee, the same offers 1`] = `
         "diffThumbnailName": null,
         "diffTollerancePercent": 0,
         "featureName": null,
+        "fileSignatures": {
+          "<file4>": "<signature>",
+          "<file9>": "<signature>",
+        },
         "hasUiTree": true,
         "id": "<id15>",
         "ignoreAreas": "[]",
@@ -552,6 +574,13 @@ exports[`05 second SDK build: a changed fee, the same offers 1`] = `
         "diffThumbnailName": "<file11>",
         "diffTollerancePercent": 0,
         "featureName": null,
+        "fileSignatures": {
+          "<file10>": "<signature>",
+          "<file11>": "<signature>",
+          "<file12>": "<signature>",
+          "<file13>": "<signature>",
+          "<file6>": "<signature>",
+        },
         "hasUiTree": true,
         "id": "<id16>",
         "ignoreAreas": "[]",
@@ -583,6 +612,10 @@ exports[`05 second SDK build: a changed fee, the same offers 1`] = `
         "diffThumbnailName": null,
         "diffTollerancePercent": 0,
         "featureName": null,
+        "fileSignatures": {
+          "<file14>": "<signature>",
+          "<file8>": "<signature>",
+        },
         "hasUiTree": false,
         "id": "<id17>",
         "ignoreAreas": "[]",
@@ -680,6 +713,13 @@ exports[`06 review: details, structure, groups, overview 1`] = `
       "diffThumbnailName": "<file11>",
       "diffTollerancePercent": 0,
       "featureName": null,
+      "fileSignatures": {
+        "<file10>": "<signature>",
+        "<file11>": "<signature>",
+        "<file12>": "<signature>",
+        "<file13>": "<signature>",
+        "<file6>": "<signature>",
+      },
       "id": "<id16>",
       "ignoreAreas": "[]",
       "imageName": "<file12>",
@@ -702,6 +742,9 @@ exports[`06 review: details, structure, groups, overview 1`] = `
         "customTags": "",
         "device": "Pixel 7",
         "elementRules": null,
+        "fileSignatures": {
+          "<file6>": "<signature>",
+        },
         "id": "<id10>",
         "ignoreAreas": "[]",
         "name": "Payment",
@@ -771,6 +814,13 @@ exports[`06 review: details, structure, groups, overview 1`] = `
             "diffThumbnailName": "<file11>",
             "diffTollerancePercent": 0,
             "featureName": null,
+            "fileSignatures": {
+              "<file10>": "<signature>",
+              "<file11>": "<signature>",
+              "<file12>": "<signature>",
+              "<file13>": "<signature>",
+              "<file6>": "<signature>",
+            },
             "hasUiTree": true,
             "id": "<id16>",
             "ignoreAreas": "[]",
@@ -2047,6 +2097,10 @@ exports[`07 element rules and ignore areas 1`] = `
       "diffThumbnailName": null,
       "diffTollerancePercent": 0,
       "featureName": null,
+      "fileSignatures": {
+        "<file12>": "<signature>",
+        "<file6>": "<signature>",
+      },
       "id": "<id16>",
       "ignoreAreas": "[]",
       "imageName": "<file12>",
@@ -2069,6 +2123,9 @@ exports[`07 element rules and ignore areas 1`] = `
         "customTags": "",
         "device": "Pixel 7",
         "elementRules": null,
+        "fileSignatures": {
+          "<file6>": "<signature>",
+        },
         "id": "<id10>",
         "ignoreAreas": "[]",
         "name": "Payment",
@@ -2115,6 +2172,10 @@ exports[`07 element rules and ignore areas 1`] = `
       "diffThumbnailName": null,
       "diffTollerancePercent": 0,
       "featureName": null,
+      "fileSignatures": {
+        "<file4>": "<signature>",
+        "<file9>": "<signature>",
+      },
       "id": "<id15>",
       "ignoreAreas": "[{"x":10,"y":10,"width":100,"height":50}]",
       "imageName": "<file9>",
@@ -2137,6 +2198,9 @@ exports[`07 element rules and ignore areas 1`] = `
         "customTags": "",
         "device": "Pixel 7",
         "elementRules": null,
+        "fileSignatures": {
+          "<file4>": "<signature>",
+        },
         "id": "<id8>",
         "ignoreAreas": "[{"x":10,"y":10,"width":100,"height":50}]",
         "name": "Offers",
@@ -3231,6 +3295,11 @@ exports[`12 report links 1`] = `
           "device": "Pixel 7",
           "diffName": "<file17>",
           "diffPercent": 0.8639274691358024,
+          "fileSignatures": {
+            "<file12>": "<reportSignature>",
+            "<file17>": "<reportSignature>",
+            "<file6>": "<reportSignature>",
+          },
           "imageName": "<file12>",
           "name": "Payment",
           "os": "Android 14",
@@ -3341,6 +3410,11 @@ exports[`12 report links 1`] = `
           "device": "Pixel 7",
           "diffName": "<file17>",
           "diffPercent": 0.8639274691358024,
+          "fileSignatures": {
+            "<file12>": "<signature>",
+            "<file17>": "<signature>",
+            "<file6>": "<signature>",
+          },
           "imageName": "<file12>",
           "name": "Payment",
           "os": "Android 14",
@@ -3477,6 +3551,8 @@ exports[`12 report links 1`] = `
     },
     "status": 200,
   },
+  "reportImage": 200,
+  "reportImageAfterRevoke": 404,
   "revoke": {
     "body": null,
     "status": 200,
@@ -3494,6 +3570,9 @@ exports[`13 Insights and test variations 1`] = `
         {
           "baselineName": "<file6>",
           "createdAt": "<time>",
+          "fileSignatures": {
+            "<file6>": "<signature>",
+          },
           "id": "<id22>",
           "testRun": {
             "a11yNewCount": 9,
@@ -3519,6 +3598,9 @@ exports[`13 Insights and test variations 1`] = `
             "diffThumbnailName": null,
             "diffTollerancePercent": 0,
             "featureName": null,
+            "fileSignatures": {
+              "<file2>": "<signature>",
+            },
             "id": "<id9>",
             "ignoreAreas": "[]",
             "imageName": "<file2>",
@@ -3558,6 +3640,9 @@ exports[`13 Insights and test variations 1`] = `
       "customTags": "",
       "device": "Pixel 7",
       "elementRules": null,
+      "fileSignatures": {
+        "<file6>": "<signature>",
+      },
       "id": "<id10>",
       "ignoreAreas": "[]",
       "name": "Payment",
@@ -3649,6 +3734,9 @@ exports[`13 Insights and test variations 1`] = `
         "customTags": "",
         "device": "Pixel 7",
         "elementRules": null,
+        "fileSignatures": {
+          "<file4>": "<signature>",
+        },
         "id": "<id8>",
         "ignoreAreas": "[{"x":10,"y":10,"width":100,"height":50}]",
         "name": "Offers",
@@ -3667,6 +3755,9 @@ exports[`13 Insights and test variations 1`] = `
         "customTags": "",
         "device": "Pixel 7",
         "elementRules": null,
+        "fileSignatures": {
+          "<file6>": "<signature>",
+        },
         "id": "<id10>",
         "ignoreAreas": "[]",
         "name": "Payment",
@@ -3685,6 +3776,9 @@ exports[`13 Insights and test variations 1`] = `
         "customTags": "",
         "device": "Pixel 7",
         "elementRules": null,
+        "fileSignatures": {
+          "<file8>": "<signature>",
+        },
         "id": "<id12>",
         "ignoreAreas": "[]",
         "name": "Splash",
@@ -3867,6 +3961,9 @@ exports[`14 the CLI sends checks from files, in a session 1`] = `
         "diffThumbnailName": null,
         "diffTollerancePercent": 0,
         "featureName": null,
+        "fileSignatures": {
+          "<file19>": "<signature>",
+        },
         "hasUiTree": true,
         "id": "<id24>",
         "ignoreAreas": "[]",
@@ -4149,6 +4246,26 @@ Review: http://vision.control.test/<id4>?buildId=<id26>&testId=<id27>",
 
 exports[`16 images 1`] = `
 {
+  "anotherFilesSignature": {
+    "body": {
+      "exception": {
+        "message": "Image not found: <file12>",
+        "name": "NotFoundException",
+        "options": {},
+        "response": {
+          "error": "Not Found",
+          "message": "Image not found: <file12>",
+          "statusCode": 404,
+        },
+        "status": 404,
+      },
+      "message": "Image not found: <file12>",
+      "name": "NotFoundException",
+      "path": "/images/<file12>?sig=<signature>",
+      "stack": "<stack>",
+    },
+    "status": 404,
+  },
   "bad": {
     "body": {
       "exception": {
@@ -4164,7 +4281,7 @@ exports[`16 images 1`] = `
       },
       "message": "Invalid image name",
       "name": "BadRequestException",
-      "path": "/images/..%2Fetc%2Fpasswd/download",
+      "path": "/images/..%2Fetc%2Fpasswd/download?sig=<signature>",
       "stack": "<stack>",
     },
     "status": 400,
@@ -4172,26 +4289,82 @@ exports[`16 images 1`] = `
   "download": {
     "body": "<2432453 bytes>",
     "headers": {
+      "cache-control": "private, max-age=31536000, immutable",
       "content-disposition": "attachment; filename="<file12>"",
       "content-type": "image/png",
     },
     "status": 200,
   },
-  "redirect": {
-    "headers": {
-      "cache-control": "private, max-age=3000",
-      "content-type": "text/plain",
-      "location": "/<file12>",
-    },
-    "status": 302,
-  },
-  "staticFile": {
+  "shown": {
     "body": "<2432453 bytes>",
     "headers": {
-      "cache-control": "public, max-age=31536",
+      "cache-control": "private, max-age=31536000, immutable",
       "content-type": "image/png",
     },
     "status": 200,
+  },
+  "staticFile": {
+    "body": {
+      "exception": {
+        "message": "Cannot GET /<file12>",
+        "name": "NotFoundException",
+        "options": {},
+        "response": {
+          "error": "Not Found",
+          "message": "Cannot GET /<file12>",
+          "statusCode": 404,
+        },
+        "status": 404,
+      },
+      "message": "Cannot GET /<file12>",
+      "name": "NotFoundException",
+      "path": "/<file12>",
+      "stack": "<stack>",
+    },
+    "headers": {
+      "content-type": "application/json",
+    },
+    "status": 404,
+  },
+  "unsigned": {
+    "body": {
+      "exception": {
+        "message": "Image not found: <file12>",
+        "name": "NotFoundException",
+        "options": {},
+        "response": {
+          "error": "Not Found",
+          "message": "Image not found: <file12>",
+          "statusCode": 404,
+        },
+        "status": 404,
+      },
+      "message": "Image not found: <file12>",
+      "name": "NotFoundException",
+      "path": "/images/<file12>",
+      "stack": "<stack>",
+    },
+    "status": 404,
+  },
+  "unsignedDownload": {
+    "body": {
+      "exception": {
+        "message": "Image not found: <file12>",
+        "name": "NotFoundException",
+        "options": {},
+        "response": {
+          "error": "Not Found",
+          "message": "Image not found: <file12>",
+          "statusCode": 404,
+        },
+        "status": 404,
+      },
+      "message": "Image not found: <file12>",
+      "name": "NotFoundException",
+      "path": "/images/<file12>/download",
+      "stack": "<stack>",
+    },
+    "status": 404,
   },
 }
 `;
@@ -4374,6 +4547,9 @@ exports[`18 a build is approved as a whole and deleted 1`] = `
           "diffThumbnailName": null,
           "diffTollerancePercent": 0,
           "featureName": null,
+          "fileSignatures": {
+            "<file1>": "<signature>",
+          },
           "id": "<id7>",
           "ignoreAreas": "[]",
           "imageName": "<file1>",
@@ -4417,6 +4593,9 @@ exports[`18 a build is approved as a whole and deleted 1`] = `
           "diffThumbnailName": null,
           "diffTollerancePercent": 0,
           "featureName": null,
+          "fileSignatures": {
+            "<file2>": "<signature>",
+          },
           "id": "<id9>",
           "ignoreAreas": "[]",
           "imageName": "<file2>",
@@ -4460,6 +4639,9 @@ exports[`18 a build is approved as a whole and deleted 1`] = `
           "diffThumbnailName": null,
           "diffTollerancePercent": 0,
           "featureName": null,
+          "fileSignatures": {
+            "<file3>": "<signature>",
+          },
           "id": "<id11>",
           "ignoreAreas": "[]",
           "imageName": "<file3>",

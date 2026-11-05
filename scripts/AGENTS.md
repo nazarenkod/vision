@@ -26,6 +26,7 @@
 | `tests/test_vision_sh.py` | `vision.sh` при збірці: вбудований збирач Docker замість `docker-container`, помічник облікових даних Docker Desktop поза `PATH` (замінник `docker`) |
 | `tests/test_build_sdk_jar.py` | справжня збірка SDK у копії репозиторію: координати й версія в pom, лише новий jar у `dist/`, у класах немає назв VRT; без Gradle пропускається |
 | `tests/test_prod_read_only.py` | копія з проду лише читає VRT (`SELECT` і `pg_dump`), картинки VRT не змінюються, запобіжники зупиняють до запису; замінник `docker`, працює й на macOS |
+| `tests/test_protected_images.py` | жодної прямої видачі збережених файлів: ні статики в API, ні `/static/imageUploads` в nginx, ні тому картинок у контейнері `ui` (043) |
 | `tests/test_vision_backup.py` | бекап, відновлення й бекап перед копією проду на локальному Postgres (замінники `docker`, `rclone`) |
 
 Тести запускаються як `python3 -I scripts/tests/<файл>.py`.

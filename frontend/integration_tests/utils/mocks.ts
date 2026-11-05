@@ -158,10 +158,12 @@ export const mockImage = async (page: Page, image: string) => {
       path: `integration_tests/images/${image}`,
     });
 
-  // the API serves an image two ways: a redirect to storage for display, and
-  // the bytes themselves for the download zip
-  await page.route(`${API_URL}/images/${image}`, fulfillWithImage);
-  return page.route(`${API_URL}/images/${image}/download`, fulfillWithImage);
+  // the API serves an image for display and as bytes for the download zip,
+  // each with the signature from the answers in its query (043)
+  const at = (path: string) => (url: URL) =>
+    url.origin === API_URL && url.pathname === path;
+  await page.route(at(`/images/${image}`), fulfillWithImage);
+  return page.route(at(`/images/${image}/download`), fulfillWithImage);
 };
 
 export const mockUpdateUser = async (page: Page, user: object) => {

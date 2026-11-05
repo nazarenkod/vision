@@ -2,10 +2,10 @@
 
 | | |
 |---|---|
-| Статус | Approved |
+| Статус | Implemented |
 | Власник | Дмитро Назаренко |
 | Оновлено | 2026-11-05 |
-| Дизайн | `design.md` — після `Approved` |
+| Дизайн | [design.md](design.md) |
 | Пов'язане | [аудит](../../security/audit-2026-11-04.md) S-5, [план](../../security/bank-readiness-plan.md) 2.2; [042](../042-project-access/spec.md) (доступ до проєктів), [031](../031-build-overview/spec.md) (публічний звіт) |
 
 ## Контекст і проблема

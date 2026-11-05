@@ -23,6 +23,7 @@
 | Ручні перевірки | [009](specs/009-manual-checks-cli-mcp/spec.md) |
 | Локальний запуск | [development](guides/development.md) |
 | Тести й перевірка змін | [testing](guides/testing.md) |
+| Заведення в банківський контур: аудит і план | [аудит](security/audit-2026-11-04.md), [план](security/bank-readiness-plan.md) |
 
 ## Будова
 

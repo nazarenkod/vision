@@ -305,3 +305,22 @@ export const mockSocket = async (
       send(`42${JSON.stringify([event, data])}`),
   };
 };
+
+/**
+ * Opens the comparison's side panel when it came up folded: a screen without
+ * changed areas and accessibility findings folds it (REQ-046-07). The screens
+ * show once the panel is settled, so this waits for them first.
+ */
+export const unfoldPanel = async (page: Page) => {
+  await page
+    .getByTestId("reviewPanes")
+    .waitFor({ state: "visible", timeout: 10000 });
+  const unfold = page.getByTestId("panelUnfold");
+  if (!(await unfold.count())) return;
+  await unfold.click();
+  // the pointer leaves the button, so its tooltip does not stay open
+  await page.mouse.move(0, 0);
+  await page.getByRole("tooltip", { name: "Hide details" }).waitFor({
+    state: "hidden",
+  });
+};

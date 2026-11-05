@@ -379,7 +379,6 @@ export const TestDetailsDialog: React.FunctionComponent<{
           frozen && queueKey ? (
             <QueueHeader
               label={labelOfKey(queueKey)}
-              position={selectedTestRunIndex + 1}
               total={testRuns.length}
               current={queueKey}
               choices={queueChoices(allTestRuns, groups ?? [])}

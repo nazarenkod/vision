@@ -14,6 +14,7 @@ import {
   mockGetTestRuns,
   mockImage,
   mockTestRun,
+  unfoldPanel,
 } from "utils/mocks";
 
 const project = TEST_PROJECT;
@@ -126,6 +127,7 @@ test("lists the rules for this screen and for every screen", async ({
   page,
 }) => {
   await openProjectPage(project.id, build.id, testRun.id);
+  await unfoldPanel(page);
   await expect(rule(page, "id:balance")).toContainText("±5%");
   await expect(rule(page, "id:balance")).toContainText("this screen");
   // a rule for every screen that found nothing here is folded away (REQ-030-23)
@@ -149,6 +151,7 @@ test("shows the result once, at the top of the Changes tab", async ({
   page,
 }) => {
   await openProjectPage(project.id, build.id, testRun.id);
+  await unfoldPanel(page);
   // the run has a diff, but nothing the panel can name in it
   await expect(page.getByTestId("verdictTitle")).toHaveText("Changed");
   await expect(page.getByTestId("verdictReason")).toHaveText(
@@ -209,6 +212,7 @@ test("says the count once and lists the changes straight under it", async ({
 }) => {
   await withStructure(page, changed);
   await openProjectPage(project.id, build.id, testRun.id);
+  await unfoldPanel(page);
   // each spot outside the elements counts, as before (REQ-036-16)
   await expect(page.getByTestId("verdictTitle")).toHaveText("4 changes");
   await expect(page.getByTestId("verdictReason")).toHaveCount(0);
@@ -239,6 +243,7 @@ test("opens a row into its spots, five at a time", async ({
 }) => {
   await withStructure(page, changed);
   await openProjectPage(project.id, build.id, testRun.id);
+  await unfoldPanel(page);
   const next = page.getByTestId("changedArea").first();
   await next.getByTestId("changedAreaToggle").click();
   await expect(next.getByTestId("changedAreaToggle")).toHaveAttribute(
@@ -292,6 +297,7 @@ test("names a changed place by the text in it, as it was and is", async ({
     ],
   });
   await openProjectPage(project.id, build.id, testRun.id);
+  await unfoldPanel(page);
   // one place whose text changed says so instead of "Changed in 1 spot" (REQ-038-04)
   await expect(page.getByTestId("changedAreaWhat")).toHaveText(
     "“12 450,00 ₴” → “9 870,00 ₴”",
@@ -305,6 +311,7 @@ test("folds the comparison scope while there are changes to look at", async ({
 }) => {
   await withStructure(page, changed);
   await openProjectPage(project.id, build.id, testRun.id);
+  await unfoldPanel(page);
   const toggle = page.getByTestId("comparedToggle");
   await expect(toggle).toContainText("Comparison scope");
   await expect(toggle).toHaveAttribute("aria-expanded", "false");
@@ -323,6 +330,7 @@ test("keeps rows outside the compared elements folded", async ({
 }) => {
   await withStructure(page, compareOnly());
   await openProjectPage(project.id, build.id, testRun.id);
+  await unfoldPanel(page);
   await expect(page.getByTestId("comparedSummary")).toHaveText(
     "Only the chosen elements",
   );
@@ -344,6 +352,7 @@ test("explains why the folded rows do not count", async ({
 }) => {
   await withStructure(page, compareOnly());
   await openProjectPage(project.id, build.id, testRun.id);
+  await unfoldPanel(page);
   await page.getByTestId("outsideToggle").click();
   await expect(page.getByTestId("outsideGroup")).toContainText(
     "They lie outside the chosen elements, so they change nothing.",
@@ -373,6 +382,7 @@ test("removes a gone element from what is compared, with Undo", async ({
     ]),
   );
   await openProjectPage(project.id, build.id, testRun.id);
+  await unfoldPanel(page);
   await expect(page.getByTestId("verdictTitle")).toHaveText(
     "One of the chosen elements is gone",
   );
@@ -395,6 +405,7 @@ test("lights an area the test sent on the screenshot until clicked again", async
   page,
 }) => {
   await openProjectPage(project.id, build.id, testRun.id);
+  await unfoldPanel(page);
   const area = page.getByTestId("comparedTestArea");
   // where it comes from, and nothing more
   await expect(area).toContainText("from the test");
@@ -422,6 +433,7 @@ test("opens an area of the summary in the Areas menu", async ({
   page,
 }) => {
   await openProjectPage(project.id, build.id, testRun.id);
+  await unfoldPanel(page);
   // a drawn area opens in the Areas menu, chosen there, ready to delete or move
   await page.getByTestId("comparedArea").click();
   await expect(page.getByTestId("areasMenu")).toBeVisible();
@@ -437,6 +449,7 @@ test("removes a rule for this screen at once", async ({
   page,
 }) => {
   await openProjectPage(project.id, build.id, testRun.id);
+  await unfoldPanel(page);
   await rule(page, "id:balance").hover();
   await rule(page, "id:balance")
     .getByRole("button", { name: "Remove rule" })
@@ -453,6 +466,7 @@ test("asks before removing a rule for every screen", async ({
   page,
 }) => {
   await openProjectPage(project.id, build.id, testRun.id);
+  await unfoldPanel(page);
   // it found nothing here, so it waits under "No effect"
   await page.getByTestId("outsideToggle").click();
   const remove = rule(page, "id:clock").getByRole("button", {
@@ -481,6 +495,7 @@ test("widens the side panel by its edge and remembers the width", async ({
   page,
 }) => {
   await openProjectPage(project.id, build.id, testRun.id);
+  await unfoldPanel(page);
   const panel = page.locator("aside").last();
   const width = async () => (await panel.boundingBox())?.width ?? 0;
   await expect.poll(width).toBe(420);
@@ -497,6 +512,7 @@ test("widens the side panel by its edge and remembers the width", async ({
 
   // this browser keeps it
   await page.reload();
+  await unfoldPanel(page);
   await expect.poll(width).toBe(540);
 
   // a double click on the edge gives the usual width back

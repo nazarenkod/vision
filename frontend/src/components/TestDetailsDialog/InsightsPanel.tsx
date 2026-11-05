@@ -26,6 +26,7 @@ import {
   ChevronRightRounded,
   MoreHoriz,
   VisibilityOffOutlined,
+  ViewSidebarOutlined,
 } from "@mui/icons-material";
 import { useSnackbar } from "notistack";
 import { v4 as uuid } from "uuid";
@@ -131,6 +132,9 @@ interface Props {
   onA11yMarksChange?: (on: boolean) => void;
   // turns on selecting elements on the screenshots (REQ-030-51)
   onSelectElements?: () => void;
+  // folded to a strip with a button, so the screens take its width (REQ-046-07)
+  folded?: boolean;
+  onFoldedChange?: (folded: boolean) => void;
 }
 
 type RuleDraft = {
@@ -176,6 +180,8 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
   a11yMarks = true,
   onA11yMarksChange,
   onSelectElements,
+  folded = false,
+  onFoldedChange,
 }) => {
   const { enqueueSnackbar } = useSnackbar();
   const showRuleSnack = useRuleSnackbar();
@@ -1579,6 +1585,42 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
     handle.addEventListener("pointerup", stop);
   };
 
+  if (folded) {
+    return (
+      <Box
+        component="aside"
+        aria-label={t("panel.details")}
+        data-testid="panelFolded"
+        sx={{
+          width: 48,
+          flexShrink: 0,
+          borderLeft: `1px solid ${tokens.border}`,
+          bgcolor: tokens.surface,
+          display: "flex",
+          justifyContent: "center",
+          pt: 1,
+        }}
+      >
+        <Tooltip
+          title={t("compare.showPanel")}
+          placement="left"
+          disableInteractive
+        >
+          <IconButton
+            size="small"
+            data-testid="panelUnfold"
+            aria-label={t("compare.showPanel")}
+            aria-expanded={false}
+            onClick={() => onFoldedChange?.(false)}
+            sx={{ alignSelf: "flex-start", color: tokens.textMuted }}
+          >
+            <ViewSidebarOutlined fontSize="small" />
+          </IconButton>
+        </Tooltip>
+      </Box>
+    );
+  }
+
   return (
     <Box
       component="aside"
@@ -1633,37 +1675,63 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
           outline: "none",
         }}
       />
-      <Tabs
-        value={tab}
-        onChange={(_, value) => setTab(value)}
-        sx={{ px: 2, borderBottom: `1px solid ${tokens.border}` }}
+      <Box
+        sx={{
+          display: "flex",
+          alignItems: "center",
+          pr: 1,
+          borderBottom: `1px solid ${tokens.border}`,
+        }}
       >
-        <Tab
-          value="a11y"
-          label={
-            <Box sx={{ display: "flex", gap: 1, alignItems: "center" }}>
-              {t("panel.accessibility")}{" "}
-              {newCount > 0 && (
-                <StatusPill
-                  tone="changed"
-                  label={t("builds.a11yNewPill", { count: newCount })}
-                />
-              )}
-            </Box>
-          }
-        />
-        <Tab
-          value="changes"
-          label={
-            <Box sx={{ display: "flex", gap: 1, alignItems: "center" }}>
-              {t("panel.changes")}
-              {(structure?.invisible.length ?? 0) > 0 && (
-                <StatusPill tone="failed" label={structure?.invisible.length} />
-              )}
-            </Box>
-          }
-        />
-      </Tabs>
+        <Tabs
+          value={tab}
+          onChange={(_, value) => setTab(value)}
+          sx={{ px: 2, flex: 1, minWidth: 0 }}
+        >
+          <Tab
+            value="a11y"
+            label={
+              <Box sx={{ display: "flex", gap: 1, alignItems: "center" }}>
+                {t("panel.accessibility")}{" "}
+                {newCount > 0 && (
+                  <StatusPill
+                    tone="changed"
+                    label={t("builds.a11yNewPill", { count: newCount })}
+                  />
+                )}
+              </Box>
+            }
+          />
+          <Tab
+            value="changes"
+            label={
+              <Box sx={{ display: "flex", gap: 1, alignItems: "center" }}>
+                {t("panel.changes")}
+                {(structure?.invisible.length ?? 0) > 0 && (
+                  <StatusPill
+                    tone="failed"
+                    label={structure?.invisible.length}
+                  />
+                )}
+              </Box>
+            }
+          />
+        </Tabs>
+        {onFoldedChange && (
+          <Tooltip title={t("compare.hidePanel")} disableInteractive>
+            <IconButton
+              size="small"
+              data-testid="panelFold"
+              aria-label={t("compare.hidePanel")}
+              aria-expanded
+              onClick={() => onFoldedChange(true)}
+              sx={{ color: tokens.textMuted }}
+            >
+              <ViewSidebarOutlined fontSize="small" />
+            </IconButton>
+          </Tooltip>
+        )}
+      </Box>
       <Box
         sx={{
           flex: 1,

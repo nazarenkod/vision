@@ -1,24 +1,18 @@
 import React, { useEffect, useState } from "react";
-import { makeStyles } from "@mui/styles";
 import {
   Typography,
   Button,
-  Grid,
   Switch,
   IconButton,
   Box,
   LinearProgress,
-  Divider,
   FormControlLabel,
-  Checkbox,
-  ToggleButton,
-  Slider,
   Dialog,
   DialogActions,
   DialogContent,
   DialogTitle,
-  Tooltip as MuiTooltip,
   Chip,
+  Tooltip as MuiTooltip,
 } from "@mui/material";
 import { useHotkeys } from "react-hotkeys-hook";
 import { TestRun, VisualBug, VisualBugResult } from "../../types";
@@ -28,13 +22,9 @@ import { IgnoreArea, UpdateIgnoreAreaDto } from "../../types/ignoreArea";
 import Konva from "konva";
 import {
   Close,
-  WarningRounded,
-  Compare,
-  OpenInNew,
   ZoomIn,
   ZoomOut,
   Fullscreen,
-  FullscreenExit,
   NavigateNext,
   NavigateBefore,
   BugReport,
@@ -99,71 +89,37 @@ import { AreaKind, AreasMenu } from "./AreasMenu";
 import { areaMarkId, ruleMarkId, testAreaMarkId } from "./WhatsCompared";
 import { useRuleSnackbar } from "../useRuleSnackbar";
 import { motion, tokens, type, radius } from "../../theme";
-import { StepDots } from "./StepDots";
+import { StepProgress } from "./StepProgress";
+import { CompareToolbar, CompareView } from "./CompareToolbar";
+import { DiffMeter } from "./DiffMeter";
+import { DeviceTags } from "../DeviceTags";
 import { prefersReducedMotion } from "../../_helpers/motion.helper";
 import { BaseModal } from "../BaseModal";
 import { Tooltip } from "../Tooltip";
 import ImageDetails, { ImageDetailsProps } from "./ImageDetails";
-import { calculateScale, clampScale } from "../../_helpers/scale.helper";
+import { clampScale } from "../../_helpers/scale.helper";
+import { fitScale } from "../../_helpers/fit.helper";
+import { panelStartsFolded } from "../../_helpers/review.helper";
 import { canCompareToBaseline } from "../../_helpers/testRunStatus.helper";
 import TestStatusChip from "../TestStatusChip";
 import { useT } from "../../i18n";
 
-const useStyles = makeStyles(() => ({
-  header: {
-    position: "relative",
-    textAlign: "left",
-    background: tokens.surface,
-    paddingLeft: 8,
-    paddingBottom: 8,
-  },
-  footer: {
-    background: tokens.surface,
-    borderTop: `1px solid ${tokens.border}`,
-  },
-  scaleActions: {
-    display: "flex",
-    alignItems: "center",
-  },
-  testRunActions: {
-    display: "flex",
-    alignItems: "center",
-    alignContent: "center",
-  },
-  centerActions: {
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    flexWrap: "wrap",
-    gap: 4,
-  },
-  testRunName: {
-    fontWeight: 400,
-  },
-  closeIcon: {
-    position: "absolute",
-    right: "8px",
-  },
-  testRunDetails: {
-    paddingLeft: 8,
-  },
-  drawAreaContainer: {
-    width: "100%",
-    height: "100%",
-    background: tokens.lightbox,
-  },
-  drawAreaItem: {
-    padding: "0 4px",
-    height: "100%",
-  },
-  imageToolbar: {
-    paddingLeft: 5,
-    height: 52,
-  },
-}));
-
 // the height the selection panel takes at the bottom of the screenshots, with its margin
 const PANEL_ROOM = 190;
+// room kept round a fitted screen, so rounding never brings up a scrollbar
+const FIT_MARGIN = 4;
+// how long the screens wait for the side panel to be settled (REQ-046-07)
+const FOLD_WAIT_MS = 1000;
+// the keycap after a footer action, as on Select elements
+const keycap = {
+  font: `500 ${type.caption}px/16px ${tokens.mono}`,
+  minWidth: 18,
+  px: 0.5,
+  textAlign: "center",
+  borderRadius: radius.control,
+  border: `1px solid ${tokens.border}`,
+  color: tokens.textMuted,
+} as const;
 
 const defaultStagePos = {
   x: 0,
@@ -219,12 +175,22 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
   handleSelectRun,
   queueHeader,
 }) => {
-  const classes = useStyles();
   const { enqueueSnackbar } = useDialogSnackbar();
   const testRunDispatch = useTestRunDispatch();
 
   const stageScaleBy = 1.2;
   const [stageScale, setStageScale] = React.useState(1);
+  // the screens are fitted to their area until the reviewer zooms by hand
+  // (REQ-046-01); fitting again happens only when a step opens or the area
+  // changes size, never on a re-render, so they hold still (REQ-018-25)
+  const fitting = React.useRef(true);
+  const [fitted, setFitted] = React.useState(true);
+  const setScaleByHand: React.Dispatch<React.SetStateAction<number>> =
+    React.useCallback((value) => {
+      fitting.current = false;
+      setFitted(false);
+      setStageScale(value);
+    }, []);
   const [stagePos, setStagePos] = React.useState(defaultStagePos);
   const [stageScrollPos, setStageScrollPos] = React.useState(defaultStagePos);
   const [stageInitPos, setStageInitPos] = React.useState(defaultStagePos);
@@ -331,6 +297,48 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
   const [pickedElement, setPickedElement] = useState<PickableElement>();
   // chosen in the rule dialog's list, outlined while the dialog is open
   const [previewElement, setPreviewElement] = useState<PickableElement>();
+
+  // a screen with nothing for the side panel opens with it folded, and the
+  // screens take its width (REQ-046-07); decided once per step, when both the
+  // changes and the findings are in, so a reviewer's own choice then stays
+  const [panelFolded, setPanelFolded] = useState(false);
+  // the step whose panel is settled: until then its screens are not shown, so
+  // folding the panel never moves them once they are (REQ-018-25)
+  const [foldSettled, setFoldSettled] = useState<string>();
+  const foldFor = React.useRef<{ seen?: string; decided?: string }>({});
+  useEffect(() => {
+    const fold = foldFor.current;
+    // on the render a step changes, the changes and findings are still the
+    // last step's: they are cleared on the way
+    if (fold.seen !== testRun.id) {
+      fold.seen = testRun.id;
+      return;
+    }
+    if (fold.decided === testRun.id) return;
+    const folded = panelStartsFolded(structure, a11yReport);
+    if (folded === undefined) return;
+    fold.decided = testRun.id;
+    setPanelFolded(folded);
+    setFoldSettled(testRun.id);
+  }, [testRun.id, structure, a11yReport]);
+  // a slow server does not keep the screens hidden: past a moment the panel
+  // stays open, ready for what comes
+  useEffect(() => {
+    const id = testRun.id;
+    const timer = setTimeout(() => {
+      const fold = foldFor.current;
+      if (fold.decided === id) return;
+      fold.decided = id;
+      setPanelFolded(false);
+      setFoldSettled(id);
+    }, FOLD_WAIT_MS);
+    return () => clearTimeout(timer);
+  }, [testRun.id]);
+  const panesShown = foldSettled === testRun.id;
+  // the full rule form lives in the panel (REQ-024-10)
+  useEffect(() => {
+    if (pickedElement) setPanelFolded(false);
+  }, [pickedElement]);
   // a rule or an area the pointer is over in the panel (REQ-024-24)
   const [previewMark, setPreviewMark] = useState<string>();
   // a test area clicked in the summary or the Areas menu stays lit until clicked again
@@ -949,8 +957,18 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
         : [],
     [a11yOverlay, a11yReport, canvas],
   );
-  const [overlayOpacity, setOverlayOpacity] = useState(1);
-  const [blendDifference, setBlendDifference] = useState(false);
+  // how Current lies against the baseline; the fade only in Fade (REQ-046-02)
+  const [view, setView] = useState<CompareView>("side");
+  const [fade, setFade] = useState(0.5);
+  // the diff image hides what Overlay and Fade show, so one turns the other off
+  const chooseView = (next: CompareView) => {
+    setView(next);
+    if (next !== "side") setIsDiffShown(false);
+  };
+  const showDiff = (shown: boolean) => {
+    setIsDiffShown(shown);
+    if (shown) setView("side");
+  };
   const [selectedRectId, setSelectedRectId] = React.useState<string>();
   const [ignoreAreas, setIgnoreAreas] = React.useState<IgnoreArea[]>([]);
 
@@ -1038,35 +1056,47 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
 
   const applyIgnoreAreaText = t("review.applyIgnoreArea");
 
-  const fitImageToStage = (image: HTMLImageElement, container: HTMLElement) => {
-    // the pane's own padding is not room for the image: counted in, the image
-    // came out a pixel wider than its scroll area and its right edge was cut off
-    const style = window.getComputedStyle(container);
-    const padding = (side: "Left" | "Right" | "Top" | "Bottom") =>
-      parseFloat(style[`padding${side}`]) || 0;
-    const scale = calculateScale(
-      image.width + 20,
-      image.height + 20,
-      container.clientWidth - padding("Left") - padding("Right"),
-      container.clientHeight - padding("Top") - padding("Bottom") - 48,
-    );
-
-    if (scale < stageScale) {
-      setStageScale(scale);
-    }
-  };
-
+  // the areas the two screens are fitted into, under their headers
+  const leftAreaRef = React.useRef<HTMLDivElement>(null);
+  const rightAreaRef = React.useRef<HTMLDivElement>(null);
   const fitImagesToStage = () => {
-    if (currentImage && leftItemRef.current) {
-      fitImageToStage(currentImage, leftItemRef.current);
-    }
-
-    if (baselineImage && rightItemRef.current) {
-      fitImageToStage(baselineImage, rightItemRef.current);
-    }
-
+    // both screens share one scale, so the one that fits worse decides it
+    const scales = (
+      [
+        [baselineImage, leftAreaRef.current],
+        [currentImage ?? diffImage, rightAreaRef.current],
+      ] as const
+    ).flatMap(([image, area]) =>
+      image && area && area.clientWidth > 0 && area.clientHeight > 0
+        ? [
+            fitScale(
+              { width: image.width, height: image.height },
+              {
+                width: area.clientWidth - FIT_MARGIN,
+                height: area.clientHeight - FIT_MARGIN,
+              },
+            ),
+          ]
+        : [],
+    );
+    fitting.current = true;
+    setFitted(true);
     resetPosition();
+    if (scales.length) setStageScale(clampScale(Math.min(...scales)));
   };
+  const fitLatest = React.useRef(fitImagesToStage);
+  fitLatest.current = fitImagesToStage;
+  // a window made smaller or bigger, or the side panel folded, gives the
+  // screens another area: fitted, they are fitted to it again
+  useEffect(() => {
+    const panes = panesRef.current;
+    if (!panes || typeof ResizeObserver === "undefined") return;
+    const observer = new ResizeObserver(() => {
+      if (fitting.current) fitLatest.current();
+    });
+    observer.observe(panes);
+    return () => observer.disconnect();
+  }, []);
 
   // the fade, the blend and the drawing tools belong to the run being looked
   // at, like the diff does: a half-faded image carried onto the next
@@ -1077,8 +1107,8 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
   // whatever belongs to one screen has to be cleared here.
   useEffect(() => {
     setIsDiffShown(!!testRun.diffName);
-    setOverlayOpacity(1);
-    setBlendDifference(false);
+    setView("side");
+    setFade(0.5);
     setIsDrawMode(false);
     setAreasOpen(false);
     setSelectedRectId(undefined);
@@ -1203,7 +1233,7 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
   };
 
   const setOriginalSize = () => {
-    setStageScale(1);
+    setScaleByHand(1);
     resetPosition();
   };
 
@@ -1252,11 +1282,9 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
   useHotkeys(
     "d",
     () => {
-      if (testRun.diffName) {
-        setIsDiffShown((isDiffShown) => !isDiffShown);
-      }
+      if (testRun.diffName) showDiff(!isDiffShown);
     },
-    [testRun.diffName],
+    [testRun.diffName, isDiffShown],
   );
 
   const openHistoryTab = () => {
@@ -1281,7 +1309,7 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
               aria-pressed={pickMode}
               // pressed like Draw in the areas menu: a solid green bar shouted over the screenshot
               sx={{
-                height: 34,
+                height: 32,
                 px: 1.25,
                 gap: 1,
                 fontSize: type.small,
@@ -1348,71 +1376,68 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
     </Box>
   );
 
-  const baselinePanel = () => (
-    <Grid
-      item
-      xs={6}
-      ref={leftItemRef}
-      className={classes.drawAreaItem}
-      alignItems="stretch"
+  // one column of the comparison: its head, then the screen fitted under it
+  const column = (
+    itemRef: React.RefObject<HTMLDivElement>,
+    areaRef: React.RefObject<HTMLDivElement>,
+    head: React.ReactNode,
+    drawArea: React.ReactNode,
+  ) => (
+    <Box
+      ref={itemRef}
+      sx={{
+        flex: 1,
+        minWidth: 0,
+        display: "flex",
+        flexDirection: "column",
+        gap: 1.25,
+      }}
     >
-      <Grid
-        container
-        alignItems="center"
-        spacing={1}
-        className={classes.imageToolbar}
-      >
-        <ImageDetails
-          type="Baseline"
-          branchName={testRun.baselineBranchName}
-          imageName={testRun.baselineName}
-          image={baselineImage}
-          ignoreAreas={[]}
-        />
-        <Grid item>
-          <Button
-            color="primary"
-            disabled={!testRun.testVariationId}
-            onClick={openHistoryTab}
-          >
-            {t("review.history")} <OpenInNew fontSize="small" />
-          </Button>
-        </Grid>
-      </Grid>
-      <Grid
-        item
-        style={{
-          flexGrow: "1",
-        }}
-      >
-        <DrawArea
-          imageName={testRun.baselineName}
-          imageState={[baselineImage, baselineImageStatus]}
-          ignoreAreas={[]}
-          tempIgnoreAreas={[]}
-          setIgnoreAreas={handleIgnoreAreaChange}
-          selectedRectId={selectedRectId}
-          setSelectedRectId={setSelectedRectId}
-          onStageClick={removeSelection}
-          stageScaleState={[stageScale, setStageScale]}
-          stagePosState={[stagePos, setStagePos]}
-          stageScrollPosState={[stageScrollPos, setStageScrollPos]}
-          stageInitPosState={[stageInitPos, setStageInitPos]}
-          stageOffsetState={[stageOffset, setStageOffset]}
-          drawModeState={[false, setIsDrawMode]}
-          overlayRects={[...ruleMarks("baseline"), ...pickMarks("baseline")]}
-          highlightedOverlayId={selectingNow ? pickedLit : previewMark}
-          dimOutside={dimOutside("baseline")}
-          pickMode={pickMode}
-          onPickHover={(point) => {
-            const element = elementAt(point, elementsOf("baseline"));
-            setHovered(element ? { side: "baseline", element } : undefined);
-          }}
-          onPick={pick("baseline")}
-        />
-      </Grid>
-    </Grid>
+      {head}
+      <Box ref={areaRef} sx={{ flex: 1, minHeight: 0, position: "relative" }}>
+        {drawArea}
+      </Box>
+    </Box>
   );
+
+  const baselinePanel = () =>
+    column(
+      leftItemRef,
+      leftAreaRef,
+      <ImageDetails
+        type="Baseline"
+        branchName={testRun.baselineBranchName}
+        imageName={testRun.baselineName}
+        image={baselineImage}
+        ignoreAreas={[]}
+        onHistory={testRun.testVariationId ? openHistoryTab : undefined}
+      />,
+      <DrawArea
+        imageName={testRun.baselineName}
+        imageState={[baselineImage, baselineImageStatus]}
+        ignoreAreas={[]}
+        tempIgnoreAreas={[]}
+        setIgnoreAreas={handleIgnoreAreaChange}
+        selectedRectId={selectedRectId}
+        setSelectedRectId={setSelectedRectId}
+        onStageClick={removeSelection}
+        stageScaleState={[stageScale, setScaleByHand]}
+        stagePosState={[stagePos, setStagePos]}
+        stageScrollPosState={[stageScrollPos, setStageScrollPos]}
+        stageInitPosState={[stageInitPos, setStageInitPos]}
+        stageOffsetState={[stageOffset, setStageOffset]}
+        drawModeState={[false, setIsDrawMode]}
+        overlayRects={[...ruleMarks("baseline"), ...pickMarks("baseline")]}
+        highlightedOverlayId={selectingNow ? pickedLit : previewMark}
+        dimOutside={dimOutside("baseline")}
+        pickMode={pickMode}
+        onPickHover={(point) => {
+          const element = elementAt(point, elementsOf("baseline"));
+          setHovered(element ? { side: "baseline", element } : undefined);
+        }}
+        onPick={pick("baseline")}
+      />,
+    );
 
   const diffPanel = (
     type: ImageDetailsProps["type"],
@@ -1420,40 +1445,24 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
     imageName: string | null,
     imageStatus: ImageStateLoad,
     image: HTMLImageElement | undefined,
-  ) => (
-    <Grid item xs={6} className={classes.drawAreaItem} ref={rightItemRef}>
-      <Grid
-        container
-        alignItems="center"
-        spacing={1}
-        className={classes.imageToolbar}
-      >
-        <ImageDetails
-          type={type}
-          branchName={branchName}
-          imageName={imageName}
-          image={image}
-          ignoreAreas={readAreas(testRun.tempIgnoreAreas)}
-        />
-        {testRun.diffName && (
-          <Grid item>
-            <Tooltip title={t("review.toggleDiff")}>
-              <Switch
-                checked={isDiffShown}
-                onChange={() => setIsDiffShown(!isDiffShown)}
-                name="Toggle diff"
-                inputProps={{ "aria-label": t("review.toggleDiffLabel") }}
-              />
-            </Tooltip>
-          </Grid>
-        )}
-      </Grid>
+  ) =>
+    column(
+      rightItemRef,
+      rightAreaRef,
+      <ImageDetails
+        type={type}
+        branchName={branchName}
+        imageName={imageName}
+        image={image}
+        ignoreAreas={readAreas(testRun.tempIgnoreAreas)}
+        sizeDiffers={!!isImageSizeDiffer}
+      />,
       <DrawArea
         imageName={imageName}
         imageState={[image, imageStatus]}
         underlayImage={isDiffShown ? undefined : baselineImage}
-        overlayOpacity={overlayOpacity}
-        blendDifference={blendDifference && !isDiffShown}
+        overlayOpacity={view === "fade" ? fade : 1}
+        blendDifference={view === "overlay" && !isDiffShown}
         ignoreAreas={ignoreAreas}
         tempIgnoreAreas={readAreas(testRun.tempIgnoreAreas)}
         setIgnoreAreas={handleIgnoreAreaChange}
@@ -1461,7 +1470,7 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
         deleteIgnoreArea={deleteIgnoreArea}
         setSelectedRectId={setSelectedRectId}
         onStageClick={removeSelection}
-        stageScaleState={[stageScale, setStageScale]}
+        stageScaleState={[stageScale, setScaleByHand]}
         stagePosState={[stagePos, setStagePos]}
         stageScrollPosState={[stageScrollPos, setStageScrollPos]}
         stageInitPosState={[stageInitPos, setStageInitPos]}
@@ -1508,9 +1517,8 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
           setHovered(element ? { side: "current", element } : undefined);
         }}
         onPick={pick("current")}
-      />
-    </Grid>
-  );
+      />,
+    );
 
   // brings an issue's box into view on the checkpoint pane
   const highlightViolation = (violation: A11yViolation) => {
@@ -1522,189 +1530,318 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
     });
   };
 
+  // what is on screen and where the review is (REQ-046-05)
   const header = () => (
-    <Box mt={1} ml={1}>
-      <Grid
-        container
-        alignItems="center"
-        className={classes.header}
-        spacing={2}
+    <Box
+      data-testid="compareHeader"
+      sx={{
+        minHeight: 56,
+        flexShrink: 0,
+        display: "flex",
+        alignItems: "center",
+        gap: 2,
+        pl: 3,
+        pr: 2,
+        borderBottom: `1px solid ${tokens.border}`,
+        bgcolor: tokens.surface,
+        minWidth: 0,
+      }}
+    >
+      <Typography
+        component="h1"
+        noWrap
+        data-testid="screenName"
+        sx={{ fontSize: type.title, fontWeight: 600, minWidth: 0 }}
       >
-        {queueHeader && <Grid item>{queueHeader}</Grid>}
-        <Grid item>
-          {!queueHeader && (
-            <Typography variant="h6" display="inline">
-              {t("review.step", {
-                current: currentRunIndex + 1,
-                total: totalTestRunCount,
-              })}
-            </Typography>
-          )}
-          <Typography
-            variant="h6"
-            display="inline"
-            className={classes.testRunName}
-          >
-            {testRun.name}
-          </Typography>
-        </Grid>
-        <Grid item>
-          <TestStatusChip status={testRun.status} />
-        </Grid>
-        {bugs.slice(0, 3).map((bug) => (
-          <Grid item key={bug.id}>
-            <Tooltip title={bug.summary}>
-              <Chip
-                size="small"
-                variant="outlined"
-                icon={<BugReport sx={{ fontSize: 16 }} />}
-                label={bug.jiraKey}
-                component="a"
-                href={bug.jiraUrl ?? undefined}
-                target="_blank"
-                rel="noreferrer"
-                clickable
-                data-testid="visualBugChip"
-                sx={{
-                  fontFamily: tokens.mono,
-                  "& .MuiChip-icon": { color: tokens.status.failed.fg },
-                }}
-              />
-            </Tooltip>
-          </Grid>
-        ))}
-        <Grid item>
-          <StepDots statuses={stepStatuses} currentIndex={currentRunIndex} />
-        </Grid>
-        <Grid item>
-          <RunFlags run={testRun} />
-        </Grid>
-        {deviceRuns.length > 1 && handleSelectRun && (
-          <Grid item>
-            <DeviceStrip
-              runs={deviceRuns}
-              currentId={testRun.id}
-              onSelect={handleSelectRun}
-            />
-          </Grid>
-        )}
-        <Grid item className={classes.closeIcon}>
-          <IconButton color="inherit" onClick={handleClose} size="large">
-            <Close />
-          </IconButton>
-        </Grid>
-      </Grid>
+        {testRun.name}
+      </Typography>
+      <TestStatusChip status={testRun.status} />
+      <Box sx={{ ml: 1, minWidth: 0 }}>
+        <StepProgress
+          statuses={stepStatuses}
+          currentIndex={currentRunIndex}
+          queue={queueHeader}
+        />
+      </Box>
+      {bugs.slice(0, 3).map((bug) => (
+        <Tooltip key={bug.id} title={bug.summary}>
+          <Chip
+            size="small"
+            variant="outlined"
+            icon={<BugReport sx={{ fontSize: 16 }} />}
+            label={bug.jiraKey}
+            component="a"
+            href={bug.jiraUrl ?? undefined}
+            target="_blank"
+            rel="noreferrer"
+            clickable
+            data-testid="visualBugChip"
+            sx={{
+              fontFamily: tokens.mono,
+              "& .MuiChip-icon": { color: tokens.status.failed.fg },
+            }}
+          />
+        </Tooltip>
+      ))}
+      <RunFlags run={testRun} />
+      <Box sx={{ ml: "auto", display: "flex", alignItems: "center", gap: 0.5 }}>
+        <CommentsPopper
+          text={testRun.comment}
+          onSave={(comment) =>
+            testRunService
+              .update(testRun.id, {
+                comment,
+              })
+              .then(() =>
+                enqueueSnackbar(t("review.commentUpdated"), {
+                  variant: "success",
+                }),
+              )
+              .catch((err) =>
+                enqueueSnackbar(err, {
+                  variant: "error",
+                }),
+              )
+          }
+        />
+        <IconButton
+          onClick={handleClose}
+          aria-label={t("compare.close")}
+          data-testid="closeReview"
+          sx={{ color: tokens.textSecondary }}
+        >
+          <Close />
+        </IconButton>
+      </Box>
     </Box>
   );
 
-  // Fade and blend read the checkpoint against its baseline. They sit in the
-  // top toolbar: next to the side panel the checkpoint's own header is too
-  // narrow, and the slider shrank to a dot there.
-  const compareControls = () => (
+  // the device, as in the table; every device of the check when it ran on more
+  const devices = () => (
     <>
-      {canCompareToBaseline(testRun) && (
-        <Box display="flex" alignItems="center" gap={1}>
-          <MuiTooltip title={t("review.fadeHelp")}>
-            <Box display="flex" alignItems="center" gap={1} minWidth={0}>
-              <Typography variant="caption" color="textSecondary" noWrap>
-                {t("review.fade")}
-              </Typography>
-              <Box width={80} display="flex" data-testid="overlayOpacity">
-                <Slider
-                  size="small"
-                  disabled={blendDifference}
-                  min={0}
-                  max={1}
-                  step={0.05}
-                  value={overlayOpacity}
-                  onChange={(event, value) => {
-                    setOverlayOpacity(value as number);
-                    setIsDiffShown(false);
-                  }}
-                  aria-label={t("review.fadeLabel")}
-                />
-              </Box>
-            </Box>
-          </MuiTooltip>
-          <MuiTooltip title={t("review.blendHelp")}>
-            <ToggleButton
-              value="blend"
-              size="small"
-              selected={blendDifference}
-              onChange={() => {
-                setBlendDifference((blend) => !blend);
-                setIsDiffShown(false);
-              }}
-              data-testid="differenceToggle"
-              style={{ padding: 4 }}
-            >
-              <Compare fontSize="small" />
-            </ToggleButton>
-          </MuiTooltip>
-        </Box>
+      {deviceRuns.length > 1 && handleSelectRun ? (
+        <DeviceStrip
+          runs={deviceRuns}
+          currentId={testRun.id}
+          onSelect={handleSelectRun}
+        />
+      ) : (
+        <DeviceTags parts={testRun} testId="compareDevice" />
+      )}
+      {testRun.customTags && (
+        <Tooltip title={t("review.attr.customTags")}>
+          <Chip size="small" label={testRun.customTags} />
+        </Tooltip>
       )}
     </>
   );
 
-  const testRunDetails = () => (
-    <Box ml={1} mr={1} mt={0} mb={0}>
-      <Grid
-        container
-        alignItems="center"
-        className={classes.testRunDetails}
-        spacing={1}
+  const toolbar = () => (
+    <CompareToolbar
+      devices={devices()}
+      meter={
+        <DiffMeter
+          diffPercent={testRun.diffPercent}
+          tolerancePercent={testRun.diffTollerancePercent}
+        />
+      }
+      canCompare={canCompareToBaseline(testRun)}
+      view={view}
+      onView={chooseView}
+      fade={fade}
+      onFade={setFade}
+      hasDiff={!!testRun.diffName}
+      diffShown={isDiffShown}
+      onDiffShown={showDiff}
+      tools={comparisonTools()}
+    />
+  );
+
+  const zoomBy = (factor: number) =>
+    setScaleByHand(clampScale(stageScale * factor));
+
+  // one line: zoom; the decision between the arrows; Auto-next and the bug
+  const footer = () => (
+    <Box
+      data-testid="compareFooter"
+      sx={{
+        minHeight: 64,
+        flexShrink: 0,
+        display: "grid",
+        gridTemplateColumns: "1fr auto 1fr",
+        alignItems: "center",
+        columnGap: 2,
+        pl: 3,
+        pr: 2,
+        borderTop: `1px solid ${tokens.border}`,
+        bgcolor: tokens.surface,
+        whiteSpace: "nowrap",
+      }}
+    >
+      <Box
+        data-testid="zoomGroup"
+        sx={{ display: "flex", alignItems: "center", gap: 0.25 }}
       >
-        <TestRunDetails testRun={testRun} />
-        {isImageSizeDiffer && (
-          <Grid item>
-            <Tooltip title={t("review.sizeDiffers")}>
-              <IconButton size="large">
-                <WarningRounded color="secondary" />
-              </IconButton>
-            </Tooltip>
-          </Grid>
+        <Tooltip title={t("review.zoomOut")}>
+          <IconButton
+            onClick={() => zoomBy(1 / stageScaleBy)}
+            aria-label={t("review.zoomOut")}
+          >
+            <ZoomOut fontSize="small" />
+          </IconButton>
+        </Tooltip>
+        <Tooltip title={t("review.fit")}>
+          <Button
+            onClick={fitImagesToStage}
+            data-testid="zoomFit"
+            color="inherit"
+            size="small"
+            sx={{
+              minWidth: 52,
+              fontSize: type.small,
+              fontWeight: 500,
+              fontVariantNumeric: "tabular-nums",
+              color: tokens.textSecondary,
+            }}
+          >
+            {fitted ? t("compare.fit") : `${Math.round(stageScale * 100)}%`}
+          </Button>
+        </Tooltip>
+        <Tooltip title={t("review.zoomIn")}>
+          <IconButton
+            onClick={() => zoomBy(stageScaleBy)}
+            aria-label={t("review.zoomIn")}
+          >
+            <ZoomIn fontSize="small" />
+          </IconButton>
+        </Tooltip>
+        <Tooltip title={t("review.originalSize")}>
+          <IconButton
+            onClick={setOriginalSize}
+            aria-label={t("review.originalSize")}
+          >
+            <Fullscreen fontSize="small" />
+          </IconButton>
+        </Tooltip>
+      </Box>
+      <Box
+        data-testid="decisionGroup"
+        sx={{ display: "flex", alignItems: "center", gap: 1 }}
+      >
+        <Tooltip title={t("compare.previous")}>
+          <IconButton
+            aria-label={t("compare.previous")}
+            style={{
+              visibility: currentRunIndex > 0 ? "visible" : "hidden",
+            }}
+            onClick={goPrevious}
+          >
+            <NavigateBefore />
+          </IconButton>
+        </Tooltip>
+        {(testRun.status === TestStatus.unresolved ||
+          testRun.status === TestStatus.new) && (
+          <ApproveRejectButtons
+            testRun={testRun}
+            onDecide={handleDecide}
+            // the tick is seen before the review moves on
+            afterApprove={() => settleDecision(true, APPROVED_TICK_MS)}
+            afterReject={() => settleDecision(true)}
+            afterFail={() => settleDecision(false)}
+            onReportBug={jiraReady ? () => reportBugFrom() : undefined}
+          />
         )}
-        <Grid item style={{ marginLeft: "auto" }}>
-          {compareControls()}
-        </Grid>
-        <Grid item>{comparisonTools()}</Grid>
-        <Grid item>
-          <CommentsPopper
-            text={testRun.comment}
-            onSave={(comment) =>
-              testRunService
-                .update(testRun.id, {
-                  comment,
-                })
-                .then(() =>
-                  enqueueSnackbar(t("review.commentUpdated"), {
-                    variant: "success",
-                  }),
-                )
-                .catch((err) =>
-                  enqueueSnackbar(err, {
-                    variant: "error",
-                  }),
-                )
+        <Tooltip title={t("compare.next")}>
+          <IconButton
+            aria-label={t("compare.next")}
+            style={{
+              visibility:
+                totalTestRunCount > currentRunIndex + 1 ? "visible" : "hidden",
+            }}
+            onClick={goNext}
+          >
+            <NavigateNext />
+          </IconButton>
+        </Tooltip>
+      </Box>
+      <Box
+        data-testid="afterGroup"
+        sx={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "flex-end",
+          gap: 2,
+          minWidth: 0,
+        }}
+      >
+        <MuiTooltip
+          title={t("compare.autoNextHelp")}
+          describeChild
+          arrow
+          disableInteractive
+        >
+          <FormControlLabel
+            data-testid="autoNext"
+            sx={{ m: 0, gap: 1 }}
+            control={
+              <Switch
+                size="small"
+                checked={goToNextAutomatically}
+                onChange={(e) => setGoToNextAutomatically(e.target.checked)}
+              />
+            }
+            label={
+              <Box
+                component="span"
+                sx={{ fontSize: type.small, color: tokens.textSecondary }}
+              >
+                {t("compare.autoNext")}
+              </Box>
             }
           />
-        </Grid>
-      </Grid>
-      <Divider />
+        </MuiTooltip>
+        {jiraSet && (
+          <Tooltip
+            title={
+              jiraReady ? t("reportBug.openHelp") : t("reportBug.needToken")
+            }
+          >
+            <span>
+              <Button
+                variant="outlined"
+                startIcon={<BugReport />}
+                onClick={() => reportBugFrom()}
+                disabled={!jiraReady}
+                data-testid="reportBug"
+                sx={{ whiteSpace: "nowrap", gap: 0.5 }}
+              >
+                {t("reportBug.open")}
+                <Box
+                  component="kbd"
+                  aria-hidden="true"
+                  sx={{ ...keycap, ml: 1 }}
+                >
+                  B
+                </Box>
+              </Button>
+            </span>
+          </Tooltip>
+        )}
+      </Box>
     </Box>
   );
 
   return (
     <>
       {header()}
-      <Divider />
       {processing && <LinearProgress />}
-      {testRunDetails()}
+      {toolbar()}
+      <TestRunDetails testRun={testRun} />
       <Box
         overflow="hidden"
         position="relative"
-        className={classes.drawAreaContainer}
         display="flex"
+        sx={{ flex: 1, minHeight: 0, bgcolor: tokens.lightbox }}
       >
         {pickMode && !several && (
           <Box
@@ -1726,7 +1863,7 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
               bgcolor: tokens.text,
               color: tokens.surface,
               boxShadow: tokens.shadowPop,
-              fontSize: 13,
+              fontSize: type.small,
             }}
           >
             {selection?.adding ? t("select.adding") : t("select.hint")}
@@ -1752,39 +1889,37 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
         <Box
           flex={1}
           minWidth={0}
-          height="100%"
           ref={panesRef}
           data-testid="reviewPanes"
           position="relative"
           // Shift + click on a trackpad would select the page's text instead
-          sx={pickMode ? { userSelect: "none" } : undefined}
+          sx={{
+            display: "flex",
+            gap: 3,
+            px: 2,
+            pt: 2.5,
+            pb: 2,
+            ...(pickMode ? { userSelect: "none" } : {}),
+            visibility: panesShown ? "visible" : "hidden",
+          }}
         >
           {selectionPanel()}
-          <Grid
-            container
-            justifyContent="center"
-            alignItems="stretch"
-            style={{
-              height: "100%",
-            }}
-          >
-            {baselinePanel()}
-            {isDiffShown
-              ? diffPanel(
-                  "Diff",
-                  testRun.branchName,
-                  testRun.diffName,
-                  diffImageStatus,
-                  diffImage,
-                )
-              : diffPanel(
-                  "Image",
-                  testRun.branchName,
-                  testRun.imageName,
-                  currentImageStatus,
-                  currentImage,
-                )}
-          </Grid>
+          {baselinePanel()}
+          {isDiffShown
+            ? diffPanel(
+                "Diff",
+                testRun.branchName,
+                testRun.diffName,
+                diffImageStatus,
+                diffImage,
+              )
+            : diffPanel(
+                "Image",
+                testRun.branchName,
+                testRun.imageName,
+                currentImageStatus,
+                currentImage,
+              )}
         </Box>
         <InsightsPanel
           testRun={testRun}
@@ -1816,146 +1951,11 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
           onBugMarksChange={setShowBugMarks}
           a11yMarks={a11yOverlay}
           onA11yMarksChange={setA11yOverlay}
+          folded={panelFolded}
+          onFoldedChange={setPanelFolded}
         />
       </Box>
-      <Grid container className={classes.footer}>
-        <Grid item xs={3} className={classes.scaleActions}>
-          <Tooltip title={t("review.zoomIn")}>
-            <IconButton
-              onClick={() =>
-                setStageScale(clampScale(stageScale * stageScaleBy))
-              }
-              size="large"
-            >
-              <ZoomIn />
-            </IconButton>
-          </Tooltip>
-          <Tooltip title={t("review.zoomOut")}>
-            <IconButton
-              onClick={() =>
-                setStageScale(clampScale(stageScale / stageScaleBy))
-              }
-              size="large"
-            >
-              <ZoomOut />
-            </IconButton>
-          </Tooltip>
-          <Tooltip title={t("review.originalSize")}>
-            <IconButton onClick={setOriginalSize} size="large">
-              <Fullscreen />
-            </IconButton>
-          </Tooltip>
-          <Tooltip title={t("review.fit")}>
-            <IconButton onClick={fitImagesToStage} size="large">
-              <FullscreenExit />
-            </IconButton>
-          </Tooltip>
-        </Grid>
-        <Grid item xs={6} className={classes.centerActions}>
-          <Tooltip title={t("review.hotkeyLeft")}>
-            <IconButton
-              color="secondary"
-              style={{
-                visibility: currentRunIndex > 0 ? "visible" : "hidden",
-              }}
-              onClick={goPrevious}
-              size="large"
-            >
-              <NavigateBefore />
-            </IconButton>
-          </Tooltip>
-          {(testRun.status === TestStatus.unresolved ||
-            testRun.status === TestStatus.new) && (
-            <ApproveRejectButtons
-              testRun={testRun}
-              onDecide={handleDecide}
-              // the tick is seen before the review moves on
-              afterApprove={() => settleDecision(true, APPROVED_TICK_MS)}
-              afterReject={() => settleDecision(true)}
-              afterFail={() => settleDecision(false)}
-              onReportBug={jiraReady ? () => reportBugFrom() : undefined}
-            />
-          )}
-          <Tooltip title={t("review.hotkeyRight")}>
-            <IconButton
-              color="secondary"
-              style={{
-                visibility:
-                  totalTestRunCount > currentRunIndex + 1
-                    ? "visible"
-                    : "hidden",
-              }}
-              onClick={goNext}
-              size="large"
-            >
-              <NavigateNext />
-            </IconButton>
-          </Tooltip>
-        </Grid>
-        <Grid
-          item
-          xs={3}
-          className={classes.testRunActions}
-          justifyContent="flex-end"
-        >
-          <FormControlLabel
-            control={
-              <Checkbox
-                color="primary"
-                size="small"
-                checked={goToNextAutomatically}
-                onChange={(e) => setGoToNextAutomatically(e.target.checked)}
-              />
-            }
-            label={
-              <Typography variant="body2" color="textSecondary">
-                {t("review.goNext")}
-              </Typography>
-            }
-          />
-          {jiraSet && (
-            <>
-              <Divider
-                orientation="vertical"
-                flexItem
-                sx={{ mx: 1.5, my: 1.5 }}
-              />
-              <Tooltip
-                title={
-                  jiraReady ? t("reportBug.openHelp") : t("reportBug.needToken")
-                }
-              >
-                <span>
-                  <Button
-                    variant="outlined"
-                    startIcon={<BugReport />}
-                    onClick={() => reportBugFrom()}
-                    disabled={!jiraReady}
-                    data-testid="reportBug"
-                    sx={{ whiteSpace: "nowrap" }}
-                  >
-                    {t("reportBug.open")}
-                    <Box
-                      component="kbd"
-                      sx={{
-                        ml: 1,
-                        fontFamily: tokens.mono,
-                        fontSize: type.caption,
-                        border: "1px solid currentColor",
-                        borderRadius: radius.control,
-                        px: 0.5,
-                        opacity: 0.75,
-                      }}
-                    >
-                      B
-                    </Box>
-                  </Button>
-                </span>
-              </Tooltip>
-            </>
-          )}
-        </Grid>
-      </Grid>
+      {footer()}
       {bugDialog && (
         <ReportBugDialog
           testRun={testRun}

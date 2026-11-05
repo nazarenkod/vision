@@ -45,7 +45,7 @@
 | черги (чисте) | `frontend/src/_helpers/reviewQueue.helper.ts` | ключ черги → впорядковані id; меню черг; наступна непорожня |
 | порівняння | `frontend/src/components/TestDetailsDialog/index.tsx` | крокує чергою, якщо вона є, інакше як зараз (список All tests) |
 | заголовок черги, підсумок | `frontend/src/components/TestDetailsDialog/QueueHeader.tsx`, `frontend/src/components/TestDetailsDialog/QueueDone.tsx` | назва черги, «N / M», меню; підсумок, Enter і Esc |
-| крапки кроків | `frontend/src/components/TestDetailsDialog/StepDots.tsx` | без змін; поруч «N / M» замість «Step N/M» |
+| крапки кроків | `frontend/src/components/TestDetailsDialog/StepProgress.tsx` | поруч «N / M» замість «Step N/M»; з [046](../046-design-review-refresh/spec.md) — «N of M in …» і смуга сегментів |
 | звіт | `frontend/src/components/BuildReport/` | `ReportDialog` (налаштування, поділитися, посилання), `ReportDocument` (спільний для діалогу, сторінки й друку) |
 | сторінки звіту | `frontend/src/pages/ReportPage.tsx`, `frontend/src/Router.jsx`, `frontend/src/App.tsx` | `/r/:token` поза `PrivateRoute`, перепит кожні 8 с; `/report/:buildId` для друку (входу треба), друкує, щойно знімки завантажились; обидві — без шапки й навігації |
 | тексти | `frontend/src/i18n/en.ts`, `frontend/src/i18n/uk.ts` | ключі `overview.*`, `queue.*`, `report.*` |

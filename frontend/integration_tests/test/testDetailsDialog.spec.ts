@@ -183,6 +183,8 @@ test("keeps the review layout and its keys", async ({
   );
   await openProjectPage(project.id, build.id, TEST_UNRESOLVED.id);
 
+  // nothing to say about this screen: the side panel opens folded (REQ-046-07)
+  await page.getByTestId("panelUnfold").click();
   // the same parts in the same places as before the redesign
   await expect(page.getByText("Baseline", { exact: true })).toBeVisible();
   await expect(page.getByText("Current", { exact: true })).toBeVisible();
@@ -207,7 +209,7 @@ test("keeps the review layout and its keys", async ({
   await page.keyboard.press("ArrowRight");
   await expect(page).toHaveURL(new RegExp(`testId=${TEST_RUN_NEW.id}`));
   // as a person would: Esc once the next step is on screen
-  await expect(page.getByText("Step 2/2:")).toBeVisible();
+  await expect(page.getByTestId("stepPosition")).toHaveText("2 of 2");
   await page.keyboard.press("Escape");
   await expect(page.getByTestId("approveButton")).toBeHidden();
 });
@@ -353,7 +355,7 @@ for (const keys of [["ArrowRight"], ["a", "x", "ArrowRight"]]) {
     for (const key of keys) await page.keyboard.press(key);
 
     await expect(page).toHaveURL(new RegExp(`testId=${TEST_RUN_NEW.id}$`));
-    await expect(page.getByText("Step 2/2:")).toBeVisible();
+    await expect(page.getByTestId("stepPosition")).toHaveText("2 of 2");
   });
 }
 
@@ -407,16 +409,16 @@ test.describe("with Go to the next on", () => {
       page,
     }) => {
       await openProjectPage(project.id, build.id, runs[0].id);
-      await expect(page.getByText("Step 1/3:")).toBeVisible();
+      await expect(page.getByTestId("stepPosition")).toHaveText("1 of 3");
 
       await page.keyboard.press(key);
       await page.keyboard.press("ArrowRight");
 
-      await expect(page.getByText("Step 3/3:")).toBeVisible();
+      await expect(page.getByTestId("stepPosition")).toHaveText("3 of 3");
       await expect(page).toHaveURL(new RegExp(`testId=${runs[2].id}$`));
       // and nothing moves it on afterwards
       await page.waitForTimeout(1000);
-      await expect(page.getByText("Step 3/3:")).toBeVisible();
+      await expect(page.getByTestId("stepPosition")).toHaveText("3 of 3");
     });
   }
 
@@ -425,13 +427,13 @@ test.describe("with Go to the next on", () => {
     page,
   }) => {
     await openProjectPage(project.id, build.id, runs[0].id);
-    await expect(page.getByText("Step 1/3:")).toBeVisible();
+    await expect(page.getByTestId("stepPosition")).toHaveText("1 of 3");
 
     await page.keyboard.press("a");
 
-    await expect(page.getByText("Step 2/3:")).toBeVisible();
+    await expect(page.getByTestId("stepPosition")).toHaveText("2 of 3");
     await page.waitForTimeout(1000);
-    await expect(page.getByText("Step 2/3:")).toBeVisible();
+    await expect(page.getByTestId("stepPosition")).toHaveText("2 of 3");
   });
 
   test("stays on the screen and lets the arrow go when the server refuses", async ({
@@ -442,15 +444,15 @@ test.describe("with Go to the next on", () => {
       route.fulfill({ status: 500, body: JSON.stringify({ message: "nope" }) }),
     );
     await openProjectPage(project.id, build.id, runs[0].id);
-    await expect(page.getByText("Step 1/3:")).toBeVisible();
+    await expect(page.getByTestId("stepPosition")).toHaveText("1 of 3");
 
     await page.keyboard.press("a");
     await page.keyboard.press("ArrowRight");
 
     await expect(page.getByText("nope")).toBeVisible();
-    await expect(page.getByText("Step 2/3:")).toBeVisible();
+    await expect(page.getByTestId("stepPosition")).toHaveText("2 of 3");
     await page.waitForTimeout(1000);
-    await expect(page.getByText("Step 2/3:")).toBeVisible();
+    await expect(page.getByTestId("stepPosition")).toHaveText("2 of 3");
   });
 });
 
@@ -495,6 +497,8 @@ test("has no Devices tab and no capture warnings", async ({
   );
 
   await openProjectPage(project.id, build.id, run.id);
+  // no changes and no findings: the side panel opens folded (REQ-046-07)
+  await page.getByTestId("panelUnfold").click();
   await expect(page.getByRole("tab", { name: "Changes" })).toBeVisible();
   await expect(page.getByRole("tab", { name: "Devices" })).toHaveCount(0);
   await page.getByRole("tab", { name: "Changes" }).click();
@@ -520,6 +524,7 @@ test("says accessibility needs the UI tree when it cannot be read", async ({
   );
 
   await openProjectPage(project.id, build.id, run.id);
+  await page.getByTestId("panelUnfold").click();
   await expect(
     page.getByText(
       "Accessibility is checked from the UI tree, and this screen's tree could not be read.",

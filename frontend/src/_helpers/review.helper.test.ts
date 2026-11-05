@@ -1,4 +1,58 @@
-import { diffMeter, stepStates, REVIEW_KEYS } from "./review.helper";
+import {
+  diffMeter,
+  stepStates,
+  REVIEW_KEYS,
+  stepProgress,
+  panelStartsFolded,
+} from "./review.helper";
+
+describe("stepProgress", () => {
+  it("counts the decided steps and those left besides the current one", () => {
+    expect(
+      stepProgress(["approved", "unresolved", "new", "unresolved"], 1),
+    ).toEqual({ decided: 1, left: 2 });
+    // a decided step on screen is counted as decided, not left
+    expect(stepProgress(["approved", "failed", "new"], 1)).toEqual({
+      decided: 2,
+      left: 1,
+    });
+    expect(stepProgress(["unresolved"], 0)).toEqual({ decided: 0, left: 0 });
+  });
+});
+
+describe("panelStartsFolded", () => {
+  const empty = { regions: [], changes: [], invisible: [] };
+  it("folds the panel only when it has nothing to show", () => {
+    expect(panelStartsFolded(empty, { violations: [] })).toBe(true);
+    expect(panelStartsFolded(null, null)).toBe(true);
+    expect(
+      panelStartsFolded(
+        {
+          ...empty,
+          regions: [
+            {
+              region: { x: 0, y: 0, width: 1, height: 1 },
+              key: null,
+              element: null,
+              resourceId: null,
+            },
+          ],
+        },
+        null,
+      ),
+    ).toBe(false);
+    expect(
+      panelStartsFolded(empty, {
+        violations: [{} as never],
+      }),
+    ).toBe(false);
+  });
+
+  it("waits until both the changes and the findings are known", () => {
+    expect(panelStartsFolded(undefined, null)).toBeUndefined();
+    expect(panelStartsFolded(empty, undefined)).toBeUndefined();
+  });
+});
 
 describe("review", () => {
   it("puts the tolerance mark and the diff on one scale", () => {

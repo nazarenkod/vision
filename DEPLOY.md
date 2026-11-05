@@ -47,7 +47,7 @@ Vision ставится на ту же машину, что и рабочий VR
   Postgres — 1 CPU и 1 ГБ, UI — 0.5 CPU (настраивается в `.env.demo`).
 - **Перед копированием** скрипт показывает, что прочитает и что заменит, и ждёт `yes`.
 
-Проверено на стенде с upstream VRT 5.6.3 на postgres:12. Сняли «отпечаток» прода (хеши
+Проверено на стенде с VRT 5.6.3 на postgres:12. Сняли «отпечаток» прода (хеши
 содержимого всех таблиц, хеши всех картинок, время запуска контейнеров) до и после:
 - отказов защиты (чужой проект `vision`, чужая `COMPOSE_PROJECT_NAME`);
 - двух копирований (копия и ссылки);
@@ -71,13 +71,19 @@ Vision ставится на ту же машину, что и рабочий VR
 - Docker с Compose v2 (`docker compose version`), git, bash, rsync.
 - Место на диске: около 6 ГБ под образы, плюс 2× размер базы, плюс размер картинок (в режиме
   `copy`). Скрипты посчитают сами.
-- Свободные порты: 18080 (UI), 14200 (API), 15432 (Postgres, только localhost). Меняются в
+- Свободные порты: 18080 (UI), 14200 (API); Postgres наружу не публикуется. Меняются в
   `.env.demo`.
 - Имя Docker-контейнера с базой прода (`docker ps`) или строка подключения к ней.
 - Папка картинок прода: то, что смонтировано в его API как `/imageUploads`. Если прод хранит
   картинки в S3, см. раздел 12.
 
 Прод должен быть VRT 5.x и не новее форка. Скрипт проверит это сам.
+
+Образы собираются из этого репозитория на Node 24 (база закреплена по digest), все процессы
+работают не от root: API — от пользователя, который запускает `vision.sh`, UI — от `nginx`.
+TLS проверяется всегда. В закрытой сети (прокси переподписывает TLS, нет доступа к
+registry.npmjs.org или binaries.prisma.sh) задайте в `.env.demo` `VISION_EXTRA_CA_FILE` (CA
+прокси, PEM), `VISION_NPM_REGISTRY` и `VISION_PRISMA_ENGINES_MIRROR` — зеркала, например в Nexus.
 
 ## 2. Код
 
@@ -100,6 +106,8 @@ cp .env.demo.example .env.demo
 | Переменная | Что указать |
 |---|---|
 | `JWT_SECRET` | любой длинный секрет (можно тот же, что у прода: тогда у пользователей работают выданные токены входа) |
+| `VISION_SECRET_KEY` | длинный случайный ключ (`openssl rand -base64 32`), **хранить навсегда**: им зашифрованы токены Jira и ключи Gemini в базе. Без него API не стартует; новый ключ — все вводят токены заново ([044](docs/specs/044-secrets-at-rest/spec.md)) |
+| `VISION_JIRA_HOSTS` | хосты Jira через запятую, куда можно отправлять личные токены, например `jira.bank.example`. Пусто — Vision в Jira не ходит, а адрес Jira в проекте не сохранить |
 | `DEMO_UI_URL` | адрес UI так, как его видит браузер, например `http://vision-host:18080` |
 | `DEMO_API_URL` | адрес API так, как его видит браузер и автотесты, например `http://vision-host:14200` |
 | `PROD_PG_CONTAINER` | имя контейнера Postgres прода, **или** |
@@ -163,13 +171,26 @@ successfully applied`:
 ./scripts/vision.sh logs migration
 ```
 
-Открыть `DEMO_UI_URL` и войти **продовой** учёткой. Пользователи, пароли, проекты, сборки и
-API-ключи скопированы.
+Открыть `DEMO_UI_URL` и войти **продовой** учёткой. Пользователи, пароли, проекты и сборки
+скопированы. **API-ключи VRT во Vision не действуют** ([044](docs/specs/044-secrets-at-rest/spec.md)):
+при первом старте API делает их недействительными, каждый создаёт новый в **Profile → API key**
+и прописывает его в CI (`VISION_APIKEY` или `vision.json`). Ключ показывается один раз.
+
+**Доступ к проектам** ([042](docs/specs/042-project-access/spec.md)): после перехода каждый видит
+все проекты, как раньше. Админ сужает доступ в **Settings проекта → Access**; новые пользователи
+проектов не видят, пока админ не даст. Editor, создавший проект, видит его сразу.
 
 ## 6. Настройки в Vision
 
+**Вход** ([045](docs/specs/045-sign-in-and-api-hardening/spec.md)). LDAP или SSO включаются в `.env.demo`
+(`LDAP_*` или `OIDC_*`, пример — в `.env.demo.example`), и локальные аккаунты от админа работают
+рядом: LDAP решает за тех, кто есть в каталоге, остальные входят своим паролем; с SSO форма пароля —
+под кнопкой SSO, а при `REACT_APP_OIDC_AUTO_REDIRECT` — по адресу `/login?local`. Пароль локального
+аккаунта — от 12 символов; 5 неверных попыток подряд закрывают вход для этого email на 15 минут.
+Документация API (`/api`) выключена, пока `VISION_SWAGGER=true`.
+
 Projects → карандаш у проекта:
-- **Jira**: URL Jira. Токен у каждого свой: **Profile → Jira** (Server/DC — personal access
+- **Jira**: URL Jira — только на хосте из `VISION_JIRA_HOSTS`. Токен у каждого свой: **Profile → Jira** (Server/DC — personal access
   token; Jira Cloud — API token и email). Баги заводятся от имени того, кто нажал кнопку, и
   Jira ищется с его правами. Общего токена проекта нет ([035](docs/specs/035-admin-accounts/spec.md)):
   без своего токена баг не завести. Общие токены, сохранённые раньше, Vision стирает при
@@ -277,76 +298,52 @@ decisions to problems»).
 
 ## 7. SDK: jar и pom.xml
 
-**Пока ничего менять не нужно.** Vision понимает текущий SDK как есть: скриншоты, статусы, группы
-изменений работают. Новый SDK нужен только для отправки XML-дерева экрана: доступность,
-изменения по элементам, правила по элементам, а также для названия фичи в багах из сравнения.
+SDK Vision — `ua.vision:vision-sdk`, версия `1.0.0`. Нужен для отправки XML-дерева экрана
+(доступность, изменения и правила по элементам) и названия фичи в багах из сравнения. Работает на
+Java 11+. Jar собирается из исходников: `./scripts/build-sdk-jar.sh` (JDK 11–17, Gradle 7) кладёт
+`dist/sdk-java/vision-sdk-1.0.0.jar` и его pom; в репозитории готового jar нет.
 
-Новый SDK — это upstream 4.3.1 плюс два необязательных поля, `uiTree` и `featureName`, а классы
-называются по-своему: `Vision`, `VisionConfig`, `VisionOptions`, `VisionResult` вместо
-`VisualRegressionTracker`, `VisualRegressionTrackerConfig`, `TestRunOptions`, `TestRunResult`.
-Пакет, методы и остальные классы те же, работает на Java 11+. Готовый jar лежит в репозитории:
-`dist/sdk-java/sdk-java-4.3.1-vision.4.jar`
-(рядом его pom). Пересобрать: `./scripts/build-sdk-jar.sh` (JDK 11–17, Gradle 7).
+Классы `Vision`, `VisionConfig`, `VisionOptions`, `VisionResult` в пакете `ua.vision.sdk`.
+Настройки — переменные `VISION_*` или файл `vision.json`. Дерево больше 10 МБ SDK не отправляет:
+пишет предупреждение в лог, скриншот уходит как обычно (сервер такое дерево всё равно не принял бы).
 
-### Обновление с 4.3.1-vision.3
+### Переход с 4.3.1-vision.N на 1.0.0
 
-Что нового в `4.3.1-vision.4`: `TestRunOptions` и `TestRunResult` переименованы в `VisionOptions` и
-`VisionResult`. Старых имён в jar нет; поля, методы и их названия те же (`uiTree`, `featureName`,
-`getTestRunResponse()`…). Запросы к серверу не изменились, эталоны остаются.
+Старого пакета, переменных `VRT_*` и файла `vrt.json` новый SDK не знает: тест на старых именах
+падает при старте с сообщением, какой настройки не хватает. Запросы к серверу те же, эталоны
+остаются. В тестовом проекте:
 
-```java
-// было
-TestRunResult result = vrt.track("Payment", screenshotBase64, TestRunOptions.builder().uiTree(xml).build());
-// стало
-VisionResult result = vrt.track("Payment", screenshotBase64, VisionOptions.builder().uiTree(xml).build());
-```
+1. Зависимость: `com.github.Visual-Regression-Tracker:sdk-java:4.3.1-vision.N` →
+   `ua.vision:vision-sdk:1.0.0` (вариант А или Б ниже); старый jar удалить.
+2. Импорты: `io.visual_regression_tracker.sdk_java.` → `ua.vision.sdk.` (замена по всему проекту).
+3. Переменные в CI: `VRT_APIURL`, `VRT_APIKEY`, `VRT_PROJECT`, `VRT_BRANCHNAME`… →
+   `VISION_APIURL`, `VISION_APIKEY`, `VISION_PROJECT`, `VISION_BRANCHNAME`…
+4. Файл `vrt.json`, если есть, переименовать в `vision.json` (содержимое то же).
 
-### Обновление с 4.3.1-vision.2
-
-Что нового в `4.3.1-vision.3`: классы `VisualRegressionTracker` и `VisualRegressionTrackerConfig`
-переименованы в `Vision` и `VisionConfig`. Старых имён в jar нет, поэтому в тестах меняются эти два
-имени (и импорты); методы, `TestRunOptions`, переменные `VRT_*` и `vrt.json` те же (в `vision.4`
-переименованы и опции с результатом, см. выше). Запросы к серверу
-не изменились, эталоны остаются. Обновляться не обязательно: `vision.2` продолжает работать.
+С версий до `4.3.1-vision.4` ещё и имена классов: `VisualRegressionTracker` → `Vision`,
+`VisualRegressionTrackerConfig` → `VisionConfig`, `TestRunOptions` → `VisionOptions`,
+`TestRunResult` → `VisionResult`.
 
 ```java
 // было
-VisualRegressionTracker vrt = new VisualRegressionTracker(VisualRegressionTrackerConfig.builder()...build());
+import io.visual_regression_tracker.sdk_java.Vision;
 // стало
-Vision vrt = new Vision(VisionConfig.builder()...build());
+import ua.vision.sdk.Vision;
 ```
-
-### Обновление с 4.3.1-vision.1
-
-Что нового в `4.3.1-vision.2`: необязательное поле `featureName` — фича экрана для названия бага,
-заведённого из сравнения: `[Automation] [Checkout] кнопка обрезана`. Без него Vision берёт часть
-названия проверки до первой точки (`Checkout. Payment sheet` → `Checkout`). Эталоны от поля не
-зависят: прогоны с ним и без него сравниваются с теми же эталонами.
-
-Обновляться не обязательно: `vision.1` продолжает работать, сервер принимает запросы без
-`featureName`. Чтобы обновиться:
-
-1. Вариант А: ещё раз `mvn install:install-file` с файлами `vision.4` (команда ниже) и версия
-   `4.3.1-vision.4` в pom.xml. Вариант Б: заменить jar в `libs/` и поправить версию и `systemPath`.
-2. Если названия проверок не начинаются с фичи, добавить `.featureName(...)` в обёртку над
-   `vrt.track` (пример в 8.2).
-3. Переименовать четыре класса, как описано выше для `vision.3` и `vision.4`.
 
 ### Вариант А: установить в локальный Maven (рекомендую)
 
 Один раз на каждой машине, где собираются тесты (ноутбук, агенты CI):
 
 ```bash
-mvn install:install-file -Dfile=dist/sdk-java/sdk-java-4.3.1-vision.4.jar -DpomFile=dist/sdk-java/sdk-java-4.3.1-vision.4.pom
+mvn install:install-file -Dfile=dist/sdk-java/vision-sdk-1.0.0.jar -DpomFile=dist/sdk-java/vision-sdk-1.0.0.pom
 ```
-
-В pom.xml меняется только версия:
 
 ```xml
 <dependency>
-    <groupId>com.github.Visual-Regression-Tracker</groupId>
-    <artifactId>sdk-java</artifactId>
-    <version>4.3.1-vision.4</version>
+    <groupId>ua.vision</groupId>
+    <artifactId>vision-sdk</artifactId>
+    <version>1.0.0</version>
 </dependency>
 ```
 
@@ -358,11 +355,11 @@ mvn install:install-file -Dfile=dist/sdk-java/sdk-java-4.3.1-vision.4.jar -DpomF
 
 ```xml
 <dependency>
-    <groupId>com.github.Visual-Regression-Tracker</groupId>
-    <artifactId>sdk-java</artifactId>
-    <version>4.3.1-vision.4</version>
+    <groupId>ua.vision</groupId>
+    <artifactId>vision-sdk</artifactId>
+    <version>1.0.0</version>
     <scope>system</scope>
-    <systemPath>${project.basedir}/libs/sdk-java-4.3.1-vision.4.jar</systemPath>
+    <systemPath>${project.basedir}/libs/vision-sdk-1.0.0.jar</systemPath>
 </dependency>
 <!-- jar из файла не приносит своих зависимостей; если они уже есть в проекте, эти две не нужны -->
 <dependency>
@@ -379,12 +376,9 @@ mvn install:install-file -Dfile=dist/sdk-java/sdk-java-4.3.1-vision.4.jar -DpomF
 
 Maven предупредит о `system` scope, это нормально.
 
-Оба варианта проверены Maven-проектом на `vision.1`: собирается и отправляет экраны с XML в
-Vision. `vision.2` отличается от неё только полем `featureName`, `vision.3` и `vision.4` — именами классов;
-их покрывают тесты SDK
-(`gradle test`), Maven-проектом их ещё не прогоняли.
-Публикация в Nexus тоже настроена (`gradle publish -PrepoUrl=...`, см. `sdk-java/README.md`),
-пригодится, когда захотите убрать ручной шаг.
+`1.0.0` покрыта тестами SDK (`gradle test`) и контрольным сценарием (`./scripts/control-scenario.sh`:
+настоящий SDK против настоящего сервера). Maven-проектом в банке её ещё не прогоняли.
+Публикация в Nexus настроена (`gradle publish -PrepoUrl=...`, см. `sdk-java/README.md`).
 
 ## 8. Подключение автотестов
 
@@ -393,20 +387,20 @@ Vision. `vision.2` отличается от неё только полем `fea
 Адрес и ключ задаются переменными окружения, код для этого менять не нужно:
 
 ```bash
-export VRT_APIURL=http://vision-host:14200
+export VISION_APIURL=http://vision-host:14200
 ```
 
 ```bash
-export VRT_APIKEY=ваш_API_ключ
+export VISION_APIKEY=ваш_API_ключ
 ```
 
-`VRT_PROJECT` и `VRT_BRANCHNAME` — как сейчас. Ключ тот же, что на проде: он скопирован.
+`VISION_PROJECT` и `VISION_BRANCHNAME` — как сейчас (раньше `VRT_PROJECT` и `VRT_BRANCHNAME`). Ключ тот же, что на проде: он скопирован.
 
 Переменные работают, только если адрес и ключ **не заданы в коде**. SDK берёт значение из
 `VisionConfig.builder().apiUrl(...)`, если оно там есть, затем из
-переменной `VRT_APIURL`, затем из `vrt.json`. Если в коде стоит `.apiUrl("http://vrt-prod...")`,
+переменной `VISION_APIURL`, затем из `vision.json`. Если в коде стоит `.apiUrl("http://vrt-prod...")`,
 вынесите его в переменную или системное свойство, например
-`.apiUrl(System.getenv().getOrDefault("VRT_APIURL", "http://vrt-prod:4200"))`.
+`.apiUrl(System.getenv().getOrDefault("VISION_APIURL", "http://vrt-prod:4200"))`.
 
 Рабочий прогон не трогайте. Для Vision сделайте **отдельную джобу**: тот же набор тестов с
 этими двумя переменными. Прод продолжит получать свои прогоны, Vision будет получать свои.
@@ -416,7 +410,7 @@ export VRT_APIKEY=ваш_API_ключ
 Java:
 
 ```java
-vrt.track(
+vision.track(
     "Payment",
     screenshotBase64,
     VisionOptions.builder()
@@ -431,7 +425,7 @@ vrt.track(
 Kotlin:
 
 ```kotlin
-vrt.track(
+vision.track(
     "Payment",
     screenshotBase64,
     VisionOptions.builder()
@@ -443,7 +437,7 @@ vrt.track(
 )
 ```
 
-Если у вас обёртка над `vrt.track`, правка одна, в ней. Без `.uiTree(...)` всё работает как
+Если у вас обёртка над `vision.track`, правка одна, в ней. Без `.uiTree(...)` всё работает как
 раньше. `featureName` попадает в название бага из сравнения (`[Automation] [Checkout] …`); без него
 Vision берёт часть названия проверки до первой точки. Эталоны от него не зависят.
 
@@ -528,13 +522,61 @@ git pull
 
 Новые миграции применятся сами, данные Vision останутся.
 
+**Названия по умолчанию теперь Vision** ([041](docs/specs/041-vision-names/spec.md)): база
+`vision`, первый админ новой установки `admin@vision.local`, группы админов SSO по умолчанию
+`vision-admin,admin`. То, что задано в `.env.demo`, работает как задано.
+
+**Если Vision до этого работал от root** (образы до Node 24): API теперь пишет картинки и файлы
+бэкапа от вашего пользователя, а старые файлы в `demo-data` принадлежат root. Один раз после
+`./scripts/vision.sh build` и до запуска верните их себе (образ `vision-api` уже собран, ничего
+не скачивается):
+
+```bash
+docker run --rm --user 0 --entrypoint chown -v "$PWD/demo-data:/data" vision-api -R "$(id -u):$(id -g)" /data/imageUploads /data/backup-config /data/backup-status
+```
+
+### Переход на версию для банка (с версии до 1.0.0 SDK)
+
+Новая версия шифрует секреты, закрывает снимки подписью и делит проекты по доступу
+([042](docs/specs/042-project-access/spec.md)–[044](docs/specs/044-secrets-at-rest/spec.md)), поэтому
+переход — по шагам, а не одним `git pull`. Прод VRT при этом только читается.
+Та же инструкция по-украински, с тем, что именно читается из VRT, — [bank-cutover](docs/guides/bank-cutover.md).
+
+1. Остановить старый Vision: `./scripts/vision.sh stop`.
+2. Забрать код: `git pull`.
+3. Перевести настройки (покажет изменения, спросит `yes`, старый файл сохранит рядом):
+
+   ```bash
+   python3 -I scripts/vision-convert-env.py --jira-hosts jira.bank.example
+   ```
+
+   Появятся `VISION_SECRET_KEY` (храните его: без него токены Jira не прочитать), `VISION_JIRA_HOSTS`,
+   новый `JWT_SECRET`; `POSTGRES_DB` останется прежней базой.
+4. Собрать образы: `./scripts/vision.sh build`; один раз вернуть себе файлы `demo-data` (команда `chown`
+   выше).
+5. Свежая копия прода, как обычно: `./scripts/demo-clone-from-prod.sh`.
+6. Запустить: `./scripts/vision.sh up -d`. На первом старте применятся миграции, все получат доступ
+   ко всем проектам, токены зашифруются, API-ключи из копии VRT перестанут работать.
+7. Проверить (только чтение, сверка с VRT):
+
+   ```bash
+   ./scripts/vision-check-cutover.sh
+   ```
+
+8. Каждый создаёт новый API-ключ в профиле и прописывает его в CI; тестовые проекты — на jar SDK
+   1.0.0 (раздел 7).
+
+**Откат:** `./scripts/vision.sh stop`, `git checkout` прежнего коммита, старый `.env.demo` из
+сохранённой копии (`.env.demo.before-vision-…`), `./scripts/demo-clone-from-prod.sh`,
+`./scripts/vision.sh up -d --build`. Прод не менялся, поэтому откат — та же копия.
+
 ## 12. Бэкапы
 
 Каждую ночь база Vision и новые картинки уходят в папку `vision-backups` на «Моём диске» Google
 Drive рабочего аккаунта администратора ([013](docs/specs/013-backups-and-secrets/spec.md),
 [017](docs/specs/017-backup-settings-ui/spec.md)). Бэкап не шифруется, поэтому в нём **нет
-паролей и токенов Jira**; API-ключи есть, чтобы автотесты после восстановления работали без
-изменений. Vision видит на этом Drive только файлы, которые создал сам.
+паролей, токенов Jira и ключей Gemini**; API-ключи есть только хешами, чтобы автотесты после
+восстановления работали без изменений. Vision видит на этом Drive только файлы, которые создал сам.
 
 Нужен доступ сервера к `oauth2.googleapis.com`, `www.googleapis.com` и Docker Hub. rclone
 ставить не нужно: скрипты запускают Docker-образ `rclone/rclone:1.68.2`, если rclone нет на
@@ -604,7 +646,7 @@ Drive рабочего аккаунта администратора ([013](docs
 После восстановления:
 - входите мастер-логином; он становится администратором;
 - остальным пользователям задайте пароль: Users → выделить пользователя → «Set password»;
-- токены Jira каждый вводит заново в профиле;
+- токены Jira и ключи Gemini каждый вводит заново в профиле;
 - API-ключи и автотесты — без изменений.
 
 ## 13. Если что-то пошло не так
@@ -614,7 +656,7 @@ Drive рабочего аккаунта администратора ([013](docs
 | «containers that were not created from …» | в проекте `vision` есть чужие контейнеры. Скрипт ничего не сделал. Выясните, чьи они (`docker ps -a --filter label=com.docker.compose.project=vision`), не удаляйте вслепую |
 | «Not enough disk …» | освободите место (`docker system df`, `docker builder prune`) или, для картинок, `PROD_IMAGES_MODE=link` |
 | «production VRT is older than 5.x» | сначала обновите прод, или запускайте Vision на пустой базе (без шага 4) |
-| «Production has migrations this fork does not know» | прод новее форка: нужно подтянуть upstream в форк |
+| «Production has migrations Vision does not know» | схема прода новее Vision: нужна миграция в Vision под неё |
 | `migration` в состоянии Exited (1) | `./scripts/vision.sh logs migration` |
 | `docker-credential-desktop: executable file not found` | на macOS `vision.sh` сам добавляет в `PATH` папку Docker Desktop (`/Applications/Docker.app/Contents/Resources/bin`); если Docker стоит в другом месте, укажите её в `VISION_DOCKER_APP_BIN` |
 | Сборка `up -d --build` идёт много минут без вывода | выбран сборщик в отдельном контейнере (`docker buildx ls`, звёздочка у `docker-container`): `vision.sh` сам собирает встроенным сборщиком Docker и пишет об этом; свой сборщик — через `BUILDX_BUILDER` |

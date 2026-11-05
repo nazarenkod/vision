@@ -24,7 +24,7 @@
    - створює рядок з новим API-ключем, хешем пароля й обраною роллю; повертає `UserDto`, без
      токена входу: адміністратор лишається собою (REQ-035-11, 15).
 
-   Інтерфейс `Users.create` і його реалізації в `db`/`ldap`/`oidc` (upstream) не чіпаємо:
+   Інтерфейс `Users.create` і його реалізації в `db`/`ldap`/`oidc` (успадковане) не чіпаємо:
    `DbUsersService.create` отримує необов'язкову `role`, і `createAccount` іде через нього.
    `GET /users/accounts/enabled` (без входу, як `oidc/enabled`) каже, чи можна створювати акаунти
    в цьому режимі входу.
@@ -116,7 +116,7 @@ sequenceDiagram
 | Хтось працював лише через спільний токен і після оновлення не заведе баг | Підказка «Add your Jira token in your profile» уже стоїть у кожному місці; пишемо в DEPLOY.md, що перед оновленням треба попросити команду додати токени |
 | Відкат Vision після чищення не поверне спільні токени | Рішення власника (ADR-0025); у бекапах їх і так немає |
 | `wipeSharedJiraCredentials` падає на старті (база недоступна) | Лише лог; повториться на наступному старті |
-| e2e та acceptance upstream створюють користувача через `/users/register` | Переписуємо їх на `POST /users` від адміністратора за замовчуванням або прямий запис через Prisma |
+| успадковані e2e та acceptance створюють користувача через `/users/register` | Переписуємо їх на `POST /users` від адміністратора за замовчуванням або прямий запис через Prisma |
 | Сід створює адміністратора з поштою як є (може бути з великими літерами) | Пошук дубля — без урахування регістру, тож дубль не з'явиться |
 
 ## Перевірка вимог
@@ -132,7 +132,7 @@ sequenceDiagram
 | REQ-035-13 | `backend/src/users/users.service.spec.ts › refuses an email that is taken in any letter case` |
 | REQ-035-14 | `backend/src/users/users.controller.spec.ts › lets only admins create accounts` |
 | REQ-035-15 | `backend/src/users/users.service.spec.ts › creates an account with the role the admin chose and no sign-in token`; manual: створити акаунт у Users, вийти, увійти ним — роль та, що обрав адміністратор |
-| REQ-035-16 | `backend/src/users/users.service.spec.ts › refuses to create accounts when sign-in goes through LDAP or SSO`; `frontend/integration_tests/test/userList.spec.ts › explains that accounts come from SSO` |
+| REQ-035-16 | `backend/src/users/users.service.spec.ts › signs in a local account beside LDAP and SSO` |
 | REQ-035-20 | `frontend/integration_tests/test/userList.spec.ts › shows no head count and no row height picker` |
 | REQ-035-21 | `frontend/integration_tests/test/userList.spec.ts › shows no head count and no row height picker` |
 | REQ-035-30 | `frontend/integration_tests/test/projectSettings.spec.ts › Jira settings have no shared token or email` |

@@ -37,7 +37,7 @@ describe("new account", () => {
   const filled = {
     email: " qa.new@example.com ",
     role: "editor" as const,
-    password: "secret",
+    password: "long-secret-1",
   };
 
   it("needs a valid email, a role and a password to create an account", () => {

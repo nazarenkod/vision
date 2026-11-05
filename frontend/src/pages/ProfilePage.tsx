@@ -15,6 +15,7 @@ import {
   MenuItem,
 } from "@mui/material";
 import {
+  newApiKey,
   useUserDispatch,
   useUserState,
   update,
@@ -31,7 +32,7 @@ import PasswordField from "../components/PasswordField";
 import { useOidcEnabled } from "../_helpers/useOidcEnabled";
 import { JiraTokenCard } from "../components/JiraTokenCard";
 import { GeminiKeyCard } from "../components/GeminiKeyCard";
-import { ApiKeyCard, maskKey } from "../components/ApiKeyCard";
+import { ApiKeyCard } from "../components/ApiKeyCard";
 import { AppearanceCard } from "../components/AppearanceCard";
 import { labelOf, useT } from "../i18n";
 
@@ -47,9 +48,9 @@ const ProfilePage = () => {
   const [lastName, setLastName] = useState(user?.lastName);
   const [password, setPassword] = useState("");
   const [tabIndex, setTabIndex] = React.useState(0);
-  // the key stays hidden, in the examples too, until someone asks for it
-  const [keyRevealed, setKeyRevealed] = React.useState(false);
-  const shownKey = keyRevealed ? user?.apiKey : maskKey(user?.apiKey);
+  // a new key is on this page until it is left; the server cannot show it again (044)
+  const [newKey, setNewKey] = React.useState<string>();
+  const shownKey = newKey ?? "YOUR_API_KEY";
   const oidcEnabled = useOidcEnabled();
 
   const handleUserUpdateSubmit = (event: FormEvent) => {
@@ -220,6 +221,7 @@ const ProfilePage = () => {
                       <Grid container spacing={2}>
                         <Grid item xs={12}>
                           <PasswordField
+                            isNew
                             password={password}
                             setPassword={setPassword}
                             label={t("profile.newPassword")}
@@ -260,9 +262,14 @@ const ProfilePage = () => {
             </Grid>
             <Grid item xs={12}>
               <ApiKeyCard
-                apiKey={user?.apiKey}
-                revealed={keyRevealed}
-                onReveal={setKeyRevealed}
+                ending={user?.apiKeyEnding}
+                newKey={newKey}
+                onNewKey={() =>
+                  user &&
+                  newApiKey(authDispatch, user)
+                    .then(setNewKey)
+                    .catch((err) => enqueueSnackbar(err, { variant: "error" }))
+                }
               />
             </Grid>
             <Grid item xs={12}>
@@ -320,12 +327,12 @@ const ProfilePage = () => {
                           variant="outlined"
                           disabled
                           value={`
-  VRT_APIURL="${window._env_.REACT_APP_API_URL}"
-  VRT_APIKEY="${shownKey}"
-  VRT_PROJECT="${selectedProjectId ?? "Default project"} "
-  VRT_BRANCHNAME="master"
-  VRT_CIBUILDID="commit_sha"
-  VRT_ENABLESOFTASSERT=false
+  VISION_APIURL="${window._env_.REACT_APP_API_URL}"
+  VISION_APIKEY="${shownKey}"
+  VISION_PROJECT="${selectedProjectId ?? "Default project"} "
+  VISION_BRANCHNAME="master"
+  VISION_CIBUILDID="commit_sha"
+  VISION_ENABLESOFTASSERT=false
   `}
                           multiline
                           rows={8}

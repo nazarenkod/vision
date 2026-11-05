@@ -10,6 +10,7 @@ import { Roles } from '../shared/roles.decorator';
 import { MergeParams } from './types';
 import { BaseTestVariationDto } from './dto/base-test-variation.dto';
 import { TestVariationDto } from './dto/test-variation.dto';
+import { ProjectFrom, inParam, inQuery } from '../projects/project-access';
 
 @ApiTags('test-variations')
 @Controller('test-variations')
@@ -19,6 +20,7 @@ export class TestVariationsController {
     private prismaService: PrismaService
   ) {}
 
+  @ProjectFrom(inQuery('projectId', 'project'))
   @Get()
   @ApiQuery({ name: 'projectId', required: true })
   @ApiOkResponse({ type: BaseTestVariationDto, isArray: true })
@@ -30,6 +32,7 @@ export class TestVariationsController {
     });
   }
 
+  @ProjectFrom(inParam('id', 'variation'))
   @Get('details/:id')
   @ApiParam({ name: 'id', required: true })
   @ApiOkResponse({ type: TestVariationDto })
@@ -39,6 +42,7 @@ export class TestVariationsController {
     return this.testVariations.getDetails(id);
   }
 
+  @ProjectFrom(inQuery('projectId', 'project'))
   @Get('merge/')
   @ApiQuery({ name: 'projectId', required: true })
   @ApiQuery({ name: 'fromBranch', required: true })
@@ -52,6 +56,7 @@ export class TestVariationsController {
     return this.testVariations.merge(projectId, fromBranch, toBranch);
   }
 
+  @ProjectFrom(inParam('id', 'variation'))
   @Delete(':id')
   @ApiParam({ name: 'id', required: true })
   @ApiOkResponse({ type: BaseTestVariationDto })

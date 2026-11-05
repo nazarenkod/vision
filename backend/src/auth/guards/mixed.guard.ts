@@ -14,6 +14,8 @@ export class MixedGuard implements CanActivate {
     try {
       jwtAuth = (await this.authGuard.canActivate(context)) as boolean;
     } catch {}
+    // signed in: that person acts, whatever key the request also carries
+    if (jwtAuth) return true;
 
     let apiAuth = false;
     try {

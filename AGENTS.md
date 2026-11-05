@@ -1,8 +1,9 @@
 # Vision — інструкції для агентів
 
-Vision — внутрішній форк [Visual Regression Tracker](https://github.com/Visual-Regression-Tracker/Visual-Regression-Tracker)
-для QA мобільних застосунків (Android «AOS» та iOS, Appium + Selenide). До піксельного порівняння
-він додає аналіз UI-дерева, перевірки доступності, баги в Jira, групи змін, Insights і CLI/MCP.
+Vision — візуальні перевірки для QA мобільних застосунків (Android «AOS» та iOS, Appium +
+Selenide): порівняння знімків з урахуванням UI-дерева, перевірки доступності, баги в Jira, групи
+змін, Insights і CLI/MCP. Працює поруч із робочим VRT, з якого копіює дані (правило 1); походження
+коду — у [NOTICE](NOTICE).
 
 Це рівень 0: правила, що діють завжди, і куди йти далі. Деталі — за посиланнями, коли вони
 потрібні задачі.
@@ -14,15 +15,17 @@ Vision — внутрішній форк [Visual Regression Tracker](https://git
 1. **Робочий VRT і його база не повинні постраждати за жодних умов.** Vision стоїть на тій самій
    машині й працює на копії даних. docker compose — лише через `./scripts/vision.sh`; нові
    скрипти — за запобіжниками `scripts/lib/vision-safety.sh` ([ADR-0002](docs/decisions/0002-production-is-read-only.md)).
-2. **Пуш лише в remote `vision`:** `git -c http.postBuffer=1048576000 push vision mvp/demo:main`.
-   `origin` — upstream VRT ([ADR-0001](docs/decisions/0001-fork-as-subtree-monorepo.md)).
-   Виняток — хмарні сесії, де `origin` — сам `nazarenkod/vision`: туди можна пушити окрему гілку
-   (`git push -u origin <гілка>`), але не `main`, без force і без видалень.
+2. **Пуш лише в remote з `.claude/repository.json`** (тут — `vision`): гілку задачі, далі PR.
+   `origin` може бути чужим репозиторієм ([ADR-0027](docs/decisions/0027-vision-own-product.md)).
+   Виняток — клон, де `origin` і є цей репозиторій (хмарні сесії): туди можна пушити окрему гілку
+   (`git push -u origin <гілка>`), але не `main`, без force і без видалень. В іншому git-хості
+   змінюються лише два значення в `.claude/repository.json`.
 3. **Міграції лише додавальні:** нова таблиця, nullable-колонка, індекс; без змін enum, видалень,
    перейменувань ([ADR-0003](docs/decisions/0003-additive-schema-only.md)).
 4. **Жодних скидань і видалень бази** (`prisma migrate reset`, `DROP DATABASE`, `dropdb`).
-5. **SDK змінюється лише за специфікацією:** зараз це upstream + `VisionOptions.uiTree`, `featureName`
-   і власні назви класів `Vision`, `VisionConfig`, `VisionOptions`, `VisionResult`; запити до сервера не ламаємо ([ADR-0024](docs/decisions/0024-own-vision-sdk.md)).
+5. **SDK змінюється лише за специфікацією:** зараз це вихідний SDK + `VisionOptions.uiTree` (до 10 МиБ), `featureName`,
+   класи `Vision`, `VisionConfig`, `VisionOptions`, `VisionResult` у пакеті `ua.vision.sdk` (`ua.vision:vision-sdk`), налаштування `VISION_*`;
+   запити до сервера не ламаємо ([ADR-0024](docs/decisions/0024-own-vision-sdk.md), [ADR-0026](docs/decisions/0026-sdk-own-package-and-versions.md)).
 6. **LLM — лише на вимогу,** ніколи при прийомі знімків ([ADR-0007](docs/decisions/0007-deterministic-first-ai-on-demand.md)).
 7. **Секрети не виходять із сервера:** токени Jira лише записуються (`jiraTokenSet`); рядок
    `User` ніколи не віддається цілком.
@@ -40,9 +43,9 @@ Vision — внутрішній форк [Visual Regression Tracker](https://git
 
 | Шлях | Що там | Команди й правила |
 |---|---|---|
-| `backend/` | NestJS 11 + Prisma 6 + Postgres: API, UI-дерево, доступність, Jira, AI | [backend/AGENTS.md](backend/AGENTS.md) |
+| `backend/` | NestJS 12 + Prisma 7 + Postgres (Node 24): API, UI-дерево, доступність, Jira, AI | [backend/AGENTS.md](backend/AGENTS.md) |
 | `frontend/` | React 18 + MUI 5 + Vite, Playwright; CLI `public/cli/vision.py` | [frontend/AGENTS.md](frontend/AGENTS.md) |
-| `sdk-java/` | Java SDK (upstream + `uiTree`, `featureName`) | [sdk-java/AGENTS.md](sdk-java/AGENTS.md) |
+| `sdk-java/` | Java SDK (вихідний + `uiTree`, `featureName`) | [sdk-java/AGENTS.md](sdk-java/AGENTS.md) |
 | `scripts/` | `vision.sh`, копія даних проду, jar SDK, перевірка документації | [scripts/AGENTS.md](scripts/AGENTS.md) |
 | `docs/` | специфікації, рішення, архітектура, гайди | [docs/README.md](docs/README.md) |
 | `DEPLOY.md`, `DEMO.md` | розгортання поруч із продом (рос.), демо (англ.) | — |

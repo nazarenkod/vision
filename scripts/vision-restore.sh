@@ -151,13 +151,16 @@ HASH_AND_KEY="$(printf '%s' "$MASTER_PASSWORD" | vision_compose run --rm -T --no
 let password = "";
 process.stdin.on("data", (chunk) => (password += chunk)).on("end", async () => {
   const hash = await require("bcryptjs").hash(password, 10);
-  const apiKey = require("uuid-apikey").create({ noDashes: true }).apiKey;
+  // stored as the API stores keys (044): the hash of a key nobody is shown
+  const crypto = require("crypto");
+  const apiKey = "sha256:" + crypto.createHash("sha256").update(crypto.randomBytes(32)).digest("hex");
   console.log(hash + " " + apiKey);
 });')"
 HASH="$(echo "$HASH_AND_KEY" | tail -1 | awk '{print $1}')"
 NEW_KEY="$(echo "$HASH_AND_KEY" | tail -1 | awk '{print $2}')"
 [[ "$HASH" == \$2* ]] && [ -n "$NEW_KEY" ] || vision_die "Could not hash the master password with the API image: $HASH_AND_KEY"
-# the API key is only used when the master user is new; an existing one keeps theirs
+# the API key is only used when the master user is new, who makes their own in the profile;
+# an existing one keeps theirs
 vb_sql -v email="$MASTER_EMAIL" -v hash="$HASH" -v apikey="$NEW_KEY" <<'SQL'
 INSERT INTO "User" (id, email, password, "firstName", "lastName", "apiKey", role, "updatedAt")
 VALUES (gen_random_uuid()::text, :'email', :'hash', 'Master', 'Admin', :'apikey', 'admin', now())
@@ -168,4 +171,4 @@ SQL
 echo "==> Starting Vision"
 vision_compose up -d
 echo "==> Done. Sign in as $MASTER_EMAIL with the master password; set other users' passwords in Users."
-echo "    Jira tokens are not in backups: people enter theirs again in their profile."
+echo "    Jira tokens and Gemini keys are not in backups: people enter theirs again in their profile."

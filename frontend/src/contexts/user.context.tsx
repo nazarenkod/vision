@@ -144,6 +144,17 @@ function setGemini(dispatch: Dispatch, geminiApiKey: string) {
   });
 }
 
+/** A new API key; the user in the state keeps only its ending. */
+function newApiKey(dispatch: Dispatch, user: User) {
+  return usersService.newApiKey().then((key) => {
+    dispatch({
+      type: "success",
+      payload: { ...user, apiKeyEnding: key.slice(-4) },
+    });
+    return key;
+  });
+}
+
 function logout(dispatch: Dispatch) {
   usersService.logout();
   usersService.markOidcLoggedOut();
@@ -153,6 +164,7 @@ function logout(dispatch: Dispatch) {
 }
 
 export {
+  newApiKey,
   UserProvider,
   useUserState,
   useUserDispatch,

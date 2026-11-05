@@ -113,6 +113,7 @@ export const NewUserDialog: React.FunctionComponent<{
             ))}
           </TextField>
           <PasswordField
+            isNew
             password={password}
             setPassword={setPassword}
             label={t("users.password")}

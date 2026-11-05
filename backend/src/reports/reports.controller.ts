@@ -8,13 +8,18 @@ import { RoleGuard } from '../auth/guards/role.guard';
 import { Roles } from '../shared/roles.decorator';
 import { CurrentUser } from '../shared/current-user.decorator';
 import { ReportLinkDto, ReportsService } from './reports.service';
+import { serverFileLinkKey, signReportFile, withFileSignatures } from '../static/file-links';
+import { NoProjectData, ProjectFrom, inParam } from '../projects/project-access';
 
 @Controller()
 @ApiTags('reports')
 export class ReportsController {
+  private readonly fileKey = serverFileLinkKey();
+
   constructor(private reportsService: ReportsService) {}
 
   // only editors and admins put a build in front of people without an account (REQ-031-69)
+  @ProjectFrom(inParam('id', 'build'))
   @Post('builds/:id/report-links')
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard, RoleGuard)
@@ -27,6 +32,7 @@ export class ReportsController {
     return this.reportsService.create(buildId, body ?? {}, user);
   }
 
+  @ProjectFrom(inParam('id', 'build'))
   @Get('builds/:id/report')
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
@@ -34,6 +40,7 @@ export class ReportsController {
     return this.reportsService.reportFor(buildId, user);
   }
 
+  @ProjectFrom(inParam('id', 'build'))
   @Get('builds/:id/report-links')
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
@@ -41,6 +48,7 @@ export class ReportsController {
     return this.reportsService.list(buildId);
   }
 
+  @ProjectFrom(inParam('id', 'reportLink'))
   @Delete('report-links/:id')
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
@@ -52,6 +60,7 @@ export class ReportsController {
    * The one route that serves data without signing in (ADR-0022). The page asks
    * every few seconds; an unchanged report costs a 304.
    */
+  @NoProjectData()
   @Get('public/reports/:token')
   async publicReport(
     @Param('token') token: string,
@@ -59,7 +68,8 @@ export class ReportsController {
     @Res() res: Response
   ): Promise<void> {
     const report = await this.reportsService.publicReport(token);
-    const body = JSON.stringify(report);
+    // its screens open with the report's own signature, and only while the link is valid (REQ-043-06)
+    const body = JSON.stringify(withFileSignatures(report, (name) => signReportFile(token, name, this.fileKey)));
     const etag = `"${createHash('sha1').update(body).digest('base64url')}"`;
     res.setHeader('ETag', etag);
     // the page is served from another origin than the API: let it read the tag

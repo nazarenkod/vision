@@ -4,6 +4,7 @@
 import type { Prisma } from '@prisma/client';
 import { Role } from '@prisma/client';
 import { genSalt, hash } from 'bcryptjs';
+import { createHash, randomBytes } from 'crypto';
 
 import prisma from './client';
 
@@ -18,17 +19,27 @@ seed()
   .catch((e) => console.error('e', e))
   .finally(async () => await prisma.$disconnect());
 
+/** The SHA-256 the API looks keys up by, as `hashApiKey` in src/shared/api-key-hash.ts makes it. */
+function storedApiKey(key: string | undefined): string {
+  return (
+    'sha256:' +
+    createHash('sha256')
+      .update(key?.trim() || randomBytes(32).toString('hex'))
+      .digest('hex')
+  );
+}
+
 async function createDefaultUser() {
   let userList: Prisma.UserGetPayload<undefined>[] = [];
   try {
+    // never logged: the rows hold password hashes (rule 7)
     userList = await prisma.user.findMany();
-    console.log(userList);
   } catch (error) {
     // Expected to see that "user" table does not exist
     console.log(error.message);
   }
 
-  const defaultEmail = process.env.DEFAULT_USER_EMAIL || 'visual-regression-tracker@example.com';
+  const defaultEmail = process.env.DEFAULT_USER_EMAIL || 'admin@vision.local';
   const defaultPassword = process.env.DEFAULT_USER_PASSWORD || '123456';
   const salt = await genSalt(10);
 
@@ -47,11 +58,13 @@ async function createDefaultUser() {
           firstName: 'fname',
           lastName: 'lname',
           role: Role.admin,
-          apiKey: process.env.DEFAULT_USER_API_KEY || 'DEFAULTUSERAPIKEYTOBECHANGED',
+          // stored as the API stores keys (044); without DEFAULT_USER_API_KEY nobody knows the key,
+          // and the admin makes one in the profile
+          apiKey: storedApiKey(process.env.DEFAULT_USER_API_KEY),
           password: await hash(defaultPassword, salt),
         },
       })
-      .then((user) => {
+      .then(() => {
         console.log('###########################');
         console.log('####### DEFAULT USER ######');
         console.log('###########################');
@@ -59,7 +72,11 @@ async function createDefaultUser() {
         console.log(
           `The user with the email "${defaultEmail}" and password "${defaultPassword}" was created (if not changed before)`
         );
-        console.log(`The Api key is: ${user.apiKey}`);
+        console.log(
+          process.env.DEFAULT_USER_API_KEY
+            ? 'The API key is the one in DEFAULT_USER_API_KEY'
+            : 'Make an API key in the profile'
+        );
       });
   }
 }

@@ -120,17 +120,20 @@ def check_specs(root: pathlib.Path):
 CHANGES = re.compile(r"\b(?:змінює|замінює|знімає)\b", re.I)
 # REQ-004-10, and ranges written as REQ-004-10…REQ-004-17 or REQ-007-01…07
 REQ_OR_RANGE = re.compile(r"REQ-(\d{3})-(\d{2})(?:\s*…\s*(?:REQ-\1-)?(\d{2}))?")
+SPEC_LINK = re.compile(r"\]\(\.\./(\d{3}-[^/)]+)/spec\.md\)")
 
 
 def changed_requirements(related_row: str):
-    """REQ ids that a spec's «Пов'язане» row says it changes or removes."""
+    """(REQ id, folder of the spec its link points at, or None) that a «Пов'язане» row changes or removes."""
     found = []
     for clause in re.split(r";|(?<=\.)\s+(?=[^\W\d_])", related_row):
         keyword = CHANGES.search(clause)
         if not keyword:
             continue
+        # two specs may share a number (033): the link names which one is meant
+        link = SPEC_LINK.search(clause)
         for number, first, last in REQ_OR_RANGE.findall(clause[keyword.end():]):
-            found += [f"REQ-{number}-{n:02d}" for n in range(int(first), int(last or first) + 1)]
+            found += [(f"REQ-{number}-{n:02d}", link.group(1) if link else None) for n in range(int(first), int(last or first) + 1)]
     return found
 
 
@@ -138,8 +141,13 @@ def check_replacements(root: pathlib.Path):
     """A requirement another spec changed says so in its own row, so nobody reads it as in force."""
     problems = []
     specs_dir = root / "docs" / "specs"
-    folders = {p.name[:3]: p for p in specs_dir.iterdir() if p.is_dir() and re.match(r"^\d{3}-", p.name)}
-    for number, folder in sorted(folders.items()):
+    all_folders = sorted(p for p in specs_dir.iterdir() if p.is_dir() and re.match(r"^\d{3}-", p.name))
+    by_name = {p.name: p for p in all_folders}
+    folders = {}
+    for p in all_folders:
+        folders.setdefault(p.name[:3], p)
+    for folder in all_folders:
+        number = folder.name[:3]
         spec_file = folder / "spec.md"
         if not spec_file.exists():
             continue
@@ -148,8 +156,8 @@ def check_replacements(root: pathlib.Path):
         if status_of(spec) not in {"Implemented", "Verified"}:
             continue
         related = re.search(r"^\|\s*Пов'язане\s*\|(.*)$", spec, re.M)
-        for req in changed_requirements(related.group(1) if related else ""):
-            old = folders.get(req[4:7])
+        for req, linked in changed_requirements(related.group(1) if related else ""):
+            old = by_name.get(linked) if linked and linked[:3] == req[4:7] else folders.get(req[4:7])
             if req[4:7] == number or not old or not (old / "spec.md").exists():
                 continue
             row = re.search(rf"^\|\s*{req}\s*\|.*$", (old / "spec.md").read_text(encoding="utf-8"), re.M)

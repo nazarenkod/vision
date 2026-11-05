@@ -73,10 +73,14 @@ test.describe("Guided Tour", () => {
     test("should display all tour steps", async ({ loginPage }) => {
       const tour = await loginPage.header.startTour();
 
-      await expect(tour.joyrideOverlay).toContainText(english(LOGIN_PAGE_STEPS[0].content as MessageKey));
+      await expect(tour.joyrideOverlay).toContainText(
+        english(LOGIN_PAGE_STEPS[0].content as MessageKey),
+      );
       await tour.clickNext();
 
-      await expect(tour.joyrideOverlay).toContainText(english(LOGIN_PAGE_STEPS[1].content as MessageKey));
+      await expect(tour.joyrideOverlay).toContainText(
+        english(LOGIN_PAGE_STEPS[1].content as MessageKey),
+      );
       await tour.clickLast();
 
       await expect(tour.joyrideOverlay).not.toBeVisible();
@@ -87,7 +91,9 @@ test.describe("Guided Tour", () => {
     test("should display all tour steps", async ({ projectListPage }) => {
       const tour = await projectListPage.header.startTour();
 
-      await expect(tour.joyrideOverlay).toContainText(english(PROJECT_LIST_PAGE_STEPS[0].title as MessageKey));
+      await expect(tour.joyrideOverlay).toContainText(
+        english(PROJECT_LIST_PAGE_STEPS[0].title as MessageKey),
+      );
       await tour.clickLast();
 
       await expect(tour.joyrideOverlay).not.toBeVisible();
@@ -97,23 +103,35 @@ test.describe("Guided Tour", () => {
   test.describe("Project Page", () => {
     test("should display all tour steps", async ({ openProjectPage }) => {
       const projectPage = await openProjectPage(project.id);
-      await projectPage.buildList.getBuildLocator(TEST_BUILD_FAILED.number).click();
+      await projectPage.buildList
+        .getBuildLocator(TEST_BUILD_FAILED.number)
+        .click();
 
       const tour = await projectPage.header.startTour();
 
-      await expect(tour.joyrideOverlay).toContainText(english(PROJECT_PAGE_STEPS[0].content as MessageKey));
+      await expect(tour.joyrideOverlay).toContainText(
+        english(PROJECT_PAGE_STEPS[0].content as MessageKey),
+      );
       await tour.clickNext();
 
-      await expect(tour.joyrideOverlay).toContainText(english(PROJECT_PAGE_STEPS[1].content as MessageKey));
+      await expect(tour.joyrideOverlay).toContainText(
+        english(PROJECT_PAGE_STEPS[1].content as MessageKey),
+      );
       await tour.clickNext();
 
-      await expect(tour.joyrideOverlay).toContainText(english(PROJECT_PAGE_STEPS[2].content as MessageKey));
+      await expect(tour.joyrideOverlay).toContainText(
+        english(PROJECT_PAGE_STEPS[2].content as MessageKey),
+      );
       await tour.clickNext();
 
-      await expect(tour.joyrideOverlay).toContainText(english(PROJECT_PAGE_STEPS[3].content as MessageKey));
+      await expect(tour.joyrideOverlay).toContainText(
+        english(PROJECT_PAGE_STEPS[3].content as MessageKey),
+      );
       await tour.clickNext();
 
-      await expect(tour.joyrideOverlay).toContainText(english(PROJECT_PAGE_STEPS[4].content as MessageKey));
+      await expect(tour.joyrideOverlay).toContainText(
+        english(PROJECT_PAGE_STEPS[4].content as MessageKey),
+      );
       await tour.clickLast();
 
       await expect(tour.joyrideOverlay).not.toBeVisible();
@@ -121,20 +139,34 @@ test.describe("Guided Tour", () => {
   });
 
   test.describe("Test Variation List Page", () => {
-    test("should display all tour steps", async ({ openTestVariationListPage }) => {
+    test("should display all tour steps", async ({
+      openTestVariationListPage,
+    }) => {
       const variationListPage = await openTestVariationListPage(project.id);
       const tour = await variationListPage.header.startTour();
 
-      await expect(tour.joyrideOverlay).toContainText(english(TEST_VARIATION_LIST_PAGE[0].title as MessageKey));
+      await expect(tour.joyrideOverlay).toContainText(
+        english(TEST_VARIATION_LIST_PAGE[0].title as MessageKey),
+      );
       await tour.clickNext();
 
-      await expect(tour.joyrideOverlay).toContainText(english(TEST_VARIATION_LIST_PAGE[1].content as MessageKey));
+      await expect(tour.joyrideOverlay).toContainText(
+        english(TEST_VARIATION_LIST_PAGE[1].content as MessageKey),
+      );
       await tour.clickNext();
 
-      await expect(tour.joyrideOverlay).toContainText(english(TEST_VARIATION_LIST_PAGE[2].content as MessageKey));
+      await expect(tour.joyrideOverlay).toContainText(
+        english(TEST_VARIATION_LIST_PAGE[2].content as MessageKey),
+      );
       await tour.clickLast();
 
       await expect(tour.joyrideOverlay).not.toBeVisible();
     });
   });
+});
+
+test("shows the Vision version in the help menu", async ({ loginPage }) => {
+  await loginPage.header.helpMenuButton.click();
+  // env-config.js is written from env.defaults, as in the image
+  await expect(loginPage.header.helpMenu).toContainText("Vision 1.0.0");
 });

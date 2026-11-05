@@ -45,6 +45,8 @@ export const uk: Messages = {
   "projectList.editOf": "Налаштування {name}",
   "projectList.deleteOf": "Видалити {name}",
   "projectList.noMatch": "Немає проєктів, що містять «{search}»",
+  "projectList.noAccess":
+    "У вас ще немає проєктів: попросіть адміна Vision додати вас до потрібного",
   "projectList.empty": "Проєктів ще немає",
   "projectList.createTitle": "Новий проєкт",
   "projectList.create": "Створити проєкт",
@@ -100,6 +102,7 @@ export const uk: Messages = {
   "section.mobile": "Мобільні екрани",
   "section.a11y": "Доступність",
   "section.jira": "Jira",
+  "section.access": "Доступ",
   "section.danger": "Небезпечна зона",
   "section.devices": "Пристрої",
   "section.devicesIntro":
@@ -109,6 +112,15 @@ export const uk: Messages = {
   "section.mobileIntro": "Для екранів, надісланих з Appium page source.",
   "section.a11yIntro":
     "Що Vision перевіряє на кожному екрані з UI-деревом, за нормами вашої команди.",
+  "section.accessIntro":
+    "Хто бачить цей проєкт і працює в ньому. Адміни мають доступ до всіх проєктів і тут не показані.",
+  "access.pick": "Людина",
+  "access.add": "Дати доступ",
+  "access.remove": "Забрати доступ",
+  "access.removeOf": "Забрати доступ у {name}",
+  "access.none": "Поки нікого: цей проєкт бачать лише адміни.",
+  "access.added": "{name} тепер має доступ",
+  "access.removed": "{name} більше не має доступу",
   "section.jiraIntro":
     "Дає заводити баги просто з екрана перегляду. Кожен додає власний токен Jira у профілі, тож баги заводяться від його імені й з його правами.",
 
@@ -258,6 +270,7 @@ export const uk: Messages = {
   "secret.undo": "Повернути",
   "secret.keepSaved": "Лишіть порожнім, щоб не змінювати збережений",
 
+  "validation.passwordLength": "Щонайменше {count} символів.",
   "validation.twoCharacters": "Введіть щонайменше два символи.",
   "validation.greaterThan": "Введіть число, більше за {min}",
   "validation.lessThan": "Введіть число, менше за {max}",
@@ -882,14 +895,17 @@ export const uk: Messages = {
   "profile.configFile": "Файл налаштувань",
   "profile.env": "Змінні середовища",
   "profile.configHelp":
-    "Збережіть як vrt.json у корені проєкту. Змінні середовища мають пріоритет",
+    "Збережіть як vision.json у корені проєкту. Змінні середовища мають пріоритет",
   "profile.envHelp": "Додайте змінні середовища в CI",
   "profile.apiKey": "Ключ API",
   "profile.apiKeyHelp": "Для SDK, CLI та MCP-сервера.",
-  "profile.hide": "Сховати",
-  "profile.show": "Показати",
-  "profile.hideKey": "Сховати ключ API",
-  "profile.showKey": "Показати ключ API",
+  "profile.newApiKey": "Новий ключ API",
+  "profile.noApiKey":
+    "Ключа ще немає: створіть його для SDK, CLI та MCP-сервера",
+  "profile.newKeyOnce":
+    "Скопіюйте його зараз: Vision показує ключ лише раз. Попередній ключ більше не діє.",
+  "profile.newKeyConfirm":
+    "Поточний ключ перестане діяти в SDK, CLI та MCP-сервері, що ним користуються. Створити новий?",
   "profile.copied": "Скопійовано",
   "profile.copy": "Копіювати",
   "profile.copyKey": "Скопіювати ключ API",
@@ -941,6 +957,8 @@ export const uk: Messages = {
   "users.firstName": "Ім’я",
   "users.lastName": "Прізвище",
   "users.lastSignIn": "Останній вхід",
+  "users.projects": "Проєкти",
+  "users.allProjects": "Усі, як адмін",
   "users.role": "Роль",
   "users.updated": "Збережено",
   "users.setPasswordHelp":
@@ -1012,6 +1030,7 @@ export const uk: Messages = {
   "backups.open": "Відкрити резервні копії",
 
   // auth
+  "auth.orLocal": "Або локальним акаунтом:",
   "auth.sso": "Увійти через SSO",
   "auth.validEmail": "Введіть правильну адресу email.",
   "auth.email": "Email",
@@ -1029,8 +1048,7 @@ export const uk: Messages = {
   "tour.last": "Готово",
   "tour.next": "Далі",
   "tour.skip": "Пропустити",
-  "tour.loginAdmin":
-    "Типовий обліковий запис адміністратора: visual-regression-tracker@example.com / 123456. Обов’язково змініть типовий пароль.",
+  "tour.loginAdmin": "Увійдіть з email і паролем, які вам видав адміністратор.",
   "tour.loginNoAccount":
     "Немає облікового запису? Самому зареєструватися не можна: облікові записи створює адміністратор у Users.",
   "tour.projectListTitle": "Список проєктів",

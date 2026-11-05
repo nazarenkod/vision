@@ -1,46 +1,26 @@
-# Java SDK for [Visual Regression Tracker](https://github.com/Visual-Regression-Tracker/Visual-Regression-Tracker)
-[![Codacy Badge](https://app.codacy.com/project/badge/Grade/79dcd96f2be04992bc1059cad60e2e04)](https://www.codacy.com/gh/Visual-Regression-Tracker/sdk-java?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=Visual-Regression-Tracker/sdk-java&amp;utm_campaign=Badge_Grade)
+# Vision Java SDK
 
-## Gradle
+`ua.vision:vision-sdk` sends screenshots, and optionally the screen's UI tree, from autotests to
+Vision. Runs on Java 11+; build with JDK 11–17 and Gradle 7.
 
-```yml
-repositories {
-    maven { url 'https://jitpack.io' }
-}
-```
+## Get it
 
-```yml
-dependencies {
-    implementation group: 'com.github.visual-regression-tracker', name: 'sdk-java', version: '${REPLACE_THIS_VALUE}'
-}
-```
+`./scripts/build-sdk-jar.sh` builds the jar and pom into `dist/sdk-java/` (the repository keeps
+no built jar). Install into the local Maven repository:
 
-## Maven
-
-```xml
-<repositories>
-    <repository>
-        <id>jitpack.io</id>
-        <url>https://jitpack.io</url>
-    </repository>
-</repositories>
+```bash
+mvn install:install-file -Dfile=vision-sdk-1.0.0.jar -DpomFile=vision-sdk-1.0.0.pom
 ```
 
 ```xml
 <dependency>
-    <groupId>com.github.Visual-Regression-Tracker</groupId>
-    <artifactId>sdk-java</artifactId>
-    <version>${REPLACE_THIS_VALUE}</version>
+    <groupId>ua.vision</groupId>
+    <artifactId>vision-sdk</artifactId>
+    <version>1.0.0</version>
 </dependency>
 ```
-[Available versions](https://github.com/Visual-Regression-Tracker/sdk-java/releases)
 
-### Vision build
-
-This copy adds two optional fields, `VisionOptions.uiTree` and `featureName`, and names its classes
-`Vision`, `VisionConfig`, `VisionOptions` and `VisionResult` (upstream: `VisualRegressionTracker`,
-`VisualRegressionTrackerConfig`, `TestRunOptions`, `TestRunResult`). Publish it, change the version in your
-build and those class names in your tests (default `4.3.1-vision.4`; JDK 11–17 and Gradle 7 to build, runs on Java 11+):
+Or publish from this folder:
 
 ```bash
 gradle publishToMavenLocal
@@ -51,8 +31,6 @@ gradle publish -PrepoUrl=https://nexus.company/repository/maven-releases/ -Prepo
 ```
 
 `-PpublishGroup=...` and `-PpublishVersion=...` change the coordinates.
-
-More info about https://jitpack.io/
 
 ## Usage
 
@@ -90,13 +68,13 @@ VisionConfig config = VisionConfig.builder()
 <summary>Set environment variables</summary>
 
 ```
-export VRT_APIURL=http://localhost:4200
-export VRT_APIKEY=F5Z2H0H2SNMXZVHX0EA4YQM1MGDD
-export VRT_PROJECT=003f5fcf-6c5f-4f1f-a99f-82a697711382
-export VRT_BRANCHNAME=develop
-export VRT_ENABLESOFTASSERT=true
-export VRT_CIBUILDID=40bdba4
-export VRT_HTTPTIMEOUTINSECONDS=15
+export VISION_APIURL=http://localhost:4200
+export VISION_APIKEY=F5Z2H0H2SNMXZVHX0EA4YQM1MGDD
+export VISION_PROJECT=003f5fcf-6c5f-4f1f-a99f-82a697711382
+export VISION_BRANCHNAME=develop
+export VISION_ENABLESOFTASSERT=true
+export VISION_CIBUILDID=40bdba4
+export VISION_HTTPTIMEOUTINSECONDS=15
 
 ```
 
@@ -104,7 +82,7 @@ export VRT_HTTPTIMEOUTINSECONDS=15
 
 <details>
 
-<summary>Create vrt.json file in the root of the project</summary>
+<summary>Create vision.json file in the root of the project</summary>
 
 ```json
 {
@@ -208,8 +186,8 @@ vision.track(
 
 Vision then checks accessibility (labels, touch targets, contrast), tells
 which element changed, and can ignore or tolerate changes by element. The
-format (Android or iOS) is recognised from the XML. Servers without UI tree
-support ignore the field.
+format (Android or iOS) is recognised from the XML. A tree over 10 MiB is not
+sent: the SDK logs a warning and the screenshot goes without it.
 
 A Vision project may list the devices its tests run on. A snapshot from any
 other `device` / `os` is refused by the server, and `track` throws a

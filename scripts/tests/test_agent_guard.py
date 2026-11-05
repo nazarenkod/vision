@@ -3,6 +3,7 @@
     python3 -I scripts/tests/test_agent_guard.py
 """
 import json
+import os
 import pathlib
 import subprocess
 import sys
@@ -24,13 +25,26 @@ def clone_with_origin(url=None):
 NO_REPOSITORY = clone_with_origin()
 
 
-def run(command, tool="Bash", cwd=NO_REPOSITORY):
+def run(command, tool="Bash", cwd=NO_REPOSITORY, config=None):
     payload = json.dumps({"tool_name": tool, "tool_input": {"command": command}, "cwd": cwd})
-    done = subprocess.run([sys.executable, "-I", str(GUARD)], input=payload, capture_output=True, text=True)
+    env = dict(os.environ, VISION_GUARD_CONFIG=config) if config else None
+    done = subprocess.run([sys.executable, "-I", str(GUARD)], input=payload, capture_output=True, text=True, env=env)
     return done.returncode, done.stderr
 
 
 class AgentGuardTest(unittest.TestCase):
+    def test_takes_the_push_remote_and_repository_from_its_config(self):
+        # the same rules on another git host: only .claude/repository.json changes
+        config = pathlib.Path(tempfile.mkdtemp()) / "repository.json"
+        config.write_text(json.dumps({"pushRemote": "bank", "repository": "git.bank.test/qa/vision"}))
+        own = clone_with_origin("https://git.bank.test/qa/vision.git")
+        self.assertEqual(run("git push bank feature/x", config=str(config))[0], 0)
+        code, err = run("git push vision feature/x", config=str(config))
+        self.assertEqual(code, 2)
+        self.assertIn("'bank' remote", err)
+        self.assertEqual(run("git push -u origin feature/x", cwd=own, config=str(config))[0], 0)
+        self.assertEqual(run("git push origin main", cwd=own, config=str(config))[0], 2)
+
     def assertBlocked(self, command, why, cwd=NO_REPOSITORY):
         code, err = run(command, cwd=cwd)
         self.assertEqual(code, 2, f"not blocked: {command}")

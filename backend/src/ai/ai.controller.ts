@@ -18,6 +18,7 @@ import { JwtAuthGuard } from '../auth/guards/auth.guard';
 import { CurrentUser } from '../shared/current-user.decorator';
 import { AiService } from './ai.service';
 import { AiFeaturesService } from './ai-features.service';
+import { NoProjectData, ProjectFrom, inBody } from '../projects/project-access';
 
 class GroupSummaryRequestDto {
   @ApiProperty()
@@ -82,6 +83,7 @@ export class AiController {
     private aiFeaturesService: AiFeaturesService
   ) {}
 
+  @NoProjectData()
   @Get('status')
   @ApiOkResponse({ description: 'Whether AI is configured, which model, and today’s usage' })
   @ApiBearerAuth()
@@ -90,6 +92,7 @@ export class AiController {
     return this.aiService.status();
   }
 
+  @ProjectFrom(inBody('buildId', 'build'))
   @Post('group-summary')
   @ApiOkResponse({ description: 'What changed in a change group and whether it looks intended' })
   @ApiBearerAuth()
@@ -98,6 +101,7 @@ export class AiController {
     return this.aiFeaturesService.summarizeGroup(body.buildId, body.groupId);
   }
 
+  @ProjectFrom(inBody('testRunId', 'testRun'))
   @Post('a11y-labels')
   @ApiOkResponse({ description: 'Proposed labels for the unlabeled controls of a test run' })
   @ApiBearerAuth()
@@ -106,6 +110,7 @@ export class AiController {
     return this.aiFeaturesService.suggestLabels(body.testRunId);
   }
 
+  @ProjectFrom(inBody('testRunId', 'testRun'))
   @Post('bug-draft')
   @ApiOkResponse({ description: 'A draft of a bug’s title essence, steps, actual and expected result (Gemini)' })
   @ApiBearerAuth()

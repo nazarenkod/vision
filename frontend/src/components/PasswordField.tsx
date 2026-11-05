@@ -3,17 +3,21 @@ import { IconButton, InputAdornment } from "@mui/material";
 import { Visibility, VisibilityOff } from "@mui/icons-material";
 import { TextValidator } from "react-material-ui-form-validator";
 import { useT } from "../i18n";
+import { MIN_PASSWORD_LENGTH } from "../_helpers/users.helper";
 
 interface PasswordFieldProps {
   password: string;
   setPassword: React.Dispatch<React.SetStateAction<string>>;
   label?: string;
+  // a password being set, not typed to sign in: 12 characters or more (045)
+  isNew?: boolean;
 }
 
 const PasswordField = ({
   password,
   setPassword,
   label,
+  isNew = false,
 }: PasswordFieldProps) => {
   const [showPassword, setShowPassword] = useState<boolean>(false);
 
@@ -30,8 +34,12 @@ const PasswordField = ({
 
   return (
     <TextValidator
-      validators={["minStringLength:2"]}
-      errorMessages={[errorForTwoChar]}
+      validators={[`minStringLength:${isNew ? MIN_PASSWORD_LENGTH : 2}`]}
+      errorMessages={[
+        isNew
+          ? t("validation.passwordLength", { count: MIN_PASSWORD_LENGTH })
+          : errorForTwoChar,
+      ]}
       id="password"
       name="password"
       value={password}

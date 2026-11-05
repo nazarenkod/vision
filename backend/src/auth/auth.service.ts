@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import uuidAPIKey from 'uuid-apikey';
+import { newRandomKey } from '../shared/random-key';
+import { apiKeyEnding, hashApiKey } from '../shared/api-key-hash';
 import { compare, genSalt, hash } from 'bcryptjs';
 import { JwtPayload } from './jwt-payload.model';
 import { User } from '@prisma/client';
@@ -14,8 +15,15 @@ export class AuthService {
     return hash(password, salt);
   }
 
-  generateApiKey(): string {
-    return uuidAPIKey.create({ noDashes: true }).apiKey;
+  /** A new key, and what is stored of it: its hash and its last characters (044). */
+  generateApiKey(): { key: string; stored: { apiKey: string; apiKeyEnding: string } } {
+    const key = newRandomKey();
+    return { key, stored: { apiKey: hashApiKey(key), apiKeyEnding: apiKeyEnding(key) } };
+  }
+
+  /** What a new account gets: the hash of a key nobody was shown; they make their own in the profile. */
+  unknownApiKey(): string {
+    return hashApiKey(newRandomKey());
   }
 
   async compare(password: string, hashedPassword: string): Promise<boolean> {

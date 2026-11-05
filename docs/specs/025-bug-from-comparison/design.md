@@ -24,7 +24,7 @@
   Так працюють журнал рішень і Undo ([ADR-0014](../../decisions/0014-undo-through-decision-journal.md)), а
   збій відхилення не скасовує бага (REQ-025-30, REQ-025-32).
 - **Назва фічі** — nullable-колонка прогону поза ключем варіації
-  ([ADR-0019](../../decisions/0019-sdk-upstream-plus-ui-tree-and-feature.md)); без неї —
+  ([ADR-0019](../../decisions/0019-sdk-base-plus-ui-tree-and-feature.md)); без неї —
   `functionalBlock(name)` з [005](../005-jira-bugs/design.md).
 - **AI — Gemini на особистому ключі** ([ADR-0020](../../decisions/0020-personal-gemini-keys.md)).
   Ключ лежить у `User.geminiApiKey`, API повертає лише `geminiKeySet`. `AiService.generateJson`
@@ -61,8 +61,8 @@
 
 | Компонент | Шлях | Роль |
 |---|---|---|
-| Опції й запит | `sdk-java/src/main/java/io/visual_regression_tracker/sdk_java/VisionOptions.java`, `sdk-java/src/main/java/io/visual_regression_tracker/sdk_java/request/TestRunRequest.java`, `sdk-java/src/main/java/io/visual_regression_tracker/sdk_java/Vision.java` | `featureName`; у JSON лише коли задано (Gson пропускає `null`, REQ-025-73) |
-| Збірка | `scripts/build-sdk-jar.sh`, `sdk-java/build.gradle`, `dist/sdk-java/` | версія `4.3.1-vision.2` |
+| Опції й запит | `sdk-java/src/main/java/ua/vision/sdk/VisionOptions.java`, `sdk-java/src/main/java/ua/vision/sdk/request/TestRunRequest.java`, `sdk-java/src/main/java/ua/vision/sdk/Vision.java` | `featureName`; у JSON лише коли задано (Gson пропускає `null`, REQ-025-73) |
+| Збірка | `scripts/build-sdk-jar.sh`, `sdk-java/build.gradle`, dist/sdk-java/ (збирає скрипт, не в git) | версія `4.3.1-vision.2` |
 
 ### Фронтенд
 
@@ -93,7 +93,7 @@ ALTER TABLE "TestRun" ADD COLUMN "featureName" TEXT;
 -- особистий ключ Gemini; лише записується (ADR-0020)
 ALTER TABLE "User" ADD COLUMN "geminiApiKey" TEXT;
 
--- нова таблиця без зовнішніх ключів: видалення прогонів і варіацій upstream-кодом її не чіпає
+-- нова таблиця без зовнішніх ключів: видалення прогонів і варіацій успадкованим кодом її не чіпає
 CREATE TABLE "VisualBug" (
   "id" TEXT PRIMARY KEY,
   "projectId" TEXT NOT NULL,
@@ -195,7 +195,7 @@ sequenceDiagram
 | REQ-025-48 | `backend/src/ai/ai.service.spec.ts › gives up on a bug draft after 30 seconds`; `backend/src/ai/ai.service.spec.ts › refuses a bug draft without the person’s own Gemini key`; `frontend/src/_helpers/bugReport.helper.test.ts › keeps the note and the person’s fields when the draft fails` |
 | REQ-025-60 | `backend/src/visual-bugs/visual-bugs.service.spec.ts › lists the check’s bugs on every device and build` |
 | REQ-025-61 | manual: відкрити знімок перевірки з багом на тому самому пристрої — пунктирна рамка з ключем на чекпоінті, «Bug marks» її ховає |
-| REQ-025-70 | `sdk-java/src/test/java/io/visual_regression_tracker/sdk_java/VisionTest.java › trackSendsFeature` |
+| REQ-025-70 | `sdk-java/src/test/java/ua/vision/sdk/VisionTest.java › trackSendsFeature` |
 | REQ-025-71 | `backend/src/visual-bugs/visual-bug.spec.ts › takes the feature from the check name before the first dot when none is sent` |
 | REQ-025-72 | `backend/src/test-variations/test-variations.service.spec.ts › compares with the same baseline whether a feature is sent or not` |
-| REQ-025-73 | `sdk-java/src/test/java/io/visual_regression_tracker/sdk_java/VisionTest.java › trackWithoutFeatureSendsTheSameRequest` |
+| REQ-025-73 | `sdk-java/src/test/java/ua/vision/sdk/VisionTest.java › trackWithoutFeatureSendsTheSameRequest` |

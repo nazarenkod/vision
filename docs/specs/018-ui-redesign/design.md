@@ -123,7 +123,7 @@
 ALTER TABLE "User" ADD COLUMN "lastSignInAt" TIMESTAMP(3);
 
 -- нова таблиця: журнал рішень для Undo; ні на що не посилається зовнішнім ключем,
--- тож видалення прогонів і варіацій upstream-кодом її не зачіпає
+-- тож видалення прогонів і варіацій успадкованим кодом її не зачіпає
 CREATE TABLE "ReviewDecision" (
   "id" TEXT PRIMARY KEY,
   "userId" TEXT,
@@ -150,7 +150,7 @@ sequenceDiagram
   participant J as Журнал
   UI->>API: POST /approve [ids]
   API->>J: знімок "до" (статус, baselineName, варіація гілки)
-  API->>API: upstream approve для кожного id
+  API->>API: успадкований approve для кожного id
   API->>J: знімок "після" → ReviewDecision
   API-->>UI: { decisionId }
   UI->>UI: сповіщення з Undo, 8 s
@@ -173,8 +173,8 @@ Undo на сервері дозволене до 30 s після рішення:
 
 | Ризик | Що робимо |
 |---|---|
-| Злиття з upstream VRT стануть важчими: редизайн зачіпає майже всі файли фронтенду | Ділимо на три шари з окремими комітами; логіку upstream (approve, фільтри, сервіси) не переписуємо, лише вигляд і обгортки |
-| Approve upstream почне змінювати ще щось, і Undo відновлюватиме не все | Тест відновлення порівнює повний стан до approve і після undo; новий ефект approve його зламає |
+| Злиття з вихідним проєктом стануть важчими: редизайн зачіпає майже всі файли фронтенду | Ділимо на три шари з окремими комітами; логіку вихідного проєкту (approve, фільтри, сервіси) не переписуємо, лише вигляд і обгортки |
+| Approve вихідного проєкту почне змінювати ще щось, і Undo відновлюватиме не все | Тест відновлення порівнює повний стан до approve і після undo; новий ефект approve його зламає |
 | Недостатній контраст у темній темі (пігулки, підписи DataGrid) | `theme.test.ts` перевіряє кожну текстову пару; DataGrid і react-joyride отримують стилі з тих самих змінних |
 | Konva-полотно не розуміє CSS-змінних | `useTokens()` дає справжні кольори; полотно перемальовується при зміні теми |
 | Скриншот-еталони Playwright зміняться всі | Генеруємо в Docker ([ADR-0011](../../decisions/0011-screenshot-baselines-in-docker.md)), кожен переглядаємо |
@@ -235,7 +235,7 @@ Undo на сервері дозволене до 30 s після рішення:
 | REQ-018-65 | `frontend/integration_tests/test/roles.spec.ts › account menu shows Users and Backups only to admins` |
 | REQ-018-66 | `frontend/integration_tests/test/errors.spec.ts › shows the reason and Try again when a page fails to load` |
 | REQ-018-67 | `frontend/integration_tests/test/guidedTour.spec.ts › should display all tour steps` |
-| REQ-018-68 | `frontend/integration_tests/test/profile.spec.ts › hides the API key until Show and copies it` |
+| REQ-018-68 | `frontend/integration_tests/test/profile.spec.ts › shows a new API key once and only its ending later` |
 | REQ-018-69 | `frontend/src/_helpers/backups.helper.test.ts › marks each of the last 14 days with or without a backup` |
 | REQ-018-70 | `frontend/src/_helpers/undo.helper.test.ts › offers Undo for 8 seconds` |
 | REQ-018-71 | `backend/src/test-runs/decision-undo.spec.ts › restores status and baseline as they were before approve` |

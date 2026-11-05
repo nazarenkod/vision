@@ -1,4 +1,4 @@
-import { IgnoreAreaDto } from 'src/test-runs/dto/ignore-area.dto';
+import { IgnoreAreaDto } from '../../test-runs/dto/ignore-area.dto';
 import { AreaRect } from './pixelmatch/pixelmatch.core';
 
 export interface ImageCompareInput {

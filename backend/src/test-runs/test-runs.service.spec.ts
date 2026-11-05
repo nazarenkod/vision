@@ -197,7 +197,7 @@ describe('TestRunsService', () => {
         status: TestStatus.failed,
       },
     });
-    expect(eventTestRunUpdatedMock).toBeCalledWith(testRun);
+    expect(eventTestRunUpdatedMock).toHaveBeenCalledWith(testRun);
   });
 
   it('setStatus compares nothing with a reference device', async () => {

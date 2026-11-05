@@ -1,5 +1,5 @@
-group 'io.visual-regression-tracker.sdk-java'
-version '4.3.1'
+group 'ua.vision'
+version '1.0.0'
 
 apply plugin: 'java'
 apply plugin: 'maven-publish'
@@ -56,13 +56,13 @@ check.dependsOn jacocoTestReport
 // Vision: publish this build to a Maven repository so tests can use it.
 //   gradle publishToMavenLocal                     -> ~/.m2, for one machine
 //   gradle publish -PrepoUrl=https://nexus/... -PrepoUser=... -PrepoPassword=...
-// Coordinates match upstream's JitPack artifact, so only the version changes in a pom.
+// Own coordinates and versions since 040 (ADR-0026): ua.vision:vision-sdk.
 publishing {
     publications {
         sdk(MavenPublication) {
-            groupId = findProperty('publishGroup') ?: 'com.github.Visual-Regression-Tracker'
-            artifactId = 'sdk-java'
-            version = findProperty('publishVersion') ?: "${project.version}-vision.4"
+            groupId = findProperty('publishGroup') ?: 'ua.vision'
+            artifactId = 'vision-sdk'
+            version = findProperty('publishVersion') ?: project.version
             from components.java
         }
     }

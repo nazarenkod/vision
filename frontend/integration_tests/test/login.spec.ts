@@ -54,3 +54,24 @@ test("an old sign-up link opens the start page once signed in", async ({
   await page.goto("/register");
   await expect(page).not.toHaveURL(/\/(register|login)$/);
 });
+
+test("offers SSO and the local sign-in together", async ({ page }) => {
+  await page.route("**/users/oidc/enabled", (route) =>
+    route.fulfill({ body: "true" }),
+  );
+  await page.goto("/login");
+
+  // corporate sign-in first, and a local account below it (045)
+  await expect(page.getByTestId("oidcLoginBtn")).toBeVisible();
+  await expect(page.getByText("Or with a local account:")).toBeVisible();
+  await page.getByTestId("email").fill("contractor@bank.test");
+  await page.getByTestId("password").fill("their-password");
+  const [request] = await Promise.all([
+    page.waitForRequest("**/users/login"),
+    page.getByTestId("loginBtn").click(),
+  ]);
+  expect(request.postDataJSON()).toEqual({
+    email: "contractor@bank.test",
+    password: "their-password",
+  });
+});

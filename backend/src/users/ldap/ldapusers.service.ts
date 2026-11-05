@@ -51,6 +51,11 @@ export class LdapUsersService implements Users {
     });
   }
 
+  /** Whether the directory has this person: then it decides their sign-in, not a local password (045). */
+  async isInDirectory(email: string): Promise<boolean> {
+    return !!(await this.findUserInLdap(email));
+  }
+
   private async findUserInLdap(email: string): Promise<LdapEntry> {
     //escape the email address for LDAP search
     email = this.escapeLdap(email.trim());
@@ -86,17 +91,17 @@ export class LdapUsersService implements Users {
   }
 
   private async createUserFromLdapEntry(ldapEntry: LdapEntry): Promise<User> {
-    const userForVRTDb = {
+    const userForDb = {
       email: ldapEntry[this.ldapConfig.attributeMail].toString().trim().toLowerCase(),
       firstName: ldapEntry[this.ldapConfig.attributeFirstName].toString(),
       lastName: ldapEntry[this.ldapConfig.attributeLastName].toString(),
-      apiKey: this.authService.generateApiKey(),
+      apiKey: this.authService.unknownApiKey(),
       password: await this.authService.encryptPassword(genSaltSync(1).slice(-12)),
       role: Role.editor,
     };
 
     return this.prismaService.user.create({
-      data: userForVRTDb,
+      data: userForDb,
     });
   }
 
@@ -147,10 +152,10 @@ export class LdapUsersService implements Users {
     });
 
     if (!user) {
-      // create user if not found in VRT database
+      // create user if not found in Vision database
       this.logger.log(
         `'${userLoginRequestDto.email}' (found in ldap as '${userEmailFromLdap}') successfully ` +
-          'authenticated via LDAP, but not found in VRT database. Creating user.'
+          'authenticated via LDAP, but not found in Vision database. Creating user.'
       );
       user = await this.createUserFromLdapEntry(userFromLdap);
     }

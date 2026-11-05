@@ -11,6 +11,7 @@ import { cropPng } from './image-crop';
 import { BugDraft, cropAreas, draftFields, draftPrompt, draftSchema } from '../visual-bugs/bug-draft';
 import { featureOf } from '../visual-bugs/visual-bug';
 import { Rect } from '../ui-tree/ui-tree.types';
+import { openSecret } from '../shared/secret-box';
 
 // a person waits in the dialog: past this, they fill the bug in themselves
 export const BUG_DRAFT_TIMEOUT_MS = 30_000;
@@ -190,7 +191,8 @@ export class AiFeaturesService {
     const user = userId
       ? await this.prismaService.user.findUnique({ where: { id: userId }, select: { geminiApiKey: true } })
       : null;
-    if (!user?.geminiApiKey) {
+    const geminiKey = openSecret(user?.geminiApiKey);
+    if (!geminiKey) {
       throw new BadRequestException('Add your Gemini API key in your profile to draft bugs with AI');
     }
     if (!request.note?.trim()) throw new BadRequestException('Say in a few words what is wrong');
@@ -220,7 +222,7 @@ export class AiFeaturesService {
         this.aiService.generateJson({
           kind: 'bug-draft',
           schema: draftSchema,
-          personalGeminiKey: user.geminiApiKey,
+          personalGeminiKey: geminiKey,
           images,
           cacheParts: { attempt: request.attempt ?? 1, changes, areas },
           prompt: draftPrompt({

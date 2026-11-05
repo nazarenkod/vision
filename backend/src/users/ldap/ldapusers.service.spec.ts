@@ -42,6 +42,7 @@ const user: User = {
   firstName: 'John',
   lastName: 'Doe',
   apiKey: 'generatedApiKey',
+  apiKeyEnding: null,
   password: 'encryptedPassword',
   isActive: true,
   jiraToken: null,
@@ -83,7 +84,8 @@ describe('LdapUsersService match from ldap', () => {
         {
           provide: AuthService,
           useValue: {
-            generateApiKey: jest.fn(() => 'generatedApiKey'),
+            generateApiKey: jest.fn(() => ({ key: 'newKey', stored: { apiKey: 'sha256:hash', apiKeyEnding: 'wKey' } })),
+            unknownApiKey: jest.fn(() => 'generatedApiKey'),
             encryptPassword: jest.fn(() => 'encryptedPassword'),
             signToken: jest.fn(() => 'token'),
           },
@@ -104,14 +106,14 @@ describe('LdapUsersService match from ldap', () => {
     jest.spyOn(prismaService.user, 'findUnique').mockResolvedValue(undefined);
     const prismaUserCreateMock = jest.spyOn(prismaService.user, 'create').mockResolvedValue(user);
     await service.login({ email: 'exists@example.com', password: 'password' });
-    expect(prismaUserCreateMock).toBeCalled();
+    expect(prismaUserCreateMock).toHaveBeenCalled();
   });
 
   it('should login with user already in db', async () => {
     jest.spyOn(prismaService.user, 'findUnique').mockResolvedValue(user);
     const prismaUserCreateMock = jest.spyOn(prismaService.user, 'create');
     await service.login({ email: 'exists@example.com', password: 'password' });
-    expect(prismaUserCreateMock).not.toBeCalled();
+    expect(prismaUserCreateMock).not.toHaveBeenCalled();
   });
 });
 
@@ -144,7 +146,8 @@ describe('LdapUsersService with no results from ldap', () => {
         {
           provide: AuthService,
           useValue: {
-            generateApiKey: jest.fn(() => 'generatedApiKey'),
+            generateApiKey: jest.fn(() => ({ key: 'newKey', stored: { apiKey: 'sha256:hash', apiKeyEnding: 'wKey' } })),
+            unknownApiKey: jest.fn(() => 'generatedApiKey'),
             encryptPassword: jest.fn(() => 'encryptedPassword'),
           },
         },
@@ -164,8 +167,8 @@ describe('LdapUsersService with no results from ldap', () => {
     const prismaUserCreateMock = jest.spyOn(prismaService.user, 'create');
     const prismaUserUpdateMock = jest.spyOn(prismaService.user, 'update');
     const result = await service.changePassword(user, 'newPassword');
-    expect(prismaUserCreateMock).not.toBeCalled();
-    expect(prismaUserUpdateMock).not.toBeCalled();
+    expect(prismaUserCreateMock).not.toHaveBeenCalled();
+    expect(prismaUserUpdateMock).not.toHaveBeenCalled();
     expect(result).toBe(true);
   });
 

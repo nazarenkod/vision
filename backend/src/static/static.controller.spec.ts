@@ -1,21 +1,20 @@
-import { Test, TestingModule } from '@nestjs/testing';
 import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { Response } from 'express';
 import { StaticController } from './static.controller';
-import { StaticService } from './static.service';
+import { serverFileLinkKey, signFile, signReportFile } from './file-links';
 
-const initController = async (getImageBufferMock = jest.fn(), getImageUrlMock = jest.fn()) => {
-  const module: TestingModule = await Test.createTestingModule({
-    controllers: [StaticController],
-    providers: [
-      {
-        provide: StaticService,
-        useValue: { getImageBuffer: getImageBufferMock, getImageUrl: getImageUrlMock },
-      },
-    ],
-  }).compile();
+const NAME = 'image.png';
+const key = serverFileLinkKey();
+const signed = (name = NAME) => signFile(name, key);
 
-  return module.get<StaticController>(StaticController);
+const initController = ({
+  getImageBuffer = jest.fn().mockResolvedValue(Buffer.from([1, 2, 3])),
+  getImageUrl = jest.fn().mockResolvedValue(`/${NAME}`),
+  reportLink = null as { revokedAt: Date | null } | null,
+} = {}) => {
+  const staticService = { getImageBuffer, getImageUrl };
+  const prisma = { reportLink: { findUnique: jest.fn().mockResolvedValue(reportLink) } };
+  return { controller: new StaticController(staticService as never, prisma as never), getImageBuffer, prisma };
 };
 
 const responseMock = () => {
@@ -23,66 +22,110 @@ const responseMock = () => {
   return res as unknown as Response & { set: jest.Mock; send: jest.Mock; redirect: jest.Mock };
 };
 
-describe('download', () => {
-  it('answers with the image bytes', async () => {
-    const imageBuffer = Buffer.from([1, 2, 3]);
-    const getImageBufferMock = jest.fn().mockResolvedValueOnce(imageBuffer);
-    const controller = await initController(getImageBufferMock);
+const headersOf = (res: { set: jest.Mock }) =>
+  Object.assign(
+    {},
+    ...res.set.mock.calls.map(([name, value]) => (typeof name === 'string' ? { [name]: value } : name))
+  );
+
+describe('images', () => {
+  it('shows the bytes of a signed image', async () => {
+    const { controller, getImageBuffer } = initController();
     const res = responseMock();
 
-    await controller.download('image.png', res);
+    await controller.show(NAME, signed(), res);
 
-    expect(getImageBufferMock).toHaveBeenCalledWith('image.png');
-    expect(res.set).toHaveBeenCalledWith({
-      'Content-Type': 'image/png',
-      'Content-Disposition': 'attachment; filename="image.png"',
-    });
-    expect(res.send).toHaveBeenCalledWith(imageBuffer);
+    expect(getImageBuffer).toHaveBeenCalledWith(NAME);
+    expect(res.send).toHaveBeenCalledWith(Buffer.from([1, 2, 3]));
+    expect(headersOf(res)['Content-Type']).toBe('image/png');
   });
 
-  it('answers 404 for an image that is not there', async () => {
-    const getImageBufferMock = jest.fn().mockResolvedValueOnce(null);
-    const controller = await initController(getImageBufferMock);
+  it('answers not found without a valid signature', async () => {
+    const { controller, getImageBuffer } = initController();
 
-    await expect(controller.download('missing.png', responseMock())).rejects.toThrow(NotFoundException);
+    for (const sig of [undefined, '', 'x', signed('other.png'), signReportFile('token', NAME, key)]) {
+      await expect(controller.show(NAME, sig, responseMock())).rejects.toThrow(NotFoundException);
+      await expect(controller.download(NAME, sig, responseMock())).rejects.toThrow(NotFoundException);
+    }
+    // a tree or a report file is never served here, signed or not
+    await expect(controller.show('tree.json.gz', signed('tree.json.gz'), responseMock())).rejects.toThrow(
+      NotFoundException
+    );
+    expect(getImageBuffer).not.toHaveBeenCalled();
+  });
+
+  it("lets only the person's browser keep a file and only Vision read it", async () => {
+    process.env.APP_FRONTEND_URL = 'https://vision.bank.test/some/path';
+    const { controller } = initController();
+    const shown = responseMock();
+    const downloaded = responseMock();
+
+    await controller.show(NAME, signed(), shown);
+    await controller.download(NAME, signed(), downloaded);
+
+    for (const res of [shown, downloaded]) {
+      expect(headersOf(res)['Cache-Control']).toBe('private, max-age=31536000, immutable');
+      expect(headersOf(res)['Access-Control-Allow-Origin']).toBe('https://vision.bank.test');
+    }
+  });
+
+  it('opens a report image while its link is valid only', async () => {
+    const live = initController({ reportLink: { revokedAt: null } });
+    await live.controller.show(NAME, signReportFile('token', NAME, key), responseMock());
+    expect(live.prisma.reportLink.findUnique).toHaveBeenCalledWith({
+      where: { token: 'token' },
+      select: { revokedAt: true },
+    });
+
+    for (const reportLink of [{ revokedAt: new Date() }, null]) {
+      const { controller } = initController({ reportLink });
+      await expect(controller.show(NAME, signReportFile('token', NAME, key), responseMock())).rejects.toThrow(
+        NotFoundException
+      );
+    }
+  });
+
+  it('answers 404 for a signed image that is not there', async () => {
+    const { controller } = initController({ getImageBuffer: jest.fn().mockResolvedValue(null) });
+
+    await expect(controller.download(NAME, signed(), responseMock())).rejects.toThrow(NotFoundException);
+    await expect(controller.show(NAME, signed(), responseMock())).rejects.toThrow(NotFoundException);
+  });
+
+  it('downloads the bytes as an attachment', async () => {
+    const { controller } = initController();
+    const res = responseMock();
+
+    await controller.download(NAME, signed(), res);
+
+    expect(headersOf(res)['Content-Disposition']).toBe(`attachment; filename="${NAME}"`);
+    expect(res.send).toHaveBeenCalledWith(Buffer.from([1, 2, 3]));
   });
 
   // a name carrying a path could otherwise read any file the process can see
   it.each(['../../etc/passwd', '..', '.', '', 'nested/image.png', '/etc/passwd'])(
     'rejects %p without touching storage',
     async (fileName) => {
-      const getImageBufferMock = jest.fn();
-      const controller = await initController(getImageBufferMock);
+      const { controller, getImageBuffer } = initController();
 
-      await expect(controller.download(fileName, responseMock())).rejects.toThrow(BadRequestException);
-      expect(getImageBufferMock).not.toHaveBeenCalled();
+      await expect(controller.download(fileName, signed(fileName), responseMock())).rejects.toThrow(
+        BadRequestException
+      );
+      await expect(controller.show(fileName, signed(fileName), responseMock())).rejects.toThrow(BadRequestException);
+      expect(getImageBuffer).not.toHaveBeenCalled();
     }
   );
-});
 
-describe('getUrlAndRedirect', () => {
-  // Without this the browser asks the API for a location on every single view.
-  // Storage then hands back a freshly signed, and therefore different, URL, and
-  // the image it already holds is dead weight — every view a fresh download.
-  it('lets the browser reuse the redirect it was given', async () => {
-    const getImageUrlMock = jest.fn().mockResolvedValueOnce('https://storage/image.png');
-    const controller = await initController(jest.fn(), getImageUrlMock);
+  // storage that signs its own URLs: the browser reuses the redirect, never past the URL's life
+  it('redirects to a storage URL and reuses it for less than its life', async () => {
+    const { controller } = initController({ getImageUrl: jest.fn().mockResolvedValue('https://storage/image.png') });
     const res = responseMock();
 
-    await controller.getUrlAndRedirect('image.png', res);
+    await controller.show(NAME, signed(), res);
 
-    expect(res.set).toHaveBeenCalledWith('Cache-Control', expect.stringContaining('max-age='));
     expect(res.redirect).toHaveBeenCalledWith('https://storage/image.png');
-  });
-
-  // the redirect may not outlive the URL it points at
-  it('stops reusing the redirect before the signed URL can expire', async () => {
-    const controller = await initController(jest.fn(), jest.fn().mockResolvedValueOnce('https://storage/image.png'));
-    const res = responseMock();
-
-    await controller.getUrlAndRedirect('image.png', res);
-
-    const [, value] = res.set.mock.calls.find(([header]) => header === 'Cache-Control');
-    expect(Number(/max-age=(\d+)/.exec(value)[1])).toBeLessThan(3600);
+    const cache = headersOf(res)['Cache-Control'];
+    expect(cache).toMatch(/^private, /);
+    expect(Number(/max-age=(\d+)/.exec(cache)[1])).toBeLessThan(3600);
   });
 });

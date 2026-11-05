@@ -1,4 +1,4 @@
-# Vision (the company fork of VRT), meant to run next to an existing VRT on the same host.
+# Vision, meant to run next to the production VRT it copies from, on the same host.
 # Everything is built from the folders of this repo and kept apart from the existing
 # instance: own compose project, own ports, own Postgres volume, own image folder.
 #
@@ -10,28 +10,48 @@
 #   ./scripts/vision.sh up -d --build
 #
 # CPU and memory are capped so Vision cannot starve production on a shared host.
+#
+# Behind a network that re-signs TLS (a proxy) or without the public registries, set in .env.demo:
+#   VISION_EXTRA_CA_FILE   the proxy's CA (PEM): trusted by the builds and by the API (Jira, Gemini)
+#   VISION_NPM_REGISTRY    a mirror of registry.npmjs.org
+#   VISION_PRISMA_ENGINES_MIRROR   a mirror of binaries.prisma.sh (the migration engine)
 name: vision
+
+x-build-args: &build-args
+  NPM_REGISTRY: ${VISION_NPM_REGISTRY:-}
+  PRISMA_ENGINES_MIRROR: ${VISION_PRISMA_ENGINES_MIRROR:-}
 
 services:
   ui:
-    build: ./frontend
+    build:
+      context: ./frontend
+      args: *build-args
+      secrets: [extra_ca]
     ports:
       - "${DEMO_UI_PORT:-18080}:8080"
-    volumes:
-      - ./demo-data/imageUploads:/usr/share/nginx/html/static/imageUploads
+    # no images in the UI container: the API serves them, only with a signature (043)
     environment:
       REACT_APP_API_URL: ${DEMO_API_URL:-http://localhost:14200}
-      VRT_VERSION: demo
+      VISION_VERSION: demo
       PORT: ${DEMO_UI_PORT:-18080}
     cpus: ${DEMO_UI_CPUS:-0.5}
     mem_limit: ${DEMO_UI_MEMORY:-256m}
     restart: unless-stopped
 
   api:
-    build: ./backend
+    build:
+      context: ./backend
+      args: *build-args
+      secrets: [extra_ca]
+    # not root: the images and backup files it writes belong to whoever runs Vision (vision.sh sets these)
+    user: "${VISION_UID:-1000}:${VISION_GID:-1000}"
     environment:
-      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-vrt_demo}
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-vision}
       JWT_SECRET: ${JWT_SECRET:?set JWT_SECRET in .env.demo}
+      # seals Jira tokens and Gemini keys in the database (044): keep it, a new one makes people enter them again
+      VISION_SECRET_KEY: ${VISION_SECRET_KEY:?set VISION_SECRET_KEY in .env.demo}
+      # Jira hosts a token may go to, comma-separated (044); empty: Vision calls no Jira
+      VISION_JIRA_HOSTS: ${VISION_JIRA_HOSTS:-}
       JWT_LIFE_TIME: ${JWT_LIFE_TIME:-1d}
       APP_FRONTEND_URL: ${DEMO_UI_URL:-http://localhost:18080}
       BODY_PARSER_JSON_LIMIT: ${BODY_PARSER_JSON_LIMIT:-20mb}
@@ -45,14 +65,41 @@ services:
       AI_DAILY_CALL_LIMIT: ${AI_DAILY_CALL_LIMIT:-500}
       # image comparisons run in this many worker threads
       DIFF_WORKERS_COUNT: ${DEMO_DIFF_WORKERS:-2}
+      # corporate sign-in beside local accounts (045): every setting, with the API's own defaults
       OIDC_ENABLED: ${OIDC_ENABLED:-false}
+      OIDC_ISSUER_URL: ${OIDC_ISSUER_URL:-}
+      OIDC_CLIENT_ID: ${OIDC_CLIENT_ID:-}
+      OIDC_CLIENT_SECRET: ${OIDC_CLIENT_SECRET:-}
+      OIDC_REDIRECT_URI: ${OIDC_REDIRECT_URI:-${DEMO_API_URL:-http://localhost:14200}/users/oidc/callback}
+      OIDC_SCOPES: ${OIDC_SCOPES:-openid profile email}
+      OIDC_ATTRIBUTE_MAIL: ${OIDC_ATTRIBUTE_MAIL:-email}
+      OIDC_ATTRIBUTE_FIRST_NAME: ${OIDC_ATTRIBUTE_FIRST_NAME:-given_name}
+      OIDC_ATTRIBUTE_LAST_NAME: ${OIDC_ATTRIBUTE_LAST_NAME:-family_name}
+      OIDC_ROLE_CLAIM: ${OIDC_ROLE_CLAIM:-groups}
+      OIDC_ADMIN_VALUES: ${OIDC_ADMIN_VALUES:-vision-admin,admin}
+      OIDC_DEFAULT_ROLE: ${OIDC_DEFAULT_ROLE:-editor}
+      OIDC_REQUIRE_VERIFIED_EMAIL: ${OIDC_REQUIRE_VERIFIED_EMAIL:-true}
+      OIDC_TLS_NO_VERIFY: ${OIDC_TLS_NO_VERIFY:-false}
       LDAP_ENABLED: ${LDAP_ENABLED:-false}
+      LDAP_URL: ${LDAP_URL:-}
+      LDAP_BIND_USER: ${LDAP_BIND_USER:-}
+      LDAP_BIND_PASSWORD: ${LDAP_BIND_PASSWORD:-}
+      LDAP_SEARCH_DN: ${LDAP_SEARCH_DN:-}
+      LDAP_USERS_SEARCH_FILTER: ${LDAP_USERS_SEARCH_FILTER:-}
+      LDAP_ATTRIBUTE_MAIL: ${LDAP_ATTRIBUTE_MAIL:-mail}
+      LDAP_ATTRIBUTE_FIRST_NAME: ${LDAP_ATTRIBUTE_FIRST_NAME:-givenName}
+      LDAP_ATTRIBUTE_LAST_NAME: ${LDAP_ATTRIBUTE_LAST_NAME:-sn}
+      LDAP_TLS_NO_VERIFY: ${LDAP_TLS_NO_VERIFY:-false}
+      # the API documentation at /api, off unless asked for (045)
+      VISION_SWAGGER: ${VISION_SWAGGER:-false}
       # backups (ADR-0013): the API writes the Backups page settings for scripts/vision-backup.sh
       # and reads its status; admins are warned only once backups are set up
       BACKUP_STATUS_FILE: /backup-status/status.json
       BACKUP_CONFIG_DIR: /backup-config
       BACKUP_REMOTE_CONFIGURED: ${BACKUP_REMOTE:+true}
       BACKUP_FILES_OWNER: ${VISION_UID:-}:${VISION_GID:-}
+      # calls out (Jira, Gemini) trust the proxy's CA too, when there is one
+      NODE_EXTRA_CA_CERTS: ${VISION_EXTRA_CA_FILE:+/certs/extra-ca.pem}
     cpus: ${DEMO_API_CPUS:-2}
     mem_limit: ${DEMO_API_MEMORY:-3g}
     ports:
@@ -63,6 +110,7 @@ services:
       - ./demo-data/imageUploads:/imageUploads
       - ./demo-data/backup-status:/backup-status:ro
       - ./demo-data/backup-config:/backup-config
+      - ${VISION_EXTRA_CA_FILE:-./scripts/lib/no-extra-ca.pem}:/certs/extra-ca.pem:ro
     depends_on:
       postgres:
         condition: service_healthy
@@ -71,27 +119,29 @@ services:
     restart: unless-stopped
 
   migration:
-    build: ./backend/prisma
+    build:
+      context: ./backend/prisma
+      args: *build-args
+      secrets: [extra_ca]
     environment:
-      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-vrt_demo}
-      DEFAULT_USER_EMAIL: ${DEFAULT_USER_EMAIL:-visual-regression-tracker@example.com}
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-vision}
+      DEFAULT_USER_EMAIL: ${DEFAULT_USER_EMAIL:-admin@vision.local}
       DEFAULT_USER_PASSWORD: ${DEFAULT_USER_PASSWORD:-123456}
-      DEFAULT_USER_API_KEY: ${DEFAULT_USER_API_KEY:-DEFAULTUSERAPIKEYTOBECHANGED}
+      DEFAULT_USER_API_KEY: ${DEFAULT_USER_API_KEY:-}
     depends_on:
       postgres:
         condition: service_healthy
     restart: "no"
 
   postgres:
-    image: postgres:16-alpine
+    image: postgres:16-alpine@sha256:0cefaabd882e42bcb2a2f3dc56d3ce4770560ba62fd7f197f1a2e008fd5731ab
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
-      POSTGRES_DB: ${POSTGRES_DB:-vrt_demo}
+      POSTGRES_DB: ${POSTGRES_DB:-vision}
     cpus: ${DEMO_POSTGRES_CPUS:-1}
     mem_limit: ${DEMO_POSTGRES_MEMORY:-1g}
-    ports:
-      - "127.0.0.1:${DEMO_POSTGRES_PORT:-15432}:5432"
+    # no port on the host: scripts reach it with docker exec
     volumes:
       - ./demo-data/db:/var/lib/postgresql/data
     healthcheck:
@@ -100,3 +150,8 @@ services:
       timeout: 60s
       retries: 20
     restart: unless-stopped
+
+secrets:
+  # empty unless VISION_EXTRA_CA_FILE names the proxy's CA
+  extra_ca:
+    file: ${VISION_EXTRA_CA_FILE:-./scripts/lib/no-extra-ca.pem}

@@ -84,8 +84,8 @@ const Header: FunctionComponent = () => {
     window.open(BRAND.supportUrl, "_blank", "noopener");
   };
 
-  const getVRTVersion = (): string => {
-    return window._env_.VRT_VERSION;
+  const getVersion = (): string => {
+    return window._env_.VISION_VERSION;
   };
 
   const renderHelpMenu = (
@@ -124,7 +124,7 @@ const Header: FunctionComponent = () => {
         variant="caption"
         sx={{ px: 1.25, py: 0.5, color: tokens.textMuted }}
       >
-        {BRAND.name} {getVRTVersion()}
+        {BRAND.name} {getVersion()}
       </Typography>
     </Menu>
   );

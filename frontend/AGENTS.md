@@ -21,7 +21,7 @@
 | `src/_helpers/reviewQueue.helper.ts` | черги рев'ю: ключ у адресі (`queue`), порядок, пропуск вирішених, наступна черга; у порівнянні — `QueueHeader`, `QueueDone` |
 | `src/components/BuildReport/`, `src/pages/ReportPage.tsx` | діалог звіту, `ReportDocument` (один для діалогу, друку й публічної сторінки); `/r/:token` без входу, `/report/:buildId` для друку |
 | `src/pages/InsightsPage.tsx` | Insights |
-| `src/services/*.service.ts` | виклики API: `fetch` + `authHeader()` + `handleResponse` |
+| `src/services/*.service.ts` | виклики API: `fetch` + `authHeader()` + `handleResponse` (він же запам'ятовує `fileSignatures` знімків, `_helpers/fileSignatures.ts`; адресу знімка дає лише `staticService.getImage`, [043](../docs/specs/043-protected-images/spec.md)) |
 | `src/types/` | типи; `insights.ts` дзеркалить відповіді бекенду для Vision-фіч |
 | `public/cli/vision.py` | CLI і MCP (віддається UI за `/cli/vision.py`) |
 | `integration_tests/` | Playwright: сторінки, моки API, скриншот-еталони |

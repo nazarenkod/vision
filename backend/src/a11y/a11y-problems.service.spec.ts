@@ -1,3 +1,4 @@
+import { sealSecret } from '../shared/secret-box';
 import { A11yIssuesService } from './a11y-issues.service';
 import { facetsOf } from './a11y-problems';
 import { parseUiTreeSettings } from '../ui-tree/comparison-inputs';
@@ -65,9 +66,9 @@ function setup(jira: (url: string, init: RequestInit) => Response) {
     user: {
       findUnique: jest.fn(async ({ where }) =>
         where.id === 'with-token'
-          ? { id: 'with-token', jiraToken: 'mine', jiraEmail: null }
+          ? { id: 'with-token', jiraToken: sealSecret('mine'), jiraEmail: null }
           : where.id === 'reviewer'
-            ? { id: 'reviewer', jiraToken: 't', jiraEmail: null }
+            ? { id: 'reviewer', jiraToken: sealSecret('t'), jiraEmail: null }
             : { id: where.id }
       ),
     },

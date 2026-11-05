@@ -1,0 +1,19 @@
+package ua.vision.sdk;
+
+import ua.vision.sdk.response.TestRunResponse;
+import lombok.Getter;
+
+@Getter
+public class VisionResult {
+  private final TestRunResponse testRunResponse;
+  private final String imageUrl;
+  private final String diffUrl;
+  private final String baselineUrl;
+
+  public VisionResult(TestRunResponse testRunResponse, PathProvider pathProvider) {
+    this.testRunResponse = testRunResponse;
+    this.imageUrl = pathProvider.getImageUrl(testRunResponse.getImageName());
+    this.diffUrl = pathProvider.getImageUrl(testRunResponse.getDiffName());
+    this.baselineUrl = pathProvider.getImageUrl(testRunResponse.getBaselineName());
+  }
+}

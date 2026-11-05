@@ -50,6 +50,8 @@ export const en = {
   "projectList.editOf": "Edit {name}",
   "projectList.deleteOf": "Delete {name}",
   "projectList.noMatch": 'No projects match "{search}"',
+  "projectList.noAccess":
+    "No projects for you yet: ask an admin of Vision to add you to one",
   "projectList.empty": "No projects yet",
   "projectList.createTitle": "New project",
   "projectList.create": "Create project",
@@ -106,6 +108,7 @@ export const en = {
   "section.mobile": "Mobile screens",
   "section.a11y": "Accessibility",
   "section.jira": "Jira",
+  "section.access": "Access",
   "section.danger": "Danger zone",
   "section.devices": "Devices",
   "section.devicesIntro":
@@ -115,6 +118,15 @@ export const en = {
   "section.mobileIntro": "Applies to screens sent with an Appium page source.",
   "section.a11yIntro":
     "What Vision checks on every screen sent with a UI tree, by your team's norms.",
+  "section.accessIntro":
+    "Who sees and works in this project. Admins reach every project and are not listed.",
+  "access.pick": "Person",
+  "access.add": "Give access",
+  "access.remove": "Take access away",
+  "access.removeOf": "Take access away from {name}",
+  "access.none": "Nobody yet: only admins see this project.",
+  "access.added": "{name} now has access",
+  "access.removed": "{name} no longer has access",
   "section.jiraIntro":
     "Lets reviewers file bugs from the review screen. Each person adds their own Jira token in their profile, so bugs are filed as them, with their rights.",
 
@@ -159,7 +171,7 @@ export const en = {
   "comparison.ignoreAntialiasing": "Ignore anti-aliasing",
   "comparison.ignoreAntialiasingHelp":
     "Ignore detecting and ignoring anti-aliased pixels.",
-  // upstream's spelling, kept so English reads as before
+  // the original spelling, kept so English reads as before
   "comparison.ignoreAntialiasingLooksSame": "Ignore anti-alliasing",
   "comparison.threshold": "Pixel diff threshold",
   "comparison.thresholdHelp":
@@ -263,6 +275,7 @@ export const en = {
   "secret.undo": "Undo",
   "secret.keepSaved": "Leave empty to keep the saved one",
 
+  "validation.passwordLength": "Use at least {count} characters.",
   "validation.twoCharacters": "Enter at least two characters.",
   "validation.greaterThan": "Enter greater than {min}",
   "validation.lessThan": "Enter less than {max}",
@@ -830,14 +843,17 @@ export const en = {
   "profile.configFile": "Config file",
   "profile.env": "ENV variables",
   "profile.configHelp":
-    "Save as vrt.json in project root. Could be overridden with ENV variables",
+    "Save as vision.json in project root. Could be overridden with ENV variables",
   "profile.envHelp": "Add Environment variables inside CI environment",
   "profile.apiKey": "Api key",
   "profile.apiKeyHelp": "For the SDK, the CLI and the MCP server.",
-  "profile.hide": "Hide",
-  "profile.show": "Show",
-  "profile.hideKey": "Hide API key",
-  "profile.showKey": "Show API key",
+  "profile.newApiKey": "New API key",
+  "profile.noApiKey":
+    "No key yet: make one for the SDK, the CLI and the MCP server",
+  "profile.newKeyOnce":
+    "Copy it now: Vision shows the key only once. The previous key no longer works.",
+  "profile.newKeyConfirm":
+    "The current key stops working in the SDK, the CLI and the MCP server that use it. Make a new one?",
   "profile.copied": "Copied",
   "profile.copy": "Copy",
   "profile.copyKey": "Copy API key",
@@ -890,6 +906,8 @@ export const en = {
   "users.firstName": "First name",
   "users.lastName": "Last name",
   "users.lastSignIn": "Last sign-in",
+  "users.projects": "Projects",
+  "users.allProjects": "All, as an admin",
   "users.role": "Role",
   "users.updated": "Updated",
   "users.setPasswordHelp":
@@ -958,6 +976,7 @@ export const en = {
   "backups.open": "Open Backups",
 
   // auth
+  "auth.orLocal": "Or with a local account:",
   "auth.sso": "Sign in with SSO",
   "auth.validEmail": "Enter a valid email.",
   "auth.email": "Email address",
@@ -974,8 +993,7 @@ export const en = {
   "tour.last": "Last",
   "tour.next": "Next",
   "tour.skip": "Skip",
-  "tour.loginAdmin":
-    "Default admin account: visual-regression-tracker@example.com / 123456. Make sure to change default password.",
+  "tour.loginAdmin": "Sign in with the email and password an admin gave you.",
   "tour.loginNoAccount":
     "No account? Nobody signs up here: an admin creates accounts in Users.",
   "tour.projectListTitle": "Project List",

@@ -28,7 +28,7 @@ const prisma = {
   user: {
     findUnique: jest.fn(async ({ where }) => {
       if (where.email) return users.has(where.email) ? { id: users.get(where.email) } : null;
-      return [...users.values()].includes(where.id) ? { id: where.id } : null;
+      return [...users.values()].includes(where.id) ? { id: where.id, role: 'editor' } : null;
     }),
   },
   project: {
@@ -40,7 +40,17 @@ const prisma = {
     ),
   },
   testRun: { groupBy: jest.fn(async () => []) },
+  // who was given which project (042); every pair unless a test takes one away
+  projectAccess: {
+    findUnique: jest.fn(async ({ where }) =>
+      granted.has(`${where.userId_projectId.userId}:${where.userId_projectId.projectId}`)
+        ? { projectId: where.userId_projectId.projectId }
+        : null
+    ),
+  },
 };
+const everyPair = () => [...users.values()].flatMap((user) => [...projects].map((project) => `${user}:${project}`));
+let granted = new Set(everyPair());
 
 const tokenFor = (email: string) => signer.sign({ email }, { expiresIn: '1h' });
 const testRun = (id: string, buildId: string, projectId: string | null) =>
@@ -188,6 +198,25 @@ describe('EventsGateway', () => {
     expect(await fromB).toMatchObject({ id: 'build-b' });
     await settle();
     expect(received.build_created).toEqual([expect.objectContaining({ id: 'build-b' })]);
+  });
+
+  it('subscribes only to a project the person has access to and leaves it when access goes', async () => {
+    granted = new Set(everyPair().filter((pair) => pair !== 'user-guest:project-b'));
+    try {
+      const guest = await connectAs('guest@example.com');
+      expect(await subscribe(guest, 'project-b')).toEqual({ ok: false });
+      expect(await subscribe(guest, 'project-a')).toEqual({ ok: true });
+      const received = record(guest);
+
+      // access to A is taken away while the page is open: its events stop now
+      gateway.leaveProject('user-guest', 'project-a');
+      await settle();
+      gateway.buildCreated({ id: 'build-a', projectId: 'project-a' } as BuildDto);
+      await settle();
+      expect(received).toEqual({});
+    } finally {
+      granted = new Set(everyPair());
+    }
   });
 
   it('refuses a subscription to a project that does not exist', async () => {

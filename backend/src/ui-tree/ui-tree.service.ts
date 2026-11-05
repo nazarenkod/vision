@@ -6,6 +6,7 @@ import { buildReport, findViolations } from '../a11y/a11y.rules';
 import { screenTitle } from '../a11y/a11y-problems';
 import { A11yReport, RgbaImage } from '../a11y/a11y.types';
 import { describeNode, ownSpeakableText, parseUiTree } from './ui-tree.parser';
+import { readUiTreeXml } from './ui-tree.intake';
 import { Rect, UiNode, UiTree, UiTreeFormat } from './ui-tree.types';
 import { diffTrees, elementsUnderRegions, RegionElement, StructuralChange } from './structure-diff';
 import { findNoiseHints, NoiseHint } from './noise-hints';
@@ -28,8 +29,6 @@ import {
   UiTreeSettings,
   VariableCheck,
 } from './comparison-inputs';
-
-const GZIP_MAGIC = [0x1f, 0x8b];
 
 // Trees never change once stored, so recently read ones are kept.
 const TREE_CACHE_SIZE = 300;
@@ -260,15 +259,20 @@ export class UiTreeService {
   async store(
     uiTreeBase64: string,
     options: { format?: UiTreeFormat; densityDpi?: number; activity?: string },
-    imageBuffer: Buffer
+    imageBuffer: Buffer,
+    // which check it came with, for the log when the tree is left out
+    check: { name?: string; projectId?: string } = {}
   ): Promise<{ name: string; tree: UiTree } | null> {
     try {
-      let bytes = Buffer.from(uiTreeBase64, 'base64');
-      if (bytes[0] === GZIP_MAGIC[0] && bytes[1] === GZIP_MAGIC[1]) {
-        bytes = gunzipSync(bytes);
+      const intake = readUiTreeXml(uiTreeBase64);
+      if ('left' in intake) {
+        this.logger.warn(
+          `UI tree of "${check.name ?? '?'}" in project ${check.projectId ?? '?'} left out (${intake.left}): ${intake.detail}`
+        );
+        return null;
       }
       const { width, height } = pngSize(imageBuffer);
-      const tree = parseUiTree(bytes.toString('utf8'), {
+      const tree = parseUiTree(intake.xml, {
         format: options.format,
         densityDpi: options.densityDpi,
         activity: options.activity,

@@ -48,7 +48,7 @@ describe('ProjectsService', () => {
       const projectFindUniqueMock = jest.fn().mockResolvedValueOnce(undefined);
       service = await initService({ projectFindUniqueMock });
 
-      await expect(service.findOne('foo')).rejects.toThrowError(
+      await expect(service.findOne('foo')).rejects.toThrow(
         new HttpException('Project not found', HttpStatus.NOT_FOUND)
       );
     });
@@ -81,6 +81,19 @@ describe('ProjectsService', () => {
 
       expect(projectFindUniqueMock).not.toHaveBeenCalled();
       expect(projectUpdateMock.mock.calls[0][0].data.uiTreeSettings).toBeUndefined();
+    });
+
+    it('refuses to save a Jira address on a host the server does not allow', async () => {
+      const projectUpdateMock = jest.fn().mockResolvedValue({});
+      service = await initService({ projectUpdateMock });
+
+      await expect(
+        service.update({ id: 'p1', name: 'Mobile', jiraUrl: 'https://jira.attacker.example' } as never)
+      ).rejects.toThrow('Jira at https://jira.attacker.example is not allowed');
+      expect(projectUpdateMock).not.toHaveBeenCalled();
+      // clearing the address needs no allowed host
+      await service.update({ id: 'p1', name: 'Mobile', jiraUrl: '' } as never);
+      expect(projectUpdateMock.mock.calls[0][0].data.jiraUrl).toBeNull();
     });
 
     it('ignores a shared Jira token or email that an older client still sends', async () => {

@@ -1,3 +1,4 @@
+import { ProjectAccessService } from '../projects/project-access.service';
 import { INestApplication } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { PATH_METADATA } from '@nestjs/common/constants';
@@ -28,6 +29,7 @@ describe('TestRuns Controller', () => {
         { provide: DecisionUndoService, useValue: {} },
         { provide: ApiGuard, useValue: {} },
         { provide: JwtAuthGuard, useValue: {} },
+        { provide: ProjectAccessService, useValue: {} },
       ],
     }).compile();
 

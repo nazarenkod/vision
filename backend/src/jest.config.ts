@@ -9,5 +9,6 @@ module.exports = async () => {
     },
     coverageDirectory: '../coverage',
     testEnvironment: 'node',
+    setupFiles: ['<rootDir>/jest.setup.ts'],
   };
 };

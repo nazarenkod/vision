@@ -1,13 +1,13 @@
 import { User } from '@prisma/client';
 import axios from 'axios'
-import { UserLoginRequestDto } from 'src/users/dto/user-login-request.dto';
-import { UserLoginResponseDto } from 'src/users/dto/user-login-response.dto';
-import uuidAPIKey from 'uuid-apikey';
+import { UserLoginRequestDto } from '../src/users/dto/user-login-request.dto';
+import { UserLoginResponseDto } from '../src/users/dto/user-login-response.dto';
+import { randomUUID } from 'crypto';
 
 axios.defaults.baseURL = 'http://localhost:4200';
 
 let user: Partial<User> = {
-    email: `${uuidAPIKey.create().uuid}@example.com`,
+    email: `${randomUUID()}@example.com`,
     password: '123456',
     firstName: 'fName',
     lastName: 'lName',
@@ -15,7 +15,7 @@ let user: Partial<User> = {
 };
 // the seeded admin (prisma/seed.ts) creates accounts: nobody signs up (035)
 const admin: UserLoginRequestDto = {
-    email: process.env.DEFAULT_USER_EMAIL || 'visual-regression-tracker@example.com',
+    email: process.env.DEFAULT_USER_EMAIL || 'admin@vision.local',
     password: process.env.DEFAULT_USER_PASSWORD || '123456',
 }
 const loginData: UserLoginRequestDto = {

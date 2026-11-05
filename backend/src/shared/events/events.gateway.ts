@@ -8,7 +8,7 @@ import {
 } from '@nestjs/websockets';
 import { Logger, OnModuleDestroy } from '@nestjs/common';
 import { Server, Socket } from 'socket.io';
-import { TestRun } from '@prisma/client';
+import { Role, TestRun } from '@prisma/client';
 import { BuildDto } from '../../builds/dto/build.dto';
 import { getBuildsStats } from '../../builds/build-stats';
 import { debounce } from 'lodash';
@@ -16,15 +16,19 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { AuthService } from '../../auth/auth.service';
 import { msUntilExpiry, tokenFromHandshake } from './events-auth';
 import { groupByProject, projectRoom } from './events-rooms';
+import { serverFileLinkKey, signFile, withFileSignatures } from '../../static/file-links';
+import { allowOwnInterface } from '../../security';
 
 // The message a rejected client gets in connect_error; the UI signs out on it.
 export const UNAUTHORIZED = 'unauthorized';
 
 // Only signed-in users get events, and only of the project they subscribed to
-// (spec 032, ADR-0023). Upstream VRT broadcast everything to anyone.
-@WebSocketGateway({ cors: true })
+// (spec 032, ADR-0023), never to anyone listening.
+// the same origin as the REST API: only Vision's own interface (045)
+@WebSocketGateway({ cors: { origin: allowOwnInterface } })
 export class EventsGateway implements OnGatewayInit, OnModuleDestroy {
   private readonly logger = new Logger(EventsGateway.name);
+  private readonly fileKey = serverFileLinkKey();
 
   @WebSocketServer()
   server: Server;
@@ -90,11 +94,16 @@ export class EventsGateway implements OnGatewayInit, OnModuleDestroy {
     }
     if (!projectId) return { ok: true };
 
+    // only a project the person may reach (042): an admin any, anyone else one they were given
     const allowed = await Promise.all([
       this.prismaService.project.findUnique({ where: { id: projectId }, select: { id: true } }),
-      this.prismaService.user.findUnique({ where: { id: socket.data.userId }, select: { id: true } }),
+      this.prismaService.user.findUnique({ where: { id: socket.data.userId }, select: { id: true, role: true } }),
+      this.prismaService.projectAccess.findUnique({
+        where: { userId_projectId: { userId: socket.data.userId, projectId } },
+        select: { projectId: true },
+      }),
     ]).then(
-      ([project, user]) => !!project && !!user,
+      ([project, user, access]) => !!project && !!user && (user.role === Role.admin || !!access),
       () => false
     );
     if (!allowed) return { ok: false };
@@ -102,8 +111,24 @@ export class EventsGateway implements OnGatewayInit, OnModuleDestroy {
     return { ok: true };
   }
 
+  /** Access was taken away: that person's sockets stop getting the project's events now. */
+  leaveProject(userId: string, projectId: string): void {
+    this.server
+      .in(projectRoom(projectId))
+      .fetchSockets()
+      .then((sockets) =>
+        sockets
+          .filter((socket) => socket.data.userId === userId)
+          .forEach((socket) => socket.leave(projectRoom(projectId)))
+      )
+      .catch((error) => this.logger.warn(`Could not stop events of ${projectId} for ${userId}: ${error}`));
+  }
+
   buildCreated(build: BuildDto): void {
-    this.server.to(projectRoom(build.projectId)).emit('build_created', build);
+    this.server.to(projectRoom(build.projectId)).emit(
+      'build_created',
+      withFileSignatures(build, (name) => signFile(name, this.fileKey))
+    );
   }
 
   buildUpdated(id: string): void {
@@ -137,7 +162,11 @@ export class EventsGateway implements OnGatewayInit, OnModuleDestroy {
 
   private emitToProjects<T>(event: string, items: T[], projectOf: (item: T) => string | null | undefined): void {
     for (const [projectId, group] of groupByProject(items, projectOf)) {
-      this.server.to(projectRoom(projectId)).emit(event, group);
+      // members of the room see these rows in the interface, with their images (043)
+      this.server.to(projectRoom(projectId)).emit(
+        event,
+        withFileSignatures(group, (name) => signFile(name, this.fileKey))
+      );
     }
   }
 

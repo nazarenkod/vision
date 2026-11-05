@@ -1,7 +1,7 @@
 import { deviceLabel, deviceTagsOf } from "./device.helper";
 
 describe("deviceLabel", () => {
-  it("names each value as upstream VRT does", () => {
+  it("names each value", () => {
     expect(deviceLabel({ device: "PIXEL_4_XL", os: "15" })).toBe(
       "OS: 15 · Device: PIXEL_4_XL",
     );

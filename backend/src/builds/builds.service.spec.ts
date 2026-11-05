@@ -8,7 +8,8 @@ import { mocked, MockedObject } from 'jest-mock';
 import { BuildDto } from './dto/build.dto';
 import { ProjectsService } from '../projects/projects.service';
 import { generateTestRun } from '../_data_';
-import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
+
+const { PrismaClientKnownRequestError } = Prisma;
 
 jest.mock('./dto/build.dto');
 

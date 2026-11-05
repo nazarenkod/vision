@@ -11,6 +11,8 @@ import { OllamaService } from './providers/ollama/ollama.service';
 import { GeminiService } from './providers/gemini/gemini.service';
 import { PixelmatchService, DEFAULT_CONFIG as PIXELMATCH_DEFAULT_CONFIG } from '../pixelmatch/pixelmatch.service';
 import { PNG } from 'pngjs';
+import { openSecret } from '../../../shared/secret-box';
+import { openConfigSecrets } from '../../../projects/project-secrets';
 import z from 'zod/v3';
 
 export const DEFAULT_PROMPT = `You are provided with three images:
@@ -47,7 +49,9 @@ export class VlmService implements ImageComparator {
   ) {}
 
   parseConfig(configJson: string): VlmConfig {
-    return parseConfig(configJson, DEFAULT_CONFIG, this.logger);
+    // the project's Gemini key is stored sealed (044) and opened only here, to call Gemini
+    const opened = configJson ? openConfigSecrets(configJson, (stored) => openSecret(stored)) : configJson;
+    return parseConfig(opened, DEFAULT_CONFIG, this.logger);
   }
 
   async getDiff(data: ImageCompareInput, config: VlmConfig): Promise<DiffResult> {

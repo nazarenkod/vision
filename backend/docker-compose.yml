@@ -1,6 +1,6 @@
 services:
   api:
-    container_name: vrt_api
+    container_name: vision_dev_api
     build:
       context: .
       dockerfile: Dockerfile
@@ -13,6 +13,8 @@ services:
       AWS_S3_BUCKET_NAME: ${AWS_S3_BUCKET_NAME}
       JWT_SECRET: ${JWT_SECRET}
       JWT_LIFE_TIME: ${JWT_LIFE_TIME}
+      VISION_SECRET_KEY: ${VISION_SECRET_KEY}
+      VISION_JIRA_HOSTS: ${VISION_JIRA_HOSTS}
       APP_FRONTEND_URL: ${APP_FRONTEND_URL}
       BODY_PARSER_JSON_LIMIT: ${BODY_PARSER_JSON_LIMIT}
       ELASTIC_URL: ${ELASTIC_URL}
@@ -30,7 +32,7 @@ services:
       redis:
         condition: service_healthy
   migration:
-    container_name: vrt_migration
+    container_name: vision_dev_migration
     build:
       context: prisma
       dockerfile: Dockerfile
@@ -44,7 +46,7 @@ services:
         condition: service_healthy
   postgres:
     container_name: postgres
-    image: postgres:15.3-alpine3.18
+    image: postgres:16-alpine@sha256:0cefaabd882e42bcb2a2f3dc56d3ce4770560ba62fd7f197f1a2e008fd5731ab
     restart: always
     environment:
       POSTGRES_USER: ${POSTGRES_USER}
@@ -62,8 +64,8 @@ services:
       timeout: 120s
       retries: 10
   redis:
-    container_name: vrt_redis
-    image: redis:7-alpine
+    container_name: vision_dev_redis
+    image: redis:7-alpine@sha256:8da19c7399dca900c6822a1cf30f9d2285585e2c4b457ff4095b0f4500054d3f
     restart: always
     expose:
       - "6379"

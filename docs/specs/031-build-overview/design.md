@@ -56,7 +56,7 @@
 
 - **Нова таблиця `ReportLink`:** `id`, `token` (унікальний, 32 випадкові байти base64url), `buildId`,
   `projectId`, `sections` (JSON-рядок), `language`, `createdById`, `createdAt`,
-  `revokedAt?`. Індекси — `token` і `buildId`. **Без зовнішніх ключів на `Build` і `User`:** upstream
+  `revokedAt?`. Індекси — `token` і `buildId`. **Без зовнішніх ключів на `Build` і `User`:** успадкований код
   видаляє збірки (ліміт збірок, гілки), і обмеження зламало б це видалення. Посилання на видалену
   збірку показує «збірки більше немає» (REQ-031-65).
 - **`TestRun.decidedById String?`.** Журнал рішень пише в нього того, хто прийняв чи відхилив прогон,

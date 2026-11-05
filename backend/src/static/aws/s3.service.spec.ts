@@ -29,7 +29,7 @@ describe('AWSS3Service', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    process.env.AWS_S3_BUCKET_NAME = 'vrt-bucket';
+    process.env.AWS_S3_BUCKET_NAME = 'vision-bucket';
   });
 
   afterAll(() => {
@@ -47,14 +47,14 @@ describe('AWSS3Service', () => {
 
       expect(generateNewImageName).toHaveBeenCalledWith('screenshot');
       expect(PutObjectCommand).toHaveBeenCalledWith({
-        Bucket: 'vrt-bucket',
+        Bucket: 'vision-bucket',
         Key: 'generated.screenshot.png',
         ContentType: 'image/png',
         Body: imageBuffer,
       });
       expect(mockSend).toHaveBeenCalledWith({
         input: {
-          Bucket: 'vrt-bucket',
+          Bucket: 'vision-bucket',
           Key: 'generated.screenshot.png',
           ContentType: 'image/png',
           Body: imageBuffer,
@@ -95,7 +95,7 @@ describe('AWSS3Service', () => {
       const result = await service.getImage('baseline.png');
 
       expect(GetObjectCommand).toHaveBeenCalledWith({
-        Bucket: 'vrt-bucket',
+        Bucket: 'vision-bucket',
         Key: 'baseline.png',
       });
       expect(result).toMatchObject({ width: 1, height: 1 });
@@ -132,7 +132,7 @@ describe('AWSS3Service', () => {
 
       expect(result).toBe('https://signed-url');
       expect(GetObjectCommand).toHaveBeenCalledWith(
-        expect.objectContaining({ Bucket: 'vrt-bucket', Key: 'image.png' })
+        expect.objectContaining({ Bucket: 'vision-bucket', Key: 'image.png' })
       );
     });
 
@@ -216,7 +216,7 @@ describe('AWSS3Service', () => {
       await expect(service.deleteImage('image.png')).resolves.toBe(true);
 
       expect(DeleteObjectCommand).toHaveBeenCalledWith({
-        Bucket: 'vrt-bucket',
+        Bucket: 'vision-bucket',
         Key: 'image.png',
       });
     });

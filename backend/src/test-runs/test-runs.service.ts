@@ -128,7 +128,8 @@ export class TestRunsService {
             densityDpi: createTestRequestDto.deviceDensity,
             activity: createTestRequestDto.uiActivity,
           },
-          imageBuffer
+          imageBuffer,
+          { name: createTestRequestDto.name, projectId: createTestRequestDto.projectId }
         )
       : null;
 
@@ -669,7 +670,7 @@ export class TestRunsService {
       await this.prismaService.testRun.delete({ where: { id } });
     } catch (e) {
       if (e instanceof Prisma.PrismaClientKnownRequestError) {
-        // workaround https://github.com/Visual-Regression-Tracker/Visual-Regression-Tracker/issues/435
+        // two clean-ups at once may both delete it: the second finds nothing, which is fine
         if (e.code === 'P2025') {
           this.logger.warn(`TestRun already deleted ${id}`);
           return;

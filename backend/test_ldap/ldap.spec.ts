@@ -1,6 +1,6 @@
 import axios from 'axios';
-import { UserLoginRequestDto } from 'src/users/dto/user-login-request.dto';
-import { UserLoginResponseDto } from 'src/users/dto/user-login-response.dto';
+import { UserLoginRequestDto } from '../src/users/dto/user-login-request.dto';
+import { UserLoginResponseDto } from '../src/users/dto/user-login-response.dto';
 
 axios.defaults.baseURL = 'http://localhost:4200';
 

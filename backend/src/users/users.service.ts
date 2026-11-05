@@ -13,12 +13,17 @@ import { UsersFactoryService } from './users.factory';
 import { Users } from './users.interface';
 import { OidcUsersService } from './oidc/oidcusers.service';
 import { DbUsersService } from './db/dbusers.service';
-import { accountEmail } from './account';
+import { accountEmail, passwordProblem } from './account';
+import { LdapUsersService } from './ldap/ldapusers.service';
+import { SignInLimit } from './sign-in-limit';
 
 @Injectable()
 export class UsersService {
   private readonly logger: Logger = new Logger(UsersService.name);
   private readonly usersService: Users;
+  // local accounts sign in beside LDAP and SSO (045)
+  private readonly localUsers: DbUsersService;
+  private readonly signInLimit = new SignInLimit();
 
   constructor(
     private readonly usersFactoryService: UsersFactoryService,
@@ -26,26 +31,23 @@ export class UsersService {
     private authService: AuthService
   ) {
     this.usersService = this.usersFactoryService.getUsersService();
+    this.localUsers =
+      this.usersService instanceof DbUsersService
+        ? this.usersService
+        : new DbUsersService(this.prismaService, this.authService);
   }
 
-  // With LDAP or SSO the account appears on its first sign-in, and its email
-  // belongs to the directory, so only local accounts are created here (035).
+  // A local account works beside LDAP and SSO, for people the directory does not have (045);
+  // directory and SSO accounts still appear on their first sign-in.
   canCreateAccounts(): boolean {
-    return this.usersService instanceof DbUsersService;
+    return true;
   }
 
   // Nobody signs themselves up: an admin creates the account and hands the
   // password over (035). The admin stays signed in as themselves.
   async createAccount(dto: CreateAccountDto): Promise<UserDto> {
-    if (!this.canCreateAccounts()) {
-      throw new HttpException(
-        'Accounts come from LDAP or SSO: they appear on the first sign-in',
-        HttpStatus.BAD_REQUEST
-      );
-    }
-    if (typeof dto.password !== 'string' || !dto.password.trim()) {
-      throw new HttpException('Password is required', HttpStatus.BAD_REQUEST);
-    }
+    const problem = passwordProblem(dto.password);
+    if (problem) throw new HttpException(problem, HttpStatus.BAD_REQUEST);
     const email = accountEmail(dto.email);
     // the seeded admin keeps its email as configured, so compare without case
     const taken = await this.prismaService.user.findFirst({
@@ -61,7 +63,7 @@ export class UsersService {
         firstName: dto.firstName?.trim() ?? '',
         lastName: dto.lastName?.trim() ?? '',
         role: dto.role,
-        apiKey: this.authService.generateApiKey(),
+        apiKey: this.authService.unknownApiKey(),
         password: await this.authService.encryptPassword(dto.password),
       },
     });
@@ -73,15 +75,20 @@ export class UsersService {
   }
 
   async changePassword(user: User, newPassword: string): Promise<boolean> {
+    const problem = passwordProblem(newPassword);
+    if (problem) throw new HttpException(problem, HttpStatus.BAD_REQUEST);
+    // a local account beside LDAP changes its own password; the directory's people change theirs there
+    if (this.usersService instanceof LdapUsersService && !(await this.usersService.isInDirectory(user.email))) {
+      return this.localUsers.changePassword(user, newPassword);
+    }
     return this.usersService.changePassword(user, newPassword);
   }
 
   // After a restore nobody but the master user has a password (backups carry none), so an
   // admin hands them out; it works the same for any local account.
   async setPassword(id: string, password: string): Promise<boolean> {
-    if (typeof password !== 'string' || !password.trim()) {
-      throw new HttpException('Password is required', HttpStatus.BAD_REQUEST);
-    }
+    const problem = passwordProblem(password);
+    if (problem) throw new HttpException(problem, HttpStatus.BAD_REQUEST);
     await this.prismaService.user.update({
       where: { id },
       data: { password: await this.authService.encryptPassword(password) },
@@ -91,9 +98,34 @@ export class UsersService {
   }
 
   async login(userLoginRequestDto: UserLoginRequestDto) {
-    const result = await this.usersService.login(userLoginRequestDto);
+    const email = userLoginRequestDto?.email ?? '';
+    if (this.signInLimit.closed(email)) {
+      throw new HttpException('Too many attempts: try again in 15 minutes', HttpStatus.TOO_MANY_REQUESTS);
+    }
+    let result: UserLoginResponseDto;
+    try {
+      result = await this.signIn(userLoginRequestDto);
+    } catch (error) {
+      // a wrong email or password counts; a directory that is down does not
+      if (error instanceof HttpException && error.getStatus() === HttpStatus.BAD_REQUEST)
+        this.signInLimit.failed(email);
+      throw error;
+    }
+    this.signInLimit.succeeded(email);
     await this.recordSignIn(result.id);
     return result;
+  }
+
+  /**
+   * The directory decides for the people it has; everyone else signs in with a local password
+   * (045). With SSO the form is for local accounts only: SSO's people have no password anyone knows.
+   */
+  private async signIn(dto: UserLoginRequestDto): Promise<UserLoginResponseDto> {
+    if (this.usersService instanceof LdapUsersService && !(await this.usersService.isInDirectory(dto.email))) {
+      return this.localUsers.login(dto);
+    }
+    if (this.usersService instanceof OidcUsersService) return this.localUsers.login(dto);
+    return this.usersService.login(dto);
   }
 
   // For the Users page (018). Only sign-ins to the web interface pass here;
@@ -164,14 +196,10 @@ export class UsersService {
     return new UserDto(user);
   }
 
+  // the key is returned this once; the database keeps only its hash and ending (044)
   async generateNewApiKey(user: User): Promise<string> {
-    const newApiKey = this.authService.generateApiKey();
-    await this.prismaService.user.update({
-      where: { id: user.id },
-      data: {
-        apiKey: newApiKey,
-      },
-    });
-    return newApiKey;
+    const { key, stored } = this.authService.generateApiKey();
+    await this.prismaService.user.update({ where: { id: user.id }, data: stored });
+    return key;
   }
 }

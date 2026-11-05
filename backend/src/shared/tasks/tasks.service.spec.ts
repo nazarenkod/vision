@@ -66,7 +66,7 @@ describe('cleanOldTestVariations', () => {
         projectId: project.id,
       },
     });
-    expect(testVariationsDeleteMock).toBeCalledWith(testVariation.id);
+    expect(testVariationsDeleteMock).toHaveBeenCalledWith(testVariation.id);
   });
 
   it('skips cleanup when TASKS_CLEANUP_ENABLED=false', async () => {

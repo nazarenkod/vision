@@ -1,3 +1,4 @@
+import { openSecret } from '../shared/secret-box';
 import { Test, TestingModule } from '@nestjs/testing';
 import { PrismaService } from '../prisma/prisma.service';
 import { UsersController } from './users.controller';
@@ -35,6 +36,7 @@ describe('Users Controller', () => {
     firstName: 'John',
     lastName: 'Doe',
     apiKey: 'api-key',
+    apiKeyEnding: null,
     password: 'encrypted',
     isActive: true,
     jiraToken: null,
@@ -82,7 +84,10 @@ describe('Users Controller', () => {
     const withPrisma = new UsersController(usersService as never, prisma as never, { get: jest.fn() } as never);
 
     const saved = await withPrisma.setGemini(user, { geminiApiKey: ' key-1 ' });
-    expect(update).toHaveBeenCalledWith({ where: { id: '1' }, data: { geminiApiKey: 'key-1' } });
+    // stored sealed (044), and readable back with the server's key only
+    const stored = update.mock.calls[0][0].data.geminiApiKey;
+    expect(stored).toMatch(/^enc:v1:/);
+    expect(openSecret(stored)).toBe('key-1');
     expect(saved.geminiKeySet).toBe(true);
     expect(JSON.stringify(saved)).not.toContain('key-1');
 
@@ -128,6 +133,8 @@ describe('Users Controller', () => {
     const gemini = await withPrisma.setGemini(user, { geminiApiKey: 'key-1' });
 
     expect(update.mock.calls.map(([args]) => args.where)).toEqual([{ id: '1' }, { id: '1' }]);
+    expect(openSecret(update.mock.calls[0][0].data.jiraToken)).toBe('token-1');
+    expect(JSON.stringify(update.mock.calls)).not.toMatch(/token-1|key-1/);
     expect(JSON.stringify([jira, gemini])).not.toMatch(/token-1|key-1/);
     // no route takes somebody else's id together with a Jira token or a Gemini key
     for (const name of ['setJira', 'setGemini']) {

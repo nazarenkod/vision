@@ -27,9 +27,11 @@ import { Role, User } from '@prisma/client';
 import { RoleGuard } from '../auth/guards/role.guard';
 import { Roles } from '../shared/roles.decorator';
 import { PrismaService } from '../prisma/prisma.service';
+import { sealSecret } from '../shared/secret-box';
 import { AssignRoleDto } from './dto/assign-role.dto';
 import { Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { NoProjectData } from '../projects/project-access';
 
 const OIDC_STATE_COOKIE = 'oidc_state';
 
@@ -60,6 +62,7 @@ export class UsersController {
 
   // There is no self sign-up (035): accounts come from an admin, or from the
   // first sign-in through LDAP or SSO.
+  @NoProjectData()
   @Post()
   @ApiOkResponse({ type: UserDto })
   @ApiBearerAuth()
@@ -69,24 +72,28 @@ export class UsersController {
     return this.usersService.createAccount(dto);
   }
 
+  @NoProjectData()
   @Get('accounts/enabled')
   @ApiOkResponse({ type: Boolean })
   accountsEnabled(): boolean {
     return this.usersService.canCreateAccounts();
   }
 
+  @NoProjectData()
   @Post('login')
   @ApiOkResponse({ type: UserLoginResponseDto })
   async login(@Body() userLoginRequestDto: UserLoginRequestDto): Promise<UserLoginResponseDto> {
     return this.usersService.login(userLoginRequestDto);
   }
 
+  @NoProjectData()
   @Get('oidc/enabled')
   @ApiOkResponse({ type: Boolean })
   oidcEnabled(): boolean {
     return this.usersService.isOidcEnabled();
   }
 
+  @NoProjectData()
   @Get('oidc/login')
   async oidcLogin(@Res() res: Response): Promise<void> {
     if (!this.usersService.isOidcEnabled()) {
@@ -115,6 +122,7 @@ export class UsersController {
     res.redirect(url);
   }
 
+  @NoProjectData()
   @Get('oidc/callback')
   async oidcCallback(@Req() req: Request, @Res() res: Response): Promise<void> {
     if (!this.usersService.isOidcEnabled()) {
@@ -150,6 +158,7 @@ export class UsersController {
     res.redirect(target);
   }
 
+  @NoProjectData()
   @Get('me')
   @ApiOkResponse({ type: UserDto })
   @ApiBearerAuth()
@@ -158,6 +167,7 @@ export class UsersController {
     return new UserDto(user);
   }
 
+  @NoProjectData()
   @Get('newApiKey')
   @ApiOkResponse({ type: String })
   @ApiBearerAuth()
@@ -166,6 +176,7 @@ export class UsersController {
     return this.usersService.generateNewApiKey(user);
   }
 
+  @NoProjectData()
   @Put('password')
   @ApiOkResponse({ type: Boolean })
   @ApiBearerAuth()
@@ -174,6 +185,7 @@ export class UsersController {
     return this.usersService.changePassword(user, password);
   }
 
+  @NoProjectData()
   @Put(':id/password')
   @ApiOkResponse({ type: Boolean })
   @ApiBearerAuth()
@@ -183,6 +195,7 @@ export class UsersController {
     return this.usersService.setPassword(id, password);
   }
 
+  @NoProjectData()
   @Put()
   @ApiOkResponse({ type: UserLoginResponseDto })
   @ApiBearerAuth()
@@ -191,19 +204,23 @@ export class UsersController {
     return this.usersService.update(user.id, updateUserDto);
   }
 
+  @NoProjectData()
   @Put('jira')
   @ApiOkResponse({ type: UserDto })
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
   async setJira(@CurrentUser() user: User, @Body() dto: UserJiraDto): Promise<UserDto> {
     const value = (text: string | undefined) => (text === undefined ? undefined : text.trim() || null);
+    const token = value(dto.jiraToken);
     const updated = await this.prismaService.user.update({
       where: { id: user.id },
-      data: { jiraToken: value(dto.jiraToken), jiraEmail: value(dto.jiraEmail) },
+      // the token is stored sealed (044); the email is no secret
+      data: { jiraToken: token ? sealSecret(token) : token, jiraEmail: value(dto.jiraEmail) },
     });
     return new UserDto(updated);
   }
 
+  @NoProjectData()
   @Put('gemini')
   @ApiOkResponse({ type: UserDto })
   @ApiBearerAuth()
@@ -212,21 +229,34 @@ export class UsersController {
     if (dto.geminiApiKey === undefined) return new UserDto(user);
     const updated = await this.prismaService.user.update({
       where: { id: user.id },
-      data: { geminiApiKey: dto.geminiApiKey.trim() || null },
+      data: { geminiApiKey: dto.geminiApiKey.trim() ? sealSecret(dto.geminiApiKey.trim()) : null },
     });
     return new UserDto(updated);
   }
 
+  @NoProjectData()
   @Get('all')
   @ApiOkResponse({ type: UserDto, isArray: true })
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard, RoleGuard)
   @Roles(Role.admin)
-  async userList(): Promise<UserDto[]> {
-    const users = await this.prismaService.user.findMany();
-    return users.map((user) => new UserDto(user));
+  async userList(): Promise<Array<UserDto & { projects: Array<{ id: string; name: string }> }>> {
+    const [users, access] = await Promise.all([
+      this.prismaService.user.findMany(),
+      this.prismaService.projectAccess.findMany({
+        select: { userId: true, project: { select: { id: true, name: true } } },
+        orderBy: { project: { name: 'asc' } },
+      }),
+    ]);
+    // the projects each person was given, for the admin's Users page (REQ-042-06)
+    return users.map((user) =>
+      Object.assign(new UserDto(user), {
+        projects: access.filter((row) => row.userId === user.id).map((row) => row.project),
+      })
+    );
   }
 
+  @NoProjectData()
   @Delete()
   @ApiOkResponse({ type: Boolean })
   @ApiBearerAuth()
@@ -239,6 +269,7 @@ export class UsersController {
     }
   }
 
+  @NoProjectData()
   @Patch('assignRole')
   @ApiOkResponse({ type: UserDto })
   @ApiBearerAuth()

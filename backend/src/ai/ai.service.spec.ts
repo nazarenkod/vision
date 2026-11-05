@@ -1,3 +1,4 @@
+import { sealSecret } from '../shared/secret-box';
 import z from 'zod/v3';
 import { PNG } from 'pngjs';
 import { AiService } from './ai.service';
@@ -186,7 +187,7 @@ describe('AiFeaturesService: bug drafts', () => {
       aiService,
       {
         testRun: { findUnique: jest.fn().mockResolvedValue(run) },
-        user: { findUnique: jest.fn().mockResolvedValue({ geminiApiKey: key }) },
+        user: { findUnique: jest.fn().mockResolvedValue({ geminiApiKey: key && sealSecret(key) }) },
       } as never,
       { getImage: jest.fn().mockResolvedValue(image) } as never,
       {} as never,

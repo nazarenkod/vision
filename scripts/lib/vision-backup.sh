@@ -10,7 +10,8 @@
 # projects always find them.
 #
 # Secrets never enter a backup (ADR-0012). Add every new secret column here.
-VB_SECRET_COLUMNS="User.password=!restored User.jiraToken= Project.jiraToken="
+# API keys stay: they are stored as hashes (044), and CI keeps working after a restore
+VB_SECRET_COLUMNS="User.password=!restored User.jiraToken= User.geminiApiKey= Project.jiraToken="
 
 # Call after vision_load_env: paths and the database come from .env.demo.
 vb_init() {
@@ -21,7 +22,7 @@ vb_init() {
   # written by the API from the Backups page (ADR-0013)
   VB_CONFIG_DIR="$VISION_DATA_DIR/backup-config"
   VB_PG_USER="${POSTGRES_USER:-postgres}"
-  VB_PG_DB="${POSTGRES_DB:-vrt_demo}"
+  VB_PG_DB="${POSTGRES_DB:-vision}"
   BACKUP_REMOTE="${BACKUP_REMOTE:-}"
   BACKUP_KEEP="${BACKUP_KEEP:-7}"
   mkdir -p "$VB_BACKUP_DIR" "$VB_STATUS_DIR" "$VB_IMAGES_DIR" "$VB_CONFIG_DIR"

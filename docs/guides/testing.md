@@ -12,6 +12,7 @@
 |---|---|---|---|
 | Unit бекенду | чисті функції й сервіси з моками Prisma і `fetch` | `backend/src/**/*.spec.ts`, [backend/AGENTS.md](../../backend/AGENTS.md) | завжди |
 | E2E / acceptance бекенду | API з реальною базою | `backend/test/`, `backend/test_acceptance/` | зміни контролерів і схеми; потрібні Postgres і API |
+| Контрольний сценарій | увесь робочий шлях на справжньому сервері проти еталона | `backend/test_control/`, `./scripts/control-scenario.sh` | оновлення залежностей, перейменування, зміни доступу; потрібні Docker і Java |
 | Unit фронтенду | функції й компоненти | `frontend/src/**/*.test.ts(x)`, [frontend/AGENTS.md](../../frontend/AGENTS.md) | завжди |
 | Playwright функціональні | UI з моками API | `frontend/integration_tests/test/` | зміни UI |
 | Playwright скриншоти | вигляд сторінок | `toHaveScreenshot` у тих самих спеках | коли змінився знятий екран; лише в Docker |
@@ -30,6 +31,34 @@
   потрібною семантикою (унікальний ключ, `updatedAt`).
 - Коментар у тесті пояснює, *чому* цей випадок важливий.
 
+## Контрольний сценарій
+
+`./scripts/control-scenario.sh` (~40 с) доводить, що Vision працює так само, як працював:
+збирає сервер і SDK з поточного коду, піднімає тимчасовий Postgres у контейнері
+`vision-control-pg-*` (без томів, лише на `127.0.0.1`, видаляється після прогону) і проходить
+увесь робочий шлях:
+
+1. вхід, акаунти, проєкт з Jira;
+2. дві збірки через справжній Java SDK з UI-деревами;
+3. review: approve, reject, undo, ignore-areas, правила елементів;
+4. доступність і баги в Jira (фейкова Jira записує все, що їй надіслали);
+5. посилання на звіт, Insights;
+6. CLI і MCP з файлів;
+7. знімки і ролі.
+
+Відповіді нормалізуються (id, час, ключі й токени — стабільні мітки) і порівнюються з еталоном у
+`backend/test_control/__snapshots__/`. Робоча база й робочий VRT не використовуються.
+
+- Розбіжність — це або регресія, або навмисна зміна поведінки. Навмисну перезаписуй
+  `./scripts/control-scenario.sh --update` у тому ж коміті, що й специфікацію, і переглянь diff
+  еталона, як код.
+- `--images` — те саме проти образів `api` і `migration`, зібраних із цього коду: міграції й seed
+  робить образ міграцій, API працює в контейнері від користувача хоста, усе — в окремій мережі
+  `vision-control-net-*`, яку скрипт прибирає. Так перевіряється саме те, що піде в контур.
+- Один крок: `CONTROL_ONLY=<частина імені файла>`. Лог API після прогону:
+  `CONTROL_LOG_DIR=<папка>`.
+- Перед зміною, яку він має покрити, проганяй його й до, й після: еталон знято на `main`.
+
 ## Скриншот-еталони
 
 Еталони генеруються лише в Docker ([ADR-0011](../decisions/0011-screenshot-baselines-in-docker.md)),
@@ -46,7 +75,7 @@ cd /tmp/pwsnap/frontend && ./test-docker.sh <spec> --update-snapshots
 
 ## Базові лінії
 
-- `tsc`: відомі помилки upstream — у `scripts/baselines/{backend,frontend}-tsc.txt`, `verify.py`
+- `tsc`: відомі помилки успадкованого коду — у `scripts/baselines/{backend,frontend}-tsc.txt`, `verify.py`
   показує лише нові. Нова — твоя; виправив відому — `python3 -I scripts/verify.py --update-baselines`.
 - Скриншот-тести поза Docker падають завжди (macOS, хмарна сесія), тому `verify.py` запускає
   Playwright з `--ignore-snapshots`. Функціональні мусять проходити.

@@ -105,6 +105,26 @@ function setGemini(geminiApiKey: string): Promise<User> {
     });
 }
 
+/**
+ * A new API key, shown to the person this once: the server keeps only its hash (044). The
+ * stored user learns the new ending; the previous key stops working.
+ */
+function newApiKey(): Promise<string> {
+  return fetch(`${API_URL}${ENDPOINT_URL}/newApiKey`, {
+    method: "GET",
+    headers: authHeader(),
+  })
+    .then((response) =>
+      // the key comes back as plain text, not JSON
+      response.ok ? response.text() : handleResponse(response),
+    )
+    .then((key: string) => {
+      const stored = JSON.parse(localStorage.getItem("user") ?? "{}");
+      setUserInLocalStorage({ ...stored, apiKeyEnding: key.slice(-4) });
+      return key;
+    });
+}
+
 /** Personal Jira token and email; undefined keeps a value, an empty string removes it. */
 function setJira(values: {
   jiraToken?: string;
@@ -272,6 +292,7 @@ function remove(ids: string[] | number[]): Promise<boolean> {
 }
 
 export const usersService = {
+  newApiKey,
   login,
   logout,
   create,

@@ -1,4 +1,4 @@
-import { AllowedDevice, Project } from "../types";
+import { AllowedDevice, Project, ProjectMember } from "../types";
 import { handleResponse, authHeader } from "../_helpers/service.helpers";
 import { API_URL } from "../_config/env.config";
 
@@ -101,7 +101,40 @@ async function updateSettings(
   return handleResponse(response);
 }
 
+/** Who was given the project, and giving or taking it (042): admins only. */
+async function getAccess(id: string): Promise<ProjectMember[]> {
+  const response = await fetch(`${API_URL}/projects/${id}/access`, {
+    headers: authHeader(),
+  });
+  return handleResponse(response);
+}
+
+async function grantAccess(
+  id: string,
+  userId: string,
+): Promise<ProjectMember[]> {
+  const response = await fetch(`${API_URL}/projects/${id}/access/${userId}`, {
+    method: "PUT",
+    headers: authHeader(),
+  });
+  return handleResponse(response);
+}
+
+async function revokeAccess(
+  id: string,
+  userId: string,
+): Promise<ProjectMember[]> {
+  const response = await fetch(`${API_URL}/projects/${id}/access/${userId}`, {
+    method: "DELETE",
+    headers: authHeader(),
+  });
+  return handleResponse(response);
+}
+
 export const projectsService = {
+  getAccess,
+  grantAccess,
+  revokeAccess,
   updateSettings,
   getAll,
   getDevices,

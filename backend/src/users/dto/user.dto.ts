@@ -14,8 +14,9 @@ export class UserDto {
   @ApiProperty()
   readonly lastName: string;
 
-  @ApiProperty()
-  readonly apiKey: string;
+  // the key itself is shown once, when it is made (044); afterwards only its last characters
+  @ApiProperty({ nullable: true })
+  readonly apiKeyEnding: string | null;
 
   @ApiProperty()
   readonly role: Role;
@@ -40,7 +41,7 @@ export class UserDto {
     this.email = user.email;
     this.firstName = user.firstName;
     this.lastName = user.lastName;
-    this.apiKey = user.apiKey;
+    this.apiKeyEnding = user.apiKeyEnding ?? null;
     this.role = user.role;
     this.jiraTokenSet = !!user.jiraToken;
     this.jiraEmail = user.jiraEmail ?? null;

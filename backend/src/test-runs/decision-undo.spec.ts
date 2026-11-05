@@ -5,7 +5,7 @@ import { DecisionUndoService } from './decision-undo.service';
 import { TestRunsService } from './test-runs.service';
 import { TestVariationsService } from '../test-variations/test-variations.service';
 
-// An in-memory stand-in for the tables an approve touches, so the real upstream
+// An in-memory stand-in for the tables an approve touches, so the real inherited
 // approve runs against it: if approve starts changing something else, the
 // round trip below stops matching (ADR-0014).
 type Row = Record<string, any>;

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Upload screenshots with their Appium UI trees as one VRT build.
+"""Upload screenshots with their Appium UI trees as one Vision build.
 
 Takes a folder of pairs exported from Appium Inspector (or saved by a test):
     Payment.png + Payment.xml, Transfer.png + Transfer.xml, ...

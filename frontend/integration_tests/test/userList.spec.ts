@@ -161,3 +161,25 @@ test("shows no head count and no row height picker", async ({
   await expect(page.getByRole("button", { name: /density/i })).toHaveCount(0);
   expect(userListPage).toBeTruthy();
 });
+
+test("shows the projects each user has access to", async ({
+  page,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  authUser,
+}) => {
+  await mockGetUsers(page, [
+    { ...TEST_USER, projects: [] },
+    {
+      ...EDITOR_USER,
+      projects: [
+        { id: "a", name: "Android" },
+        { id: "i", name: "iOS" },
+      ],
+    },
+    { ...GUEST_USER, projects: [] },
+  ]);
+  await page.goto("/users");
+
+  const projects = page.getByTestId("userProjects");
+  await expect(projects).toHaveText(["All, as an admin", "Android, iOS", "—"]);
+});

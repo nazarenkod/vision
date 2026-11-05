@@ -1,31 +1,11 @@
 import React from "react";
-import { Typography, Grid, IconButton } from "@mui/material";
-import { WarningRounded, AltRoute } from "@mui/icons-material";
+import { Box, IconButton, Link } from "@mui/material";
+import { WarningRounded, WarningAmberRounded } from "@mui/icons-material";
 import { IgnoreArea } from "../../types/ignoreArea";
 import { Tooltip } from "../Tooltip";
-import { makeStyles } from "@mui/styles";
-import { tokens } from "../../theme";
+import { BranchTag } from "../DeviceTags";
+import { tokens, type, radius } from "../../theme";
 import { useT } from "../../i18n";
-
-const useStyles = makeStyles(() => ({
-  container: {
-    display: "flex",
-    alignItems: "center",
-    gap: 4,
-    color: tokens.textSecondary,
-  },
-  branchName: {
-    cursor: "pointer",
-    lineHeight: "20px",
-    fontSize: 12,
-    fontFamily: tokens.mono,
-    color: tokens.text,
-    maxWidth: 195,
-    textOverflow: "ellipsis",
-    whiteSpace: "nowrap",
-    overflow: "hidden",
-  },
-}));
 
 export interface ImageDetailsProps {
   type: "Baseline" | "Image" | "Diff";
@@ -35,56 +15,116 @@ export interface ImageDetailsProps {
   image: HTMLImageElement | undefined;
   branchName: string;
   ignoreAreas?: IgnoreArea[];
+  /** Current is not the baseline's size: said next to it instead of its size (REQ-046-04) */
+  sizeDiffers?: boolean;
+  /** the baseline's history, opened in a new tab */
+  onHistory?: () => void;
 }
 
+/**
+ * The head of one image column: BASELINE or CURRENT, the branch, the size and
+ * the baseline's history (spec 046).
+ */
 const ImageDetails: React.FunctionComponent<ImageDetailsProps> = ({
-  type,
+  type: kind,
   image,
   imageName,
   branchName,
   ignoreAreas,
+  sizeDiffers,
+  onHistory,
 }) => {
-  const classes = useStyles();
   const { t } = useT();
-  const imageSize = () => {
-    return (
-      imageName && (
-        <Typography
-          variant="caption"
-          sx={{ mr: 0.5, fontSize: 12, color: tokens.textMuted }}
-          data-testid="image-size"
-        >
-          {image ? `(${image?.width} x ${image?.height})` : t("review.loading")}
-        </Typography>
-      )
-    );
-  };
+  const size = image ? `${image.width} × ${image.height}` : t("review.loading");
   return (
-    <Grid item className={classes.container}>
-      <Typography
-        variant="overline"
+    <Box
+      data-testid={kind === "Baseline" ? "baselineHeader" : "currentHeader"}
+      sx={{
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: 1.25,
+        height: 24,
+        minWidth: 0,
+        whiteSpace: "nowrap",
+        fontSize: type.small,
+        color: tokens.textSecondary,
+      }}
+    >
+      <Box
+        component="span"
         sx={{
-          color: tokens.text,
+          fontSize: type.caption,
           fontWeight: 600,
-          letterSpacing: "0.06em",
-          mr: 0.5,
+          letterSpacing: "0.04em",
+          textTransform: "uppercase",
+          color: tokens.text,
         }}
       >
-        {t(type === "Baseline" ? "review.baseline" : "review.checkpoint")}
-      </Typography>
-      {imageSize()}
-      <AltRoute fontSize="small" />
-      <Tooltip title={t("review.branch", { branch: branchName })}>
-        <span className={classes.branchName}>{branchName}</span>
-      </Tooltip>
+        {t(kind === "Baseline" ? "review.baseline" : "review.checkpoint")}
+      </Box>
+      {branchName && (
+        <Tooltip title={t("review.branch", { branch: branchName })}>
+          <BranchTag
+            branch={branchName}
+            sx={{ bgcolor: tokens.surface, maxWidth: 200, minWidth: 0 }}
+          />
+        </Tooltip>
+      )}
+      {imageName &&
+        (sizeDiffers && image ? (
+          <Tooltip title={t("review.sizeDiffers")}>
+            <Box
+              component="span"
+              data-testid="sizeDiffers"
+              sx={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 0.5,
+                height: 22,
+                px: 1,
+                borderRadius: radius.pill,
+                bgcolor: tokens.status.changed.bg,
+                color: tokens.status.changed.fg,
+                fontSize: type.caption,
+                fontWeight: 600,
+              }}
+            >
+              <WarningAmberRounded sx={{ fontSize: type.small }} />
+              {t("compare.sizeDiffers", {
+                width: image.width,
+                height: image.height,
+              })}
+            </Box>
+          </Tooltip>
+        ) : (
+          <Box
+            component="span"
+            data-testid="image-size"
+            sx={{ fontVariantNumeric: "tabular-nums", color: tokens.textMuted }}
+          >
+            {size}
+          </Box>
+        ))}
+      {onHistory && (
+        <Link
+          component="button"
+          type="button"
+          onClick={onHistory}
+          data-testid="historyLink"
+          sx={{ fontSize: type.small, fontWeight: 600 }}
+        >
+          {t("review.history")}
+        </Link>
+      )}
       {ignoreAreas && ignoreAreas.length > 0 && (
         <Tooltip title={t("review.uploadIgnore")}>
-          <IconButton size="large">
-            <WarningRounded color="secondary" />
+          <IconButton size="small">
+            <WarningRounded color="secondary" fontSize="small" />
           </IconButton>
         </Tooltip>
       )}
-    </Grid>
+    </Box>
   );
 };
 

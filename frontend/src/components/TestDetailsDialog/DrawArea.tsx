@@ -27,8 +27,21 @@ const TAG_TEXT = "white";
 const useStyles = makeStyles((theme: Theme) => ({
   canvasContainer: {
     overflow: "auto",
+    // the area the dialog fits the screenshot into (REQ-046-01); the image
+    // sits in its middle until it is zoomed past it, then scrolls
+    position: "relative",
+    width: "100%",
+    height: "100%",
+    display: "flex",
     // the lit table the screenshot lies on
     background: tokens.lightbox,
+  },
+  stage: {
+    // auto margins centre the image and fall to zero once it overflows,
+    // so the scroll still starts at its top left edge
+    margin: "auto",
+    flexShrink: 0,
+    boxShadow: tokens.shadowShot,
   },
   imageDetailsContainer: {
     position: "absolute",
@@ -266,6 +279,10 @@ export const DrawArea: FunctionComponent<IDrawArea> = ({
       const bounds = container.getBoundingClientRect();
       const pointerX = event.clientX - bounds.left;
       const pointerY = event.clientY - bounds.top;
+      // a centred image starts this far into the area
+      const stage = container.firstElementChild as HTMLElement | null;
+      const offsetX = stage?.offsetLeft ?? 0;
+      const offsetY = stage?.offsetTop ?? 0;
 
       targetScaleRef.current = clampScale(
         event.deltaY < 0
@@ -278,9 +295,11 @@ export const DrawArea: FunctionComponent<IDrawArea> = ({
         pointerX,
         pointerY,
         imageX:
-          (container.scrollLeft + pointerX - stagePos.x) / scaleRef.current,
+          (container.scrollLeft + pointerX - offsetX - stagePos.x) /
+          scaleRef.current,
         imageY:
-          (container.scrollTop + pointerY - stagePos.y) / scaleRef.current,
+          (container.scrollTop + pointerY - offsetY - stagePos.y) /
+          scaleRef.current,
       };
 
       if (!frameRef.current) {
@@ -387,6 +406,7 @@ export const DrawArea: FunctionComponent<IDrawArea> = ({
         }}
       >
         <div
+          className={classes.stage}
           style={{
             height: image && image.height * stageScale,
             width: image && image.width * stageScale,

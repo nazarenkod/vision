@@ -62,7 +62,7 @@
 | Компонент | Шлях | Роль |
 |---|---|---|
 | Смужка діфу | `frontend/src/components/TestDetailsDialog/DiffMeter.tsx` | відсоток, заповнення, риска допуску |
-| Крапки кроків | `frontend/src/components/TestDetailsDialog/StepDots.tsx` | стан кожного кроку |
+| Крапки кроків (з [046](../046-design-review-refresh/spec.md) — смуга сегментів) | `frontend/src/components/TestDetailsDialog/StepProgress.tsx` | стан кожного кроку |
 | Чисті функції ревю | `frontend/src/_helpers/review.helper.ts` | `diffMeter(diff, tolerance)`, `stepStates(ids, current, decided)`, `hotkeyLabel` |
 | Кнопки | `frontend/src/components/TestDetailsDialog/ApproveRejectButtons.tsx` | підписи A і X, галочка 420 ms, сповіщення з Undo |
 | Діалог | `frontend/src/components/TestDetailsDialog/TestDetailsModal.tsx` | крапки, напрямок переходу кроків, знімки без анімацій після появи |

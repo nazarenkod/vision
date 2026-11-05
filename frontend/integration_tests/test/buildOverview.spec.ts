@@ -319,7 +319,7 @@ test("each number opens its tab or queue", async ({
   await page.getByRole("tab", { name: "Overview" }).click();
   await page.getByTestId("overviewTile-waiting").click();
   await expect(page.getByTestId("queueName")).toHaveText("All to review");
-  await expect(page.getByTestId("queuePosition")).toHaveText("1 / 3");
+  await expect(page.getByTestId("queuePosition")).toHaveText("1 of 3");
 });
 
 test("shows the queue name and position instead of Step", async ({
@@ -334,7 +334,7 @@ test("shows the queue name and position instead of Step", async ({
 
   await expect(page.getByRole("dialog")).toBeVisible();
   await expect(page.getByTestId("queueName")).toHaveText("iPhone 15 iOS 17");
-  await expect(page.getByTestId("queuePosition")).toHaveText("1 / 1");
+  await expect(page.getByTestId("queuePosition")).toHaveText("1 of 1");
   await expect(page.getByText(/^Step \d/)).toHaveCount(0);
   await expect(page).toHaveURL(/queue=device%3AiPhone/);
 });
@@ -342,13 +342,13 @@ test("shows the queue name and position instead of Step", async ({
 test("switches the queue from its menu", async ({ openProjectPage, page }) => {
   await openProjectPage(project.id, build.id, undefined, "overview");
   await page.getByTestId("reviewWaiting").click();
-  await expect(page.getByTestId("queuePosition")).toHaveText("1 / 3");
+  await expect(page.getByTestId("queuePosition")).toHaveText("1 of 3");
 
   await page.getByTestId("queueName").click();
   await page.getByRole("menuitem", { name: /New screens/ }).click();
 
   await expect(page.getByTestId("queueName")).toHaveText("New screens");
-  await expect(page.getByTestId("queuePosition")).toHaveText("1 / 1");
+  await expect(page.getByTestId("queuePosition")).toHaveText("1 of 1");
   await expect(page).toHaveURL(/testId=fresh/);
 });
 
@@ -523,7 +523,7 @@ test("counts the checks of a feature and opens a check on its own", async ({
 
   await login.click();
   await expect(page.getByTestId("queueName")).toHaveText("Login. Error");
-  await expect(page.getByTestId("queuePosition")).toHaveText("1 / 1");
+  await expect(page.getByTestId("queuePosition")).toHaveText("1 of 1");
   await expect(page).toHaveURL(/queue=check%3ALogin/);
 });
 

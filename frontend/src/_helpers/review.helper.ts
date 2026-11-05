@@ -1,4 +1,5 @@
 import { TestStatus } from "../types/testStatus";
+import type { A11yReport, StructureInfo } from "../types/insights";
 
 export type DiffMeter = {
   /** 0–100: how far along the bar the diff reaches */
@@ -49,3 +50,44 @@ export const stepStates = (
 
 /** Keys of the review; X has always rejected, so hints show it, not R. */
 export const REVIEW_KEYS = { approve: "A", reject: "X" } as const;
+
+const decided = (status: string | undefined) =>
+  !!status && (APPROVED.includes(status) || status === TestStatus.failed);
+
+/**
+ * How far the review has got, beside "N of M" (REQ-046-05): the steps already
+ * decided, the current one among them when it is, and those still ahead of
+ * the reviewer besides the one on screen.
+ */
+export const stepProgress = (
+  statuses: string[],
+  currentIndex: number,
+): { decided: number; left: number } => {
+  const count = statuses.filter(decided).length;
+  const currentOpen =
+    currentIndex < statuses.length && !decided(statuses[currentIndex]);
+  return {
+    decided: count,
+    left: statuses.length - count - (currentOpen ? 1 : 0),
+  };
+};
+
+/**
+ * The side panel starts folded when it would have nothing to say: no changed
+ * areas, no structural changes and no accessibility findings (REQ-046-07).
+ * Undefined while either is still loading, so the panel does not jump.
+ */
+export const panelStartsFolded = (
+  structure:
+    Pick<StructureInfo, "regions" | "changes" | "invisible"> | null | undefined,
+  report: Pick<A11yReport, "violations"> | null | undefined,
+): boolean | undefined => {
+  if (structure === undefined || report === undefined) return undefined;
+  const changes =
+    !!structure &&
+    (structure.regions.length > 0 ||
+      structure.changes.length > 0 ||
+      structure.invisible.length > 0);
+  const findings = !!report && report.violations.length > 0;
+  return !changes && !findings;
+};

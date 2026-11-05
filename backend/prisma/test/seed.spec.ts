@@ -35,6 +35,11 @@ const mockDefaultUser = {
   apiKey: 'DEFAULTUSERAPIKEYTOBECHANGED',
   password: 'password.hashed',
   isActive: true,
+  // fields Vision added to User; the seed leaves them empty
+  jiraToken: null,
+  jiraEmail: null,
+  geminiApiKey: null,
+  lastSignInAt: null,
   updatedAt: new Date(),
   createdAt: new Date(),
 } as const;

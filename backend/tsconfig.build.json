@@ -1,4 +1,8 @@
 {
   "extends": "./tsconfig.json",
+  // the image builds src alone; rootDir keeps dist/main.js where `node dist/main` looks for it.
+  // Not incremental: after `rimraf dist` a stale build info would make tsc emit nothing
+  "compilerOptions": { "rootDir": "./src", "incremental": false },
+  "include": ["src/**/*"],
   "exclude": ["node_modules", "test", "dist", "**/*spec.ts"]
 }

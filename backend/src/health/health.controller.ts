@@ -1,5 +1,5 @@
 import { Controller, Get } from '@nestjs/common';
-import { HealthCheckService, HealthCheck } from '@nestjs/terminus';
+import { HealthCheckService, HealthCheck, HealthIndicatorResult } from '@nestjs/terminus';
 import { PrismaService } from '../prisma/prisma.service';
 import { ApiOkResponse, ApiTags } from '@nestjs/swagger';
 
@@ -15,6 +15,9 @@ export class HealthController {
   @ApiOkResponse({ type: Object })
   @HealthCheck()
   check() {
-    return this.health.check([() => this.prismaService.$queryRaw`SELECT 1`]);
+    // the query result is what the indicator reported before Terminus 12 typed it: the answer stays the same
+    return this.health.check([
+      () => this.prismaService.$queryRaw`SELECT 1` as Promise<unknown> as Promise<HealthIndicatorResult>,
+    ]);
   }
 }

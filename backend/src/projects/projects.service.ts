@@ -13,7 +13,7 @@ import { BuildsService } from '../builds/builds.service';
 import { TestVariationsService } from '../test-variations/test-variations.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { Project } from '@prisma/client';
-import uuidAPIKey from 'uuid-apikey';
+import { looksLikeUuid } from '../shared/random-key';
 import { UpdateProjectDto } from './dto/update-project.dto';
 import { settingsConflict } from './settings-conflict';
 import { hideConfigSecrets, keepConfigSecrets } from './project-secrets';
@@ -93,7 +93,7 @@ export class ProjectsService implements OnModuleInit {
   }
 
   async findOne(idOrName: string): Promise<Project> {
-    const isUUID = uuidAPIKey.isUUID(idOrName);
+    const isUUID = looksLikeUuid(idOrName);
     const project: Project = await this.prismaService.project.findUnique({
       where: {
         id: isUUID ? idOrName : undefined,

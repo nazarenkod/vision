@@ -6,6 +6,8 @@ COPY ./prisma/schema.prisma ./
 
 # A wildcard is used to ensure both package.json AND package-lock.json are copied
 COPY package*.json ./
+# overrides point a dev dependency at a patched copy here (vendor/deepmerge/README.md)
+COPY vendor ./vendor
 
 # Install app dependencies
 ENV NODE_TLS_REJECT_UNAUTHORIZED='0'

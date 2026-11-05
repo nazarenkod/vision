@@ -90,5 +90,14 @@ class ChangedFilesTest(unittest.TestCase):
         self.assertEqual(verify.new_migrations(files), ["backend/prisma/migrations/20261030_x/migration.sql"])
 
 
+class NodeVersionTest(unittest.TestCase):
+    def test_refuses_a_node_older_than_24_9(self):
+        # Jest loads the ES modules of Nest 12 with require(esm) only from 24.9 on
+        self.assertEqual(verify.node_too_old("v23.3.0"), "23.3")
+        self.assertEqual(verify.node_too_old("v24.8.1"), "24.8")
+        self.assertIsNone(verify.node_too_old("v24.22.2"))
+        self.assertIsNone(verify.node_too_old("v26.0.0"))
+
+
 if __name__ == "__main__":
     unittest.main()

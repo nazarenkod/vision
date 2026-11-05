@@ -48,7 +48,7 @@ describe('ProjectsService', () => {
       const projectFindUniqueMock = jest.fn().mockResolvedValueOnce(undefined);
       service = await initService({ projectFindUniqueMock });
 
-      await expect(service.findOne('foo')).rejects.toThrowError(
+      await expect(service.findOne('foo')).rejects.toThrow(
         new HttpException('Project not found', HttpStatus.NOT_FOUND)
       );
     });

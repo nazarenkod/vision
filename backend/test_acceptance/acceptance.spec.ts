@@ -1,13 +1,13 @@
 import { User } from '@prisma/client';
 import axios from 'axios'
-import { UserLoginRequestDto } from 'src/users/dto/user-login-request.dto';
-import { UserLoginResponseDto } from 'src/users/dto/user-login-response.dto';
-import uuidAPIKey from 'uuid-apikey';
+import { UserLoginRequestDto } from '../src/users/dto/user-login-request.dto';
+import { UserLoginResponseDto } from '../src/users/dto/user-login-response.dto';
+import { randomUUID } from 'crypto';
 
 axios.defaults.baseURL = 'http://localhost:4200';
 
 let user: Partial<User> = {
-    email: `${uuidAPIKey.create().uuid}@example.com`,
+    email: `${randomUUID()}@example.com`,
     password: '123456',
     firstName: 'fName',
     lastName: 'lName',

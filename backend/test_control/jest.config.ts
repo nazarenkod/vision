@@ -2,7 +2,7 @@ import { createDefaultPreset } from 'ts-jest';
 
 // Run only through scripts/control-scenario.sh: it starts the server, the database and the SDK build.
 /** @returns {Promise<import('jest').Config>} */
-module.exports = async () => {
+export default async () => {
   return {
     displayName: 'Control scenario',
     roots: ['./'],

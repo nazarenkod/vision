@@ -195,6 +195,16 @@ def missing_dependencies():
     return [p for p in ("backend", "frontend") if not (ROOT / p / "node_modules").is_dir()]
 
 
+# Nest 12 ships ES modules only, and Jest loads them with require(esm) from Node 24.9 on
+NODE_MIN = (24, 9)
+
+
+def node_too_old(version: str):
+    """The Node version as "24.9" when it is older than NODE_MIN, else None."""
+    numbers = tuple(int(n) for n in version.lstrip("v").split(".")[:2])
+    return None if numbers >= NODE_MIN else ".".join(map(str, numbers))
+
+
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     parser.add_argument("--skip-e2e", action="store_true", help="do not run Playwright")
@@ -205,6 +215,11 @@ def main(argv=None) -> int:
     missing = missing_dependencies()
     if missing:
         print(f"No node_modules in {', '.join(missing)}: run npm ci there first.")
+        return 1
+    node = subprocess.run(["node", "--version"], capture_output=True, text=True).stdout.strip() or "v0"
+    old = node_too_old(node)
+    if old:
+        print(f"Node {old} is too old: backend tests need {'.'.join(map(str, NODE_MIN))}+ (see .nvmrc; nvm use).")
         return 1
 
     logs = pathlib.Path(tempfile.mkdtemp(prefix="vision-verify-"))

@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import uuidAPIKey from 'uuid-apikey';
+import { newRandomKey } from '../shared/random-key';
 import { compare, genSalt, hash } from 'bcryptjs';
 import { JwtPayload } from './jwt-payload.model';
 import { User } from '@prisma/client';
@@ -15,7 +15,7 @@ export class AuthService {
   }
 
   generateApiKey(): string {
-    return uuidAPIKey.create({ noDashes: true }).apiKey;
+    return newRandomKey();
   }
 
   async compare(password: string, hashedPassword: string): Promise<boolean> {

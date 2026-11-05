@@ -1,7 +1,7 @@
 import { createDefaultPreset } from 'ts-jest';
 
 /** @returns {Promise<import('jest').Config>} */
-module.exports = async () => {
+export default async () => {
   return {
     displayName: 'E2E Tests',
     roots: ['./'],

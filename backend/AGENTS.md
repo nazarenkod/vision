@@ -1,4 +1,4 @@
-# backend — NestJS 11 + Prisma 6 + Postgres
+# backend — NestJS 12 + Prisma 7 + Postgres
 
 Загальні правила — у [../AGENTS.md](../AGENTS.md). Тут лише те, що стосується бекенду.
 
@@ -57,8 +57,17 @@ npm run test:e2e / test:acceptance         # потрібні запущені P
 
 ## Пастки
 
+- **Node 24.9+** (`.nvmrc`, `nvm use`): Nest 12 — лише ES-модулі, а Jest 30 вантажить їх через
+  `require(esm)` тільки з цієї версії; на старішому Node тести падають з «Must use import to load
+  ES Module». Код компілюється в CommonJS, Node сам підтягує ESM-пакети. `npm run build` — це
+  `tsc -p tsconfig.build.json` (без Nest CLI), результат у `dist/main.js`.
+- **Prisma 7:** адреса бази — у `prisma.config.ts` (у `schema.prisma` її немає), клієнт ходить через
+  `@prisma/adapter-pg` (`PrismaService`, `prisma/client.ts`). Генератор лишився `prisma-client-js`,
+  тож імпорти — як і раніше, з `@prisma/client`; помилки — `Prisma.PrismaClientKnownRequestError`.
+- **`overrides` у `package.json`** піднімають транзитивні dev-залежності до версій без вразливостей;
+  `deepmerge` — виправлена копія у `vendor/` (виправленого релізу немає, див. її README).
 - `npx jest` без `--projects src` запускає ще e2e й acceptance, і вони падають без бази.
-  Один файл — `npm test -- --testPathPattern <шлях>`: голий шлях після `--projects src` jest
+  Один файл — `npm test -- --testPathPatterns <шлях>` (Jest 30): голий шлях після `--projects src` jest
   вважає ще одним проєктом і падає з «jest is not defined».
 - `parseUiTreeSettings` відкидає записи, яких не розуміє. Додаючи поле в налаштування проєкту,
   онови й парсер, і його тест (`comparison-inputs.spec.ts`).

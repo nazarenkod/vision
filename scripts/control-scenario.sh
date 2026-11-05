@@ -77,7 +77,7 @@ echo "==> Migrations and seed"
 (cd "$BACKEND" && npx ts-node prisma/seed.ts >"$WORK/seed.log" 2>&1) || { cat "$WORK/seed.log"; vision_die "Seed failed."; }
 
 echo "==> Building the backend"
-(cd "$BACKEND" && npx nest build >"$WORK/build.log" 2>&1) || { cat "$WORK/build.log"; vision_die "Backend build failed."; }
+(cd "$BACKEND" && npm run build >"$WORK/build.log" 2>&1) || { cat "$WORK/build.log"; vision_die "Backend build failed."; }
 # The image builds src alone (dist/main.js); a checkout also has the test_* folders next to it,
 # which moves the output one level down.
 MAIN_JS="$BACKEND/dist/main.js"

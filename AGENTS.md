@@ -41,7 +41,7 @@ Vision — внутрішній форк [Visual Regression Tracker](https://git
 
 | Шлях | Що там | Команди й правила |
 |---|---|---|
-| `backend/` | NestJS 11 + Prisma 6 + Postgres: API, UI-дерево, доступність, Jira, AI | [backend/AGENTS.md](backend/AGENTS.md) |
+| `backend/` | NestJS 12 + Prisma 7 + Postgres (Node 24): API, UI-дерево, доступність, Jira, AI | [backend/AGENTS.md](backend/AGENTS.md) |
 | `frontend/` | React 18 + MUI 5 + Vite, Playwright; CLI `public/cli/vision.py` | [frontend/AGENTS.md](frontend/AGENTS.md) |
 | `sdk-java/` | Java SDK (upstream + `uiTree`, `featureName`) | [sdk-java/AGENTS.md](sdk-java/AGENTS.md) |
 | `scripts/` | `vision.sh`, копія даних проду, jar SDK, перевірка документації | [scripts/AGENTS.md](scripts/AGENTS.md) |

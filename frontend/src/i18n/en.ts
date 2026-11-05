@@ -1355,7 +1355,6 @@ export const en = {
   "reportBug.aiGets":
     "Gemini gets your note, the baseline and current cut around {areas} area(s), {changes} ticked change(s) and the check’s name. Not the whole images, not your tokens.",
   "reportBug.fillWithAi": "Fill with AI",
-  "reportBug.askAgain": "Ask again",
   "reportBug.drafting": "Drafting…",
   "reportBug.aiFailed":
     "AI did not fill the bug: {error}. Your note and fields are kept; fill in the rest yourself.",
@@ -1366,17 +1365,20 @@ export const en = {
   "reportBug.field.actual": "Actual result",
   "reportBug.field.expected": "Expected result",
   "reportBug.stepsPlaceholder": "1. …\n2. Open the screen of the feature",
-  "reportBug.screenshots":
-    "The marked current screen goes into the actual result, the baseline into the expected one.",
-  "reportBug.screenshotsNoBaseline":
-    "The marked current screen goes into the actual result; this check has no baseline yet.",
   "reportBug.visionAdds":
     "Vision adds the check, the build and a link back to this review, labels the bug “vision” and copies the customer from the task.",
   "reportBug.alsoReject": "Also reject the screen",
-  "reportBug.missing": {
-    one: "1 required field left: {fields}",
-    other: "{count} required fields left: {fields}",
-  },
+  "reportBug.adds": "Adds the screen, build and a link back · label “vision”",
+  "reportBug.required": "Required",
+  "reportBug.jiraField": "Jira field",
+  "reportBug.choose": "Choose…",
+  "reportBug.drafted":
+    "Texts drafted by AI from your note and the marked area.",
+  "reportBug.draftAgain": "Draft again",
+  "reportBug.whatAiGets": "What AI receives",
+  "reportBug.getsCurrent": "Gets the marked current screen.",
+  "reportBug.getsBaseline": "Gets the baseline.",
+  "reportBug.noBaseline": "This check has no baseline yet.",
   "reportBug.creating": "Creating…",
   "reportBug.filed": "Filed {key}",
   "reportBug.filedRejected": "Filed {key} · screen rejected",

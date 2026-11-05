@@ -1,5 +1,6 @@
 import React from "react";
-import { Autocomplete, MenuItem, TextField } from "@mui/material";
+import { Autocomplete, Box, MenuItem, TextField } from "@mui/material";
+import { tokens } from "../../theme";
 import { insightsService } from "../../services";
 import { JiraBugInput, JiraUser } from "../../types";
 import { useT } from "../../i18n";
@@ -22,16 +23,22 @@ const optionIds = (value: unknown): string[] =>
       ? [String((value as { id: string }).id)]
       : [];
 
-/** One field of a Jira bug: a person, an option, several options, or text. */
+/**
+ * One field of a Jira bug: a person, an option, several options, or text.
+ * With an `id` the label is drawn above the field by the caller (046), named
+ * `${id}-label`; without one the field carries its own floating label.
+ */
 export const JiraFieldInput: React.FunctionComponent<{
   testRunId: string;
   input: JiraBugInput;
   chosen?: ChosenValue;
   onChange: (value: ChosenValue | undefined) => void;
-}> = ({ testRunId, input, chosen, onChange }) => {
+  id?: string;
+  error?: boolean;
+}> = ({ testRunId, input, chosen, onChange, id, error }) => {
   const value = chosen?.value ?? input.value;
   const { t } = useT();
-  const label = `${input.name}${input.required ? " *" : ""}`;
+  const label = id ? undefined : `${input.name}${input.required ? " *" : ""}`;
   const [query, setQuery] = React.useState("");
   const [people, setPeople] = React.useState<JiraUser[]>([]);
   const [searching, setSearching] = React.useState(false);
@@ -69,6 +76,7 @@ export const JiraFieldInput: React.FunctionComponent<{
         : null;
     return (
       <Autocomplete
+        id={id}
         options={people}
         value={current}
         filterOptions={(options) => options}
@@ -96,6 +104,8 @@ export const JiraFieldInput: React.FunctionComponent<{
           <TextField
             {...params}
             label={label}
+            error={error}
+            size={id ? "small" : undefined}
             placeholder={t("bug.searchByName")}
           />
         )}
@@ -109,9 +119,35 @@ export const JiraFieldInput: React.FunctionComponent<{
     return (
       <TextField
         select
+        id={id}
         label={label}
+        error={error}
+        size={id ? "small" : undefined}
         value={multiple ? ids : (ids[0] ?? "")}
-        SelectProps={{ multiple }}
+        SelectProps={{
+          multiple,
+          ...(id
+            ? {
+                labelId: `${id}-label`,
+                displayEmpty: true,
+                renderValue: (picked: unknown) => {
+                  const chosenIds = ([] as string[]).concat(
+                    picked as string | string[],
+                  );
+                  return chosenIds.length && chosenIds[0] !== "" ? (
+                    (input.options ?? [])
+                      .filter((option) => chosenIds.includes(option.id))
+                      .map((option) => option.label)
+                      .join(", ")
+                  ) : (
+                    <Box component="span" sx={{ color: tokens.textMuted }}>
+                      {t("reportBug.choose")}
+                    </Box>
+                  );
+                },
+              }
+            : {}),
+        }}
         onChange={(event) => {
           const picked = ([] as string[]).concat(
             event.target.value as string | string[],
@@ -142,7 +178,10 @@ export const JiraFieldInput: React.FunctionComponent<{
 
   return (
     <TextField
+      id={id}
       label={label}
+      error={error}
+      size={id ? "small" : undefined}
       type={input.type === "number" ? "number" : "text"}
       value={value === undefined || value === null ? "" : String(value)}
       onChange={(event) => {

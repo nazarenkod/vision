@@ -6,7 +6,7 @@
 
 | Шлях | Що там |
 |---|---|
-| `src/theme.ts` | палітри світлої й темної тем, `tokens` (CSS-змінні), `motion` (тривалості, крива); кольори й тривалості беремо звідси, не літералами ([ADR-0015](../docs/decisions/0015-theme-tokens-as-css-variables.md)) |
+| `src/theme.ts` | палітри світлої й темної тем, `tokens` (CSS-змінні), `motion` (тривалості, крива), шкала `type` (28/20/16/14/13/12 px) і `radius` (`"6px"`/`"12px"`/`"999px"`, рядки: число в `sx` множиться); кольори, тривалості, розміри шрифту й кути беремо звідси, не літералами — ESLint забороняє інші ([046](../docs/specs/046-design-review-refresh/spec.md)) ([ADR-0015](../docs/decisions/0015-theme-tokens-as-css-variables.md)) |
 | `src/contexts/themeMode.context.tsx` | вибір теми (System / Light / Dark), ⇧D, `useTokens()` — справжні кольори для canvas і бібліотек з inline-стилями |
 | `src/components/BrandMark.tsx` | знак «Гніздо» і словесний знак; favicon — `public/favicon.svg`, PNG — `scripts/render-favicon.mjs` |
 | `src/components/motion/` | `useCountUp`, `staggered(i)` (каскад), `GrowFromPointer` (діалоги ростуть з точки кліку), `SlidingToggleGroup` (замість `ToggleButtonGroup`: підсвітка переїжджає) |
@@ -41,6 +41,8 @@ npx playwright test <spec> --ignore-snapshots   # функціональні т�
 
 - Колір у `src/components` і `src/pages` — лише `tokens.*` або `useTokens()`: шістнадцятковий
   літерал там забороняє ESLint, бо він працює лише в одній темі.
+- Розмір шрифту — лише зі шкали `type`, кут — лише `radius.*`; моноширинний шрифт — лише для
+  коду й ідентифікаторів (гілка, ID, ключ Jira, селектор), числа — `tabular-nums`.
 - Рух — з `motion` у `theme.ts`; знімки в порівнянні після появи не рухаються (REQ-018-25).
 - Тексти інтерфейсу — через `useT()` і ключі в `src/i18n/en.ts` + `uk.ts`
   ([ADR-0017](../docs/decisions/0017-interface-in-two-languages.md)): пропущений переклад —

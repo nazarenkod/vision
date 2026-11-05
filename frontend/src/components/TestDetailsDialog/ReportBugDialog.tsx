@@ -19,8 +19,8 @@ import {
   AutoAwesome,
   BugReport,
   Close,
+  InfoOutlined,
   Refresh,
-  Visibility,
 } from "@mui/icons-material";
 import { insightsService } from "../../services";
 import { useProjectState, useUserState } from "../../contexts";
@@ -35,6 +35,7 @@ import {
 } from "../../types";
 import { ChosenValue, JiraFieldInput } from "./JiraFieldInput";
 import { BugEvidence } from "./BugEvidence";
+import { LabelledField } from "./LabelledField";
 import { describeChange } from "../ChangeGroups";
 import { tokens, type, radius } from "../../theme";
 import { useT } from "../../i18n";
@@ -60,6 +61,7 @@ import {
   editField,
   emptyForm,
   missingFields,
+  missingTargets,
   visibleInputs,
 } from "../../_helpers/bugReport.helper";
 
@@ -131,6 +133,9 @@ export const ReportBugDialog: React.FunctionComponent<{
     testRun.status === TestStatus.new;
   const [reject, setReject] = React.useState(canReject);
   const [creating, setCreating] = React.useState(false);
+  // the person pressed Create bug with something empty: show what is required
+  const [tried, setTried] = React.useState(false);
+  const formRef = React.useRef<HTMLDivElement>(null);
   const keyValid = JIRA_KEY.test(parentKey.trim());
   const { user } = useUserState();
   const withAi = aiAvailable(user);
@@ -249,14 +254,13 @@ export const ReportBugDialog: React.FunctionComponent<{
   const cannotAsk = (prep?.missing ?? []).filter(
     (name) => !inputs.some((input) => input.name === name),
   );
-  const ready =
-    !!prep &&
-    !!issueType &&
-    !missing.texts.length &&
-    !missing.fields.length &&
-    !cannotAsk.length &&
-    !creating &&
-    !drafting;
+  const targets = missingTargets(
+    !!prep && !!issueType,
+    missing,
+    inputs,
+    cannotAsk.length,
+  );
+  const isRequired = (target: string) => tried && targets.includes(target);
 
   const change = (field: keyof BugForm, value: string) => {
     const next = editField(form, field, value, drafted, edited);
@@ -295,7 +299,34 @@ export const ReportBugDialog: React.FunctionComponent<{
     }
   };
 
+  // the first empty field comes into view and takes the focus (REQ-046-41)
+  const reveal = (target: string) =>
+    window.requestAnimationFrame(() => {
+      const box = formRef.current?.querySelector<HTMLElement>(
+        `[data-bug-field="${target}"]`,
+      );
+      if (!box) return;
+      const reduce = window.matchMedia?.(
+        "(prefers-reduced-motion: reduce)",
+      ).matches;
+      box.scrollIntoView({
+        block: "center",
+        behavior: reduce ? "auto" : "smooth",
+      });
+      box
+        .querySelector<HTMLElement>(
+          'textarea:not([aria-hidden]), input:not([aria-hidden="true"]):not([type="hidden"]), [role="combobox"]',
+        )
+        ?.focus({ preventScroll: true });
+    });
+
   const create = async () => {
+    if (creating || drafting || loading) return;
+    if (targets.length) {
+      setTried(true);
+      reveal(targets[0]);
+      return;
+    }
     if (!prep || !issueType) return;
     const key = parentKey.trim().toUpperCase();
     setCreating(true);
@@ -341,59 +372,48 @@ export const ReportBugDialog: React.FunctionComponent<{
     }
   };
 
-  const aiTag = (field: DraftField) =>
-    drafted.has(field) ? (
-      <Chip
-        label={t("reportBug.aiTag")}
-        size="small"
-        icon={<AutoAwesome sx={{ fontSize: 12 }} />}
-        sx={{
-          height: 18,
-          ml: 0.75,
-          fontSize: type.caption,
-          fontWeight: 700,
-          bgcolor: tokens.brandSoft,
-          color: tokens.brand,
-          "& .MuiChip-icon": { color: tokens.brand },
-        }}
-        data-testid={`aiDrafted-${field}`}
-      />
-    ) : null;
-  const label = (text: string, field?: DraftField) => (
-    <Box component="span" sx={{ display: "inline-flex", alignItems: "center" }}>
-      {text} *{field && aiTag(field)}
-    </Box>
-  );
   const textField = (
     field: DraftField | "environment",
     text: string,
     rows: number,
-    placeholder?: string,
-  ) => (
-    <TextField
-      label={label(text, field === "environment" ? undefined : field)}
-      value={form[field]}
-      onChange={(event) => change(field, event.target.value)}
-      multiline
-      minRows={rows}
-      maxRows={rows + 3}
-      placeholder={placeholder}
-      error={
-        field !== "environment" &&
-        !!prep &&
-        missing.texts.includes(field) &&
-        edited.has(field)
-      }
-      inputProps={{ "data-testid": `bugField-${field}` }}
-      fullWidth
-      size="small"
-    />
-  );
+    options: { placeholder?: string; helper?: React.ReactNode } = {},
+  ) => {
+    const ai = field !== "environment" && drafted.has(field);
+    return (
+      <LabelledField
+        id={`bug-${field}`}
+        label={text}
+        ai={ai}
+        aiTestId={`aiDrafted-${field}`}
+        helper={options.helper}
+        required={isRequired(field)}
+        target={field}
+      >
+        <TextField
+          id={`bug-${field}`}
+          value={form[field]}
+          onChange={(event) => change(field, event.target.value)}
+          multiline
+          minRows={rows}
+          maxRows={rows + 3}
+          placeholder={options.placeholder}
+          error={
+            field !== "environment" &&
+            missing.texts.includes(field) &&
+            (tried || edited.has(field))
+          }
+          inputProps={{ "data-testid": `bugField-${field}` }}
+          fullWidth
+          size="small"
+        />
+      </LabelledField>
+    );
+  };
 
-  const missingNames = [
-    ...missing.texts.map((field) => t(`reportBug.field.${field}`)),
-    ...missing.fields,
-  ];
+  const aiGets = t("reportBug.aiGets", {
+    areas: Math.min(3, marks.length || (structure?.regions.length ?? 0)),
+    changes: tickedChanges.length,
+  });
 
   return (
     <Dialog
@@ -402,8 +422,8 @@ export const ReportBugDialog: React.FunctionComponent<{
       maxWidth={false}
       PaperProps={{
         sx: {
-          width: "min(1000px, calc(100vw - 32px))",
-          height: "min(720px, calc(100vh - 32px))",
+          width: "min(1120px, calc(100vw - 32px))",
+          height: "min(780px, calc(100vh - 32px))",
           display: "flex",
           flexDirection: "column",
         },
@@ -412,25 +432,24 @@ export const ReportBugDialog: React.FunctionComponent<{
     >
       <Box
         sx={{
-          height: 56,
+          height: 60,
           display: "flex",
           alignItems: "center",
           gap: 1.5,
-          pl: 2.5,
-          pr: 1.5,
+          pl: 3,
+          pr: 2,
           borderBottom: `1px solid ${tokens.border}`,
           flexShrink: 0,
         }}
       >
-        <BugReport sx={{ color: tokens.brand }} />
-        <Typography variant="h6" sx={{ fontSize: 16, fontWeight: 600 }}>
+        <BugReport sx={{ color: tokens.brand, fontSize: 20 }} />
+        <Typography variant="h6" sx={{ fontSize: type.title, fontWeight: 600 }}>
           {t("reportBug.title")}
         </Typography>
         <Typography
           variant="body2"
-          color="textSecondary"
           noWrap
-          sx={{ minWidth: 0, flexShrink: 1 }}
+          sx={{ minWidth: 0, flexShrink: 1, color: tokens.textSecondary }}
         >
           {testRun.name}
         </Typography>
@@ -452,7 +471,7 @@ export const ReportBugDialog: React.FunctionComponent<{
           flex: 1,
           minHeight: 0,
           display: "grid",
-          gridTemplateColumns: { xs: "1fr", md: "372px minmax(0, 1fr)" },
+          gridTemplateColumns: { xs: "1fr", md: "380px minmax(0, 1fr)" },
           overflow: { xs: "auto", md: "hidden" },
         }}
       >
@@ -460,7 +479,8 @@ export const ReportBugDialog: React.FunctionComponent<{
           sx={{
             background: tokens.lightbox,
             borderRight: { md: `1px solid ${tokens.border}` },
-            p: 2,
+            px: 3,
+            py: 2.5,
             overflow: "auto",
           }}
         >
@@ -470,13 +490,15 @@ export const ReportBugDialog: React.FunctionComponent<{
             onChange={setMarks}
             elements={structure?.elements ?? []}
             disabled={drafting || creating}
-            width={340}
-            height={420}
+            width={332}
+            height={460}
           />
         </Box>
         <Box
+          ref={formRef}
           sx={{
-            p: 2.5,
+            px: 3.5,
+            py: 2.5,
             display: "flex",
             flexDirection: "column",
             gap: 2,
@@ -484,62 +506,80 @@ export const ReportBugDialog: React.FunctionComponent<{
             minWidth: 0,
           }}
         >
-          <Box sx={{ display: "flex", gap: 1.5 }}>
-            <TextField
+          <Box sx={{ display: "flex", gap: 1.5, flexWrap: "wrap" }}>
+            <LabelledField
               id="bug-parent"
               label={t("bug.task")}
-              placeholder="P24MOB-14136"
-              value={parentKey}
-              onChange={(event) => setParentKey(event.target.value)}
-              error={!!parentKey && !keyValid}
-              size="small"
+              required={isRequired("parent")}
+              target="parent"
+              helper={
+                parentKey && !keyValid
+                  ? t("bug.looksLike")
+                  : prep
+                    ? `${prep.parent.summary}${prep.parent.assignee ? ` — ${prep.parent.assignee}` : ""}`
+                    : t("bug.taskHelp")
+              }
               sx={{ flex: "1 1 200px" }}
-              inputProps={{ style: { fontFamily: tokens.mono } }}
-            />
-            {prep && (
+            >
               <TextField
-                select
-                label={t("bug.issueType")}
-                value={issueTypeId ?? ""}
-                onChange={(event) => setIssueTypeId(event.target.value)}
+                id="bug-parent"
+                placeholder="P24MOB-14136"
+                value={parentKey}
+                onChange={(event) => setParentKey(event.target.value)}
+                error={(!!parentKey && !keyValid) || isRequired("parent")}
                 size="small"
+                inputProps={{ style: { fontFamily: tokens.mono } }}
+              />
+            </LabelledField>
+            {prep && (
+              <LabelledField
+                id="bug-issueType"
+                label={t("bug.issueType")}
                 sx={{ flex: "1 1 180px" }}
               >
-                {prep.issueTypes.map((type) => (
-                  <MenuItem key={type.id} value={type.id}>
-                    {type.name}
-                    {type.subtask ? t("bug.subtask") : ""}
-                  </MenuItem>
-                ))}
-              </TextField>
+                <TextField
+                  select
+                  id="bug-issueType"
+                  value={issueTypeId ?? ""}
+                  onChange={(event) => setIssueTypeId(event.target.value)}
+                  SelectProps={{ labelId: "bug-issueType-label" }}
+                  size="small"
+                >
+                  {prep.issueTypes.map((type) => (
+                    <MenuItem key={type.id} value={type.id}>
+                      {type.name}
+                      {type.subtask ? t("bug.subtask") : ""}
+                    </MenuItem>
+                  ))}
+                </TextField>
+              </LabelledField>
             )}
             {prep &&
               issueType &&
               !issueType.subtask &&
               prep.linkTypes.length > 0 && (
-                <TextField
-                  select
+                <LabelledField
+                  id="bug-linkType"
                   label={t("bug.linkAs")}
-                  value={linkType ?? ""}
-                  onChange={(event) => setLinkType(event.target.value)}
-                  size="small"
                   sx={{ flex: "1 1 160px" }}
                 >
-                  {prep.linkTypes.map((name) => (
-                    <MenuItem key={name} value={name}>
-                      {name}
-                    </MenuItem>
-                  ))}
-                </TextField>
+                  <TextField
+                    select
+                    id="bug-linkType"
+                    value={linkType ?? ""}
+                    onChange={(event) => setLinkType(event.target.value)}
+                    SelectProps={{ labelId: "bug-linkType-label" }}
+                    size="small"
+                  >
+                    {prep.linkTypes.map((name) => (
+                      <MenuItem key={name} value={name}>
+                        {name}
+                      </MenuItem>
+                    ))}
+                  </TextField>
+                </LabelledField>
               )}
           </Box>
-          <Typography variant="body2" color="textSecondary" sx={{ mt: -1 }}>
-            {parentKey && !keyValid
-              ? t("bug.looksLike")
-              : prep
-                ? `${prep.parent.summary}${prep.parent.assignee ? ` — ${prep.parent.assignee}` : ""}`
-                : t("bug.taskHelp")}
-          </Typography>
           {loading && <LinearProgress />}
           {error && <Alert severity="error">{error}</Alert>}
           {withAi && (
@@ -547,18 +587,20 @@ export const ReportBugDialog: React.FunctionComponent<{
               sx={{ display: "flex", flexDirection: "column", gap: 1.25 }}
               data-testid="bugAi"
             >
-              <TextField
-                label={`${t("reportBug.note")} *`}
-                value={note}
-                onChange={(event) => setNote(event.target.value)}
-                multiline
-                minRows={2}
-                maxRows={4}
-                placeholder={t("reportBug.notePlaceholder")}
-                size="small"
-                inputProps={{ "data-testid": "bugNote" }}
-                disabled={drafting}
-              />
+              <LabelledField id="bug-note" label={t("reportBug.note")}>
+                <TextField
+                  id="bug-note"
+                  value={note}
+                  onChange={(event) => setNote(event.target.value)}
+                  multiline
+                  minRows={2}
+                  maxRows={4}
+                  placeholder={t("reportBug.notePlaceholder")}
+                  size="small"
+                  inputProps={{ "data-testid": "bugNote" }}
+                  disabled={drafting}
+                />
+              </LabelledField>
               <Box
                 sx={{
                   display: "flex",
@@ -567,7 +609,9 @@ export const ReportBugDialog: React.FunctionComponent<{
                   alignItems: "center",
                 }}
               >
-                <Typography variant="caption" color="textSecondary">
+                <Typography
+                  sx={{ fontSize: type.caption, color: tokens.textMuted }}
+                >
                   {t("reportBug.add")}
                 </Typography>
                 {(
@@ -601,7 +645,9 @@ export const ReportBugDialog: React.FunctionComponent<{
               </Box>
               {changes.length > 0 && (
                 <Box>
-                  <Typography variant="caption" color="textSecondary">
+                  <Typography
+                    sx={{ fontSize: type.caption, color: tokens.textMuted }}
+                  >
                     {t("reportBug.changesItLooksAt")}
                   </Typography>
                   {changes.map((option) => (
@@ -610,7 +656,9 @@ export const ReportBugDialog: React.FunctionComponent<{
                       sx={{
                         display: "flex",
                         ml: 0,
-                        "& .MuiFormControlLabel-label": { fontSize: 13 },
+                        "& .MuiFormControlLabel-label": {
+                          fontSize: type.small,
+                        },
                       }}
                       control={
                         <Checkbox
@@ -632,44 +680,51 @@ export const ReportBugDialog: React.FunctionComponent<{
                   ))}
                 </Box>
               )}
-              <Box
-                sx={{
-                  display: "flex",
-                  gap: 1,
-                  alignItems: "flex-start",
-                  bgcolor: tokens.status.new.bg,
-                  borderRadius: radius.card,
-                  px: 1.5,
-                  py: 1,
-                }}
-              >
-                <Visibility
-                  sx={{ fontSize: 16, color: tokens.status.new.fg, mt: 0.25 }}
-                />
-                <Typography variant="body2" sx={{ fontSize: 12 }}>
-                  {t("reportBug.aiGets", {
-                    areas: Math.min(
-                      3,
-                      marks.length || (structure?.regions.length ?? 0),
-                    ),
-                    changes: tickedChanges.length,
-                  })}
-                </Typography>
-              </Box>
-              <Box sx={{ display: "flex", gap: 1, alignItems: "center" }}>
+              {/* asking AI is a side step: Create bug stays the one main action (REQ-046-40) */}
+              <Box sx={{ display: "flex", gap: 1.5, alignItems: "center" }}>
+                {attempt > 0 && (
+                  <Typography
+                    sx={{
+                      fontSize: type.small,
+                      color: tokens.textSecondary,
+                      minWidth: 0,
+                    }}
+                    data-testid="aiDraftedNote"
+                  >
+                    {t("reportBug.drafted")}
+                  </Typography>
+                )}
                 <Button
-                  variant="contained"
+                  variant="outlined"
+                  size="small"
+                  color="inherit"
                   startIcon={attempt ? <Refresh /> : <AutoAwesome />}
                   onClick={askAi}
                   disabled={!canAskAi(note) || drafting || creating}
                   data-testid="fillWithAi"
+                  sx={{
+                    ml: attempt ? "auto" : 0,
+                    flexShrink: 0,
+                    borderColor: tokens.borderStrong,
+                    fontWeight: 600,
+                  }}
                 >
                   {drafting
                     ? t("reportBug.drafting")
                     : attempt
-                      ? t("reportBug.askAgain")
+                      ? t("reportBug.draftAgain")
                       : t("reportBug.fillWithAi")}
                 </Button>
+                <Tooltip title={aiGets}>
+                  <IconButton
+                    size="small"
+                    aria-label={t("reportBug.whatAiGets")}
+                    data-testid="aiGetsInfo"
+                    sx={{ color: tokens.textMuted, flexShrink: 0 }}
+                  >
+                    <InfoOutlined sx={{ fontSize: 16 }} />
+                  </IconButton>
+                </Tooltip>
               </Box>
               {drafting && <LinearProgress />}
               {aiError && (
@@ -698,100 +753,125 @@ export const ReportBugDialog: React.FunctionComponent<{
               {t("reportBug.needGeminiKey")}
             </Alert>
           )}
-          <TextField
-            label={label(t("reportBug.field.essence"), "essence")}
-            value={form.essence}
-            onChange={(event) => change("essence", event.target.value)}
-            size="small"
-            fullWidth
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <Box
-                    component="span"
-                    sx={{
-                      fontFamily: tokens.mono,
-                      fontSize: type.caption,
-                      bgcolor: tokens.subtle,
-                      borderRadius: radius.control,
-                      px: 0.75,
-                      py: 0.25,
-                      color: tokens.textMuted,
-                    }}
-                  >
-                    {prep?.prefix ?? "[Automation]"}
-                  </Box>
-                </InputAdornment>
-              ),
-            }}
-            inputProps={{ "data-testid": "bugField-essence", maxLength: 200 }}
-          />
+          <LabelledField
+            id="bug-essence"
+            label={t("reportBug.field.essence")}
+            ai={drafted.has("essence")}
+            aiTestId="aiDrafted-essence"
+            required={isRequired("essence")}
+            target="essence"
+          >
+            <TextField
+              id="bug-essence"
+              value={form.essence}
+              onChange={(event) => change("essence", event.target.value)}
+              error={
+                missing.texts.includes("essence") &&
+                (tried || edited.has("essence"))
+              }
+              size="small"
+              fullWidth
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <Box
+                      component="span"
+                      sx={{
+                        fontFamily: tokens.mono,
+                        fontSize: type.caption,
+                        bgcolor: tokens.subtle,
+                        borderRadius: radius.control,
+                        px: 0.75,
+                        py: 0.25,
+                        color: tokens.textMuted,
+                      }}
+                    >
+                      {prep?.prefix ?? "[Automation]"}
+                    </Box>
+                  </InputAdornment>
+                ),
+              }}
+              inputProps={{
+                "data-testid": "bugField-essence",
+                maxLength: 200,
+              }}
+            />
+          </LabelledField>
           {textField("environment", t("reportBug.field.environment"), 2)}
-          {textField(
-            "steps",
-            t("reportBug.field.steps"),
-            2,
-            t("reportBug.stepsPlaceholder"),
-          )}
+          {textField("steps", t("reportBug.field.steps"), 2, {
+            placeholder: t("reportBug.stepsPlaceholder"),
+          })}
           <Box
             sx={{
               display: "grid",
-              gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" },
-              gap: 1.5,
+              gridTemplateColumns: {
+                xs: "1fr",
+                sm: "repeat(2, minmax(0, 1fr))",
+              },
+              gap: 2,
             }}
           >
-            {textField("actual", t("reportBug.field.actual"), 3)}
-            {textField("expected", t("reportBug.field.expected"), 3)}
+            {textField("actual", t("reportBug.field.actual"), 3, {
+              helper: t("reportBug.getsCurrent"),
+            })}
+            {textField("expected", t("reportBug.field.expected"), 3, {
+              helper:
+                prep && !prep.hasBaseline
+                  ? t("reportBug.noBaseline")
+                  : t("reportBug.getsBaseline"),
+            })}
           </Box>
-          <Typography variant="caption" color="textSecondary" sx={{ mt: -1 }}>
-            {prep && !prep.hasBaseline
-              ? t("reportBug.screenshotsNoBaseline")
-              : t("reportBug.screenshots")}
-          </Typography>
           {visibleInputs(inputs).map((input) => (
-            <JiraFieldInput
+            // Jira's own name, as Jira shows it; only the caption is ours (REQ-046-43)
+            <LabelledField
               key={`${issueTypeId}-${input.id}`}
-              testRunId={testRun.id}
-              input={input}
-              chosen={valueOf(input)}
-              onChange={(value) =>
-                setChosen((current) => {
-                  const next = { ...current };
-                  if (value) next[input.id] = value;
-                  else delete next[input.id];
-                  return next;
-                })
-              }
-            />
+              id={`bug-jira-${input.id}`}
+              label={input.name}
+              caption={t("reportBug.jiraField")}
+              required={isRequired(`jira:${input.id}`)}
+              target={`jira:${input.id}`}
+            >
+              <JiraFieldInput
+                id={`bug-jira-${input.id}`}
+                testRunId={testRun.id}
+                input={input}
+                chosen={valueOf(input)}
+                error={isRequired(`jira:${input.id}`)}
+                onChange={(value) =>
+                  setChosen((current) => {
+                    const next = { ...current };
+                    if (value) next[input.id] = value;
+                    else delete next[input.id];
+                    return next;
+                  })
+                }
+              />
+            </LabelledField>
           ))}
           {cannotAsk.length > 0 && prep && (
-            <Alert severity="warning">
+            <Alert severity="warning" data-bug-field="cannotAsk">
               {t("bug.cannotAsk", {
                 fields: cannotAsk.join(", "),
                 key: prep.parent.key,
               })}
             </Alert>
           )}
-          <Typography variant="caption" color="textSecondary">
-            {t("reportBug.visionAdds")}
-          </Typography>
         </Box>
       </Box>
       <Box
         sx={{
-          minHeight: 60,
+          minHeight: 68,
           display: "flex",
           alignItems: "center",
-          gap: 1.5,
-          px: 2,
+          gap: 2,
+          px: 3,
           borderTop: `1px solid ${tokens.border}`,
           flexShrink: 0,
-          // one line: Create bug used to drop under the list of missing fields
-          "& > *": { flexShrink: 0 },
         }}
       >
         {canReject && (
           <FormControlLabel
+            sx={{ flexShrink: 0, mr: 0 }}
             control={
               <Checkbox
                 size="small"
@@ -807,40 +887,33 @@ export const ReportBugDialog: React.FunctionComponent<{
             }
           />
         )}
-        {/* what is left to fill in, quietly: in red before anything was typed it
-            read as an error; the full list is in the tooltip when cut short */}
-        <Box
-          sx={{
-            flex: "1 1 0 !important",
-            minWidth: 0,
-            display: "flex",
-            justifyContent: "flex-end",
-          }}
+        <Tooltip title={t("reportBug.visionAdds")}>
+          <Typography
+            noWrap
+            sx={{
+              ml: "auto",
+              minWidth: 0,
+              fontSize: type.small,
+              color: tokens.textMuted,
+            }}
+            data-testid="bugAdds"
+          >
+            {t("reportBug.adds")}
+          </Typography>
+        </Tooltip>
+        <Button
+          onClick={onClose}
+          disabled={creating}
+          sx={{ flexShrink: 0, color: tokens.textSecondary }}
         >
-          {prep && missingNames.length > 0 && (
-            <Tooltip title={missingNames.join(", ")}>
-              <Typography
-                variant="body2"
-                noWrap
-                sx={{ color: tokens.textSecondary }}
-                data-testid="bugMissing"
-              >
-                {t("reportBug.missing", {
-                  count: missingNames.length,
-                  fields: missingNames.join(", "),
-                })}
-              </Typography>
-            </Tooltip>
-          )}
-        </Box>
-        <Button onClick={onClose} disabled={creating}>
           {t("common.cancel")}
         </Button>
         <Button
           variant="contained"
           onClick={create}
-          disabled={!ready}
+          disabled={creating}
           data-testid="createBug"
+          sx={{ flexShrink: 0 }}
         >
           {creating ? t("reportBug.creating") : t("bug.create")}
         </Button>

@@ -78,6 +78,28 @@ export function missingFields(
 }
 
 /**
+ * Where Create bug takes the person when something is still empty (046):
+ * every field still to fill, in the order the form reads, so the first one is
+ * where the dialog scrolls. The button stays enabled: a greyed-out Create with
+ * no reason next to it left people hunting for what was missing.
+ */
+export function missingTargets(
+  taskReady: boolean,
+  missing: { texts: DraftField[]; fields: string[] },
+  inputs: JiraBugInput[],
+  cannotAsk: number,
+): string[] {
+  return [
+    ...(taskReady ? [] : ["parent"]),
+    ...missing.texts,
+    ...inputs
+      .filter((input) => missing.fields.includes(input.name))
+      .map((input) => `jira:${input.id}`),
+    ...(cannotAsk ? ["cannotAsk"] : []),
+  ];
+}
+
+/**
  * On the person's own Gemini key (REQ-025-40): a small local model reads
  * screenshots poorly, and what AI costs is each person's to decide.
  */

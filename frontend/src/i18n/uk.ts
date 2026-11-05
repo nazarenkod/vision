@@ -1457,7 +1457,6 @@ export const uk: Messages = {
   "reportBug.aiGets":
     "Gemini отримає вашу нотатку, вирізки еталона й поточного навколо {areas} обл., {changes} відмічених змін і назву перевірки. Не цілі зображення й не ваші токени.",
   "reportBug.fillWithAi": "Заповнити з AI",
-  "reportBug.askAgain": "Спитати ще раз",
   "reportBug.drafting": "Заповнює…",
   "reportBug.aiFailed":
     "AI не заповнив баг: {error}. Нотатку й поля збережено; решту заповніть самі.",
@@ -1468,19 +1467,19 @@ export const uk: Messages = {
   "reportBug.field.actual": "Фактичний результат",
   "reportBug.field.expected": "Очікуваний результат",
   "reportBug.stepsPlaceholder": "1. …\n2. Відкрити екран фічі",
-  "reportBug.screenshots":
-    "Поточний з позначками піде у фактичний результат, еталон — в очікуваний.",
-  "reportBug.screenshotsNoBaseline":
-    "Поточний з позначками піде у фактичний результат; еталона в перевірки ще немає.",
   "reportBug.visionAdds":
     "Vision додасть перевірку, збірку й посилання на це порівняння, поставить мітку «vision» і візьме «Замовника» з таски.",
   "reportBug.alsoReject": "Також відхилити екран",
-  "reportBug.missing": {
-    one: "Лишилось {count} обов’язкове поле: {fields}",
-    few: "Лишилось {count} обов’язкові поля: {fields}",
-    many: "Лишилось {count} обов’язкових полів: {fields}",
-    other: "Лишилось {count} обов’язкового поля: {fields}",
-  },
+  "reportBug.adds": "Додасть екран, збірку й посилання назад · мітка «vision»",
+  "reportBug.required": "Обов’язкове поле",
+  "reportBug.jiraField": "Поле Jira",
+  "reportBug.choose": "Виберіть…",
+  "reportBug.drafted": "Тексти склав AI з вашої нотатки й позначеної області.",
+  "reportBug.draftAgain": "Скласти ще раз",
+  "reportBug.whatAiGets": "Що отримує AI",
+  "reportBug.getsCurrent": "Отримає поточний екран з позначками.",
+  "reportBug.getsBaseline": "Отримає еталон.",
+  "reportBug.noBaseline": "У перевірки ще немає еталона.",
   "reportBug.creating": "Створюю…",
   "reportBug.filed": "Заведено {key}",
   "reportBug.filedRejected": "Заведено {key} · екран відхилено",

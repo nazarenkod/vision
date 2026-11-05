@@ -1,8 +1,8 @@
 import com.google.gson.Gson;
-import io.visual_regression_tracker.sdk_java.Vision;
-import io.visual_regression_tracker.sdk_java.VisionConfig;
-import io.visual_regression_tracker.sdk_java.VisionOptions;
-import io.visual_regression_tracker.sdk_java.VisionResult;
+import ua.vision.sdk.Vision;
+import ua.vision.sdk.VisionConfig;
+import ua.vision.sdk.VisionOptions;
+import ua.vision.sdk.VisionResult;
 
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;

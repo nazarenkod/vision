@@ -9,6 +9,7 @@
  * Steps share state and run in order; scripts/control-scenario.sh starts everything.
  */
 import { join } from 'path';
+import { gzipSync } from 'zlib';
 import { API, Answer, FakeJira, Normalizer, call, fixture, run, screenFor, writeWork } from './harness';
 
 const norm = new Normalizer();
@@ -535,6 +536,58 @@ it('18 a build is approved as a whole and deleted', async () => {
       statuses: byName(after.body as Array<{ name: string; status: string }>).map((r) => [r.name, r.status]),
       removed: strip(removed),
       builds: strip(builds),
+    })
+  ).toMatchSnapshot();
+});
+
+it('19 hostile UI trees', async () => {
+  const key = { apiKey: state.editorKey };
+  const build = await call('POST', '/builds', key, { project: state.projectId, branchName: 'hostile' });
+  const png = screenFor(PAYMENT_XML, 1080, 2400).toString('base64');
+  // 256 MB of one character gzip into ~250 KB; and entities that expand into each other
+  const bomb = gzipSync(Buffer.alloc(256 * 1024 * 1024, 'a'), { level: 9 }).toString('base64');
+  const laughs = Buffer.from(
+    '<?xml version="1.0"?><!DOCTYPE lolz [<!ENTITY lol "lol"><!ENTITY lol2 "&lol;&lol;&lol;&lol;&lol;&lol;&lol;&lol;&lol;&lol;">]>' +
+      '<hierarchy><node text="&lol2;"/></hierarchy>'
+  ).toString('base64');
+  const send = (name: string, uiTree: string) =>
+    call('POST', '/test-runs', key, {
+      name,
+      imageBase64: png,
+      uiTree,
+      projectId: state.projectId,
+      buildId: build.body.id,
+      branchName: 'hostile',
+      device: 'Pixel 7',
+      os: 'Android 14',
+    });
+
+  // while the bomb is taken, the server keeps answering others (REQ-040-05, SC-040-01)
+  let slowest = 0;
+  let done = false;
+  const started = Date.now();
+  const bombed = send('Bomb', bomb).finally(() => (done = true));
+  while (!done) {
+    const t = Date.now();
+    await call('GET', '/health');
+    slowest = Math.max(slowest, Date.now() - t);
+  }
+  const bombAnswer = await bombed;
+  const took = Date.now() - started;
+  const laughsAnswer = await send('Laughs', laughs);
+  // the same request with a real tree keeps it: the two above lost theirs to the limits only
+  const realAnswer = await send('Real', Buffer.from(PAYMENT_XML).toString('base64'));
+  const hasTree = async (answer: Answer) =>
+    !!(await call('GET', `/test-runs/${(answer.body as { id: string }).id}`, { token: state.editorToken })).body
+      .uiTreeName;
+
+  expect(took).toBeLessThan(2000);
+  expect(slowest).toBeLessThan(1000);
+  expect(
+    record({
+      bomb: { status: bombAnswer.status, result: bombAnswer.body.status, hasUiTree: await hasTree(bombAnswer) },
+      laughs: { status: laughsAnswer.status, result: laughsAnswer.body.status, hasUiTree: await hasTree(laughsAnswer) },
+      real: { status: realAnswer.status, result: realAnswer.body.status, hasUiTree: await hasTree(realAnswer) },
     })
   ).toMatchSnapshot();
 });

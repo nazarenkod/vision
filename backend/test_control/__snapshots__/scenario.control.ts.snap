@@ -4520,3 +4520,23 @@ exports[`18 a build is approved as a whole and deleted 1`] = `
   ],
 }
 `;
+
+exports[`19 hostile UI trees 1`] = `
+{
+  "bomb": {
+    "hasUiTree": false,
+    "result": "new",
+    "status": 201,
+  },
+  "laughs": {
+    "hasUiTree": false,
+    "result": "new",
+    "status": 201,
+  },
+  "real": {
+    "hasUiTree": true,
+    "result": "new",
+    "status": 201,
+  },
+}
+`;

@@ -540,6 +540,7 @@ docker run --rm --user 0 --entrypoint chown -v "$PWD/demo-data:/data" vision-api
 Новая версия шифрует секреты, закрывает снимки подписью и делит проекты по доступу
 ([042](docs/specs/042-project-access/spec.md)–[044](docs/specs/044-secrets-at-rest/spec.md)), поэтому
 переход — по шагам, а не одним `git pull`. Прод VRT при этом только читается.
+Та же инструкция по-украински, с тем, что именно читается из VRT, — [bank-cutover](docs/guides/bank-cutover.md).
 
 1. Остановить старый Vision: `./scripts/vision.sh stop`.
 2. Забрать код: `git pull`.

@@ -579,7 +579,7 @@ test("shows +N for the tags that do not fit in two rows", async ({
   expect(box?.height).toBeLessThanOrEqual(52);
 });
 
-test("wraps a long name and its tags rather than cutting them off", async ({
+test("keeps a long name to one line and wraps the tags", async ({
   openProjectPage,
   page,
 }) => {
@@ -599,13 +599,17 @@ test("wraps a long name and its tags rather than cutting them off", async ({
   await projectPage.testRunList.gridViewToggle.click();
   await projectPage.testRunList.compactDensity.click();
 
-  // the tags stay on the narrowest card, and both run onto a second line
-  // instead of ending in an ellipsis after two words
+  // the name keeps to one line so the cards stay even, the whole of it in its
+  // title (spec 046); the tags stay on the narrowest card and run onto a
+  // second line instead of ending in an ellipsis after two words
   await expect(projectPage.testRunList.cardTags.first()).toBeVisible();
   const oneLine = 24;
-  expect(
-    (await projectPage.testRunList.cardNames.first().boundingBox()).height,
-  ).toBeGreaterThan(oneLine);
+  const name = projectPage.testRunList.cardNames.first();
+  expect((await name.boundingBox()).height).toBeLessThanOrEqual(oneLine);
+  await expect(name).toHaveAttribute(
+    "title",
+    "Onboarding / ideal weight / metric units",
+  );
   expect(
     (await projectPage.testRunList.cardTags.first().boundingBox()).height,
   ).toBeGreaterThan(oneLine);
@@ -688,19 +692,60 @@ test("labels its switches in the table's colour", async ({
   expect(await colourOf(label)).toBe(inTable);
 });
 
-test("labels its header in the table's colour", async ({
+test("labels its sort button in the table's colour", async ({
   openProjectPage,
   page,
 }) => {
   const projectPage = await openProjectPage(project.id, build.id);
   const inTable = await colourOf(
-    page.locator(".MuiDataGrid-columnHeaderTitle").first(),
+    page.locator(".MuiDataGrid-cell[data-field='name']").first(),
   );
 
   await projectPage.testRunList.gridViewToggle.click();
   await expect(projectPage.testRunList.grid).toBeVisible();
 
-  expect(await colourOf(page.getByTestId("gridSort-name"))).toBe(inTable);
+  expect(await colourOf(projectPage.testRunList.sortButton)).toBe(inTable);
+});
+
+test("shows cards without the table head, sorted by a button", async ({
+  openProjectPage,
+  page,
+}) => {
+  await mockGetTestRuns(page, build.id, SORTABLE);
+  await page.setViewportSize({ width: 1440, height: 900 });
+  const projectPage = await openProjectPage(project.id, build.id);
+  await projectPage.testRunList.gridViewToggle.click();
+  await expect(projectPage.testRunList.cards).toHaveCount(3);
+
+  // no table head above the cards, and nothing of it left to sort by
+  await expect(page.locator(".MuiDataGrid-columnHeaders")).toHaveCount(0);
+  await expect(page.getByTestId("gridSort-name")).toHaveCount(0);
+  await expect(projectPage.testRunList.sortButton).toHaveText(/Sort: Status/);
+
+  // the status sits on the thumbnail, above the name, not beside it
+  const card = projectPage.testRunList.getCard("Alpha");
+  const image = await card.locator("img").first().boundingBox();
+  const status = await card.getByTestId("cardStatus").boundingBox();
+  const name = await card.getByTestId("cardName").boundingBox();
+  expect(status.y).toBeGreaterThanOrEqual(image.y);
+  expect(status.y + status.height).toBeLessThanOrEqual(image.y + image.height);
+  expect(status.y + status.height).toBeLessThan(name.y);
+
+  // the button sorts as the table's column heads did
+  await projectPage.testRunList.sortBy("name");
+  await expect(projectPage.testRunList.sortButton).toHaveText(/Sort: Name/);
+  await expect(projectPage.testRunList.cardNames).toHaveText([
+    "Alpha",
+    "Mango",
+    "Zebra",
+  ]);
+
+  // the pagination comes after the cards, never over them
+  const pagination = await page
+    .locator("#test-run-list .MuiTablePagination-root")
+    .boundingBox();
+  const last = await projectPage.testRunList.cards.last().boundingBox();
+  expect(last.y + last.height).toBeLessThanOrEqual(pagination.y);
 });
 
 test("shows phone screenshots as portrait cards", async ({
@@ -723,12 +768,13 @@ test("shows phone screenshots as portrait cards", async ({
   const box = await image.boundingBox();
   expect(box && box.height > box.width * 1.5).toBe(true);
 
-  // a main area about 1100 px wide holds at least five cards in a row
-  // layout positions: the cards may still be rising into place
+  // the main area at 1440 px holds four cards in a row beside the sidebar
+  // (spec 046), more without it. Layout positions: the cards may still be
+  // rising into place
   const tops = await projectPage.testRunList.cards.evaluateAll((cards) =>
     cards.map((card) => (card as HTMLElement).offsetTop),
   );
   expect(tops.filter((top) => top === tops[0]).length).toBeGreaterThanOrEqual(
-    5,
+    4,
   );
 });

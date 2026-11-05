@@ -19,6 +19,7 @@ import {
 import { SlidingToggleGroup } from "../motion/SlidingToggleGroup";
 import { Tooltip } from "../Tooltip";
 import { useT } from "../../i18n";
+import { GridSortButton, TestRunSort } from "./TestRunGridHeader";
 
 export type TestRunView = "table" | "grid";
 
@@ -31,7 +32,9 @@ export const CARD_SIZE_BY_DENSITY: Record<
 > = {
   // phone screens are portrait: a card is as tall as the screenshot is
   compact: { width: 120, imageHeight: 210 },
-  standard: { width: 150, imageHeight: 270 },
+  // four to a row in the main area at 1440 px beside the sidebar and the
+  // build list (spec 046), each still half as tall again as it is wide
+  standard: { width: 176, imageHeight: 300 },
   comfortable: { width: 210, imageHeight: 390 },
 };
 
@@ -66,8 +69,8 @@ const IconToggle: React.FunctionComponent<IconToggleProps> = ({
   icon,
   ...rest
 }) => (
-  // not interactive: the tooltip opens over the grid header below, and an
-  // interactive one would swallow clicks on the sort buttons under it
+  // not interactive: the tooltip opens over the list below, and an
+  // interactive one would swallow clicks meant for it
   <MuiTooltip
     title={title}
     placement="bottom"
@@ -88,6 +91,9 @@ export const TestRunListControls: React.FunctionComponent<{
   onDensityChange: (density: TestRunDensity) => void;
   showDiff: boolean;
   onShowDiffChange: (showDiff: boolean) => void;
+  // the cards' order; the table sorts by its column heads instead
+  sort?: TestRunSort;
+  onSortChange?: (sort: TestRunSort) => void;
 }> = ({
   view,
   onViewChange,
@@ -95,6 +101,8 @@ export const TestRunListControls: React.FunctionComponent<{
   onDensityChange,
   showDiff,
   onShowDiffChange,
+  sort,
+  onSortChange,
 }) => {
   const { t } = useT();
   return (
@@ -155,6 +163,10 @@ export const TestRunListControls: React.FunctionComponent<{
           icon={<DensityLarge fontSize="small" />}
         />
       </SlidingToggleGroup>
+      {view === "grid" && sort && onSortChange && groupDivider}
+      {view === "grid" && sort && onSortChange && (
+        <GridSortButton sort={sort} onSortChange={onSortChange} />
+      )}
       {/* only the cards carry a picture, so the table has nothing to swap; a
         switch rather than an icon, so "on" is unmistakable */}
       {view === "grid" && groupDivider}

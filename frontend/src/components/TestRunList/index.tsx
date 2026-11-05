@@ -1,7 +1,7 @@
 import React from "react";
 import {
   Box,
-  Chip,
+  Checkbox,
   LinearProgress,
   TablePagination,
   Toolbar,
@@ -35,11 +35,8 @@ import {
   TestRunListControls,
   TestRunView,
 } from "./TestRunListControls";
-import {
-  DEFAULT_SORT,
-  TestRunGridHeader,
-  TestRunSort,
-} from "./TestRunGridHeader";
+import { DEFAULT_SORT, TestRunSort } from "./TestRunGridHeader";
+import { TagOverflow } from "../DeviceTags";
 import TestRunFilters from "./TestRunFilters";
 import { TestRun, TestStatus } from "../../types";
 import { testRunService } from "../../services";
@@ -92,25 +89,15 @@ const buildColumns = (t: Text): GridColDef[] => [
         (prev, curr) => prev.concat(curr ? `${curr};` : ""),
         "",
       ),
+    // one line, the rest behind "+N": wrapped or cut mid-word, the tags made
+    // rows of uneven height or said nothing (REQ-046-31)
     renderCell: (params: GridCellParams) => (
-      <React.Fragment>
-        {params.formattedValue
-          ?.toString()
+      <TagOverflow
+        tags={(params.formattedValue?.toString() ?? "")
           .split(";")
-          .map(
-            (tag: string | null) =>
-              tag && (
-                <Chip
-                  key={tag}
-                  size="small"
-                  label={tag}
-                  style={{
-                    margin: "1px",
-                  }}
-                />
-              ),
-          )}
-      </React.Fragment>
+          .filter(Boolean)}
+        testId="rowTags"
+      />
     ),
   },
   {
@@ -505,7 +492,14 @@ const TestRunList: React.FunctionComponent = () => {
             onReset={resetFilters}
           />
         </Box>
-        <Box flex={1} minHeight={0}>
+        {/* the table pages within its own height; the cards take the height
+          they need and the pane scrolls, so the pagination under them never
+          cuts the last row in half (REQ-046-30) */}
+        <Box
+          flex={1}
+          minHeight={0}
+          overflow={view === "grid" ? "auto" : "visible"}
+        >
           {view === "table" ? (
             <DataGrid
               apiRef={apiRef}
@@ -562,7 +556,6 @@ const TestRunList: React.FunctionComponent = () => {
             // and without it the toolbar and header inherit the body's pure
             // black and read heavier than the table's
             <Box
-              height="100%"
               display="flex"
               flexDirection="column"
               border={1}
@@ -570,8 +563,34 @@ const TestRunList: React.FunctionComponent = () => {
               borderRadius={radius.card}
               overflow="hidden"
               color="text.primary"
+              bgcolor="background.paper"
             >
-              <Toolbar variant="dense">
+              {/* no table head above the cards (REQ-046-30): the box that
+                ticks them all and the sort live in the toolbar */}
+              <Toolbar
+                variant="dense"
+                sx={{
+                  gap: 1,
+                  flexWrap: "wrap",
+                  borderBottom: 1,
+                  borderColor: "divider",
+                }}
+              >
+                <Checkbox
+                  size="small"
+                  checked={
+                    gridRunIds.length > 0 &&
+                    selectedCardCount === gridRunIds.length
+                  }
+                  indeterminate={
+                    selectedCardCount > 0 &&
+                    selectedCardCount < gridRunIds.length
+                  }
+                  onChange={() => toggleAll(gridRunIds)}
+                  inputProps={{ "aria-label": t("runs.selectAllRuns") }}
+                  data-testid="gridSelectAll"
+                  sx={{ marginLeft: -1 }}
+                />
                 <TestRunListControls
                   view={view}
                   onViewChange={setView}
@@ -579,6 +598,8 @@ const TestRunList: React.FunctionComponent = () => {
                   onDensityChange={setDensity}
                   showDiff={showDiff}
                   onShowDiffChange={setShowDiff}
+                  sort={gridSort}
+                  onSortChange={setGridSort}
                 />
                 <Box marginLeft="auto">
                   <BulkOperation
@@ -589,16 +610,8 @@ const TestRunList: React.FunctionComponent = () => {
                   />
                 </Box>
               </Toolbar>
-              <TestRunGridHeader
-                sort={gridSort}
-                onSortChange={setGridSort}
-                density={density}
-                selectedCount={selectedCardCount}
-                totalCount={gridRunIds.length}
-                onToggleAll={() => toggleAll(gridRunIds)}
-              />
               {loading && <LinearProgress />}
-              <Box flex={1} overflow="auto">
+              <Box>
                 {gridRows.length === 0 ? (
                   <Typography
                     variant="subtitle1"

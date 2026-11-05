@@ -4,9 +4,12 @@ import {
   motion,
   palettes,
   Palette,
+  radius,
   ThemeMode,
   tokens,
+  type,
 } from "./theme";
+import type { Theme } from "@mui/material/styles";
 
 const MODES: ThemeMode[] = ["light", "dark"];
 
@@ -143,6 +146,141 @@ describe("theme", () => {
       // MUI's palette holds the real colours of the same table
       expect(theme.palette.primary.main).toBe(palettes[mode].brand);
       expect(theme.palette.background.default).toBe(palettes[mode].ground);
+    }
+  });
+
+  // every value a style key takes in the theme: typography and component overrides
+  function styleValues(theme: Theme, key: string): unknown[] {
+    const found: unknown[] = [];
+    const walk = (value: unknown) => {
+      if (!value || typeof value !== "object") return;
+      for (const [name, inner] of Object.entries(value)) {
+        if (name === key && (typeof inner !== "object" || inner === null))
+          found.push(inner);
+        else walk(inner);
+      }
+    };
+    walk(theme.typography);
+    for (const component of Object.values(theme.components ?? {}))
+      walk((component as { styleOverrides?: unknown }).styleOverrides);
+    return found;
+  }
+  // MUI keeps sizes it built itself in rem of a 16px root
+  const px = (value: unknown) =>
+    typeof value === "number"
+      ? value
+      : String(value).endsWith("rem")
+        ? parseFloat(String(value)) * 16
+        : parseFloat(String(value));
+
+  it("uses only the six type sizes and four weights", () => {
+    expect(Object.values(type)).toEqual([28, 20, 16, 14, 13, 12]);
+    for (const mode of MODES) {
+      const theme = createAppTheme(mode);
+      const sizes = styleValues(theme, "fontSize")
+        .filter((value) => value !== "inherit")
+        .map(px);
+      expect(sizes.length).toBeGreaterThan(10);
+      for (const size of sizes) {
+        expect([mode, size, Object.values(type)]).toEqual([
+          mode,
+          size,
+          expect.arrayContaining([size]),
+        ]);
+      }
+      const weights = styleValues(theme, "fontWeight")
+        .filter((value) => value !== "inherit")
+        .map(Number);
+      for (const weight of weights)
+        expect([400, 500, 600, 700]).toContain(weight);
+      expect(weights).not.toContain(650);
+      expect(px(theme.typography.h4.fontSize)).toBe(28);
+      expect(theme.typography.h4.fontWeight).toBe(700);
+      expect(px(theme.typography.h5.fontSize)).toBe(20);
+      expect(theme.typography.h5.fontWeight).toBe(600);
+      expect(px(theme.typography.h6.fontSize)).toBe(16);
+      expect(px(theme.typography.body1.fontSize)).toBe(14);
+      expect(px(theme.typography.body2.fontSize)).toBe(13);
+      expect(px(theme.typography.caption.fontSize)).toBe(12);
+    }
+  });
+
+  it("rounds corners with three values only", () => {
+    expect(Object.values(radius).map(px)).toEqual([6, 12, 999]);
+    for (const mode of MODES) {
+      const theme = createAppTheme(mode);
+      const used = new Set(
+        [theme.shape.borderRadius, ...styleValues(theme, "borderRadius")].map(
+          px,
+        ),
+      );
+      expect([...used].every((value) => [6, 12, 999].includes(value))).toBe(
+        true,
+      );
+      const overrides = theme.components!;
+      const rootOf = (name: string, slot = "root") =>
+        (
+          overrides[name as keyof typeof overrides] as {
+            styleOverrides: Record<string, Record<string, unknown>>;
+          }
+        ).styleOverrides[slot];
+      expect(rootOf("MuiCard").borderRadius).toBe(radius.card);
+      expect(rootOf("MuiPaper", "rounded").borderRadius).toBe(radius.card);
+      expect(rootOf("MuiDialog", "paper").borderRadius).toBe(radius.card);
+      expect(rootOf("MuiButton").borderRadius).toBe(radius.control);
+      expect(rootOf("MuiOutlinedInput").borderRadius).toBe(radius.control);
+      expect(rootOf("MuiTextField")["& .MuiInputBase-root"]).toEqual({
+        borderRadius: radius.control,
+      });
+      expect(rootOf("MuiChip").borderRadius).toBe(radius.control);
+    }
+  });
+
+  it("gives every table head the same full-width band", () => {
+    for (const mode of MODES) {
+      const overrides = createAppTheme(mode).components!;
+      const cell = overrides.MuiTableCell!.styleOverrides as Record<
+        string,
+        Record<string, unknown>
+      >;
+      const grid = overrides.MuiDataGrid!.styleOverrides as Record<
+        string,
+        Record<string, unknown>
+      >;
+      const look = (style: Record<string, unknown>) => ({
+        backgroundColor: style.backgroundColor,
+        color: style.color,
+        fontSize: style.fontSize,
+        fontWeight: style.fontWeight,
+      });
+      const band = {
+        backgroundColor: tokens.subtle,
+        color: tokens.textSecondary,
+        fontSize: 12,
+        fontWeight: 600,
+      };
+      expect(look(cell.head)).toEqual(band);
+      // the grid's header row is the whole width of its frame, not just the columns
+      expect(look(grid.columnHeaders)).toEqual(band);
+      expect(grid.columnHeader.backgroundColor).toBe(tokens.subtle);
+      expect({
+        ...look(grid.columnHeaderTitle),
+        backgroundColor: tokens.subtle,
+      }).toEqual(band);
+      // numbers line up in columns
+      expect(cell.body.fontVariantNumeric).toBe("tabular-nums");
+      expect(grid.cell.fontVariantNumeric).toBe("tabular-nums");
+    }
+  });
+
+  it("colours every link with the brand", () => {
+    for (const mode of MODES) {
+      const link = createAppTheme(mode).components!.MuiLink!;
+      expect(link.defaultProps?.underline).toBe("hover");
+      expect(
+        (link.styleOverrides as Record<string, Record<string, unknown>>).root
+          .color,
+      ).toBe(tokens.brand);
     }
   });
 });

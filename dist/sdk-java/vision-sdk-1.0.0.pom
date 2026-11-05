@@ -7,9 +7,9 @@
   <!-- that they should prefer consuming it instead. -->
   <!-- do_not_remove: published-with-gradle-metadata -->
   <modelVersion>4.0.0</modelVersion>
-  <groupId>com.github.Visual-Regression-Tracker</groupId>
-  <artifactId>sdk-java</artifactId>
-  <version>4.3.1-vision.4</version>
+  <groupId>ua.vision</groupId>
+  <artifactId>vision-sdk</artifactId>
+  <version>1.0.0</version>
   <dependencies>
     <dependency>
       <groupId>com.google.code.gson</groupId>

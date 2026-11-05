@@ -10,8 +10,8 @@ gzip + base64 у поле `uiTree`. Розбір, формат і щільніс
 
 | Компонент | Шлях | Роль |
 |---|---|---|
-| Параметр | `sdk-java/src/main/java/io/visual_regression_tracker/sdk_java/VisionOptions.java` | `uiTree` |
-| Запит | `sdk-java/src/main/java/io/visual_regression_tracker/sdk_java/request/TestRunRequest.java` | стиснення |
+| Параметр | `sdk-java/src/main/java/ua/vision/sdk/VisionOptions.java` | `uiTree` |
+| Запит | `sdk-java/src/main/java/ua/vision/sdk/request/TestRunRequest.java` | стиснення |
 | Збірка | `scripts/build-sdk-jar.sh` | jar і pom → `dist/sdk-java/` (`4.3.1-vision.N`) |
 
 ## Перевірка вимог
@@ -19,7 +19,7 @@ gzip + base64 у поле `uiTree`. Розбір, формат і щільніс
 | Вимога | Перевірка |
 |---|---|
 | REQ-012-01 | manual: `git diff` `sdk-java/` проти upstream 4.3.1 |
-| REQ-012-02 | `sdk-java/src/test/java/io/visual_regression_tracker/sdk_java/VisionTest.java › shouldSendTheUiTreeGzippedWhenGiven` |
-| REQ-012-03 | `sdk-java/src/test/java/io/visual_regression_tracker/sdk_java/VisionTest.java › shouldLeaveTheUiTreeOutWhenNotGiven` |
+| REQ-012-02 | `sdk-java/src/test/java/ua/vision/sdk/VisionTest.java › shouldSendTheUiTreeGzippedWhenGiven` |
+| REQ-012-03 | `sdk-java/src/test/java/ua/vision/sdk/VisionTest.java › shouldLeaveTheUiTreeOutWhenNotGiven` |
 | REQ-012-04 | manual: `backend/src/main.ts` upstream — `new ValidationPipe()`; запит з `uiTree` на upstream VRT приймається |
 | REQ-012-05 | manual: підключення за [DEPLOY.md §7](../../../DEPLOY.md) на JDK 11 |

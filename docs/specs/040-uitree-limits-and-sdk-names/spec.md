@@ -2,10 +2,10 @@
 
 | | |
 |---|---|
-| Статус | Approved |
+| Статус | Implemented |
 | Власник | Дмитро Назаренко |
 | Оновлено | 2026-11-05 |
-| Дизайн | `design.md` — після `Approved` |
+| Дизайн | [design.md](design.md) |
 | Пов'язане | [аудит](../../security/audit-2026-11-04.md) S-1, [план](../../security/bank-readiness-plan.md) 1.1; змінює [012](../012-java-sdk/spec.md) REQ-012-02; змінює [033](../033-vision-sdk/spec.md) REQ-033-03; доповнює [002](../002-ui-tree-analysis/spec.md) REQ-002-04 |
 
 ## Контекст і проблема

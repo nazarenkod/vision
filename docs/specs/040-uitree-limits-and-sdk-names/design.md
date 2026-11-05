@@ -7,7 +7,7 @@
 перевищено або в дереві є `<!DOCTYPE` чи `<!ENTITY`. Повертає або XML, або причину, з якої
 дерево не взято. `UiTreeService.store` логує причину (REQ-040-04) і повертає `null`, як і для
 дерева, яке не вдалося прочитати: знімок приймається без дерева тим самим шляхом, що й зараз
-(REQ-002-04).
+(як для не-Appium дерева у 002).
 
 Розгортання стандартних сутностей (`&amp;`, `&#x1F686;`) лишається: ними Appium пише тексти, і
 від них залежать тексти елементів та ідентичність проблем доступності (REQ-040-06). Небезпечні
@@ -77,7 +77,7 @@ POST /test-runs
 | REQ-040-07 | `sdk-java/src/test/java/ua/vision/sdk/VisionTest.java › leavesOutUiTreeOverTheLimit` |
 | REQ-040-08 | `sdk-java/src/test/java/ua/vision/sdk/VisionTest.java › sendsUiTreeAtTheLimit` |
 | REQ-040-09 | `sdk-java/src/test/java/ua/vision/sdk/VisionTest.java › livesInTheVisionPackageOnly` |
-| REQ-040-10 | `scripts/tests/test_build_sdk_jar.py › publishes ua.vision:vision-sdk with its own version` |
+| REQ-040-10 | `scripts/tests/test_build_sdk_jar.py › test_publishes_ua_vision_vision_sdk_with_its_own_version` |
 | REQ-040-11 | `sdk-java/src/test/java/ua/vision/sdk/VisionConfigTest.java › ignoresVrtVariables` |
 | REQ-040-12 | `sdk-java/src/test/java/ua/vision/sdk/VisionTest.java › logsUnderTheVisionName` |
 | REQ-040-13 | `backend/test_control/scenario.control.ts › 05 second SDK build: a changed fee, the same offers` |

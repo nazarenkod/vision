@@ -93,6 +93,15 @@ class CheckDocsTest(unittest.TestCase):
         self.write("docs/specs/001-a/spec.md", marked)
         self.assertEqual(check_docs.check_replacements(self.root), [])
 
+    def test_looks_for_the_mark_in_the_spec_the_link_names_when_two_share_a_number(self):
+        # 033 exists twice (variable text, Vision SDK): the requirement is the linked spec's
+        self.write("docs/specs/001-a/spec.md", spec_md())
+        self.write("docs/specs/001-z/spec.md", spec_md().replace(
+            "СИСТЕМА ПОВИННА … |", "СИСТЕМА ПОВИННА … Замінено 2026-11-05 [002](../002-b/spec.md) REQ-002-01. |"))
+        newer = spec_md(reqs=("REQ-002-01",)).replace("\n\n## Вимоги", "\n| Пов'язане | змінює [001](../001-z/spec.md) REQ-001-01 |\n\n## Вимоги", 1)
+        self.write("docs/specs/002-b/spec.md", newer.replace("# 001", "# 002"))
+        self.assertEqual(check_docs.check_replacements(self.root), [])
+
     def test_a_draft_that_will_change_a_requirement_needs_no_mark_yet(self):
         self.write("docs/specs/001-a/spec.md", spec_md())
         draft = spec_md(status="Draft", reqs=("REQ-002-01",)).replace("\n\n## Вимоги", "\n| Пов'язане | знімає REQ-001-01 |\n\n## Вимоги", 1)

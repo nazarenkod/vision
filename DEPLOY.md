@@ -277,76 +277,52 @@ decisions to problems»).
 
 ## 7. SDK: jar и pom.xml
 
-**Пока ничего менять не нужно.** Vision понимает текущий SDK как есть: скриншоты, статусы, группы
-изменений работают. Новый SDK нужен только для отправки XML-дерева экрана: доступность,
-изменения по элементам, правила по элементам, а также для названия фичи в багах из сравнения.
+SDK Vision — `ua.vision:vision-sdk`, версия `1.0.0`. Нужен для отправки XML-дерева экрана
+(доступность, изменения и правила по элементам) и названия фичи в багах из сравнения. Работает на
+Java 11+. Готовый jar лежит в репозитории: `dist/sdk-java/vision-sdk-1.0.0.jar` (рядом его pom).
+Пересобрать: `./scripts/build-sdk-jar.sh` (JDK 11–17, Gradle 7).
 
-Новый SDK — это upstream 4.3.1 плюс два необязательных поля, `uiTree` и `featureName`, а классы
-называются по-своему: `Vision`, `VisionConfig`, `VisionOptions`, `VisionResult` вместо
-`VisualRegressionTracker`, `VisualRegressionTrackerConfig`, `TestRunOptions`, `TestRunResult`.
-Пакет, методы и остальные классы те же, работает на Java 11+. Готовый jar лежит в репозитории:
-`dist/sdk-java/sdk-java-4.3.1-vision.4.jar`
-(рядом его pom). Пересобрать: `./scripts/build-sdk-jar.sh` (JDK 11–17, Gradle 7).
+Классы `Vision`, `VisionConfig`, `VisionOptions`, `VisionResult` в пакете `ua.vision.sdk`.
+Настройки — переменные `VISION_*` или файл `vision.json`. Дерево больше 10 МБ SDK не отправляет:
+пишет предупреждение в лог, скриншот уходит как обычно (сервер такое дерево всё равно не принял бы).
 
-### Обновление с 4.3.1-vision.3
+### Переход с 4.3.1-vision.N на 1.0.0
 
-Что нового в `4.3.1-vision.4`: `TestRunOptions` и `TestRunResult` переименованы в `VisionOptions` и
-`VisionResult`. Старых имён в jar нет; поля, методы и их названия те же (`uiTree`, `featureName`,
-`getTestRunResponse()`…). Запросы к серверу не изменились, эталоны остаются.
+Старого пакета, переменных `VRT_*` и файла `vrt.json` новый SDK не знает: тест на старых именах
+падает при старте с сообщением, какой настройки не хватает. Запросы к серверу те же, эталоны
+остаются. В тестовом проекте:
 
-```java
-// было
-TestRunResult result = vrt.track("Payment", screenshotBase64, TestRunOptions.builder().uiTree(xml).build());
-// стало
-VisionResult result = vrt.track("Payment", screenshotBase64, VisionOptions.builder().uiTree(xml).build());
-```
+1. Зависимость: `com.github.Visual-Regression-Tracker:sdk-java:4.3.1-vision.N` →
+   `ua.vision:vision-sdk:1.0.0` (вариант А или Б ниже); старый jar удалить.
+2. Импорты: `io.visual_regression_tracker.sdk_java.` → `ua.vision.sdk.` (замена по всему проекту).
+3. Переменные в CI: `VRT_APIURL`, `VRT_APIKEY`, `VRT_PROJECT`, `VRT_BRANCHNAME`… →
+   `VISION_APIURL`, `VISION_APIKEY`, `VISION_PROJECT`, `VISION_BRANCHNAME`…
+4. Файл `vrt.json`, если есть, переименовать в `vision.json` (содержимое то же).
 
-### Обновление с 4.3.1-vision.2
-
-Что нового в `4.3.1-vision.3`: классы `VisualRegressionTracker` и `VisualRegressionTrackerConfig`
-переименованы в `Vision` и `VisionConfig`. Старых имён в jar нет, поэтому в тестах меняются эти два
-имени (и импорты); методы, `TestRunOptions`, переменные `VRT_*` и `vrt.json` те же (в `vision.4`
-переименованы и опции с результатом, см. выше). Запросы к серверу
-не изменились, эталоны остаются. Обновляться не обязательно: `vision.2` продолжает работать.
+С версий до `4.3.1-vision.4` ещё и имена классов: `VisualRegressionTracker` → `Vision`,
+`VisualRegressionTrackerConfig` → `VisionConfig`, `TestRunOptions` → `VisionOptions`,
+`TestRunResult` → `VisionResult`.
 
 ```java
 // было
-VisualRegressionTracker vrt = new VisualRegressionTracker(VisualRegressionTrackerConfig.builder()...build());
+import io.visual_regression_tracker.sdk_java.Vision;
 // стало
-Vision vrt = new Vision(VisionConfig.builder()...build());
+import ua.vision.sdk.Vision;
 ```
-
-### Обновление с 4.3.1-vision.1
-
-Что нового в `4.3.1-vision.2`: необязательное поле `featureName` — фича экрана для названия бага,
-заведённого из сравнения: `[Automation] [Checkout] кнопка обрезана`. Без него Vision берёт часть
-названия проверки до первой точки (`Checkout. Payment sheet` → `Checkout`). Эталоны от поля не
-зависят: прогоны с ним и без него сравниваются с теми же эталонами.
-
-Обновляться не обязательно: `vision.1` продолжает работать, сервер принимает запросы без
-`featureName`. Чтобы обновиться:
-
-1. Вариант А: ещё раз `mvn install:install-file` с файлами `vision.4` (команда ниже) и версия
-   `4.3.1-vision.4` в pom.xml. Вариант Б: заменить jar в `libs/` и поправить версию и `systemPath`.
-2. Если названия проверок не начинаются с фичи, добавить `.featureName(...)` в обёртку над
-   `vrt.track` (пример в 8.2).
-3. Переименовать четыре класса, как описано выше для `vision.3` и `vision.4`.
 
 ### Вариант А: установить в локальный Maven (рекомендую)
 
 Один раз на каждой машине, где собираются тесты (ноутбук, агенты CI):
 
 ```bash
-mvn install:install-file -Dfile=dist/sdk-java/sdk-java-4.3.1-vision.4.jar -DpomFile=dist/sdk-java/sdk-java-4.3.1-vision.4.pom
+mvn install:install-file -Dfile=dist/sdk-java/vision-sdk-1.0.0.jar -DpomFile=dist/sdk-java/vision-sdk-1.0.0.pom
 ```
-
-В pom.xml меняется только версия:
 
 ```xml
 <dependency>
-    <groupId>com.github.Visual-Regression-Tracker</groupId>
-    <artifactId>sdk-java</artifactId>
-    <version>4.3.1-vision.4</version>
+    <groupId>ua.vision</groupId>
+    <artifactId>vision-sdk</artifactId>
+    <version>1.0.0</version>
 </dependency>
 ```
 
@@ -358,11 +334,11 @@ mvn install:install-file -Dfile=dist/sdk-java/sdk-java-4.3.1-vision.4.jar -DpomF
 
 ```xml
 <dependency>
-    <groupId>com.github.Visual-Regression-Tracker</groupId>
-    <artifactId>sdk-java</artifactId>
-    <version>4.3.1-vision.4</version>
+    <groupId>ua.vision</groupId>
+    <artifactId>vision-sdk</artifactId>
+    <version>1.0.0</version>
     <scope>system</scope>
-    <systemPath>${project.basedir}/libs/sdk-java-4.3.1-vision.4.jar</systemPath>
+    <systemPath>${project.basedir}/libs/vision-sdk-1.0.0.jar</systemPath>
 </dependency>
 <!-- jar из файла не приносит своих зависимостей; если они уже есть в проекте, эти две не нужны -->
 <dependency>
@@ -379,12 +355,9 @@ mvn install:install-file -Dfile=dist/sdk-java/sdk-java-4.3.1-vision.4.jar -DpomF
 
 Maven предупредит о `system` scope, это нормально.
 
-Оба варианта проверены Maven-проектом на `vision.1`: собирается и отправляет экраны с XML в
-Vision. `vision.2` отличается от неё только полем `featureName`, `vision.3` и `vision.4` — именами классов;
-их покрывают тесты SDK
-(`gradle test`), Maven-проектом их ещё не прогоняли.
-Публикация в Nexus тоже настроена (`gradle publish -PrepoUrl=...`, см. `sdk-java/README.md`),
-пригодится, когда захотите убрать ручной шаг.
+`1.0.0` покрыта тестами SDK (`gradle test`) и контрольным сценарием (`./scripts/control-scenario.sh`:
+настоящий SDK против настоящего сервера). Maven-проектом в банке её ещё не прогоняли.
+Публикация в Nexus настроена (`gradle publish -PrepoUrl=...`, см. `sdk-java/README.md`).
 
 ## 8. Подключение автотестов
 
@@ -393,20 +366,20 @@ Vision. `vision.2` отличается от неё только полем `fea
 Адрес и ключ задаются переменными окружения, код для этого менять не нужно:
 
 ```bash
-export VRT_APIURL=http://vision-host:14200
+export VISION_APIURL=http://vision-host:14200
 ```
 
 ```bash
-export VRT_APIKEY=ваш_API_ключ
+export VISION_APIKEY=ваш_API_ключ
 ```
 
-`VRT_PROJECT` и `VRT_BRANCHNAME` — как сейчас. Ключ тот же, что на проде: он скопирован.
+`VISION_PROJECT` и `VISION_BRANCHNAME` — как сейчас (раньше `VRT_PROJECT` и `VRT_BRANCHNAME`). Ключ тот же, что на проде: он скопирован.
 
 Переменные работают, только если адрес и ключ **не заданы в коде**. SDK берёт значение из
 `VisionConfig.builder().apiUrl(...)`, если оно там есть, затем из
-переменной `VRT_APIURL`, затем из `vrt.json`. Если в коде стоит `.apiUrl("http://vrt-prod...")`,
+переменной `VISION_APIURL`, затем из `vision.json`. Если в коде стоит `.apiUrl("http://vrt-prod...")`,
 вынесите его в переменную или системное свойство, например
-`.apiUrl(System.getenv().getOrDefault("VRT_APIURL", "http://vrt-prod:4200"))`.
+`.apiUrl(System.getenv().getOrDefault("VISION_APIURL", "http://vrt-prod:4200"))`.
 
 Рабочий прогон не трогайте. Для Vision сделайте **отдельную джобу**: тот же набор тестов с
 этими двумя переменными. Прод продолжит получать свои прогоны, Vision будет получать свои.
@@ -416,7 +389,7 @@ export VRT_APIKEY=ваш_API_ключ
 Java:
 
 ```java
-vrt.track(
+vision.track(
     "Payment",
     screenshotBase64,
     VisionOptions.builder()
@@ -431,7 +404,7 @@ vrt.track(
 Kotlin:
 
 ```kotlin
-vrt.track(
+vision.track(
     "Payment",
     screenshotBase64,
     VisionOptions.builder()
@@ -443,7 +416,7 @@ vrt.track(
 )
 ```
 
-Если у вас обёртка над `vrt.track`, правка одна, в ней. Без `.uiTree(...)` всё работает как
+Если у вас обёртка над `vision.track`, правка одна, в ней. Без `.uiTree(...)` всё работает как
 раньше. `featureName` попадает в название бага из сравнения (`[Automation] [Checkout] …`); без него
 Vision берёт часть названия проверки до первой точки. Эталоны от него не зависят.
 

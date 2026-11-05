@@ -13,8 +13,8 @@
 
 | Компонент | Шлях | Роль |
 |---|---|---|
-| Головний клас | `sdk-java/src/main/java/io/visual_regression_tracker/sdk_java/Vision.java` | колишній `VisualRegressionTracker` |
-| Налаштування | `sdk-java/src/main/java/io/visual_regression_tracker/sdk_java/VisionConfig.java` | колишній `VisualRegressionTrackerConfig` |
+| Головний клас | `sdk-java/src/main/java/ua/vision/sdk/Vision.java` | колишній `VisualRegressionTracker` |
+| Налаштування | `sdk-java/src/main/java/ua/vision/sdk/VisionConfig.java` | колишній `VisualRegressionTrackerConfig` |
 | Версія | `sdk-java/build.gradle`, `scripts/build-sdk-jar.sh` | `4.3.1-vision.3` |
 | Jar | `dist/sdk-java/` | jar і pom `4.3.1-vision.3` |
 
@@ -27,6 +27,6 @@
 
 | Вимога | Перевірка |
 |---|---|
-| REQ-033-01 | `sdk-java/src/test/java/io/visual_regression_tracker/sdk_java/VisionTest.java › noClassKeepsTheOldVisualRegressionTrackerName` |
-| REQ-033-02 | `sdk-java/src/test/java/io/visual_regression_tracker/sdk_java/VisionTest.java › shouldSubmitTestRun`; решта тестів `VisionTest` без змін очікувань |
-| REQ-033-03 | `sdk-java/src/test/java/io/visual_regression_tracker/sdk_java/VisionConfigTest.java › shouldResolveFinalValuesInTheRightOrder` |
+| REQ-033-01 | `sdk-java/src/test/java/ua/vision/sdk/VisionTest.java › noClassKeepsTheOldVisualRegressionTrackerName` |
+| REQ-033-02 | `sdk-java/src/test/java/ua/vision/sdk/VisionTest.java › shouldSubmitTestRun`; решта тестів `VisionTest` без змін очікувань |
+| REQ-033-03 | `sdk-java/src/test/java/ua/vision/sdk/VisionConfigTest.java › shouldResolveFinalValuesInTheRightOrder` |

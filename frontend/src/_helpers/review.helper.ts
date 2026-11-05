@@ -47,5 +47,5 @@ export const stepStates = (
           : "waiting",
   );
 
-/** Keys of the review; X has rejected since VRT, so hints show it, not R. */
+/** Keys of the review; X has always rejected, so hints show it, not R. */
 export const REVIEW_KEYS = { approve: "A", reject: "X" } as const;

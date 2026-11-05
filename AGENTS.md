@@ -15,7 +15,7 @@ Vision — внутрішній форк [Visual Regression Tracker](https://git
    машині й працює на копії даних. docker compose — лише через `./scripts/vision.sh`; нові
    скрипти — за запобіжниками `scripts/lib/vision-safety.sh` ([ADR-0002](docs/decisions/0002-production-is-read-only.md)).
 2. **Пуш лише в remote `vision`:** `git -c http.postBuffer=1048576000 push vision mvp/demo:main`.
-   `origin` — upstream VRT ([ADR-0001](docs/decisions/0001-fork-as-subtree-monorepo.md)).
+   `origin` — upstream VRT ([ADR-0027](docs/decisions/0027-vision-own-product.md)).
    Виняток — хмарні сесії, де `origin` — сам `nazarenkod/vision`: туди можна пушити окрему гілку
    (`git push -u origin <гілка>`), але не `main`, без force і без видалень.
 3. **Міграції лише додавальні:** нова таблиця, nullable-колонка, індекс; без змін enum, видалень,

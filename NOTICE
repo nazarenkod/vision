@@ -1,0 +1,13 @@
+Vision
+Copyright 2026 Dmytro Nazarenko
+
+This product is a derivative work of Visual Regression Tracker
+(https://github.com/Visual-Regression-Tracker), copyright 2020-2025 Pavel Strunkin and
+contributors, licensed under the Apache License, Version 2.0 (see LICENSE).
+
+The files of backend/, frontend/ and sdk-java/ that came from Visual Regression Tracker have
+been modified; the changes and everything added since are part of Vision.
+
+backend/vendor/deepmerge, backend/prisma/vendor/deepmerge and frontend/vendor/deepmerge are
+deepmerge 4.3.1 (MIT, copyright James Halliday, Josh Duff and contributors) with one change,
+described in their README.md.

@@ -27,7 +27,8 @@ export default [
   },
   js.configs.recommended,
   react.configs.flat.recommended,
-  reactHooks.configs["recommended-latest"],
+  // hooks live in src; Playwright fixtures call their own use(), which is no React hook
+  { ...reactHooks.configs["recommended-latest"], files: ["src/**/*.{js,jsx,ts,tsx}"] },
   importPlugin.flatConfigs.recommended,
   jsxA11y.flatConfigs.recommended,
   ...tsPlugin.configs["flat/recommended"],

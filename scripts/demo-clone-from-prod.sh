@@ -20,7 +20,7 @@ vision_load_env
 vision_guard
 
 POSTGRES_USER="${POSTGRES_USER:-postgres}"
-POSTGRES_DB="${POSTGRES_DB:-vrt_demo}"
+POSTGRES_DB="${POSTGRES_DB:-vision}"
 DATA_DIR="${VISION_DATA_DIR:-$VISION_ROOT/demo-data}"
 DEMO_IMAGES_DIR="$DATA_DIR/imageUploads"
 DUMP_FILE="$DATA_DIR/prod.dump"

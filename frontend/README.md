@@ -1,48 +1,16 @@
-# Frontend app for [Visual Regression Tracker](https://github.com/Visual-Regression-Tracker/Visual-Regression-Tracker)
+# Vision — frontend
 
-## Local setup
+Інтерфейс Vision: React 18, MUI 5, Vite. Правила, команди й пастки — у [AGENTS.md](AGENTS.md).
 
-- clone repo
-- `npm i`
-- Update `.env`
-- `npm run start`
+## Локально
 
-The testing related `.spec.tsx` files are used with Playwright for browser tests, and the `.test.tsx` files with Jest for unit tests.
-
-## Local OIDC (SSO)
-
-The UI asks the backend (`GET /users/oidc/enabled`) whether OIDC is enabled and then replaces the local login form with the SSO login. No UI configuration is needed for that.
-
-- `REACT_APP_OIDC_AUTO_REDIRECT=true` redirects straight to the identity provider instead of showing the "Login with SSO" button. The overlay enables it:
-
-```sh
-docker compose -f docker-compose.yml -f docker-compose.oidc.yml up
-```
-
-See the backend README for the local mock identity provider.
-
-
-## Running Tests
-
-### Unit Tests (Jest)
-
-Run Jest unit tests:
+Потрібні Node 24.9+ і API Vision (`backend/`).
 
 ```bash
-npm run test
+npm ci
+npm start               # env.sh пише public/env-config.js з env.defaults (або з .env, якщо він є)
 ```
 
-### Integration Tests (Playwright)
-
-#### Local Testing
-
-Run Playwright tests locally (builds the app and serves it with `vite preview` on port 4173):
-
-```bash
-npm run test:pw:local
-```
-
-## Local HTTPS config
-
-- Generate keys [here](https://www.selfsignedcertificate.com/)
-- place in folder `/secrets` named `ssl.cert` and `ssl.key`
+Адреса API — `REACT_APP_API_URL` у середовищі або в `.env` поруч (зразок — `env.defaults`).
+Тести — `CI=true npx jest` і `npx playwright test --ignore-snapshots`
+([docs/guides/testing.md](../docs/guides/testing.md)).

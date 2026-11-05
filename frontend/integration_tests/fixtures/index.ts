@@ -36,7 +36,7 @@ type Fixtures = {
 // the user the authUser fixture signs in, before its role is applied
 export const AUTH_USER = {
   id: "00b428bf-9b4d-487f-9883-0dc5ec9403d3",
-  email: "visual-regression-tracker@example.com",
+  email: "admin@vision.local",
   firstName: "fname",
   lastName: "lname",
   apiKey: "ASJDHGAKJSDGASD",

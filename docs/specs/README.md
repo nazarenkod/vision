@@ -107,6 +107,7 @@ docs/specs/NNN-коротка-назва/
 | [038](038-place-labels/spec.md) | Місця змін названі за тим, що в них на екрані | Implemented |
 | [039](039-overview-polish/spec.md) | Огляд збірки: тихі нулі, усі фічі, проблеми доступності | Implemented |
 | [040](040-uitree-limits-and-sdk-names/spec.md) | Безпечний прийом UI-дерева і власні назви SDK | Implemented |
+| [041](041-vision-names/spec.md) | Інтерфейс і налаштування під назвою Vision | Implemented |
 
 Статусу `Verified` поки немає в жодної: інтеграцію з реальною Jira Cloud і прогони на сервері
 команда ще не підтвердила.

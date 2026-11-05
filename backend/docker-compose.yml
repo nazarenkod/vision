@@ -1,6 +1,6 @@
 services:
   api:
-    container_name: vrt_api
+    container_name: vision_dev_api
     build:
       context: .
       dockerfile: Dockerfile
@@ -30,7 +30,7 @@ services:
       redis:
         condition: service_healthy
   migration:
-    container_name: vrt_migration
+    container_name: vision_dev_migration
     build:
       context: prisma
       dockerfile: Dockerfile
@@ -62,7 +62,7 @@ services:
       timeout: 120s
       retries: 10
   redis:
-    container_name: vrt_redis
+    container_name: vision_dev_redis
     image: redis:7-alpine@sha256:8da19c7399dca900c6822a1cf30f9d2285585e2c4b457ff4095b0f4500054d3f
     restart: always
     expose:

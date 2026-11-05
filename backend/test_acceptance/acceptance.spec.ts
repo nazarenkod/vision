@@ -15,7 +15,7 @@ let user: Partial<User> = {
 };
 // the seeded admin (prisma/seed.ts) creates accounts: nobody signs up (035)
 const admin: UserLoginRequestDto = {
-    email: process.env.DEFAULT_USER_EMAIL || 'visual-regression-tracker@example.com',
+    email: process.env.DEFAULT_USER_EMAIL || 'admin@vision.local',
     password: process.env.DEFAULT_USER_PASSWORD || '123456',
 }
 const loginData: UserLoginRequestDto = {

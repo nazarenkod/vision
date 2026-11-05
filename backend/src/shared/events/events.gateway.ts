@@ -21,7 +21,7 @@ import { groupByProject, projectRoom } from './events-rooms';
 export const UNAUTHORIZED = 'unauthorized';
 
 // Only signed-in users get events, and only of the project they subscribed to
-// (spec 032, ADR-0023). Upstream VRT broadcast everything to anyone.
+// (spec 032, ADR-0023), never to anyone listening.
 @WebSocketGateway({ cors: true })
 export class EventsGateway implements OnGatewayInit, OnModuleDestroy {
   private readonly logger = new Logger(EventsGateway.name);

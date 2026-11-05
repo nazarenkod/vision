@@ -49,7 +49,7 @@ const configService = {
   get: jest.fn((key: string, defaultValue?: string) => {
     const values: Record<string, string> = {
       OIDC_ISSUER_URL: 'https://idp.example.com',
-      OIDC_CLIENT_ID: 'vrt-client',
+      OIDC_CLIENT_ID: 'vision-client',
       OIDC_CLIENT_SECRET: 'secret',
       APP_FRONTEND_URL: 'http://localhost:8080',
     };
@@ -58,7 +58,7 @@ const configService = {
   getOrThrow: jest.fn((key: string) => {
     const values: Record<string, string> = {
       OIDC_ISSUER_URL: 'https://idp.example.com',
-      OIDC_CLIENT_ID: 'vrt-client',
+      OIDC_CLIENT_ID: 'vision-client',
       OIDC_CLIENT_SECRET: 'secret',
     };
     if (!(key in values)) {
@@ -71,7 +71,7 @@ const configService = {
 const authService = {
   generateApiKey: jest.fn(() => 'generatedApiKey'),
   encryptPassword: jest.fn(() => 'encryptedPassword'),
-  signToken: jest.fn(() => 'vrt-jwt'),
+  signToken: jest.fn(() => 'vision-jwt'),
 } as unknown as AuthService;
 
 const prismaService = {
@@ -173,7 +173,7 @@ describe('OidcUsersService', () => {
 
   describe('buildFrontendRedirect', () => {
     it('puts the token into the url fragment', () => {
-      expect(service.buildFrontendRedirect('vrt-jwt')).toBe('http://localhost:8080/login#token=vrt-jwt');
+      expect(service.buildFrontendRedirect('vision-jwt')).toBe('http://localhost:8080/login#token=vision-jwt');
     });
 
     it('adds an error fragment when no token is present', () => {
@@ -194,7 +194,7 @@ describe('OidcUsersService', () => {
           email_verified: true,
           given_name: 'New',
           family_name: 'User',
-          groups: ['vrt-admin'],
+          groups: ['vision-admin'],
         }),
       });
       findUnique.mockResolvedValue(null);
@@ -212,7 +212,7 @@ describe('OidcUsersService', () => {
           }),
         })
       );
-      expect(result.token).toBe('vrt-jwt');
+      expect(result.token).toBe('vision-jwt');
     });
 
     it('falls back to the editor role when no admin claim matches', async () => {
@@ -245,7 +245,7 @@ describe('OidcUsersService', () => {
       const result = await service.handleCallback({ code: 'code', state: 'mock-state' }, checks);
 
       expect(update).toHaveBeenCalledWith({ where: { id: user.id }, data: { role: Role.admin } });
-      expect(result.token).toBe('vrt-jwt');
+      expect(result.token).toBe('vision-jwt');
     });
 
     it('throws when the email claim is missing', async () => {
@@ -320,7 +320,7 @@ describe('OidcUsersService', () => {
 
       const result = await relaxedService.handleCallback({ code: 'code', state: 'mock-state' }, checks);
 
-      expect(result.token).toBe('vrt-jwt');
+      expect(result.token).toBe('vision-jwt');
     });
 
     it('rejects an empty email claim array', async () => {
@@ -339,15 +339,15 @@ describe('OidcUsersService', () => {
 
       const result = await service.handleCallback({ code: 'code', state: 'mock-state' }, checks);
 
-      expect(result.token).toBe('vrt-jwt');
+      expect(result.token).toBe('vision-jwt');
     });
 
     it.each([
-      ['a dotted path into nested claims', 'realm_access.roles', { realm_access: { roles: ['vrt-admin'] } }],
+      ['a dotted path into nested claims', 'realm_access.roles', { realm_access: { roles: ['vision-admin'] } }],
       [
         'an exact claim name containing dots',
-        'https://vrt.example.com/roles',
-        { 'https://vrt.example.com/roles': ['vrt-admin'] },
+        'https://vision.example.com/roles',
+        { 'https://vision.example.com/roles': ['vision-admin'] },
       ],
     ])('reads the role claim via %s', async (_label, roleClaim, roleClaims) => {
       const claimConfigService = {
@@ -378,7 +378,7 @@ describe('OidcUsersService', () => {
       const result = await service.handleCallback({ code: 'code', state: 'mock-state' }, checks);
 
       expect(findUnique).toHaveBeenCalledTimes(2);
-      expect(result.token).toBe('vrt-jwt');
+      expect(result.token).toBe('vision-jwt');
     });
 
     it('rethrows a unique violation that is not a concurrent login', async () => {
@@ -401,7 +401,7 @@ describe('OidcUsersService', () => {
       const result = await service.handleCallback({ code: 'code', state: 'mock-state' }, checks);
 
       expect(update).not.toHaveBeenCalled();
-      expect(result.token).toBe('vrt-jwt');
+      expect(result.token).toBe('vision-jwt');
     });
 
     it('leaves an existing user unchanged when the role already matches', async () => {
@@ -413,7 +413,7 @@ describe('OidcUsersService', () => {
       const result = await service.handleCallback({ code: 'code', state: 'mock-state' }, checks);
 
       expect(update).not.toHaveBeenCalled();
-      expect(result.token).toBe('vrt-jwt');
+      expect(result.token).toBe('vision-jwt');
     });
   });
 
@@ -428,7 +428,7 @@ describe('OidcUsersService', () => {
       });
 
       expect(update).toHaveBeenCalledWith({ where: { id: '1' }, data: { firstName: 'New', lastName: 'Name' } });
-      expect(result.token).toBe('vrt-jwt');
+      expect(result.token).toBe('vision-jwt');
     });
 
     it('rejects password changes', async () => {

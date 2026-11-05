@@ -21,7 +21,7 @@ vb_init() {
   # written by the API from the Backups page (ADR-0013)
   VB_CONFIG_DIR="$VISION_DATA_DIR/backup-config"
   VB_PG_USER="${POSTGRES_USER:-postgres}"
-  VB_PG_DB="${POSTGRES_DB:-vrt_demo}"
+  VB_PG_DB="${POSTGRES_DB:-vision}"
   BACKUP_REMOTE="${BACKUP_REMOTE:-}"
   BACKUP_KEEP="${BACKUP_KEEP:-7}"
   mkdir -p "$VB_BACKUP_DIR" "$VB_STATUS_DIR" "$VB_IMAGES_DIR" "$VB_CONFIG_DIR"

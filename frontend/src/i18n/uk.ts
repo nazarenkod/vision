@@ -882,7 +882,7 @@ export const uk: Messages = {
   "profile.configFile": "Файл налаштувань",
   "profile.env": "Змінні середовища",
   "profile.configHelp":
-    "Збережіть як vrt.json у корені проєкту. Змінні середовища мають пріоритет",
+    "Збережіть як vision.json у корені проєкту. Змінні середовища мають пріоритет",
   "profile.envHelp": "Додайте змінні середовища в CI",
   "profile.apiKey": "Ключ API",
   "profile.apiKeyHelp": "Для SDK, CLI та MCP-сервера.",
@@ -1030,7 +1030,7 @@ export const uk: Messages = {
   "tour.next": "Далі",
   "tour.skip": "Пропустити",
   "tour.loginAdmin":
-    "Типовий обліковий запис адміністратора: visual-regression-tracker@example.com / 123456. Обов’язково змініть типовий пароль.",
+    "Увійдіть з email і паролем, які вам видав адміністратор.",
   "tour.loginNoAccount":
     "Немає облікового запису? Самому зареєструватися не можна: облікові записи створює адміністратор у Users.",
   "tour.projectListTitle": "Список проєктів",

@@ -16,7 +16,7 @@ Architecture Decision Record фіксує важливе рішення: кон�
 
 | ADR | Рішення | Статус | Дата |
 |---|---|---|---|
-| [ADR-0001](0001-fork-as-subtree-monorepo.md) | Форк як монорепозиторій із git subtree | Accepted | 2026-10-24 |
+| [ADR-0001](0001-fork-as-subtree-monorepo.md) | Форк як монорепозиторій із git subtree | Superseded by ADR-0027 | 2026-10-24 |
 | [ADR-0002](0002-production-is-read-only.md) | Робочий VRT лише читається | Accepted | 2026-10-24 |
 | [ADR-0003](0003-additive-schema-only.md) | Лише додавальні зміни схеми | Accepted | 2026-10-24 |
 | [ADR-0004](0004-sdk-upstream-plus-ui-tree.md) | SDK — upstream плюс одне поле | Superseded by ADR-0019 | 2026-10-25 |
@@ -42,3 +42,4 @@ Architecture Decision Record фіксує важливе рішення: кон�
 | [ADR-0024](0024-own-vision-sdk.md) | SDK відходить від upstream кроками; перший — головні класи `Vision` | Accepted | 2026-11-01 |
 | [ADR-0025](0025-admin-made-accounts-personal-tokens.md) | Акаунти лише від адміністратора, токени Jira лише особисті | Accepted | 2026-11-02 |
 | [ADR-0026](0026-sdk-own-package-and-versions.md) | SDK — власний пакет, координати й нумерація, без старих назв | Accepted | 2026-11-05 |
+| [ADR-0027](0027-vision-own-product.md) | Vision — власний продукт; без синхронізації з upstream | Accepted | 2026-11-05 |

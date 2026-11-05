@@ -28,7 +28,7 @@ async function createDefaultUser() {
     console.log(error.message);
   }
 
-  const defaultEmail = process.env.DEFAULT_USER_EMAIL || 'visual-regression-tracker@example.com';
+  const defaultEmail = process.env.DEFAULT_USER_EMAIL || 'admin@vision.local';
   const defaultPassword = process.env.DEFAULT_USER_PASSWORD || '123456';
   const salt = await genSalt(10);
 

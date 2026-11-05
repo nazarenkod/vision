@@ -830,7 +830,7 @@ export const en = {
   "profile.configFile": "Config file",
   "profile.env": "ENV variables",
   "profile.configHelp":
-    "Save as vrt.json in project root. Could be overridden with ENV variables",
+    "Save as vision.json in project root. Could be overridden with ENV variables",
   "profile.envHelp": "Add Environment variables inside CI environment",
   "profile.apiKey": "Api key",
   "profile.apiKeyHelp": "For the SDK, the CLI and the MCP server.",
@@ -975,7 +975,7 @@ export const en = {
   "tour.next": "Next",
   "tour.skip": "Skip",
   "tour.loginAdmin":
-    "Default admin account: visual-regression-tracker@example.com / 123456. Make sure to change default password.",
+    "Sign in with the email and password an admin gave you.",
   "tour.loginNoAccount":
     "No account? Nobody signs up here: an admin creates accounts in Users.",
   "tour.projectListTitle": "Project List",

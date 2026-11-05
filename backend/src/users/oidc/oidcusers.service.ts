@@ -50,7 +50,7 @@ export class OidcUsersService implements Users {
       attributeLastName: this.configService.get<string>('OIDC_ATTRIBUTE_LAST_NAME', 'family_name'),
       roleClaim: this.configService.get<string>('OIDC_ROLE_CLAIM', 'groups'),
       adminValues: this.configService
-        .get<string>('OIDC_ADMIN_VALUES', 'vrt-admin,admin')
+        .get<string>('OIDC_ADMIN_VALUES', 'vision-admin,admin')
         .split(',')
         .map((value) => value.trim().toLowerCase())
         .filter((value) => value.length > 0),
@@ -188,7 +188,7 @@ export class OidcUsersService implements Users {
     }
 
     // Never trust an email address the identity provider marks as unverified:
-    // it could otherwise be used to take over an existing VRT account. Can be
+    // it could otherwise be used to take over an existing account. Can be
     // disabled for providers that do not emit a reliable email_verified claim.
     // Some providers serialize the claim as the string "true".
     const emailVerified = claims.email_verified === true || claims.email_verified === 'true';
@@ -206,7 +206,7 @@ export class OidcUsersService implements Users {
     let user = await this.prismaService.user.findUnique({ where: { email } });
 
     if (!user) {
-      this.logger.log(`'${email}' authenticated via OIDC but not found in VRT database. Creating user.`);
+      this.logger.log(`'${email}' authenticated via OIDC but not found in Vision database. Creating user.`);
       user = await this.createUserFromClaimsOrFindConcurrent(claims, email, role);
     } else if (!hasRoleClaim) {
       this.logger.warn(`Claim '${this.oidcConfig.roleClaim}' not found for '${email}'. Keeping role '${user.role}'.`);

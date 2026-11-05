@@ -6,7 +6,7 @@
 .pnp.js
 
 # testing
-vrt.json
+vision.json
 .nyc_output/
 /coverage
 

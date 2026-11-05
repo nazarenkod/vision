@@ -95,12 +95,17 @@ test("shows the API key and puts it in the config examples", async ({
   await expect(profilePage.configFile).toHaveValue(
     new RegExp(`"apiKey": "${AUTH_USER.apiKey}"`),
   );
+  await expect(
+    profilePage.page.getByText(/Save as vision\.json/),
+  ).toBeVisible();
 
   await profilePage.envVariablesTab.click();
 
   await expect(profilePage.envVariables).toHaveValue(
-    new RegExp(`VRT_APIKEY="${AUTH_USER.apiKey}"`),
+    new RegExp(`VISION_APIKEY="${AUTH_USER.apiKey}"`),
   );
+  // the names SDK 1.0.0 reads (040); the old VRT_* ones it ignores
+  await expect(profilePage.envVariables).not.toHaveValue(/VRT_/);
 });
 
 test("hides the API key until Show and copies it", async ({

@@ -147,10 +147,10 @@ export class LdapUsersService implements Users {
     });
 
     if (!user) {
-      // create user if not found in VRT database
+      // create user if not found in Vision database
       this.logger.log(
         `'${userLoginRequestDto.email}' (found in ldap as '${userEmailFromLdap}') successfully ` +
-          'authenticated via LDAP, but not found in VRT database. Creating user.'
+          'authenticated via LDAP, but not found in Vision database. Creating user.'
       );
       user = await this.createUserFromLdapEntry(userFromLdap);
     }

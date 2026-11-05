@@ -56,7 +56,7 @@ async function downloadAsZip(
 
   await Promise.all(downloadFilePromises);
   const zipBlob = await zip.generateAsync({ type: "blob" });
-  FileSaver.saveAs(zipBlob, "vrt_images.zip");
+  FileSaver.saveAs(zipBlob, "vision_images.zip");
 }
 
 export const staticService = {

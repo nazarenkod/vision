@@ -28,7 +28,7 @@ const mockDefaultProject = {
 
 const mockDefaultUser = {
   id: '0',
-  email: 'visual-regression-tracker@example.com',
+  email: 'admin@vision.local',
   firstName: 'fname',
   lastName: 'lname',
   role: 'admin',
@@ -57,6 +57,18 @@ describe('Defaults get created', () => {
 
     expect(prismaMock.user.upsert).toHaveBeenCalled();
     expect(prismaMock.project.create).toHaveBeenCalled();
+  });
+
+  test('creates admin@vision.local when no admin email is set', async () => {
+    delete process.env.DEFAULT_USER_EMAIL;
+    prismaMock.user.findMany.mockResolvedValue([]);
+    prismaMock.project.findMany.mockResolvedValue([]);
+
+    await seed();
+
+    expect(prismaMock.user.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { email: 'admin@vision.local' } })
+    );
   });
 
   test('Default user and project are created on error', async () => {

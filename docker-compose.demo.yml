@@ -1,4 +1,4 @@
-# Vision (the company fork of VRT), meant to run next to an existing VRT on the same host.
+# Vision, meant to run next to the production VRT it copies from, on the same host.
 # Everything is built from the folders of this repo and kept apart from the existing
 # instance: own compose project, own ports, own Postgres volume, own image folder.
 #
@@ -33,7 +33,7 @@ services:
       - ./demo-data/imageUploads:/usr/share/nginx/html/static/imageUploads
     environment:
       REACT_APP_API_URL: ${DEMO_API_URL:-http://localhost:14200}
-      VRT_VERSION: demo
+      VISION_VERSION: demo
       PORT: ${DEMO_UI_PORT:-18080}
     cpus: ${DEMO_UI_CPUS:-0.5}
     mem_limit: ${DEMO_UI_MEMORY:-256m}
@@ -47,7 +47,7 @@ services:
     # not root: the images and backup files it writes belong to whoever runs Vision (vision.sh sets these)
     user: "${VISION_UID:-1000}:${VISION_GID:-1000}"
     environment:
-      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-vrt_demo}
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-vision}
       JWT_SECRET: ${JWT_SECRET:?set JWT_SECRET in .env.demo}
       JWT_LIFE_TIME: ${JWT_LIFE_TIME:-1d}
       APP_FRONTEND_URL: ${DEMO_UI_URL:-http://localhost:18080}
@@ -96,8 +96,8 @@ services:
       args: *build-args
       secrets: [extra_ca]
     environment:
-      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-vrt_demo}
-      DEFAULT_USER_EMAIL: ${DEFAULT_USER_EMAIL:-visual-regression-tracker@example.com}
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-vision}
+      DEFAULT_USER_EMAIL: ${DEFAULT_USER_EMAIL:-admin@vision.local}
       DEFAULT_USER_PASSWORD: ${DEFAULT_USER_PASSWORD:-123456}
       DEFAULT_USER_API_KEY: ${DEFAULT_USER_API_KEY:-DEFAULTUSERAPIKEYTOBECHANGED}
     depends_on:
@@ -110,7 +110,7 @@ services:
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
-      POSTGRES_DB: ${POSTGRES_DB:-vrt_demo}
+      POSTGRES_DB: ${POSTGRES_DB:-vision}
     cpus: ${DEMO_POSTGRES_CPUS:-1}
     mem_limit: ${DEMO_POSTGRES_MEMORY:-1g}
     # no port on the host: scripts reach it with docker exec

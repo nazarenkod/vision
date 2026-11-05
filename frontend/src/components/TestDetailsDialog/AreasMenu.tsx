@@ -62,7 +62,7 @@ const DashedSquare = () => (
 );
 
 /**
- * VRT's pixel areas behind one button (REQ-024-30): elements are the main way
+ * Pixel areas behind one button (REQ-024-30): elements are the main way
  * to leave something out, areas are for what has no element. The areas keep
  * working as before; the button shows how many there are (REQ-024-32).
  */

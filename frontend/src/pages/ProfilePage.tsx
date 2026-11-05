@@ -320,12 +320,12 @@ const ProfilePage = () => {
                           variant="outlined"
                           disabled
                           value={`
-  VRT_APIURL="${window._env_.REACT_APP_API_URL}"
-  VRT_APIKEY="${shownKey}"
-  VRT_PROJECT="${selectedProjectId ?? "Default project"} "
-  VRT_BRANCHNAME="master"
-  VRT_CIBUILDID="commit_sha"
-  VRT_ENABLESOFTASSERT=false
+  VISION_APIURL="${window._env_.REACT_APP_API_URL}"
+  VISION_APIKEY="${shownKey}"
+  VISION_PROJECT="${selectedProjectId ?? "Default project"} "
+  VISION_BRANCHNAME="master"
+  VISION_CIBUILDID="commit_sha"
+  VISION_ENABLESOFTASSERT=false
   `}
                           multiline
                           rows={8}

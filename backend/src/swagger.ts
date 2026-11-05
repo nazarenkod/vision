@@ -1,9 +1,11 @@
 import { INestApplication } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 
+export const API_TITLE = 'Vision';
+
 export function setupSwagger(app: INestApplication) {
   const options = new DocumentBuilder()
-    .setTitle('Visual Regression Tracker')
+    .setTitle(API_TITLE)
     .setDescription('API Documentation')
     .setVersion('1.0')
     .addBearerAuth()

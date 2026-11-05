@@ -6,15 +6,15 @@ services:
       # On macOS/Windows Docker Desktop host.docker.internal works out of the box,
       # on Linux add `127.0.0.1 host.docker.internal` to /etc/hosts.
       OIDC_ISSUER_URL: 'http://host.docker.internal:8090/default'
-      OIDC_CLIENT_ID: 'vrt-client'
-      OIDC_CLIENT_SECRET: 'vrt-secret'
+      OIDC_CLIENT_ID: 'vision-client'
+      OIDC_CLIENT_SECRET: 'vision-secret'
       OIDC_REDIRECT_URI: 'http://localhost:4200/users/oidc/callback'
       OIDC_SCOPES: 'openid profile email'
       OIDC_ATTRIBUTE_MAIL: 'email'
       OIDC_ATTRIBUTE_FIRST_NAME: 'given_name'
       OIDC_ATTRIBUTE_LAST_NAME: 'family_name'
       OIDC_ROLE_CLAIM: 'groups'
-      OIDC_ADMIN_VALUES: 'vrt-admin'
+      OIDC_ADMIN_VALUES: 'vision-admin'
       OIDC_DEFAULT_ROLE: 'editor'
       OIDC_REQUIRE_VERIFIED_EMAIL: 'true'
     # Docker Desktop provides host.docker.internal; on Linux map it to the host

@@ -112,7 +112,7 @@ docs/specs/NNN-коротка-назва/
 | [043](043-protected-images/spec.md) | Знімки лише з входом або за підписаним посиланням | Implemented |
 | [044](044-secrets-at-rest/spec.md) | Секрети в базі: зашифровані токени, хеші ключів, Jira лише на дозволених хостах | Implemented |
 | [045](045-sign-in-and-api-hardening/spec.md) | Корпоративний вхід разом з локальними акаунтами; захист входу й API | Implemented |
-| [046](046-project-tokens-and-personal-keys/spec.md) | Проєктні токени для SDK, персональний ключ — усі дії людини | Draft |
+| [046](046-project-tokens-and-personal-keys/spec.md) | Проєктні токени для SDK, персональний ключ — усі дії людини | Approved |
 
 Статусу `Verified` поки немає в жодної: інтеграцію з реальною Jira Cloud і прогони на сервері
 команда ще не підтвердила.

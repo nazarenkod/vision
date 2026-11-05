@@ -43,3 +43,4 @@ Architecture Decision Record фіксує важливе рішення: кон�
 | [ADR-0025](0025-admin-made-accounts-personal-tokens.md) | Акаунти лише від адміністратора, токени Jira лише особисті | Accepted | 2026-11-02 |
 | [ADR-0026](0026-sdk-own-package-and-versions.md) | SDK — власний пакет, координати й нумерація, без старих назв | Accepted | 2026-11-05 |
 | [ADR-0027](0027-vision-own-product.md) | Vision — власний продукт; без синхронізації з вихідним проєктом | Accepted | 2026-11-05 |
+| [ADR-0028](0028-sidebar-instead-of-top-bar.md) | Навігація — бічне меню з підписами замість верхньої смуги й рейки іконок | Proposed | 2026-11-05 |

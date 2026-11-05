@@ -569,12 +569,18 @@ test("shows +N for the tags that do not fit in two rows", async ({
   await expect(card("Checkout").getByTestId("cardTag")).toHaveCount(5);
   await expect(more).toHaveCount(0);
 
-  // a wider card measures again: folded back, the count still adds up and the
-  // tags still sit in two rows
+  // a wider card measures again: folded back, the shown tags and +N (if any
+  // is still hidden) add up to all five, and the tags still sit in two rows.
+  // The comfortable card of spec 046 is wide enough to show all five.
   await projectPage.testRunList.comfortableDensity.click();
-  await expect(more).toBeVisible();
-  const wide = await card("Checkout").getByTestId("cardTag").count();
-  await expect(more).toHaveText(`+${5 - wide}`);
+  await expect(async () => {
+    const wide = await card("Checkout").getByTestId("cardTag").count();
+    const folded = await more.count();
+    expect(
+      wide + (folded ? Number((await more.innerText()).slice(1)) : 0),
+    ).toBe(5);
+    expect(folded).toBe(wide < 5 ? 1 : 0);
+  }).toPass({ timeout: 5000 });
   const box = await card("Checkout").getByTestId("cardTags").boundingBox();
   expect(box?.height).toBeLessThanOrEqual(52);
 });

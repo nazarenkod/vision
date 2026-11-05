@@ -1,6 +1,6 @@
 # Vision demo
 
-Vision is a fork of Visual Regression Tracker with a refreshed UI and these additions:
+Vision is visual regression testing for mobile apps, derived from Visual Regression Tracker (see [NOTICE](NOTICE)), with these additions:
 
 - **Light and dark themes, one motion system.** The theme follows the system until you pick one (header button, Shift+D, or Profile → Appearance). Screens move consistently and briefly; screenshots in the review never move once shown. Project settings are a page of their own with contents, search and an explicit Save that warns when someone else saved first. Approve and Reject can be undone for 8 seconds from their notification. Users shows when each person last signed in.
 - **Mobile accessibility.** The Appium page source sent with each screenshot is checked for missing labels, touch targets below 48 dp / 44 pt (or the project's own norm), low text contrast (measured on the screenshot), inputs without a label, duplicate labels and controls hidden from VoiceOver. Issues are compared with the baseline, so only issues a branch introduces count as new.

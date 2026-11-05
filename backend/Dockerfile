@@ -23,8 +23,10 @@ RUN --mount=type=secret,id=extra_ca,required=false \
 
 COPY tsconfig*.json ./
 COPY src ./src
-# the image keeps only what runs: no test or lint tooling
-RUN npm run build && npm prune --omit=dev
+# the image keeps only what runs: no test or lint tooling, and not Prisma's CLI with its Studio,
+# which the client lists as an optional peer and prune keeps; the Studio carries EPL-2.0 elkjs
+RUN npm run build && npm prune --omit=dev && \
+    rm -rf node_modules/prisma node_modules/@prisma/studio-core node_modules/elkjs
 
 FROM ${NODE_IMAGE}
 ENV NODE_ENV=production CHECKPOINT_DISABLE=1

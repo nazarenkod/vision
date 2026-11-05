@@ -17,6 +17,7 @@ USER node
 RUN --mount=type=secret,id=extra_ca,required=false,uid=1000 \
     if [ -s /run/secrets/extra_ca ]; then export NODE_EXTRA_CA_CERTS=/run/secrets/extra_ca; fi; \
     if [ -n "$NPM_REGISTRY" ]; then npm config set registry "$NPM_REGISTRY"; fi; \
-    npm ci && npx prisma generate
+    npm ci && npx prisma generate && rm -rf node_modules/elkjs
+# migrations need the CLI but never the graph layout of its Studio, the one EPL-2.0 package (elkjs)
 
 ENTRYPOINT ["/app/entrypoint.sh"]

@@ -57,6 +57,7 @@
     "fast-xml-parser": "^5.12.0",
     "fs-extra": "^11.4.1",
     "ldapts": "^9.2.0",
+    "lodash": "^4.18.1",
     "looks-same": "^10.0.1",
     "odiff-bin": "^4.5.0",
     "ollama": "^0.6.4",

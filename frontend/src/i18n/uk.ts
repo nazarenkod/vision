@@ -1516,6 +1516,8 @@ export const uk: Messages = {
   "overview.a11yIssueKnown": "Відома",
   "overview.noA11y": "Проблем доступності немає",
   "overview.a11yMore": "Ще {count} — на вкладці «Доступність»",
+  "overview.noFeature": "Без функціоналу",
+  "overview.a11yUnit": "нових",
   "overview.loadFailed": "Не вдалося завантажити огляд",
   "overview.report": "Звіт",
   "overview.reviewAll": "Переглянути",

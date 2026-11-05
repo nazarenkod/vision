@@ -21,6 +21,7 @@ import {
   NameCell,
   Num,
   Row,
+  TileDot,
   TileProps,
   Tiles,
 } from "../SummaryParts";
@@ -118,7 +119,7 @@ const OverviewTiles: React.FunctionComponent<{
             ),
           ].join("\n")
         : undefined,
-      color: tokens.status.changed.fg,
+      marker: <TileDot color={tokens.status.changed.bar} />,
       onClick: counts.waiting
         ? () => actions.openQueue({ kind: "all" })
         : undefined,
@@ -127,23 +128,24 @@ const OverviewTiles: React.FunctionComponent<{
       key: "rejected",
       value: counts.rejected,
       label: t("overview.rejected"),
-      color: tokens.status.failed.fg,
+      marker: <TileDot color={tokens.status.failed.bar} />,
       onClick: () => actions.openTab("all", "failed"),
     },
     {
       key: "a11y",
       value: counts.a11yNew,
+      unit: t("overview.a11yUnit"),
       // short enough for the strip; what the number counts, on hover
       label: t("overview.a11y"),
       hint: t("overview.a11yNew"),
-      color: tokens.a11y,
+      marker: <AccessibilityNewOutlined sx={{ fontSize: type.body }} />,
       onClick: () => actions.openTab("a11y"),
     },
     {
       key: "bugs",
       value: counts.bugs,
       label: t("overview.jiraBugs"),
-      color: tokens.status.new.fg,
+      marker: <BugReportOutlined sx={{ fontSize: type.body }} />,
       onClick: counts.bugs
         ? () =>
             document
@@ -152,6 +154,7 @@ const OverviewTiles: React.FunctionComponent<{
         : undefined,
     },
   ];
+  // the numbers in the text colour, what each means by its marker (046);
   // a zero says nothing needs doing: it steps back, the screens count never does (REQ-039-01)
   return (
     <Tiles
@@ -163,10 +166,52 @@ const OverviewTiles: React.FunctionComponent<{
   );
 };
 
-const FEATURE_COLUMNS = "minmax(0, 1fr) 64px 80px 64px 40px";
-// wide enough for "Accessibility" over its numbers
-// narrow bars and counts, so a device keeps its OS and model on one line of tags
-const DEVICE_COLUMNS = "minmax(0, 1fr) 56px 52px 84px";
+// the result is a short bar and its words: "1 changed · 1 new" (046)
+const FEATURE_COLUMNS = "minmax(0, 1fr) 56px 148px 68px 40px";
+// the devices take the page's width; "Accessibility" fits over its numbers
+const DEVICE_COLUMNS = "minmax(0, 1fr) 180px 96px 96px";
+
+/**
+ * A device's tags in one line (046): a row never grows to two lines for a long
+ * model name; what does not fit is cut at the cell's edge.
+ */
+const OneLineDevice: React.FunctionComponent<{
+  parts: React.ComponentProps<typeof DeviceTags>["parts"];
+}> = ({ parts }) => (
+  <Box
+    data-testid="overviewDeviceTags"
+    sx={{ minWidth: 0, overflow: "hidden", display: "flex" }}
+  >
+    <DeviceTags dense parts={parts} sx={{ flexWrap: "nowrap" }} />
+  </Box>
+);
+
+/**
+ * A screen sent without featureName: "No feature" in grey with the screen
+ * under it, so its name is not read as a feature's (046).
+ */
+const NoFeatureCell: React.FunctionComponent<{ name: string }> = ({ name }) => {
+  const { t } = useT();
+  return (
+    <Box sx={{ minWidth: 0 }}>
+      <Typography
+        data-testid="overviewNoFeature"
+        noWrap
+        sx={{ fontSize: type.small, color: tokens.textSecondary }}
+      >
+        {t("overview.noFeature")}
+      </Typography>
+      <Typography
+        data-testid="overviewScreenName"
+        noWrap
+        title={name}
+        sx={{ fontSize: type.caption, color: tokens.textSecondary }}
+      >
+        {name}
+      </Typography>
+    </Box>
+  );
+};
 
 const Devices: React.FunctionComponent<{
   overview: Overview;
@@ -174,7 +219,7 @@ const Devices: React.FunctionComponent<{
 }> = ({ overview, actions }) => {
   const { t } = useT();
   return (
-    <Card index={7} testId="overviewDevices">
+    <Card index={9} testId="overviewDevices">
       <Head
         columns={DEVICE_COLUMNS}
         cells={[
@@ -201,9 +246,7 @@ const Devices: React.FunctionComponent<{
                 : undefined
             }
           >
-            {/* compact: the column is a third of half the page at 1280px */}
-            <DeviceTags
-              dense
+            <OneLineDevice
               parts={{
                 os: row.os,
                 device: row.device,
@@ -212,7 +255,7 @@ const Devices: React.FunctionComponent<{
                 viewport: row.viewport || row.screen,
               }}
             />
-            <ResultBar outcome={row} text={t} hint />
+            <ResultBar outcome={row} text={t} hint words />
             <Num value={waiting} zero="0" />
             <Num value={row.a11yNew} zero="0" />
           </Row>
@@ -247,14 +290,18 @@ const FeatureRows: React.FunctionComponent<{
                 : undefined
             }
           >
-            <NameCell name={row.name} strong={row.grouped} />
+            {row.grouped ? (
+              <NameCell name={row.name} />
+            ) : (
+              <NoFeatureCell name={row.name} />
+            )}
             {/* a check on its own counts itself: only a feature says how many it holds */}
             {row.grouped ? (
               <Num value={row.total} testId="overviewChecks" />
             ) : (
               <span />
             )}
-            <ResultBar outcome={row} text={t} hint />
+            <ResultBar outcome={row} text={t} hint words />
             <Num value={waiting} zero="0" />
             <Num value={row.bugs} zero="0" />
           </Row>
@@ -276,7 +323,7 @@ const Features: React.FunctionComponent<{
     ...(overview.quietFeatures.features ?? []),
   ];
   return (
-    <Card index={8} testId="overviewFeatures">
+    <Card index={7} testId="overviewFeatures">
       <Head
         columns={FEATURE_COLUMNS}
         cells={[
@@ -383,10 +430,7 @@ const A11yProblems: React.FunctionComponent<{
                 {[problem.check, problem.element].filter(Boolean).join(" · ")}
               </Typography>
             </Box>
-            <DeviceTags
-              dense
-              parts={{ os: problem.os, device: problem.device }}
-            />
+            <OneLineDevice parts={{ os: problem.os, device: problem.device }} />
             <Box sx={{ justifySelf: "end" }}>
               <StatusPill
                 tone={problem.isNew ? "changed" : "neutral"}
@@ -423,7 +467,7 @@ const Bugs: React.FunctionComponent<{
   // no bugs: one line, not a table's title and header over nothing
   if (overview.bugs.length === 0) {
     return (
-      <Card index={9} testId="overviewBugs" id="overview-bugs">
+      <Card index={8} testId="overviewBugs" id="overview-bugs">
         <EmptyLine testId="overviewNoBugs" icon={BugReportOutlined}>
           {t("overview.noBugs")}
         </EmptyLine>
@@ -433,7 +477,7 @@ const Bugs: React.FunctionComponent<{
   return (
     <Card
       title={t("overview.jiraBugs")}
-      index={9}
+      index={8}
       testId="overviewBugs"
       id="overview-bugs"
     >
@@ -536,16 +580,21 @@ export const BuildOverview: React.FunctionComponent<{
         py: 2,
         display: "flex",
         flexDirection: "column",
-        gap: 1.75,
+        gap: 2,
         maxWidth: 1240,
       }}
     >
       <OverviewTiles overview={overview} actions={actions} />
+      {/* features beside the bugs; the devices and the accessibility problems take the
+          whole width, so a device keeps its tags on one line (046) */}
       <Box
         sx={{
           display: "grid",
-          gridTemplateColumns: { xs: "1fr", lg: "repeat(2, minmax(0, 1fr))" },
-          gap: 1.75,
+          gridTemplateColumns: {
+            xs: "1fr",
+            lg: "minmax(0, 1.3fr) minmax(0, 1fr)",
+          },
+          gap: 2,
           alignItems: "start",
         }}
       >
@@ -555,20 +604,10 @@ export const BuildOverview: React.FunctionComponent<{
           overview={overview}
           actions={actions}
         />
-        {/* stacked, so the shorter cards fill the column beside the features */}
-        <Box
-          sx={{
-            display: "flex",
-            flexDirection: "column",
-            gap: 1.75,
-            minWidth: 0,
-          }}
-        >
-          <Devices overview={overview} actions={actions} />
-          <Bugs overview={overview} actions={actions} />
-          <A11yProblems overview={overview} actions={actions} />
-        </Box>
+        <Bugs overview={overview} actions={actions} />
       </Box>
+      <Devices overview={overview} actions={actions} />
+      <A11yProblems overview={overview} actions={actions} />
     </Box>
   );
 };

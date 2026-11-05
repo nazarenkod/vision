@@ -58,7 +58,7 @@ describe('drive-auth', () => {
     expect(
       readTokenPoll(
         200,
-        { access_token: 'at', refresh_token: 'rt', expires_in: 3599, id_token: idToken({ email: 'qa@privatbank.ua' }) },
+        { access_token: 'at', refresh_token: 'rt', expires_in: 3599, id_token: idToken({ email: 'qa@bank.test' }) },
         now
       )
     ).toEqual({
@@ -67,13 +67,13 @@ describe('drive-auth', () => {
         accessToken: 'at',
         refreshToken: 'rt',
         accessTokenExpiresAt: '2026-10-27T12:59:59.000Z',
-        email: 'qa@privatbank.ua',
+        email: 'qa@bank.test',
       },
     });
   });
 
   it('takes the email from the id token and nothing else', () => {
-    expect(emailFromIdToken(idToken({ email: 'qa@privatbank.ua' }))).toBe('qa@privatbank.ua');
+    expect(emailFromIdToken(idToken({ email: 'qa@bank.test' }))).toBe('qa@bank.test');
     expect(emailFromIdToken('not-a-token')).toBeNull();
     expect(emailFromIdToken(undefined)).toBeNull();
   });
@@ -85,7 +85,7 @@ describe('drive-auth', () => {
       accessToken: 'at',
       refreshToken: 'rt',
       accessTokenExpiresAt: '2026-10-27T13:00:00.000Z',
-      email: 'qa@privatbank.ua',
+      email: 'qa@bank.test',
       folderId: 'folder-1',
       folderName: 'vision-backups',
     });
@@ -111,10 +111,10 @@ describe('drive-auth', () => {
       accessToken: 'at',
       refreshToken: 'rt',
       accessTokenExpiresAt: '',
-      email: 'qa@privatbank.ua',
+      email: 'qa@bank.test',
       folderId: 'f',
       folderName: 'vision-backups',
     });
-    expect(shown).toEqual({ connected: true, email: 'qa@privatbank.ua', folderName: 'vision-backups' });
+    expect(shown).toEqual({ connected: true, email: 'qa@bank.test', folderName: 'vision-backups' });
   });
 });

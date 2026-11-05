@@ -30,7 +30,7 @@ const connected = overview({
   lastSuccessAt: "2026-10-27T03:18:00Z",
   drive: {
     connected: true,
-    email: "qa@privatbank.ua",
+    email: "qa@bank.test",
     folderName: "vision-backups",
   },
   remote: {
@@ -80,7 +80,7 @@ test("connects Google Drive with a device code", async ({ page, authUser }) => {
     }
     state = connected;
     return route.fulfill({
-      body: JSON.stringify({ state: "connected", email: "qa@privatbank.ua" }),
+      body: JSON.stringify({ state: "connected", email: "qa@bank.test" }),
     });
   });
   await page.goto("/backups");
@@ -100,7 +100,7 @@ test("connects Google Drive with a device code", async ({ page, authUser }) => {
 
   await expect(page.getByTestId("driveUserCode")).toHaveText("ABC-DEF-GHI");
   await expect(page.getByTestId("driveConnected")).toContainText(
-    "qa@privatbank.ua",
+    "qa@bank.test",
     { timeout: 10000 },
   );
   await expect(page.getByTestId("backupRow")).toHaveCount(1);

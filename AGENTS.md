@@ -1,8 +1,9 @@
 # Vision — інструкції для агентів
 
-Vision — внутрішній форк [Visual Regression Tracker](https://github.com/Visual-Regression-Tracker/Visual-Regression-Tracker)
-для QA мобільних застосунків (Android «AOS» та iOS, Appium + Selenide). До піксельного порівняння
-він додає аналіз UI-дерева, перевірки доступності, баги в Jira, групи змін, Insights і CLI/MCP.
+Vision — візуальні перевірки для QA мобільних застосунків (Android «AOS» та iOS, Appium +
+Selenide): порівняння знімків з урахуванням UI-дерева, перевірки доступності, баги в Jira, групи
+змін, Insights і CLI/MCP. Працює поруч із робочим VRT, з якого копіює дані (правило 1); походження
+коду — у [NOTICE](NOTICE).
 
 Це рівень 0: правила, що діють завжди, і куди йти далі. Деталі — за посиланнями, коли вони
 потрібні задачі.
@@ -14,10 +15,11 @@ Vision — внутрішній форк [Visual Regression Tracker](https://git
 1. **Робочий VRT і його база не повинні постраждати за жодних умов.** Vision стоїть на тій самій
    машині й працює на копії даних. docker compose — лише через `./scripts/vision.sh`; нові
    скрипти — за запобіжниками `scripts/lib/vision-safety.sh` ([ADR-0002](docs/decisions/0002-production-is-read-only.md)).
-2. **Пуш лише в remote `vision`:** `git -c http.postBuffer=1048576000 push vision mvp/demo:main`.
-   `origin` — upstream VRT ([ADR-0027](docs/decisions/0027-vision-own-product.md)).
-   Виняток — хмарні сесії, де `origin` — сам `nazarenkod/vision`: туди можна пушити окрему гілку
-   (`git push -u origin <гілка>`), але не `main`, без force і без видалень.
+2. **Пуш лише в remote з `.claude/repository.json`** (тут — `vision`): гілку задачі, далі PR.
+   `origin` може бути чужим репозиторієм ([ADR-0027](docs/decisions/0027-vision-own-product.md)).
+   Виняток — клон, де `origin` і є цей репозиторій (хмарні сесії): туди можна пушити окрему гілку
+   (`git push -u origin <гілка>`), але не `main`, без force і без видалень. В іншому git-хості
+   змінюються лише два значення в `.claude/repository.json`.
 3. **Міграції лише додавальні:** нова таблиця, nullable-колонка, індекс; без змін enum, видалень,
    перейменувань ([ADR-0003](docs/decisions/0003-additive-schema-only.md)).
 4. **Жодних скидань і видалень бази** (`prisma migrate reset`, `DROP DATABASE`, `dropdb`).

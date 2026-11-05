@@ -2,14 +2,14 @@
 """PreToolUse hook: stops shell commands that break Vision's hard rules.
 
 AGENTS.md states the rules; an agent may still slip, so this hook enforces
-the ones whose breach cannot be undone (docs/decisions/0002, 0001, 0003):
+the ones whose breach cannot be undone (docs/decisions/0002, 0027, 0003):
 
 - docker compose only through ./scripts/vision.sh (the pinned "vision" project);
 - no pruning or removing Docker volumes, and no stopping or removing
   containers that are not Vision's: production runs on the same host;
-- git push only to the "vision" remote ("origin" is upstream VRT), except a
-  feature branch to "origin" in a clone where origin is Vision's own
-  repository, as in cloud sessions: no main, no force, no deletes;
+- git push only to the push remote of .claude/repository.json, except a
+  feature branch to "origin" in a clone where origin is that repository, as in
+  cloud sessions: no main, no force, no deletes;
 - no database resets, drops or data-losing schema pushes.
 
 Reads the hook JSON on stdin; exits 2 with the reason on stderr to block,
@@ -26,8 +26,23 @@ SEGMENT = re.compile(r"\|\||&&|;|\||\n|\$\(|`")
 # shell redirections such as 2>&1, >log or <input: they go to the shell, not to the command
 REDIRECTION = re.compile(r"^\d*(>>?|<)(&\d+|&-)?$|^\d*(>>?|<|&>)\S+$")
 
-# Vision's own repository: in a cloud session's clone "origin" points here, not at upstream VRT
-VISION_REPO = re.compile(r"github\.com[:/]nazarenkod/vision(\.git)?/?$")
+
+def repository_config() -> dict:
+    """Where this repository lives (.claude/repository.json, or VISION_GUARD_CONFIG for tests)."""
+    path = os.environ.get("VISION_GUARD_CONFIG") or os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "repository.json")
+    try:
+        with open(path, encoding="utf-8") as config:
+            return json.load(config)
+    except (OSError, json.JSONDecodeError):
+        return {}
+
+
+CONFIG = repository_config()
+PUSH_REMOTE = CONFIG.get("pushRemote") or "vision"
+# this repository: in a cloud session's clone "origin" points here; anything else may be someone else's
+_HOST_PATH = (CONFIG.get("repository") or "").strip().rstrip("/")
+_HOST, _, _PATH = _HOST_PATH.partition("/")
+OWN_REPO = re.compile(rf"{re.escape(_HOST)}[:/]{re.escape(_PATH)}(\.git)?/?$") if _HOST and _PATH else None
 PROTECTED_BRANCHES = {"main", "master", "HEAD"}
 # options that rewrite or delete remote history, or point git at another clone
 RISKY_PUSH_OPTIONS = {
@@ -98,7 +113,7 @@ def feature_branch_to_vision_origin(tokens: list[str], rest: list[str], cwd: str
         return False
     if any(token.split("=", 1)[0] in RISKY_PUSH_OPTIONS for token in tokens):
         return False
-    return bool(VISION_REPO.search(origin_url(cwd)))
+    return bool(OWN_REPO and OWN_REPO.search(origin_url(cwd)))
 
 
 def check_segment(segment: str, cwd: str = ""):
@@ -123,8 +138,8 @@ def check_segment(segment: str, cwd: str = ""):
         rest = args[args.index("push") + 1:]
         if feature_branch_to_vision_origin(tokens, rest, cwd):
             return None
-        if not rest or rest[0] != "vision":
-            return "git push goes only to the 'vision' remote: git push vision mvp/demo:main ('origin' is upstream VRT, ADR-0001)."
+        if not rest or rest[0] != PUSH_REMOTE:
+            return f"git push goes only to the '{PUSH_REMOTE}' remote (.claude/repository.json, ADR-0027): git push {PUSH_REMOTE} <branch>."
     if program in {"npx", "prisma"} or "prisma" in tokens[:3]:
         joined = " ".join(tokens)
         if re.search(r"\bmigrate\s+reset\b", joined) or re.search(r"\bdb\s+push\b.*--(force-reset|accept-data-loss)", joined):

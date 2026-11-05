@@ -47,7 +47,7 @@ describe('BackupsService with Google Drive', () => {
         access_token: 'at-1',
         refresh_token: 'rt-1',
         expires_in: 3600,
-        id_token: idToken({ email: 'qa@privatbank.ua' }),
+        id_token: idToken({ email: 'qa@bank.test' }),
       })
   ) => {
     answer(
@@ -85,7 +85,7 @@ describe('BackupsService with Google Drive', () => {
       interval: 5,
     });
     expect(code).not.toHaveProperty('deviceCode');
-    expect(result).toEqual({ state: 'connected', email: 'qa@privatbank.ua' });
+    expect(result).toEqual({ state: 'connected', email: 'qa@bank.test' });
     expect(String(calls[0].init.body)).toContain(
       'scope=openid+email+https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fdrive.file'
     );
@@ -129,7 +129,7 @@ describe('BackupsService with Google Drive', () => {
     for (const secret of ['client-secret', 'rt-1', 'at-1', 'cid.apps']) {
       expect(shown).not.toContain(secret);
     }
-    expect(shown).toContain('qa@privatbank.ua');
+    expect(shown).toContain('qa@bank.test');
   });
 
   it('lists the backups in Drive with the status', async () => {
@@ -160,7 +160,7 @@ describe('BackupsService with Google Drive', () => {
     expect(overview.configured).toBe(true);
     expect(overview.warning).toBeNull();
     expect(overview.lastSuccessAt).toBe('2026-10-27T03:17:00Z');
-    expect(overview.drive).toEqual({ connected: true, email: 'qa@privatbank.ua', folderName: 'vision-backups' });
+    expect(overview.drive).toEqual({ connected: true, email: 'qa@bank.test', folderName: 'vision-backups' });
     expect(overview.remote).toEqual({
       backups: [{ name: 'vision-20261027T031700Z.tar', size: 1048576, modifiedTime: '2026-10-27T03:18:00Z' }],
       error: null,

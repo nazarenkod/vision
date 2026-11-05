@@ -38,8 +38,8 @@ export const en = {
 
   "projectList.title": "Projects",
   "projectList.search": "Search",
-  "projectList.searchPlaceholder": "Project name",
-  "projectList.add": "Add project",
+  "projectList.searchPlaceholder": "Search projects",
+  "projectList.add": "New project",
   "projectList.project": "Project",
   "projectList.mainBranch": "Main branch",
   "projectList.comparison": "Comparison",
@@ -338,7 +338,7 @@ export const en = {
   "builds.views": "Build views",
   "builds.changes": "Changes",
   "builds.toReview": "{count} to review",
-  "builds.allTests": "All tests",
+  "builds.allTests": "All screens",
   "builds.accessibility": "Accessibility",
   "builds.a11yNewPill": { one: "{count} new", other: "{count} new" },
 
@@ -444,6 +444,10 @@ export const en = {
   "baselines.thisOne": "This one",
   "baselines.beforeIt": "Before it",
   "baselines.nothingBefore": "Nothing before it",
+  "baselines.selected": "Selected",
+  "baselines.previous": "Previous",
+  "baselines.inUse": "in use",
+  "baselines.openInReview": "Open in review",
   "baselines.testRun": "Screen",
 
   // filters
@@ -457,6 +461,10 @@ export const en = {
   "filters.status": "Status",
   "filters.branch": "Branch",
   "filters.reset": "Reset",
+  "filters.search": "Search checks",
+  "filters.title": "Filters",
+  "filters.remove": "Remove filter {name}",
+  "filters.clear": "Clear",
   "filters.project": "Project",
   "filters.selectProject": "Select project",
   "projectSelect.newProject": "New project",
@@ -835,7 +843,7 @@ export const en = {
   "profile.firstName": "First name",
   "profile.lastName": "Last name",
   "profile.validEmail": "Enter valid email address",
-  "profile.email": "Email address",
+  "profile.email": "Email",
   "profile.update": "Update",
   "profile.changePassword": "Change password",
   "profile.newPassword": "New password",
@@ -845,8 +853,9 @@ export const en = {
   "profile.configHelp":
     "Save as vision.json in project root. Could be overridden with ENV variables",
   "profile.envHelp": "Add Environment variables inside CI environment",
-  "profile.apiKey": "Api key",
-  "profile.apiKeyHelp": "For the SDK, the CLI and the MCP server.",
+  "profile.apiKey": "API key",
+  "profile.apiKeyHelp":
+    "For the SDK, the CLI and the MCP server. Shown in full once, after you create it.",
   "profile.newApiKey": "New API key",
   "profile.noApiKey":
     "No key yet: make one for the SDK, the CLI and the MCP server",
@@ -886,7 +895,19 @@ export const en = {
   "reportBug.openProfile": "Open profile",
   "profile.appearance": "Appearance",
   "profile.appearanceHelp":
-    "Follows the system until you choose. Remembered in this browser.",
+    "Applies at once and is remembered in this browser. System follows the system until you choose.",
+  "profile.account": "Account",
+  "profile.roleSetBy": "Role {role} · set by an admin",
+  "profile.passwordHint": "At least {count} characters.",
+  "profile.notSet": "Not set",
+  "profile.tokenSet": "Token saved",
+  "profile.keySet": "Key saved",
+  "profile.jiraCloudOnly": "Jira Cloud only",
+  "profile.sdkSettings": "SDK settings",
+  "profile.downloadConfig": "Download vision.json",
+  "profile.languageAndTheme": "Language and theme",
+  "profile.language": "Language",
+  "profile.theme": "Theme",
   "profile.system": "System",
   "profile.light": "Light",
   "profile.dark": "Dark",
@@ -976,10 +997,16 @@ export const en = {
   "backups.open": "Open Backups",
 
   // auth
-  "auth.orLocal": "Or with a local account:",
+  "auth.orLocal": "or with a local account",
+  "auth.subtitleSso": "With your company account or a local one.",
+  "auth.emailPlaceholder": "name@company.com",
+  "auth.brandLine":
+    "Screens, UI tree and accessibility for Android and iOS builds — reviewed in one place.",
+  "auth.lightTheme": "Light theme",
+  "auth.darkTheme": "Dark theme",
   "auth.sso": "Sign in with SSO",
   "auth.validEmail": "Enter a valid email.",
-  "auth.email": "Email address",
+  "auth.email": "Email",
   "auth.signIn": "Sign in",
   "auth.noAccount": "No account? Ask an admin to create one.",
 

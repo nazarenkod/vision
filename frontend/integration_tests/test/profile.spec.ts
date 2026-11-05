@@ -106,7 +106,7 @@ test("shows a new API key once and only its ending later", async ({
 
   // replacing a key in use asks first
   page.once("dialog", (dialog) => dialog.accept());
-  await page.getByRole("button", { name: "New API key" }).click();
+  await page.getByRole("button", { name: "New key" }).click();
 
   await expect(value).toHaveText(newKey);
   await expect(page.getByTestId("apiKeyOnce")).toContainText(
@@ -138,4 +138,50 @@ test("shows a new API key once and only its ending later", async ({
   await page.reload();
   await expect(value).toHaveText(`${"•".repeat(24)}${newKey.slice(-4)}`);
   await expect(page.getByText(newKey)).toHaveCount(0);
+});
+
+test("shows the profile in one column with the role as text", async ({
+  profilePage,
+  page,
+}) => {
+  const column = page.getByTestId("profileColumn");
+  const titles = column.getByRole("heading", { level: 2 });
+  await expect(titles).toHaveText([
+    "Account",
+    "Password",
+    "Jira",
+    "Gemini",
+    "API key",
+    "Language and theme",
+  ]);
+
+  // the cards stand one under another, no wider than 760 px
+  const cards = column.locator("section");
+  const boxes = await Promise.all(
+    (await cards.all()).map(async (card) => (await card.boundingBox())!),
+  );
+  expect(new Set(boxes.map((box) => Math.round(box.x))).size).toBe(1);
+  boxes.slice(1).forEach((box, index) => {
+    expect(box.y).toBeGreaterThan(boxes[index].y + boxes[index].height - 1);
+  });
+  expect(boxes[0].width).toBeLessThanOrEqual(760);
+
+  // the role is said in the Account header, not offered in a disabled select
+  const account = page.getByTestId("accountCard");
+  await expect(account.getByTestId("cardAside")).toHaveText(
+    "Role Admin · set by an admin",
+  );
+  await expect(account.getByRole("combobox")).toHaveCount(0);
+
+  // each form saves from its footer, on the right
+  await expect(profilePage.updateUserBtn).toHaveText("Save");
+  await expect(profilePage.updatePasswordBtn).toHaveText("Save");
+  const footer = (await account.getByTestId("cardFooter").boundingBox())!;
+  const save = (await profilePage.updateUserBtn.boundingBox())!;
+  expect(save.x + save.width).toBeGreaterThan(footer.x + footer.width - 40);
+  await expect(page.getByText("At least 12 characters.")).toBeVisible();
+
+  // whether a key is saved shows beside its title
+  await expect(page.getByTestId("jiraTokenCard")).toContainText("Not set");
+  await expect(page.getByTestId("geminiKeyCard")).toContainText("Not set");
 });

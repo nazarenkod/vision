@@ -100,25 +100,30 @@ const ProjectsListPage = () => {
         maxWidth: 1280,
       }}
     >
-      <Typography variant="h4" component="h1">
-        {t("projectList.title")}
-      </Typography>
       <Box
         sx={{
           display: "flex",
           flexWrap: "wrap",
-          alignItems: "flex-end",
+          alignItems: "center",
           gap: 2,
         }}
       >
+        <Typography variant="h4" component="h1">
+          {t("projectList.title")}
+        </Typography>
+        <Box sx={{ flex: 1 }} />
+        {/* a placeholder, no floating label: the field says what it is (REQ-046-53) */}
         <TextField
           id="projectSearch"
           size="small"
-          label={t("projectList.search")}
           placeholder={t("projectList.searchPlaceholder")}
           value={search}
           onChange={(event) => setSearch(event.target.value)}
-          sx={{ width: 320, bgcolor: tokens.surface }}
+          sx={{ width: 300, bgcolor: tokens.surface }}
+          inputProps={{
+            "aria-label": t("projectList.searchPlaceholder"),
+            "data-testid": "projectSearch",
+          }}
           InputProps={{
             startAdornment: (
               <InputAdornment position="start">
@@ -127,11 +132,11 @@ const ProjectsListPage = () => {
             ),
           }}
         />
-        <Box sx={{ flex: 1 }} />
         {canEditProjects && (
           <Button
             variant="contained"
             startIcon={<Add />}
+            data-testid="newProject"
             onClick={() => {
               toggleCreateDialogOpen();
               setProjectEditState(projectDispatch);

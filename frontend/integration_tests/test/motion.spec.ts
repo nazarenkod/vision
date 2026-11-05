@@ -159,7 +159,7 @@ test("highlights travel to the new item instead of jumping", async ({
       run.className.includes("MuiTabs-indicator") && run.property === "left",
   );
 
-  await page.getByRole("tab", { name: /All tests/ }).click();
+  await page.getByRole("tab", { name: /All screens/ }).click();
 
   // a segment, even though the other view draws the switch anew
   await page.getByTestId("gridViewToggle").click();

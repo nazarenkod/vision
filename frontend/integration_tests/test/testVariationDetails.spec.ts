@@ -115,3 +115,56 @@ test("shows the picked baseline next to the one before", async ({
   await expect(page.getByTestId("historyBefore")).toHaveCount(0);
   await expect(page.getByText("Nothing before it")).toBeVisible();
 });
+
+test("labels the pair Selected and Previous", async ({
+  openTestVariationDetailsPage,
+  page,
+}) => {
+  await openTestVariationDetailsPage(TEST_VARIATION_ONE.id);
+
+  await expect(page.getByText("Selected", { exact: true })).toBeVisible();
+  await expect(page.getByText("Previous", { exact: true })).toBeVisible();
+  await expect(page.getByText("Current", { exact: true })).toHaveCount(0);
+  await expect(page.getByText("Before it", { exact: true })).toHaveCount(0);
+
+  // an older record picked is still the selected one
+  await page
+    .getByTestId("historyEntry")
+    .nth(1)
+    .locator("button[aria-pressed]")
+    .click();
+  await expect(page.getByText("Selected", { exact: true })).toBeVisible();
+  await expect(page.getByText("This one", { exact: true })).toHaveCount(0);
+});
+
+test("shows the date of a record in one line", async ({
+  openTestVariationDetailsPage,
+  page,
+}) => {
+  await openTestVariationDetailsPage(TEST_VARIATION_ONE.id);
+  const dates = page.getByTestId("historyDate");
+  await expect(dates).toHaveCount(TEST_VARIATION_ONE.baselines.length);
+
+  // "Oct 12, 2026 · 16:05": the date and the time, one line, for every record
+  for (const date of await dates.all()) {
+    await expect(date).toHaveText(
+      /^[A-Z][a-z]{2} \d{1,2}, \d{4} · \d{2}:\d{2}$/,
+    );
+    const box = (await date.boundingBox())!;
+    const lineHeight = await date.evaluate((node) =>
+      parseFloat(getComputedStyle(node).lineHeight),
+    );
+    expect(box.height).toBeLessThan(lineHeight * 1.5);
+  }
+  // the same in the header of the pair
+  await expect(page.getByTestId("historyPickedDate")).toHaveText(
+    await dates.first().innerText(),
+  );
+  // the newest is the one in use, and opens in review
+  await expect(page.getByTestId("historyEntry").first()).toContainText(
+    "in use",
+  );
+  await expect(
+    page.getByRole("button", { name: "Open in review" }).first(),
+  ).toBeVisible();
+});

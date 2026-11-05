@@ -301,7 +301,7 @@ test("each number opens its tab or queue", async ({
   await openProjectPage(project.id, build.id, undefined, "overview");
 
   await page.getByTestId("overviewTile-screens").click();
-  await expect(page.getByRole("tab", { name: /All tests/ })).toHaveAttribute(
+  await expect(page.getByRole("tab", { name: /All screens/ })).toHaveAttribute(
     "aria-selected",
     "true",
   );
@@ -402,7 +402,7 @@ test("keeps the counts out of the build header on every tab", async ({
   await expect(page.getByTestId("overviewTile-screens")).toBeVisible();
   await expect(page.getByTestId("buildCounts")).toHaveCount(0);
 
-  await page.getByRole("tab", { name: /All tests/ }).click();
+  await page.getByRole("tab", { name: /All screens/ }).click();
   await expect(page.getByTestId("buildStatusBar")).toBeVisible();
   await expect(page.getByTestId("buildCounts")).toHaveCount(0);
 });
@@ -532,8 +532,8 @@ test("puts the count of All tests in a pill like the tabs beside it", async ({
   page,
 }) => {
   await openProjectPage(project.id, build.id, undefined, "overview");
-  const tab = page.getByRole("tab", { name: /All tests/ });
-  await expect(tab).toHaveText(new RegExp(`^All tests\\s*${runs.length}$`));
+  const tab = page.getByRole("tab", { name: /All screens/ });
+  await expect(tab).toHaveText(new RegExp(`^All screens\\s*${runs.length}$`));
 });
 
 test("shows a device's screen size when the run sent no viewport", async ({

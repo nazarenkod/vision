@@ -1,19 +1,5 @@
 import React, { useState, FormEvent } from "react";
-import {
-  Grid,
-  Card,
-  CardContent,
-  TextField,
-  CardActions,
-  Button,
-  Typography,
-  Box,
-  CardHeader,
-  Tabs,
-  Tab,
-  Select,
-  MenuItem,
-} from "@mui/material";
+import { TextField, Button, Typography, Box, Tabs, Tab } from "@mui/material";
 import {
   newApiKey,
   useUserDispatch,
@@ -27,7 +13,6 @@ import { usersService } from "../services";
 import { useSnackbar } from "notistack";
 import ProjectSelect from "../components/ProjectSelect";
 import { TextValidator, ValidatorForm } from "react-material-ui-form-validator";
-import { Role } from "../types";
 import PasswordField from "../components/PasswordField";
 import { useOidcEnabled } from "../_helpers/useOidcEnabled";
 import { JiraTokenCard } from "../components/JiraTokenCard";
@@ -35,10 +20,14 @@ import { GeminiKeyCard } from "../components/GeminiKeyCard";
 import { ApiKeyCard } from "../components/ApiKeyCard";
 import { AppearanceCard } from "../components/AppearanceCard";
 import { labelOf, useT } from "../i18n";
+import { FormCard } from "../components/FormCard";
+import { FieldLabel } from "../components/FieldLabel";
+import { tokens, type } from "../theme";
+import { MIN_PASSWORD_LENGTH } from "../_helpers/users.helper";
 
 const ProfilePage = () => {
   const { enqueueSnackbar } = useSnackbar();
-  const { t } = useT();
+  const { t, tx } = useT();
   const { user } = useUserState();
   const authDispatch = useUserDispatch();
   const projectDispatch = useProjectDispatch();
@@ -97,257 +86,271 @@ const ProfilePage = () => {
 
   const errorForTwoChar = t("validation.twoCharacters");
 
-  return (
-    <Box sx={{ px: 4, py: 3, maxWidth: 1280 }}>
-      <Typography variant="h4" component="h1" sx={{ mb: 2 }}>
-        {t("profile.title")}
-      </Typography>
-      <Grid container spacing={2}>
-        <Grid item xs={6}>
-          <Grid container spacing={1}>
-            <Grid item xs={12}>
-              <ValidatorForm onSubmit={handleUserUpdateSubmit} instantValidate>
-                <Card variant="outlined">
-                  <CardHeader title={t("profile.details")} />
-                  <CardContent>
-                    <Grid container spacing={2}>
-                      <Grid item xs={6}>
-                        <TextValidator
-                          validators={["minStringLength:2"]}
-                          errorMessages={[errorForTwoChar]}
-                          id="firstName"
-                          name="firstName"
-                          value={firstName}
-                          label={t("profile.firstName")}
-                          type="text"
-                          variant="outlined"
-                          required
-                          fullWidth
-                          inputProps={{
-                            onChange: (
-                              event: React.ChangeEvent<HTMLInputElement>,
-                            ) => setFirstName(event.target.value),
-                            "data-testid": "firstName",
-                          }}
-                        />
-                      </Grid>
-                      <Grid item xs={6}>
-                        <TextValidator
-                          validators={["minStringLength:2"]}
-                          errorMessages={[errorForTwoChar]}
-                          id="lastName"
-                          name="lastName"
-                          value={lastName}
-                          label={t("profile.lastName")}
-                          type="text"
-                          variant="outlined"
-                          required
-                          fullWidth
-                          inputProps={{
-                            onChange: (
-                              event: React.ChangeEvent<HTMLInputElement>,
-                            ) => setLastName(event.target.value),
-                            "data-testid": "lastName",
-                          }}
-                        />
-                      </Grid>
-                      <Grid item xs={12}>
-                        <TextValidator
-                          validators={["isEmail"]}
-                          errorMessages={[t("profile.validEmail")]}
-                          id="email"
-                          name="email"
-                          value={email}
-                          label={t("profile.email")}
-                          type="text"
-                          variant="outlined"
-                          required
-                          fullWidth
-                          // The identity provider owns the email of SSO users.
-                          disabled={oidcEnabled !== false}
-                          inputProps={{
-                            onChange: (
-                              event: React.ChangeEvent<HTMLInputElement>,
-                            ) => setEmail(event.target.value),
-                            "data-testid": "email",
-                          }}
-                        />
-                      </Grid>
-                      <Grid item xs={12}>
-                        <Select
-                          variant="standard"
-                          id="role"
-                          labelId="role"
-                          displayEmpty
-                          fullWidth
-                          disabled
-                          value={user?.role}
-                        >
-                          {Object.entries(Role).map(([key, value]) => (
-                            <MenuItem key={key} value={key}>
-                              {labelOf(t, "role", key) || value}
-                            </MenuItem>
-                          ))}
-                        </Select>
-                      </Grid>
-                    </Grid>
-                  </CardContent>
-                  <CardActions>
-                    <Grid container justifyContent="center">
-                      <Grid item>
-                        <Button
-                          type="submit"
-                          color="primary"
-                          variant="outlined"
-                          data-testid="submit"
-                        >
-                          {t("profile.update")}
-                        </Button>
-                      </Grid>
-                    </Grid>
-                  </CardActions>
-                </Card>
-              </ValidatorForm>
-            </Grid>
-            {oidcEnabled === false && (
-              <Grid item xs={12}>
-                <ValidatorForm
-                  onSubmit={handlePasswordUpdateSubmit}
-                  instantValidate
-                >
-                  <Card variant="outlined">
-                    <CardHeader title={t("profile.changePassword")} />
-                    <CardContent>
-                      <Grid container spacing={2}>
-                        <Grid item xs={12}>
-                          <PasswordField
-                            isNew
-                            password={password}
-                            setPassword={setPassword}
-                            label={t("profile.newPassword")}
-                          />
-                        </Grid>
-                      </Grid>
-                    </CardContent>
-                    <CardActions>
-                      <Grid container justifyContent="center">
-                        <Grid item>
-                          <Button
-                            type="submit"
-                            color="primary"
-                            variant="outlined"
-                            data-testid="submit"
-                          >
-                            {t("profile.update")}
-                          </Button>
-                        </Grid>
-                      </Grid>
-                    </CardActions>
-                  </Card>
-                </ValidatorForm>
-              </Grid>
-            )}
-            <Grid item xs={12}>
-              <AppearanceCard />
-            </Grid>
-          </Grid>
-        </Grid>
-        <Grid item xs={6}>
-          <Grid container spacing={1}>
-            <Grid item xs={12}>
-              <JiraTokenCard />
-            </Grid>
-            <Grid item xs={12}>
-              <GeminiKeyCard />
-            </Grid>
-            <Grid item xs={12}>
-              <ApiKeyCard
-                ending={user?.apiKeyEnding}
-                newKey={newKey}
-                onNewKey={() =>
-                  user &&
-                  newApiKey(authDispatch, user)
-                    .then(setNewKey)
-                    .catch((err) => enqueueSnackbar(err, { variant: "error" }))
-                }
-              />
-            </Grid>
-            <Grid item xs={12}>
-              <Card variant="outlined">
-                <CardHeader title={t("profile.examples")} />
-                <CardContent>
-                  <ProjectSelect
-                    onProjectSelect={(id) => selectProject(projectDispatch, id)}
-                  />
-                  <Tabs
-                    variant="fullWidth"
-                    value={tabIndex}
-                    indicatorColor="primary"
-                    textColor="primary"
-                    onChange={(
-                      event: React.ChangeEvent<unknown>,
-                      newValue: number,
-                    ) => {
-                      setTabIndex(newValue);
-                    }}
-                  >
-                    <Tab label={t("profile.configFile")} />
-                    <Tab label={t("profile.env")} />
-                  </Tabs>
-                  <div role="tabpanel" hidden={tabIndex !== 0}>
-                    {tabIndex === 0 && (
-                      <Box p={3}>
-                        <TextField
-                          id="configFile"
-                          name="configFile"
-                          variant="outlined"
-                          disabled
-                          value={`{
+  const configFile = `{
     "apiUrl": "${window._env_.REACT_APP_API_URL}",
     "apiKey": "${shownKey}",
     "project": "${selectedProjectId ?? "Default project"}",
     "branchName": "master",
     "ciBuildId": "commit_sha",
     "enableSoftAssert": false
-}`}
-                          multiline
-                          rows={8}
-                          fullWidth
-                          helperText={t("profile.configHelp")}
-                        />
-                      </Box>
-                    )}
-                  </div>
-                  <div role="tabpanel" hidden={tabIndex !== 1}>
-                    {tabIndex === 1 && (
-                      <Box p={3}>
-                        <TextField
-                          id="envVariables"
-                          name="envVariables"
-                          variant="outlined"
-                          disabled
-                          value={`
+}`;
+  const envVariables = `
   VISION_APIURL="${window._env_.REACT_APP_API_URL}"
   VISION_APIKEY="${shownKey}"
   VISION_PROJECT="${selectedProjectId ?? "Default project"} "
   VISION_BRANCHNAME="master"
   VISION_CIBUILDID="commit_sha"
   VISION_ENABLESOFTASSERT=false
-  `}
-                          multiline
-                          rows={8}
-                          fullWidth
-                          helperText={t("profile.envHelp")}
-                        />
-                      </Box>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-            </Grid>
-          </Grid>
-        </Grid>
-      </Grid>
+  `;
+
+  const copySettings = () =>
+    navigator.clipboard
+      ?.writeText(tabIndex === 0 ? configFile : envVariables)
+      .then(() => enqueueSnackbar(t("profile.copied"), { variant: "success" }))
+      .catch(() => undefined);
+
+  const downloadConfig = () => {
+    const url = URL.createObjectURL(
+      new Blob([configFile], { type: "application/json" }),
+    );
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "vision.json";
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const saveButton = (
+    <Button type="submit" variant="outlined" data-testid="submit">
+      {t("profile.save")}
+    </Button>
+  );
+
+  const settingsField = (id: string, value: string, help: string) => (
+    <TextField
+      id={id}
+      name={id}
+      variant="outlined"
+      disabled
+      value={value}
+      multiline
+      rows={8}
+      fullWidth
+      helperText={help}
+      sx={{
+        "& textarea": {
+          fontFamily: tokens.mono,
+          fontSize: type.caption,
+          lineHeight: 1.5,
+        },
+      }}
+    />
+  );
+
+  return (
+    <Box sx={{ px: { xs: 2, md: 5 }, py: 4 }}>
+      {/* one column: a person reads their profile top to bottom (REQ-046-52) */}
+      <Box
+        data-testid="profileColumn"
+        sx={{
+          maxWidth: 760,
+          mx: "auto",
+          display: "flex",
+          flexDirection: "column",
+          gap: 2,
+        }}
+      >
+        <Typography variant="h4" component="h1" sx={{ mb: 0.5 }}>
+          {t("profile.title")}
+        </Typography>
+        <ValidatorForm onSubmit={handleUserUpdateSubmit} instantValidate>
+          <FormCard
+            data-testid="accountCard"
+            title={t("profile.account")}
+            // only an admin changes a role, on the Users page
+            aside={tx("profile.roleSetBy", {
+              role: (
+                <Box
+                  component="b"
+                  data-testid="profileRole"
+                  sx={{ color: tokens.text, fontWeight: 600 }}
+                >
+                  {labelOf(t, "role", user?.role ?? "") || user?.role}
+                </Box>
+              ),
+            })}
+            footer={saveButton}
+          >
+            <Box
+              sx={{
+                display: "grid",
+                gridTemplateColumns: {
+                  xs: "1fr",
+                  sm: "repeat(2, minmax(0, 1fr))",
+                },
+                gap: 2,
+              }}
+            >
+              <div>
+                <FieldLabel htmlFor="firstName">
+                  {t("profile.firstName")}
+                </FieldLabel>
+                <TextValidator
+                  validators={["minStringLength:2"]}
+                  errorMessages={[errorForTwoChar]}
+                  id="firstName"
+                  name="firstName"
+                  value={firstName}
+                  type="text"
+                  variant="outlined"
+                  size="small"
+                  required
+                  fullWidth
+                  inputProps={{
+                    onChange: (event: React.ChangeEvent<HTMLInputElement>) =>
+                      setFirstName(event.target.value),
+                    "data-testid": "firstName",
+                  }}
+                />
+              </div>
+              <div>
+                <FieldLabel htmlFor="lastName">
+                  {t("profile.lastName")}
+                </FieldLabel>
+                <TextValidator
+                  validators={["minStringLength:2"]}
+                  errorMessages={[errorForTwoChar]}
+                  id="lastName"
+                  name="lastName"
+                  value={lastName}
+                  type="text"
+                  variant="outlined"
+                  size="small"
+                  required
+                  fullWidth
+                  inputProps={{
+                    onChange: (event: React.ChangeEvent<HTMLInputElement>) =>
+                      setLastName(event.target.value),
+                    "data-testid": "lastName",
+                  }}
+                />
+              </div>
+            </Box>
+            <div>
+              <FieldLabel htmlFor="email">{t("profile.email")}</FieldLabel>
+              <TextValidator
+                validators={["isEmail"]}
+                errorMessages={[t("profile.validEmail")]}
+                id="email"
+                name="email"
+                value={email}
+                type="text"
+                variant="outlined"
+                size="small"
+                required
+                fullWidth
+                // The identity provider owns the email of SSO users.
+                disabled={oidcEnabled !== false}
+                inputProps={{
+                  onChange: (event: React.ChangeEvent<HTMLInputElement>) =>
+                    setEmail(event.target.value),
+                  "data-testid": "email",
+                }}
+              />
+            </div>
+          </FormCard>
+        </ValidatorForm>
+        {oidcEnabled === false && (
+          <ValidatorForm onSubmit={handlePasswordUpdateSubmit} instantValidate>
+            <FormCard
+              data-testid="passwordCard"
+              title={t("profile.password")}
+              footer={saveButton}
+            >
+              <Box sx={{ maxWidth: 356 }}>
+                <PasswordField
+                  isNew
+                  labelAbove
+                  size="small"
+                  password={password}
+                  setPassword={setPassword}
+                  label={t("profile.newPassword")}
+                  helperText={t("profile.passwordHint", {
+                    count: MIN_PASSWORD_LENGTH,
+                  })}
+                />
+              </Box>
+            </FormCard>
+          </ValidatorForm>
+        )}
+        <JiraTokenCard />
+        <GeminiKeyCard />
+        <ApiKeyCard
+          ending={user?.apiKeyEnding}
+          newKey={newKey}
+          onNewKey={() =>
+            user &&
+            newApiKey(authDispatch, user)
+              .then(setNewKey)
+              .catch((err) => enqueueSnackbar(err, { variant: "error" }))
+          }
+          footer={
+            <>
+              <Button
+                color="inherit"
+                onClick={copySettings}
+                data-testid="copySdkSettings"
+              >
+                {t("profile.copy")}
+              </Button>
+              <Button
+                variant="outlined"
+                onClick={downloadConfig}
+                data-testid="downloadConfig"
+              >
+                {t("profile.downloadConfig")}
+              </Button>
+            </>
+          }
+        >
+          <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
+            <Typography sx={{ fontSize: type.small, fontWeight: 600 }}>
+              {t("profile.sdkSettings")}
+            </Typography>
+            <ProjectSelect
+              onProjectSelect={(id) => selectProject(projectDispatch, id)}
+            />
+            <Tabs
+              value={tabIndex}
+              indicatorColor="primary"
+              textColor="primary"
+              onChange={(event: React.ChangeEvent<unknown>, value: number) =>
+                setTabIndex(value)
+              }
+            >
+              <Tab label={t("profile.configFile")} />
+              <Tab label={t("profile.env")} />
+            </Tabs>
+            <div role="tabpanel" hidden={tabIndex !== 0}>
+              {tabIndex === 0 &&
+                settingsField(
+                  "configFile",
+                  configFile,
+                  t("profile.configHelp"),
+                )}
+            </div>
+            <div role="tabpanel" hidden={tabIndex !== 1}>
+              {tabIndex === 1 &&
+                settingsField(
+                  "envVariables",
+                  envVariables,
+                  t("profile.envHelp"),
+                )}
+            </div>
+          </Box>
+        </ApiKeyCard>
+        <AppearanceCard />
+      </Box>
     </Box>
   );
 };

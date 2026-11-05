@@ -16,7 +16,7 @@ import {
   Typography,
 } from "@mui/material";
 import { MergeType } from "@mui/icons-material";
-import { motion } from "../theme";
+import { motion, tokens, type } from "../theme";
 import ProjectSelect from "../components/ProjectSelect";
 import Filters from "../components/Filters";
 import { TestVariationMergeForm } from "../components/TestVariationMergeForm";
@@ -147,6 +147,13 @@ const TestVariationListPage: React.FunctionComponent = () => {
           <Typography variant="h4" component="h1">
             {t("baselines.title")}
           </Typography>
+          {/* a baseline is a check: its name and tags (REQ-046-17) */}
+          <Typography
+            data-testid="baselinesCount"
+            sx={{ fontSize: type.body, color: tokens.textMuted }}
+          >
+            {t("baselines.checks", { count: groups.length })}
+          </Typography>
           <Box id={LOCATOR_TEST_VARIATION_LIST_PAGE_SELECT_PROJECT}>
             <ProjectSelect
               compact
@@ -157,9 +164,6 @@ const TestVariationListPage: React.FunctionComponent = () => {
             />
           </Box>
           <Box sx={{ flex: 1 }} />
-          <Typography variant="body2" color="textSecondary">
-            {t("baselines.checks", { count: groups.length })}
-          </Typography>
           <Button
             variant="outlined"
             startIcon={<MergeType />}

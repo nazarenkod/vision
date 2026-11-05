@@ -2,7 +2,9 @@ import { BasePage } from "./BasePage";
 
 export class ProfilePage extends BasePage {
   // each card is its own form with its own submit button
-  userForm = this.page.locator("form").filter({ hasText: "User details" });
+  userForm = this.page
+    .locator("form")
+    .filter({ has: this.page.getByTestId("accountCard") });
   firstName = this.userForm.getByTestId("firstName");
   lastName = this.userForm.getByTestId("lastName");
   email = this.userForm.getByTestId("email");
@@ -10,7 +12,7 @@ export class ProfilePage extends BasePage {
 
   passwordForm = this.page
     .locator("form")
-    .filter({ hasText: "Change password" });
+    .filter({ has: this.page.getByTestId("passwordCard") });
   password = this.passwordForm.getByTestId("password");
   updatePasswordBtn = this.passwordForm.getByTestId("submit");
 

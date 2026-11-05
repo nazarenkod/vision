@@ -1,7 +1,16 @@
 import { expect } from "@playwright/test";
 import { test } from "fixtures";
-import { TEST_PROJECT } from "~client/_test/test.data.helper";
-import { inUkrainian, mockGetProjects } from "utils/mocks";
+import {
+  TEST_BUILD_FAILED,
+  TEST_PROJECT,
+} from "~client/_test/test.data.helper";
+import {
+  inUkrainian,
+  mockGetBuildDetails,
+  mockGetBuilds,
+  mockGetProjects,
+  mockGetTestRuns,
+} from "utils/mocks";
 
 test.beforeEach(async ({ page }) => {
   await mockGetProjects(page, [TEST_PROJECT]);
@@ -59,6 +68,25 @@ test("shows the project settings in Ukrainian", async ({ page, authUser }) => {
   await expect(page.getByTestId("section-jira")).toBeHidden();
   await search.fill("navigation");
   await expect(page.getByTestId("section-mobile")).toBeVisible();
+});
+
+test("names the build tab All screens in both languages", async ({
+  openProjectPage,
+  page,
+}) => {
+  await mockGetBuilds(page, TEST_PROJECT.id, [TEST_BUILD_FAILED]);
+  await mockGetBuildDetails(page, TEST_BUILD_FAILED);
+  await mockGetTestRuns(page, TEST_BUILD_FAILED.id, []);
+  await openProjectPage(TEST_PROJECT.id, TEST_BUILD_FAILED.id);
+
+  // a build image is a screen (REQ-046-17)
+  await expect(page.getByRole("tab", { name: /^All screens/ })).toBeVisible();
+  await expect(page.getByRole("tab", { name: /All tests/ })).toHaveCount(0);
+
+  await inUkrainian(page);
+  await page.reload();
+  await expect(page.getByRole("tab", { name: /^Усі екрани/ })).toBeVisible();
+  await expect(page.getByRole("tab", { name: /Усі перевірки/ })).toHaveCount(0);
 });
 
 // Ukrainian texts run longer: nothing is cut off or wrapped mid-word

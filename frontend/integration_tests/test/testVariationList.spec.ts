@@ -150,20 +150,69 @@ test("filters with chips and hides merge behind a button", async ({
   await listPage.mergeToggle.click();
   await expect(listPage.toBranch).toBeVisible();
 
-  // the filters sit in one row
-  const filters = ["Name", "OS", "Device", "Branch"].map((label) =>
-    page.getByLabel(label, { exact: true }),
-  );
-  const tops = await Promise.all(
-    filters.map(async (filter) =>
-      Math.round((await filter.boundingBox())?.y ?? -1),
-    ),
-  );
-  expect(new Set(tops).size).toBe(1);
-
   await expect(listPage.cards).toHaveCount(3);
+  await page.getByTestId("filtersButton").click();
   await page.getByLabel("Device", { exact: true }).click();
   await page.getByRole("option", { name: "PIXEL_4_XL" }).click();
   await expect(listPage.cards).toHaveCount(1);
   await expect(listPage.getCard(other.name)).toBeVisible();
+});
+
+test("filters with one Filters button and removable chips", async ({
+  openTestVariationListPage,
+  page,
+}) => {
+  const android = {
+    ...TEST_VARIATION_TWO,
+    id: "android-14",
+    name: "android screen",
+    os: "Android 14",
+  };
+  await mockGetTestVariations(page, TEST_PROJECT.id, [
+    TEST_VARIATION_ONE,
+    TEST_VARIATION_TWO,
+    android,
+  ]);
+  const listPage = await openTestVariationListPage(TEST_PROJECT.id);
+  const filtersButton = page.getByTestId("filtersButton");
+  const chips = page.getByTestId("filterChip");
+
+  // a search and one button; the filter fields wait in its popover
+  await expect(page.getByTestId("filterSearch")).toHaveAttribute(
+    "placeholder",
+    "Search checks",
+  );
+  await expect(filtersButton).toHaveText("Filters");
+  await expect(page.getByLabel("OS", { exact: true })).toHaveCount(0);
+  await expect(chips).toHaveCount(0);
+  // a baseline is a check: name and tags, its devices inside
+  await expect(page.getByTestId("baselinesCount")).toHaveText("3 checks");
+
+  await filtersButton.click();
+  await page.getByLabel("OS", { exact: true }).click();
+  await page.getByRole("option", { name: "Android 14" }).click();
+  await page.getByLabel("Branch", { exact: true }).click();
+  await page
+    .getByRole("option", { name: TEST_VARIATION_TWO.branchName })
+    .click();
+  await page.keyboard.press("Escape");
+
+  await expect(filtersButton).toHaveText("Filters2");
+  await expect(chips).toHaveText([
+    "OS: Android 14",
+    `Branch: ${TEST_VARIATION_TWO.branchName}`,
+  ]);
+  await expect(listPage.cards).toHaveCount(1);
+
+  // a chip's cross drops that filter only
+  await page.getByRole("button", { name: "Remove filter OS" }).click();
+  await expect(chips).toHaveText([`Branch: ${TEST_VARIATION_TWO.branchName}`]);
+  await expect(filtersButton).toHaveText("Filters1");
+  await expect(listPage.cards).toHaveCount(3);
+
+  // Clear drops the rest
+  await page.getByTestId("clearFilters").click();
+  await expect(chips).toHaveCount(0);
+  await expect(filtersButton).toHaveText("Filters");
+  await expect(page.getByTestId("clearFilters")).toHaveCount(0);
 });

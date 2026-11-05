@@ -18,19 +18,6 @@ import { motion, tokens, radius } from "../../theme";
 import { staggered } from "../motion/Stagger";
 import { useT } from "../../i18n";
 
-/**
- * Wraps onto the next line and stops after a few, rather than cutting the text
- * off at the first: a narrow card holds neither a long screen name nor a row of
- * tags on one line, and an ellipsis after two words says nothing.
- */
-const clampToLines = (lines: number) => ({
-  display: "-webkit-box",
-  WebkitBoxOrient: "vertical",
-  WebkitLineClamp: lines,
-  overflow: "hidden",
-  overflowWrap: "anywhere",
-});
-
 // two rows of small chips (24px) and the gap between them
 const TAG_ROWS_HEIGHT = 52;
 // room a "+N" chip and its gap take beside a tag cut short
@@ -168,7 +155,7 @@ export const TestRunGrid: React.FunctionComponent<{
     <Box
       display="grid"
       gridTemplateColumns={`repeat(auto-fill, minmax(${CARD_SIZE_BY_DENSITY[density].width}px, 1fr))`}
-      gap={1.5}
+      gap={2}
       padding={2}
       data-testid="testRunGrid"
     >
@@ -214,11 +201,25 @@ export const TestRunGrid: React.FunctionComponent<{
                     objectPosition: "center",
                     boxSizing: "border-box",
                     p: 1,
+                    // the status pill sits above the screenshot, not on it
+                    pt: 5,
                     // the lit table the screenshot lies on; its pixels stay as they are
                     background: tokens.lightbox,
                   }}
                 />
               </CardActionArea>
+              {/* on the picture, as the first thing read about a screen; the
+                name below it then has the card's full width (REQ-046-30) */}
+              <Box
+                position="absolute"
+                top={10}
+                left={10}
+                display="flex"
+                sx={{ pointerEvents: "none" }}
+                data-testid="cardStatus"
+              >
+                <TestStatusChip status={run.status} />
+              </Box>
               <Checkbox
                 size="small"
                 checked={selected}
@@ -229,8 +230,8 @@ export const TestRunGrid: React.FunctionComponent<{
                 className="cardSelect"
                 sx={{
                   position: "absolute",
-                  top: 4,
-                  left: 4,
+                  top: 6,
+                  right: 6,
                   padding: 0.25,
                   borderRadius: radius.control,
                   // legible over a screenshot of any colour; shown on hover or when ticked
@@ -258,21 +259,22 @@ export const TestRunGrid: React.FunctionComponent<{
                 "&:last-child": { paddingBottom: 1 },
               }}
             >
+              {/* one line, the whole name in its title: two lines of a long name
+                made cards of uneven height (REQ-046-30) */}
               <Typography
                 variant="body2"
                 fontWeight={600}
                 width="100%"
-                sx={clampToLines(2)}
+                noWrap
                 title={run.name}
                 data-testid="cardName"
               >
                 {run.name}
               </Typography>
-              <TestStatusChip status={run.status} />
               {/* the same grey tags as the table and every other screen (spec 037),
-                at most two rows so a narrow card still leads with the name and the
-                status. Each one filters the list by itself; the filter shows in the
-                Tag field above, the tag itself stays grey (REQ-037-04). */}
+                at most two rows so a narrow card still leads with the name. Each
+                one filters the list by itself; the filter shows in the Tag field
+                above, the tag itself stays grey (REQ-037-04). */}
               <CardTags
                 tags={tags}
                 activeTags={activeTags}

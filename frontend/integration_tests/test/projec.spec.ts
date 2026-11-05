@@ -60,7 +60,7 @@ test("renders", async ({ openProjectPage, page }) => {
   const projectPage = await openProjectPage(project.id);
   await projectPage.buildList.getBuildLocator(TEST_BUILD_FAILED.number).click();
   // a build opens on its Overview (031); these are about the list of runs
-  await page.getByRole("tab", { name: /All tests|Усі перевірки/ }).click();
+  await page.getByRole("tab", { name: /All screens|Усі екрани/ }).click();
 
   await expect(page).toHaveScreenshot("project-page-test-run-list.png");
 
@@ -78,7 +78,7 @@ test("renders the build and the review in Ukrainian", async ({
   const projectPage = await openProjectPage(project.id);
   await projectPage.buildList.getBuildLocator(TEST_BUILD_FAILED.number).click();
   // a build opens on its Overview (031); these are about the list of runs
-  await page.getByRole("tab", { name: /All tests|Усі перевірки/ }).click();
+  await page.getByRole("tab", { name: /All screens|Усі екрани/ }).click();
 
   await expect(page).toHaveScreenshot("project-page-test-run-list-uk.png");
 
@@ -96,7 +96,7 @@ test("renders the review in Ukrainian in the dark theme", async ({
   const projectPage = await openProjectPage(project.id);
   await projectPage.buildList.getBuildLocator(TEST_BUILD_FAILED.number).click();
   // a build opens on its Overview (031); these are about the list of runs
-  await page.getByRole("tab", { name: /All tests|Усі перевірки/ }).click();
+  await page.getByRole("tab", { name: /All screens|Усі екрани/ }).click();
   await projectPage.testRunList.getRow(TEST_UNRESOLVED.id).click();
 
   await expect(page).toHaveScreenshot(

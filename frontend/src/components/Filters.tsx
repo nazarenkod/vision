@@ -4,30 +4,48 @@ import {
   TextField,
   MenuItem,
   Button,
+  IconButton,
   InputAdornment,
+  Popover,
 } from "@mui/material";
-import { Search } from "@mui/icons-material";
-import { tokens } from "../theme";
-import { pillField } from "./pillField";
+import { Close, FilterList, Search } from "@mui/icons-material";
+import { tokens, radius, type } from "../theme";
 import { TestRun, TestVariation } from "../types";
 import { DebounceInput } from "react-debounce-input";
 import { LOCATOR_RESET_FILTER } from "../constants/help";
 import { labelOf, useT } from "../i18n";
+import {
+  activeFilters,
+  distinctValues,
+  FilterField,
+} from "../_helpers/filters.helper";
 
 const emptyFn = () => undefined;
 
+type FilterState = [string, React.Dispatch<React.SetStateAction<string>>];
+
 interface IProps {
   items: TestRun[] | TestVariation[];
-  queryState: [string, React.Dispatch<React.SetStateAction<string>>];
-  osState: [string, React.Dispatch<React.SetStateAction<string>>];
-  deviceState: [string, React.Dispatch<React.SetStateAction<string>>];
-  browserState: [string, React.Dispatch<React.SetStateAction<string>>];
-  viewportState: [string, React.Dispatch<React.SetStateAction<string>>];
-  customTagsState: [string, React.Dispatch<React.SetStateAction<string>>];
-  testStatusState?: [string, React.Dispatch<React.SetStateAction<string>>];
-  branchNameState?: [string, React.Dispatch<React.SetStateAction<string>>];
+  queryState: FilterState;
+  osState: FilterState;
+  deviceState: FilterState;
+  browserState: FilterState;
+  viewportState: FilterState;
+  customTagsState: FilterState;
+  testStatusState?: FilterState;
+  branchNameState?: FilterState;
 }
 
+type Filter = FilterField & {
+  options: string[];
+  set: (value: string) => void;
+  labelOfValue: (value: string) => string;
+};
+
+/**
+ * A search field and one Filters button; the chosen filters stand beside it
+ * as chips that remove themselves, and Clear drops them all (REQ-046-54).
+ */
 const Filters: React.FunctionComponent<IProps> = ({
   items,
   queryState,
@@ -39,113 +57,121 @@ const Filters: React.FunctionComponent<IProps> = ({
   testStatusState,
   branchNameState,
 }) => {
-  // `t` is taken: the lists below name each item t
-  const i18n = useT();
+  const { t } = useT();
   const [query, setQuery] = queryState;
-  const [os, setOs] = osState;
-  const [device, setDevice] = deviceState;
-  const [browser, setBrowser] = browserState;
-  const [viewport, setViewport] = viewportState;
-  const [customTags, setCustomTags] = customTagsState;
-
+  const [anchor, setAnchor] = React.useState<HTMLElement | null>(null);
   const [testStatus, setTestStatus] = testStatusState || [null, emptyFn];
-
   const [branchName, setBranchName] = branchNameState || [null, emptyFn];
+  const list = items as (TestRun | TestVariation)[];
 
-  const osList = items
-    .map((t) => t.os)
-    .filter((v, i, array) => v && array.indexOf(v) === i);
-
-  const deviceList = items
-    .map((t) => t.device)
-    .filter((v, i, array) => v && array.indexOf(v) === i);
-
-  const browserList = items
-    .map((t) => t.browser)
-    .filter((v, i, array) => v && array.indexOf(v) === i);
-
-  const viewportList = items
-    .map((t) => t.viewport)
-    .filter((v, i, array) => v && array.indexOf(v) === i);
-
-  const customTagsList = items
-    .map((t) => t.customTags)
-    .filter((v, i, array) => v && array.indexOf(v) === i);
-
-  const testStatusList =
-    testStatusState &&
-    items.some((i) => (i as TestRun).status) &&
-    (items as TestRun[])
-      .map((t) => t.status)
-      .filter((v, i, array) => v && array.indexOf(v) === i);
-
-  const branchNameList =
-    branchNameState &&
-    items
-      .map((t) => t.branchName)
-      .filter((v, i, array) => v && array.indexOf(v) === i);
-
-  // compact selects in one row, each a rounded chip that turns green when set
-  const select = (
-    id: string,
+  const asIs = (value: string) => value;
+  const filter = (
+    key: string,
     label: string,
     value: string | null,
-    options: string[] | false | undefined,
-    onChange: (value: string) => void,
-    wrapperId?: string,
-    // the label of a value: statuses have their own, the rest is data
-    labelOfValue: (value: string) => string = (value) => value,
-  ) =>
-    options && options.length > 0 ? (
-      <Box id={wrapperId} sx={{ display: "inline-flex" }}>
-        <TextField
-          select
-          size="small"
-          label={label}
-          value={value ?? ""}
-          onChange={(event) => onChange(event.target.value)}
-          SelectProps={{
-            id,
-            displayEmpty: true,
-            renderValue: (selected) =>
-              selected ? (
-                labelOfValue(String(selected))
-              ) : (
-                <Box component="span" sx={{ color: tokens.textMuted }}>
-                  {i18n.t("filters.all")}
-                </Box>
-              ),
-          }}
-          InputLabelProps={{ shrink: true }}
-          sx={{ minWidth: 120, maxWidth: 220, ...pillField(Boolean(value)) }}
-        >
-          <MenuItem value="">{i18n.t("filters.all")}</MenuItem>
-          {options.map((option) => (
-            <MenuItem key={option} value={option}>
-              {labelOfValue(option)}
-            </MenuItem>
-          ))}
-        </TextField>
-      </Box>
-    ) : null;
+    set: (value: string) => void,
+    options: string[],
+    labelOfValue: (value: string) => string = asIs,
+  ): Filter => ({
+    key,
+    label,
+    value,
+    set,
+    options,
+    labelOfValue,
+    shownValue: value ? labelOfValue(value) : undefined,
+  });
+
+  const filters: Filter[] = [
+    filter(
+      "os",
+      t("filters.os"),
+      osState[0],
+      osState[1],
+      distinctValues(list.map((item) => item.os)),
+    ),
+    filter(
+      "device",
+      t("filters.device"),
+      deviceState[0],
+      deviceState[1],
+      distinctValues(list.map((item) => item.device)),
+    ),
+    filter(
+      "browser",
+      t("filters.browser"),
+      browserState[0],
+      browserState[1],
+      distinctValues(list.map((item) => item.browser)),
+    ),
+    filter(
+      "viewport",
+      t("filters.viewport"),
+      viewportState[0],
+      viewportState[1],
+      distinctValues(list.map((item) => item.viewport)),
+    ),
+    filter(
+      "customTags",
+      t("filters.customTags"),
+      customTagsState[0],
+      customTagsState[1],
+      distinctValues(list.map((item) => item.customTags)),
+    ),
+    ...(testStatusState
+      ? [
+          filter(
+            "testStatus",
+            t("filters.status"),
+            testStatus,
+            setTestStatus,
+            distinctValues((list as TestRun[]).map((item) => item.status)),
+            (value) => labelOf(t, "testStatus", value),
+          ),
+        ]
+      : []),
+    ...(branchNameState
+      ? [
+          filter(
+            "branchName",
+            t("filters.branch"),
+            branchName,
+            setBranchName,
+            distinctValues(list.map((item) => item.branchName)),
+          ),
+        ]
+      : []),
+  ];
+  const offered = filters.filter((one) => one.options.length > 0 || one.value);
+  const active = activeFilters(filters);
+  const byKey = new Map(filters.map((one) => [one.key, one]));
+  const clear = () => {
+    setQuery("");
+    filters.forEach((one) => one.set(""));
+  };
 
   return (
     <Box
+      data-testid="filters"
       sx={{
         display: "flex",
         flexWrap: "wrap",
         alignItems: "center",
-        gap: 1.25,
+        gap: 1,
       }}
     >
       <DebounceInput
         size="small"
-        label={i18n.t("filters.name")}
+        placeholder={t("filters.search")}
         value={query}
         element={TextField}
         minLength={2}
         debounceTimeout={300}
         onChange={(event) => setQuery(event?.target.value)}
+        inputProps={{
+          "aria-label": t("filters.search"),
+          "data-testid": "filterSearch",
+        }}
         InputProps={{
           startAdornment: (
             <InputAdornment position="start">
@@ -153,81 +179,130 @@ const Filters: React.FunctionComponent<IProps> = ({
             </InputAdornment>
           ),
         }}
-        sx={{ width: 220, ...pillField(Boolean(query)) }}
+        sx={{ width: 280, bgcolor: tokens.surface }}
       />
-      {select("filter_os", i18n.t("filters.os"), os, osList, setOs)}
-      {select(
-        "filter_device",
-        i18n.t("filters.device"),
-        device,
-        deviceList,
-        setDevice,
-      )}
-      {select(
-        "filter_browser",
-        i18n.t("filters.browser"),
-        browser,
-        browserList,
-        setBrowser,
-      )}
-      {select(
-        "filter_viewport",
-        i18n.t("filters.viewport"),
-        viewport,
-        viewportList,
-        setViewport,
-      )}
-      {select(
-        "filter_customTags",
-        i18n.t("filters.customTags"),
-        customTags,
-        customTagsList,
-        setCustomTags,
-      )}
-      {select(
-        "filter_testStatus",
-        i18n.t("filters.status"),
-        testStatus,
-        testStatusList,
-        setTestStatus,
-        undefined,
-        (value) => labelOf(i18n.t, "testStatus", value),
-      )}
-      {select(
-        "filter_branchName",
-        i18n.t("filters.branch"),
-        branchName,
-        branchNameList,
-        setBranchName,
-        LOCATOR_RESET_FILTER,
-      )}
       <Button
-        size="small"
-        disabled={
-          ![
-            query,
-            os,
-            device,
-            browser,
-            viewport,
-            customTags,
-            testStatus,
-            branchName,
-          ].some(Boolean)
-        }
-        onClick={() => {
-          setQuery("");
-          setOs("");
-          setDevice("");
-          setBrowser("");
-          setViewport("");
-          setCustomTags("");
-          setTestStatus("");
-          setBranchName("");
+        id={LOCATOR_RESET_FILTER}
+        variant="outlined"
+        color="inherit"
+        startIcon={<FilterList fontSize="small" />}
+        aria-haspopup="dialog"
+        aria-expanded={Boolean(anchor)}
+        data-testid="filtersButton"
+        onClick={(event) => setAnchor(event.currentTarget)}
+        sx={{ borderColor: tokens.borderStrong, bgcolor: tokens.surface }}
+      >
+        {t("filters.title")}
+        {active.length > 0 && (
+          <Box
+            component="span"
+            data-testid="filtersCount"
+            sx={{
+              ml: 0.75,
+              px: 0.75,
+              minWidth: 18,
+              borderRadius: radius.pill,
+              fontSize: type.caption,
+              lineHeight: "18px",
+              textAlign: "center",
+              color: tokens.brandInk,
+              bgcolor: tokens.brand,
+            }}
+          >
+            {active.length}
+          </Box>
+        )}
+      </Button>
+      {active.map((one) => (
+        <Box
+          key={one.key}
+          component="span"
+          data-testid="filterChip"
+          sx={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 0.25,
+            height: 28,
+            pl: 1.25,
+            pr: 0.25,
+            borderRadius: radius.control,
+            fontSize: type.small,
+            color: tokens.brandDark,
+            bgcolor: tokens.brandSoft,
+          }}
+        >
+          {one.text}
+          <IconButton
+            size="small"
+            aria-label={t("filters.remove", { name: one.label })}
+            onClick={() => byKey.get(one.key)?.set("")}
+            sx={{ p: 0.25, color: tokens.brandDark }}
+          >
+            <Close sx={{ fontSize: type.body }} />
+          </IconButton>
+        </Box>
+      ))}
+      {(active.length > 0 || query) && (
+        <Button
+          size="small"
+          color="inherit"
+          onClick={clear}
+          data-testid="clearFilters"
+          sx={{ color: tokens.textSecondary }}
+        >
+          {t("filters.clear")}
+        </Button>
+      )}
+      <Popover
+        open={Boolean(anchor)}
+        anchorEl={anchor}
+        onClose={() => setAnchor(null)}
+        anchorOrigin={{ vertical: "bottom", horizontal: "left" }}
+        slotProps={{
+          paper: {
+            role: "dialog",
+            "aria-label": t("filters.title"),
+            sx: { mt: 0.5, p: 2, width: 280 },
+          } as object,
         }}
       >
-        {i18n.t("filters.reset")}
-      </Button>
+        <Box
+          data-testid="filtersPanel"
+          sx={{ display: "flex", flexDirection: "column", gap: 2 }}
+        >
+          {offered.map((one) => (
+            <TextField
+              key={one.key}
+              select
+              size="small"
+              fullWidth
+              label={one.label}
+              value={one.value ?? ""}
+              onChange={(event) => one.set(event.target.value)}
+              SelectProps={{
+                id: `filter_${one.key}`,
+                displayEmpty: true,
+                renderValue: (selected) =>
+                  selected ? (
+                    one.labelOfValue(String(selected))
+                  ) : (
+                    <Box component="span" sx={{ color: tokens.textMuted }}>
+                      {t("filters.all")}
+                    </Box>
+                  ),
+              }}
+              InputLabelProps={{ shrink: true }}
+            >
+              <MenuItem value="">{t("filters.all")}</MenuItem>
+              {one.options.map((option) => (
+                <MenuItem key={option} value={option}>
+                  {one.labelOfValue(option)}
+                </MenuItem>
+              ))}
+            </TextField>
+          ))}
+        </Box>
+      </Popover>
     </Box>
   );
 };

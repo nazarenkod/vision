@@ -1,47 +1,78 @@
 import React from "react";
-import { Card, CardContent, CardHeader, ToggleButton } from "@mui/material";
-import {
-  DarkModeOutlined,
-  LightModeOutlined,
-  MonitorOutlined,
-} from "@mui/icons-material";
+import { Box, ToggleButton, Typography } from "@mui/material";
 import { SlidingToggleGroup } from "./motion/SlidingToggleGroup";
 import { useThemeMode } from "../contexts";
 import { ThemePreference } from "../_helpers/themeMode.helper";
-import { useT } from "../i18n";
+import { Language, useT } from "../i18n";
+import { FormCard } from "./FormCard";
+import { tokens, type } from "../theme";
 
-/** System, Light or Dark for this browser (REQ-018-04). */
+const groupLabel = (id: string, text: string) => (
+  <Typography id={id} sx={{ fontSize: type.small, fontWeight: 600, mb: 0.75 }}>
+    {text}
+  </Typography>
+);
+
+/**
+ * The interface language and System, Light or Dark (REQ-018-04), for this
+ * browser. Both apply at once, so the card has nothing to save.
+ */
 export const AppearanceCard: React.FunctionComponent = () => {
   const { preference, setPreference } = useThemeMode();
-  const { t } = useT();
+  const { t, language, setLanguage } = useT();
+  const toggleSx = { px: 1.75, fontSize: type.small };
   return (
-    <Card variant="outlined" data-testid="appearanceCard">
-      <CardHeader
-        title={t("profile.appearance")}
-        subheader={t("profile.appearanceHelp")}
-        subheaderTypographyProps={{ variant: "body2" }}
-      />
-      <CardContent sx={{ pt: 0 }}>
-        <SlidingToggleGroup
-          exclusive
-          size="small"
-          value={preference}
-          aria-label={t("profile.appearance")}
-          onChange={(event, value: ThemePreference | null) => {
-            if (value) setPreference(value, event.currentTarget as Element);
-          }}
-        >
-          <ToggleButton value="system" sx={{ gap: 0.75, px: 1.5 }}>
-            <MonitorOutlined fontSize="small" /> {t("profile.system")}
-          </ToggleButton>
-          <ToggleButton value="light" sx={{ gap: 0.75, px: 1.5 }}>
-            <LightModeOutlined fontSize="small" /> {t("profile.light")}
-          </ToggleButton>
-          <ToggleButton value="dark" sx={{ gap: 0.75, px: 1.5 }}>
-            <DarkModeOutlined fontSize="small" /> {t("profile.dark")}
-          </ToggleButton>
-        </SlidingToggleGroup>
-      </CardContent>
-    </Card>
+    <FormCard
+      data-testid="appearanceCard"
+      title={t("profile.languageAndTheme")}
+    >
+      <Box sx={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
+        <div>
+          {groupLabel("profileLanguageLabel", t("profile.language"))}
+          <SlidingToggleGroup
+            exclusive
+            size="small"
+            value={language}
+            aria-labelledby="profileLanguageLabel"
+            data-testid="profileLanguage"
+            onChange={(_, value: Language | null) =>
+              value && setLanguage(value)
+            }
+          >
+            <ToggleButton value="en" sx={toggleSx}>
+              English
+            </ToggleButton>
+            <ToggleButton value="uk" sx={toggleSx}>
+              Українська
+            </ToggleButton>
+          </SlidingToggleGroup>
+        </div>
+        <div>
+          {groupLabel("profileThemeLabel", t("profile.theme"))}
+          <SlidingToggleGroup
+            exclusive
+            size="small"
+            value={preference}
+            aria-labelledby="profileThemeLabel"
+            onChange={(event, value: ThemePreference | null) => {
+              if (value) setPreference(value, event.currentTarget as Element);
+            }}
+          >
+            <ToggleButton value="system" sx={toggleSx}>
+              {t("profile.system")}
+            </ToggleButton>
+            <ToggleButton value="light" sx={toggleSx}>
+              {t("profile.light")}
+            </ToggleButton>
+            <ToggleButton value="dark" sx={toggleSx}>
+              {t("profile.dark")}
+            </ToggleButton>
+          </SlidingToggleGroup>
+        </div>
+      </Box>
+      <Typography sx={{ fontSize: type.small, color: tokens.textMuted }}>
+        {t("profile.appearanceHelp")}
+      </Typography>
+    </FormCard>
   );
 };

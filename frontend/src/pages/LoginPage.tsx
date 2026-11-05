@@ -7,6 +7,7 @@ import { setHelpSteps, useHelpDispatch, useUserDispatch } from "../contexts";
 import { LOGIN_PAGE_STEPS, routes } from "../constants";
 import { usersService } from "../services";
 import { useT } from "../i18n";
+import { useOidcEnabled } from "../_helpers/useOidcEnabled";
 
 const LoginPage = () => {
   const helpDispatch = useHelpDispatch();
@@ -14,6 +15,7 @@ const LoginPage = () => {
   const navigate = useNavigate();
   const { enqueueSnackbar } = useSnackbar();
   const { t } = useT();
+  const oidcEnabled = useOidcEnabled();
 
   useEffect(() => {
     setHelpSteps(helpDispatch, LOGIN_PAGE_STEPS);
@@ -48,7 +50,10 @@ const LoginPage = () => {
   }, [enqueueSnackbar, navigate, userDispatch]);
 
   return (
-    <AuthLayout title={t("auth.signIn")}>
+    <AuthLayout
+      title={t("auth.signIn")}
+      subtitle={oidcEnabled ? t("auth.subtitleSso") : undefined}
+    >
       <LoginForm />
     </AuthLayout>
   );

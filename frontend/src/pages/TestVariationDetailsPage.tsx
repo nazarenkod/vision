@@ -2,10 +2,17 @@ import React from "react";
 import { Link, useParams, useNavigate } from "react-router-dom";
 import { TestVariation } from "../types";
 import { testVariationService, staticService } from "../services";
-import { Box, Button, ButtonBase, Typography } from "@mui/material";
+import {
+  Box,
+  Button,
+  ButtonBase,
+  Link as MuiLink,
+  Typography,
+} from "@mui/material";
 import { ArrowBack } from "@mui/icons-material";
 import { routes } from "../constants";
-import { motion, tokens, radius } from "../theme";
+import { motion, tokens, radius, type } from "../theme";
+import { recordDate } from "../_helpers/baselineHistory.helper";
 import { staggered } from "../components/motion/Stagger";
 import {
   buildProjectPageUrl,
@@ -88,8 +95,11 @@ const TestVariationDetailsPage: React.FunctionComponent = () => {
           {title}
         </Typography>
         {baseline && (
-          <Typography variant="caption" color="textSecondary">
-            {formatDate(baseline.createdAt)}
+          <Typography
+            data-testid={`${testId}Date`}
+            sx={{ fontSize: type.small, color: tokens.textMuted }}
+          >
+            {recordDate(baseline.createdAt, formatDate)}
           </Typography>
         )}
       </Box>
@@ -221,54 +231,91 @@ const TestVariationDetailsPage: React.FunctionComponent = () => {
                         transition: `transform ${motion.base}ms ${motion.spring}, background-color ${motion.base}ms`,
                       }}
                     />
-                    <ButtonBase
-                      onClick={() => setPickedIndex(index)}
-                      aria-pressed={on}
+                    <Box
                       sx={{
                         flex: 1,
                         minWidth: 0,
                         display: "flex",
                         flexDirection: "column",
                         alignItems: "flex-start",
-                        textAlign: "left",
                         gap: 0.25,
-                        borderRadius: radius.control,
                       }}
                     >
-                      <Box
-                        sx={{ display: "flex", gap: 1, alignItems: "center" }}
+                      <ButtonBase
+                        onClick={() => setPickedIndex(index)}
+                        aria-pressed={on}
+                        sx={{
+                          width: "100%",
+                          minWidth: 0,
+                          display: "flex",
+                          flexDirection: "column",
+                          alignItems: "flex-start",
+                          textAlign: "left",
+                          gap: 0.25,
+                          borderRadius: radius.control,
+                        }}
                       >
-                        <Typography sx={{ fontWeight: 600 }}>
-                          {index === 0
-                            ? t("baselines.current")
-                            : formatDate(baseline.createdAt)}
-                        </Typography>
-                        {baseline.testRun && (
-                          <TestStatusChip status={baseline.testRun.status} />
-                        )}
-                      </Box>
-                      {baseline.user && (
-                        <Typography
-                          variant="body2"
-                          color="textSecondary"
-                          sx={{ overflowWrap: "anywhere" }}
+                        <Box
+                          sx={{
+                            display: "flex",
+                            gap: 1,
+                            alignItems: "center",
+                            width: "100%",
+                          }}
                         >
-                          {`${baseline.user.firstName} ${baseline.user.lastName} <${baseline.user.email}>`}
-                        </Typography>
+                          {/* the date and the time in one line (REQ-046-55) */}
+                          <Typography
+                            data-testid="historyDate"
+                            sx={{ fontWeight: 600, whiteSpace: "nowrap" }}
+                          >
+                            {recordDate(baseline.createdAt, formatDate)}
+                          </Typography>
+                          {index === 0 && (
+                            <Typography
+                              component="span"
+                              sx={{
+                                fontSize: type.caption,
+                                fontWeight: 600,
+                                color: tokens.brandDark,
+                                whiteSpace: "nowrap",
+                              }}
+                            >
+                              {`· ${t("baselines.inUse")}`}
+                            </Typography>
+                          )}
+                          {baseline.testRun && (
+                            <Box sx={{ ml: "auto" }}>
+                              <TestStatusChip
+                                status={baseline.testRun.status}
+                              />
+                            </Box>
+                          )}
+                        </Box>
+                        {baseline.user && (
+                          <Typography
+                            variant="body2"
+                            color="textSecondary"
+                            sx={{ overflowWrap: "anywhere" }}
+                          >
+                            {`${baseline.user.firstName} ${baseline.user.lastName} <${baseline.user.email}>`}
+                          </Typography>
+                        )}
+                      </ButtonBase>
+                      {baseline.testRun && (
+                        <MuiLink
+                          component="button"
+                          type="button"
+                          onClick={() => openTestRun(baseline)}
+                          sx={{
+                            fontSize: type.small,
+                            fontWeight: 600,
+                            textAlign: "left",
+                          }}
+                        >
+                          {t("baselines.openInReview")}
+                        </MuiLink>
                       )}
-                      {index === 0 && (
-                        <Typography variant="caption" color="textSecondary">
-                          {formatDate(baseline.createdAt)}
-                        </Typography>
-                      )}
-                    </ButtonBase>
-                    <Button
-                      size="small"
-                      disabled={!baseline.testRun}
-                      onClick={() => openTestRun(baseline)}
-                    >
-                      {t("baselines.testRun")}
-                    </Button>
+                    </Box>
                   </Box>
                 );
               })}
@@ -284,14 +331,8 @@ const TestVariationDetailsPage: React.FunctionComponent = () => {
                 overflow: "hidden",
               }}
             >
-              {pane(
-                pickedIndex === 0
-                  ? t("baselines.current")
-                  : t("baselines.thisOne"),
-                picked,
-                "historyPicked",
-              )}
-              {pane(t("baselines.beforeIt"), before, "historyBefore")}
+              {pane(t("baselines.selected"), picked, "historyPicked")}
+              {pane(t("baselines.previous"), before, "historyBefore")}
             </Box>
           </Box>
         </Box>

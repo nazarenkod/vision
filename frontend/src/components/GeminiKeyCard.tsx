@@ -1,17 +1,11 @@
 import React from "react";
-import {
-  Box,
-  Button,
-  Card,
-  CardContent,
-  CardHeader,
-  Link,
-  TextField,
-  Typography,
-} from "@mui/material";
+import { Box, Button, Link, TextField } from "@mui/material";
 import { useSnackbar } from "notistack";
 import { setGemini, useUserDispatch, useUserState } from "../contexts";
 import { useT } from "../i18n";
+import { FormCard } from "./FormCard";
+import { FieldLabel } from "./FieldLabel";
+import { StatusPill } from "./StatusPill";
 
 /**
  * The person's own Gemini API key (025): bugs from the comparison are drafted
@@ -43,10 +37,17 @@ export const GeminiKeyCard: React.FunctionComponent = () => {
   };
 
   return (
-    <Card variant="outlined" data-testid="geminiKeyCard">
-      <CardHeader title="Gemini" />
-      <CardContent sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
-        <Typography variant="body2" color="textSecondary">
+    <FormCard
+      data-testid="geminiKeyCard"
+      title="Gemini"
+      status={
+        <StatusPill
+          tone={user?.geminiKeySet ? "passed" : "neutral"}
+          label={t(user?.geminiKeySet ? "profile.keySet" : "profile.notSet")}
+        />
+      }
+      description={
+        <>
           {t("profile.geminiIntro")}{" "}
           <Link
             href="https://aistudio.google.com/apikey"
@@ -55,23 +56,15 @@ export const GeminiKeyCard: React.FunctionComponent = () => {
           >
             {t("profile.geminiGetKey")}
           </Link>
-        </Typography>
-        <TextField
-          id="geminiKey"
-          size="small"
-          type="password"
-          autoComplete="new-password"
-          label={t(user?.geminiKeySet ? "profile.newKey" : "profile.geminiKey")}
-          placeholder={user?.geminiKeySet ? t("profile.tokenReplace") : ""}
-          value={key}
-          onChange={(event) => setKey(event.target.value)}
-          helperText={
-            user?.geminiKeySet
-              ? t("profile.geminiKeySaved")
-              : t("profile.geminiKeyNotSet")
-          }
-        />
-        <Box sx={{ display: "flex", gap: 1 }}>
+        </>
+      }
+      footer={
+        <>
+          {user?.geminiKeySet && (
+            <Button color="error" disabled={saving} onClick={() => save("")}>
+              {t("profile.removeKey")}
+            </Button>
+          )}
           <Button
             variant="outlined"
             disabled={saving || !key.trim()}
@@ -79,13 +72,24 @@ export const GeminiKeyCard: React.FunctionComponent = () => {
           >
             {t("profile.save")}
           </Button>
-          {user?.geminiKeySet && (
-            <Button color="error" disabled={saving} onClick={() => save("")}>
-              {t("profile.removeKey")}
-            </Button>
-          )}
-        </Box>
-      </CardContent>
-    </Card>
+        </>
+      }
+    >
+      <Box sx={{ maxWidth: 356 }}>
+        <FieldLabel htmlFor="geminiKey">
+          {t(user?.geminiKeySet ? "profile.newKey" : "profile.apiKey")}
+        </FieldLabel>
+        <TextField
+          id="geminiKey"
+          size="small"
+          fullWidth
+          type="password"
+          autoComplete="new-password"
+          placeholder={user?.geminiKeySet ? t("profile.tokenReplace") : ""}
+          value={key}
+          onChange={(event) => setKey(event.target.value)}
+        />
+      </Box>
+    </FormCard>
   );
 };

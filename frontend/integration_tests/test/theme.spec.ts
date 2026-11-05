@@ -59,7 +59,7 @@ test("switches theme with the header button and with Shift+D, and remembers it",
   await expect.poll(() => shownTheme(page)).toBe("light");
 
   // typing a capital D in a field is just typing
-  const search = page.getByPlaceholder("Project name");
+  const search = page.getByPlaceholder("Search projects");
   await search.click();
   await page.keyboard.press("Shift+D");
   await expect(search).toHaveValue("D");
@@ -148,7 +148,7 @@ test("Appearance System forgets the choice and follows the system again", async 
 }) => {
   await page.emulateMedia({ colorScheme: "light" });
   await expect(profilePage.page.getByTestId("appearanceCard")).toBeVisible();
-  const appearance = page.getByRole("group", { name: "Appearance" });
+  const appearance = page.getByRole("group", { name: "Theme" });
 
   await appearance.getByRole("button", { name: "Dark" }).click();
   await expect.poll(() => shownTheme(page)).toBe("dark");

@@ -33,8 +33,8 @@ export const uk: Messages = {
 
   "projectList.title": "Проєкти",
   "projectList.search": "Пошук",
-  "projectList.searchPlaceholder": "Назва проєкту",
-  "projectList.add": "Додати проєкт",
+  "projectList.searchPlaceholder": "Пошук проєктів",
+  "projectList.add": "Новий проєкт",
   "projectList.project": "Проєкт",
   "projectList.mainBranch": "Основна гілка",
   "projectList.comparison": "Порівняння",
@@ -339,7 +339,7 @@ export const uk: Messages = {
   "builds.views": "Подання збірки",
   "builds.changes": "Зміни",
   "builds.toReview": "{count} на перегляд",
-  "builds.allTests": "Усі перевірки",
+  "builds.allTests": "Усі екрани",
   "builds.accessibility": "Доступність",
   "builds.a11yNewPill": {
     one: "{count} нова",
@@ -472,6 +472,10 @@ export const uk: Messages = {
   "baselines.thisOne": "Вибраний",
   "baselines.beforeIt": "Попередній",
   "baselines.nothingBefore": "Раніше еталонів не було",
+  "baselines.selected": "Вибраний",
+  "baselines.previous": "Попередній",
+  "baselines.inUse": "діє",
+  "baselines.openInReview": "Відкрити в перегляді",
   "baselines.testRun": "Екран",
 
   // filters
@@ -485,6 +489,10 @@ export const uk: Messages = {
   "filters.status": "Статус",
   "filters.branch": "Гілка",
   "filters.reset": "Скинути",
+  "filters.search": "Пошук перевірок",
+  "filters.title": "Фільтри",
+  "filters.remove": "Прибрати фільтр {name}",
+  "filters.clear": "Очистити",
   "filters.project": "Проєкт",
   "filters.selectProject": "Виберіть проєкт",
   "projectSelect.newProject": "Новий проєкт",
@@ -901,7 +909,8 @@ export const uk: Messages = {
     "Збережіть як vision.json у корені проєкту. Змінні середовища мають пріоритет",
   "profile.envHelp": "Додайте змінні середовища в CI",
   "profile.apiKey": "Ключ API",
-  "profile.apiKeyHelp": "Для SDK, CLI та MCP-сервера.",
+  "profile.apiKeyHelp":
+    "Для SDK, CLI та MCP-сервера. Повністю показується один раз, одразу після створення.",
   "profile.newApiKey": "Новий ключ API",
   "profile.noApiKey":
     "Ключа ще немає: створіть його для SDK, CLI та MCP-сервера",
@@ -940,7 +949,19 @@ export const uk: Messages = {
   "reportBug.openProfile": "Відкрити профіль",
   "profile.appearance": "Вигляд",
   "profile.appearanceHelp":
-    "Як у системі, доки ви не виберете інше. Запам’ятовується в цьому браузері.",
+    "Діє одразу й запам’ятовується в цьому браузері. «Як у системі» — доки ви не виберете інше.",
+  "profile.account": "Обліковий запис",
+  "profile.roleSetBy": "Роль {role} · призначає адміністратор",
+  "profile.passwordHint": "Щонайменше {count} символів.",
+  "profile.notSet": "Не задано",
+  "profile.tokenSet": "Токен збережено",
+  "profile.keySet": "Ключ збережено",
+  "profile.jiraCloudOnly": "лише Jira Cloud",
+  "profile.sdkSettings": "Налаштування SDK",
+  "profile.downloadConfig": "Завантажити vision.json",
+  "profile.languageAndTheme": "Мова й тема",
+  "profile.language": "Мова",
+  "profile.theme": "Тема",
   "profile.system": "Як у системі",
   "profile.light": "Світлий",
   "profile.dark": "Темний",
@@ -1033,7 +1054,13 @@ export const uk: Messages = {
   "backups.open": "Відкрити резервні копії",
 
   // auth
-  "auth.orLocal": "Або локальним акаунтом:",
+  "auth.orLocal": "або локальним акаунтом",
+  "auth.subtitleSso": "Корпоративним акаунтом або локальним.",
+  "auth.emailPlaceholder": "name@company.com",
+  "auth.brandLine":
+    "Екрани, UI-дерево й доступність збірок Android та iOS — в одному місці.",
+  "auth.lightTheme": "Світла тема",
+  "auth.darkTheme": "Темна тема",
   "auth.sso": "Увійти через SSO",
   "auth.validEmail": "Введіть правильну адресу email.",
   "auth.email": "Email",

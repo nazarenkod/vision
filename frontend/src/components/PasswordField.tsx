@@ -4,6 +4,7 @@ import { Visibility, VisibilityOff } from "@mui/icons-material";
 import { TextValidator } from "react-material-ui-form-validator";
 import { useT } from "../i18n";
 import { MIN_PASSWORD_LENGTH } from "../_helpers/users.helper";
+import { FieldLabel } from "./FieldLabel";
 
 interface PasswordFieldProps {
   password: string;
@@ -11,6 +12,10 @@ interface PasswordFieldProps {
   label?: string;
   // a password being set, not typed to sign in: 12 characters or more (045)
   isNew?: boolean;
+  // the label above the field instead of inside it (spec 046)
+  labelAbove?: boolean;
+  helperText?: string;
+  size?: "small" | "medium";
 }
 
 const PasswordField = ({
@@ -18,6 +23,9 @@ const PasswordField = ({
   setPassword,
   label,
   isNew = false,
+  labelAbove = false,
+  helperText,
+  size,
 }: PasswordFieldProps) => {
   const [showPassword, setShowPassword] = useState<boolean>(false);
 
@@ -32,7 +40,8 @@ const PasswordField = ({
   const { t } = useT();
   const errorForTwoChar = t("validation.twoCharacters");
 
-  return (
+  const shownLabel = label ?? t("profile.password");
+  const field = (
     <TextValidator
       validators={[`minStringLength:${isNew ? MIN_PASSWORD_LENGTH : 2}`]}
       errorMessages={[
@@ -43,7 +52,9 @@ const PasswordField = ({
       id="password"
       name="password"
       value={password}
-      label={label ?? t("profile.password")}
+      label={labelAbove ? undefined : shownLabel}
+      helperText={helperText}
+      size={size}
       type={showPassword ? "text" : "password"}
       InputProps={{
         endAdornment: (
@@ -68,6 +79,14 @@ const PasswordField = ({
         "data-testid": "password",
       }}
     />
+  );
+  return labelAbove ? (
+    <div>
+      <FieldLabel htmlFor="password">{shownLabel}</FieldLabel>
+      {field}
+    </div>
+  ) : (
+    field
   );
 };
 

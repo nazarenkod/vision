@@ -185,3 +185,27 @@ test.describe("as an editor without projects", () => {
     ).toBeVisible();
   });
 });
+
+test("names the create button New project", async ({ projectListPage }) => {
+  await expect(projectListPage.page.getByTestId("newProject")).toHaveText(
+    "New project",
+  );
+  await expect(
+    projectListPage.page.getByRole("button", { name: /^Add/ }),
+  ).toHaveCount(0);
+});
+
+test("searches with a placeholder and no floating label", async ({
+  projectListPage,
+  page,
+}) => {
+  const search = page.getByTestId("projectSearch");
+  await expect(search).toHaveAttribute("placeholder", "Search projects");
+  await expect(search).toHaveAccessibleName("Search projects");
+  // no label above or inside the field, before typing and after
+  const field = page.locator(".MuiFormControl-root", { has: search });
+  await expect(field.locator("label")).toHaveCount(0);
+  await search.fill("nothing like it");
+  await expect(field.locator("label")).toHaveCount(0);
+  await expect(projectListPage.projects).toHaveCount(0);
+});

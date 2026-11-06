@@ -93,7 +93,7 @@ export const en = {
     "Try another word, or clear the search to see every section.",
   "settings.saved": "Saved",
   "settings.unsavedIn": "Unsaved changes in {sections}",
-  "settings.discard": "Discard",
+  "settings.discard": "Discard changes",
   "settings.save": "Save changes",
   "settings.conflictTitle":
     "Someone saved these settings after you opened the page",
@@ -121,10 +121,11 @@ export const en = {
   "section.danger": "Danger zone",
   "section.devices": "Devices",
   "section.devicesIntro":
-    "Screens sent with the SDK from any other device or OS version fail in the test, so baselines are only made where CI runs. Manual checks from the CLI are not held to the list.",
+    "The SDK rejects screens from devices not in the list, and the test fails. This way baselines are made only on the devices CI runs on. Manual checks from the CLI are not held to the list.",
   "section.comparisonIntro":
-    "How the current screen is compared with its baseline. Below the engines: the settings of the one you pick.",
-  "section.mobileIntro": "Applies to screens sent with an Appium page source.",
+    "How the current screen is compared with its baseline. The method's own settings are under the cards.",
+  "section.mobileIntro":
+    "Applies to screens sent with a UI tree (Appium page source).",
   "section.a11yIntro":
     "What Vision checks on every screen sent with a UI tree, by your team's norms.",
   "section.accessIntro":
@@ -148,7 +149,7 @@ export const en = {
   "devices.missing": "Needs both a device and an OS",
   "devices.wildcard": "* only at the end of the OS, as in 26.*",
   "devices.duplicate": "Already in the list",
-  "devices.received": "Devices from screens",
+  "devices.received": "Devices screens came from",
   "devices.receivedHint":
     "As the tests send them. Add the ones CI runs on before anything else.",
   "devices.receivedNone": "No screens yet.",
@@ -158,44 +159,49 @@ export const en = {
   "general.name": "Project name",
   "general.mainBranch": "Main branch",
   "general.buildCount": "Number of builds to keep",
-  "general.branchLifetime": "Max branch lifetime (days)",
+  "general.buildCountHelp": "Older builds are deleted when a new one comes in.",
+  "general.branchLifetime": "Days to keep a branch",
+  "general.branchLifetimeHelp":
+    "Baselines of a branch other than the main one are deleted after this many days without changes.",
   "general.newProjectHint":
     "Mobile screens, accessibility and Jira are set up in the project's settings, which open right after it is created.",
 
-  "review.autoApprove": "Auto approve feature",
+  "review.autoApprove": "Auto-approve in feature branches",
+  "review.autoApproveHelp":
+    "A screen in a feature branch that matches one already approved is approved without review.",
 
-  "comparison.library": "Image comparison library",
-  "comparison.engines": "Image comparison",
+  "comparison.library": "Image comparison",
+  "comparison.engines": "Comparison method",
   "comparison.pixelmatchHelp":
     "Pixel by pixel. Fast and predictable; the default.",
   "comparison.lookSameHelp":
     "Forgives anti-aliasing and the text caret. Good for text-heavy screens.",
   "comparison.odiffHelp":
-    "The fastest on big screens. Can fail on any layout change.",
+    "The fastest on big screens. Fails when the screen size changes.",
   "comparison.vlmHelp":
     "Asks a vision model whether a change matters. Slower; needs a provider.",
   "comparison.allowDiffDimensions": "Allow diff dimensions",
   "comparison.allowDiffDimensionsHelp":
-    "Enable comparison of images with different sizes.",
+    "Compare images of different sizes instead of failing.",
   "comparison.ignoreAntialiasing": "Ignore anti-aliasing",
   "comparison.ignoreAntialiasingHelp":
-    "Ignore detecting and ignoring anti-aliased pixels.",
+    "Anti-aliased pixels don't count as a change.",
   // the original spelling, kept so English reads as before
-  "comparison.ignoreAntialiasingLooksSame": "Ignore anti-alliasing",
+  "comparison.ignoreAntialiasingLooksSame": "Ignore anti-aliasing",
   "comparison.threshold": "Pixel diff threshold",
   "comparison.thresholdHelp":
-    "The threshold of how much a pixel can deviate until it is detected as change (0-1).",
+    "How much a pixel may differ before it counts as changed (0–1).",
   "comparison.strict": "Strict",
   "comparison.tolerance": "Tolerance",
   "comparison.toleranceHelp":
-    "Default tolerance in non-strict mode is 2.3 which is enough for the most cases. Setting tolerance to 0 will produce the same result as strict: true, but strict mode is faster. Attempt to set tolerance in strict mode will produce an error.",
+    "How far colours may differ before a pixel counts as changed. The default 2.3 is enough almost always. Not used in strict mode.",
   "comparison.antialiasingTolerance": "Antialiasing tolerance",
   "comparison.antialiasingToleranceHelp":
-    "Minimum difference in brightness (zero by default) between the darkest/lightest pixel (which is adjacent to the antialiasing pixel) and theirs adjacent pixels.",
-  "comparison.ignoreCaret": "Ignore carret",
+    "How strong anti-aliasing may be before it counts as a change. 0 by default.",
+  "comparison.ignoreCaret": "Ignore caret",
   "comparison.outputDiffMask": "Output diff mask",
-  "comparison.failOnLayoutDiff": "Fail on layout diff",
-  "comparison.provider": "VLM Provider",
+  "comparison.failOnLayoutDiff": "Fail if the size differs",
+  "comparison.provider": "Vision model provider",
   "comparison.model": "Model",
   "comparison.modelRequired": "Model is required",
   "comparison.loadingModels": "Loading models...",
@@ -203,30 +209,31 @@ export const en = {
   "comparison.unknownModel": "Selected model is not in the available list.",
   "comparison.ollamaModelHelp":
     "The Ollama model name to use for image comparison. Models are fetched from the Ollama service.",
-  "comparison.geminiModel": "Gemini Model",
+  "comparison.geminiModel": "Gemini model",
   "comparison.geminiModelHelp":
     "The Google Gemini model to use for image comparison.",
   "comparison.geminiModelName": "Gemini model name.",
   "comparison.geminiModels": "View all available models",
   "comparison.geminiKey": "Gemini API key",
-  "comparison.geminiKeyNew": "Gemini API Key",
+  "comparison.geminiKeyNew": "Gemini API key",
   "comparison.geminiKeyRequired": "API key is required",
   "comparison.geminiKeyHelp":
-    "Your Google Gemini API key. Get one from https://makersuite.google.com/app/apikey",
+    "Your Google Gemini API key. Get one at https://aistudio.google.com/app/apikey",
   "comparison.geminiKeyEnter": "Enter your Google Gemini API key",
   "comparison.prompt": "Prompt",
   "comparison.promptRequired": "Prompt is required",
   "comparison.promptHelp":
-    "The prompt text that will be sent to the VLM to analyze image differences.",
+    "The text sent to the vision model to judge the difference between the images.",
   "comparison.temperature": "Temperature",
   "comparison.temperatureHelp":
-    "Controls the randomness of the VLM response. Lower values (0-0.3) produce more consistent results, higher values (0.7-1) produce more creative responses.",
+    "Controls the randomness of the answer. Lower values (0–0.3) give more consistent results, higher values (0.7–1) more varied ones.",
   "comparison.temperatureShortHelp":
-    "Controls response randomness (0-1). Lower values are more consistent.",
-  "comparison.useThinking": "Use Thinking",
-  "comparison.useThinkingHelp": "Enable thinking mode for the VLM model.",
+    "Randomness of the answer (0–1). Lower values are more consistent.",
+  "comparison.useThinking": "Use thinking",
+  "comparison.useThinkingHelp":
+    "Lets the vision model reason before it answers.",
 
-  "mobile.title": "Mobile screens (UI tree)",
+  "mobile.title": "Mobile screens",
   "mobile.systemBars": "Leave out status and navigation bars",
   "mobile.systemBarsHelp": "Clock, battery and signal change on every run.",
   "mobile.moves": "Compare moved elements at their new place",
@@ -244,11 +251,11 @@ export const en = {
   "a11y.norm.text": "Text",
   "a11y.norm.large": "Large text",
   "a11y.norm.default": "Default {value}",
-  "a11y.norm.reset": "Reset",
+  "a11y.norm.reset": "Default",
   "a11y.norm.whole": "A whole number from {min} to {max}",
   "a11y.norm.range": "From {min} to {max}, one decimal",
   "a11y.norm.iosOnly": "iOS only",
-  "a11y.norm.advice": "advice, not counted",
+  "a11y.norm.advice": "advice only, not in the totals",
   "a11y.norm.applies":
     "A looser norm also hides issues on screens already received; a stricter one finds new issues from the next screens.",
   "a11y.rule.touchTarget": "Touch target too small",
@@ -277,7 +284,10 @@ export const en = {
     "Lets reviewers file bugs from the review screen. Each person adds their own Jira token in their profile, so bugs are filed as them, with their rights.",
   "jira.url": "Jira URL",
   "jira.issueType": "Issue type",
+  "jira.issueTypeHelp": "What a filed bug is created as. Empty: Bug.",
   "jira.linkType": "Link type",
+  "jira.linkTypeHelp":
+    "How the bug is linked to the task it was found in. Empty: Relates.",
 
   "secret.replace": "Replace",
   "secret.removedOnSave": "Removed on save",
@@ -286,10 +296,10 @@ export const en = {
 
   "validation.passwordLength": "Use at least {count} characters.",
   "validation.twoCharacters": "Enter at least two characters.",
-  "validation.greaterThan": "Enter greater than {min}",
+  "validation.greaterThan": "Enter more than {min}",
   "validation.lessThan": "Enter less than {max}",
-  "validation.atLeast": "Enter greater than or equal to {min}",
-  "validation.atMost": "Enter less than or equal to {max}",
+  "validation.atLeast": "Enter {min} or more",
+  "validation.atMost": "Enter {max} or less",
 
   // status
   "testStatus.new": "new",

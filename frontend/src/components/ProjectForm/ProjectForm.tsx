@@ -98,6 +98,7 @@ export const GeneralFields: React.FunctionComponent = () => {
         }}
         margin="dense"
         id="buildCount"
+        helperText={t("general.buildCountHelp")}
         label={t("general.buildCount")}
         type="number"
         fullWidth
@@ -124,6 +125,7 @@ export const GeneralFields: React.FunctionComponent = () => {
         }}
         margin="dense"
         id="maxBranchLifetime"
+        helperText={t("general.branchLifetimeHelp")}
         label={t("general.branchLifetime")}
         type="number"
         fullWidth
@@ -149,7 +151,18 @@ export const ReviewFields: React.FunctionComponent = () => {
   return (
     <React.Fragment>
       <FormControlLabel
-        label={t("review.autoApprove")}
+        label={
+          <Box>
+            <Typography variant="body2">{t("review.autoApprove")}</Typography>
+            <Typography variant="caption" color="textSecondary">
+              {t("review.autoApproveHelp")}
+            </Typography>
+          </Box>
+        }
+        sx={{
+          alignItems: "flex-start",
+          "& .MuiSwitch-root": { mt: -0.5 },
+        }}
         control={
           <Switch
             checked={project.autoApproveFeature}
@@ -420,6 +433,7 @@ export const JiraSettings: React.FunctionComponent<{ bare?: boolean }> = ({
       <Box sx={{ display: "flex", gap: 1.5 }}>
         <TextField
           id="jiraIssueType"
+          helperText={t("jira.issueTypeHelp")}
           label={t("jira.issueType")}
           placeholder="Bug"
           size="small"
@@ -429,6 +443,7 @@ export const JiraSettings: React.FunctionComponent<{ bare?: boolean }> = ({
         />
         <TextField
           id="jiraLinkType"
+          helperText={t("jira.linkTypeHelp")}
           label={t("jira.linkType")}
           placeholder="Relates"
           size="small"

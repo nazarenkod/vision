@@ -87,7 +87,7 @@ export const uk: Messages = {
     "Спробуйте інше слово або очистьте пошук, щоб побачити всі розділи.",
   "settings.saved": "Збережено",
   "settings.unsavedIn": "Незбережені зміни: {sections}",
-  "settings.discard": "Скасувати",
+  "settings.discard": "Відкинути зміни",
   "settings.save": "Зберегти зміни",
   "settings.conflictTitle":
     "Хтось зберіг ці налаштування після того, як ви відкрили сторінку",
@@ -115,10 +115,11 @@ export const uk: Messages = {
   "section.danger": "Небезпечна зона",
   "section.devices": "Пристрої",
   "section.devicesIntro":
-    "Екрани, надіслані з SDK з іншого пристрою чи іншої версії OS, падають у тесті, тож еталони з'являються лише там, де ганяється CI. Ручні перевірки з CLI перелік не обмежує.",
+    "Екрани з пристроїв поза переліком SDK відхиляє, і тест падає. Так еталони створюються лише на пристроях, де працює CI. Ручних перевірок з CLI перелік не стосується.",
   "section.comparisonIntro":
-    "Як поточний екран порівнюється з еталоном. Під способами порівняння — параметри того, який ви виберете.",
-  "section.mobileIntro": "Для екранів, надісланих з Appium page source.",
+    "Як поточний екран порівнюється з еталоном. Параметри обраного способу — під картками.",
+  "section.mobileIntro":
+    "Для екранів, надісланих з UI-деревом (Appium page source).",
   "section.a11yIntro":
     "Що Vision перевіряє на кожному екрані з UI-деревом, за нормами вашої команди.",
   "section.accessIntro":
@@ -142,9 +143,9 @@ export const uk: Messages = {
   "devices.missing": "Потрібні і пристрій, і OS",
   "devices.wildcard": "* лише в кінці OS, як у 26.*",
   "devices.duplicate": "Уже в переліку",
-  "devices.received": "Пристрої з екранів",
+  "devices.received": "Пристрої, з яких приходили екрани",
   "devices.receivedHint":
-    "Так, як їх надсилають тести. Спершу додайте ті, на яких ганяється CI.",
+    "Так, як їх надсилають тести. Спершу додайте ті, на яких працює CI.",
   "devices.receivedNone": "Екранів ще немає.",
   "devices.notInList": "не в переліку",
   "devices.allowed": "дозволено",
@@ -152,25 +153,30 @@ export const uk: Messages = {
   "general.name": "Назва проєкту",
   "general.mainBranch": "Основна гілка",
   "general.buildCount": "Скільки збірок зберігати",
+  "general.buildCountHelp": "Старіші збірки видаляються, коли приходить нова.",
   "general.branchLifetime": "Скільки днів зберігати гілку",
+  "general.branchLifetimeHelp":
+    "Еталони гілки, крім основної, видаляються, якщо стільки днів не змінювалися.",
   "general.newProjectHint":
     "Мобільні екрани, доступність і Jira налаштовуються в налаштуваннях проєкту — вони відкриються одразу після створення.",
 
   "review.autoApprove": "Автоматично приймати у feature-гілках",
+  "review.autoApproveHelp":
+    "Екран у feature-гілці, що збігається з уже прийнятим, приймається без перегляду.",
 
-  "comparison.library": "Бібліотека порівняння зображень",
-  "comparison.engines": "Порівняння зображень",
+  "comparison.library": "Порівняння",
+  "comparison.engines": "Спосіб порівняння",
   "comparison.pixelmatchHelp":
     "Піксель за пікселем. Швидко й передбачувано; типовий спосіб.",
   "comparison.lookSameHelp":
     "Не помічає згладжування й курсор у полі. Добре для екранів з великою кількістю тексту.",
   "comparison.odiffHelp":
-    "Найшвидший на великих екранах. Може падати на будь-якій зміні розмітки.",
+    "Найшвидший на великих екранах. Падає, якщо змінився розмір екрана.",
   "comparison.vlmHelp":
     "Питає візуальну модель, чи важлива зміна. Повільніше; потрібен постачальник моделі.",
   "comparison.allowDiffDimensions": "Порівнювати зображення різного розміру",
   "comparison.allowDiffDimensionsHelp":
-    "Дозволяє порівнювати зображення різного розміру.",
+    "Порівнювати зображення різного розміру замість того, щоб не проходити.",
   "comparison.ignoreAntialiasing": "Не помічати згладжування",
   "comparison.ignoreAntialiasingHelp":
     "Згладжені пікселі не вважаються зміною.",
@@ -181,14 +187,14 @@ export const uk: Messages = {
   "comparison.strict": "Суворий режим",
   "comparison.tolerance": "Допуск",
   "comparison.toleranceHelp":
-    "Типовий допуск у несуворому режимі — 2,3, і цього досить майже завжди. Допуск 0 дає те саме, що strict: true, але суворий режим швидший. Допуск у суворому режимі дає помилку.",
+    "Наскільки можуть відрізнятися кольори, доки піксель не вважають зміненим. Типових 2,3 досить майже завжди. У суворому режимі не враховується.",
   "comparison.antialiasingTolerance": "Допуск згладжування",
   "comparison.antialiasingToleranceHelp":
-    "Найменша різниця яскравості (типово нуль) між найтемнішим чи найсвітлішим пікселем біля згладженого пікселя і його сусідами.",
+    "Наскільки сильне згладжування не вважати зміною. Типово 0.",
   "comparison.ignoreCaret": "Не помічати курсор у полі",
   "comparison.outputDiffMask": "Зображення різниці — лише зміни",
   "comparison.failOnLayoutDiff": "Не проходити, якщо змінився розмір",
-  "comparison.provider": "Постачальник VLM",
+  "comparison.provider": "Постачальник візуальної моделі",
   "comparison.model": "Модель",
   "comparison.modelRequired": "Потрібна модель",
   "comparison.loadingModels": "Завантаження моделей…",
@@ -205,21 +211,21 @@ export const uk: Messages = {
   "comparison.geminiKeyNew": "Ключ API Gemini",
   "comparison.geminiKeyRequired": "Потрібен ключ API",
   "comparison.geminiKeyHelp":
-    "Ваш ключ API Google Gemini. Отримати його можна на https://makersuite.google.com/app/apikey",
+    "Ваш ключ API Google Gemini. Отримати його можна на https://aistudio.google.com/app/apikey",
   "comparison.geminiKeyEnter": "Введіть свій ключ API Google Gemini",
   "comparison.prompt": "Запит до моделі",
   "comparison.promptRequired": "Потрібен запит",
   "comparison.promptHelp":
-    "Текст, який надсилається VLM, щоб вона проаналізувала різницю між зображеннями.",
+    "Текст, який надсилається візуальній моделі, щоб вона оцінила різницю між зображеннями.",
   "comparison.temperature": "Температура",
   "comparison.temperatureHelp":
-    "Наскільки випадкова відповідь VLM. Нижчі значення (0–0,3) дають сталіші результати, вищі (0,7–1) — різноманітніші.",
+    "Наскільки випадкова відповідь моделі. Нижчі значення (0–0,3) дають сталіші результати, вищі (0,7–1) — різноманітніші.",
   "comparison.temperatureShortHelp":
     "Випадковість відповіді (0–1). Нижчі значення — сталіші.",
   "comparison.useThinking": "Режим міркування",
-  "comparison.useThinkingHelp": "Вмикає режим міркування моделі VLM.",
+  "comparison.useThinkingHelp": "Модель міркує, перш ніж відповісти.",
 
-  "mobile.title": "Мобільні екрани (UI-дерево)",
+  "mobile.title": "Мобільні екрани",
   "mobile.systemBars": "Не враховувати рядок стану й панель навігації",
   "mobile.systemBarsHelp": "Годинник, батарея й сигнал змінюються щоразу.",
   "mobile.moves": "Порівнювати зсунуті елементи на новому місці",
@@ -237,11 +243,11 @@ export const uk: Messages = {
   "a11y.norm.text": "Текст",
   "a11y.norm.large": "Великий текст",
   "a11y.norm.default": "Типово {value}",
-  "a11y.norm.reset": "Повернути",
+  "a11y.norm.reset": "Типове",
   "a11y.norm.whole": "Ціле число від {min} до {max}",
   "a11y.norm.range": "Від {min} до {max}, один знак після коми",
   "a11y.norm.iosOnly": "лише iOS",
-  "a11y.norm.advice": "порада, не рахується",
+  "a11y.norm.advice": "лише порада, не впливає на підсумок",
   "a11y.norm.applies":
     "Послаблена норма ховає знахідки й на вже отриманих екранах; суворіша знаходить нові з наступних екранів.",
   "a11y.rule.touchTarget": "Замала область дотику",
@@ -272,7 +278,10 @@ export const uk: Messages = {
     "Дає заводити баги просто з екрана перегляду. Кожен додає власний токен Jira у профілі, тож баги заводяться від його імені й з його правами.",
   "jira.url": "Адреса Jira",
   "jira.issueType": "Тип задачі",
+  "jira.issueTypeHelp": "Яким типом заводиться баг. Порожньо — Bug.",
   "jira.linkType": "Тип зв’язку",
+  "jira.linkTypeHelp":
+    "Як баг пов’язується із задачею, у якій його знайдено. Порожньо — Relates.",
 
   "secret.replace": "Замінити",
   "secret.removedOnSave": "Буде видалено під час збереження",
@@ -859,7 +868,7 @@ export const uk: Messages = {
   "a11ySummary.emptyHint":
     "Доступність перевіряється, коли екран надходить разом з Appium page source. У Java чи Kotlin додайте {code} до TestRunOptions; для ручного тестування скористайтеся CLI (меню довідки, «Ручні перевірки»).",
   "a11ySummary.newHint":
-    "Порівняно з еталоном кожного екрана: лише те, що з'явилося в цій збірці. Заведені баги й хибні знахідки не рахуються.",
+    "Порівняно з еталоном кожного екрана: лише те, що з’явилося в цій збірці. Заведені баги й хибні знахідки не рахуються.",
   "a11ySummary.ofScreenshots": {
     one: "з {count} екрана",
     few: "з {count} екранів",
@@ -1389,7 +1398,7 @@ export const uk: Messages = {
   "compared.state.same": "без змін",
   "compared.state.changed": "змінено",
   "compared.state.disappeared": "зник",
-  "compared.state.appeared": "з'явився",
+  "compared.state.appeared": "з’явився",
   "compared.state.resized": "змінив розмір",
   "compared.state.nothingFound": "нічого не знайдено",
   "compared.oneTree.baseline":
@@ -1428,7 +1437,7 @@ export const uk: Messages = {
   "changes.text": "Текст: «{before}» → «{after}»",
   "changes.label": "Підпис: «{before}» → «{after}»",
   "changes.state": "Стан: {before} → {after}",
-  "changes.added": "З'явився",
+  "changes.added": "З’явився",
   "changes.removed": "Зник",
   "changes.resized": "Змінив розмір: {before} → {after} dp",
   "verdict.same": "Змін немає",
@@ -1453,7 +1462,7 @@ export const uk: Messages = {
   "verdict.disappeared": "Одного з обраних елементів немає",
   "verdict.disappearedWhy":
     "{element} немає на поточному, тож порівнювати його нема з чим.",
-  "verdict.appeared": "З'явився новий обраний елемент",
+  "verdict.appeared": "З’явився новий обраний елемент",
   "verdict.appearedWhy":
     "{element} немає в еталоні, тож порівнювати його нема з чим.",
   "verdict.count": "Кількість обраних елементів змінилась",
@@ -1471,7 +1480,7 @@ export const uk: Messages = {
   "compared.more": "Інші дії",
   "compared.problem.nothingFound": "{selector} нічого не знайшов",
   "compared.problem.disappeared": "{element} зник",
-  "compared.problem.appeared": "{element} з'явився",
+  "compared.problem.appeared": "{element} з’явився",
   "compared.problem.count": "{selector}: в еталоні {baseline}, тепер {current}",
   "compared.problem.resized": "{element} змінив розмір",
   "reportBug.title": "Завести баг",

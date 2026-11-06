@@ -190,7 +190,7 @@ test("saves every field the old dialog had", async ({
   await page.locator("#branchName").fill("develop");
   await page.locator("#buildCount").fill("40");
   await page.locator("#maxBranchLifetime").fill("14");
-  await page.getByLabel("Auto approve feature").uncheck();
+  await page.getByLabel("Auto-approve in feature branches").uncheck();
   await page.getByTestId(`engine-${ImageComparison.odiff}`).click();
   await page.getByLabel("Send hidden changes to review").uncheck();
   await page.locator("#jiraIssueType").fill("Defect");
@@ -245,7 +245,7 @@ test("shows only the chosen engine's settings", async ({
   await expect(
     page.getByTestId(`engine-${ImageComparison.odiff}`),
   ).toHaveAttribute("aria-checked", "true");
-  await expect(page.getByLabel("Fail on layout diff")).toBeVisible();
+  await expect(page.getByLabel("Fail if the size differs")).toBeVisible();
   await expect(page.getByLabel("Allow diff dimensions")).toHaveCount(0);
 });
 
@@ -283,7 +283,9 @@ test("has no settings for variations in the review section", async ({
   // a project saved with them on still has the columns (022)
   await open(page, { bulkApproveVariations: true, bulkApproveGroupBy: "os" });
   const review = page.getByTestId("section-review");
-  await expect(review.getByLabel("Auto approve feature")).toBeVisible();
+  await expect(
+    review.getByLabel("Auto-approve in feature branches"),
+  ).toBeVisible();
   await expect(review.getByText(/variations/i)).toHaveCount(0);
   await page.getByTestId("settingsSearch").fill("variation");
   await expect(page.getByText("Nothing matches")).toBeVisible();

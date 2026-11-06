@@ -6,7 +6,7 @@
 | Власник | Дмитро Назаренко |
 | Оновлено | 2026-11-06 |
 | Дизайн | design.md з'явиться після `Approved` |
-| Пов'язане | змінює [012](../012-java-sdk/spec.md) (SDK уміє зібрати дерево вебсторінки); SDK для Playwright — з агента VRT `agent-playwright` (Apache 2.0, [NOTICE](../../../NOTICE)); розширює [002](../002-ui-tree-analysis/spec.md) і [003](../003-accessibility-checks/spec.md) на веб; межі прийому — [040](../040-uitree-limits-and-sdk-names/spec.md); назва розділу налаштувань — [049](../049-settings-explained/spec.md) |
+| Пов'язане | змінює [012](../012-java-sdk/spec.md) (SDK уміє зібрати дерево вебсторінки); SDK для Playwright — з агента VRT `agent-playwright` (Apache 2.0, [NOTICE](../../../NOTICE)); змінює [026](../026-a11y-rules-settings/spec.md) REQ-026-01 (ще й норма для вебу); розширює [002](../002-ui-tree-analysis/spec.md) і [003](../003-accessibility-checks/spec.md) на веб; межі прийому — [040](../040-uitree-limits-and-sdk-names/spec.md); назва розділу налаштувань — [049](../049-settings-explained/spec.md) |
 
 ## Контекст і проблема
 

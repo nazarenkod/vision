@@ -1,5 +1,5 @@
 import React from "react";
-import { Box, Link, Typography } from "@mui/material";
+import { Box, ButtonBase, Link, Typography } from "@mui/material";
 import {
   AccessibilityNewOutlined,
   BugReportOutlined,
@@ -210,43 +210,61 @@ const Devices: React.FunctionComponent<{
   const { testRuns } = useTestRunState();
   return (
     <Card title={t("overview.devices")} index={9} testId="overviewDevices">
-      {overview.devices.map((row) => {
-        const waiting = row.changed + row.new;
-        const profile = [row.device, row.os, row.browser, row.viewport].join(
-          "|",
-        );
-        const first = testRuns.find(
-          (run) =>
-            run.buildId === overview.build.id && profileOf(run) === profile,
-        );
-        return (
-          <Row
-            key={profile}
-            columns="minmax(0, 1fr)"
-            label={`${row.device} ${row.os}`}
-            testId="overviewDevice"
-            onClick={
-              waiting
-                ? () => actions.openQueue({ kind: "device", profile })
-                : first
-                  ? () => actions.openQueue({ kind: "run", id: first.id })
-                  : undefined
-            }
-          >
-            <DeviceTags
-              testId="overviewDeviceTags"
-              dense
-              parts={{
-                os: row.os,
-                device: row.device,
-                browser: row.browser,
-                // the size of the screen: what the test sent, else the screenshot's
-                viewport: row.viewport || row.screen,
+      {/* the devices in one wrapping line: which ones ran, nothing more */}
+      <Box
+        sx={{
+          display: "flex",
+          flexWrap: "wrap",
+          // a wider gap between devices than between the tags of one
+          columnGap: 2.5,
+          rowGap: 1,
+          px: 2,
+          pt: 0.5,
+          pb: 2,
+        }}
+      >
+        {overview.devices.map((row) => {
+          const waiting = row.changed + row.new;
+          const profile = [row.device, row.os, row.browser, row.viewport].join(
+            "|",
+          );
+          const first = testRuns.find(
+            (run) =>
+              run.buildId === overview.build.id && profileOf(run) === profile,
+          );
+          const open = waiting
+            ? () => actions.openQueue({ kind: "device", profile })
+            : first
+              ? () => actions.openQueue({ kind: "run", id: first.id })
+              : undefined;
+          return (
+            <ButtonBase
+              key={profile}
+              data-testid="overviewDevice"
+              aria-label={`${row.device} ${row.os}`}
+              onClick={open}
+              disabled={!open}
+              sx={{
+                p: "2px",
+                borderRadius: radius.control,
+                "&:hover": { bgcolor: "action.hover" },
               }}
-            />
-          </Row>
-        );
-      })}
+            >
+              <DeviceTags
+                testId="overviewDeviceTags"
+                dense
+                parts={{
+                  os: row.os,
+                  device: row.device,
+                  browser: row.browser,
+                  // the size of the screen: what the test sent, else the screenshot's
+                  viewport: row.viewport || row.screen,
+                }}
+              />
+            </ButtonBase>
+          );
+        })}
+      </Box>
     </Card>
   );
 };
@@ -587,10 +605,11 @@ export const BuildOverview: React.FunctionComponent<{
           "& > *": { minWidth: 0 },
         }}
       >
-        <Box sx={{ flex: "1 1 280px" }}>
+        {/* beside the bugs when both fit; the devices wrap inside */}
+        <Box sx={{ flex: "1 1 320px" }}>
           <Devices overview={overview} actions={actions} />
         </Box>
-        <Box sx={{ flex: overview.bugs.length ? "3 1 420px" : "1 1 280px" }}>
+        <Box sx={{ flex: "1 1 420px" }}>
           <Bugs overview={overview} actions={actions} />
         </Box>
       </Box>

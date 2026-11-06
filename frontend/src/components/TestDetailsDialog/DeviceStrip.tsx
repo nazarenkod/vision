@@ -6,7 +6,7 @@ import { TestRun } from "../../types";
 import { TestStatus } from "../../types/testStatus";
 import { testRunService } from "../../services";
 import { useUserState } from "../../contexts";
-import { tokens, type, radius } from "../../theme";
+import { motion, tokens, type, radius } from "../../theme";
 import { BaseModal } from "../BaseModal";
 import { DeviceTags } from "../DeviceTags";
 import { deviceLabel } from "../../_helpers/device.helper";
@@ -87,48 +87,64 @@ export const DeviceStrip: React.FunctionComponent<{
           {t("review.devices")}
         </Typography>
       )}
-      {runs.map((run) => {
-        const current = run.id === currentId;
-        return (
-          <ButtonBase
-            key={run.id}
-            onClick={() => !current && onSelect(run.id)}
-            title={labelOf(t, "testStatus", run.status)}
-            sx={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: 0.75,
-              minHeight: 32,
-              py: 0.25,
-              pl: 1.25,
-              pr: 0.5,
-              borderRadius: radius.pill,
-              fontSize: type.small,
-              // the frame marks the current device; the tags inside stay grey (REQ-037-04)
-              border: `1px solid ${current ? tokens.brand : tokens.border}`,
-              bgcolor: tokens.surface,
-              color: tokens.text,
-            }}
-            aria-label={deviceLabel(run, undefined, t)}
-            aria-current={current || undefined}
-          >
-            <Box
-              component="span"
+      {/* one segmented track, like the view switch: the current device is the
+          raised segment. A pill with a frame round each device read as a
+          second set of chips around the tags */}
+      <Box
+        sx={{
+          display: "inline-flex",
+          alignItems: "center",
+          gap: "2px",
+          p: "2px",
+          borderRadius: radius.control,
+          bgcolor: tokens.subtle,
+          flexShrink: 0,
+        }}
+      >
+        {runs.map((run) => {
+          const current = run.id === currentId;
+          return (
+            <ButtonBase
+              key={run.id}
+              onClick={() => !current && onSelect(run.id)}
+              title={labelOf(t, "testStatus", run.status)}
               sx={{
-                width: 8,
-                height: 8,
-                borderRadius: radius.pill,
-                bgcolor: dotColor(run.status),
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 0.75,
+                minHeight: 28,
+                px: 1,
+                borderRadius: radius.control,
+                fontSize: type.small,
+                // the raised segment marks the current device; the tags stay grey (REQ-037-04)
+                // the same mark as the chosen view beside it ("Side by side")
+                bgcolor: current ? "action.selected" : "transparent",
+                fontWeight: current ? 600 : 400,
+                color: current ? tokens.text : tokens.textSecondary,
+                transition: `background-color ${motion.fast}ms`,
+                "&:hover": current ? undefined : { bgcolor: "action.hover" },
               }}
-            />
-            <DeviceTags
-              parts={
-                compact ? { ...run, os: "", browser: "", viewport: "" } : run
-              }
-            />
-          </ButtonBase>
-        );
-      })}
+              aria-label={deviceLabel(run, undefined, t)}
+              aria-current={current || undefined}
+            >
+              <Box
+                component="span"
+                sx={{
+                  width: 8,
+                  height: 8,
+                  borderRadius: radius.pill,
+                  bgcolor: dotColor(run.status),
+                }}
+              />
+              <DeviceTags
+                parts={
+                  compact ? { ...run, os: "", browser: "", viewport: "" } : run
+                }
+              />
+            </ButtonBase>
+          );
+        })}
+      </Box>
       {canEdit && pending.length > 1 && (
         <Button size="small" onClick={() => setConfirm(true)}>
           {t("review.approveAll", { count: pending.length })}

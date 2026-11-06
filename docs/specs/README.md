@@ -114,6 +114,7 @@ docs/specs/NNN-коротка-назва/
 | [045](045-sign-in-and-api-hardening/spec.md) | Корпоративний вхід разом з локальними акаунтами; захист входу й API | Implemented |
 | [046](046-design-review-refresh/spec.md) | Оновлений вигляд після дизайн-ревю: одна система, бічне меню, порівняння на всю висоту | Implemented |
 | [047](047-overview-and-review-header/spec.md) | Огляд без дублів і тихіший заголовок порівняння | Implemented |
+| [048](048-overview-checks-table/spec.md) | Одна таблиця перевірок на огляді, пристрої в шапці збірки | Implemented |
 
 Статусу `Verified` поки немає в жодної: інтеграцію з реальною Jira Cloud і прогони на сервері
 команда ще не підтвердила.

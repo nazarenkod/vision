@@ -538,12 +538,13 @@ test("shows neither the position nor the queue in the header", async ({
   await expect(header).not.toContainText(/\d+ з \d+/);
   await expect(page.getByTestId("stepProgress")).toHaveCount(0);
   await expect(page.getByTestId("queueName")).toHaveCount(0);
-  // one line whatever the queue's name (SC-047-02)
+  // one line whatever the queue's name (SC-047-02); the header's height is
+  // the same for any name (REQ-048-08)
   const box = await header.boundingBox();
   const name = await header.getByTestId("screenName").boundingBox();
   if (!box || !name) throw new Error("not on screen");
   expect(name.y + name.height).toBeLessThanOrEqual(box.y + box.height);
-  expect(box.height).toBeLessThan(2 * name.height + 24);
+  expect(name.height).toBeLessThan(40);
 
   // the queue still leads the arrows: past the screen outside the feature
   await page.keyboard.press("ArrowRight");
@@ -554,4 +555,39 @@ test("shows neither the position nor the queue in the header", async ({
   );
   await page.keyboard.press("ArrowLeft");
   await expect(page).toHaveURL(/testId=entry$/);
+});
+
+test("shows the whole check name in up to two lines at one header height", async ({
+  openProjectPage,
+  page,
+}) => {
+  await page.setViewportSize({ width: 1280, height: 900 });
+  const heightFor = async (name: string) => {
+    await mockApi(page);
+    const named = { ...run, name };
+    await mockGetTestRuns(page, build.id, [named]);
+    await mockTestRun(page, named);
+    await openProjectPage(project.id, build.id, run.id);
+    const header = page.getByTestId("compareHeader");
+    const title = header.getByTestId("screenName");
+    await expect(title).toHaveText(name);
+    // the whole name on hover (REQ-048-08)
+    await expect(title).toHaveAttribute("title", name);
+    const lineHeight = await title.evaluate((el) =>
+      parseFloat(getComputedStyle(el).lineHeight),
+    );
+    const box = await title.boundingBox();
+    if (!box) throw new Error("not on screen");
+    // at most two lines, the rest behind an ellipsis
+    expect(box.height).toBeLessThanOrEqual(lineHeight * 2 + 1);
+    return { header: (await header.boundingBox())?.height, title: box };
+  };
+  const short = await heightFor("Вхід");
+  const long = await heightFor(
+    'Перехід по deeplink [part_instant_payments-earlypay] для внесення платежу, коли договір на простроченні ("withOverdue") і клієнт має кілька карток та активну підписку на всі сервіси застосунку',
+  );
+  // longer than a third of the header: the name is not cut to a stub
+  expect(long.title.width).toBeGreaterThan(1280 / 3);
+  // one height for any name, so the screens below never move (SC-048-03)
+  expect(long.header).toBe(short.header);
 });

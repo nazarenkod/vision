@@ -174,18 +174,15 @@ test("shows the changed share against the allowed one without a handle", async (
   await openProjectPage(project.id, build.id, run.id);
 
   const meter = page.getByTestId("diffMeter");
-  await expect(meter.getByTestId("diffChanged")).toHaveText("1.24% changed");
-  await expect(meter.getByTestId("diffAllowed")).toHaveText("3.21% allowed");
-  await expect(meter.getByTestId("toleranceMark")).toBeVisible();
-  // a tick, not something to drag
+  // words only: nothing to drag, no bar to read as a slider (REQ-047-06)
+  await expect(meter).toHaveText("1.24% changed·3.21% allowed");
   await expect(meter.getByRole("slider")).toHaveCount(0);
-  const mark = await meter.getByTestId("toleranceMark").boundingBox();
-  expect(mark?.width).toBeLessThanOrEqual(2);
+  await expect(meter.getByTestId("toleranceMark")).toHaveCount(0);
+  await expect(meter.getByTestId("diffFill")).toHaveCount(0);
 
   await openProjectPage(project.id, build.id, strict.id);
   await expect(meter.getByTestId("diffChanged")).toHaveText("1.24% changed");
   await expect(meter.getByTestId("diffAllowed")).toHaveCount(0);
-  await expect(meter.getByTestId("toleranceMark")).toHaveCount(0);
 });
 
 test("says the size differs next to Current", async ({
@@ -386,10 +383,9 @@ test("keeps a check on two devices in one toolbar row", async ({
     page.getByTestId("compareHeader").getByTestId("deviceStrip"),
   ).toHaveCount(0);
   await expect(devices.getByTestId("approveAllDevices")).toBeVisible();
-  // the header says only where the review is: no counts, no step bar
-  await expect(page.getByTestId("stepProgress")).toHaveText("1 з 13");
+  // the header names the screen and its trend: no position, no counts (REQ-047-05)
+  await expect(page.getByTestId("stepProgress")).toHaveCount(0);
   await expect(page.getByTestId("stepCounts")).toHaveCount(0);
-  await expect(page.getByTestId("stepDots")).toHaveCount(0);
 
   const oneRow = async () => {
     await expect(toolbar.getByTestId("toolbarTools")).toBeVisible();
@@ -459,11 +455,14 @@ test("shows the trend of the check in the header", async ({
     "aria-label",
     "Trend of the check over the last 3 runs",
   );
-  // right after the position, where the step bar was
-  const position = await header.getByTestId("stepProgress").boundingBox();
+  // right after the status, with nothing between them (REQ-047-05)
+  const status = await header
+    .getByText("unresolved", { exact: true })
+    .boundingBox();
   const chart = await trend.boundingBox();
-  if (!position || !chart) throw new Error("not on screen");
-  expect(chart.x).toBeGreaterThan(position.x + position.width);
+  if (!status || !chart) throw new Error("not on screen");
+  expect(chart.x).toBeGreaterThan(status.x + status.width);
+  expect(chart.x - (status.x + status.width)).toBeLessThanOrEqual(32);
 
   // oldest first, ending with the run on screen; height follows the share
   const bars = trend.getByTestId("trendBar");
@@ -481,4 +480,78 @@ test("shows the trend of the check in the header", async ({
   await expect(page.getByRole("tooltip")).toContainText(
     "#128 · 1.24% · unresolved ·",
   );
+});
+
+test("shows neither the position nor the queue in the header", async ({
+  openProjectPage,
+  page,
+}) => {
+  // signs in; the page is opened at the queue's address below
+  void openProjectPage;
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await inUkrainian(page);
+  const feature = "Кредитна сила - Оплата частинами (Точки входу)";
+  const entry = { ...run, id: "entry", name: "Вхід", featureName: feature };
+  // in the build between the two (screens go by name), not in the feature's queue
+  const other = {
+    ...run,
+    id: "other",
+    name: "Головна",
+    featureName: "Профіль",
+  };
+  const banner = {
+    ...run,
+    id: "banner",
+    name: "Точки входу. Банер",
+    featureName: feature,
+  };
+  const runs = [entry, other, banner];
+  await mockGetProjects(page, [project]);
+  await mockGetBuilds(page, project.id, [build]);
+  await mockGetBuildDetails(page, build);
+  await mockGetTestRuns(page, build.id, runs);
+  await page.route(`${API_URL}/test-runs/groups?buildId=${build.id}`, (route) =>
+    route.fulfill({ json: [] }),
+  );
+  for (const item of runs) {
+    await mockTestRun(page, item);
+    await page.route(`${API_URL}/test-runs/${item.id}/structure`, (route) =>
+      route.fulfill({ body: JSON.stringify(changed) }),
+    );
+    await page.route(`${API_URL}/test-runs/${item.id}/bugs`, (route) =>
+      route.fulfill({ body: "[]" }),
+    );
+  }
+  await mockImage(page, "image.png");
+  await mockImage(page, "diff.png");
+  await mockImage(page, "baseline.png");
+  await page.goto(
+    `/${project.id}?buildId=${build.id}&testId=entry&queue=${encodeURIComponent(
+      `feature:${feature}`,
+    )}`,
+  );
+
+  const header = page.getByTestId("compareHeader");
+  await expect(header.getByTestId("screenName")).toHaveText("Вхід");
+  // no "1 з 2 у <черга> ▾": the queue is chosen on the Overview
+  await expect(header).not.toContainText(feature);
+  await expect(header).not.toContainText(/\d+ з \d+/);
+  await expect(page.getByTestId("stepProgress")).toHaveCount(0);
+  await expect(page.getByTestId("queueName")).toHaveCount(0);
+  // one line whatever the queue's name (SC-047-02)
+  const box = await header.boundingBox();
+  const name = await header.getByTestId("screenName").boundingBox();
+  if (!box || !name) throw new Error("not on screen");
+  expect(name.y + name.height).toBeLessThanOrEqual(box.y + box.height);
+  expect(box.height).toBeLessThan(2 * name.height + 24);
+
+  // the queue still leads the arrows: past the screen outside the feature
+  await page.keyboard.press("ArrowRight");
+  await expect(page).toHaveURL(/testId=banner$/);
+  await expect(page).toHaveURL(/queue=feature/);
+  await expect(header.getByTestId("screenName")).toHaveText(
+    "Точки входу. Банер",
+  );
+  await page.keyboard.press("ArrowLeft");
+  await expect(page).toHaveURL(/testId=entry$/);
 });

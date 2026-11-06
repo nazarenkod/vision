@@ -18,7 +18,7 @@
 | `src/components/BuildOverview/` | вкладка Overview збірки; `useBuildGroups` — групи змін для огляду й черг ([031](../docs/specs/031-build-overview/spec.md)) |
 | `src/components/DeviceTags.tsx` | пристрій сірими тегами, модель першою, далі ОС, назва в підказці; `dense` для вузьких місць, `print` для звіту ([037](../docs/specs/037-device-as-tags/spec.md)). Новий показ пристрою — лише через нього |
 | `src/components/SummaryParts.tsx` | плитки, картки й рядки таблиць огляду збірки; ними ж зібрано Accessibility (`A11ySummary`). Шапки MUI-таблиць і DataGrid, картки й їхні заголовки під них підігнані в `theme.ts`, тож нова таблиця виглядає так само без власних стилів |
-| `src/_helpers/reviewQueue.helper.ts` | черги рев'ю: ключ у адресі (`queue`), порядок, пропуск вирішених, наступна черга; у порівнянні — `QueueHeader`, `QueueDone` |
+| `src/_helpers/reviewQueue.helper.ts` | черги рев'ю: ключ у адресі (`queue`), порядок, пропуск вирішених, наступна черга; у порівнянні — `QueueDone` (заголовок без черги, [047](../docs/specs/047-overview-and-review-header/spec.md)) |
 | `src/components/BuildReport/`, `src/pages/ReportPage.tsx` | діалог звіту, `ReportDocument` (один для діалогу, друку й публічної сторінки); `/r/:token` без входу, `/report/:buildId` для друку |
 | `src/pages/InsightsPage.tsx` | Insights |
 | `src/services/*.service.ts` | виклики API: `fetch` + `authHeader()` + `handleResponse` (він же запам'ятовує `fileSignatures` знімків, `_helpers/fileSignatures.ts`; адресу знімка дає лише `staticService.getImage`, [043](../docs/specs/043-protected-images/spec.md)) |

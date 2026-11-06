@@ -1,5 +1,5 @@
 import React from "react";
-import { Box, Link, Typography } from "@mui/material";
+import { Box, ButtonBase, Link, Typography } from "@mui/material";
 import {
   AccessibilityNewOutlined,
   BugReportOutlined,
@@ -13,8 +13,7 @@ import { BuildOverview as Overview } from "../../types/buildOverview";
 import { RULE_LABEL } from "../ProjectForm/A11yRulesSettings";
 import { StatusPill } from "../StatusPill";
 import { ResultBar } from "./ResultBar";
-import { TagOverflow } from "../DeviceTags";
-import { DeviceParts, deviceTagsOf } from "../../_helpers/device.helper";
+import { DeviceTags } from "../DeviceTags";
 import { EmptyState } from "../EmptyState";
 import {
   Card,
@@ -27,7 +26,7 @@ import {
   Tiles,
 } from "../SummaryParts";
 import { BuildTab } from "../../_helpers/route.helpers";
-import { QueueKey } from "../../_helpers/reviewQueue.helper";
+import { profileOf, QueueKey } from "../../_helpers/reviewQueue.helper";
 
 // a burst of events while screenshots arrive or decisions land: ask once it settles
 const REFRESH_DELAY_MS = 400;
@@ -170,25 +169,6 @@ const OverviewTiles: React.FunctionComponent<{
 // the result is a short bar and its words: "1 changed · 1 new" (046)
 // the name keeps room for "No feature" and a screen's name under it in either language
 const FEATURE_COLUMNS = "minmax(150px, 1fr) 72px 140px 68px 40px";
-// the devices take the page's width; "Accessibility" fits over its numbers
-const DEVICE_COLUMNS = "minmax(0, 1fr) 150px 80px 96px";
-
-/**
- * A device's tags in one line (046): a row never grows to two lines for a long
- * model name; the tags that do not fit become "+N" with their values on hover,
- * so no tag is cut mid-word (REQ-046-31).
- */
-const OneLineDevice: React.FunctionComponent<{
-  parts: DeviceParts;
-}> = ({ parts }) => (
-  <TagOverflow
-    testId="overviewDeviceTags"
-    tagTestId="deviceTag"
-    dense
-    tags={deviceTagsOf(parts).map((tag) => tag.value)}
-  />
-);
-
 /**
  * A screen sent without featureName: "No feature" in grey with the screen
  * under it, so its name is not read as a feature's (046).
@@ -216,54 +196,75 @@ const NoFeatureCell: React.FunctionComponent<{ name: string }> = ({ name }) => {
   );
 };
 
+/**
+ * The build's devices (REQ-047-02): a set of tags per profile and nothing
+ * else, since the features already show the results. A device opens its
+ * screenshots waiting for a decision; with none waiting, its first screenshot
+ * (REQ-047-03).
+ */
 const Devices: React.FunctionComponent<{
   overview: Overview;
   actions: OverviewActions;
 }> = ({ overview, actions }) => {
   const { t } = useT();
+  const { testRuns } = useTestRunState();
   return (
-    <Card index={9} testId="overviewDevices">
-      <Head
-        columns={DEVICE_COLUMNS}
-        cells={[
-          [t("overview.device")],
-          [t("overview.result")],
-          [t("overview.review"), true],
-          [t("overview.a11y"), true],
-        ]}
-      />
-      {overview.devices.map((row) => {
-        const waiting = row.changed + row.new;
-        const profile = [row.device, row.os, row.browser, row.viewport].join(
-          "|",
-        );
-        return (
-          <Row
-            key={profile}
-            columns={DEVICE_COLUMNS}
-            label={`${row.device} ${row.os}`}
-            testId="overviewDevice"
-            onClick={
-              waiting
-                ? () => actions.openQueue({ kind: "device", profile })
-                : undefined
-            }
-          >
-            <OneLineDevice
-              parts={{
-                os: row.os,
-                device: row.device,
-                browser: row.browser,
-                // the size of the screen: what the test sent, else the screenshot's
-                viewport: row.viewport || row.screen,
+    <Card title={t("overview.devices")} index={9} testId="overviewDevices">
+      {/* the devices in one wrapping line: which ones ran, nothing more */}
+      <Box
+        sx={{
+          display: "flex",
+          flexWrap: "wrap",
+          // a wider gap between devices than between the tags of one
+          columnGap: 2.5,
+          rowGap: 1,
+          px: 2,
+          pt: 0.5,
+          pb: 2,
+        }}
+      >
+        {overview.devices.map((row) => {
+          const waiting = row.changed + row.new;
+          const profile = [row.device, row.os, row.browser, row.viewport].join(
+            "|",
+          );
+          const first = testRuns.find(
+            (run) =>
+              run.buildId === overview.build.id && profileOf(run) === profile,
+          );
+          const open = waiting
+            ? () => actions.openQueue({ kind: "device", profile })
+            : first
+              ? () => actions.openQueue({ kind: "run", id: first.id })
+              : undefined;
+          return (
+            <ButtonBase
+              key={profile}
+              data-testid="overviewDevice"
+              aria-label={`${row.device} ${row.os}`}
+              onClick={open}
+              disabled={!open}
+              sx={{
+                p: "2px",
+                borderRadius: radius.control,
+                "&:hover": { bgcolor: "action.hover" },
               }}
-            />
-            <ResultBar outcome={row} text={t} hint words />
-            <Num value={waiting} zero="0" />
-            <Num value={row.a11yNew} zero="0" />
-          </Row>
-        );
-      })}
+            >
+              <DeviceTags
+                testId="overviewDeviceTags"
+                dense
+                parts={{
+                  os: row.os,
+                  device: row.device,
+                  browser: row.browser,
+                  // the size of the screen: what the test sent, else the screenshot's
+                  viewport: row.viewport || row.screen,
+                }}
+              />
+            </ButtonBase>
+          );
+        })}
+      </Box>
     </Card>
   );
 };
@@ -367,8 +368,9 @@ const EmptyLine: React.FunctionComponent<{
   </Box>
 );
 
-// the problem, the device's tags, then New or Known pinned to the right edge
-const A11Y_COLUMNS = "minmax(0, 1fr) minmax(96px, 280px) 72px";
+// the problem, then New or Known pinned to the right edge; the device is the
+// screen's, already named in the devices card (REQ-047-04)
+const A11Y_COLUMNS = "minmax(0, 1fr) 72px";
 
 /**
  * The accessibility problems of the build's screenshots (039): a row per
@@ -396,11 +398,7 @@ const A11yProblems: React.FunctionComponent<{
     <Card index={10} testId="overviewA11y">
       <Head
         columns={A11Y_COLUMNS}
-        cells={[
-          [t("overview.a11y")],
-          [t("overview.device")],
-          [t("overview.a11yState"), true],
-        ]}
+        cells={[[t("overview.a11y")], [t("overview.a11yState"), true]]}
       />
       {a11y.problems.map((problem, i) => {
         const rule = RULE_LABEL[problem.rule]
@@ -433,7 +431,6 @@ const A11yProblems: React.FunctionComponent<{
                 {[problem.check, problem.element].filter(Boolean).join(" · ")}
               </Typography>
             </Box>
-            <OneLineDevice parts={{ os: problem.os, device: problem.device }} />
             <Box sx={{ justifySelf: "end" }}>
               <StatusPill
                 tone={problem.isNew ? "changed" : "neutral"}
@@ -588,28 +585,34 @@ export const BuildOverview: React.FunctionComponent<{
       }}
     >
       <OverviewTiles overview={overview} actions={actions} />
-      {/* features beside the bugs when both fit; the devices and the accessibility problems take the
-          whole width, so a device keeps its tags on one line (046) */}
+      {/* the features take the whole width, so a feature's name is never cut
+          (REQ-047-01); the devices and the bugs are small: side by side when
+          both fit, one under the other when not. A list of bugs needs room
+          for its summaries, so it takes the larger share */}
+      <Features
+        // another build starts folded again
+        key={overview.build.id}
+        overview={overview}
+        actions={actions}
+      />
       <Box
+        data-testid="overviewSmallCards"
         sx={{
-          display: "grid",
-          // side by side only when each gets room for its names and summaries;
-          // narrower, the bugs go under the features
-          gridTemplateColumns:
-            "repeat(auto-fit, minmax(min(100%, 520px), 1fr))",
+          display: "flex",
+          flexWrap: "wrap",
           gap: 2,
-          alignItems: "start",
+          alignItems: "flex-start",
+          "& > *": { minWidth: 0 },
         }}
       >
-        <Features
-          // another build starts folded again
-          key={overview.build.id}
-          overview={overview}
-          actions={actions}
-        />
-        <Bugs overview={overview} actions={actions} />
+        {/* beside the bugs when both fit; the devices wrap inside */}
+        <Box sx={{ flex: "1 1 320px" }}>
+          <Devices overview={overview} actions={actions} />
+        </Box>
+        <Box sx={{ flex: "1 1 420px" }}>
+          <Bugs overview={overview} actions={actions} />
+        </Box>
       </Box>
-      <Devices overview={overview} actions={actions} />
       <A11yProblems overview={overview} actions={actions} />
     </Box>
   );

@@ -44,8 +44,8 @@
 | вкладка в адресі | `frontend/src/pages/ProjectPage.tsx`, `frontend/src/_helpers/route.helpers.ts` | `tab` і `queue` у query; без `tab` — Overview |
 | черги (чисте) | `frontend/src/_helpers/reviewQueue.helper.ts` | ключ черги → впорядковані id; меню черг; наступна непорожня |
 | порівняння | `frontend/src/components/TestDetailsDialog/index.tsx` | крокує чергою, якщо вона є, інакше як зараз (список All tests) |
-| заголовок черги, підсумок | `frontend/src/components/TestDetailsDialog/QueueHeader.tsx`, `frontend/src/components/TestDetailsDialog/QueueDone.tsx` | назва черги, «N / M», меню; підсумок, Enter і Esc |
-| крапки кроків | `frontend/src/components/TestDetailsDialog/StepProgress.tsx` | поруч «N / M» замість «Step N/M»; з [046](../046-design-review-refresh/spec.md) — «N of M in …» і смуга сегментів |
+| заголовок черги, підсумок | `frontend/src/components/TestDetailsDialog/QueueDone.tsx` (`QueueHeader.tsx` прибрано в [047](../047-overview-and-review-header/spec.md)) | назва черги, «N / M», меню; підсумок, Enter і Esc |
+| крапки кроків | `StepProgress.tsx` — прибрано в [047](../047-overview-and-review-header/spec.md) | поруч «N / M» замість «Step N/M»; з [046](../046-design-review-refresh/spec.md) — «N of M in …» і смуга сегментів |
 | звіт | `frontend/src/components/BuildReport/` | `ReportDialog` (налаштування, поділитися, посилання), `ReportDocument` (спільний для діалогу, сторінки й друку) |
 | сторінки звіту | `frontend/src/pages/ReportPage.tsx`, `frontend/src/Router.jsx`, `frontend/src/App.tsx` | `/r/:token` поза `PrivateRoute`, перепит кожні 8 с; `/report/:buildId` для друку (входу треба), друкує, щойно знімки завантажились; обидві — без шапки й навігації |
 | тексти | `frontend/src/i18n/en.ts`, `frontend/src/i18n/uk.ts` | ключі `overview.*`, `queue.*`, `report.*` |
@@ -131,8 +131,8 @@ sequenceDiagram
 | REQ-031-21 | `frontend/src/_helpers/reviewQueue.helper.test.ts › keeps only the waiting runs of a group, device, feature or check`; `frontend/integration_tests/test/buildOverview.spec.ts › counts the checks of a feature and opens a check on its own` |
 | REQ-031-22 | знято 2026-11-01 — перевірки немає |
 | REQ-031-23 | `frontend/src/_helpers/reviewQueue.helper.test.ts › opens the run a bug was filed from, decided or not` |
-| REQ-031-24 | `frontend/integration_tests/test/buildOverview.spec.ts › shows the queue name and position instead of Step` |
-| REQ-031-25 | `frontend/integration_tests/test/buildOverview.spec.ts › switches the queue from its menu` |
+| REQ-031-24 | `frontend/integration_tests/test/compareLayout.spec.ts › shows neither the position nor the queue in the header` |
+| REQ-031-25 | `frontend/integration_tests/test/compareLayout.spec.ts › shows neither the position nor the queue in the header` |
 | REQ-031-26 | `frontend/integration_tests/test/buildOverview.spec.ts › sums up a finished queue and offers the next one` |
 | REQ-031-27 | `frontend/src/_helpers/reviewQueue.helper.test.ts › skips runs someone else decided` |
 | REQ-031-28 | `frontend/integration_tests/test/buildOverview.spec.ts › Esc returns to where the review was opened, focus on the same row` |

@@ -2,6 +2,7 @@ import {
   Box,
   ButtonBase,
   Divider,
+  Link,
   TextField,
   Typography,
   FormControl,
@@ -29,6 +30,11 @@ import { getDefaultConfig } from "./utils";
 import { UiTreeSettings, parseUiTreeSettings } from "../../types/insights";
 import { A11yRulesSettings } from "./A11yRulesSettings";
 import { MessageKey, useT } from "../../i18n";
+import { Link as RouterLink } from "react-router-dom";
+import { routes } from "../../constants";
+import { projectsService } from "../../services";
+import { JiraTypesProblem } from "../../types";
+import { JiraTypeSelect } from "./JiraTypeSelect";
 
 // what each engine is for, in one sentence (REQ-018-44)
 const ENGINES: Array<[ImageComparison, MessageKey]> = [
@@ -396,6 +402,48 @@ export const ProjectForm: React.FunctionComponent = () => (
   </React.Fragment>
 );
 
+interface JiraLists {
+  issueTypes: Array<{ name: string; subtask: boolean }> | null;
+  linkTypes: string[] | null;
+  problem?: JiraTypesProblem;
+}
+
+const NO_LISTS: JiraLists = { issueTypes: null, linkTypes: null };
+
+/**
+ * The Jira types of the address on the page, with the person's own token.
+ * Loaded apart from the settings: a slow or failing Jira holds up nothing
+ * else (SC-049-03).
+ */
+function useJiraTypes(projectId: string | undefined, savedUrl?: string | null) {
+  const [lists, setLists] = React.useState<JiraLists>(NO_LISTS);
+  const loadedFor = React.useRef<string | null>(null);
+  const reload = React.useCallback(
+    (url: string, force = false) => {
+      if (!projectId || (!force && loadedFor.current === url.trim())) return;
+      loadedFor.current = url.trim();
+      projectsService
+        .getJiraTypes(projectId, url.trim())
+        .then((answer) =>
+          setLists(
+            "problem" in answer
+              ? { ...NO_LISTS, problem: answer.problem }
+              : answer,
+          ),
+        )
+        .catch(() => setLists({ ...NO_LISTS, problem: "failed" }));
+    },
+    [projectId],
+  );
+  // the saved address when the page opens; later ones on leaving the field
+  React.useEffect(() => {
+    loadedFor.current = null;
+    reload(savedUrl ?? "");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [projectId]);
+  return { lists, reload };
+}
+
 /** Jira connection used to file accessibility bugs from the review screen. */
 export const JiraSettings: React.FunctionComponent<{ bare?: boolean }> = ({
   bare = false,
@@ -405,6 +453,11 @@ export const JiraSettings: React.FunctionComponent<{ bare?: boolean }> = ({
   const { t } = useT();
   const update = (patch: Partial<typeof project>) =>
     setProjectEditState(projectDispatch, { ...project, ...patch });
+  const { lists, reload } = useJiraTypes(project.id, project.jiraUrl);
+  const linkTypes = React.useMemo(
+    () => lists.linkTypes?.map((name) => ({ name })) ?? null,
+    [lists.linkTypes],
+  );
 
   return (
     <Box
@@ -429,27 +482,60 @@ export const JiraSettings: React.FunctionComponent<{ bare?: boolean }> = ({
         size="small"
         value={project.jiraUrl ?? ""}
         onChange={(event) => update({ jiraUrl: event.target.value })}
+        // the lists follow a new address before it is saved (REQ-049-09)
+        onBlur={() => reload(project.jiraUrl ?? "")}
+        error={lists.problem === "hostNotAllowed"}
+        helperText={
+          lists.problem === "hostNotAllowed"
+            ? t("jira.hostNotAllowed")
+            : undefined
+        }
       />
+      {lists.problem === "noToken" && (
+        <Typography
+          variant="body2"
+          color="textSecondary"
+          data-testid="jiraTypesNoToken"
+        >
+          {t("jira.noToken")}{" "}
+          <Link component={RouterLink} to={routes.PROFILE_PAGE}>
+            {t("jira.openProfile")}
+          </Link>
+        </Typography>
+      )}
+      {lists.problem === "failed" && (
+        <Typography
+          variant="body2"
+          color="textSecondary"
+          data-testid="jiraTypesFailed"
+        >
+          {t("jira.failed")}{" "}
+          <Link
+            component="button"
+            type="button"
+            onClick={() => reload(project.jiraUrl ?? "", true)}
+            data-testid="jiraTypesRetry"
+          >
+            {t("jira.retry")}
+          </Link>
+        </Typography>
+      )}
       <Box sx={{ display: "flex", gap: 1.5 }}>
-        <TextField
+        <JiraTypeSelect
           id="jiraIssueType"
-          helperText={t("jira.issueTypeHelp")}
           label={t("jira.issueType")}
-          placeholder="Bug"
-          size="small"
-          fullWidth
-          value={project.jiraIssueType ?? ""}
-          onChange={(event) => update({ jiraIssueType: event.target.value })}
+          helperText={t("jira.issueTypeHelp")}
+          types={lists.issueTypes}
+          value={project.jiraIssueType}
+          onChange={(value) => update({ jiraIssueType: value })}
         />
-        <TextField
+        <JiraTypeSelect
           id="jiraLinkType"
-          helperText={t("jira.linkTypeHelp")}
           label={t("jira.linkType")}
-          placeholder="Relates"
-          size="small"
-          fullWidth
-          value={project.jiraLinkType ?? ""}
-          onChange={(event) => update({ jiraLinkType: event.target.value })}
+          helperText={t("jira.linkTypeHelp")}
+          types={linkTypes}
+          value={project.jiraLinkType}
+          onChange={(value) => update({ jiraLinkType: value })}
         />
       </Box>
     </Box>

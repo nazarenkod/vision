@@ -30,6 +30,21 @@ export const mockGetDevices = async (
     route.fulfill({ body: JSON.stringify(devices) }),
   );
 
+/**
+ * The Jira types the settings offer (049): a function gets the address the page
+ * asked for and answers lists or a problem.
+ */
+export const mockGetJiraTypes = async (
+  page: Page,
+  projectId: string,
+  answer: object | ((url: string) => object),
+) =>
+  page.route(`${API_URL}/projects/${projectId}/jira/types*`, (route) => {
+    const url = new URL(route.request().url()).searchParams.get("url") ?? "";
+    const body = typeof answer === "function" ? answer(url) : answer;
+    return route.fulfill({ body: JSON.stringify(body) });
+  });
+
 // the API answers create and update with the project it saved
 export const mockSaveProject = async (page: Page) => {
   return page.route(`${API_URL}/projects`, (route, request) => {

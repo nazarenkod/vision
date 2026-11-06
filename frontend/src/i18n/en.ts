@@ -284,10 +284,21 @@ export const en = {
     "Lets reviewers file bugs from the review screen. Each person adds their own Jira token in their profile, so bugs are filed as them, with their rights.",
   "jira.url": "Jira URL",
   "jira.issueType": "Issue type",
-  "jira.issueTypeHelp": "What a filed bug is created as. Empty: Bug.",
+  "jira.issueTypeHelp":
+    "What a filed bug is created as. Automatic: a bug sub-task, a bug, or any sub-task the task's project has.",
   "jira.linkType": "Link type",
   "jira.linkTypeHelp":
-    "How the bug is linked to the task it was found in. Empty: Relates.",
+    "How the bug is linked to the task it was found in. Automatic: Relates.",
+  "jira.automatic": "Automatic",
+  "jira.missing": "not in this Jira",
+  "jira.groupIssueTypes": "Issue types",
+  "jira.groupSubtasks": "Sub-tasks",
+  "jira.noToken":
+    "Add your Jira token in your profile to pick the types from a list.",
+  "jira.openProfile": "Open profile",
+  "jira.hostNotAllowed": "This server does not allow Jira at this address.",
+  "jira.failed": "Could not load the types from Jira.",
+  "jira.retry": "Try again",
 
   "secret.replace": "Replace",
   "secret.removedOnSave": "Removed on save",

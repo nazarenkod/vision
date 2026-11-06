@@ -6,6 +6,7 @@ import {
   API_URL,
   inUkrainian,
   mockGetDevices,
+  mockGetJiraTypes,
   mockGetProjects,
   mockGetUsers,
   mockSaveProject,
@@ -34,6 +35,15 @@ const project = {
       },
     ],
   }),
+};
+
+const JIRA_TYPES = {
+  issueTypes: [
+    { name: "Bug", subtask: false },
+    { name: "Defect", subtask: false },
+    { name: "Sub-bug", subtask: true },
+  ],
+  linkTypes: ["Blocks", "Relates"],
 };
 
 const open = async (page: Page, overrides: object = {}) => {
@@ -185,6 +195,7 @@ test("saves every field the old dialog had", async ({
   authUser,
 }) => {
   await mockSaveProject(page);
+  await mockGetJiraTypes(page, project.id, JIRA_TYPES);
   await open(page);
   await page.locator("#name").fill("Mobile Shop");
   await page.locator("#branchName").fill("develop");
@@ -193,7 +204,8 @@ test("saves every field the old dialog had", async ({
   await page.getByLabel("Auto-approve in feature branches").uncheck();
   await page.getByTestId(`engine-${ImageComparison.odiff}`).click();
   await page.getByLabel("Send hidden changes to review").uncheck();
-  await page.locator("#jiraIssueType").fill("Defect");
+  await page.getByTestId("jiraIssueType-select").click();
+  await page.getByRole("option", { name: "Defect" }).click();
 
   // the save bar names what changed
   await expect(page.getByTestId("saveBar")).toContainText(
@@ -633,6 +645,105 @@ test("shows saved secrets as Saved and never their value", async ({
   expect(JSON.parse(request.postDataJSON().imageComparisonConfig).apiKey).toBe(
     "",
   );
+});
+
+test("picks the Jira issue and link type from the person's Jira", async ({
+  page,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  authUser,
+}) => {
+  await mockSaveProject(page);
+  await mockGetJiraTypes(page, project.id, JIRA_TYPES);
+  await open(page);
+  // the address stays a field; the types are lists (REQ-049-07)
+  await expect(page.locator("input#jiraUrl")).toHaveValue(project.jiraUrl);
+  await page.getByTestId("jiraIssueType-select").click();
+  // sub-tasks under a heading of their own (REQ-049-08)
+  await expect(page.getByRole("listbox").locator("li")).toHaveText([
+    "Automatic",
+    "Issue types",
+    "Bug",
+    "Defect",
+    "Sub-tasks",
+    "Sub-bug",
+  ]);
+  await page.getByRole("option", { name: "Defect" }).click();
+  await page.getByTestId("jiraLinkType-select").click();
+  await page.getByRole("option", { name: "Blocks" }).click();
+
+  const [request] = await Promise.all([
+    putRequest(page),
+    page.getByTestId("saveSettings").click(),
+  ]);
+  expect(request.postDataJSON()).toMatchObject({
+    jiraIssueType: "Defect",
+    jiraLinkType: "Blocks",
+  });
+});
+
+test("reloads the Jira types for a new address before saving", async ({
+  page,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  authUser,
+}) => {
+  const asked: string[] = [];
+  await mockGetJiraTypes(page, project.id, (url) => {
+    asked.push(url);
+    return url.includes("other")
+      ? {
+          issueTypes: [{ name: "Task", subtask: false }],
+          linkTypes: ["Relates"],
+        }
+      : JIRA_TYPES;
+  });
+  await open(page);
+  await expect.poll(() => asked).toEqual([project.jiraUrl]);
+  await page.locator("input#jiraUrl").fill("https://other.example.com");
+  await page.locator("input#jiraUrl").blur();
+  await expect
+    .poll(() => asked)
+    .toEqual([project.jiraUrl, "https://other.example.com"]);
+  await page.getByTestId("jiraIssueType-select").click();
+  await expect(page.getByRole("option")).toHaveText(["Automatic", "Task"]);
+});
+
+test("asks for a Jira token in the profile when the person has none", async ({
+  page,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  authUser,
+}) => {
+  await mockGetJiraTypes(page, project.id, { problem: "noToken" });
+  await open(page, { jiraIssueType: "Defect" });
+  await expect(page.getByTestId("jiraTypesNoToken")).toContainText(
+    "Add your Jira token in your profile",
+  );
+  await expect(
+    page
+      .getByTestId("jiraTypesNoToken")
+      .getByRole("link", { name: "Open profile" }),
+  ).toHaveAttribute("href", "/profile");
+  await expect(page.locator("input#jiraIssueType")).toHaveValue("Defect");
+  await expect(page.locator("input#jiraIssueType")).toBeDisabled();
+  await expect(page.locator("input#jiraLinkType")).toHaveValue("Automatic");
+});
+
+test("keeps the saved Jira types and offers a retry when Jira fails", async ({
+  page,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  authUser,
+}) => {
+  let calls = 0;
+  await mockGetJiraTypes(page, project.id, () =>
+    ++calls === 1 ? { problem: "failed" } : JIRA_TYPES,
+  );
+  await open(page, { jiraIssueType: "Defect" });
+  await expect(page.getByTestId("jiraTypesFailed")).toContainText(
+    "Could not load the types from Jira.",
+  );
+  await expect(page.locator("input#jiraIssueType")).toHaveValue("Defect");
+  await page.getByTestId("jiraTypesRetry").click();
+  await expect(page.getByTestId("jiraTypesFailed")).toHaveCount(0);
+  await expect(page.getByTestId("jiraIssueType-select")).toHaveText("Defect");
 });
 
 test("Jira settings have no shared token or email", async ({

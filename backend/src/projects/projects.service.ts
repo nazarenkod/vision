@@ -22,6 +22,9 @@ import { AllowedDevice, invalidAllowedDevice } from './allowed-devices';
 import { wipeSharedJiraCredentials } from './shared-jira-credentials';
 import { sealSecret } from '../shared/secret-box';
 import { allowedJiraHosts, JIRA_HOSTS_VARIABLE, jiraHostProblem } from '../a11y/jira-hosts';
+import { settingsJira } from '../a11y/jira-access';
+import { JiraClient } from '../a11y/jira.client';
+import { jiraTypesFor, JiraTypesResponse } from '../a11y/jira-types';
 
 const blankToNull = (value: string | null | undefined) =>
   value === undefined ? undefined : value?.trim() ? value.trim() : null;
@@ -137,6 +140,19 @@ export class ProjectsService implements OnModuleInit {
   }
 
   /** Device and OS pairs the project's snapshots came from, to build the allowed list from (029). */
+  /** The Jira issue and link types the settings page offers, as the person sees them (049). */
+  async jiraTypes(jiraUrl: string | undefined, userId: string): Promise<JiraTypesResponse> {
+    const jira = await settingsJira(this.prismaService, jiraUrl, userId);
+    if (!(jira instanceof JiraClient)) return jira;
+    try {
+      const [issueTypes, linkTypes] = await Promise.all([jira.allIssueTypes(), jira.linkTypes()]);
+      return jiraTypesFor(issueTypes, linkTypes);
+    } catch (error) {
+      this.logger.warn(`Jira types for the settings failed: ${error}`);
+      return { problem: 'failed' };
+    }
+  }
+
   async findDevices(projectId: string): Promise<AllowedDevice[]> {
     const rows = await this.prismaService.testVariation.findMany({
       where: { projectId },

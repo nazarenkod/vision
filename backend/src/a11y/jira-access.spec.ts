@@ -81,14 +81,16 @@ describe('settingsJira', () => {
     const jira = await settingsJira(prisma, 'https://jira.example.com', 'person', env);
     expect(jira).toBeInstanceOf(JiraClient);
     expect(JSON.stringify(jira)).toContain('mine');
-    expect(await settingsJira(people({ jiraToken: null, jiraEmail: null }), 'https://jira.example.com', 'person', env)).toEqual(
-      { problem: 'noToken' }
-    );
+    expect(
+      await settingsJira(people({ jiraToken: null, jiraEmail: null }), 'https://jira.example.com', 'person', env)
+    ).toEqual({ problem: 'noToken' });
   });
 
   it('reads no Jira for an address the server does not allow', async () => {
     const prisma = people({ jiraToken: sealed('mine'), jiraEmail: null });
-    expect(await settingsJira(prisma, 'https://evil.example.org', 'person', env)).toEqual({ problem: 'hostNotAllowed' });
+    expect(await settingsJira(prisma, 'https://evil.example.org', 'person', env)).toEqual({
+      problem: 'hostNotAllowed',
+    });
     expect(await settingsJira(prisma, '  ', 'person', env)).toEqual({ problem: 'notSet' });
     expect((prisma as unknown as { user: { findUnique: jest.Mock } }).user.findUnique).not.toHaveBeenCalled();
   });

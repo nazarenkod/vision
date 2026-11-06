@@ -292,6 +292,36 @@ test("names the UI tree section Screen structure", async ({
   await expect(page.getByTestId("section-general")).toBeHidden();
 });
 
+test("explains the compare and ignore options with an animation", async ({
+  page,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  authUser,
+}) => {
+  await open(page);
+  // pixelmatch: sizes and anti-aliasing; screen structure: moves; nothing else
+  await expect(page.locator("[data-testid^=explain-]")).toHaveCount(3);
+  const moves = page.getByTestId("explain-moves");
+  await expect(moves).toHaveAccessibleName("What this option does");
+  const switchOf = page.locator("input[name=compensateMoves]");
+  const before = await switchOf.isChecked();
+
+  await moves.click();
+  const hint = page.getByTestId("explainer-moves");
+  await expect(hint.getByRole("img")).toBeVisible();
+  await expect(hint).toContainText("A banner pushes the list down.");
+  // the "?" explains; it does not flip the option
+  expect(await switchOf.isChecked()).toBe(before);
+  await page.keyboard.press("Escape");
+  await expect(hint).toBeHidden();
+
+  await page.getByTestId(`engine-${ImageComparison.lookSame}`).click();
+  await expect(page.getByTestId("explain-caret")).toBeVisible();
+  await page.getByTestId("explain-caret").click();
+  await expect(page.getByTestId("explainer-caret")).toContainText(
+    "The text caret blinks in a field.",
+  );
+});
+
 test("has no element rules section", async ({
   page,
   // eslint-disable-next-line @typescript-eslint/no-unused-vars

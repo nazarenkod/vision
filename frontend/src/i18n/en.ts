@@ -86,6 +86,25 @@ export const en = {
   // the field is narrow: Ukrainian needs a shorter placeholder than its label
   "settings.findPlaceholder": "Find a setting",
   "settings.unsavedMark": "unsaved changes",
+  "explainer.button": "What this option does",
+  "explainer.before": "Before",
+  "explainer.after": "After",
+  "explainer.moves.on":
+    "A banner pushes the list down. With the option on, only the banner is a change: the rows just moved.",
+  "explainer.moves.off":
+    "A banner pushes the list down. With the option off, the banner and every row it moved are changes.",
+  "explainer.diffDimensions.on":
+    "The screen comes in taller. With the option on, the images are compared anyway.",
+  "explainer.diffDimensions.off":
+    "The screen comes in taller. With the option off, a different size fails the comparison.",
+  "explainer.antialiasing.on":
+    "The edge of a letter comes out a shade off. With the option on, that is not a change.",
+  "explainer.antialiasing.off":
+    "The edge of a letter comes out a shade off. With the option off, those edge pixels are a change.",
+  "explainer.caret.on":
+    "The text caret blinks in a field. With the option on, its coming and going is not a change.",
+  "explainer.caret.off":
+    "The text caret blinks in a field. With the option off, the caret is a change.",
   "settings.noSuchProject": "No such project",
   "settings.maybeDeleted": "It may have been deleted.",
   "settings.nothingMatches": "Nothing matches “{query}”",

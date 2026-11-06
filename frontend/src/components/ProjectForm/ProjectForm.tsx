@@ -35,6 +35,7 @@ import { routes } from "../../constants";
 import { projectsService } from "../../services";
 import { JiraTypesProblem } from "../../types";
 import { JiraTypeSelect } from "./JiraTypeSelect";
+import { Explained } from "./OptionExplainer";
 
 // what each engine is for, in one sentence (REQ-018-44)
 const ENGINES: Array<[ImageComparison, MessageKey]> = [
@@ -584,30 +585,40 @@ export const MobileSettings: React.FunctionComponent<{
           {t("section.mobileIntro")}
         </Typography>
       )}
-      {TOGGLES.map(([key, label, help]) => (
-        <FormControlLabel
-          key={key}
-          control={
-            <Switch
-              checked={!!settings[key]}
-              onChange={(_, checked) => save({ ...settings, [key]: checked })}
-              name={key}
-            />
-          }
-          label={
-            <Box>
-              <Typography variant="body2">{t(label)}</Typography>
-              <Typography variant="caption" color="textSecondary">
-                {t(help)}
-              </Typography>
-            </Box>
-          }
-          sx={{
-            alignItems: "flex-start",
-            "& .MuiSwitch-root": { mt: -0.5 },
-          }}
-        />
-      ))}
+      {TOGGLES.map(([key, label, help]) => {
+        const toggle = (
+          <FormControlLabel
+            key={key}
+            control={
+              <Switch
+                checked={!!settings[key]}
+                onChange={(_, checked) => save({ ...settings, [key]: checked })}
+                name={key}
+              />
+            }
+            label={
+              <Box>
+                <Typography variant="body2">{t(label)}</Typography>
+                <Typography variant="caption" color="textSecondary">
+                  {t(help)}
+                </Typography>
+              </Box>
+            }
+            sx={{
+              alignItems: "flex-start",
+              "& .MuiSwitch-root": { mt: -0.5 },
+            }}
+          />
+        );
+        // moves are the option to explain here (REQ-049-20)
+        return key === "compensateMoves" ? (
+          <Explained key={key} option="moves" on={!!settings[key]}>
+            {toggle}
+          </Explained>
+        ) : (
+          toggle
+        );
+      })}
       {settings.compensateMoves && (
         <TextField
           id="maxMoveDp"

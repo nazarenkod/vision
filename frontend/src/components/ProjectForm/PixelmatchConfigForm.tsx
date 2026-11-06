@@ -5,6 +5,7 @@ import { PixelmatchConfig } from "../../types/imageComparison";
 import { Tooltip } from "../Tooltip";
 import { useConfigHook } from "./useConfigHook";
 import { useT } from "../../i18n";
+import { Explained } from "./OptionExplainer";
 
 export const PixelmatchConfigForm: React.FunctionComponent = () => {
   const [config, updateConfig] = useConfigHook<PixelmatchConfig>();
@@ -12,36 +13,40 @@ export const PixelmatchConfigForm: React.FunctionComponent = () => {
 
   return (
     <React.Fragment>
-      <Tooltip title={t("comparison.allowDiffDimensionsHelp")}>
-        <FormControlLabel
-          label={t("comparison.allowDiffDimensions")}
-          control={
-            <Switch
-              checked={config.allowDiffDimensions}
-              onChange={(event, checked) =>
-                updateConfig("allowDiffDimensions", checked)
-              }
-              color="primary"
-              name="diffDimensionsFeature"
-            />
-          }
-        />
-      </Tooltip>
-      <Tooltip title={t("comparison.ignoreAntialiasingHelp")}>
-        <FormControlLabel
-          label={t("comparison.ignoreAntialiasing")}
-          control={
-            <Switch
-              checked={config.ignoreAntialiasing}
-              onChange={(event, checked) =>
-                updateConfig("ignoreAntialiasing", checked)
-              }
-              color="primary"
-              name="ignoreAntialiasing"
-            />
-          }
-        />
-      </Tooltip>
+      <Explained option="diffDimensions" on={!!config.allowDiffDimensions}>
+        <Tooltip title={t("comparison.allowDiffDimensionsHelp")}>
+          <FormControlLabel
+            label={t("comparison.allowDiffDimensions")}
+            control={
+              <Switch
+                checked={config.allowDiffDimensions}
+                onChange={(event, checked) =>
+                  updateConfig("allowDiffDimensions", checked)
+                }
+                color="primary"
+                name="diffDimensionsFeature"
+              />
+            }
+          />
+        </Tooltip>
+      </Explained>
+      <Explained option="antialiasing" on={!!config.ignoreAntialiasing}>
+        <Tooltip title={t("comparison.ignoreAntialiasingHelp")}>
+          <FormControlLabel
+            label={t("comparison.ignoreAntialiasing")}
+            control={
+              <Switch
+                checked={config.ignoreAntialiasing}
+                onChange={(event, checked) =>
+                  updateConfig("ignoreAntialiasing", checked)
+                }
+                color="primary"
+                name="ignoreAntialiasing"
+              />
+            }
+          />
+        </Tooltip>
+      </Explained>
       <TextValidator
         name="threshold"
         validators={["minNumber:0", "maxNumber:1"]}

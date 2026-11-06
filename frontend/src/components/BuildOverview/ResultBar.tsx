@@ -64,17 +64,27 @@ export const ResultBar: React.FunctionComponent<{
           sx={{
             fontSize: type.small,
             color: tokens.textSecondary,
-            whiteSpace: "nowrap",
-            overflow: "hidden",
-            textOverflow: "ellipsis",
+            // a result of two parts («1 змінений · 1 без змін») goes onto a
+            // second line rather than behind an ellipsis
+            lineHeight: 1.3,
             minWidth: 0,
           }}
         >
-          {label}
+          {label.split(" · ").map((part, index) => (
+            // each part stays whole; the line breaks only between them
+            <React.Fragment key={index}>
+              {/* the space outside the unbreakable part is where a line may end */}
+              {index > 0 && " "}
+              <Box component="span" sx={{ whiteSpace: "nowrap" }}>
+                {index > 0 && "· "}
+                {part}
+              </Box>
+            </React.Fragment>
+          ))}
         </Box>
       </Box>
     );
-    // words cut short in a narrow column are whole on hover
+    // the words are also named on hover, as the bar alone is
     return hint ? <Tooltip title={label}>{shown}</Tooltip> : shown;
   }
   // the tooltip needs a box taller than the 6px bar to be found by the pointer

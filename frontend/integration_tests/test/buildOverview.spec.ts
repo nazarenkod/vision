@@ -701,6 +701,41 @@ test("shows a device in one line", async ({ openProjectPage, page }) => {
   expect(cellHeight).toBeLessThanOrEqual(tagHeight + 1);
 });
 
+test("shows a result of two parts whole at 1280 px in Ukrainian", async ({
+  openProjectPage,
+  page,
+}) => {
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await inUkrainian(page);
+  await page.route(`${API_URL}/builds/${build.id}/overview`, (route) =>
+    route.fulfill({
+      json: {
+        ...overview,
+        devices: [
+          {
+            ...overview.devices[2],
+            device: "Pixel 7",
+            total: 2,
+            changed: 1,
+            new: 0,
+            passed: 1,
+          },
+        ],
+      },
+    }),
+  );
+  await openProjectPage(project.id, build.id, undefined, "overview");
+  const words = page
+    .getByTestId("overviewDevice")
+    .filter({ hasText: "Pixel 7" })
+    .getByTestId("resultWords");
+  await expect(words).toHaveText("1 змінений · 1 без змін");
+  // nothing hidden behind an ellipsis
+  expect(await words.evaluate((el) => el.scrollWidth <= el.clientWidth)).toBe(
+    true,
+  );
+});
+
 test("names the result next to its bar", async ({ openProjectPage, page }) => {
   await page.route(`${API_URL}/builds/${build.id}/overview`, (route) =>
     route.fulfill({

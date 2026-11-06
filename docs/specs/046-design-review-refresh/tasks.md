@@ -31,5 +31,11 @@
     `testVariationDetails`, `language` spec.
 - [x] **T9** ADR-0028 → Accepted; позначки «Замінено» в 018 (REQ-018-03, 32, 62, 65), 023
   (REQ-023-01), 041 (REQ-041-04); статус 046 → `Implemented`; DEMO.md, якщо там шапка.
-- [ ] **T10** `/verify`: unit, tsc, eslint, Playwright функціонально, скриншот-еталони в Docker
+- [x] **T10** `/verify`: unit, tsc, eslint, Playwright функціонально, скриншот-еталони в Docker
   (переглянути кожен), `check-docs.py`, SC-046-01…04 вручну на 1280 і 1440 px обома мовами й темами.
+
+Перевірка 2026-11-06: `verify.py` — 22 з 23 (не пройшов лише `test_build_sdk_jar`: у хмарному
+контейнері Gradle 8.14, а SDK потребує 7.x; SDK ця зміна не зачіпає). Скриншот-еталони
+перегенеровано в Docker (350 passed) і переглянуто. Дизайн-ревю реалізації українською на 1280 і
+1440 px, світла й темна теми: знайдені дефекти виправлено (коміт «Fit overview, comparison, list
+and baseline screens in Ukrainian»).

@@ -2,9 +2,9 @@
 
 | | |
 |---|---|
-| Статус | Approved |
+| Статус | Implemented |
 | Власник | Дмитро Назаренко |
-| Оновлено | 2026-11-05 |
+| Оновлено | 2026-11-06 |
 | Дизайн | design.md з'явиться після `Approved`; [макет](https://claude.ai/artifact/UJ7fb5xgJBmpW5tQkvwAWQ) |
 | Пов'язане | змінює [018](../018-ui-redesign/spec.md) REQ-018-03 (кнопка теми в шапці), REQ-018-32 (крапки кроків), REQ-018-62 (фільтри еталонів), REQ-018-65 (меню акаунта); змінює [023](../023-ukrainian-ui/spec.md) REQ-023-01 (перемикач мови в шапці); змінює [041](../041-vision-names/spec.md) REQ-041-04 (версія в шапці); узгоджено з [039](../039-overview-polish/spec.md), [042](../042-project-access/spec.md), [045](../045-sign-in-and-api-hardening/spec.md) |
 

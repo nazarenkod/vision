@@ -109,23 +109,23 @@ export function explainerScene(option: ExplainedOption, on: boolean): Scene {
       const edges: Shape[] = [
         {
           kind: "rect",
-          x: 40,
-          y: 128,
-          w: 6,
-          h: 6,
+          x: 38,
+          y: 126,
+          w: 9,
+          h: 9,
           tone: "soft",
           appears: true,
         },
         {
           kind: "rect",
-          x: 74,
-          y: 128,
-          w: 6,
-          h: 6,
+          x: 73,
+          y: 126,
+          w: 9,
+          h: 9,
           tone: "soft",
           appears: true,
         },
-        { kind: "rect", x: 57, y: 76, w: 6, h: 6, tone: "soft", appears: true },
+        { kind: "rect", x: 56, y: 72, w: 9, h: 9, tone: "soft", appears: true },
       ];
       return {
         shapes: [screen, header, letter, ...edges],

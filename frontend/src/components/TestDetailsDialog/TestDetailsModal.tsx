@@ -93,8 +93,10 @@ import { areaMarkId, ruleMarkId, testAreaMarkId } from "./WhatsCompared";
 import { useRuleSnackbar } from "../useRuleSnackbar";
 import { motion, tokens, type, radius } from "../../theme";
 import { StepProgress } from "./StepProgress";
+import { CheckTrend } from "./CheckTrend";
 import {
   COMPACT_TOOLS_QUERY,
+  ROOM_FOR_DEVICES_QUERY,
   CompareToolbar,
   CompareView,
 } from "./CompareToolbar";
@@ -765,7 +767,15 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
   // without a tree there are no elements: the button stays off (REQ-024-33)
   const canSelect = withUiTree && structure?.hasUiTree !== false;
   // a narrow window keeps the toolbar in one row: the tools as icons, named on hover
-  const compactTools = useMediaQuery(COMPACT_TOOLS_QUERY, { noSsr: true });
+  const narrow = useMediaQuery(COMPACT_TOOLS_QUERY, { noSsr: true });
+  // every device of the check is the toolbar's first group; at full size it
+  // takes a third of a 1440 px toolbar, so below a wide window the devices go
+  // by their model and the tools by their icons, keeping the toolbar one row
+  const severalDevices = deviceRuns.length > 1 && !!handleSelectRun;
+  const roomForDevices = useMediaQuery(ROOM_FOR_DEVICES_QUERY, {
+    noSsr: true,
+  });
+  const compactTools = narrow || (severalDevices && !roomForDevices);
   const toggleSelecting = () => {
     if (!canSelect) return;
     leaveAreasThen(() => {
@@ -1560,7 +1570,7 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
     });
   };
 
-  // what is on screen and where the review is (REQ-046-05)
+  // what is on screen, where the review is and how the check went before (REQ-046-08, REQ-046-19)
   const header = () => (
     <Box
       data-testid="compareHeader"
@@ -1582,7 +1592,7 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
         noWrap
         data-testid="screenName"
         title={testRun.name}
-        // the name gives way last: the steps and devices shrink before it does
+        // the name gives way last: the steps and the trend shrink before it does
         sx={{
           fontSize: type.title,
           fontWeight: 600,
@@ -1599,19 +1609,12 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
           statuses={stepStatuses}
           currentIndex={currentRunIndex}
           queue={queueHeader}
-          compact={compactTools}
         />
       </Box>
-      {severalDevices && handleSelectRun && (
-        <Box sx={{ minWidth: 0, overflowX: "auto" }}>
-          <DeviceStrip
-            runs={deviceRuns}
-            currentId={testRun.id}
-            onSelect={handleSelectRun}
-            compact={compactTools}
-          />
-        </Box>
-      )}
+      <CheckTrend
+        testRunId={testRun.id}
+        current={{ status: testRun.status, diffPercent: testRun.diffPercent }}
+      />
       {bugs.slice(0, 3).map((bug) => (
         <Tooltip key={bug.id} title={bug.summary}>
           <Chip
@@ -1665,23 +1668,28 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
     </Box>
   );
 
-  // a check run on several devices names them in the header, beside the steps:
-  // in the toolbar the strip pushed the view and the tools onto a second row
-  const severalDevices = deviceRuns.length > 1 && !!handleSelectRun;
-  // the device, as in the table, when there is only one
-  const devices = () =>
-    severalDevices && !testRun.customTags ? null : (
-      <>
-        {!severalDevices && (
-          <DeviceTags parts={testRun} testId="compareDevice" />
-        )}
-        {testRun.customTags && (
-          <Tooltip title={t("review.attr.customTags")}>
-            <Chip size="small" label={testRun.customTags} />
-          </Tooltip>
-        )}
-      </>
-    );
+  // the device, as in the table; every device of the check when it ran on more.
+  // The strip stays the toolbar's first group, where the owner looks for it;
+  // its compact form keeps the toolbar to one row
+  const devices = () => (
+    <>
+      {severalDevices && handleSelectRun ? (
+        <DeviceStrip
+          runs={deviceRuns}
+          currentId={testRun.id}
+          onSelect={handleSelectRun}
+          compact={compactTools}
+        />
+      ) : (
+        <DeviceTags parts={testRun} testId="compareDevice" />
+      )}
+      {testRun.customTags && (
+        <Tooltip title={t("review.attr.customTags")}>
+          <Chip size="small" label={testRun.customTags} />
+        </Tooltip>
+      )}
+    </>
+  );
 
   const toolbar = () => (
     <CompareToolbar
@@ -1701,6 +1709,8 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
       diffShown={isDiffShown}
       onDiffShown={showDiff}
       tools={comparisonTools()}
+      // two devices at 1280 px: Highlight diff by its icon too
+      dense={severalDevices && narrow}
     />
   );
 

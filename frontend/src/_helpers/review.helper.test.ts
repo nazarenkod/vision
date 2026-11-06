@@ -1,30 +1,4 @@
-import {
-  diffMeter,
-  stepStates,
-  REVIEW_KEYS,
-  stepProgress,
-  panelStartsFolded,
-} from "./review.helper";
-
-describe("stepProgress", () => {
-  it("counts the decided steps and those left besides the current one", () => {
-    expect(
-      stepProgress(["approved", "unresolved", "new", "unresolved"], 1),
-    ).toEqual({ decided: 1, left: 2 });
-    // a decided step on screen is counted as decided, not left
-    expect(stepProgress(["approved", "failed", "new"], 1)).toEqual({
-      decided: 2,
-      left: 1,
-    });
-    expect(stepProgress(["unresolved"], 0)).toEqual({ decided: 0, left: 0 });
-  });
-
-  it("counts screens without changes neither as decided nor as left", () => {
-    expect(
-      stepProgress(["unresolved", "unresolved", "ok", "ok", "ok"], 1),
-    ).toEqual({ decided: 0, left: 1 });
-  });
-});
+import { diffMeter, REVIEW_KEYS, panelStartsFolded } from "./review.helper";
 
 describe("panelStartsFolded", () => {
   const empty = { regions: [], changes: [], invisible: [] };
@@ -76,21 +50,6 @@ describe("review", () => {
     // nothing reaches past the end of the bar
     expect(diffMeter(80, 1).fill).toBeLessThanOrEqual(100);
     expect(diffMeter(0, 0)).toEqual({ fill: 0, mark: 0, over: false });
-  });
-
-  it("marks each step as current, approved, rejected or waiting", () => {
-    expect(
-      stepStates(
-        ["approved", "failed", "unresolved", "new", "autoApproved"],
-        2,
-      ),
-    ).toEqual(["approved", "rejected", "current", "waiting", "approved"]);
-    expect(stepStates(["approved"], 0)).toEqual(["current"]);
-    // a screen that matched its baseline is fine, but nobody decided it
-    expect(stepStates(["ok", "unresolved"], 1)).toEqual([
-      "unchanged",
-      "current",
-    ]);
   });
 
   it("shows the keys the review already has", () => {

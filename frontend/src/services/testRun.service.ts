@@ -1,4 +1,4 @@
-import { TestRun } from "../types";
+import { TestRun, TrendPoint } from "../types";
 import { handleResponse, authHeader } from "../_helpers/service.helpers";
 import { API_URL } from "../_config/env.config";
 import { UpdateIgnoreAreaDto } from "../types/ignoreArea";
@@ -152,9 +152,18 @@ function update(
   );
 }
 
+/** The check's last runs up to this one, oldest first (REQ-046-08). */
+function getTrend(id: string): Promise<TrendPoint[]> {
+  return fetch(`${API_URL}${ENDPOINT_URL}/${id}/trend`, {
+    method: "GET",
+    headers: authHeader(),
+  }).then(handleResponse);
+}
+
 export const testRunService = {
   getList,
   getDetails,
+  getTrend,
   removeBulk,
   rejectBulk,
   approveBulk,

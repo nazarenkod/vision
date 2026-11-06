@@ -552,9 +552,11 @@ export const en = {
   // the comparison laid out anew (spec 046)
   "compare.position": "{current} of {total}",
   "compare.inQueue": "in",
-  "compare.progress": "{decided} decided · {left} left",
-  "compare.stepsLabel":
-    "{approved} approved, {rejected} rejected, {waiting} waiting, {unchanged} unchanged",
+  "compare.trend": {
+    one: "Trend of the check: this run only",
+    other: "Trend of the check over the last {count} runs",
+  },
+  "compare.trendRun": "{build} · {diff}% · {status} · {date}",
   "compare.changed": "{value}% changed",
   "compare.allowed": "{value}% allowed",
   "compare.toolbar": "Comparison tools",

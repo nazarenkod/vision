@@ -2,6 +2,8 @@ import { useDecisionSnackbar } from "../useDecisionSnackbar";
 import React from "react";
 import { Box, Button, ButtonBase, Typography } from "@mui/material";
 import { useSnackbar } from "notistack";
+import { DoneAll } from "@mui/icons-material";
+import { Tooltip } from "../Tooltip";
 import { TestRun } from "../../types";
 import { TestStatus } from "../../types/testStatus";
 import { testRunService } from "../../services";
@@ -43,7 +45,7 @@ export const DeviceStrip: React.FunctionComponent<{
   runs: TestRun[];
   currentId: string;
   onSelect: (id: string) => void;
-  /** a narrow header: one line, each device by its model, the rest on hover */
+  /** a narrow toolbar: one line, each device by its model, the rest on hover */
   compact?: boolean;
 }> = ({ runs, currentId, onSelect, compact }) => {
   const { enqueueSnackbar } = useSnackbar();
@@ -145,11 +147,32 @@ export const DeviceStrip: React.FunctionComponent<{
           );
         })}
       </Box>
-      {canEdit && pending.length > 1 && (
-        <Button size="small" onClick={() => setConfirm(true)}>
-          {t("review.approveAll", { count: pending.length })}
-        </Button>
-      )}
+      {canEdit &&
+        pending.length > 1 &&
+        (compact ? (
+          // a narrow toolbar: the action by its icon and count, named on hover,
+          // so the devices, the view and the tools still share one row
+          <Tooltip title={t("review.approveAll", { count: pending.length })}>
+            <Button
+              size="small"
+              onClick={() => setConfirm(true)}
+              data-testid="approveAllDevices"
+              aria-label={t("review.approveAll", { count: pending.length })}
+              startIcon={<DoneAll />}
+              sx={{ minWidth: 0, fontVariantNumeric: "tabular-nums" }}
+            >
+              {pending.length}
+            </Button>
+          </Tooltip>
+        ) : (
+          <Button
+            size="small"
+            onClick={() => setConfirm(true)}
+            data-testid="approveAllDevices"
+          >
+            {t("review.approveAll", { count: pending.length })}
+          </Button>
+        ))}
       <BaseModal
         open={confirm}
         title={t("review.approveDevicesTitle", { count: pending.length })}

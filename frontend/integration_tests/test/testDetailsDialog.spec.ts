@@ -265,9 +265,8 @@ test("shows the diff against the tolerance and the steps of the review", async (
     2,
   );
 
-  const dots = page.getByTestId("stepDots").locator("[data-state]");
-  await expect(dots).toHaveCount(2);
-  await expect(dots.first()).toHaveAttribute("data-state", "current");
+  // where the review is, as a position only (REQ-046-19)
+  await expect(page.getByTestId("stepProgress")).toHaveText("1 of 2");
 });
 
 // the bulk review of a screen's variations was removed (022); a project saved

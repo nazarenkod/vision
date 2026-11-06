@@ -126,6 +126,11 @@ export const test = base.extend<Fixtures & Options>({
       (url) => /^\/projects\/[^/]+\/access$/.test(url.pathname),
       (route) => route.fulfill({ body: "[]" }),
     );
+    // the comparison asks for the check's trend (046); a test that shows it mocks its own
+    await page.route(
+      (url) => /^\/test-runs\/[^/]+\/trend$/.test(url.pathname),
+      (route) => route.fulfill({ body: "[]" }),
+    );
 
     await use();
   },

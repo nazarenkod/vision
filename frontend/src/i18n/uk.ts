@@ -583,9 +583,13 @@ export const uk: Messages = {
   // порівняння в новому компонуванні (спека 046)
   "compare.position": "{current} з {total}",
   "compare.inQueue": "у",
-  "compare.progress": "вирішено {decided} · лишилось {left}",
-  "compare.stepsLabel":
-    "прийнято {approved}, відхилено {rejected}, чекають {waiting}, без змін {unchanged}",
+  "compare.trend": {
+    one: "Тренд перевірки: лише цей прогін",
+    few: "Тренд перевірки за останні {count} прогони",
+    many: "Тренд перевірки за останні {count} прогонів",
+    other: "Тренд перевірки за останні {count} прогону",
+  },
+  "compare.trendRun": "{build} · {diff}% · {status} · {date}",
   "compare.changed": "змінено {value}%",
   "compare.allowed": "дозволено {value}%",
   "compare.toolbar": "Інструменти порівняння",

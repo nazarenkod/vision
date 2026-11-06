@@ -7,6 +7,8 @@ import {
   Switch,
   ToggleButton,
 } from "@mui/material";
+import { Difference } from "@mui/icons-material";
+import { visuallyHidden } from "@mui/utils";
 import { SlidingToggleGroup } from "../motion/SlidingToggleGroup";
 import { Tooltip as MuiTooltip } from "@mui/material";
 import { tokens, type } from "../../theme";
@@ -18,6 +20,13 @@ import { useT } from "../../i18n";
  * two device tags (046).
  */
 export const COMPACT_TOOLS_QUERY = "(max-width:1359.95px)";
+
+/**
+ * From this window width a check on several devices shows them in full (model
+ * and OS) beside full-size tools; narrower, both go compact so the toolbar
+ * keeps one row with two devices at 1440 px (046).
+ */
+export const ROOM_FOR_DEVICES_QUERY = "(min-width:1800px)";
 
 /** How Current is laid against the baseline. */
 export type CompareView = "side" | "overlay" | "fade";
@@ -50,6 +59,8 @@ export const CompareToolbar: React.FunctionComponent<{
   diffShown: boolean;
   onDiffShown: (shown: boolean) => void;
   tools: React.ReactNode;
+  /** the narrowest toolbar: Highlight diff by its icon, named on hover */
+  dense?: boolean;
 }> = ({
   devices,
   meter,
@@ -62,6 +73,7 @@ export const CompareToolbar: React.FunctionComponent<{
   diffShown,
   onDiffShown,
   tools,
+  dense,
 }) => {
   const { t } = useT();
   const divider = <Divider orientation="vertical" flexItem sx={{ my: 1.5 }} />;
@@ -172,12 +184,28 @@ export const CompareToolbar: React.FunctionComponent<{
                   />
                 }
                 label={
-                  <Box
-                    component="span"
-                    sx={{ fontSize: type.small, color: tokens.textSecondary }}
-                  >
-                    {t("compare.highlightDiff")}
-                  </Box>
+                  dense ? (
+                    <Box
+                      component="span"
+                      sx={{
+                        display: "inline-flex",
+                        color: tokens.textSecondary,
+                      }}
+                    >
+                      <Difference aria-hidden sx={{ fontSize: type.title }} />
+                      {/* hidden from sight, not from screen readers */}
+                      <Box component="span" sx={visuallyHidden}>
+                        {t("compare.highlightDiff")}
+                      </Box>
+                    </Box>
+                  ) : (
+                    <Box
+                      component="span"
+                      sx={{ fontSize: type.small, color: tokens.textSecondary }}
+                    >
+                      {t("compare.highlightDiff")}
+                    </Box>
+                  )
                 }
               />
             </MuiTooltip>

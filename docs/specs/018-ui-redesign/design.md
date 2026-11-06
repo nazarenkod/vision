@@ -207,7 +207,7 @@ Undo на сервері дозволене до 30 s після рішення:
 | REQ-018-27 | manual: сповільнити мережу в DevTools до Slow 3G, відкрити збірку — заготовки з відблиском у списку й таблиці, спінера на весь екран немає. Перевірено 2026-10-29: відповідь API затримана на 2.5 s — три заготовки з відблиском, видимого спінера немає |
 | REQ-018-30 | `frontend/integration_tests/test/testDetailsDialog.spec.ts › keeps the review layout and its keys` |
 | REQ-018-31 | `frontend/src/_helpers/review.helper.test.ts › puts the tolerance mark and the diff on one scale` |
-| REQ-018-32 | `frontend/src/_helpers/review.helper.test.ts › marks each step as current, approved, rejected or waiting` |
+| REQ-018-32 | замінено [046](../046-design-review-refresh/spec.md): у заголовку лише позиція «N з M» і тренд перевірки, без смуги кроків |
 | REQ-018-33 | `frontend/integration_tests/test/testDetailsDialog.spec.ts › shows the A and X keys on Approve and Reject` |
 | REQ-018-34 | manual: у порівнянні → — пара знімків іде вліво, наступна заходить справа; ← — навпаки. Перевірено 2026-10-29 у Chromium: на → панелі посередині руху зсунуті вправо (+3 px), на ← — вліво (−6 px) |
 | REQ-018-35 | `frontend/integration_tests/test/testDetailsDialog.spec.ts › shows a check on Approve instead of a toast` |

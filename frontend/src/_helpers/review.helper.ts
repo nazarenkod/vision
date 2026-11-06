@@ -1,4 +1,3 @@
-import { TestStatus } from "../types/testStatus";
 import type { A11yReport, StructureInfo } from "../types/insights";
 
 export type DiffMeter = {
@@ -25,62 +24,8 @@ export function diffMeter(
   return { fill: share(diff), mark: share(tolerance), over: diff > tolerance };
 }
 
-// "unchanged": the screen matched its baseline, so nobody had anything to decide
-export type StepState =
-  "current" | "approved" | "rejected" | "waiting" | "unchanged";
-
-const APPROVED: string[] = [
-  TestStatus.approved,
-  TestStatus.autoApproved,
-  TestStatus.ok,
-];
-
-/** One dot per step of the review (REQ-018-32). */
-export const stepStates = (
-  statuses: string[],
-  currentIndex: number,
-): StepState[] =>
-  statuses.map((status, index) =>
-    index === currentIndex
-      ? "current"
-      : status === TestStatus.ok
-        ? "unchanged"
-        : APPROVED.includes(status)
-          ? "approved"
-          : status === TestStatus.failed
-            ? "rejected"
-            : "waiting",
-  );
-
 /** Keys of the review; X has always rejected, so hints show it, not R. */
 export const REVIEW_KEYS = { approve: "A", reject: "X" } as const;
-
-// a screen without changes is no decision, and nothing is left to do on it
-const decided = (status: string | undefined) =>
-  !!status &&
-  status !== TestStatus.ok &&
-  (APPROVED.includes(status) || status === TestStatus.failed);
-
-/**
- * How far the review has got, beside "N of M" (REQ-046-05): the steps already
- * decided, the current one among them when it is, and those still ahead of
- * the reviewer besides the one on screen.
- */
-export const stepProgress = (
-  statuses: string[],
-  currentIndex: number,
-): { decided: number; left: number } => {
-  const count = statuses.filter(decided).length;
-  const currentOpen =
-    currentIndex < statuses.length && !decided(statuses[currentIndex]);
-  const unchanged = statuses.filter(
-    (status, index) => status === TestStatus.ok && index !== currentIndex,
-  ).length;
-  return {
-    decided: count,
-    left: statuses.length - count - unchanged - (currentOpen ? 1 : 0),
-  };
-};
 
 /**
  * The side panel starts folded when it would have nothing to say: no changed

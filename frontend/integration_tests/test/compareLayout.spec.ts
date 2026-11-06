@@ -331,7 +331,7 @@ test("names the areas that came from the test next to Current", async ({
   await expect(page.getByRole("tooltip")).toBeVisible();
 });
 
-test("names the devices of a check in the header and keeps the toolbar in one row", async ({
+test("keeps a check on two devices in one toolbar row", async ({
   openProjectPage,
   page,
 }) => {
@@ -378,28 +378,107 @@ test("names the devices of a check in the header and keeps the toolbar in one ro
   await mockImage(page, "baseline.png");
   await openProjectPage(project.id, build.id, galaxy.id);
 
-  // the devices sit in the header, beside the steps, not in the toolbar
-  const header = page.getByTestId("compareHeader");
-  await expect(header.getByTestId("deviceStrip")).toBeVisible();
+  // the devices are the toolbar's first group, where they were before
   const toolbar = page.getByTestId("compareToolbar");
-  await expect(toolbar.getByTestId("deviceStrip")).toHaveCount(0);
-  // so the toolbar keeps one row
-  const rows = new Set(
-    await Promise.all(
-      ["toolbarMeter", "toolbarView", "toolbarTools"].map((id) =>
-        middle(toolbar.getByTestId(id)).then(Math.round),
-      ),
-    ),
-  );
-  expect(rows.size).toBe(1);
-  // screens without changes are no decisions: nothing decided yet, one left
-  await expect(page.getByTestId("stepCounts")).toHaveText(
-    "вирішено 0 · лишилось 1",
-  );
+  const devices = toolbar.getByTestId("toolbarDevices");
+  await expect(devices.getByTestId("deviceStrip")).toBeVisible();
   await expect(
-    page.getByTestId("stepDots").locator("[data-state=unchanged]"),
-  ).toHaveCount(11);
-  await page.screenshot({
-    path: "/tmp/claude-0/-home-user-vision/76addf5c-4fa7-50d4-896d-3444407828b9/scratchpad/two-devices.png",
-  });
+    page.getByTestId("compareHeader").getByTestId("deviceStrip"),
+  ).toHaveCount(0);
+  await expect(devices.getByTestId("approveAllDevices")).toBeVisible();
+  // the header says only where the review is: no counts, no step bar
+  await expect(page.getByTestId("stepProgress")).toHaveText("1 з 13");
+  await expect(page.getByTestId("stepCounts")).toHaveCount(0);
+  await expect(page.getByTestId("stepDots")).toHaveCount(0);
+
+  const oneRow = async () => {
+    await expect(toolbar.getByTestId("toolbarTools")).toBeVisible();
+    const rows = new Set(
+      await Promise.all(
+        ["toolbarDevices", "toolbarMeter", "toolbarView", "toolbarTools"].map(
+          (id) => middle(toolbar.getByTestId(id)).then(Math.round),
+        ),
+      ),
+    );
+    expect(rows.size).toBe(1);
+  };
+  // the devices by their model, Approve all by its icon and count
+  await expect(devices.getByTestId("approveAllDevices")).toHaveText("2");
+  await expect(devices.getByTestId("deviceTag")).toHaveText([
+    "Galaxy S23",
+    "Pixel 7",
+  ]);
+  await oneRow();
+  // narrower still, Highlight diff goes by its icon too
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await expect(
+    toolbar.getByRole("checkbox", { name: "Підсвітити різницю" }),
+  ).toBeVisible();
+  await oneRow();
+});
+
+test("shows the trend of the check in the header", async ({
+  openProjectPage,
+  page,
+}) => {
+  await mockApi(page);
+  const at = (day: number) =>
+    new Date(Date.UTC(2026, 9, day, 12)).toISOString();
+  await page.route(`${API_URL}/test-runs/${run.id}/trend`, (route) =>
+    route.fulfill({
+      body: JSON.stringify([
+        {
+          id: "a",
+          buildNumber: 126,
+          createdAt: at(29),
+          status: "ok",
+          diffPercent: 0,
+        },
+        {
+          id: "b",
+          buildNumber: 127,
+          createdAt: at(30),
+          status: "approved",
+          diffPercent: 0.5,
+        },
+        {
+          id: run.id,
+          buildNumber: 128,
+          createdAt: at(31),
+          status: "unresolved",
+          diffPercent: 1.24,
+        },
+      ]),
+    }),
+  );
+  await openProjectPage(project.id, build.id, run.id);
+
+  const header = page.getByTestId("compareHeader");
+  const trend = header.getByTestId("checkTrend");
+  await expect(trend).toHaveAttribute(
+    "aria-label",
+    "Trend of the check over the last 3 runs",
+  );
+  // right after the position, where the step bar was
+  const position = await header.getByTestId("stepProgress").boundingBox();
+  const chart = await trend.boundingBox();
+  if (!position || !chart) throw new Error("not on screen");
+  expect(chart.x).toBeGreaterThan(position.x + position.width);
+
+  // oldest first, ending with the run on screen; height follows the share
+  const bars = trend.getByTestId("trendBar");
+  await expect(bars).toHaveCount(3);
+  await expect(bars.last()).toHaveAttribute("data-current", "true");
+  await expect(bars.first()).toHaveAttribute("data-status", "ok");
+  const heights = await bars.evaluateAll((items) =>
+    items.map((item) => (item.firstElementChild as HTMLElement).offsetHeight),
+  );
+  expect(heights[0]).toBe(3);
+  expect(heights[0]).toBeLessThan(heights[1]);
+  expect(heights[1]).toBeLessThan(heights[2]);
+
+  await bars.last().hover();
+  await expect(page.getByRole("tooltip")).toContainText(
+    "#128 · 1.24% · unresolved ·",
+  );
 });

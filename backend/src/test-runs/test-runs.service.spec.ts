@@ -169,6 +169,47 @@ describe('TestRunsService', () => {
     });
   });
 
+  describe('trend (REQ-046-08)', () => {
+    const at = new Date('2026-10-31T12:00:00Z');
+    const current = {
+      id: 'current',
+      createdAt: at,
+      status: TestStatus.unresolved,
+      diffPercent: 1.24,
+      testVariationId: 'variation',
+      build: { number: 128 },
+    };
+
+    it('loads only the fields of the trend for runs of the same variation up to this one', async () => {
+      const older = { ...current, id: 'older', createdAt: new Date('2026-10-30T12:00:00Z'), build: { number: 127 } };
+      const testRunFindUniqueMock = jest.fn().mockResolvedValue(current);
+      const testRunFindManyMock = jest.fn().mockResolvedValue([current, older]);
+      service = await initService({ testRunFindUniqueMock, testRunFindManyMock });
+
+      const trend = await service.getTrend('current');
+
+      expect(trend.map((point) => point.buildNumber)).toEqual([127, 128]);
+      const query = testRunFindManyMock.mock.calls[0][0];
+      expect(query.where).toEqual({ testVariationId: 'variation', createdAt: { lte: at } });
+      expect(query.orderBy).toEqual({ createdAt: 'desc' });
+      expect(query.take).toBe(21);
+      expect(Object.keys(query.select).sort()).toEqual(
+        ['build', 'createdAt', 'diffPercent', 'id', 'status', 'testVariationId'].sort()
+      );
+    });
+
+    it('shows a run without a variation on its own', async () => {
+      const testRunFindManyMock = jest.fn();
+      service = await initService({
+        testRunFindUniqueMock: jest.fn().mockResolvedValue({ ...current, testVariationId: null }),
+        testRunFindManyMock,
+      });
+
+      expect((await service.getTrend('current')).map((point) => point.id)).toEqual(['current']);
+      expect(testRunFindManyMock).not.toHaveBeenCalled();
+    });
+  });
+
   it('setStatus', async () => {
     const testRun = {
       id: 'id',

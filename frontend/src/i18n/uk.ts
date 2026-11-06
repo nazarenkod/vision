@@ -1109,7 +1109,7 @@ export const uk: Messages = {
   "auth.subtitleSso": "Корпоративним акаунтом або локальним.",
   "auth.emailPlaceholder": "name@company.com",
   "auth.brandLine":
-    "Екрани, UI-дерево й доступність збірок Android та iOS — в одному місці.",
+    "Годинник, суми й банери не заважають. Першими ви бачите справжні зміни й проблеми доступності.",
   "auth.lightTheme": "Світла тема",
   "auth.darkTheme": "Темна тема",
   "auth.sso": "Увійти через SSO",
@@ -1120,7 +1120,7 @@ export const uk: Messages = {
     "Немає облікового запису? Попросіть адміністратора створити його.",
 
   // brand
-  "brand.tagline": "Тепер ваші тести бачать",
+  "brand.tagline": "Рев'ю змін, а не шуму",
 
   // tour
   "tour.take": "Пройти екскурсію",

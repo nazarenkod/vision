@@ -139,7 +139,7 @@ test("shows the brand and the form side by side with one logo", async ({
 
   await expect(layout.getByTestId("brandMark")).toHaveCount(1);
   await expect(brand.getByTestId("brandMark")).toBeVisible();
-  await expect(brand).toContainText("Your tests can see now");
+  await expect(brand).toContainText("Review changes, not noise");
   await expect(form.getByRole("heading", { name: "Sign in" })).toBeVisible();
   await expect(loginPage.loginForm).toBeVisible();
 
@@ -161,4 +161,42 @@ test("shows the brand and the form side by side with one logo", async ({
   expect(narrowBrand.y + narrowBrand.height).toBeLessThanOrEqual(
     narrowForm.y + 1,
   );
+});
+
+test("brings back the grid and the stray pixel without leaving a square", async ({
+  loginPage,
+  page,
+}) => {
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await expect(page.getByTestId("authFormGrid")).toBeAttached();
+
+  // the pixel plays once as a difference and fades into the grid (REQ-046-57)
+  const pixel = page.getByTestId("authStrayPixel");
+  const animation = await pixel.evaluate((el) => {
+    const style = getComputedStyle(el);
+    return {
+      name: style.animationName,
+      count: style.animationIterationCount,
+    };
+  });
+  expect(animation).toEqual({ name: "v-stray-auth", count: "1" });
+  await expect
+    .poll(() => pixel.evaluate((el) => getComputedStyle(el).opacity), {
+      timeout: 5000,
+    })
+    .toBe("0");
+  await expect(loginPage.loginForm).toBeVisible();
+});
+
+test("shows the end of the sign-in motion at once with reduced motion", async ({
+  page,
+}) => {
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await page.goto("/login");
+  const pixel = page.getByTestId("authStrayPixel");
+  await expect
+    .poll(() => pixel.evaluate((el) => getComputedStyle(el).opacity), {
+      timeout: 500,
+    })
+    .toBe("0");
 });

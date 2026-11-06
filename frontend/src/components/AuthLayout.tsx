@@ -1,8 +1,9 @@
 import React from "react";
 import { Box, IconButton, Tooltip, Typography } from "@mui/material";
 import { DarkModeOutlined, LightModeOutlined } from "@mui/icons-material";
-import { BrandLockup } from "./BrandMark";
-import { tokens, radius, type } from "../theme";
+import { BrandLockup, LOGO_PLAY_MS } from "./BrandMark";
+import { staggered } from "./motion/Stagger";
+import { tokens, radius, type, motion } from "../theme";
 import { LanguageSwitch, useT } from "../i18n";
 import { useThemeMode } from "../contexts";
 
@@ -10,6 +11,50 @@ import { useThemeMode } from "../contexts";
 // with black, so it follows the palette without a colour of its own.
 const PANEL = `color-mix(in srgb, ${tokens.brand} 42%, black)`;
 const ON_PANEL = "rgba(255, 255, 255, 0.72)";
+const PANEL_GRID = 32;
+
+/**
+ * One cell of the brand grid that slipped out of place: it shows up as a
+ * difference, springs back into its cell and fades into the grid. It leaves
+ * nothing behind, so there is no pale square at rest (046), and with reduced
+ * motion the global rule jumps straight to that end.
+ */
+const StrayPixel: React.FunctionComponent = () => (
+  <Box
+    aria-hidden="true"
+    data-testid="authStrayPixel"
+    sx={{
+      position: "absolute",
+      // on a grid line + 1px: the cell it settles into is a real cell
+      left: PANEL_GRID * 15 + 1,
+      top: PANEL_GRID * 3 + 1,
+      width: PANEL_GRID - 1,
+      height: PANEL_GRID - 1,
+      borderRadius: radius.control,
+      "@keyframes v-stray-auth": {
+        "0%, 22%": {
+          transform: "translate(10px, -8px)",
+          backgroundColor: tokens.diff,
+          opacity: 0.9,
+        },
+        "48%": {
+          transform: "none",
+          backgroundColor: "rgba(255, 255, 255, 0.18)",
+          opacity: 1,
+        },
+        "100%": {
+          transform: "none",
+          backgroundColor: "rgba(255, 255, 255, 0.18)",
+          opacity: 0,
+        },
+      },
+      animation: `v-stray-auth ${LOGO_PLAY_MS}ms ${motion.easing} both ${motion.slow}ms`,
+    }}
+  />
+);
+
+// the brand half's cascade: lockup, baseline, current, words; then the change
+const DIFF_AT = 520;
 
 /** A phone screen drawn from boxes: the header, rows, a total and a button. */
 const Phone: React.FunctionComponent<{
@@ -86,6 +131,10 @@ const Phone: React.FunctionComponent<{
             borderRadius: radius.control,
             border: current ? `1.5px solid ${tokens.diff}` : "none",
             bgcolor: current ? tokens.diffSoft : "transparent",
+            // the difference is marked once both screens are in place
+            ...(current && {
+              animation: `v-grow ${motion.slow}ms ${motion.spring} both ${DIFF_AT}ms`,
+            }),
           }}
         >
           <Box
@@ -130,10 +179,12 @@ const BrandPanel: React.FunctionComponent = () => {
           inset: 0,
           backgroundImage:
             "linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px)",
-          backgroundSize: "32px 32px",
+          backgroundSize: `${PANEL_GRID}px ${PANEL_GRID}px`,
         }}
       />
+      <StrayPixel />
       <Box
+        {...staggered(0)}
         sx={{
           position: "relative",
           "& [data-testid='wordmark']": { color: "common.white" },
@@ -152,12 +203,18 @@ const BrandPanel: React.FunctionComponent = () => {
           justifyContent: "center",
         }}
       >
-        <Box sx={{ opacity: 0.85, transform: "rotate(-4deg)" }}>
-          <Phone width={150} />
+        {/* the cascade moves the wrapper: its transform would undo the tilt */}
+        <Box {...staggered(2)}>
+          <Box sx={{ opacity: 0.85, transform: "rotate(-4deg)" }}>
+            <Phone width={150} />
+          </Box>
         </Box>
-        <Phone width={170} current />
+        <Box {...staggered(4)}>
+          <Phone width={170} current />
+        </Box>
       </Box>
       <Box
+        {...staggered(6)}
         sx={{
           position: "relative",
           display: "flex",
@@ -251,12 +308,35 @@ export const AuthLayout: React.FunctionComponent<{
         px: { xs: 2, md: 5 },
         py: { xs: 2, md: 4 },
         boxSizing: "border-box",
+        position: "relative",
+        overflow: "hidden",
       }}
     >
-      <Corner />
+      {/* the grid of the earlier sign-in, fading out from behind the form */}
       <Box
-        className="v-enter"
+        aria-hidden="true"
+        data-testid="authFormGrid"
         sx={{
+          position: "absolute",
+          inset: 0,
+          backgroundImage: `linear-gradient(${tokens.border} 1px, transparent 1px), linear-gradient(90deg, ${tokens.border} 1px, transparent 1px)`,
+          backgroundSize: "28px 28px",
+          backgroundPosition: "center",
+          opacity: 0.55,
+          maskImage:
+            "radial-gradient(60% 60% at 50% 50%, black 0%, transparent 80%)",
+          WebkitMaskImage:
+            "radial-gradient(60% 60% at 50% 50%, black 0%, transparent 80%)",
+          animation: `v-fade ${motion.slow}ms ${motion.easing} both`,
+        }}
+      />
+      <Box sx={{ position: "relative" }}>
+        <Corner />
+      </Box>
+      <Box
+        {...staggered(1)}
+        sx={{
+          position: "relative",
           m: "auto",
           py: 4,
           width: "100%",
@@ -264,6 +344,8 @@ export const AuthLayout: React.FunctionComponent<{
           display: "flex",
           flexDirection: "column",
           gap: 2,
+          // fields stay solid over the grid, so the lines never cross the text
+          "& .MuiOutlinedInput-root": { bgcolor: tokens.surface },
         }}
       >
         <Box sx={{ display: "flex", flexDirection: "column", gap: 0.5 }}>

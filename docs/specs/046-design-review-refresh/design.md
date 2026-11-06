@@ -131,6 +131,7 @@ flowchart LR
 | REQ-046-43 | `frontend/integration_tests/test/reportBug.spec.ts › shows a Jira field by its Jira name` |
 | REQ-046-50 | `frontend/integration_tests/test/login.spec.ts › shows the brand and the form side by side with one logo` |
 | REQ-046-51 | `frontend/integration_tests/test/login.spec.ts › offers SSO and the local sign-in together` |
+| REQ-046-57 | `frontend/integration_tests/test/login.spec.ts › brings back the grid and the stray pixel without leaving a square` |
 | REQ-046-52 | `frontend/integration_tests/test/profile.spec.ts › shows the profile in one column with the role as text` |
 | REQ-046-53 | `frontend/integration_tests/test/projectList.spec.ts › searches with a placeholder and no floating label` |
 | REQ-046-54 | `frontend/integration_tests/test/testVariationList.spec.ts › filters with one Filters button and removable chips` |

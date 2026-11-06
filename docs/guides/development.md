@@ -36,7 +36,7 @@ REACT_APP_API_URL=http://localhost:14201 sh ./env.sh && cp env-config.js public/
 ## Дані для перевірки
 
 - `scripts/upload-uitree-samples.py` надсилає пари PNG + XML з папки як перевірки.
-- `scripts/seed-insights-demo.py --email <адмін>` наповнює окремий проєкт «Insights demo» штучною історією
+- `VISION_API_KEY=<ключ з профілю> scripts/seed-insights-demo.py --email <адмін>` наповнює окремий проєкт «Insights demo» штучною історією
   (застарілі еталони, нестабільні екрани, доступність); дати зсуває через `vision.sh`, без нього — `--no-backdate`.
 - `python3 frontend/public/cli/vision.py check "Payment" --png screen.png --xml screen.xml` — одна перевірка з файлів.
 - Jira без реальної Jira: простий фейковий сервер на Python, що відповідає на

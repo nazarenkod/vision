@@ -64,7 +64,8 @@ class FakeApi:
                 if not fake.is_vision:
                     return self.reply(404, {"message": f"Cannot {self.command} {path}"})
                 if path == "/users/login":
-                    return self.reply(201, {"token": "jwt", "apiKey": "key"})
+                    # since 044 the API key never comes back after sign-in
+                    return self.reply(201, {"token": "jwt"})
                 if path == "/projects" and self.command == "GET":
                     return self.reply(200, [])
                 if path == "/projects":
@@ -87,11 +88,15 @@ class FakeApi:
         self.server.server_close()
 
 
-def run_main(args, env_password="secret"):
+def run_main(args, env_password="secret", env_key="key"):
     out, err = io.StringIO(), io.StringIO()
     saved = sys.argv
     sys.argv = ["seed-insights-demo.py", *args]
     os.environ["VISION_PASSWORD"] = env_password
+    if env_key:
+        os.environ["VISION_API_KEY"] = env_key
+    else:
+        os.environ.pop("VISION_API_KEY", None)
     try:
         with redirect_stdout(out), redirect_stderr(err):
             seed.main()
@@ -192,6 +197,15 @@ class TalkingToTheApi(unittest.TestCase):
         self.assertEqual(sum(len(c[2]) for c in rejections), 1)
         created = [c for c in api.calls if c[0] == "POST" and c[1] == "/projects"]
         self.assertEqual(created[0][2]["name"], "Insights demo")
+
+    def test_asks_for_the_api_key_and_writes_nothing_without_it(self):
+        fake = FakeApi()
+        try:
+            code, out = run_main(["--email", "a@b.c", "--api", fake.url, "--yes", "--no-backdate"], env_key="")
+        finally:
+            fake.close()
+        self.assertIn("VISION_API_KEY", str(code))
+        self.assertFalse([c for c in fake.calls if c[1] in ("/projects", "/builds", "/test-runs")])
 
     def test_stops_without_writing_unless_told_yes(self):
         api = FakeApi()

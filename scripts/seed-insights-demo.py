@@ -19,7 +19,8 @@ Vision's). --no-backdate skips that step: then no baseline is stale.
 
 It writes only to Vision: before anything else it checks that the API answers a route that
 only Vision has, so pointed at the production VRT by mistake it stops without a write.
-Standard library only. The password comes from VISION_PASSWORD or a prompt.
+Standard library only. The password comes from VISION_PASSWORD or a prompt, the API key from
+VISION_API_KEY (the server does not give it back after sign-in since 044).
 """
 import argparse
 import base64
@@ -317,7 +318,12 @@ def main():
 
     password = os.environ.get("VISION_PASSWORD") or getpass.getpass(f"Password for {args.email}: ")
     login = api.call("POST", "/users/login", {"email": args.email, "password": password}, auth=None)
-    api.token, api.key = login["token"], login["apiKey"]
+    # since 044 the server keeps only a hash of the API key and never sends it back, so the key
+    # comes from the person; making a new one here would break the key their tests use
+    api.token = login["token"]
+    api.key = os.environ.get("VISION_API_KEY") or login.get("apiKey")
+    if not api.key:
+        sys.exit("Set VISION_API_KEY to your API key (Profile -> API key). Nothing was written.")
 
     project, builds = seed(api, args.project)
     if not args.no_backdate:

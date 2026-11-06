@@ -14,6 +14,7 @@ import {
   mockGetTestRuns,
   mockImage,
   mockTestRun,
+  unfoldPanel,
 } from "utils/mocks";
 
 // Spec 024: elements are picked on the screenshots and acted on next to them.
@@ -126,7 +127,22 @@ const openReview = async (
     },
   );
   await openProjectPage(project.id, build.id, run.id);
+  // with the side panel open, as these were written: the screens fitted
+  // into the rest leave room beside them for what opens next to an element
+  await unfoldPanel(page);
   await expect(canvasOf(page, "current")).toBeVisible();
+  // fitted again to the narrower area before anything is clicked
+  const width = () =>
+    canvasOf(page, "current").evaluate(
+      (el) => el.getBoundingClientRect().width,
+    );
+  await expect
+    .poll(async () => {
+      const before = await width();
+      await page.waitForTimeout(100);
+      return (await width()) === before;
+    })
+    .toBe(true);
   return calls;
 };
 
@@ -224,8 +240,11 @@ const middleOf = (element: PickableElement) => ({
 });
 const empty = { x: 1100, y: 600, width: 40, height: 40 };
 
-const openChanges = (page: Page) =>
-  page.getByRole("tab", { name: /Changes/ }).click();
+// a screen without changes opens with the side panel folded (REQ-046-07)
+const openChanges = async (page: Page) => {
+  await unfoldPanel(page);
+  await page.getByRole("tab", { name: /Changes/ }).click();
+};
 
 const startSelecting = async (page: Page) => {
   await page.getByTestId("selectElements").click();

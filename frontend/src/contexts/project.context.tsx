@@ -153,6 +153,21 @@ function selectProject(dispatch: Dispatch, id: string) {
   });
 }
 
+/**
+ * The project of the page's address is the one the sidebar's switcher shows
+ * (046): a page that belongs to a project selects it when it opens, so the
+ * switcher never says "Choose project" over a project's own page.
+ */
+function useProjectFromAddress(projectId: string | undefined) {
+  const { selectedProjectId } = useProjectState();
+  const dispatch = useProjectDispatch();
+  React.useEffect(() => {
+    if (projectId && projectId !== selectedProjectId) {
+      selectProject(dispatch, projectId);
+    }
+  }, [projectId, selectedProjectId, dispatch]);
+}
+
 function createProject(dispatch: Dispatch, project: ProjectDto) {
   dispatch({
     type: "request",
@@ -241,5 +256,6 @@ export {
   getProjectList,
   deleteProject,
   selectProject,
+  useProjectFromAddress,
   setProjectEditState,
 };

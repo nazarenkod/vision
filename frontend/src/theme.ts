@@ -123,6 +123,31 @@ export const palettes: Record<ThemeMode, Palette> = {
 
 const MONO = '"JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace';
 
+/**
+ * The type scale (spec 046): every text in the interface takes one of these
+ * sizes, with weights 400, 500, 600 or 700 only. A size between two steps reads
+ * as a mistake, so ESLint forbids other literals in components and pages.
+ */
+export const type = {
+  page: 28,
+  section: 20,
+  title: 16,
+  body: 14,
+  small: 13,
+  caption: 12,
+} as const;
+
+/**
+ * Three corner radii (spec 046): controls and chips, cards and dialogs, status
+ * pills. Strings, because `sx` multiplies a bare number by the theme's
+ * spacing of corners: `borderRadius: 12` there would be 72 px.
+ */
+export const radius = {
+  control: "6px",
+  card: "12px",
+  pill: "999px",
+} as const;
+
 /** `status.changed.fg` → `--v-status-changed-fg` */
 const variableName = (path: string[]) => `--v-${path.join("-")}`;
 
@@ -150,6 +175,15 @@ export const tokens: Tokens = {
   ...(referTo(palettes.light, []) as Palette),
   mono: MONO,
 };
+
+// what a table head and a number in a table look like, MUI tables and data grids alike
+const tableHead = {
+  backgroundColor: tokens.subtle,
+  color: tokens.textSecondary,
+  fontSize: type.caption,
+  fontWeight: 600,
+  lineHeight: 1.3,
+} as const;
 
 /** The CSS variables of one theme, for the global stylesheet. */
 export function cssVariables(mode: ThemeMode): Record<string, string> {
@@ -218,16 +252,29 @@ function themeFor(mode: ThemeMode): Theme {
       text: { primary: p.text, secondary: p.textSecondary },
       divider: p.border,
     },
-    shape: { borderRadius: 8 },
+    // what MUI's own controls (alerts, toggles, tooltips) round their corners by
+    shape: { borderRadius: parseInt(radius.control, 10) },
+    // every variant on the scale, MUI's unused display sizes included
     typography: {
       fontFamily: '"Inter", system-ui, -apple-system, "Segoe UI", sans-serif',
-      fontSize: 14,
-      h4: { fontSize: 24, fontWeight: 650, letterSpacing: "-0.01em" },
-      h5: { fontSize: 20, fontWeight: 650, letterSpacing: "-0.01em" },
-      h6: { fontSize: 16, fontWeight: 650 },
-      subtitle1: { fontWeight: 600 },
-      subtitle2: { fontWeight: 600 },
-      button: { textTransform: "none", fontWeight: 600 },
+      fontSize: type.body,
+      fontWeightLight: 400,
+      fontWeightRegular: 400,
+      fontWeightMedium: 500,
+      fontWeightBold: 700,
+      h1: { fontSize: type.page, fontWeight: 700, letterSpacing: "-0.01em" },
+      h2: { fontSize: type.page, fontWeight: 700, letterSpacing: "-0.01em" },
+      h3: { fontSize: type.page, fontWeight: 700, letterSpacing: "-0.01em" },
+      h4: { fontSize: type.page, fontWeight: 700, letterSpacing: "-0.01em" },
+      h5: { fontSize: type.section, fontWeight: 600, letterSpacing: "-0.01em" },
+      h6: { fontSize: type.title, fontWeight: 600 },
+      subtitle1: { fontSize: type.title, fontWeight: 600 },
+      subtitle2: { fontSize: type.body, fontWeight: 600 },
+      body1: { fontSize: type.body, fontWeight: 400 },
+      body2: { fontSize: type.small, fontWeight: 400 },
+      button: { fontSize: type.body, textTransform: "none", fontWeight: 600 },
+      caption: { fontSize: type.caption, fontWeight: 400 },
+      overline: { fontSize: type.caption, fontWeight: 600 },
     },
     transitions: {
       easing: {
@@ -265,6 +312,7 @@ function themeFor(mode: ThemeMode): Theme {
       MuiPaper: {
         styleOverrides: {
           root: { backgroundImage: "none" },
+          rounded: { borderRadius: radius.card },
           elevation1: {
             boxShadow: "none",
             border: `1px solid ${tokens.border}`,
@@ -280,7 +328,7 @@ function themeFor(mode: ThemeMode): Theme {
       MuiCard: {
         defaultProps: { variant: "outlined" },
         styleOverrides: {
-          root: { borderRadius: 24, borderColor: tokens.border },
+          root: { borderRadius: radius.card, borderColor: tokens.border },
         },
       },
       MuiCardHeader: {
@@ -290,7 +338,7 @@ function themeFor(mode: ThemeMode): Theme {
         defaultProps: { disableElevation: true },
         styleOverrides: {
           root: {
-            borderRadius: 8,
+            borderRadius: radius.control,
             transition: `background-color ${motion.base}ms ${motion.easing}, border-color ${motion.base}ms ${motion.easing}, color ${motion.base}ms ${motion.easing}, transform 120ms ${motion.easing}`,
             "&:active": { transform: "scale(.97)" },
           },
@@ -308,7 +356,10 @@ function themeFor(mode: ThemeMode): Theme {
       MuiDialog: {
         defaultProps: { TransitionComponent: GrowFromPointer },
         styleOverrides: {
-          paper: { borderRadius: 14, border: `1px solid ${tokens.border}` },
+          paper: {
+            borderRadius: radius.card,
+            border: `1px solid ${tokens.border}`,
+          },
         },
       },
       MuiBackdrop: {
@@ -319,21 +370,52 @@ function themeFor(mode: ThemeMode): Theme {
         },
       },
       MuiMenu: {
-        styleOverrides: { paper: { borderRadius: 12 } },
+        styleOverrides: { paper: { borderRadius: radius.card } },
       },
       MuiOutlinedInput: {
         styleOverrides: {
           notchedOutline: { borderColor: tokens.borderStrong },
           root: {
+            borderRadius: radius.control,
             "&.Mui-focused": { boxShadow: `0 0 0 3px ${tokens.brandSoft}` },
           },
         },
       },
-      MuiChip: { styleOverrides: { root: { fontWeight: 500 } } },
+      MuiTextField: {
+        styleOverrides: {
+          root: { "& .MuiInputBase-root": { borderRadius: radius.control } },
+        },
+      },
+      // a hint under a field starts at the field's edge, like the label above it
+      // (046): MUI indents it 14px to line up with a floating label we dropped
+      MuiFormHelperText: {
+        styleOverrides: { root: { marginLeft: 0, marginRight: 0 } },
+      },
+      // tags and devices: one grey chip; status pills are StatusPill, not chips
+      MuiChip: {
+        styleOverrides: {
+          root: {
+            borderRadius: radius.control,
+            fontWeight: 500,
+            fontSize: type.small,
+          },
+        },
+      },
+      // links read as links in both themes, and only show their line when pointed at
+      MuiLink: {
+        defaultProps: { underline: "hover" },
+        styleOverrides: {
+          root: {
+            color: tokens.brand,
+            textDecorationColor: "currentColor",
+            fontWeight: 500,
+          },
+        },
+      },
       MuiListItemButton: {
         styleOverrides: {
           root: {
-            borderRadius: 10,
+            borderRadius: radius.control,
             transition: `background-color ${motion.base}ms ${motion.easing}`,
             "&.Mui-selected, &.Mui-selected:hover": {
               backgroundColor: tokens.brandSoft,
@@ -350,21 +432,18 @@ function themeFor(mode: ThemeMode): Theme {
           },
         },
       },
-      // every table reads like the build's Overview: a low header row, 13px rows
+      // every table reads like the build's Overview: a low grey head band across
+      // the whole card, 13px rows, numbers in figures of one width
       MuiTableCell: {
         styleOverrides: {
           root: { borderBottomColor: tokens.border },
           head: {
-            backgroundColor: tokens.subtle,
-            color: tokens.textSecondary,
-            fontWeight: 600,
-            fontSize: 11.5,
-            lineHeight: 1.3,
+            ...tableHead,
             whiteSpace: "nowrap",
             paddingTop: 8,
             paddingBottom: 8,
           },
-          body: { fontSize: 13 },
+          body: { fontSize: type.small, fontVariantNumeric: "tabular-nums" },
         },
       },
       MuiTabs: {
@@ -381,14 +460,14 @@ function themeFor(mode: ThemeMode): Theme {
             minHeight: 44,
             textTransform: "none",
             fontWeight: 600,
-            fontSize: 14,
+            fontSize: type.body,
           },
         },
       },
       MuiTooltip: {
         styleOverrides: {
           tooltip: {
-            fontSize: 12,
+            fontSize: type.caption,
             backgroundColor: tokens.text,
             color: tokens.ground,
           },
@@ -398,7 +477,7 @@ function themeFor(mode: ThemeMode): Theme {
         styleOverrides: {
           root: {
             border: `1px solid ${tokens.border}`,
-            borderRadius: 24,
+            borderRadius: radius.card,
             // our grids carry a toolbar above the header: only the frame is
             // rounded, and it clips what touches its corners
             "--unstable_DataGrid-radius": "0px",
@@ -406,14 +485,15 @@ function themeFor(mode: ThemeMode): Theme {
             backgroundColor: tokens.surface,
             "--DataGrid-rowBorderColor": tokens.border,
           },
-          columnHeaders: { backgroundColor: tokens.subtle },
-          columnHeader: { backgroundColor: tokens.subtle },
+          // the band spans the whole frame, past the last column too
+          columnHeaders: { ...tableHead },
+          columnHeader: { backgroundColor: tableHead.backgroundColor },
           columnHeaderTitle: {
-            fontSize: 11.5,
-            fontWeight: 600,
-            color: tokens.textSecondary,
+            fontSize: tableHead.fontSize,
+            fontWeight: tableHead.fontWeight,
+            color: tableHead.color,
           },
-          cell: { fontSize: 13 },
+          cell: { fontSize: type.small, fontVariantNumeric: "tabular-nums" },
         },
       },
     },

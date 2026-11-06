@@ -2,11 +2,13 @@ import { useDecisionSnackbar } from "../useDecisionSnackbar";
 import React from "react";
 import { Box, Button, ButtonBase, Typography } from "@mui/material";
 import { useSnackbar } from "notistack";
+import { DoneAll } from "@mui/icons-material";
+import { Tooltip } from "../Tooltip";
 import { TestRun } from "../../types";
 import { TestStatus } from "../../types/testStatus";
 import { testRunService } from "../../services";
 import { useUserState } from "../../contexts";
-import { tokens } from "../../theme";
+import { motion, tokens, type, radius } from "../../theme";
 import { BaseModal } from "../BaseModal";
 import { DeviceTags } from "../DeviceTags";
 import { deviceLabel } from "../../_helpers/device.helper";
@@ -43,7 +45,9 @@ export const DeviceStrip: React.FunctionComponent<{
   runs: TestRun[];
   currentId: string;
   onSelect: (id: string) => void;
-}> = ({ runs, currentId, onSelect }) => {
+  /** a narrow toolbar: one line, each device by its model, the rest on hover */
+  compact?: boolean;
+}> = ({ runs, currentId, onSelect, compact }) => {
   const { enqueueSnackbar } = useSnackbar();
   const { t } = useT();
   const announce = useDecisionSnackbar();
@@ -73,56 +77,102 @@ export const DeviceStrip: React.FunctionComponent<{
         display: "flex",
         alignItems: "center",
         gap: 0.75,
-        flexWrap: "wrap",
+        flexWrap: compact ? "nowrap" : "wrap",
+        whiteSpace: "nowrap",
       }}
       data-testid="deviceStrip"
+      role="group"
+      aria-label={t("review.devices")}
     >
-      <Typography variant="body2" color="textSecondary" sx={{ mr: 0.5 }}>
-        {t("review.devices")}
-      </Typography>
-      {runs.map((run) => {
-        const current = run.id === currentId;
-        return (
-          <ButtonBase
-            key={run.id}
-            onClick={() => !current && onSelect(run.id)}
-            title={labelOf(t, "testStatus", run.status)}
-            sx={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: 0.75,
-              minHeight: 32,
-              py: 0.25,
-              pl: 1.25,
-              pr: 0.5,
-              borderRadius: 999,
-              fontSize: 12.5,
-              // the frame marks the current device; the tags inside stay grey (REQ-037-04)
-              border: `1px solid ${current ? tokens.brand : tokens.border}`,
-              bgcolor: tokens.surface,
-              color: tokens.text,
-            }}
-            aria-label={deviceLabel(run, undefined, t)}
-            aria-current={current || undefined}
-          >
-            <Box
-              component="span"
-              sx={{
-                width: 8,
-                height: 8,
-                borderRadius: "50%",
-                bgcolor: dotColor(run.status),
-              }}
-            />
-            <DeviceTags parts={run} />
-          </ButtonBase>
-        );
-      })}
-      {canEdit && pending.length > 1 && (
-        <Button size="small" onClick={() => setConfirm(true)}>
-          {t("review.approveAll", { count: pending.length })}
-        </Button>
+      {!compact && (
+        <Typography variant="body2" color="textSecondary" sx={{ mr: 0.5 }}>
+          {t("review.devices")}
+        </Typography>
       )}
+      {/* one segmented track, like the view switch: the current device is the
+          raised segment. A pill with a frame round each device read as a
+          second set of chips around the tags */}
+      <Box
+        sx={{
+          display: "inline-flex",
+          alignItems: "center",
+          gap: "2px",
+          p: "2px",
+          borderRadius: radius.control,
+          bgcolor: tokens.subtle,
+          flexShrink: 0,
+        }}
+      >
+        {runs.map((run) => {
+          const current = run.id === currentId;
+          return (
+            <ButtonBase
+              key={run.id}
+              onClick={() => !current && onSelect(run.id)}
+              title={labelOf(t, "testStatus", run.status)}
+              sx={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 0.75,
+                minHeight: 28,
+                px: 1,
+                borderRadius: radius.control,
+                fontSize: type.small,
+                // the raised segment marks the current device; the tags stay grey (REQ-037-04)
+                // the same mark as the chosen view beside it ("Side by side")
+                bgcolor: current ? "action.selected" : "transparent",
+                fontWeight: current ? 600 : 400,
+                color: current ? tokens.text : tokens.textSecondary,
+                transition: `background-color ${motion.fast}ms`,
+                "&:hover": current ? undefined : { bgcolor: "action.hover" },
+              }}
+              aria-label={deviceLabel(run, undefined, t)}
+              aria-current={current || undefined}
+            >
+              <Box
+                component="span"
+                sx={{
+                  width: 8,
+                  height: 8,
+                  borderRadius: radius.pill,
+                  bgcolor: dotColor(run.status),
+                }}
+              />
+              <DeviceTags
+                parts={
+                  compact ? { ...run, os: "", browser: "", viewport: "" } : run
+                }
+              />
+            </ButtonBase>
+          );
+        })}
+      </Box>
+      {canEdit &&
+        pending.length > 1 &&
+        (compact ? (
+          // a narrow toolbar: the action by its icon and count, named on hover,
+          // so the devices, the view and the tools still share one row
+          <Tooltip title={t("review.approveAll", { count: pending.length })}>
+            <Button
+              size="small"
+              onClick={() => setConfirm(true)}
+              data-testid="approveAllDevices"
+              aria-label={t("review.approveAll", { count: pending.length })}
+              startIcon={<DoneAll />}
+              sx={{ minWidth: 0, fontVariantNumeric: "tabular-nums" }}
+            >
+              {pending.length}
+            </Button>
+          </Tooltip>
+        ) : (
+          <Button
+            size="small"
+            onClick={() => setConfirm(true)}
+            data-testid="approveAllDevices"
+          >
+            {t("review.approveAll", { count: pending.length })}
+          </Button>
+        ))}
       <BaseModal
         open={confirm}
         title={t("review.approveDevicesTitle", { count: pending.length })}

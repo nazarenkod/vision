@@ -26,6 +26,7 @@ import {
   ChevronRightRounded,
   MoreHoriz,
   VisibilityOffOutlined,
+  ViewSidebarOutlined,
 } from "@mui/icons-material";
 import { useSnackbar } from "notistack";
 import { v4 as uuid } from "uuid";
@@ -44,7 +45,7 @@ import {
 import { StatusPill } from "../StatusPill";
 import { describeChange } from "../ChangeGroups";
 import { JiraBugDialog } from "./JiraBugDialog";
-import { motion, tokens } from "../../theme";
+import { motion, tokens, type, radius } from "../../theme";
 import { labelOf, useT } from "../../i18n";
 import { a11yMessage, a11yTitle } from "../../_helpers/a11yText.helper";
 import { WhatsCompared } from "./WhatsCompared";
@@ -131,6 +132,9 @@ interface Props {
   onA11yMarksChange?: (on: boolean) => void;
   // turns on selecting elements on the screenshots (REQ-030-51)
   onSelectElements?: () => void;
+  // folded to a strip with a button, so the screens take its width (REQ-046-07)
+  folded?: boolean;
+  onFoldedChange?: (folded: boolean) => void;
 }
 
 type RuleDraft = {
@@ -176,6 +180,8 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
   a11yMarks = true,
   onA11yMarksChange,
   onSelectElements,
+  folded = false,
+  onFoldedChange,
 }) => {
   const { enqueueSnackbar } = useSnackbar();
   const showRuleSnack = useRuleSnackbar();
@@ -333,7 +339,7 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
       sx={{
         width: 20,
         height: 20,
-        borderRadius: "50%",
+        borderRadius: radius.pill,
         flexShrink: 0,
         bgcolor: isNew ? tokens.a11y : tokens.a11yExisting,
         // a number on an orange or grey dot reads in white in both themes
@@ -396,7 +402,7 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
           transition: "border-color 220ms, background-color 220ms",
           "&:hover": { borderColor: isNew ? tokens.a11y : tokens.borderStrong },
           outline: highlighted ? `2px solid ${tokens.a11y}` : "none",
-          borderRadius: 2.5,
+          borderRadius: radius.card,
           p: 1.5,
           display: "flex",
           flexDirection: "column",
@@ -409,7 +415,11 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
             {numbers.length > 3 && (
               <Typography
                 component="span"
-                sx={{ fontSize: 11, color: tokens.textSecondary, ml: 0.25 }}
+                sx={{
+                  fontSize: type.caption,
+                  color: tokens.textSecondary,
+                  ml: 0.25,
+                }}
               >
                 +{numbers.length - 3}
               </Typography>
@@ -422,7 +432,7 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
           </Typography>
           <Typography
             sx={{
-              fontSize: 11,
+              fontSize: type.caption,
               fontWeight: 600,
               color: SEVERITY_COLOR[violation.severity],
             }}
@@ -439,7 +449,7 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
                   component: (
                     <Box
                       component="code"
-                      sx={{ font: `500 12px ${tokens.mono}` }}
+                      sx={{ font: `500 ${type.caption}px ${tokens.mono}` }}
                     >
                       {component}
                     </Box>
@@ -464,9 +474,9 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
                     display: "flex",
                     gap: 0.75,
                     alignItems: "baseline",
-                    fontSize: 12.5,
+                    fontSize: type.small,
                     color: tokens.textSecondary,
-                    borderRadius: 1,
+                    borderRadius: radius.control,
                     px: 0.5,
                     bgcolor:
                       item.id === highlightedId ? tokens.subtle : "transparent",
@@ -502,10 +512,10 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
             <Box
               component="code"
               sx={{
-                font: `500 12px ${tokens.mono}`,
+                font: `500 ${type.caption}px ${tokens.mono}`,
                 bgcolor: tokens.subtle,
                 px: 0.75,
-                borderRadius: 1,
+                borderRadius: radius.control,
               }}
             >
               {shortId(violation.resourceId)}
@@ -531,7 +541,7 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
                 copy(violation.problemCode);
               }}
               sx={{
-                font: `500 11.5px ${tokens.mono}`,
+                font: `500 ${type.caption}px ${tokens.mono}`,
                 color: tokens.textSecondary,
                 ml: "auto",
                 cursor: "copy",
@@ -548,7 +558,7 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
               fontSize: 13,
               bgcolor: tokens.subtle,
               border: `1px solid ${tokens.border}`,
-              borderRadius: 2,
+              borderRadius: radius.control,
               px: 1,
               py: 0.5,
             }}
@@ -568,7 +578,7 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
         )}
         {!!violation.issue?.related?.length && (
           <Typography
-            sx={{ fontSize: 12.5, color: tokens.textSecondary }}
+            sx={{ fontSize: type.small, color: tokens.textSecondary }}
             data-testid="a11yRelated"
           >
             {t("panel.alsoFiled")}{" "}
@@ -590,7 +600,7 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
               fontSize: 13,
               bgcolor: tokens.surface,
               border: `1px solid ${tokens.border}`,
-              borderRadius: 2,
+              borderRadius: radius.control,
               px: 1,
               py: 0.5,
             }}
@@ -599,10 +609,11 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
             <Box
               component="span"
               sx={{
-                font: `600 10.5px ${tokens.mono}`,
+                fontSize: type.caption,
+                fontWeight: 600,
                 color: tokens.brand,
                 border: `1px solid ${tokens.brand}`,
-                borderRadius: "4px",
+                borderRadius: radius.control,
                 px: 0.5,
               }}
             >
@@ -1001,7 +1012,7 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
     py: 0.5,
     px: 1,
     mx: -1,
-    borderRadius: 1,
+    borderRadius: radius.control,
     "& .acts": { opacity: 0, transition: "opacity 120ms" },
     "&:hover": { bgcolor: tokens.subtle },
     "&:hover .acts, &:focus-within .acts": { opacity: 1 },
@@ -1022,7 +1033,7 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
             onClick={() => openRule(resourceId, "ignore")}
             sx={quietIcon}
           >
-            <VisibilityOffOutlined sx={{ fontSize: 18 }} />
+            <VisibilityOffOutlined sx={{ fontSize: type.section }} />
           </IconButton>
         </Tooltip>
         <IconButton
@@ -1034,7 +1045,7 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
           }
           sx={quietIcon}
         >
-          <MoreHoriz sx={{ fontSize: 18 }} />
+          <MoreHoriz sx={{ fontSize: type.section }} />
         </IconButton>
       </>
     ) : null;
@@ -1171,7 +1182,7 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
                 key={bug.id}
                 sx={{
                   border: `1px solid ${tokens.border}`,
-                  borderRadius: 2,
+                  borderRadius: radius.card,
                   px: 1.25,
                   py: 1,
                   display: "flex",
@@ -1343,7 +1354,7 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
                         {many && (
                           <ChevronRightRounded
                             sx={{
-                              fontSize: 18,
+                              fontSize: type.title,
                               transform: open ? "rotate(90deg)" : "none",
                               transition: "transform 160ms",
                             }}
@@ -1369,7 +1380,7 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
                         <Box
                           data-testid="changedAreaWhat"
                           sx={{
-                            fontSize: 12.5,
+                            fontSize: type.small,
                             lineHeight: 1.4,
                             color: tokens.textMuted,
                             overflowWrap: "anywhere",
@@ -1392,7 +1403,7 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
                               data-testid="reportBugFromArea"
                               sx={quietIcon}
                             >
-                              <BugReport sx={{ fontSize: 18 }} />
+                              <BugReport sx={{ fontSize: type.section }} />
                             </IconButton>
                           </Tooltip>
                         )}
@@ -1428,7 +1439,9 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
                               {" · "}
                               <Box
                                 component="span"
-                                sx={{ font: `400 12px ${tokens.mono}` }}
+                                sx={{
+                                  font: `400 ${type.caption}px ${tokens.mono}`,
+                                }}
                               >
                                 {parts.id}
                               </Box>
@@ -1466,7 +1479,7 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
                               width: 8,
                               height: 8,
                               flexShrink: 0,
-                              borderRadius: "2px",
+                              borderRadius: radius.control,
                               border: `1.5px solid ${tokens.diff}`,
                             }}
                           />
@@ -1572,6 +1585,42 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
     handle.addEventListener("pointerup", stop);
   };
 
+  if (folded) {
+    return (
+      <Box
+        component="aside"
+        aria-label={t("panel.details")}
+        data-testid="panelFolded"
+        sx={{
+          width: 48,
+          flexShrink: 0,
+          borderLeft: `1px solid ${tokens.border}`,
+          bgcolor: tokens.surface,
+          display: "flex",
+          justifyContent: "center",
+          pt: 1,
+        }}
+      >
+        <Tooltip
+          title={t("compare.showPanel")}
+          placement="left"
+          disableInteractive
+        >
+          <IconButton
+            size="small"
+            data-testid="panelUnfold"
+            aria-label={t("compare.showPanel")}
+            aria-expanded={false}
+            onClick={() => onFoldedChange?.(false)}
+            sx={{ alignSelf: "flex-start", color: tokens.textMuted }}
+          >
+            <ViewSidebarOutlined fontSize="small" />
+          </IconButton>
+        </Tooltip>
+      </Box>
+    );
+  }
+
   return (
     <Box
       component="aside"
@@ -1626,37 +1675,63 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
           outline: "none",
         }}
       />
-      <Tabs
-        value={tab}
-        onChange={(_, value) => setTab(value)}
-        sx={{ px: 2, borderBottom: `1px solid ${tokens.border}` }}
+      <Box
+        sx={{
+          display: "flex",
+          alignItems: "center",
+          pr: 1,
+          borderBottom: `1px solid ${tokens.border}`,
+        }}
       >
-        <Tab
-          value="a11y"
-          label={
-            <Box sx={{ display: "flex", gap: 1, alignItems: "center" }}>
-              {t("panel.accessibility")}{" "}
-              {newCount > 0 && (
-                <StatusPill
-                  tone="changed"
-                  label={t("builds.a11yNewPill", { count: newCount })}
-                />
-              )}
-            </Box>
-          }
-        />
-        <Tab
-          value="changes"
-          label={
-            <Box sx={{ display: "flex", gap: 1, alignItems: "center" }}>
-              {t("panel.changes")}
-              {(structure?.invisible.length ?? 0) > 0 && (
-                <StatusPill tone="failed" label={structure?.invisible.length} />
-              )}
-            </Box>
-          }
-        />
-      </Tabs>
+        <Tabs
+          value={tab}
+          onChange={(_, value) => setTab(value)}
+          sx={{ px: 2, flex: 1, minWidth: 0 }}
+        >
+          <Tab
+            value="a11y"
+            label={
+              <Box sx={{ display: "flex", gap: 1, alignItems: "center" }}>
+                {t("panel.accessibility")}{" "}
+                {newCount > 0 && (
+                  <StatusPill
+                    tone="changed"
+                    label={t("builds.a11yNewPill", { count: newCount })}
+                  />
+                )}
+              </Box>
+            }
+          />
+          <Tab
+            value="changes"
+            label={
+              <Box sx={{ display: "flex", gap: 1, alignItems: "center" }}>
+                {t("panel.changes")}
+                {(structure?.invisible.length ?? 0) > 0 && (
+                  <StatusPill
+                    tone="failed"
+                    label={structure?.invisible.length}
+                  />
+                )}
+              </Box>
+            }
+          />
+        </Tabs>
+        {onFoldedChange && (
+          <Tooltip title={t("compare.hidePanel")} disableInteractive>
+            <IconButton
+              size="small"
+              data-testid="panelFold"
+              aria-label={t("compare.hidePanel")}
+              aria-expanded
+              onClick={() => onFoldedChange(true)}
+              sx={{ color: tokens.textMuted }}
+            >
+              <ViewSidebarOutlined fontSize="small" />
+            </IconButton>
+          </Tooltip>
+        )}
+      </Box>
       <Box
         sx={{
           flex: 1,
@@ -1804,7 +1879,10 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
           <Typography variant="body2">
             {tx("panel.removeProjectRuleText", {
               selector: (
-                <Box component="code" sx={{ font: `500 12px ${tokens.mono}` }}>
+                <Box
+                  component="code"
+                  sx={{ font: `500 ${type.caption}px ${tokens.mono}` }}
+                >
                   {removing?.selector}
                 </Box>
               ),

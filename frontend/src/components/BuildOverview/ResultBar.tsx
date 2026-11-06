@@ -1,17 +1,13 @@
 import React from "react";
 import { Box } from "@mui/material";
-import { tokens } from "../../theme";
+import { tokens, type, radius } from "../../theme";
 import { english, Text } from "../../i18n";
+import {
+  OUTCOME_PARTS as PARTS,
+  outcomeText,
+} from "../../_helpers/resultWords.helper";
 import { Outcome } from "../../types/buildOverview";
 import { Tooltip } from "../Tooltip";
-
-// the parts of a bar in the order they are drawn, each with its colour
-const PARTS = [
-  ["changed", "result.changed", "result.legendChanged"],
-  ["new", "result.new", "result.legendNew"],
-  ["rejected", "result.rejected", "result.legendRejected"],
-  ["passed", "result.passed", "result.legendPassed"],
-] as const;
 
 const colorOf = {
   changed: tokens.status.changed.bar,
@@ -19,13 +15,6 @@ const colorOf = {
   rejected: tokens.status.failed.bar,
   passed: tokens.status.passed.bar,
 };
-
-/** "2 changed · 1 new": what the bar shows, the parts that are there. */
-export function outcomeText(outcome: Outcome, text: Text = english): string {
-  return PARTS.filter(([part]) => outcome[part] > 0)
-    .map(([part, key]) => text(key, { count: outcome[part] }))
-    .join(" · ");
-}
 
 /**
  * How screenshots came out, as one bar: changed, new, rejected, passed. The
@@ -36,7 +25,9 @@ export const ResultBar: React.FunctionComponent<{
   outcome: Outcome;
   text?: Text;
   hint?: boolean;
-}> = ({ outcome, text = english, hint }) => {
+  // a short bar of a fixed width with its words beside it, so the bars line up (046)
+  words?: boolean;
+}> = ({ outcome, text = english, hint, words }) => {
   const label = outcomeText(outcome, text);
   const bar = (
     <Box
@@ -47,9 +38,10 @@ export const ResultBar: React.FunctionComponent<{
         display: "flex",
         height: 6,
         gap: "2px",
-        borderRadius: 999,
+        borderRadius: radius.pill,
         overflow: "hidden",
         bgcolor: tokens.subtle,
+        ...(words && { width: 48, flex: "none" }),
       }}
     >
       {PARTS.filter(([part]) => outcome[part] > 0).map(([part]) => (
@@ -57,6 +49,44 @@ export const ResultBar: React.FunctionComponent<{
       ))}
     </Box>
   );
+  if (words) {
+    const shown = (
+      <Box
+        data-testid="resultWithWords"
+        sx={{ display: "flex", alignItems: "center", gap: 1, minWidth: 0 }}
+      >
+        {bar}
+        <Box
+          component="span"
+          data-testid="resultWords"
+          // the bar already says it to a screen reader
+          aria-hidden
+          sx={{
+            fontSize: type.small,
+            color: tokens.textSecondary,
+            // a result of two parts («1 змінений · 1 без змін») goes onto a
+            // second line rather than behind an ellipsis
+            lineHeight: 1.3,
+            minWidth: 0,
+          }}
+        >
+          {label.split(" · ").map((part, index) => (
+            // each part stays whole; the line breaks only between them
+            <React.Fragment key={index}>
+              {/* the space outside the unbreakable part is where a line may end */}
+              {index > 0 && " "}
+              <Box component="span" sx={{ whiteSpace: "nowrap" }}>
+                {index > 0 && "· "}
+                {part}
+              </Box>
+            </React.Fragment>
+          ))}
+        </Box>
+      </Box>
+    );
+    // the words are also named on hover, as the bar alone is
+    return hint ? <Tooltip title={label}>{shown}</Tooltip> : shown;
+  }
   // the tooltip needs a box taller than the 6px bar to be found by the pointer
   return hint ? (
     <Tooltip title={label}>
@@ -77,7 +107,7 @@ export const ResultLegend: React.FunctionComponent<{ text?: Text }> = ({
       display: "flex",
       flexWrap: "wrap",
       gap: "4px 14px",
-      fontSize: 11,
+      fontSize: type.caption,
       color: tokens.textSecondary,
     }}
   >
@@ -92,7 +122,7 @@ export const ResultLegend: React.FunctionComponent<{ text?: Text }> = ({
           sx={{
             width: 10,
             height: 6,
-            borderRadius: 999,
+            borderRadius: radius.pill,
             bgcolor: colorOf[part],
             // printed without backgrounds the swatch would vanish
             printColorAdjust: "exact",

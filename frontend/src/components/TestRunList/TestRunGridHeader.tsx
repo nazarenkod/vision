@@ -1,8 +1,13 @@
 import React from "react";
+import {
+  Button,
+  ListItemIcon,
+  ListItemText,
+  Menu,
+  MenuItem,
+} from "@mui/material";
+import { ArrowDownward, ArrowUpward, ExpandMore } from "@mui/icons-material";
 import { tokens } from "../../theme";
-import { Box, Button, Checkbox } from "@mui/material";
-import { ArrowDownward, ArrowUpward } from "@mui/icons-material";
-import { TestRunDensity } from "./TestRunListControls";
 import { MessageKey, useT } from "../../i18n";
 
 // the grid sorts on its own: the table sorts by clicking its column headers
@@ -41,79 +46,70 @@ export const nextSort = (
     ? { field, direction: current.direction === "asc" ? "desc" : "asc" }
     : { field, direction: DEFAULT_SORT_DIRECTION[field] };
 
-// measured off the data grid's own header, so the two views line up when the
-// density changes and the header does not jump as you switch between them
-const HEADER_HEIGHT_BY_DENSITY: Record<TestRunDensity, number> = {
-  compact: 39,
-  standard: 56,
-  comfortable: 72,
-};
-
-export const TestRunGridHeader: React.FunctionComponent<{
+/**
+ * The grid's sort as a button of its own (REQ-046-30): cards have no column
+ * heads to click, and a table head above them read as a second, empty table.
+ * The menu offers the table's columns; picking the field already in use flips
+ * its direction, as clicking a column head again does.
+ */
+export const GridSortButton: React.FunctionComponent<{
   sort: TestRunSort;
   onSortChange: (sort: TestRunSort) => void;
-  density: TestRunDensity;
-  selectedCount: number;
-  totalCount: number;
-  onToggleAll: () => void;
-}> = ({
-  sort,
-  onSortChange,
-  density,
-  selectedCount,
-  totalCount,
-  onToggleAll,
-}) => {
-  const Arrow = sort.direction === "asc" ? ArrowUpward : ArrowDownward;
+}> = ({ sort, onSortChange }) => {
   const { t } = useT();
-
-  // the table's column widths, so the labels land where its headers are.
-  // textAlign is explicit because body carries a global text-align: center,
-  // which would otherwise centre each label inside its column
-  const label = (field: TestRunSortField, flex: number) => (
-    <Box flex={flex} minWidth={0} textAlign="left">
-      <Button
-        size="small"
-        color="inherit"
-        onClick={() => onSortChange(nextSort(sort, field))}
-        endIcon={field === sort.field ? <Arrow fontSize="small" /> : undefined}
-        data-testid={`gridSort-${field}`}
-        // the data grid's column titles, so both views share one header
-        sx={{
-          textTransform: "none",
-          fontSize: 11.5,
-          fontWeight: 600,
-          color: tokens.textSecondary,
-        }}
-      >
-        {t(SORT_LABELS[field])}
-      </Button>
-    </Box>
-  );
+  const [anchor, setAnchor] = React.useState<HTMLElement | null>(null);
+  const Arrow = sort.direction === "asc" ? ArrowUpward : ArrowDownward;
+  const fields = Object.keys(SORT_LABELS) as TestRunSortField[];
 
   return (
-    <Box
-      display="flex"
-      alignItems="center"
-      height={HEADER_HEIGHT_BY_DENSITY[density]}
-      flexShrink={0}
-      borderBottom={1}
-      borderColor="divider"
-      bgcolor={tokens.subtle}
-    >
-      <Box width={50} display="flex" justifyContent="center">
-        <Checkbox
-          size="small"
-          checked={totalCount > 0 && selectedCount === totalCount}
-          indeterminate={selectedCount > 0 && selectedCount < totalCount}
-          onChange={onToggleAll}
-          inputProps={{ "aria-label": t("runs.selectAllRuns") }}
-          data-testid="gridSelectAll"
+    <>
+      <Button
+        variant="outlined"
+        color="inherit"
+        size="small"
+        onClick={(event) => setAnchor(event.currentTarget)}
+        endIcon={<ExpandMore fontSize="small" />}
+        aria-haspopup="menu"
+        aria-expanded={Boolean(anchor)}
+        data-testid="gridSortButton"
+        sx={{
+          textTransform: "none",
+          borderColor: tokens.borderStrong,
+          whiteSpace: "nowrap",
+        }}
+      >
+        {t("runs.sortBy", { field: t(SORT_LABELS[sort.field]) })}
+        <Arrow
+          aria-label={t(
+            sort.direction === "asc" ? "runs.ascending" : "runs.descending",
+          )}
+          sx={{ fontSize: 16, marginLeft: 0.5, color: tokens.textSecondary }}
         />
-      </Box>
-      {label("name", 1)}
-      {label("tags", 1)}
-      {label("status", 0.3)}
-    </Box>
+      </Button>
+      <Menu
+        anchorEl={anchor}
+        open={Boolean(anchor)}
+        onClose={() => setAnchor(null)}
+      >
+        {fields.map((field) => (
+          <MenuItem
+            key={field}
+            selected={field === sort.field}
+            onClick={() => {
+              onSortChange(nextSort(sort, field));
+              setAnchor(null);
+            }}
+            data-testid={`gridSort-${field}`}
+          >
+            <ListItemText>{t(SORT_LABELS[field])}</ListItemText>
+            {field === sort.field && (
+              <ListItemIcon sx={{ justifyContent: "flex-end" }}>
+                <Arrow fontSize="small" />
+              </ListItemIcon>
+            )}
+          </MenuItem>
+        ))}
+      </Menu>
+    </>
   );
 };

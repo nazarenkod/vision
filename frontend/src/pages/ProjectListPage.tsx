@@ -15,7 +15,7 @@ import {
   TableRow,
 } from "@mui/material";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
-import { tokens } from "../theme";
+import { tokens, radius, type } from "../theme";
 import {
   useProjectState,
   useProjectDispatch,
@@ -100,25 +100,30 @@ const ProjectsListPage = () => {
         maxWidth: 1280,
       }}
     >
-      <Typography variant="h4" component="h1">
-        {t("projectList.title")}
-      </Typography>
       <Box
         sx={{
           display: "flex",
           flexWrap: "wrap",
-          alignItems: "flex-end",
+          alignItems: "center",
           gap: 2,
         }}
       >
+        <Typography variant="h4" component="h1">
+          {t("projectList.title")}
+        </Typography>
+        <Box sx={{ flex: 1 }} />
+        {/* a placeholder, no floating label: the field says what it is (REQ-046-53) */}
         <TextField
           id="projectSearch"
           size="small"
-          label={t("projectList.search")}
           placeholder={t("projectList.searchPlaceholder")}
           value={search}
           onChange={(event) => setSearch(event.target.value)}
-          sx={{ width: 320, bgcolor: tokens.surface }}
+          sx={{ width: 300, bgcolor: tokens.surface }}
+          inputProps={{
+            "aria-label": t("projectList.searchPlaceholder"),
+            "data-testid": "projectSearch",
+          }}
           InputProps={{
             startAdornment: (
               <InputAdornment position="start">
@@ -127,11 +132,11 @@ const ProjectsListPage = () => {
             ),
           }}
         />
-        <Box sx={{ flex: 1 }} />
         {canEditProjects && (
           <Button
             variant="contained"
             startIcon={<Add />}
+            data-testid="newProject"
             onClick={() => {
               toggleCreateDialogOpen();
               setProjectEditState(projectDispatch);
@@ -146,7 +151,7 @@ const ProjectsListPage = () => {
         sx={{
           bgcolor: tokens.surface,
           border: `1px solid ${tokens.border}`,
-          borderRadius: 3,
+          borderRadius: radius.card,
         }}
       >
         <Table>
@@ -172,7 +177,7 @@ const ProjectsListPage = () => {
                   </MuiLink>
                   <Typography
                     sx={{
-                      font: `400 11px ${tokens.mono}`,
+                      font: `400 ${type.caption}px ${tokens.mono}`,
                       color: tokens.textMuted,
                       whiteSpace: "nowrap",
                     }}
@@ -180,7 +185,9 @@ const ProjectsListPage = () => {
                     {project.id}
                   </Typography>
                 </TableCell>
-                <TableCell sx={{ fontFamily: tokens.mono, fontSize: 13 }}>
+                <TableCell
+                  sx={{ fontFamily: tokens.mono, fontSize: type.small }}
+                >
                   {project.mainBranchName}
                 </TableCell>
                 <TableCell>{project.imageComparison}</TableCell>

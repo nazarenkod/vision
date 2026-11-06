@@ -156,9 +156,7 @@ test("opens the bug dialog with B", async ({ openProjectPage, page }) => {
   await expect(dialog).toContainText("[Automation] [Checkout]");
   // the customer comes from the task without asking; severity is asked every time
   await expect(dialog.getByText("Замовник")).toHaveCount(0);
-  await expect(page.getByTestId("bugMissing")).toContainText(
-    "Серйозність помилки",
-  );
+  await expect(dialog.getByLabel("Серйозність помилки")).toBeVisible();
 });
 
 test("opens with the changed area already marked", async ({
@@ -204,8 +202,7 @@ test("rejects the checkpoint after filing when the box is ticked", async ({
   await page.getByTestId("bugField-steps").fill("1. Відкрити Checkout");
   await page.getByTestId("bugField-actual").fill("Обрізана.");
   await page.getByTestId("bugField-expected").fill("Видна.");
-  await expect(page.getByTestId("createBug")).toBeDisabled();
-  await page.getByLabel("Серйозність помилки *").click();
+  await page.getByLabel("Серйозність помилки").click();
   await page.getByRole("option", { name: "S4" }).click();
   await page.getByTestId("createBug").click();
 
@@ -246,7 +243,7 @@ test("shows the new key with Open in Jira and Undo reject", async ({
     ["expected", "Інакше."],
   ])
     await page.getByTestId(`bugField-${field}`).fill(text);
-  await page.getByLabel("Серйозність помилки *").click();
+  await page.getByLabel("Серйозність помилки").click();
   await page.getByRole("option", { name: "S1" }).click();
   await page.getByTestId("createBug").click();
 
@@ -303,8 +300,7 @@ test("fills the texts with AI on the person’s own Gemini key and marks them", 
   await expect(page.getByTestId("bugField-essence")).toHaveValue(
     "кнопка «Pay» обрізана",
   );
-  // MUI draws a label twice (the label and the outline gap)
-  await expect(page.getByTestId("aiDrafted-actual").first()).toBeVisible();
+  await expect(page.getByTestId("aiDrafted-actual")).toBeVisible();
   expect(asked).toMatchObject({
     testRunId: run.id,
     note: "кнопку оплати обрізано знизу",
@@ -324,4 +320,154 @@ test("asks for a personal Gemini key instead of offering AI without one", async 
   await page.getByTestId("reportBug").click();
   await expect(page.getByTestId("needGeminiKey")).toBeVisible();
   await expect(page.getByTestId("fillWithAi")).toHaveCount(0);
+});
+
+async function withGemini(page: Page) {
+  await page.addInitScript(() => {
+    const user = JSON.parse(window.localStorage.getItem("user") ?? "{}");
+    window.localStorage.setItem(
+      "user",
+      JSON.stringify({ ...user, geminiKeySet: true }),
+    );
+  });
+  await page.route(`${API_URL}/ai/bug-draft`, (route) =>
+    route.fulfill({
+      body: JSON.stringify({
+        essence: "кнопка «Pay» обрізана",
+        steps: "1. Відкрити Checkout",
+        actual: "Обрізана.",
+        expected: "Видна.",
+        cached: false,
+      }),
+    }),
+  );
+}
+
+test("makes Create bug the only primary action", async ({
+  openProjectPage,
+  page,
+}) => {
+  await mockApi(page);
+  await withGemini(page);
+  await openProjectPage(project.id, build.id, run.id);
+  await page.getByTestId("reportBug").click();
+  const dialog = page.getByTestId("reportBugDialog");
+  const primary = dialog.locator(".MuiButton-contained");
+
+  // enabled with nothing filled in: pressed, it shows what is missing
+  await expect(primary).toHaveCount(1);
+  await expect(primary).toHaveAttribute("data-testid", "createBug");
+  await expect(page.getByTestId("createBug")).toBeEnabled();
+
+  await page.getByTestId("bugNote").fill("кнопку оплати обрізано знизу");
+  await page.getByTestId("fillWithAi").click();
+  await expect(page.getByTestId("aiDraftedNote")).toBeVisible();
+  const again = dialog.getByRole("button", { name: "Draft again" });
+  await expect(again).toBeVisible();
+  await expect(again).toHaveClass(/MuiButton-outlined/);
+  await expect(primary).toHaveCount(1);
+  // what Gemini receives is a tooltip on the info icon, not a block of text
+  await expect(dialog.getByText(/Gemini gets your note/)).toHaveCount(0);
+  await page.getByTestId("aiGetsInfo").hover();
+  await expect(page.getByRole("tooltip")).toContainText("Gemini gets");
+});
+
+test("scrolls to the empty required field instead of filing", async ({
+  openProjectPage,
+  page,
+}) => {
+  await mockApi(page);
+  let filed = false;
+  await page.route(`${API_URL}/test-runs/${run.id}/bug`, (route) => {
+    filed = true;
+    return route.fulfill({ body: "{}" });
+  });
+  await openProjectPage(project.id, build.id, run.id);
+  await page.getByTestId("reportBug").click();
+  const dialog = page.getByTestId("reportBugDialog");
+  const severity = dialog.locator('[data-bug-field="jira:customfield_1"]');
+  await expect(severity).toBeAttached();
+  for (const [field, text] of [
+    ["essence", "суть"],
+    ["steps", "1. Крок"],
+    ["actual", "Так."],
+    ["expected", "Інакше."],
+  ])
+    await page.getByTestId(`bugField-${field}`).fill(text);
+  await page.getByTestId("bugField-essence").scrollIntoViewIfNeeded();
+  await expect(severity).not.toBeInViewport();
+
+  await page.getByTestId("createBug").click();
+
+  await expect(severity).toBeInViewport();
+  await expect(severity.getByTestId("bugRequired")).toHaveText("Required");
+  await expect(dialog.getByTestId("bugRequired")).toHaveCount(1);
+  await expect(dialog.getByLabel("Серйозність помилки")).toBeFocused();
+  await expect(dialog).toBeVisible();
+  expect(filed).toBe(false);
+});
+
+test("labels the fields above them", async ({ openProjectPage, page }) => {
+  await mockApi(page);
+  await openProjectPage(project.id, build.id, run.id);
+  await page.getByTestId("reportBug").click();
+  const dialog = page.getByTestId("reportBugDialog");
+  await expect(page.getByTestId("bugField-essence")).toBeVisible();
+  // the dialog grows from the button: measure it once it has its size
+  await expect
+    .poll(() =>
+      page.evaluate(() =>
+        document
+          .getAnimations()
+          .every(
+            (a) =>
+              a.playState !== "running" ||
+              a.effect?.getTiming().iterations === Infinity,
+          ),
+      ),
+    )
+    .toBe(true);
+
+  // no floating labels: the focus outline never runs through a label
+  await expect(dialog.locator(".MuiInputLabel-root")).toHaveCount(0);
+  for (const [name, field] of [
+    ["Summary", "essence"],
+    ["Steps", "steps"],
+    ["Actual result", "actual"],
+  ]) {
+    const input = dialog.getByLabel(name, { exact: true });
+    await expect(input).toHaveAttribute("data-testid", `bugField-${field}`);
+    await input.focus();
+    const label = await dialog
+      .locator(`label[for="bug-${field}"]`)
+      .boundingBox();
+    const box = await dialog
+      .locator(`[data-bug-field="${field}"] .MuiOutlinedInput-root`)
+      .boundingBox();
+    if (!label || !box) throw new Error(`${name} is not drawn`);
+    expect(label.y + label.height).toBeLessThanOrEqual(box.y);
+  }
+});
+
+test("shows a Jira field by its Jira name", async ({
+  openProjectPage,
+  page,
+}) => {
+  await mockApi(page);
+  await openProjectPage(project.id, build.id, run.id);
+  await page.getByTestId("reportBug").click();
+  const dialog = page.getByTestId("reportBugDialog");
+  const label = dialog.locator('label[for="bug-jira-customfield_1"]');
+
+  // the interface is in English, the Jira field keeps Jira’s own name
+  await expect(label).toContainText("Серйозність помилки");
+  await expect(label).toContainText("Jira field");
+  await expect(
+    dialog.getByText("Actual result", { exact: true }),
+  ).toBeVisible();
+  // no count of missing fields in the footer, just what Vision adds
+  await expect(dialog.getByText(/required fields? left/)).toHaveCount(0);
+  await expect(page.getByTestId("bugAdds")).toHaveText(
+    "Adds the screen, build and a link back · label “vision”",
+  );
 });

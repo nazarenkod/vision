@@ -1,4 +1,4 @@
-import { tokens } from "../theme";
+import { tokens, radius } from "../theme";
 import React from "react";
 import {
   Autocomplete,
@@ -70,7 +70,7 @@ export const TestVariationMergeForm: React.FunctionComponent<IProps> = ({
           ml: 0,
           width: "100%",
           border: `1px solid ${tokens.border}`,
-          borderRadius: 3,
+          borderRadius: radius.card,
           bgcolor: tokens.surface,
           pr: 2,
           pb: 2,

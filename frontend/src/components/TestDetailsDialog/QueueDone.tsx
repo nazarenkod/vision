@@ -1,7 +1,7 @@
 import React from "react";
 import { Box, Button, Typography } from "@mui/material";
 import { CheckRounded } from "@mui/icons-material";
-import { motion, tokens } from "../../theme";
+import { motion, tokens, type, radius } from "../../theme";
 import { useT } from "../../i18n";
 import { QueueSummary } from "../../_helpers/reviewQueue.helper";
 
@@ -32,9 +32,9 @@ export const QueueDone: React.FunctionComponent<{
       sx={{
         ml: "auto",
         fontFamily: tokens.mono,
-        fontSize: 10.5,
+        fontSize: type.caption,
         border: "1px solid currentColor",
-        borderRadius: 0.5,
+        borderRadius: radius.control,
         px: 0.5,
         opacity: 0.7,
       }}
@@ -64,7 +64,7 @@ export const QueueDone: React.FunctionComponent<{
           width: 340,
           bgcolor: tokens.surface,
           border: `1px solid ${tokens.border}`,
-          borderRadius: 3.5,
+          borderRadius: radius.card,
           boxShadow: tokens.shadowPop,
           p: 3,
           display: "flex",
@@ -78,16 +78,16 @@ export const QueueDone: React.FunctionComponent<{
           sx={{
             width: 30,
             height: 30,
-            borderRadius: 2,
+            borderRadius: radius.control,
             display: "grid",
             placeItems: "center",
             bgcolor: tokens.status.passed.bg,
             color: tokens.status.passed.fg,
           }}
         >
-          <CheckRounded sx={{ fontSize: 18 }} />
+          <CheckRounded sx={{ fontSize: type.title }} />
         </Box>
-        <Typography sx={{ fontSize: 16, fontWeight: 650 }}>
+        <Typography sx={{ fontSize: 16, fontWeight: 600 }}>
           {t("queue.done", { name: label })}
         </Typography>
         <Typography sx={{ color: tokens.textSecondary }}>

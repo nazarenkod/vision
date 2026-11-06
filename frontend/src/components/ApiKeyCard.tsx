@@ -1,15 +1,8 @@
 import React from "react";
-import {
-  Box,
-  Card,
-  CardContent,
-  CardHeader,
-  IconButton,
-  Tooltip,
-  Typography,
-} from "@mui/material";
+import { Box, Button, IconButton, Tooltip, Typography } from "@mui/material";
 import { Autorenew, Check, ContentCopy } from "@mui/icons-material";
-import { motion, tokens } from "../theme";
+import { motion, tokens, radius, type } from "../theme";
+import { FormCard } from "./FormCard";
 import { useT } from "../i18n";
 
 /** A key known only by its ending: the server keeps no more of it (044). */
@@ -24,7 +17,10 @@ export const ApiKeyCard: React.FunctionComponent<{
   ending?: string | null;
   newKey?: string;
   onNewKey: () => void;
-}> = ({ ending, newKey, onNewKey }) => {
+  // the SDK settings that use the key, and their actions (041)
+  children?: React.ReactNode;
+  footer?: React.ReactNode;
+}> = ({ ending, newKey, onNewKey, children, footer }) => {
   const [copied, setCopied] = React.useState(false);
   const { t } = useT();
   React.useEffect(() => {
@@ -46,22 +42,24 @@ export const ApiKeyCard: React.FunctionComponent<{
     onNewKey();
   };
   return (
-    <Card variant="outlined" data-testid="apiKeyCard">
-      <CardHeader
-        title={t("profile.apiKey")}
-        subheader={t("profile.apiKeyHelp")}
-        subheaderTypographyProps={{ variant: "body2" }}
-      />
-      <CardContent sx={{ pt: 0 }}>
+    <FormCard
+      data-testid="apiKeyCard"
+      title={t("profile.apiKey")}
+      description={t("profile.apiKeyHelp")}
+      footer={footer}
+    >
+      <div>
         <Box
           sx={{
             display: "flex",
             alignItems: "center",
             gap: 0.5,
+            minHeight: 40,
+            boxSizing: "border-box",
             pl: 1.5,
             pr: 0.5,
             py: 0.5,
-            borderRadius: 2,
+            borderRadius: radius.control,
             bgcolor: tokens.subtle,
             border: `1px solid ${tokens.border}`,
           }}
@@ -72,7 +70,8 @@ export const ApiKeyCard: React.FunctionComponent<{
               flex: 1,
               minWidth: 0,
               fontFamily: newKey || ending ? tokens.mono : undefined,
-              fontSize: 13,
+              fontSize: type.small,
+              color: tokens.textSecondary,
               overflowWrap: "anywhere",
             }}
           >
@@ -105,16 +104,14 @@ export const ApiKeyCard: React.FunctionComponent<{
               </IconButton>
             </Tooltip>
           )}
-          <Tooltip title={t("profile.newApiKey")}>
-            <IconButton
-              size="small"
-              aria-label={t("profile.newApiKey")}
-              data-testid="newApiKey"
-              onClick={makeNew}
-            >
-              <Autorenew fontSize="small" />
-            </IconButton>
-          </Tooltip>
+          <Button
+            size="small"
+            startIcon={<Autorenew fontSize="small" />}
+            data-testid="newApiKey"
+            onClick={makeNew}
+          >
+            {t("profile.newKey")}
+          </Button>
         </Box>
         {newKey && (
           <Typography
@@ -126,7 +123,8 @@ export const ApiKeyCard: React.FunctionComponent<{
             {t("profile.newKeyOnce")}
           </Typography>
         )}
-      </CardContent>
-    </Card>
+      </div>
+      {children}
+    </FormCard>
   );
 };

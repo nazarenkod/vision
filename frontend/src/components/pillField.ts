@@ -1,4 +1,4 @@
-import { motion, tokens } from "../theme";
+import { motion, tokens, radius } from "../theme";
 
 /**
  * The rounded look of compact fields in a page's header and filter row: the
@@ -6,7 +6,7 @@ import { motion, tokens } from "../theme";
  */
 export const pillField = (active = false) => ({
   "& .MuiOutlinedInput-root": {
-    borderRadius: 999,
+    borderRadius: radius.pill,
     bgcolor: active ? tokens.brandSoft : tokens.surface,
     transition: `background-color ${motion.base}ms`,
   },

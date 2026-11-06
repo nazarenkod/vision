@@ -5,7 +5,7 @@ import { Circle, Group, Image, Layer, Rect, Stage, Text } from "react-konva";
 import useImage from "use-image";
 import { staticService } from "../../services";
 import { PickableElement, TestRun } from "../../types";
-import { tokens } from "../../theme";
+import { tokens, type, radius } from "../../theme";
 import { useTokens } from "../../contexts/themeMode.context";
 import { addMark, BugMark, removeMark } from "../../_helpers/bugReport.helper";
 import { elementAt, elementLabel } from "../../_helpers/elementPicking.helper";
@@ -213,7 +213,7 @@ export const BugEvidence: React.FunctionComponent<{
                     y={mark.y * scale - 6}
                     width={20}
                     align="center"
-                    fontSize={11}
+                    fontSize={type.caption}
                     fontStyle="bold"
                     fill={colors.surface}
                   />
@@ -234,7 +234,7 @@ export const BugEvidence: React.FunctionComponent<{
             gap: 1,
             bgcolor: tokens.surface,
             border: `1px solid ${tokens.border}`,
-            borderRadius: 2,
+            borderRadius: radius.control,
             pl: 1,
             fontSize: 12,
           }}
@@ -243,12 +243,12 @@ export const BugEvidence: React.FunctionComponent<{
             sx={{
               width: 18,
               height: 18,
-              borderRadius: "50%",
+              borderRadius: radius.pill,
               bgcolor: tokens.status.new.fg,
               color: tokens.surface,
               display: "grid",
               placeItems: "center",
-              fontSize: 10.5,
+              fontSize: type.caption,
               fontWeight: 600,
               flexShrink: 0,
             }}
@@ -268,7 +268,7 @@ export const BugEvidence: React.FunctionComponent<{
                 component="span"
                 sx={{
                   fontFamily: tokens.mono,
-                  fontSize: 11,
+                  fontSize: type.caption,
                   color: tokens.textMuted,
                   ml: 1,
                 }}

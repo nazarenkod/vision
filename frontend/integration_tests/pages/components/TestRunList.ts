@@ -25,7 +25,11 @@ export class TestRunList extends Table {
   selectAll = this.page.getByTestId("gridSelectAll");
   selectionCount = this.page.getByTestId("gridSelectionCount");
 
-  sortBy(field: "status" | "name" | "tags") {
+  sortButton = this.page.getByTestId("gridSortButton");
+
+  // the cards sort from a menu behind one button (spec 046)
+  async sortBy(field: "status" | "name" | "tags") {
+    await this.sortButton.click();
     return this.page.getByTestId(`gridSort-${field}`).click();
   }
 

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, FormEvent } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { Button, Grid, Typography, Box } from "@mui/material";
+import { Button, Typography, Box } from "@mui/material";
+import { LockOutlined } from "@mui/icons-material";
 import { useUserDispatch, login } from "../contexts";
 import { LOCATOR_LOGIN_FORM, routes } from "../constants";
 import { useSnackbar } from "notistack";
@@ -10,6 +11,8 @@ import { usersService } from "../services";
 import { OIDC_AUTO_REDIRECT } from "../_config/env.config";
 import { useOidcEnabled } from "../_helpers/useOidcEnabled";
 import { useT } from "../i18n";
+import { tokens, type } from "../theme";
+import { FieldLabel } from "./FieldLabel";
 
 const LoginForm = () => {
   const location = useLocation();
@@ -64,24 +67,38 @@ const LoginForm = () => {
 
   // with SSO, its button first; the form below is for local accounts (045)
   const sso = oidcEnabled && (
-    <Box sx={{ display: "flex", flexDirection: "column", gap: 2, mb: 3 }}>
+    <Box sx={{ display: "flex", flexDirection: "column", gap: 2, mb: 2 }}>
       <Button
         color="primary"
         variant="contained"
         size="large"
         fullWidth
+        startIcon={<LockOutlined />}
         data-testid="oidcLoginBtn"
         onClick={() => usersService.startOidcLogin()}
+        sx={{ height: 44 }}
       >
         {t("auth.sso")}
       </Button>
-      <Typography
-        variant="body2"
-        color="textSecondary"
-        sx={{ textAlign: "center" }}
+      <Box
+        role="separator"
+        data-testid="localSeparator"
+        sx={{
+          display: "flex",
+          alignItems: "center",
+          gap: 1.5,
+          fontSize: type.small,
+          color: tokens.textMuted,
+          "&::before, &::after": {
+            content: '""',
+            flex: 1,
+            height: "1px",
+            bgcolor: tokens.border,
+          },
+        }}
       >
         {t("auth.orLocal")}
-      </Typography>
+      </Box>
     </Box>
   );
 
@@ -89,15 +106,16 @@ const LoginForm = () => {
     <ValidatorForm onSubmit={handleSubmit} instantValidate>
       <Box id={LOCATOR_LOGIN_FORM}>
         {sso}
-        <Grid container direction="column" spacing={2}>
-          <Grid item>
+        <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+          <div>
+            <FieldLabel htmlFor="email">{t("auth.email")}</FieldLabel>
             <TextValidator
               validators={["isEmail"]}
               errorMessages={[t("auth.validEmail")]}
               id="email"
               name="email"
               value={email}
-              label={t("auth.email")}
+              placeholder={t("auth.emailPlaceholder")}
               type="text"
               variant="outlined"
               required
@@ -108,27 +126,40 @@ const LoginForm = () => {
                 "data-testid": "email",
               }}
             />
-          </Grid>
-
-          <Grid item>
-            <PasswordField password={password} setPassword={setPassword} />
-          </Grid>
-        </Grid>
-        <Box sx={{ display: "flex", flexDirection: "column", gap: 2, mt: 3 }}>
+          </div>
+          <PasswordField
+            labelAbove
+            password={password}
+            setPassword={setPassword}
+          />
+        </Box>
+        <Box sx={{ display: "flex", flexDirection: "column", gap: 2, mt: 2 }}>
+          {/* beside SSO the local sign-in is the second way in (REQ-046-51) */}
           <Button
             type="submit"
-            color="primary"
+            color={oidcEnabled ? "inherit" : "primary"}
             variant={oidcEnabled ? "outlined" : "contained"}
             size="large"
             fullWidth
             data-testid="loginBtn"
+            data-variant={oidcEnabled ? "secondary" : "primary"}
+            sx={{
+              height: 44,
+              ...(oidcEnabled && {
+                borderColor: tokens.borderStrong,
+                bgcolor: tokens.surface,
+                color: tokens.text,
+              }),
+            }}
           >
             {t("auth.signIn")}
           </Button>
           <Typography
-            variant="body2"
-            color="textSecondary"
-            sx={{ textAlign: "center" }}
+            sx={{
+              fontSize: type.small,
+              color: tokens.textMuted,
+              textAlign: "center",
+            }}
           >
             {t("auth.noAccount")}
           </Typography>

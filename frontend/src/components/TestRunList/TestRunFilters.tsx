@@ -10,6 +10,7 @@ import {
 import { DebounceInput } from "react-debounce-input";
 import { TestStatus } from "../../types";
 import { labelOf, useT } from "../../i18n";
+import { radius } from "../../theme";
 
 interface IProps {
   tagOptions: string[];
@@ -39,7 +40,7 @@ const TestRunFilters: React.FunctionComponent<IProps> = ({
     name.length > 0 || statuses.length > 0 || tags.length > 0;
 
   return (
-    <Paper variant="outlined" sx={{ p: 2, borderRadius: 3 }}>
+    <Paper variant="outlined" sx={{ p: 2, borderRadius: radius.card }}>
       <Grid container spacing={2} alignItems="center" wrap="nowrap">
         <Grid item xs={3}>
           <DebounceInput

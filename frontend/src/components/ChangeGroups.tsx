@@ -25,7 +25,7 @@ import {
 import { buildTestRunLocation } from "../_helpers/route.helpers";
 import { BaseModal } from "./BaseModal";
 import { PillTone, StatusPill } from "./StatusPill";
-import { motion, tokens } from "../theme";
+import { motion, tokens, type, radius } from "../theme";
 import { staggered } from "./motion/Stagger";
 import { shimmer } from "./SkeletonList";
 import { EmptyState } from "./EmptyState";
@@ -98,10 +98,11 @@ const Tag: React.FunctionComponent<{
   <Box
     component="span"
     sx={{
-      font: `600 10.5px ${tokens.mono}`,
+      fontSize: type.caption,
+      fontWeight: 600,
       color: color ?? tokens.textSecondary,
       border: `1px solid ${color ?? tokens.a11yExisting}`,
-      borderRadius: "4px",
+      borderRadius: radius.control,
       px: 0.5,
       lineHeight: "16px",
       flexShrink: 0,
@@ -129,7 +130,7 @@ const Thumb: React.FunctionComponent<{ run: TestRun; onOpen: () => void }> = ({
         alignItems: "stretch",
         gap: 0.75,
         width: 112,
-        borderRadius: 2,
+        borderRadius: radius.card,
         "&:hover .thumb, &:focus-visible .thumb": {
           transform: "translateY(-2px)",
         },
@@ -148,7 +149,7 @@ const Thumb: React.FunctionComponent<{ run: TestRun; onOpen: () => void }> = ({
           height: 160,
           // whole screen: a change at the bottom (a menu) must show too
           objectFit: "contain",
-          borderRadius: 2,
+          borderRadius: radius.card,
           p: 0.75,
           boxSizing: "border-box",
           background: tokens.lightbox,
@@ -164,7 +165,8 @@ const Thumb: React.FunctionComponent<{ run: TestRun; onOpen: () => void }> = ({
             display: "flex",
             justifyContent: "space-between",
             gap: 0.5,
-            font: `400 11px ${tokens.mono}`,
+            fontSize: type.caption,
+            fontVariantNumeric: "tabular-nums",
           }}
         >
           <Typography
@@ -371,7 +373,10 @@ export const ChangeGroups: React.FunctionComponent<Props> = ({
         }}
       >
         {[0, 1, 2].map((i) => (
-          <Box key={i} sx={{ ...shimmer, height: 140, borderRadius: 3 }} />
+          <Box
+            key={i}
+            sx={{ ...shimmer, height: 140, borderRadius: radius.card }}
+          />
         ))}
       </Box>
     );
@@ -402,7 +407,7 @@ export const ChangeGroups: React.FunctionComponent<Props> = ({
             sx={{
               bgcolor: tokens.surface,
               border: `1px ${noise ? "dashed" : "solid"} ${noise ? tokens.borderStrong : tokens.border}`,
-              borderRadius: 3,
+              borderRadius: radius.card,
               px: 2,
               py: 1.5,
               display: "flex",
@@ -542,7 +547,7 @@ export const ChangeGroups: React.FunctionComponent<Props> = ({
                       display: "flex",
                       gap: 1,
                       alignItems: "baseline",
-                      fontSize: 13.5,
+                      fontSize: type.small,
                     }}
                   >
                     <Tag>{t("groups.uiTree")}</Tag>
@@ -557,7 +562,7 @@ export const ChangeGroups: React.FunctionComponent<Props> = ({
                       flexWrap: "wrap",
                       gap: 1,
                       alignItems: "baseline",
-                      fontSize: 13.5,
+                      fontSize: type.small,
                     }}
                   >
                     <Tag color={tokens.brand}>AI</Tag>

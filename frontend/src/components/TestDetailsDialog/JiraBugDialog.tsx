@@ -22,7 +22,7 @@ import {
   TestRun,
 } from "../../types";
 import { ChosenValue, JiraFieldInput } from "./JiraFieldInput";
-import { tokens } from "../../theme";
+import { tokens, radius } from "../../theme";
 import { useT } from "../../i18n";
 import { a11yTitle } from "../../_helpers/a11yText.helper";
 
@@ -332,7 +332,7 @@ export const JiraBugDialog: React.FunctionComponent<{
               sx={{
                 bgcolor: tokens.subtle,
                 border: `1px solid ${tokens.border}`,
-                borderRadius: 2,
+                borderRadius: radius.card,
                 p: 1.5,
                 display: "flex",
                 flexDirection: "column",

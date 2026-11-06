@@ -47,3 +47,12 @@ export interface TestRun {
 export const hasUiTree = (
   testRun: Pick<TestRun, "hasUiTree" | "uiTreeName">,
 ): boolean => testRun.hasUiTree ?? !!testRun.uiTreeName;
+
+/** One run of a check in the trend of the comparison header (REQ-046-08). */
+export interface TrendPoint {
+  id: string;
+  buildNumber: number | null;
+  createdAt: string;
+  status: TestStatus;
+  diffPercent: number;
+}

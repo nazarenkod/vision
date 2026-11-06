@@ -150,20 +150,129 @@ test("filters with chips and hides merge behind a button", async ({
   await listPage.mergeToggle.click();
   await expect(listPage.toBranch).toBeVisible();
 
-  // the filters sit in one row
-  const filters = ["Name", "OS", "Device", "Branch"].map((label) =>
-    page.getByLabel(label, { exact: true }),
-  );
-  const tops = await Promise.all(
-    filters.map(async (filter) =>
-      Math.round((await filter.boundingBox())?.y ?? -1),
-    ),
-  );
-  expect(new Set(tops).size).toBe(1);
-
   await expect(listPage.cards).toHaveCount(3);
+  await page.getByTestId("filtersButton").click();
   await page.getByLabel("Device", { exact: true }).click();
   await page.getByRole("option", { name: "PIXEL_4_XL" }).click();
   await expect(listPage.cards).toHaveCount(1);
   await expect(listPage.getCard(other.name)).toBeVisible();
+});
+
+test("filters with one Filters button and removable chips", async ({
+  openTestVariationListPage,
+  page,
+}) => {
+  const android = {
+    ...TEST_VARIATION_TWO,
+    id: "android-14",
+    name: "android screen",
+    os: "Android 14",
+  };
+  await mockGetTestVariations(page, TEST_PROJECT.id, [
+    TEST_VARIATION_ONE,
+    TEST_VARIATION_TWO,
+    android,
+  ]);
+  const listPage = await openTestVariationListPage(TEST_PROJECT.id);
+  const filtersButton = page.getByTestId("filtersButton");
+  const chips = page.getByTestId("filterChip");
+
+  // a search and one button; the filter fields wait in its popover
+  await expect(page.getByTestId("filterSearch")).toHaveAttribute(
+    "placeholder",
+    "Search checks",
+  );
+  await expect(filtersButton).toHaveText("Filters");
+  await expect(page.getByLabel("OS", { exact: true })).toHaveCount(0);
+  await expect(chips).toHaveCount(0);
+  // a baseline is a check: name and tags, its devices inside
+  await expect(page.getByTestId("baselinesCount")).toHaveText("3 checks");
+
+  await filtersButton.click();
+  await page.getByLabel("OS", { exact: true }).click();
+  await page.getByRole("option", { name: "Android 14" }).click();
+  await page.getByLabel("Branch", { exact: true }).click();
+  await page
+    .getByRole("option", { name: TEST_VARIATION_TWO.branchName })
+    .click();
+  await page.keyboard.press("Escape");
+
+  await expect(filtersButton).toHaveText("Filters2");
+  await expect(chips).toHaveText([
+    "OS: Android 14",
+    `Branch: ${TEST_VARIATION_TWO.branchName}`,
+  ]);
+  await expect(listPage.cards).toHaveCount(1);
+
+  // a chip's cross drops that filter only
+  await page.getByRole("button", { name: "Remove filter OS" }).click();
+  await expect(chips).toHaveText([`Branch: ${TEST_VARIATION_TWO.branchName}`]);
+  await expect(filtersButton).toHaveText("Filters1");
+  await expect(listPage.cards).toHaveCount(3);
+
+  // Clear drops the rest
+  await page.getByTestId("clearFilters").click();
+  await expect(chips).toHaveCount(0);
+  await expect(filtersButton).toHaveText("Filters");
+  await expect(page.getByTestId("clearFilters")).toHaveCount(0);
+});
+
+test("lays out a baseline card as name, one row of tags, History and delete", async ({
+  openTestVariationListPage,
+}) => {
+  const listPage = await openTestVariationListPage(TEST_PROJECT.id);
+  const card = listPage.getCard(TEST_VARIATION_ONE.name);
+  await expect(card).toBeVisible();
+
+  // no coloured edge on the card, nor on a device inside it
+  const edges = await card.evaluate((el) => {
+    const style = getComputedStyle(el);
+    return [style.borderLeftColor, style.borderTopColor];
+  });
+  expect(edges[0]).toBe(edges[1]);
+  await expect(card.locator("[aria-pressed]")).toHaveCount(0);
+
+  // the device, then the branch and the custom tags, flowing in one block
+  const tags = card.getByTestId("baselineTags");
+  await expect(tags.getByTestId("deviceTag")).toHaveText([
+    "device",
+    "OS",
+    "browser",
+    "viewport",
+  ]);
+  await expect(tags.getByTestId("branchTag")).toHaveText("branch name");
+  await expect(tags).toContainText("customTags");
+
+  // History on the left, delete on the right, in one footer row
+  const history = await card.getByTestId("baselineHistory").boundingBox();
+  const remove = await card.getByTestId("baselineDelete").boundingBox();
+  expect(history.x).toBeLessThan(remove.x);
+  expect(
+    Math.abs(history.y + history.height / 2 - (remove.y + remove.height / 2)),
+  ).toBeLessThan(4);
+  await expect(card.getByTestId("baselineHistory")).toHaveAttribute(
+    "href",
+    `/variations/details/${TEST_VARIATION_ONE.id}`,
+  );
+});
+
+test("chooses the project in the sidebar, not on the page", async ({
+  openTestVariationListPage,
+  page,
+}) => {
+  const other = { ...TEST_PROJECT, id: "other-project", name: "Other shop" };
+  await mockGetProjects(page, [TEST_PROJECT, other]);
+  await mockGetTestVariations(page, other.id, []);
+  const listPage = await openTestVariationListPage(TEST_PROJECT.id);
+  await expect(listPage.getCard(TEST_VARIATION_ONE.name)).toBeVisible();
+
+  await expect(page.locator("#page-project-select")).toHaveCount(0);
+  await expect(listPage.sideNav.projectSwitcher).toContainText(
+    TEST_PROJECT.name,
+  );
+
+  await page.locator("#project-select").click();
+  await page.getByRole("option", { name: /Other shop/ }).click();
+  await expect(page).toHaveURL(`/variations/${other.id}`);
+  await expect(listPage.cards).toHaveCount(0);
 });

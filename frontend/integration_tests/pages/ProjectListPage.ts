@@ -5,7 +5,7 @@ export class ProjectListPage extends BasePage {
   projects = this.page
     .locator("#projectlist-1 tbody tr")
     .filter({ has: this.page.getByRole("link") });
-  addBtn = this.page.getByRole("button", { name: "add" });
+  addBtn = this.page.getByRole("button", { name: "New project" });
   deleteBtn = this.page.getByTestId("delete");
   editBtn = this.page.getByTestId("EditIcon");
 

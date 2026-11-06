@@ -60,7 +60,7 @@ test("renders", async ({ openProjectPage, page }) => {
   const projectPage = await openProjectPage(project.id);
   await projectPage.buildList.getBuildLocator(TEST_BUILD_FAILED.number).click();
   // a build opens on its Overview (031); these are about the list of runs
-  await page.getByRole("tab", { name: /All tests|Усі перевірки/ }).click();
+  await page.getByRole("tab", { name: /All screens|Усі екрани/ }).click();
 
   await expect(page).toHaveScreenshot("project-page-test-run-list.png");
 
@@ -78,7 +78,7 @@ test("renders the build and the review in Ukrainian", async ({
   const projectPage = await openProjectPage(project.id);
   await projectPage.buildList.getBuildLocator(TEST_BUILD_FAILED.number).click();
   // a build opens on its Overview (031); these are about the list of runs
-  await page.getByRole("tab", { name: /All tests|Усі перевірки/ }).click();
+  await page.getByRole("tab", { name: /All screens|Усі екрани/ }).click();
 
   await expect(page).toHaveScreenshot("project-page-test-run-list-uk.png");
 
@@ -96,7 +96,7 @@ test("renders the review in Ukrainian in the dark theme", async ({
   const projectPage = await openProjectPage(project.id);
   await projectPage.buildList.getBuildLocator(TEST_BUILD_FAILED.number).click();
   // a build opens on its Overview (031); these are about the list of runs
-  await page.getByRole("tab", { name: /All tests|Усі перевірки/ }).click();
+  await page.getByRole("tab", { name: /All screens|Усі екрани/ }).click();
   await projectPage.testRunList.getRow(TEST_UNRESOLVED.id).click();
 
   await expect(page).toHaveScreenshot(
@@ -440,7 +440,9 @@ test("lines the Project label up with the select under it", async ({
   const label = await page.locator("#projectSelect").boundingBox();
   const select = await page.locator("#project-select").boundingBox();
 
-  expect(label.x).toBe(select.x);
+  // in the sidebar the caption sits where the item labels start (spec 046)
+  expect(label.x).toBe(select.x + 8);
+  expect(label.y).toBeLessThan(select.y);
 });
 
 test("shows a build as its number, date, branch and status", async ({
@@ -576,13 +578,21 @@ const overlaidOpacity = (page) =>
     });
 
 const diffSwitch = (page) =>
-  page.getByRole("checkbox", { name: "Toggle diff" });
+  page.getByRole("checkbox", { name: "Highlight diff" });
+
+// the fade has its slider only in the Fade view (REQ-046-02)
+const chooseFade = (page) =>
+  page
+    .getByTestId("compareToolbar")
+    .getByRole("button", { name: "Fade" })
+    .click();
 
 test("keeps both panes and fades the image over the baseline", async ({
   openProjectPage,
   page,
 }) => {
   await openDialog(openProjectPage, page);
+  await chooseFade(page);
   await expect(page.getByTestId("overlayOpacity")).toBeVisible();
 
   await page.getByTestId("overlayOpacity").getByRole("slider").press("Home");
@@ -593,14 +603,14 @@ test("keeps both panes and fades the image over the baseline", async ({
 
 // the dialog opens on the server's diff whenever there is one, so a fade that
 // only worked in the image view would look broken on arrival
-test("takes the pane off the diff when the fade is touched", async ({
+test("takes the pane off the diff when the fade is chosen", async ({
   openProjectPage,
   page,
 }) => {
   await openDialog(openProjectPage, page);
   await expect(diffSwitch(page)).toBeChecked();
 
-  await page.getByTestId("overlayOpacity").getByRole("slider").press("Home");
+  await chooseFade(page);
 
   await expect(diffSwitch(page)).not.toBeChecked();
 });
@@ -646,16 +656,15 @@ test("blends at full strength, whatever the fade says", async ({
   page,
 }) => {
   await openDialogWithoutDiff(openProjectPage, page);
+  await chooseFade(page);
   await page.getByTestId("overlayOpacity").getByRole("slider").press("Home");
 
   await page.getByTestId("differenceToggle").click();
 
   // faded, a difference blend washes out instead of blacking out what matches,
-  // so the fade has no meaning here
+  // so the fade has no meaning here: Overlay and Fade are one choice
   expect(await overlaidOpacity(page)).toBe(1);
-  await expect(
-    page.getByTestId("overlayOpacity").getByRole("slider"),
-  ).toBeDisabled();
+  await expect(page.getByTestId("overlayOpacity")).toHaveCount(0);
 });
 
 // the fade belongs to the run being looked at, like the diff switch beside it:
@@ -665,6 +674,7 @@ test("forgets the fade on the next screenshot", async ({
   page,
 }) => {
   await openDialogWithNextUnderReview(openProjectPage, page);
+  await chooseFade(page);
   await page.getByTestId("overlayOpacity").getByRole("slider").press("Home");
   expect(await overlaidOpacity(page)).toBe(0);
 
@@ -673,12 +683,10 @@ test("forgets the fade on the next screenshot", async ({
   await page.evaluate(() => (document.activeElement as HTMLElement)?.blur());
   await page.keyboard.press("ArrowRight");
 
-  // back on the diff, and the fade back to opaque, so the next screenshot is
-  // shown as it arrived
+  // back on the diff, side by side, so the next screenshot is shown as it
+  // arrived
   await expect(diffSwitch(page)).toBeChecked();
-  await expect(
-    page.getByTestId("overlayOpacity").getByRole("slider"),
-  ).toHaveAttribute("aria-valuenow", "1");
+  await expect(page.getByTestId("overlayOpacity")).toHaveCount(0);
 });
 
 test("forgets the blend on the next screenshot", async ({
@@ -713,7 +721,7 @@ for (const settled of [TEST_RUN_OK, TEST_RUN_NEW]) {
     await projectPage.testRunList.getRow(settled.id).click();
     await expect(page.getByTestId("drawArea").first()).toBeVisible();
 
-    await expect(page.getByTestId("overlayOpacity")).toHaveCount(0);
+    await expect(page.getByTestId("view-fade")).toHaveCount(0);
     await expect(page.getByTestId("differenceToggle")).toHaveCount(0);
   });
 }
@@ -729,7 +737,7 @@ test("keeps the fade on an approved screenshot carrying a diff", async ({
   await projectPage.testRunList.getRow(TEST_RUN_APPROVED.id).click();
   await expect(page.getByTestId("drawArea").first()).toBeVisible();
 
-  await expect(page.getByTestId("overlayOpacity")).toBeVisible();
+  await expect(page.getByTestId("view-fade")).toBeVisible();
   await expect(page.getByTestId("differenceToggle")).toBeVisible();
   await expect(diffSwitch(page)).toBeVisible();
 });
@@ -740,6 +748,7 @@ test("keeps the fade reachable in a narrow window", async ({
 }) => {
   await page.setViewportSize({ width: 1000, height: 700 });
   await openDialog(openProjectPage, page);
+  await chooseFade(page);
 
   await expect(
     page.getByTestId("overlayOpacity").getByRole("slider"),
@@ -752,6 +761,7 @@ test("keeps the fade reachable in a narrow window", async ({
 
 test("renders the fade", async ({ openProjectPage, page }) => {
   await openDialog(openProjectPage, page);
+  await chooseFade(page);
 
   await page.getByTestId("overlayOpacity").getByRole("slider").press("End");
   for (let i = 0; i < 10; i++) {

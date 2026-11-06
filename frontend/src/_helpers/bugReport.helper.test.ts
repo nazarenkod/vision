@@ -6,6 +6,7 @@ import {
   editField,
   emptyForm,
   missingFields,
+  missingTargets,
   removeMark,
   visibleInputs,
 } from "./bugReport.helper";
@@ -74,6 +75,31 @@ describe("fields", () => {
       texts: [],
       fields: [],
     });
+  });
+});
+
+describe("missingTargets", () => {
+  it("leads to the task first, then the texts and Jira fields as the form reads", () => {
+    expect(
+      missingTargets(
+        false,
+        { texts: ["essence", "expected"], fields: ["Серйозність помилки"] },
+        [customer, severity],
+        0,
+      ),
+    ).toEqual(["parent", "essence", "expected", "jira:customfield_1"]);
+  });
+
+  it("points at the fields Vision cannot ask for after everything else", () => {
+    expect(missingTargets(true, { texts: [], fields: [] }, [], 2)).toEqual([
+      "cannotAsk",
+    ]);
+  });
+
+  it("has nowhere to go when everything is filled", () => {
+    expect(
+      missingTargets(true, { texts: [], fields: [] }, [severity], 0),
+    ).toEqual([]);
   });
 });
 

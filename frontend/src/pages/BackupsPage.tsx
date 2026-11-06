@@ -21,7 +21,7 @@ import { backupsService } from "../services";
 import { BackupsOverview } from "../types";
 import { DriveCard } from "../components/Backups/DriveCard";
 import { BackupDay, dayStrip } from "../_helpers/backups.helper";
-import { tokens } from "../theme";
+import { tokens, radius } from "../theme";
 import { staggered } from "../components/motion/Stagger";
 import { useT } from "../i18n";
 
@@ -64,7 +64,7 @@ const DayStrip: React.FunctionComponent<{ days: BackupDay[] }> = ({ days }) => {
               sx={{
                 width: 16,
                 height: 16,
-                borderRadius: "4px",
+                borderRadius: radius.control,
                 bgcolor: DAY_COLOUR[d.state],
               }}
             />

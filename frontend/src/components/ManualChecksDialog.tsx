@@ -14,7 +14,7 @@ import { Check, ContentCopy } from "@mui/icons-material";
 import { API_URL } from "../_config/env.config";
 import { useProjectState } from "../contexts";
 import { BRAND } from "../constants/brand";
-import { tokens } from "../theme";
+import { tokens, radius, type } from "../theme";
 import { useT } from "../i18n";
 
 const quote = (value: string) => `"${value.replace(/(["\\$`])/g, "\\$1")}"`;
@@ -39,7 +39,7 @@ const Command: React.FunctionComponent<{ text: string; shown?: string }> = ({
         gap: 1,
         bgcolor: tokens.subtle,
         border: `1px solid ${tokens.border}`,
-        borderRadius: 1,
+        borderRadius: radius.control,
         px: 1.5,
         py: 1,
       }}
@@ -48,7 +48,7 @@ const Command: React.FunctionComponent<{ text: string; shown?: string }> = ({
         component="code"
         sx={{
           flex: 1,
-          font: `500 12.5px ${tokens.mono}`,
+          font: `500 ${type.small}px ${tokens.mono}`,
           whiteSpace: "pre-wrap",
           wordBreak: "break-all",
         }}
@@ -92,7 +92,7 @@ const Step: React.FunctionComponent<{
       sx={{
         width: 22,
         height: 22,
-        borderRadius: "50%",
+        borderRadius: radius.pill,
         display: "grid",
         placeItems: "center",
         fontSize: 12,

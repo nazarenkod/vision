@@ -1,4 +1,38 @@
-import { diffMeter, stepStates, REVIEW_KEYS } from "./review.helper";
+import { diffMeter, REVIEW_KEYS, panelStartsFolded } from "./review.helper";
+
+describe("panelStartsFolded", () => {
+  const empty = { regions: [], changes: [], invisible: [] };
+  it("folds the panel only when it has nothing to show", () => {
+    expect(panelStartsFolded(empty, { violations: [] })).toBe(true);
+    expect(panelStartsFolded(null, null)).toBe(true);
+    expect(
+      panelStartsFolded(
+        {
+          ...empty,
+          regions: [
+            {
+              region: { x: 0, y: 0, width: 1, height: 1 },
+              key: null,
+              element: null,
+              resourceId: null,
+            },
+          ],
+        },
+        null,
+      ),
+    ).toBe(false);
+    expect(
+      panelStartsFolded(empty, {
+        violations: [{} as never],
+      }),
+    ).toBe(false);
+  });
+
+  it("waits until both the changes and the findings are known", () => {
+    expect(panelStartsFolded(undefined, null)).toBeUndefined();
+    expect(panelStartsFolded(empty, undefined)).toBeUndefined();
+  });
+});
 
 describe("review", () => {
   it("puts the tolerance mark and the diff on one scale", () => {
@@ -16,16 +50,6 @@ describe("review", () => {
     // nothing reaches past the end of the bar
     expect(diffMeter(80, 1).fill).toBeLessThanOrEqual(100);
     expect(diffMeter(0, 0)).toEqual({ fill: 0, mark: 0, over: false });
-  });
-
-  it("marks each step as current, approved, rejected or waiting", () => {
-    expect(
-      stepStates(
-        ["approved", "failed", "unresolved", "new", "autoApproved"],
-        2,
-      ),
-    ).toEqual(["approved", "rejected", "current", "waiting", "approved"]);
-    expect(stepStates(["approved"], 0)).toEqual(["current"]);
   });
 
   it("shows the keys the review already has", () => {

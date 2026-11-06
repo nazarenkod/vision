@@ -1,13 +1,13 @@
 import React from "react";
 import { Box } from "@mui/material";
-import { tokens } from "../theme";
+import { tokens, radius } from "../theme";
 
 /** A placeholder shaped like what is loading, with light passing over it. */
 export const shimmer = {
   background: `linear-gradient(90deg, ${tokens.subtle} 0%, ${tokens.border} 50%, ${tokens.subtle} 100%)`,
   backgroundSize: "200% 100%",
   animation: "v-shimmer 1.4s linear infinite",
-  borderRadius: 1.5,
+  borderRadius: radius.card,
 };
 
 export const SkeletonList: React.FunctionComponent = () => {

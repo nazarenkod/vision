@@ -11,6 +11,7 @@ import { TestRun } from "~client/types";
 import { BuildOverview } from "~client/types/buildOverview";
 import {
   API_URL,
+  inUkrainian,
   mockGetBuildDetails,
   mockGetBuilds,
   mockGetProjects,
@@ -301,7 +302,7 @@ test("each number opens its tab or queue", async ({
   await openProjectPage(project.id, build.id, undefined, "overview");
 
   await page.getByTestId("overviewTile-screens").click();
-  await expect(page.getByRole("tab", { name: /All tests/ })).toHaveAttribute(
+  await expect(page.getByRole("tab", { name: /All screens/ })).toHaveAttribute(
     "aria-selected",
     "true",
   );
@@ -319,7 +320,7 @@ test("each number opens its tab or queue", async ({
   await page.getByRole("tab", { name: "Overview" }).click();
   await page.getByTestId("overviewTile-waiting").click();
   await expect(page.getByTestId("queueName")).toHaveText("All to review");
-  await expect(page.getByTestId("queuePosition")).toHaveText("1 / 3");
+  await expect(page.getByTestId("queuePosition")).toHaveText("1 of 3");
 });
 
 test("shows the queue name and position instead of Step", async ({
@@ -334,7 +335,7 @@ test("shows the queue name and position instead of Step", async ({
 
   await expect(page.getByRole("dialog")).toBeVisible();
   await expect(page.getByTestId("queueName")).toHaveText("iPhone 15 iOS 17");
-  await expect(page.getByTestId("queuePosition")).toHaveText("1 / 1");
+  await expect(page.getByTestId("queuePosition")).toHaveText("1 of 1");
   await expect(page.getByText(/^Step \d/)).toHaveCount(0);
   await expect(page).toHaveURL(/queue=device%3AiPhone/);
 });
@@ -342,13 +343,13 @@ test("shows the queue name and position instead of Step", async ({
 test("switches the queue from its menu", async ({ openProjectPage, page }) => {
   await openProjectPage(project.id, build.id, undefined, "overview");
   await page.getByTestId("reviewWaiting").click();
-  await expect(page.getByTestId("queuePosition")).toHaveText("1 / 3");
+  await expect(page.getByTestId("queuePosition")).toHaveText("1 of 3");
 
   await page.getByTestId("queueName").click();
   await page.getByRole("menuitem", { name: /New screens/ }).click();
 
   await expect(page.getByTestId("queueName")).toHaveText("New screens");
-  await expect(page.getByTestId("queuePosition")).toHaveText("1 / 1");
+  await expect(page.getByTestId("queuePosition")).toHaveText("1 of 1");
   await expect(page).toHaveURL(/testId=fresh/);
 });
 
@@ -402,7 +403,7 @@ test("keeps the counts out of the build header on every tab", async ({
   await expect(page.getByTestId("overviewTile-screens")).toBeVisible();
   await expect(page.getByTestId("buildCounts")).toHaveCount(0);
 
-  await page.getByRole("tab", { name: /All tests/ }).click();
+  await page.getByRole("tab", { name: /All screens/ }).click();
   await expect(page.getByTestId("buildStatusBar")).toBeVisible();
   await expect(page.getByTestId("buildCounts")).toHaveCount(0);
 });
@@ -515,15 +516,15 @@ test("counts the checks of a feature and opens a check on its own", async ({
 }) => {
   await openProjectPage(project.id, build.id, undefined, "overview");
   const rows = page.getByTestId("overviewFeature");
-  // the check's full name: no feature is guessed from it
+  // the check's full name under No feature: no feature is guessed from it
   const login = rows.nth(1);
-  await expect(login).toHaveText(/^Login\. Error/);
+  await expect(login).toHaveText(/^No feature\s*Login\. Error/);
   await expect(rows.first().getByTestId("overviewChecks")).toHaveText("1");
   await expect(login.getByTestId("overviewChecks")).toHaveCount(0);
 
   await login.click();
   await expect(page.getByTestId("queueName")).toHaveText("Login. Error");
-  await expect(page.getByTestId("queuePosition")).toHaveText("1 / 1");
+  await expect(page.getByTestId("queuePosition")).toHaveText("1 of 1");
   await expect(page).toHaveURL(/queue=check%3ALogin/);
 });
 
@@ -532,8 +533,8 @@ test("puts the count of All tests in a pill like the tabs beside it", async ({
   page,
 }) => {
   await openProjectPage(project.id, build.id, undefined, "overview");
-  const tab = page.getByRole("tab", { name: /All tests/ });
-  await expect(tab).toHaveText(new RegExp(`^All tests\\s*${runs.length}$`));
+  const tab = page.getByRole("tab", { name: /All screens/ });
+  await expect(tab).toHaveText(new RegExp(`^All screens\\s*${runs.length}$`));
 });
 
 test("shows a device's screen size when the run sent no viewport", async ({
@@ -573,6 +574,16 @@ test("explains a result bar and shows zeros as a faint 0", async ({
   // Login has no bugs: a faint 0, so the column reads as numbers (039)
   await expect(login.getByTestId("overviewNum").last()).toHaveText("0");
 
+  // the card rises into place: a pointer resting where it lands opens nothing
+  await expect
+    .poll(() =>
+      page
+        .getByTestId("overviewFeatures")
+        .evaluate((el) =>
+          el.getAnimations().every((a) => a.playState === "finished"),
+        ),
+    )
+    .toBe(true);
   await login.getByTestId("resultBar").hover();
   await expect(page.getByRole("tooltip")).toHaveText("1 changed");
 });
@@ -617,3 +628,223 @@ test("lays out the Accessibility tab like the Overview", async ({
   await rows.first().click();
   await expect(page).toHaveURL(/tab=a11y.*testId=pay$/);
 });
+
+test("keeps tile numbers neutral and colours only the marker", async ({
+  openProjectPage,
+  page,
+}) => {
+  await openProjectPage(project.id, build.id, undefined, "overview");
+  const colorOf = (testId: string) =>
+    page
+      .getByTestId(testId)
+      .evaluate((element) => getComputedStyle(element).color);
+  const text = await colorOf("overviewValue-screens");
+  // every number that is not zero in the colour of the text
+  for (const key of ["waiting", "a11y", "bugs"]) {
+    expect(await colorOf(`overviewValue-${key}`)).toBe(text);
+  }
+  // what waits is marked by a dot in the changed colour
+  await expect(
+    page.getByTestId("overviewMarker-waiting").getByTestId("tileDot"),
+  ).toHaveCSS("background-color", "rgb(247, 144, 9)");
+  // accessibility and Jira by an icon next to the label
+  await expect(
+    page.getByTestId("overviewMarker-a11y").locator("svg"),
+  ).toBeVisible();
+  await expect(
+    page.getByTestId("overviewMarker-bugs").locator("svg"),
+  ).toBeVisible();
+  // "2 new" over "Accessibility"
+  await expect(page.getByTestId("overviewUnit-a11y")).toHaveText("new");
+  await expect(page.getByTestId("overviewValue-a11y")).toHaveText(/^2\s*new$/);
+  await expect(page.getByTestId("overviewTile-a11y")).toContainText(
+    "Accessibility",
+  );
+  // a zero steps back whole, with nothing to mark (039)
+  await expect(page.getByTestId("overviewTile-rejected")).toHaveAttribute(
+    "data-quiet",
+    "true",
+  );
+  await expect(page.getByTestId("overviewMarker-rejected")).toHaveCount(0);
+});
+
+test("shows a device in one line", async ({ openProjectPage, page }) => {
+  await page.route(`${API_URL}/builds/${build.id}/overview`, (route) =>
+    route.fulfill({
+      json: {
+        ...overview,
+        devices: [
+          {
+            ...overview.devices[0],
+            device: "Samsung Galaxy Z Fold 5 Enterprise Edition 512 GB",
+            os: "Android 14 One UI 6.1",
+            browser: "Chrome Mobile 126",
+            viewport: "1812×2176 landscape",
+          },
+        ],
+      },
+    }),
+  );
+  await openProjectPage(project.id, build.id, undefined, "overview");
+  const cell = page
+    .getByTestId("overviewDevice")
+    .getByTestId("overviewDeviceTags");
+  const tags = cell.getByTestId("deviceTag");
+  await expect(tags.first()).toBeVisible();
+  const tops = await tags.evaluateAll((elements) =>
+    elements.map((element) => element.getBoundingClientRect().top),
+  );
+  expect(new Set(tops).size).toBe(1);
+  // the cell is as tall as one tag: nothing wrapped below it
+  const cellHeight = (await cell.boundingBox())?.height ?? Infinity;
+  const tagHeight = (await tags.first().boundingBox())?.height ?? 0;
+  expect(cellHeight).toBeLessThanOrEqual(tagHeight + 1);
+});
+
+test("shows a result of two parts whole at 1280 px in Ukrainian", async ({
+  openProjectPage,
+  page,
+}) => {
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await inUkrainian(page);
+  await page.route(`${API_URL}/builds/${build.id}/overview`, (route) =>
+    route.fulfill({
+      json: {
+        ...overview,
+        devices: [
+          {
+            ...overview.devices[2],
+            device: "Pixel 7",
+            total: 2,
+            changed: 1,
+            new: 0,
+            passed: 1,
+          },
+        ],
+      },
+    }),
+  );
+  await openProjectPage(project.id, build.id, undefined, "overview");
+  const words = page
+    .getByTestId("overviewDevice")
+    .filter({ hasText: "Pixel 7" })
+    .getByTestId("resultWords");
+  await expect(words).toHaveText("1 змінений · 1 без змін");
+  // nothing hidden behind an ellipsis
+  expect(await words.evaluate((el) => el.scrollWidth <= el.clientWidth)).toBe(
+    true,
+  );
+});
+
+test("names the result next to its bar", async ({ openProjectPage, page }) => {
+  await page.route(`${API_URL}/builds/${build.id}/overview`, (route) =>
+    route.fulfill({
+      json: {
+        ...overview,
+        devices: [
+          ...overview.devices,
+          {
+            ...overview.devices[2],
+            device: "Pixel 8",
+            total: 2,
+            changed: 1,
+            new: 1,
+            passed: 0,
+          },
+        ],
+      },
+    }),
+  );
+  await openProjectPage(project.id, build.id, undefined, "overview");
+  const device = (name: string) =>
+    page.getByTestId("overviewDevice").filter({ hasText: name });
+  await expect(device("iPhone 15").getByTestId("resultWords")).toHaveText(
+    "1 changed",
+  );
+  await expect(device("Galaxy S23").getByTestId("resultWords")).toHaveText(
+    "1 passed",
+  );
+  await expect(device("Pixel 8").getByTestId("resultWords")).toHaveText(
+    "1 changed · 1 new",
+  );
+  await expect(
+    page
+      .getByTestId("overviewFeature")
+      .filter({ hasText: "Checkout" })
+      .getByTestId("resultWords"),
+  ).toHaveText("1 changed");
+  // bars of one width, so the words line up whatever the counts
+  const widths = await page
+    .getByTestId("resultBar")
+    .evaluateAll((bars) =>
+      bars.map((bar) => bar.getBoundingClientRect().width),
+    );
+  expect(new Set(widths)).toEqual(new Set([48]));
+});
+
+test("puts screens without a feature under No feature", async ({
+  openProjectPage,
+  page,
+}) => {
+  await openProjectPage(project.id, build.id, undefined, "overview");
+  const rows = page.getByTestId("overviewFeature");
+  // one row per screen sent without featureName
+  await expect(rows.getByTestId("overviewNoFeature")).toHaveCount(2);
+  const login = rows.filter({ hasText: "Login. Error" });
+  await expect(login.getByTestId("overviewNoFeature")).toHaveText("No feature");
+  await expect(login.getByTestId("overviewScreenName")).toHaveText(
+    "Login. Error",
+  );
+  await expect(
+    rows
+      .filter({ hasText: "Search. Results" })
+      .getByTestId("overviewNoFeature"),
+  ).toHaveText("No feature");
+  // a feature is named as before
+  await expect(
+    rows.filter({ hasText: "Checkout" }).getByTestId("overviewNoFeature"),
+  ).toHaveCount(0);
+});
+
+for (const width of [1280, 1440]) {
+  test(`shows the build overview tables without cut names at ${width} px in Ukrainian`, async ({
+    openProjectPage,
+    page,
+  }) => {
+    await page.setViewportSize({ width, height: 900 });
+    await inUkrainian(page);
+    await openProjectPage(project.id, build.id, undefined, "overview");
+    const features = page.getByTestId("overviewFeatures");
+    await expect(page.getByTestId("overviewFeature")).toHaveCount(4);
+
+    // "No feature" and the screen under it are never cut short
+    const cut = (locator) =>
+      locator.evaluateAll(
+        (elements) =>
+          elements.filter((el) => el.scrollWidth > el.clientWidth).length,
+      );
+    expect(await cut(features.getByTestId("overviewNoFeature"))).toBe(0);
+    expect(await cut(features.getByTestId("overviewScreenName"))).toBe(0);
+    // the name column keeps room for its header
+    const header = features.getByText("Функціонал", { exact: true });
+    const checks = features.getByText("Перевірки", { exact: true });
+    const a = await header.boundingBox();
+    const b = await checks.boundingBox();
+    expect(a.x + a.width).toBeLessThanOrEqual(b.x);
+    // a Jira summary is shown whole
+    expect(await cut(page.getByTestId("overviewBug").locator("p"))).toBe(0);
+
+    // a device's tags are whole or folded into +N, never cut mid-word
+    const tags = page.getByTestId("overviewDevices").getByTestId("deviceTag");
+    expect(
+      await tags.evaluateAll(
+        (elements) =>
+          elements.filter(
+            (el) =>
+              el.querySelector(".MuiChip-label").scrollWidth >
+              el.querySelector(".MuiChip-label").clientWidth,
+          ).length,
+      ),
+    ).toBe(0);
+  });
+}

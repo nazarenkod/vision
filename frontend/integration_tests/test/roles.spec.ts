@@ -11,12 +11,11 @@ test.beforeEach(async ({ page }) => {
 });
 
 test.describe("as admin", () => {
-  test("reaches the user list from the header", async ({
+  test("reaches the user list from the sidebar", async ({
     projectListPage,
     page,
   }) => {
-    await projectListPage.header.openAvatarMenu();
-    await projectListPage.header.avatarMenuItem("Users").click();
+    await projectListPage.sideNav.item("Users").click();
 
     await expect(page).toHaveURL(/\/users$/);
     await expect(
@@ -49,20 +48,9 @@ for (const role of ["editor", "guest"] as const) {
       expect(userListRequests).toEqual([]);
     });
 
-    test("has no users item in the header menu", async ({
-      projectListPage,
-    }) => {
-      await projectListPage.header.openAvatarMenu();
-
-      await expect(
-        projectListPage.header.avatarMenuItem("Projects"),
-      ).toBeVisible();
-      await expect(
-        projectListPage.header.avatarMenuItem("Profile"),
-      ).toBeVisible();
-      await expect(projectListPage.header.avatarMenuItem("Users")).toHaveCount(
-        0,
-      );
+    test("has no users item in the sidebar", async ({ projectListPage }) => {
+      await expect(projectListPage.sideNav.item("Projects")).toBeVisible();
+      await expect(projectListPage.sideNav.item("Users")).toHaveCount(0);
     });
   });
 }
@@ -100,27 +88,33 @@ for (const role of ["admin", "editor", "guest"] as const) {
       projectListPage,
       page,
     }) => {
-      await projectListPage.header.openAvatarMenu();
-      const menu = projectListPage.header.avatarMenu;
+      // Users and Backups moved from this menu to the sidebar (spec 046); the
+      // sidebar is read before the menu covers it
+      const adminOnly = role === "admin" ? 1 : 0;
+      await expect(projectListPage.sideNav.item("Users")).toHaveCount(
+        adminOnly,
+      );
+      await expect(projectListPage.sideNav.item("Backups")).toHaveCount(
+        adminOnly,
+      );
+
+      await projectListPage.sideNav.openAvatarMenu();
+      const menu = projectListPage.sideNav.avatarMenu;
 
       // who is signed in, and as what
       await expect(menu).toContainText(
         `${role[0].toUpperCase()}${role.slice(1)}`,
       );
       await expect(
-        projectListPage.header.avatarMenuItem("Profile"),
+        projectListPage.sideNav.avatarMenuItem("Profile"),
       ).toBeVisible();
       await expect(page.getByTestId("themeMenuItem")).toBeVisible();
       await expect(
-        projectListPage.header.avatarMenuItem("Logout"),
+        projectListPage.sideNav.avatarMenuItem("Log out"),
       ).toBeVisible();
-      const adminOnly = role === "admin" ? 1 : 0;
-      await expect(projectListPage.header.avatarMenuItem("Users")).toHaveCount(
-        adminOnly,
+      await expect(projectListPage.sideNav.avatarMenuItem("Users")).toHaveCount(
+        0,
       );
-      await expect(
-        projectListPage.header.avatarMenuItem("Backups"),
-      ).toHaveCount(adminOnly);
     });
   });
 }

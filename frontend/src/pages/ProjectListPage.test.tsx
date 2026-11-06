@@ -52,7 +52,7 @@ describe("ProjectListPage", () => {
       page.getByRole("link", { name: TEST_PROJECT.name }),
     ).toBeInTheDocument();
     expect(
-      page.getByRole("button", { name: "Add project" }),
+      page.getByRole("button", { name: "New project" }),
     ).toBeInTheDocument();
     expect(page.getByTestId("EditIcon")).toBeInTheDocument();
     expect(page.getByTestId("delete")).toBeInTheDocument();
@@ -69,7 +69,7 @@ describe("ProjectListPage", () => {
     ).toBeInTheDocument();
     expect(page.getByRole("link", { name: "Builds" })).toBeInTheDocument();
     expect(
-      page.queryByRole("button", { name: "Add project" }),
+      page.queryByRole("button", { name: "New project" }),
     ).not.toBeInTheDocument();
     expect(page.queryByTestId("EditIcon")).not.toBeInTheDocument();
     expect(page.queryByTestId("delete")).not.toBeInTheDocument();

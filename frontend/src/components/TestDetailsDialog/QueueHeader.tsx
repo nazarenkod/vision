@@ -1,7 +1,7 @@
 import React from "react";
 import { Box, Button, ListSubheader, Menu, MenuItem } from "@mui/material";
 import { Check, ExpandMore } from "@mui/icons-material";
-import { tokens } from "../../theme";
+import { tokens, type } from "../../theme";
 import { useT } from "../../i18n";
 import {
   QueueChoice,
@@ -10,18 +10,17 @@ import {
 } from "../../_helpers/reviewQueue.helper";
 
 /**
- * The queue's name and the position in it, instead of "Step N/M" (REQ-031-24);
- * the name opens the other queues (REQ-031-25).
+ * The queue's name after "N of M in" (REQ-031-24, REQ-046-05); the name opens
+ * the other queues (REQ-031-25). The position itself is StepProgress's.
  */
 export const QueueHeader: React.FunctionComponent<{
   label: string;
-  position: number;
   total: number;
   current: QueueKey;
   choices: QueueChoice[];
   labelOf: (choice: QueueChoice) => string;
   onChoose: (key: QueueKey) => void;
-}> = ({ label, position, total, current, choices, labelOf, onChoose }) => {
+}> = ({ label, total, current, choices, labelOf, onChoose }) => {
   const { t } = useT();
   const [anchor, setAnchor] = React.useState<HTMLElement | null>(null);
   const inMenu = choices.some((choice) => sameQueue(choice.key, current));
@@ -41,39 +40,38 @@ export const QueueHeader: React.FunctionComponent<{
       <Box sx={{ flex: 1, minWidth: 0 }}>{labelOf(choice)}</Box>
       <Box
         component="span"
-        sx={{ fontFamily: tokens.mono, fontSize: 12, color: tokens.textMuted }}
+        sx={{
+          fontSize: type.caption,
+          fontVariantNumeric: "tabular-nums",
+          color: tokens.textMuted,
+        }}
       >
         {choice.waiting}
       </Box>
     </MenuItem>
   );
   return (
-    <Box sx={{ display: "flex", alignItems: "center", gap: 1.25 }}>
+    <>
       <Button
         data-testid="queueName"
-        variant="outlined"
+        variant="text"
         color="inherit"
         size="small"
         endIcon={<ExpandMore />}
         aria-label={t("queue.choose")}
         aria-haspopup="menu"
         onClick={(event) => setAnchor(event.currentTarget)}
-        sx={{ fontWeight: 600, borderColor: tokens.borderStrong }}
+        sx={{
+          minWidth: 0,
+          px: 0.75,
+          fontSize: type.small,
+          fontWeight: 500,
+          color: tokens.textSecondary,
+          "& .MuiButton-endIcon": { ml: 0.25 },
+        }}
       >
         {label}
       </Button>
-      <Box
-        component="span"
-        data-testid="queuePosition"
-        sx={{
-          fontFamily: tokens.mono,
-          fontSize: 12,
-          color: tokens.textSecondary,
-          fontVariantNumeric: "tabular-nums",
-        }}
-      >
-        {position} / {total}
-      </Box>
       <Menu anchorEl={anchor} open={!!anchor} onClose={() => setAnchor(null)}>
         {item(choices[0])}
         {choices.length > 1 && (
@@ -83,6 +81,6 @@ export const QueueHeader: React.FunctionComponent<{
         {!inMenu && <ListSubheader>{t("queue.fromOverview")}</ListSubheader>}
         {!inMenu && item({ key: current, group: null, waiting: total })}
       </Menu>
-    </Box>
+    </>
   );
 };

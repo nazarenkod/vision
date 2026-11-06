@@ -156,7 +156,8 @@ export const ThemeModeProvider: React.FunctionComponent<{
     const onKey = (event: KeyboardEvent) => {
       if (!isThemeHotkey(event)) return;
       event.preventDefault();
-      toggle(document.querySelector("[data-testid='themeToggle']"));
+      // the theme spreads from the account button, where the switch lives
+      toggle(document.querySelector("[data-testid='avatarMenuButton']"));
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);

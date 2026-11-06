@@ -46,11 +46,16 @@ test("switches theme with the header button and with Shift+D, and remembers it",
   ).toBeVisible();
   await expect.poll(() => shownTheme(page)).toBe("light");
 
-  await page.getByTestId("themeToggle").click();
+  // the theme switch lives in the account menu of the sidebar (spec 046)
+  await projectListPage.sideNav.openAvatarMenu();
+  const toggle = page.getByTestId("themeToggle");
+  await toggle.getByRole("button", { name: "Dark" }).click();
   await expect.poll(() => shownTheme(page)).toBe("dark");
-  await expect(page.getByTestId("themeToggle")).toHaveAccessibleName(
-    "Light theme",
+  await expect(toggle.getByRole("button", { name: "Dark" })).toHaveAttribute(
+    "aria-pressed",
+    "true",
   );
+  await page.keyboard.press("Escape");
 
   await page.reload();
   await expect.poll(() => shownTheme(page)).toBe("dark");
@@ -59,7 +64,7 @@ test("switches theme with the header button and with Shift+D, and remembers it",
   await expect.poll(() => shownTheme(page)).toBe("light");
 
   // typing a capital D in a field is just typing
-  const search = page.getByPlaceholder("Project name");
+  const search = page.getByPlaceholder("Search projects");
   await search.click();
   await page.keyboard.press("Shift+D");
   await expect(search).toHaveValue("D");
@@ -71,9 +76,17 @@ test("the account menu switches theme too", async ({
   page,
 }) => {
   await page.emulateMedia({ colorScheme: "light" });
-  await projectListPage.header.openAvatarMenu();
-  await page.getByTestId("themeMenuItem").click();
+  await projectListPage.sideNav.openAvatarMenu();
+  await page
+    .getByTestId("themeMenuItem")
+    .getByRole("button", { name: "Dark" })
+    .click();
   await expect.poll(() => shownTheme(page)).toBe("dark");
+  await page
+    .getByTestId("themeMenuItem")
+    .getByRole("button", { name: "System" })
+    .click();
+  await expect.poll(() => shownTheme(page)).toBe("light");
 });
 
 test("screenshots keep their pixels in the dark theme", async ({
@@ -148,7 +161,7 @@ test("Appearance System forgets the choice and follows the system again", async 
 }) => {
   await page.emulateMedia({ colorScheme: "light" });
   await expect(profilePage.page.getByTestId("appearanceCard")).toBeVisible();
-  const appearance = page.getByRole("group", { name: "Appearance" });
+  const appearance = page.getByRole("group", { name: "Theme" });
 
   await appearance.getByRole("button", { name: "Dark" }).click();
   await expect.poll(() => shownTheme(page)).toBe("dark");

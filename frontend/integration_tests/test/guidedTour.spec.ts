@@ -13,7 +13,6 @@ import {
   TEST_VARIATION_TWO,
 } from "~client/_test/test.data.helper";
 import {
-  LOGIN_PAGE_STEPS,
   PROJECT_LIST_PAGE_STEPS,
   PROJECT_PAGE_STEPS,
   TEST_VARIATION_LIST_PAGE,
@@ -60,8 +59,14 @@ test.beforeEach(async ({ page }) => {
 });
 
 test.describe("Guided Tour", () => {
-  test("should allow skipping the tour", async ({ loginPage }) => {
-    const tour = await loginPage.header.startTour();
+  // the sign-in page has no help menu any more (spec 046): the tour of a
+  // project, which has steps to skip, from the sidebar
+  test("should allow skipping the tour", async ({ openProjectPage }) => {
+    const projectPage = await openProjectPage(project.id);
+    await projectPage.buildList
+      .getBuildLocator(TEST_BUILD_FAILED.number)
+      .click();
+    const tour = await projectPage.sideNav.startTour();
     await expect(tour.joyrideOverlay).toBeVisible();
 
     await tour.skipTour();
@@ -69,27 +74,9 @@ test.describe("Guided Tour", () => {
     await expect(tour.joyrideOverlay).not.toBeVisible();
   });
 
-  test.describe("Login Page", () => {
-    test("should display all tour steps", async ({ loginPage }) => {
-      const tour = await loginPage.header.startTour();
-
-      await expect(tour.joyrideOverlay).toContainText(
-        english(LOGIN_PAGE_STEPS[0].content as MessageKey),
-      );
-      await tour.clickNext();
-
-      await expect(tour.joyrideOverlay).toContainText(
-        english(LOGIN_PAGE_STEPS[1].content as MessageKey),
-      );
-      await tour.clickLast();
-
-      await expect(tour.joyrideOverlay).not.toBeVisible();
-    });
-  });
-
   test.describe("Project List Page", () => {
     test("should display all tour steps", async ({ projectListPage }) => {
-      const tour = await projectListPage.header.startTour();
+      const tour = await projectListPage.sideNav.startTour();
 
       await expect(tour.joyrideOverlay).toContainText(
         english(PROJECT_LIST_PAGE_STEPS[0].title as MessageKey),
@@ -107,7 +94,7 @@ test.describe("Guided Tour", () => {
         .getBuildLocator(TEST_BUILD_FAILED.number)
         .click();
 
-      const tour = await projectPage.header.startTour();
+      const tour = await projectPage.sideNav.startTour();
 
       await expect(tour.joyrideOverlay).toContainText(
         english(PROJECT_PAGE_STEPS[0].content as MessageKey),
@@ -143,7 +130,7 @@ test.describe("Guided Tour", () => {
       openTestVariationListPage,
     }) => {
       const variationListPage = await openTestVariationListPage(project.id);
-      const tour = await variationListPage.header.startTour();
+      const tour = await variationListPage.sideNav.startTour();
 
       await expect(tour.joyrideOverlay).toContainText(
         english(TEST_VARIATION_LIST_PAGE[0].title as MessageKey),
@@ -165,8 +152,10 @@ test.describe("Guided Tour", () => {
   });
 });
 
-test("shows the Vision version in the help menu", async ({ loginPage }) => {
-  await loginPage.header.helpMenuButton.click();
+test("shows the Vision version in the help menu", async ({
+  projectListPage,
+}) => {
+  await projectListPage.sideNav.helpMenuButton.click();
   // env-config.js is written from env.defaults, as in the image
-  await expect(loginPage.header.helpMenu).toContainText("Vision 1.0.0");
+  await expect(projectListPage.sideNav.helpMenu).toContainText("Vision 1.0.0");
 });

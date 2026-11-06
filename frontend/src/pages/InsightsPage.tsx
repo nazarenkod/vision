@@ -1,5 +1,5 @@
 import React from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import {
   Box,
   Button,
@@ -16,14 +16,12 @@ import {
 } from "@mui/material";
 import { useSnackbar } from "notistack";
 import { pillField } from "../components/pillField";
-import ProjectSelect from "../components/ProjectSelect";
 import { BaseModal } from "../components/BaseModal";
 import { StatusPill } from "../components/StatusPill";
 import { insightsService, testVariationService } from "../services";
 import { ProjectInsights } from "../types";
-import { useUserState } from "../contexts";
-import { routes } from "../constants";
-import { motion, tokens } from "../theme";
+import { useProjectFromAddress, useUserState } from "../contexts";
+import { motion, tokens, radius } from "../theme";
 import { Num } from "../components/SummaryParts";
 import { ErrorState } from "../components/EmptyState";
 import { shimmer } from "../components/SkeletonList";
@@ -78,7 +76,7 @@ const Section: React.FunctionComponent<{
     sx={{
       bgcolor: tokens.surface,
       border: `1px solid ${tokens.border}`,
-      borderRadius: 3,
+      borderRadius: radius.card,
       p: 2.5,
       display: "flex",
       flexDirection: "column",
@@ -123,7 +121,7 @@ const Amount: React.FunctionComponent<{
       sx={{
         flex: 1,
         height: 6,
-        borderRadius: 3,
+        borderRadius: radius.card,
         bgcolor: tokens.subtle,
         overflow: "hidden",
       }}
@@ -133,7 +131,7 @@ const Amount: React.FunctionComponent<{
         style={{ width: `${barShare(value, max)}%` }}
         sx={{
           height: "100%",
-          borderRadius: 3,
+          borderRadius: radius.card,
           bgcolor: colour,
           animation: `v-fill 700ms ${motion.easing} both 200ms`,
         }}
@@ -148,7 +146,8 @@ const Amount: React.FunctionComponent<{
  */
 const InsightsPage: React.FunctionComponent = () => {
   const { projectId = "" } = useParams<{ projectId: string }>();
-  const navigate = useNavigate();
+  // the sidebar's switcher chooses the project; this page follows its address
+  useProjectFromAddress(projectId);
   const { enqueueSnackbar } = useSnackbar();
   const { t, formatDate, formatNumber } = useT();
   // the parts toLocaleDateString shows
@@ -234,11 +233,6 @@ const InsightsPage: React.FunctionComponent = () => {
         <Typography variant="h4" component="h1">
           {t("insights.title")}
         </Typography>
-        <ProjectSelect
-          compact
-          projectId={projectId}
-          onProjectSelect={(id) => navigate(`${routes.INSIGHTS_PAGE}/${id}`)}
-        />
         <Box sx={{ flex: 1 }} />
         {/* one line where the period is chosen; why the history is short, on hover */}
         {data?.partialHistory && (
@@ -274,8 +268,8 @@ const InsightsPage: React.FunctionComponent = () => {
           aria-busy="true"
           sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}
         >
-          <Box sx={{ ...shimmer, height: 240, borderRadius: 3 }} />
-          <Box sx={{ ...shimmer, height: 240, borderRadius: 3 }} />
+          <Box sx={{ ...shimmer, height: 240, borderRadius: radius.card }} />
+          <Box sx={{ ...shimmer, height: 240, borderRadius: radius.card }} />
         </Box>
       )}
       {data === null && (

@@ -28,7 +28,7 @@ import {
 } from "../../_helpers/whatsCompared.helper";
 import { expectedOf, placesIn } from "../../_helpers/variableText.helper";
 import { ComparedMap } from "./ComparedMap";
-import { tokens } from "../../theme";
+import { tokens, type, radius } from "../../theme";
 import { Text, useT } from "../../i18n";
 
 export {
@@ -66,7 +66,7 @@ const swatchSx = (swatch: Swatch) => {
   const base = {
     width: 14,
     height: 14,
-    borderRadius: "3px",
+    borderRadius: radius.control,
     boxSizing: "border-box",
     flexShrink: 0,
   } as const;
@@ -107,7 +107,7 @@ const rowSx = {
   display: "flex",
   alignItems: "center",
   gap: 1.25,
-  fontSize: 13.5,
+  fontSize: type.small,
   mx: -0.75,
   px: 0.75,
   minHeight: 30,
@@ -134,7 +134,7 @@ const Chip: React.FunctionComponent<{ children: React.ReactNode }> = ({
   <Box
     component="span"
     sx={{
-      fontSize: 11.5,
+      fontSize: type.caption,
       color: tokens.textSecondary,
       border: `1px solid ${tokens.borderStrong}`,
       borderRadius: "999px",
@@ -296,7 +296,7 @@ export const WhatsCompared: React.FunctionComponent<WhatsComparedProps> = ({
         }}
         sx={{ opacity: 0, width: 24, height: 24, flexShrink: 0 }}
       >
-        <Close sx={{ fontSize: 15 }} />
+        <Close sx={{ fontSize: type.title }} />
       </IconButton>
     );
 
@@ -387,7 +387,7 @@ export const WhatsCompared: React.FunctionComponent<WhatsComparedProps> = ({
             <Button
               size="small"
               disabled={busy}
-              sx={{ minWidth: 0, p: 0, fontSize: 12.5, flexShrink: 0 }}
+              sx={{ minWidth: 0, p: 0, fontSize: type.small, flexShrink: 0 }}
               onClick={(event) => {
                 event.stopPropagation();
                 onUseElement(String(suggestion.areaId));
@@ -489,7 +489,12 @@ export const WhatsCompared: React.FunctionComponent<WhatsComparedProps> = ({
         </Tooltip>
         {fact && (
           <Box
-            sx={{ fontSize: 12.5, color: tokens.textMuted, pl: 3, mt: -0.25 }}
+            sx={{
+              fontSize: type.small,
+              color: tokens.textMuted,
+              pl: 3,
+              mt: -0.25,
+            }}
           >
             {fact}
           </Box>
@@ -569,7 +574,7 @@ export const WhatsCompared: React.FunctionComponent<WhatsComparedProps> = ({
           fontWeight: 600,
           color: failing ? tokens.status.failed.fg : tokens.variable,
           bgcolor: failing ? tokens.status.failed.bg : tokens.variableSoft,
-          borderRadius: "4px",
+          borderRadius: radius.control,
           px: 0.5,
         }}
       >
@@ -621,7 +626,7 @@ export const WhatsCompared: React.FunctionComponent<WhatsComparedProps> = ({
           <Box
             data-testid="variableExpected"
             sx={{
-              fontSize: 12.5,
+              fontSize: type.small,
               color: tokens.textMuted,
               pl: 3,
               mb: 0.5,
@@ -652,7 +657,7 @@ export const WhatsCompared: React.FunctionComponent<WhatsComparedProps> = ({
         {others.length > 0 && (
           <Box
             sx={{
-              fontSize: 12.5,
+              fontSize: type.small,
               color: tokens.textMuted,
               pl: 3,
               mb: 0.5,
@@ -717,7 +722,7 @@ export const WhatsCompared: React.FunctionComponent<WhatsComparedProps> = ({
           display: "flex",
           alignItems: "center",
           gap: 1.75,
-          borderRadius: "8px",
+          borderRadius: radius.control,
           "&:focus-visible": {
             outline: `2px solid ${tokens.brand}`,
             outlineOffset: 2,
@@ -744,12 +749,14 @@ export const WhatsCompared: React.FunctionComponent<WhatsComparedProps> = ({
           <Box sx={groupTitleSx}>{t("compared.title")}</Box>
           <Typography
             data-testid="comparedSummary"
-            sx={{ fontSize: 15.5, fontWeight: 650, lineHeight: 1.3 }}
+            sx={{ fontSize: type.title, fontWeight: 600, lineHeight: 1.3 }}
           >
             {headline}
           </Typography>
           {noTree && (
-            <Typography sx={{ fontSize: 13.5, color: tokens.textSecondary }}>
+            <Typography
+              sx={{ fontSize: type.small, color: tokens.textSecondary }}
+            >
               {t("compared.noTreeHelp")}
             </Typography>
           )}
@@ -784,7 +791,7 @@ export const WhatsCompared: React.FunctionComponent<WhatsComparedProps> = ({
             gap: 1.25,
             fontSize: 13,
             lineHeight: 1.5,
-            borderRadius: "8px",
+            borderRadius: radius.control,
             px: 1.5,
             py: 1.25,
             bgcolor: tokens.status.changed.bg,
@@ -792,7 +799,11 @@ export const WhatsCompared: React.FunctionComponent<WhatsComparedProps> = ({
           }}
         >
           <WarningAmberRounded
-            sx={{ fontSize: 18, color: tokens.status.changed.fg, mt: 0.15 }}
+            sx={{
+              fontSize: type.title,
+              color: tokens.status.changed.fg,
+              mt: 0.15,
+            }}
           />
           <span>{describeProblem(oneTree, t)}</span>
         </Box>
@@ -807,7 +818,7 @@ export const WhatsCompared: React.FunctionComponent<WhatsComparedProps> = ({
             gap: 1,
             fontSize: 13,
             lineHeight: 1.5,
-            borderRadius: "8px",
+            borderRadius: radius.control,
             px: 1.5,
             py: 1.25,
             bgcolor: tokens.status.failed.bg,
@@ -858,7 +869,7 @@ export const WhatsCompared: React.FunctionComponent<WhatsComparedProps> = ({
             gap: 1,
             fontSize: 13,
             lineHeight: 1.5,
-            borderRadius: "8px",
+            borderRadius: radius.control,
             px: 1.5,
             py: 1.25,
             bgcolor: tokens.status.failed.bg,
@@ -925,7 +936,7 @@ export const WhatsCompared: React.FunctionComponent<WhatsComparedProps> = ({
           >
             <ChevronRightRounded
               sx={{
-                fontSize: 18,
+                fontSize: type.title,
                 color: tokens.textMuted,
                 transform: outsideOpen ? "rotate(90deg)" : "none",
                 transition: "transform 200ms",
@@ -937,7 +948,11 @@ export const WhatsCompared: React.FunctionComponent<WhatsComparedProps> = ({
             {overview.only && (
               <Box
                 component="span"
-                sx={{ ml: "auto", fontSize: 12.5, color: tokens.textMuted }}
+                sx={{
+                  ml: "auto",
+                  fontSize: type.small,
+                  color: tokens.textMuted,
+                }}
               >
                 {t("compared.outsideHint")}
               </Box>
@@ -945,7 +960,9 @@ export const WhatsCompared: React.FunctionComponent<WhatsComparedProps> = ({
           </Box>
           {outsideOpen && (
             <Box sx={{ display: "flex", flexDirection: "column", pt: 0.5 }}>
-              <Box sx={{ fontSize: 12.5, color: tokens.textMuted, mb: 0.5 }}>
+              <Box
+                sx={{ fontSize: type.small, color: tokens.textMuted, mb: 0.5 }}
+              >
                 {overview.only
                   ? t("compared.outsideHelp")
                   : t("compared.nothingFoundHelp")}
@@ -976,7 +993,7 @@ export const WhatsCompared: React.FunctionComponent<WhatsComparedProps> = ({
           <Box
             sx={{
               flex: 1,
-              fontSize: 12.5,
+              fontSize: type.small,
               lineHeight: 1.4,
               color: tokens.textMuted,
             }}
@@ -995,9 +1012,9 @@ export const WhatsCompared: React.FunctionComponent<WhatsComparedProps> = ({
               component="kbd"
               sx={{
                 ml: 0.75,
-                font: `500 11px ${tokens.mono}`,
+                font: `500 ${type.caption}px ${tokens.mono}`,
                 border: `1px solid ${tokens.borderStrong}`,
-                borderRadius: "4px",
+                borderRadius: radius.control,
                 px: 0.5,
                 color: tokens.textSecondary,
               }}
@@ -1013,7 +1030,7 @@ export const WhatsCompared: React.FunctionComponent<WhatsComparedProps> = ({
                 data-testid="comparedMore"
                 onClick={(event) => setMenu(event.currentTarget)}
               >
-                <MoreHoriz sx={{ fontSize: 18 }} />
+                <MoreHoriz sx={{ fontSize: type.section }} />
               </IconButton>
               <Menu anchorEl={menu} open={!!menu} onClose={() => setMenu(null)}>
                 <MenuItem

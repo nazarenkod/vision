@@ -20,7 +20,7 @@ import {
   setProjectEditState,
 } from "../../contexts";
 import { ImageComparison } from "../../types/imageComparison";
-import { motion, tokens } from "../../theme";
+import { motion, tokens, radius, type } from "../../theme";
 import { LooksSameConfigForm } from "./LooksSameConfigForm";
 import { OdiffConfigForm } from "./OdiffConfigForm";
 import { PixelmatchConfigForm } from "./PixelmatchConfigForm";
@@ -279,7 +279,7 @@ export const ComparisonFields: React.FunctionComponent<{
                 gap: 0.5,
                 p: 1.5,
                 pr: 4,
-                borderRadius: 3,
+                borderRadius: radius.card,
                 border: `1px solid ${on ? tokens.brand : tokens.borderStrong}`,
                 boxShadow: on ? `0 0 0 1px ${tokens.brand}` : "none",
                 bgcolor: on ? tokens.brandSoft : tokens.surface,
@@ -295,14 +295,12 @@ export const ComparisonFields: React.FunctionComponent<{
                   right: 12,
                   width: 16,
                   height: 16,
-                  borderRadius: "50%",
+                  borderRadius: radius.pill,
                   border: `${on ? 5 : 1.5}px solid ${on ? tokens.brand : tokens.borderStrong}`,
                   transition: `border ${motion.base}ms ${motion.easing}`,
                 }}
               />
-              <Typography
-                sx={{ fontFamily: tokens.mono, fontWeight: 600, fontSize: 13 }}
-              >
+              <Typography sx={{ fontWeight: 600, fontSize: type.small }}>
                 {engine}
               </Typography>
               <Typography

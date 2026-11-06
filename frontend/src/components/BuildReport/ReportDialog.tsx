@@ -8,7 +8,7 @@ import {
   Typography,
 } from "@mui/material";
 import { Close, DownloadRounded, LinkRounded } from "@mui/icons-material";
-import { tokens } from "../../theme";
+import { tokens, radius } from "../../theme";
 import { useT } from "../../i18n";
 import { useUserState } from "../../contexts";
 import { reportsService } from "../../services";
@@ -127,7 +127,7 @@ export const ReportDialog: React.FunctionComponent<{
         <Typography
           id="report-title"
           component="h2"
-          sx={{ fontSize: 16, fontWeight: 650 }}
+          sx={{ fontSize: 16, fontWeight: 600 }}
         >
           {t("report.title")}
         </Typography>
@@ -189,7 +189,7 @@ export const ReportDialog: React.FunctionComponent<{
                 alignItems: "center",
                 gap: 0.5,
                 border: `1px solid ${tokens.border}`,
-                borderRadius: 999,
+                borderRadius: radius.pill,
                 pl: 1.25,
                 pr: 0.25,
                 color: tokens.text,

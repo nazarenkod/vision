@@ -194,9 +194,9 @@ export const BulkOperation: React.FunctionComponent<{
           <IconButton
             disabled={selectedIds.length === 0}
             onClick={toggleApproveDialogOpen}
-            size="large"
+            size="small"
           >
-            <ThumbUp />
+            <ThumbUp fontSize="small" />
           </IconButton>
         </span>
       </Tooltip>
@@ -205,9 +205,9 @@ export const BulkOperation: React.FunctionComponent<{
           <IconButton
             disabled={selectedIds.length === 0}
             onClick={toggleRejectDialogOpen}
-            size="large"
+            size="small"
           >
-            <ThumbDown />
+            <ThumbDown fontSize="small" />
           </IconButton>
         </span>
       </Tooltip>
@@ -216,9 +216,9 @@ export const BulkOperation: React.FunctionComponent<{
           <IconButton
             disabled={selectedIds.length === 0}
             onClick={toggleDownloadDialogOpen}
-            size="large"
+            size="small"
           >
-            <CloudDownload />
+            <CloudDownload fontSize="small" />
           </IconButton>
         </span>
       </Tooltip>
@@ -227,9 +227,9 @@ export const BulkOperation: React.FunctionComponent<{
           <IconButton
             disabled={selectedIds.length === 0}
             onClick={toggleDeleteDialogOpen}
-            size="large"
+            size="small"
           >
-            <Delete />
+            <Delete fontSize="small" />
           </IconButton>
         </span>
       </Tooltip>
@@ -238,9 +238,9 @@ export const BulkOperation: React.FunctionComponent<{
           <IconButton
             disabled={selectedIds.length === 0}
             onClick={toggleClearIgnoreDialogOpen}
-            size="large"
+            size="small"
           >
-            <LayersClear />
+            <LayersClear fontSize="small" />
           </IconButton>
         </span>
       </Tooltip>

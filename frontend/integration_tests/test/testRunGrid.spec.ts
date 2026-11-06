@@ -10,6 +10,7 @@ import {
 } from "~client/_test/test.data.helper";
 import {
   API_URL,
+  inUkrainian,
   mockGetBuildDetails,
   mockGetBuilds,
   mockGetProjects,
@@ -569,17 +570,23 @@ test("shows +N for the tags that do not fit in two rows", async ({
   await expect(card("Checkout").getByTestId("cardTag")).toHaveCount(5);
   await expect(more).toHaveCount(0);
 
-  // a wider card measures again: folded back, the count still adds up and the
-  // tags still sit in two rows
+  // a wider card measures again: folded back, the shown tags and +N (if any
+  // is still hidden) add up to all five, and the tags still sit in two rows.
+  // The comfortable card of spec 046 is wide enough to show all five.
   await projectPage.testRunList.comfortableDensity.click();
-  await expect(more).toBeVisible();
-  const wide = await card("Checkout").getByTestId("cardTag").count();
-  await expect(more).toHaveText(`+${5 - wide}`);
+  await expect(async () => {
+    const wide = await card("Checkout").getByTestId("cardTag").count();
+    const folded = await more.count();
+    expect(
+      wide + (folded ? Number((await more.innerText()).slice(1)) : 0),
+    ).toBe(5);
+    expect(folded).toBe(wide < 5 ? 1 : 0);
+  }).toPass({ timeout: 5000 });
   const box = await card("Checkout").getByTestId("cardTags").boundingBox();
   expect(box?.height).toBeLessThanOrEqual(52);
 });
 
-test("wraps a long name and its tags rather than cutting them off", async ({
+test("keeps a long name to one line and wraps the tags", async ({
   openProjectPage,
   page,
 }) => {
@@ -599,13 +606,17 @@ test("wraps a long name and its tags rather than cutting them off", async ({
   await projectPage.testRunList.gridViewToggle.click();
   await projectPage.testRunList.compactDensity.click();
 
-  // the tags stay on the narrowest card, and both run onto a second line
-  // instead of ending in an ellipsis after two words
+  // the name keeps to one line so the cards stay even, the whole of it in its
+  // title (spec 046); the tags stay on the narrowest card and run onto a
+  // second line instead of ending in an ellipsis after two words
   await expect(projectPage.testRunList.cardTags.first()).toBeVisible();
   const oneLine = 24;
-  expect(
-    (await projectPage.testRunList.cardNames.first().boundingBox()).height,
-  ).toBeGreaterThan(oneLine);
+  const name = projectPage.testRunList.cardNames.first();
+  expect((await name.boundingBox()).height).toBeLessThanOrEqual(oneLine);
+  await expect(name).toHaveAttribute(
+    "title",
+    "Onboarding / ideal weight / metric units",
+  );
   expect(
     (await projectPage.testRunList.cardTags.first().boundingBox()).height,
   ).toBeGreaterThan(oneLine);
@@ -688,19 +699,60 @@ test("labels its switches in the table's colour", async ({
   expect(await colourOf(label)).toBe(inTable);
 });
 
-test("labels its header in the table's colour", async ({
+test("labels its sort button in the table's colour", async ({
   openProjectPage,
   page,
 }) => {
   const projectPage = await openProjectPage(project.id, build.id);
   const inTable = await colourOf(
-    page.locator(".MuiDataGrid-columnHeaderTitle").first(),
+    page.locator(".MuiDataGrid-cell[data-field='name']").first(),
   );
 
   await projectPage.testRunList.gridViewToggle.click();
   await expect(projectPage.testRunList.grid).toBeVisible();
 
-  expect(await colourOf(page.getByTestId("gridSort-name"))).toBe(inTable);
+  expect(await colourOf(projectPage.testRunList.sortButton)).toBe(inTable);
+});
+
+test("shows cards without the table head, sorted by a button", async ({
+  openProjectPage,
+  page,
+}) => {
+  await mockGetTestRuns(page, build.id, SORTABLE);
+  await page.setViewportSize({ width: 1440, height: 900 });
+  const projectPage = await openProjectPage(project.id, build.id);
+  await projectPage.testRunList.gridViewToggle.click();
+  await expect(projectPage.testRunList.cards).toHaveCount(3);
+
+  // no table head above the cards, and nothing of it left to sort by
+  await expect(page.locator(".MuiDataGrid-columnHeaders")).toHaveCount(0);
+  await expect(page.getByTestId("gridSort-name")).toHaveCount(0);
+  await expect(projectPage.testRunList.sortButton).toHaveText(/Sort: Status/);
+
+  // the status sits on the thumbnail, above the name, not beside it
+  const card = projectPage.testRunList.getCard("Alpha");
+  const image = await card.locator("img").first().boundingBox();
+  const status = await card.getByTestId("cardStatus").boundingBox();
+  const name = await card.getByTestId("cardName").boundingBox();
+  expect(status.y).toBeGreaterThanOrEqual(image.y);
+  expect(status.y + status.height).toBeLessThanOrEqual(image.y + image.height);
+  expect(status.y + status.height).toBeLessThan(name.y);
+
+  // the button sorts as the table's column heads did
+  await projectPage.testRunList.sortBy("name");
+  await expect(projectPage.testRunList.sortButton).toHaveText(/Sort: Name/);
+  await expect(projectPage.testRunList.cardNames).toHaveText([
+    "Alpha",
+    "Mango",
+    "Zebra",
+  ]);
+
+  // the pagination comes after the cards, never over them
+  const pagination = await page
+    .locator("#test-run-list .MuiTablePagination-root")
+    .boundingBox();
+  const last = await projectPage.testRunList.cards.last().boundingBox();
+  expect(last.y + last.height).toBeLessThanOrEqual(pagination.y);
 });
 
 test("shows phone screenshots as portrait cards", async ({
@@ -723,12 +775,58 @@ test("shows phone screenshots as portrait cards", async ({
   const box = await image.boundingBox();
   expect(box && box.height > box.width * 1.5).toBe(true);
 
-  // a main area about 1100 px wide holds at least five cards in a row
-  // layout positions: the cards may still be rising into place
+  // the main area at 1440 px holds four cards in a row beside the sidebar
+  // (spec 046), more without it. Layout positions: the cards may still be
+  // rising into place
   const tops = await projectPage.testRunList.cards.evaluateAll((cards) =>
     cards.map((card) => (card as HTMLElement).offsetTop),
   );
   expect(tops.filter((top) => top === tops[0]).length).toBeGreaterThanOrEqual(
-    5,
+    4,
   );
+});
+
+for (const width of [1280, 1440]) {
+  test(`keeps the grid toolbar in one row at ${width} px in Ukrainian`, async ({
+    openProjectPage,
+    page,
+  }) => {
+    await page.setViewportSize({ width, height: 900 });
+    await inUkrainian(page);
+    const projectPage = await openProjectPage(project.id, build.id);
+    await projectPage.testRunList.gridViewToggle.click();
+
+    const selectAll = page.getByTestId("gridSelectAll");
+    const toolbar = page.locator(".MuiToolbar-root").filter({ has: selectAll });
+    const sort = projectPage.testRunList.sortButton;
+    await expect(sort).toBeVisible();
+    // one dense row: the bulk actions beside the controls, not under them
+    expect((await toolbar.boundingBox())?.height).toBeLessThanOrEqual(56);
+    const middleOf = async (locator) => {
+      const box = await locator.boundingBox();
+      return Math.round(box.y + box.height / 2);
+    };
+    const bulk = toolbar.locator("button").last();
+    expect(Math.abs((await middleOf(bulk)) - (await middleOf(sort)))).toBe(0);
+    // the sort button keeps its whole label
+    expect(await sort.evaluate((el) => el.scrollWidth <= el.clientWidth)).toBe(
+      true,
+    );
+  });
+}
+
+test("translates the grid and table pagination", async ({
+  openProjectPage,
+  page,
+}) => {
+  await inUkrainian(page);
+  const projectPage = await openProjectPage(project.id, build.id);
+  const pagination = page.locator("#test-run-list .MuiTablePagination-root");
+  await expect(pagination).toContainText("Рядків на сторінці:");
+  await expect(pagination).toContainText("1–4 з 4");
+
+  await projectPage.testRunList.gridViewToggle.click();
+  await expect(pagination).toContainText("Карток на сторінці:");
+  await expect(pagination).toContainText("1–4 з 4");
+  await expect(pagination).not.toContainText(" of ");
 });

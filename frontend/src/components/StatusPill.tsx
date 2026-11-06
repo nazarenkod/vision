@@ -1,6 +1,6 @@
 import React from "react";
 import { Box } from "@mui/material";
-import { tokens } from "../theme";
+import { tokens, radius } from "../theme";
 
 export type PillTone = "changed" | "new" | "failed" | "passed" | "neutral";
 
@@ -20,7 +20,7 @@ export const StatusPill: React.FunctionComponent<{
         alignItems: "center",
         height: 22,
         px: 1,
-        borderRadius: 999,
+        borderRadius: radius.pill,
         fontSize: 12,
         fontWeight: 500,
         lineHeight: 1,

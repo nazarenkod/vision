@@ -53,8 +53,8 @@
 
 | Компонент | Шлях | Роль |
 |---|---|---|
-| Шапка | `frontend/src/components/Header.tsx` | знак, кнопка теми, меню «?» (Guided tour, Manual checks, Report a problem, версія), меню акаунта (ім'я, пошта, роль, Profile, Users, Backups, тема з ⇧D, Log out) |
-| Ліва навігація | `frontend/src/components/NavRail.tsx` | підсвітка, що переїжджає |
+| Шапка (з 046 — бічне меню, [ADR-0028](../../decisions/0028-sidebar-instead-of-top-bar.md)) | `frontend/src/components/SideNav.tsx`, `frontend/src/components/AccountMenu.tsx` | знак, кнопка теми, меню «?» (Guided tour, Manual checks, Report a problem, версія), меню акаунта (ім'я, пошта, роль, Profile, Users, Backups, тема з ⇧D, Log out) |
+| Ліва навігація | `frontend/src/components/SideNav.tsx` | підсвітка, що переїжджає |
 | Тур | `frontend/src/components/GuidedTour.tsx`, `frontend/src/components/GuidedTour.locators.ts` | кроки під нові елементи |
 
 ### Порівняння (розкладка без змін)
@@ -62,7 +62,7 @@
 | Компонент | Шлях | Роль |
 |---|---|---|
 | Смужка діфу | `frontend/src/components/TestDetailsDialog/DiffMeter.tsx` | відсоток, заповнення, риска допуску |
-| Крапки кроків | `frontend/src/components/TestDetailsDialog/StepDots.tsx` | стан кожного кроку |
+| Крапки кроків (з [046](../046-design-review-refresh/spec.md) — смуга сегментів) | `frontend/src/components/TestDetailsDialog/StepProgress.tsx` | стан кожного кроку |
 | Чисті функції ревю | `frontend/src/_helpers/review.helper.ts` | `diffMeter(diff, tolerance)`, `stepStates(ids, current, decided)`, `hotkeyLabel` |
 | Кнопки | `frontend/src/components/TestDetailsDialog/ApproveRejectButtons.tsx` | підписи A і X, галочка 420 ms, сповіщення з Undo |
 | Діалог | `frontend/src/components/TestDetailsDialog/TestDetailsModal.tsx` | крапки, напрямок переходу кроків, знімки без анімацій після появи |
@@ -207,7 +207,7 @@ Undo на сервері дозволене до 30 s після рішення:
 | REQ-018-27 | manual: сповільнити мережу в DevTools до Slow 3G, відкрити збірку — заготовки з відблиском у списку й таблиці, спінера на весь екран немає. Перевірено 2026-10-29: відповідь API затримана на 2.5 s — три заготовки з відблиском, видимого спінера немає |
 | REQ-018-30 | `frontend/integration_tests/test/testDetailsDialog.spec.ts › keeps the review layout and its keys` |
 | REQ-018-31 | `frontend/src/_helpers/review.helper.test.ts › puts the tolerance mark and the diff on one scale` |
-| REQ-018-32 | `frontend/src/_helpers/review.helper.test.ts › marks each step as current, approved, rejected or waiting` |
+| REQ-018-32 | замінено [046](../046-design-review-refresh/spec.md): у заголовку лише позиція «N з M» і тренд перевірки, без смуги кроків |
 | REQ-018-33 | `frontend/integration_tests/test/testDetailsDialog.spec.ts › shows the A and X keys on Approve and Reject` |
 | REQ-018-34 | manual: у порівнянні → — пара знімків іде вліво, наступна заходить справа; ← — навпаки. Перевірено 2026-10-29 у Chromium: на → панелі посередині руху зсунуті вправо (+3 px), на ← — вліво (−6 px) |
 | REQ-018-35 | `frontend/integration_tests/test/testDetailsDialog.spec.ts › shows a check on Approve instead of a toast` |

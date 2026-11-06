@@ -39,6 +39,7 @@ import { UiTree } from '../ui-tree/ui-tree.types';
 import { A11yIssuesService } from '../a11y/a11y-issues.service';
 import { ReviewedA11yReport } from '../a11y/a11y-issues';
 import { deviceRejection } from '../projects/allowed-devices';
+import { checkTrend, TREND_LENGTH, TrendPoint } from './check-trend';
 
 @Injectable()
 export class TestRunsService {
@@ -498,6 +499,30 @@ export class TestRunsService {
   async getStructure(id: string): Promise<StructureInfo | null> {
     const testRun = await this.findOne(id);
     return testRun ? this.uiTreeService.structure(testRun) : null;
+  }
+
+  /** The check's last runs up to this one, for the trend in the comparison header (REQ-046-08). */
+  async getTrend(id: string): Promise<TrendPoint[]> {
+    const select = {
+      id: true,
+      createdAt: true,
+      status: true,
+      diffPercent: true,
+      testVariationId: true,
+      build: { select: { number: true } },
+    } as const;
+    const current = await this.prismaService.testRun.findUnique({ where: { id }, select });
+    if (!current) return [];
+    // a run outside any variation has no history of its own
+    if (!current.testVariationId) return checkTrend([current], id);
+    const rows = await this.prismaService.testRun.findMany({
+      where: { testVariationId: current.testVariationId, createdAt: { lte: current.createdAt } },
+      orderBy: { createdAt: 'desc' },
+      // one spare: runs at the same moment as the current one may come first
+      take: TREND_LENGTH + 1,
+      select,
+    });
+    return checkTrend([...rows, current], id);
   }
 
   private assertSelector(selector: string) {

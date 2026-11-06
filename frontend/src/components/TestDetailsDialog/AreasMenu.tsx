@@ -10,14 +10,17 @@ import {
   Typography,
 } from "@mui/material";
 import { Add, ExpandLess, ExpandMore } from "@mui/icons-material";
+import { visuallyHidden } from "@mui/utils";
 import { IgnoreArea } from "../../types/ignoreArea";
-import { tokens } from "../../theme";
+import { tokens, type, radius } from "../../theme";
 import { useT } from "../../i18n";
 import { testAreaMarkId } from "./WhatsCompared";
 
 export type AreaKind = "ignore" | "compare";
 
 interface AreasMenuProps {
+  // a narrow window: the icon and the count, the name on hover
+  compact?: boolean;
   open: boolean;
   onToggle: () => void;
   // a press outside the menu that is not on the screenshot puts it away
@@ -67,6 +70,7 @@ const DashedSquare = () => (
  * working as before; the button shows how many there are (REQ-024-32).
  */
 export const AreasMenu: React.FunctionComponent<AreasMenuProps> = ({
+  compact,
   open,
   onToggle,
   onClickAway,
@@ -110,8 +114,8 @@ export const AreasMenu: React.FunctionComponent<AreasMenuProps> = ({
       aria-pressed={pressed}
       startIcon={pressed !== undefined ? <Add fontSize="small" /> : undefined}
       sx={{
-        borderRadius: "7px",
-        fontSize: 12.5,
+        borderRadius: radius.control,
+        fontSize: type.small,
         fontWeight: pressed ? 600 : 500,
         color: pressed ? tokens.brandDark : tokens.textSecondary,
         borderColor: pressed ? tokens.brand : tokens.border,
@@ -132,7 +136,7 @@ export const AreasMenu: React.FunctionComponent<AreasMenuProps> = ({
         px: 1.5,
         py: 0.5,
         font: "inherit",
-        fontSize: 12.5,
+        fontSize: type.small,
         fontWeight: kind === value ? 600 : 500,
         color: kind === value ? tokens.text : tokens.textSecondary,
         bgcolor: kind === value ? tokens.surface : "transparent",
@@ -180,7 +184,7 @@ export const AreasMenu: React.FunctionComponent<AreasMenuProps> = ({
           >
             <Button
               size="small"
-              sx={{ ml: "auto", minWidth: 0, p: 0, fontSize: 12.5 }}
+              sx={{ ml: "auto", minWidth: 0, p: 0, fontSize: type.small }}
               data-testid="useElement"
               onClick={(event) => {
                 event.stopPropagation();
@@ -197,42 +201,46 @@ export const AreasMenu: React.FunctionComponent<AreasMenuProps> = ({
 
   return (
     <>
-      <Button
-        ref={anchor}
-        onClick={onToggle}
-        aria-expanded={open}
-        data-testid="areasButton"
-        startIcon={<DashedSquare />}
-        endIcon={open ? <ExpandLess /> : <ExpandMore />}
-        sx={{
-          height: 34,
-          px: 1.25,
-          color: open ? tokens.text : tokens.textSecondary,
-          bgcolor: open ? tokens.subtle : "transparent",
-          fontWeight: open ? 600 : 500,
-          fontSize: 13.5,
-        }}
-      >
-        {t("areas.button")}
-        {count > 0 && (
-          <Box
-            component="span"
-            data-testid="areasCount"
-            sx={{
-              ml: 0.75,
-              fontSize: 11.5,
-              fontWeight: 600,
-              bgcolor: open ? tokens.surface : tokens.status.neutral.bg,
-              color: tokens.status.neutral.fg,
-              borderRadius: "999px",
-              px: 0.9,
-              lineHeight: "18px",
-            }}
-          >
-            {count}
+      <Tooltip title={compact && !open ? t("areas.button") : ""}>
+        <Button
+          ref={anchor}
+          onClick={onToggle}
+          aria-expanded={open}
+          data-testid="areasButton"
+          startIcon={<DashedSquare />}
+          endIcon={open ? <ExpandLess /> : <ExpandMore />}
+          sx={{
+            height: 34,
+            px: 1.25,
+            color: open ? tokens.text : tokens.textSecondary,
+            bgcolor: open ? tokens.subtle : "transparent",
+            fontWeight: open ? 600 : 500,
+            fontSize: type.small,
+          }}
+        >
+          <Box component="span" sx={compact ? visuallyHidden : undefined}>
+            {t("areas.button")}
           </Box>
-        )}
-      </Button>
+          {count > 0 && (
+            <Box
+              component="span"
+              data-testid="areasCount"
+              sx={{
+                ml: 0.75,
+                fontSize: type.caption,
+                fontWeight: 600,
+                bgcolor: open ? tokens.surface : tokens.status.neutral.bg,
+                color: tokens.status.neutral.fg,
+                borderRadius: "999px",
+                px: 0.9,
+                lineHeight: "18px",
+              }}
+            >
+              {count}
+            </Box>
+          )}
+        </Button>
+      </Tooltip>
       {/* not modal: drawing happens on the screenshot while this stays open */}
       <Popper
         open={open}
@@ -270,7 +278,7 @@ export const AreasMenu: React.FunctionComponent<AreasMenuProps> = ({
             sx={{
               mt: 1,
               width: 340,
-              borderRadius: "14px",
+              borderRadius: radius.card,
               boxShadow: tokens.shadowPop,
             }}
           >
@@ -278,14 +286,16 @@ export const AreasMenu: React.FunctionComponent<AreasMenuProps> = ({
               sx={{ p: 2, display: "flex", flexDirection: "column", gap: 1.5 }}
             >
               <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                <Typography sx={{ fontSize: 15, fontWeight: 600, flexGrow: 1 }}>
+                <Typography
+                  sx={{ fontSize: type.title, fontWeight: 600, flexGrow: 1 }}
+                >
                   {t("areas.title")}
                 </Typography>
                 <Box
                   sx={{
                     display: "flex",
                     bgcolor: tokens.subtle,
-                    borderRadius: "8px",
+                    borderRadius: radius.control,
                     p: "2px",
                   }}
                 >

@@ -5,21 +5,22 @@ import {
   Card,
   CardMedia,
   CardContent,
-  Button,
-  ButtonBase,
   Chip,
   IconButton,
+  Link as MuiLink,
+  Menu,
+  MenuItem,
   Typography,
 } from "@mui/material";
 import { staticService } from "../services";
 import { Link } from "react-router-dom";
 import { routes } from "../constants";
-import { Delete } from "@mui/icons-material";
+import { DeleteOutline, ExpandMore } from "@mui/icons-material";
 import { BaseModal } from "./BaseModal";
-import { motion, tokens } from "../theme";
+import { motion, tokens, type } from "../theme";
 import { staggered } from "./motion/Stagger";
 import { EmptyState } from "./EmptyState";
-import { DeviceTags } from "./DeviceTags";
+import { BranchTag, DeviceTags } from "./DeviceTags";
 import { deviceLabel } from "../_helpers/device.helper";
 import { useT } from "../i18n";
 
@@ -42,6 +43,12 @@ export function groupByCheck(items: TestVariation[]): TestVariation[][] {
   );
 }
 
+/**
+ * A check's card as the mock-up draws it (046): no coloured edge; the name;
+ * one wrapping row of grey tags (the device, then the branch and the custom
+ * tags); History on the left and delete on the right. A check on several
+ * devices shows one at a time, picked from a menu after its tags.
+ */
 const CheckCard: React.FunctionComponent<{
   devices: TestVariation[];
   onDelete: (variation: TestVariation) => void;
@@ -51,12 +58,15 @@ const CheckCard: React.FunctionComponent<{
   const [shownId, setShownId] = React.useState(
     (devices.find((d) => d.baselineName) ?? devices[0]).id,
   );
+  const [menu, setMenu] = React.useState<HTMLElement | null>(null);
   const shown = devices.find((d) => d.id === shownId) ?? devices[0];
   const check = devices[0];
   const { t } = useT();
+  const shownLabel = deviceLabel(shown, undefined, t);
   return (
     <Card
       {...staggered(index, 12)}
+      data-testid="baselineCard"
       sx={{
         transition: `transform ${motion.base}ms ${motion.easing}, border-color ${motion.base}ms, box-shadow ${motion.base}ms`,
         "&:hover": {
@@ -80,73 +90,85 @@ const CheckCard: React.FunctionComponent<{
         image={staticService.getImage(shown.baselineName)}
         title={check.name}
       />
-      <CardContent sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
-        <Typography sx={{ fontWeight: 600 }}>{check.name}</Typography>
-        <Box sx={{ display: "flex", gap: 0.5, flexWrap: "wrap" }}>
-          <Chip
-            size="small"
-            label={check.branchName}
-            sx={{ fontFamily: tokens.mono, fontSize: 11.5, borderRadius: 1.5 }}
-          />
-          {check.customTags && (
-            <Chip size="small" variant="outlined" label={check.customTags} />
+      <CardContent
+        sx={{
+          display: "flex",
+          flexDirection: "column",
+          gap: 1,
+          p: 1.5,
+          "&:last-child": { pb: 1 },
+        }}
+      >
+        <Typography sx={{ fontWeight: 600, fontSize: type.body }}>
+          {check.name}
+        </Typography>
+        <Box
+          data-testid="baselineTags"
+          sx={{
+            display: "flex",
+            flexWrap: "wrap",
+            alignItems: "center",
+            gap: 0.5,
+            minWidth: 0,
+          }}
+        >
+          {/* the device's tags flow in the same row as the branch and the tags */}
+          <DeviceTags parts={shown} sx={{ display: "contents" }} />
+          <BranchTag branch={check.branchName} />
+          {check.customTags && <Chip size="small" label={check.customTags} />}
+          {devices.length > 1 && (
+            <Chip
+              size="small"
+              variant="outlined"
+              clickable
+              onClick={(event) => setMenu(event.currentTarget)}
+              onDelete={(event) => setMenu(event.currentTarget)}
+              deleteIcon={<ExpandMore />}
+              aria-haspopup="menu"
+              aria-expanded={!!menu}
+              label={t("baselines.devices", { count: devices.length })}
+              data-testid="baselineDevices"
+            />
           )}
         </Box>
-        {devices.map((device) => (
-          <Box
-            key={device.id}
-            sx={{ display: "flex", alignItems: "center", gap: 0.5 }}
-          >
-            <ButtonBase
-              onClick={() => setShownId(device.id)}
-              sx={{
-                fontSize: 12.5,
-                lineHeight: 1.35,
-                textAlign: "left",
-                justifyContent: "flex-start",
-                flex: 1,
-                minWidth: 0,
-                py: 0.5,
-                display: "flex",
-                alignItems: "center",
-                gap: 0.75,
-              }}
+        <Menu anchorEl={menu} open={!!menu} onClose={() => setMenu(null)}>
+          {devices.map((device) => (
+            <MenuItem
+              key={device.id}
+              selected={device.id === shown.id}
               aria-label={deviceLabel(device, undefined, t)}
-              aria-pressed={device.id === shown.id}
+              onClick={() => {
+                setShownId(device.id);
+                setMenu(null);
+              }}
             >
-              {/* the shown device is marked beside its tags, which stay grey (REQ-037-04) */}
-              <Box
-                component="span"
-                sx={{
-                  width: 3,
-                  alignSelf: "stretch",
-                  minHeight: 20,
-                  borderRadius: 1,
-                  flexShrink: 0,
-                  bgcolor:
-                    device.id === shown.id ? tokens.brand : "transparent",
-                }}
-              />
-              <DeviceTags parts={device} sx={{ flex: 1 }} />
-            </ButtonBase>
-            <Button
-              size="small"
-              component={Link}
-              to={`${routes.VARIATION_DETAILS_PAGE}/${device.id}`}
-            >
-              {t("baselines.history")}
-            </Button>
-            <IconButton
-              onClick={() => onDelete(device)}
-              size="small"
-              aria-label={t("baselines.deleteOf", {
-                device: deviceLabel(device, undefined, t),
-              })}
-            >
-              <Delete fontSize="small" />
-            </IconButton>
-          </Box>
-        ))}
+              <DeviceTags parts={device} dense />
+            </MenuItem>
+          ))}
+        </Menu>
+        <Box
+          data-testid="baselineFooter"
+          sx={{ display: "flex", alignItems: "center", gap: 1 }}
+        >
+          <MuiLink
+            component={Link}
+            to={`${routes.VARIATION_DETAILS_PAGE}/${shown.id}`}
+            underline="hover"
+            data-testid="baselineHistory"
+            sx={{ fontSize: type.small, fontWeight: 600, color: tokens.brand }}
+          >
+            {t("baselines.history")}
+          </MuiLink>
+          <IconButton
+            onClick={() => onDelete(shown)}
+            size="small"
+            aria-label={t("baselines.deleteOf", { device: shownLabel })}
+            data-testid="baselineDelete"
+            sx={{ ml: "auto", color: tokens.textSecondary }}
+          >
+            <DeleteOutline fontSize="small" />
+          </IconButton>
+        </Box>
       </CardContent>
     </Card>
   );

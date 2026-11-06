@@ -250,6 +250,15 @@ export class TestRunsController {
     return this.testRunsService.getStructure(id);
   }
 
+  @ProjectFrom(inParam('id', 'testRun'))
+  @Get(':id/trend')
+  @ApiOkResponse({ description: 'The last 20 runs of the check up to this one, oldest first (REQ-046-08)' })
+  @ApiBearerAuth()
+  @UseGuards(MixedGuard)
+  getTrend(@Param('id', new ParseUUIDPipe()) id: string) {
+    return this.testRunsService.getTrend(id);
+  }
+
   @ProjectFrom(inBody(undefined, 'testRuns'))
   @Post('approve')
   @ApiQuery({ name: 'merge', required: false })

@@ -92,7 +92,6 @@ import { AreaKind, AreasMenu } from "./AreasMenu";
 import { areaMarkId, ruleMarkId, testAreaMarkId } from "./WhatsCompared";
 import { useRuleSnackbar } from "../useRuleSnackbar";
 import { motion, tokens, type, radius } from "../../theme";
-import { StepProgress } from "./StepProgress";
 import { CheckTrend } from "./CheckTrend";
 import {
   COMPACT_TOOLS_QUERY,
@@ -152,8 +151,6 @@ interface Selection {
 interface TestDetailsModalProps {
   testRun: TestRun;
   currentRunIndex: number;
-  /** statuses of every step of this review, in order */
-  stepStatuses?: string[];
   direction?: "forward" | "back" | "none";
   totalTestRunCount: number;
   touched: boolean;
@@ -165,14 +162,11 @@ interface TestDetailsModalProps {
   // the same check on every device of the build
   deviceRuns?: TestRun[];
   handleSelectRun?: (id: string) => void;
-  // the queue this review steps through, opened from the overview (REQ-031-24)
-  queueHeader?: React.ReactNode;
 }
 
 const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
   testRun,
   currentRunIndex,
-  stepStatuses = [],
   direction = "none",
   totalTestRunCount,
   touched,
@@ -182,7 +176,6 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
   handleClose,
   deviceRuns = [],
   handleSelectRun,
-  queueHeader,
 }) => {
   const { enqueueSnackbar } = useDialogSnackbar();
   const testRunDispatch = useTestRunDispatch();
@@ -1592,7 +1585,7 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
         noWrap
         data-testid="screenName"
         title={testRun.name}
-        // the name gives way last: the steps and the trend shrink before it does
+        // the name gives way last: the trend shrinks before it does
         sx={{
           fontSize: type.title,
           fontWeight: 600,
@@ -1604,13 +1597,6 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
         {testRun.name}
       </Typography>
       <TestStatusChip status={testRun.status} />
-      <Box sx={{ ml: 1, minWidth: 0 }}>
-        <StepProgress
-          statuses={stepStatuses}
-          currentIndex={currentRunIndex}
-          queue={queueHeader}
-        />
-      </Box>
       <CheckTrend
         testRunId={testRun.id}
         current={{ status: testRun.status, diffPercent: testRun.diffPercent }}

@@ -12,14 +12,12 @@ import {
   nextWaiting,
   parseQueue,
   QueueChoice,
-  queueChoices,
   queueIds,
   QueueKey,
   queueParam,
   queueSummary,
 } from "../../_helpers/reviewQueue.helper";
 import { ChangeGroup } from "../../types/insights";
-import { QueueHeader } from "./QueueHeader";
 import { QueueDone } from "./QueueDone";
 import { BaseModal } from "../BaseModal";
 import TestDetailsModal from "./TestDetailsModal";
@@ -220,10 +218,6 @@ export const TestDetailsDialog: React.FunctionComponent<{
   React.useEffect(() => {
     lastIndex.current = selectedTestRunIndex;
   }, [selectedTestRunIndex]);
-  const stepStatuses = React.useMemo(
-    () => testRuns.map((run) => run.status),
-    [testRuns],
-  );
 
   // Esc closes the review even when focus has slipped out of the dialog (to
   // the page behind a toast, say): the dialog only hears keys from inside, and
@@ -362,7 +356,6 @@ export const TestDetailsDialog: React.FunctionComponent<{
         testRun={selectedTestRun}
         currentRunIndex={selectedTestRunIndex}
         totalTestRunCount={testRuns.length}
-        stepStatuses={stepStatuses}
         direction={direction}
         touched={touched}
         handleClose={() => navigateById()}
@@ -375,18 +368,6 @@ export const TestDetailsDialog: React.FunctionComponent<{
         handleStep={(offset) => stepOrHold(offset, () => stepInQueue(offset))}
         deviceRuns={deviceRuns}
         handleSelectRun={navigateById}
-        queueHeader={
-          frozen && queueKey ? (
-            <QueueHeader
-              label={labelOfKey(queueKey)}
-              total={testRuns.length}
-              current={queueKey}
-              choices={queueChoices(allTestRuns, groups ?? [])}
-              labelOf={labelOfChoice}
-              onChoose={openQueue}
-            />
-          ) : undefined
-        }
       />
       {queueDone && queueKey && frozen && (
         <QueueDone

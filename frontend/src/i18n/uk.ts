@@ -581,8 +581,6 @@ export const uk: Messages = {
   "review.reject": "Відхилити",
   "review.devices": "Пристрої",
   // порівняння в новому компонуванні (спека 046)
-  "compare.position": "{current} з {total}",
-  "compare.inQueue": "у",
   "compare.trend": {
     one: "Тренд перевірки: лише цей прогін",
     few: "Тренд перевірки за останні {count} прогони",
@@ -1575,6 +1573,7 @@ export const uk: Messages = {
   "overview.a11yNew": "Нові проблеми доступності",
   "overview.jiraBugs": "Баги Jira",
   "overview.device": "Пристрій",
+  "overview.devices": "Пристрої",
   "overview.result": "Результат",
   "overview.review": "Перегляд",
   "overview.a11y": "Доступність",
@@ -1604,9 +1603,6 @@ export const uk: Messages = {
   "overview.report": "Звіт",
   "overview.reviewAll": "Переглянути",
   "queue.all": "Усі на перегляд",
-  "queue.groups": "Групи",
-  "queue.fromOverview": "З огляду",
-  "queue.choose": "Обрати, що переглядати",
   "queue.done": "{name} · готово",
   "queue.next": "Далі: {name} · {count}",
   "queue.back": "Назад",

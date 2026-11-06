@@ -261,9 +261,10 @@ test("opens a build on the Overview tab", async ({ openProjectPage, page }) => {
   );
   await expect(page.getByTestId("overviewDevice")).toHaveCount(3);
   await expect(page.getByTestId("overviewFeature")).toHaveCount(4);
-  // the tables name themselves in their first column
+  // the features name themselves in their first column; the devices are a
+  // list, so they carry a title (REQ-047-02)
   await expect(page.getByRole("heading", { name: "Features" })).toHaveCount(0);
-  await expect(page.getByRole("heading", { name: "Devices" })).toHaveCount(0);
+  await expect(page.getByRole("heading", { name: "Devices" })).toBeVisible();
   await expect(page.getByTestId("overviewBug")).toContainText("P24MOB-14231");
   expect(new URL(page.url()).searchParams.get("tab")).toBeNull();
 });
@@ -319,38 +320,42 @@ test("each number opens its tab or queue", async ({
 
   await page.getByRole("tab", { name: "Overview" }).click();
   await page.getByTestId("overviewTile-waiting").click();
-  await expect(page.getByTestId("queueName")).toHaveText("All to review");
-  await expect(page.getByTestId("queuePosition")).toHaveText("1 of 3");
+  await expect(page.getByRole("dialog")).toBeVisible();
+  await expect(page).toHaveURL(/queue=all&testId=/);
 });
 
-test("shows the queue name and position instead of Step", async ({
+test("opens the queue of a device from the devices block", async ({
   openProjectPage,
   page,
 }) => {
+  const galaxy = inBuild(TEST_RUN_APPROVED, {
+    id: "galaxy",
+    name: "Home. Banner",
+    device: "Galaxy S23",
+    os: "Android 14",
+    browser: "",
+    viewport: "",
+  });
+  await mockGetTestRuns(page, build.id, [...runs, galaxy]);
+  await mockTestRun(page, galaxy);
   await openProjectPage(project.id, build.id, undefined, "overview");
   await page
     .getByTestId("overviewDevice")
     .filter({ hasText: "iPhone 15" })
     .click();
 
+  // the device's waiting screens, as the devices table did (REQ-031-21)
   await expect(page.getByRole("dialog")).toBeVisible();
-  await expect(page.getByTestId("queueName")).toHaveText("iPhone 15 iOS 17");
-  await expect(page.getByTestId("queuePosition")).toHaveText("1 of 1");
-  await expect(page.getByText(/^Step \d/)).toHaveCount(0);
-  await expect(page).toHaveURL(/queue=device%3AiPhone/);
-});
+  await expect(page).toHaveURL(/queue=device%3AiPhone.*testId=login$/);
+  await expect(page.getByTestId("screenName")).toHaveText("Login. Error");
 
-test("switches the queue from its menu", async ({ openProjectPage, page }) => {
-  await openProjectPage(project.id, build.id, undefined, "overview");
-  await page.getByTestId("reviewWaiting").click();
-  await expect(page.getByTestId("queuePosition")).toHaveText("1 of 3");
-
-  await page.getByTestId("queueName").click();
-  await page.getByRole("menuitem", { name: /New screens/ }).click();
-
-  await expect(page.getByTestId("queueName")).toHaveText("New screens");
-  await expect(page.getByTestId("queuePosition")).toHaveText("1 of 1");
-  await expect(page).toHaveURL(/testId=fresh/);
+  // a device with nothing waiting opens its screen on its own (REQ-047-03)
+  await page.keyboard.press("Escape");
+  await page
+    .getByTestId("overviewDevice")
+    .filter({ hasText: "Galaxy S23" })
+    .click();
+  await expect(page).toHaveURL(/queue=run%3Agalaxy.*testId=galaxy$/);
 });
 
 test("sums up a finished queue and offers the next one", async ({
@@ -370,8 +375,8 @@ test("sums up a finished queue and offers the next one", async ({
   );
 
   await page.keyboard.press("Enter");
-  await expect(page.getByTestId("queueName")).toHaveText("New screens");
-  await expect(page).toHaveURL(/testId=fresh/);
+  await expect(page).toHaveURL(/queue=group%3Anew.*testId=fresh$/);
+  await expect(page.getByTestId("screenName")).toHaveText("Onboarding. Step 3");
   void openProjectPage;
 });
 
@@ -385,7 +390,8 @@ test("Esc returns to where the review was opened, focus on the same row", async 
     .filter({ hasText: "PIXEL_4_XL" });
   await row.focus();
   await page.keyboard.press("Enter");
-  await expect(page.getByTestId("queueName")).toHaveText("PIXEL_4_XL AOS 14");
+  await expect(page.getByRole("dialog")).toBeVisible();
+  await expect(page).toHaveURL(/queue=device%3APIXEL_4_XL/);
 
   await page.keyboard.press("Escape");
 
@@ -463,10 +469,6 @@ test("lists the accessibility problems, new first, and opens one on its tab", as
   await expect(rows.first()).toContainText("Touch target too small");
   await expect(rows.first()).toContainText("Checkout. Pay · Pay");
   await expect(rows.first()).toContainText("New");
-  await expect(rows.first().getByTestId("deviceTag")).toHaveText([
-    "PIXEL_4_XL",
-    "AOS 14",
-  ]);
   await expect(rows.last()).toContainText("Control has no label");
   await expect(rows.last()).toContainText("Known");
 
@@ -523,8 +525,7 @@ test("counts the checks of a feature and opens a check on its own", async ({
   await expect(login.getByTestId("overviewChecks")).toHaveCount(0);
 
   await login.click();
-  await expect(page.getByTestId("queueName")).toHaveText("Login. Error");
-  await expect(page.getByTestId("queuePosition")).toHaveText("1 of 1");
+  await expect(page.getByTestId("screenName")).toHaveText("Login. Error");
   await expect(page).toHaveURL(/queue=check%3ALogin/);
 });
 
@@ -550,9 +551,6 @@ test("shows a device's screen size when the run sent no viewport", async ({
   await expect(
     devices.filter({ hasText: "PIXEL_4_XL" }).getByTestId("deviceTag"),
   ).toHaveText(["PIXEL_4_XL", "AOS 14", "browser", "viewport"]);
-  await expect(
-    page.getByTestId("overviewDevices").getByText("Accessibility"),
-  ).toBeVisible();
 });
 
 test("names the review button without a count", async ({
@@ -668,37 +666,108 @@ test("keeps tile numbers neutral and colours only the marker", async ({
   await expect(page.getByTestId("overviewMarker-rejected")).toHaveCount(0);
 });
 
-test("shows a device in one line", async ({ openProjectPage, page }) => {
+test("lists the devices of the build without results", async ({
+  openProjectPage,
+  page,
+}) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await openProjectPage(project.id, build.id, undefined, "overview");
+  const devices = page.getByTestId("overviewDevices");
+  const rows = page.getByTestId("overviewDevice");
+  await expect(rows).toHaveCount(3);
+  // a set of tags per device, model first (REQ-037-11)
+  await expect(rows.first().getByTestId("deviceTag")).toHaveText([
+    "PIXEL_4_XL",
+    "AOS 14",
+    "browser",
+    "viewport",
+  ]);
+  // the features show the results: no bars, no counts here (SC-047-01)
+  await expect(devices.getByTestId("resultBar")).toHaveCount(0);
+  await expect(devices.getByTestId("overviewNum")).toHaveCount(0);
+  await expect(page.getByTestId("resultBar")).toHaveCount(4);
+  // a small card beside the Jira bugs when there is room, once the cards
+  // have risen into place
+  await expect
+    .poll(() =>
+      page
+        .getByTestId("overviewSmallCards")
+        .evaluate((el) =>
+          el
+            .getAnimations({ subtree: true })
+            .every((a) => a.playState === "finished"),
+        ),
+    )
+    .toBe(true);
+  const a = await devices.boundingBox();
+  const b = await page.getByTestId("overviewBugs").boundingBox();
+  if (!a || !b) throw new Error("not on screen");
+  expect(Math.round(a.y)).toBe(Math.round(b.y));
+  expect(a.x + a.width).toBeLessThanOrEqual(b.x);
+});
+
+test("shows the features across the whole page with whole names", async ({
+  openProjectPage,
+  page,
+}) => {
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await inUkrainian(page);
+  const name = "Кредитна сила - Оплата частинами (Точки входу)";
   await page.route(`${API_URL}/builds/${build.id}/overview`, (route) =>
     route.fulfill({
       json: {
         ...overview,
-        devices: [
-          {
-            ...overview.devices[0],
-            device: "Samsung Galaxy Z Fold 5 Enterprise Edition 512 GB",
-            os: "Android 14 One UI 6.1",
-            browser: "Chrome Mobile 126",
-            viewport: "1812×2176 landscape",
-          },
-        ],
+        features: [{ ...overview.features[0], name }, overview.features[1]],
       },
     }),
   );
   await openProjectPage(project.id, build.id, undefined, "overview");
+  const features = page.getByTestId("overviewFeatures");
   const cell = page
-    .getByTestId("overviewDevice")
-    .getByTestId("overviewDeviceTags");
-  const tags = cell.getByTestId("deviceTag");
-  await expect(tags.first()).toBeVisible();
-  const tops = await tags.evaluateAll((elements) =>
-    elements.map((element) => element.getBoundingClientRect().top),
+    .getByTestId("overviewFeature")
+    .filter({ hasText: name })
+    .getByText(name, { exact: true });
+  await expect(cell).toBeVisible();
+  // the whole width of the overview, not half of it beside the bugs
+  const card = await features.boundingBox();
+  const tiles = await page.getByTestId("overviewTile-screens").boundingBox();
+  const overviewBox = await page.getByTestId("buildOverview").boundingBox();
+  if (!card || !tiles || !overviewBox) throw new Error("not on screen");
+  expect(Math.round(card.x)).toBe(Math.round(tiles.x));
+  expect(card.width).toBeGreaterThan(overviewBox.width - 60);
+  // the name whole: no ellipsis, at most two lines
+  expect(
+    await cell.evaluate(
+      (el) =>
+        el.scrollHeight <= el.clientHeight && el.scrollWidth <= el.clientWidth,
+    ),
+  ).toBe(true);
+  const lineHeight = await cell.evaluate((el) =>
+    parseFloat(getComputedStyle(el).lineHeight),
   );
-  expect(new Set(tops).size).toBe(1);
-  // the cell is as tall as one tag: nothing wrapped below it
-  const cellHeight = (await cell.boundingBox())?.height ?? Infinity;
-  const tagHeight = (await tags.first().boundingBox())?.height ?? 0;
-  expect(cellHeight).toBeLessThanOrEqual(tagHeight + 1);
+  const height = (await cell.boundingBox())?.height ?? Infinity;
+  expect(height).toBeLessThanOrEqual(lineHeight * 2 + 1);
+  // the Jira bugs come under the features
+  const bugs = await page.getByTestId("overviewBugs").boundingBox();
+  expect(bugs?.y ?? 0).toBeGreaterThan(card.y + card.height);
+});
+
+test("lists accessibility problems without the device", async ({
+  openProjectPage,
+  page,
+}) => {
+  await inUkrainian(page);
+  await openProjectPage(project.id, build.id, undefined, "overview");
+  const card = page.getByTestId("overviewA11y");
+  const rows = page.getByTestId("overviewA11yProblem");
+  await expect(rows).toHaveCount(2);
+  // the rule, the screen · the element, New or Known; the device is in its card
+  await expect(rows.first()).toContainText("Checkout. Pay · Pay");
+  await expect(rows.first()).toContainText("Нова");
+  await expect(rows.last()).toContainText("Відома");
+  await expect(card.getByTestId("deviceTag")).toHaveCount(0);
+  await expect(card).not.toContainText("PIXEL_4_XL");
+  await expect(card.getByText("Пристрій", { exact: true })).toHaveCount(0);
 });
 
 test("shows a result of two parts whole at 1280 px in Ukrainian", async ({
@@ -711,10 +780,10 @@ test("shows a result of two parts whole at 1280 px in Ukrainian", async ({
     route.fulfill({
       json: {
         ...overview,
-        devices: [
+        features: [
           {
-            ...overview.devices[2],
-            device: "Pixel 7",
+            ...overview.features[0],
+            name: "Pixel 7",
             total: 2,
             changed: 1,
             new: 0,
@@ -726,7 +795,7 @@ test("shows a result of two parts whole at 1280 px in Ukrainian", async ({
   );
   await openProjectPage(project.id, build.id, undefined, "overview");
   const words = page
-    .getByTestId("overviewDevice")
+    .getByTestId("overviewFeature")
     .filter({ hasText: "Pixel 7" })
     .getByTestId("resultWords");
   await expect(words).toHaveText("1 змінений · 1 без змін");
@@ -741,11 +810,11 @@ test("names the result next to its bar", async ({ openProjectPage, page }) => {
     route.fulfill({
       json: {
         ...overview,
-        devices: [
-          ...overview.devices,
+        features: [
+          ...overview.features,
           {
-            ...overview.devices[2],
-            device: "Pixel 8",
+            ...overview.features[0],
+            name: "Payments",
             total: 2,
             changed: 1,
             new: 1,
@@ -756,15 +825,15 @@ test("names the result next to its bar", async ({ openProjectPage, page }) => {
     }),
   );
   await openProjectPage(project.id, build.id, undefined, "overview");
-  const device = (name: string) =>
-    page.getByTestId("overviewDevice").filter({ hasText: name });
-  await expect(device("iPhone 15").getByTestId("resultWords")).toHaveText(
+  const feature = (name: string) =>
+    page.getByTestId("overviewFeature").filter({ hasText: name });
+  await expect(feature("Login").getByTestId("resultWords")).toHaveText(
     "1 changed",
   );
-  await expect(device("Galaxy S23").getByTestId("resultWords")).toHaveText(
+  await expect(feature("Home").getByTestId("resultWords")).toHaveText(
     "1 passed",
   );
-  await expect(device("Pixel 8").getByTestId("resultWords")).toHaveText(
+  await expect(feature("Payments").getByTestId("resultWords")).toHaveText(
     "1 changed · 1 new",
   );
   await expect(

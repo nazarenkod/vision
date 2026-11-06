@@ -550,8 +550,6 @@ export const en = {
   "review.reject": "Reject",
   "review.devices": "Devices",
   // the comparison laid out anew (spec 046)
-  "compare.position": "{current} of {total}",
-  "compare.inQueue": "in",
   "compare.trend": {
     one: "Trend of the check: this run only",
     other: "Trend of the check over the last {count} runs",
@@ -1487,6 +1485,7 @@ export const en = {
   "overview.a11yNew": "New accessibility issues",
   "overview.jiraBugs": "Jira bugs",
   "overview.device": "Device",
+  "overview.devices": "Devices",
   "overview.result": "Result",
   "overview.review": "Review",
   "overview.a11y": "Accessibility",
@@ -1514,9 +1513,6 @@ export const en = {
   "overview.report": "Report",
   "overview.reviewAll": "Review",
   "queue.all": "All to review",
-  "queue.groups": "Groups",
-  "queue.fromOverview": "From overview",
-  "queue.choose": "Choose what to review",
   "queue.done": "{name} · done",
   "queue.next": "Next: {name} · {count}",
   "queue.back": "Back",

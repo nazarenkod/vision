@@ -210,7 +210,7 @@ test("keeps the review layout and its keys", async ({
   await page.keyboard.press("ArrowRight");
   await expect(page).toHaveURL(new RegExp(`testId=${TEST_RUN_NEW.id}`));
   // as a person would: Esc once the next step is on screen
-  await expect(page.getByTestId("stepPosition")).toHaveText("2 of 2");
+  await expect(page.getByTestId("screenName")).toHaveText(TEST_RUN_NEW.name);
   await page.keyboard.press("Escape");
   await expect(page.getByTestId("approveButton")).toBeHidden();
 });
@@ -248,25 +248,24 @@ test("shows a check on Approve instead of a toast", async ({
   });
 });
 
-test("shows the diff against the tolerance and the steps of the review", async ({
+test("shows the diff against the tolerance in words and no position", async ({
   openProjectPage,
   page,
 }) => {
   await openProjectPage(project.id, build.id, TEST_UNRESOLVED.id);
-  const fill = await page
-    .getByTestId("diffFill")
-    .evaluate((el) => parseFloat((el as HTMLElement).style.width));
-  const mark = await page
-    .getByTestId("toleranceMark")
-    .evaluate((el) => parseFloat((el as HTMLElement).style.left));
-  // 1.24 % of a 3.21 % tolerance: under it, on the same scale
-  expect(fill / mark).toBeCloseTo(
-    TEST_UNRESOLVED.diffPercent / TEST_UNRESOLVED.diffTollerancePercent,
-    2,
+  // 1.24 % of a 3.21 % tolerance: under it, so in the text colour (REQ-047-06)
+  await expect(page.getByTestId("diffMeter")).toHaveText(
+    "1.24% changed·3.21% allowed",
   );
+  await expect(page.getByTestId("diffValue")).not.toHaveCSS(
+    "color",
+    "rgb(180, 35, 24)",
+  );
+  await expect(page.getByTestId("diffFill")).toHaveCount(0);
 
-  // where the review is, as a position only (REQ-046-19)
-  await expect(page.getByTestId("stepProgress")).toHaveText("1 of 2");
+  // the header names the screen; no "N of M" (REQ-047-05)
+  await expect(page.getByTestId("stepProgress")).toHaveCount(0);
+  await expect(page.getByTestId("compareHeader")).not.toContainText(" of ");
 });
 
 // the bulk review of a screen's variations was removed (022); a project saved
@@ -355,7 +354,7 @@ for (const keys of [["ArrowRight"], ["a", "x", "ArrowRight"]]) {
     for (const key of keys) await page.keyboard.press(key);
 
     await expect(page).toHaveURL(new RegExp(`testId=${TEST_RUN_NEW.id}$`));
-    await expect(page.getByTestId("stepPosition")).toHaveText("2 of 2");
+    await expect(page.getByTestId("screenName")).toHaveText(TEST_RUN_NEW.name);
   });
 }
 
@@ -409,16 +408,16 @@ test.describe("with Go to the next on", () => {
       page,
     }) => {
       await openProjectPage(project.id, build.id, runs[0].id);
-      await expect(page.getByTestId("stepPosition")).toHaveText("1 of 3");
+      await expect(page.getByTestId("screenName")).toHaveText(runs[0].name);
 
       await page.keyboard.press(key);
       await page.keyboard.press("ArrowRight");
 
-      await expect(page.getByTestId("stepPosition")).toHaveText("3 of 3");
+      await expect(page.getByTestId("screenName")).toHaveText(runs[2].name);
       await expect(page).toHaveURL(new RegExp(`testId=${runs[2].id}$`));
       // and nothing moves it on afterwards
       await page.waitForTimeout(1000);
-      await expect(page.getByTestId("stepPosition")).toHaveText("3 of 3");
+      await expect(page.getByTestId("screenName")).toHaveText(runs[2].name);
     });
   }
 
@@ -427,13 +426,13 @@ test.describe("with Go to the next on", () => {
     page,
   }) => {
     await openProjectPage(project.id, build.id, runs[0].id);
-    await expect(page.getByTestId("stepPosition")).toHaveText("1 of 3");
+    await expect(page.getByTestId("screenName")).toHaveText(runs[0].name);
 
     await page.keyboard.press("a");
 
-    await expect(page.getByTestId("stepPosition")).toHaveText("2 of 3");
+    await expect(page.getByTestId("screenName")).toHaveText(runs[1].name);
     await page.waitForTimeout(1000);
-    await expect(page.getByTestId("stepPosition")).toHaveText("2 of 3");
+    await expect(page.getByTestId("screenName")).toHaveText(runs[1].name);
   });
 
   test("stays on the screen and lets the arrow go when the server refuses", async ({
@@ -444,15 +443,15 @@ test.describe("with Go to the next on", () => {
       route.fulfill({ status: 500, body: JSON.stringify({ message: "nope" }) }),
     );
     await openProjectPage(project.id, build.id, runs[0].id);
-    await expect(page.getByTestId("stepPosition")).toHaveText("1 of 3");
+    await expect(page.getByTestId("screenName")).toHaveText(runs[0].name);
 
     await page.keyboard.press("a");
     await page.keyboard.press("ArrowRight");
 
     await expect(page.getByText("nope")).toBeVisible();
-    await expect(page.getByTestId("stepPosition")).toHaveText("2 of 3");
+    await expect(page.getByTestId("screenName")).toHaveText(runs[1].name);
     await page.waitForTimeout(1000);
-    await expect(page.getByTestId("stepPosition")).toHaveText("2 of 3");
+    await expect(page.getByTestId("screenName")).toHaveText(runs[1].name);
   });
 });
 

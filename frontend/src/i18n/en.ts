@@ -114,7 +114,8 @@ export const en = {
   "section.general": "General",
   "section.review": "Review",
   "section.comparison": "Image comparison",
-  "section.mobile": "Mobile screens",
+  "section.mobile": "Screen structure",
+  "section.mobileFormer": "Mobile screens",
   "section.a11y": "Accessibility",
   "section.jira": "Jira",
   "section.access": "Access",
@@ -125,7 +126,7 @@ export const en = {
   "section.comparisonIntro":
     "How the current screen is compared with its baseline. The method's own settings are under the cards.",
   "section.mobileIntro":
-    "Applies to screens sent with a UI tree (Appium page source).",
+    "Applies to screens sent with a UI tree: today that is Appium on Android and iOS.",
   "section.a11yIntro":
     "What Vision checks on every screen sent with a UI tree, by your team's norms.",
   "section.accessIntro":
@@ -233,7 +234,7 @@ export const en = {
   "comparison.useThinkingHelp":
     "Lets the vision model reason before it answers.",
 
-  "mobile.title": "Mobile screens",
+  "mobile.title": "Screen structure",
   "mobile.systemBars": "Leave out status and navigation bars",
   "mobile.systemBarsHelp": "Clock, battery and signal change on every run.",
   "mobile.moves": "Compare moved elements at their new place",

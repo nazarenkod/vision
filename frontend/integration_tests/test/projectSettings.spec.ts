@@ -117,7 +117,7 @@ test("lists the sections and highlights the one in view", async ({
     "General",
     "Review",
     "Image comparison",
-    "Mobile screens",
+    "Screen structure",
     "Accessibility",
     "Jira",
     "Danger zone",
@@ -209,7 +209,7 @@ test("saves every field the old dialog had", async ({
 
   // the save bar names what changed
   await expect(page.getByTestId("saveBar")).toContainText(
-    "General, Review, Image comparison, Mobile screens, Jira",
+    "General, Review, Image comparison, Screen structure, Jira",
   );
   const [request] = await Promise.all([
     putRequest(page),
@@ -271,6 +271,25 @@ test("shows a dependent field only when its switch is on", async ({
   await expect(maxMove).toHaveCount(0);
   await page.getByLabel("Compare moved elements at their new place").check();
   await expect(maxMove).toBeVisible();
+});
+
+test("names the UI tree section Screen structure", async ({
+  page,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  authUser,
+}) => {
+  await open(page);
+  const section = page.getByTestId("section-mobile");
+  await expect(
+    section.getByRole("heading", { name: "Screen structure" }),
+  ).toBeVisible();
+  await expect(page.getByTestId("nav-mobile")).toHaveText("Screen structure");
+  // where trees come from today, and no promise of the web yet (REQ-049-12)
+  await expect(section).toContainText("Appium on Android and iOS");
+  await expect(section).not.toContainText(/web/i);
+  await page.getByTestId("settingsSearch").fill("mobile screens");
+  await expect(section).toBeVisible();
+  await expect(page.getByTestId("section-general")).toBeHidden();
 });
 
 test("has no element rules section", async ({
@@ -366,7 +385,7 @@ test("keeps settings it no longer shows when saving", async ({
     }),
   });
   await page.getByLabel("Send hidden changes to review").uncheck();
-  await expect(page.getByTestId("saveBar")).toContainText("Mobile screens");
+  await expect(page.getByTestId("saveBar")).toContainText("Screen structure");
   const [request] = await Promise.all([
     putRequest(page),
     page.getByTestId("saveSettings").click(),

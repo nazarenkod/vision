@@ -108,7 +108,8 @@ export const uk: Messages = {
   "section.general": "Загальне",
   "section.review": "Перегляд",
   "section.comparison": "Порівняння",
-  "section.mobile": "Мобільні екрани",
+  "section.mobile": "Структура екрана",
+  "section.mobileFormer": "Мобільні екрани",
   "section.a11y": "Доступність",
   "section.jira": "Jira",
   "section.access": "Доступ",
@@ -119,7 +120,7 @@ export const uk: Messages = {
   "section.comparisonIntro":
     "Як поточний екран порівнюється з еталоном. Параметри обраного способу — під картками.",
   "section.mobileIntro":
-    "Для екранів, надісланих з UI-деревом (Appium page source).",
+    "Для екранів, надісланих з UI-деревом: зараз це Appium на Android та iOS.",
   "section.a11yIntro":
     "Що Vision перевіряє на кожному екрані з UI-деревом, за нормами вашої команди.",
   "section.accessIntro":
@@ -225,7 +226,7 @@ export const uk: Messages = {
   "comparison.useThinking": "Режим міркування",
   "comparison.useThinkingHelp": "Модель міркує, перш ніж відповісти.",
 
-  "mobile.title": "Мобільні екрани",
+  "mobile.title": "Структура екрана",
   "mobile.systemBars": "Не враховувати рядок стану й панель навігації",
   "mobile.systemBarsHelp": "Годинник, батарея й сигнал змінюються щоразу.",
   "mobile.moves": "Порівнювати зсунуті елементи на новому місці",

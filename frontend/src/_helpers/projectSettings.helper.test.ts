@@ -24,6 +24,14 @@ const project = {
 } as Project;
 
 describe("project settings", () => {
+  it("finds the screen structure section by its former name", () => {
+    expect(matchSettings("mobile screens").sections).toEqual(["mobile"]);
+    expect(matchSettings("мобільні", ukrainian).sections).toEqual(["mobile"]);
+    expect(matchSettings("структура", ukrainian).sections).toEqual(["mobile"]);
+    // the former name is for finding only: no field of that name to mark
+    expect(matchSettings("mobile screens").labels).toEqual(["Mobile screens"]);
+  });
+
   it("finds settings by section or field name", () => {
     expect(matchSettings("navigation")).toEqual({
       sections: ["mobile"],
@@ -132,7 +140,7 @@ describe("project settings", () => {
           elementRules: [{ id: "1", selector: "id:clock", action: "ignore" }],
         }),
       }),
-    ).toEqual(["General", "Mobile screens"]);
+    ).toEqual(["General", "Screen structure"]);
     expect(
       changedSections(project, { ...project, jiraIssueType: "Story" }),
     ).toEqual(["Jira"]);

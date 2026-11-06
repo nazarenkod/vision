@@ -104,12 +104,6 @@ export const uk: Messages = {
     "{title} Разом із ним зникнуть усі збірки, еталони та їхня історія. Скасувати це неможливо.",
   "settings.dangerTitle": "Видалити цей проєкт.",
   "settings.deleteProject": "Видалити проєкт",
-  "settings.meta.mobileOn": "{count} з 5",
-  "settings.meta.rulesOn": "{count} з {total}",
-  "settings.meta.set": "задано",
-  "settings.meta.notSet": "не задано",
-  "settings.meta.devices": "дозволено {count}",
-  "settings.meta.anyDevice": "будь-який",
 
   "section.general": "Загальне",
   "section.review": "Перегляд",

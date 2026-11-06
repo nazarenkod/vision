@@ -110,12 +110,6 @@ export const en = {
     "{title} All builds, baselines and their history go with it. This cannot be undone.",
   "settings.dangerTitle": "Delete this project.",
   "settings.deleteProject": "Delete project",
-  "settings.meta.mobileOn": "{count} of 5 on",
-  "settings.meta.rulesOn": "{count} of {total} on",
-  "settings.meta.set": "set",
-  "settings.meta.notSet": "not set",
-  "settings.meta.devices": "{count} allowed",
-  "settings.meta.anyDevice": "any device",
 
   "section.general": "General",
   "section.review": "Review",

@@ -418,8 +418,8 @@ test("sets the project's touch target and turns a rule off", async ({
   await expect(
     page.getByTestId("nav-mobile").getByLabel("unsaved changes"),
   ).toHaveCount(0);
-  // the rail counts the rules on (REQ-026-16)
-  await expect(page.getByTestId("nav-a11y")).toContainText("6 of 7 on");
+  // the rail names the sections only, no counts beside them (REQ-026-16)
+  await expect(page.getByTestId("nav-a11y")).toHaveText("Accessibility");
 
   const [request] = await Promise.all([
     putRequest(page),
@@ -483,7 +483,6 @@ test("adds, edits and removes an allowed device", async ({
   await expect(section).toContainText(
     "No list: screens from any device come in.",
   );
-  await expect(page.getByTestId("nav-devices")).toContainText("any device");
 
   await page.getByTestId("newDevice-device").fill("Pixel 7");
   await page.getByTestId("newDevice-os").fill("Android 15");
@@ -497,7 +496,6 @@ test("adds, edits and removes an allowed device", async ({
   await expect(page.getByTestId("addDevice")).toBeDisabled();
   await page.getByTestId("newDevice-os").fill("26.*");
   await page.getByTestId("addDevice").click();
-  await expect(page.getByTestId("nav-devices")).toContainText("2 allowed");
   await expect(
     page.getByTestId("nav-devices").getByLabel("unsaved changes"),
   ).toBeVisible();

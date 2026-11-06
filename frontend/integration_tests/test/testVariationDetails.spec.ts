@@ -168,3 +168,19 @@ test("shows the date of a record in one line", async ({
     page.getByRole("button", { name: "Open in review" }).first(),
   ).toBeVisible();
 });
+
+test("sets the project from the baseline", async ({
+  openTestVariationDetailsPage,
+  page,
+}) => {
+  const detailsPage = await openTestVariationDetailsPage(TEST_VARIATION_ONE.id);
+  // the sidebar shows the baseline's project, its pages ready to open
+  await expect(detailsPage.sideNav.projectSwitcher).toContainText(
+    TEST_PROJECT.name,
+  );
+  await expect(detailsPage.sideNav.item("Baselines")).toHaveAttribute(
+    "href",
+    `/variations/${TEST_PROJECT.id}`,
+  );
+  await expect(page.getByText("Choose project")).toHaveCount(0);
+});

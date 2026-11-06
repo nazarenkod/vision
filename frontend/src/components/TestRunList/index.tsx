@@ -33,6 +33,7 @@ import { TestRunGrid } from "./TestRunGrid";
 import {
   TestRunDensity,
   TestRunListControls,
+  TOOLBAR_SX,
   TestRunView,
 } from "./TestRunListControls";
 import { DEFAULT_SORT, TestRunSort } from "./TestRunGridHeader";
@@ -170,6 +171,16 @@ const TestRunList: React.FunctionComponent = () => {
   const { enqueueSnackbar } = useSnackbar();
   const navigate = useNavigate();
   const { t } = useT();
+  // MUI's pagination says "1–3 of 3" in English whatever the language
+  const displayedRows = ({
+    from,
+    to,
+    count,
+  }: {
+    from: number;
+    to: number;
+    count: number;
+  }) => t("runs.displayedRows", { from, to, count });
   const { selectedTestRun, testRuns, loading } = useTestRunState();
   const { selectedBuild } = useBuildState();
   const testRunDispatch = useTestRunDispatch();
@@ -518,6 +529,11 @@ const TestRunList: React.FunctionComponent = () => {
               }}
               density={density}
               slotProps={{
+                // the same words as under the cards, from our own dictionary
+                pagination: {
+                  labelRowsPerPage: t("runs.rowsPerPage"),
+                  labelDisplayedRows: displayedRows,
+                },
                 toolbar: {
                   selectedIds,
                   rows: filteredRows,
@@ -570,8 +586,7 @@ const TestRunList: React.FunctionComponent = () => {
               <Toolbar
                 variant="dense"
                 sx={{
-                  gap: 1,
-                  flexWrap: "wrap",
+                  ...TOOLBAR_SX,
                   borderBottom: 1,
                   borderColor: "divider",
                 }}
@@ -601,7 +616,7 @@ const TestRunList: React.FunctionComponent = () => {
                   sort={gridSort}
                   onSortChange={setGridSort}
                 />
-                <Box marginLeft="auto">
+                <Box marginLeft="auto" display="flex" flexShrink={0}>
                   <BulkOperation
                     selectedIds={selectedIds}
                     rows={gridRows}
@@ -665,6 +680,7 @@ const TestRunList: React.FunctionComponent = () => {
                     rowsPerPage={paginationModel.pageSize}
                     rowsPerPageOptions={PAGE_SIZE_OPTIONS}
                     labelRowsPerPage={t("runs.cardsPerPage")}
+                    labelDisplayedRows={displayedRows}
                     onPageChange={(event, next) =>
                       setPaginationModel((prev) => ({ ...prev, page: next }))
                     }

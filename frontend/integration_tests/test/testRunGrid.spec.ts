@@ -10,6 +10,7 @@ import {
 } from "~client/_test/test.data.helper";
 import {
   API_URL,
+  inUkrainian,
   mockGetBuildDetails,
   mockGetBuilds,
   mockGetProjects,
@@ -783,4 +784,49 @@ test("shows phone screenshots as portrait cards", async ({
   expect(tops.filter((top) => top === tops[0]).length).toBeGreaterThanOrEqual(
     4,
   );
+});
+
+for (const width of [1280, 1440]) {
+  test(`keeps the grid toolbar in one row at ${width} px in Ukrainian`, async ({
+    openProjectPage,
+    page,
+  }) => {
+    await page.setViewportSize({ width, height: 900 });
+    await inUkrainian(page);
+    const projectPage = await openProjectPage(project.id, build.id);
+    await projectPage.testRunList.gridViewToggle.click();
+
+    const selectAll = page.getByTestId("gridSelectAll");
+    const toolbar = page.locator(".MuiToolbar-root").filter({ has: selectAll });
+    const sort = projectPage.testRunList.sortButton;
+    await expect(sort).toBeVisible();
+    // one dense row: the bulk actions beside the controls, not under them
+    expect((await toolbar.boundingBox())?.height).toBeLessThanOrEqual(56);
+    const middleOf = async (locator) => {
+      const box = await locator.boundingBox();
+      return Math.round(box.y + box.height / 2);
+    };
+    const bulk = toolbar.locator("button").last();
+    expect(Math.abs((await middleOf(bulk)) - (await middleOf(sort)))).toBe(0);
+    // the sort button keeps its whole label
+    expect(await sort.evaluate((el) => el.scrollWidth <= el.clientWidth)).toBe(
+      true,
+    );
+  });
+}
+
+test("translates the grid and table pagination", async ({
+  openProjectPage,
+  page,
+}) => {
+  await inUkrainian(page);
+  const projectPage = await openProjectPage(project.id, build.id);
+  const pagination = page.locator("#test-run-list .MuiTablePagination-root");
+  await expect(pagination).toContainText("Рядків на сторінці:");
+  await expect(pagination).toContainText("1–4 з 4");
+
+  await projectPage.testRunList.gridViewToggle.click();
+  await expect(pagination).toContainText("Карток на сторінці:");
+  await expect(pagination).toContainText("1–4 з 4");
+  await expect(pagination).not.toContainText(" of ");
 });

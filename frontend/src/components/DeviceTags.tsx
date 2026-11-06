@@ -166,7 +166,11 @@ const TAG_GAP = 4;
 export const TagOverflow: React.FunctionComponent<{
   tags: string[];
   testId?: string;
-}> = ({ tags, testId = "tagOverflow" }) => {
+  // a device shown this way keeps the testid its tags have everywhere else
+  tagTestId?: string;
+  // a notch smaller, as DeviceTags' dense, for table rows
+  dense?: boolean;
+}> = ({ tags, testId = "tagOverflow", tagTestId = "overflowTag", dense }) => {
   const { t } = useT();
   const box = React.useRef<HTMLDivElement>(null);
   const ruler = React.useRef<HTMLDivElement>(null);
@@ -199,6 +203,13 @@ export const TagOverflow: React.FunctionComponent<{
   }, [key]);
 
   const hidden = tags.slice(shown);
+  const size = dense
+    ? {
+        height: 20,
+        fontSize: type.caption,
+        "& .MuiChip-label": { px: 0.75 },
+      }
+    : {};
   return (
     <Box
       ref={box}
@@ -221,9 +232,9 @@ export const TagOverflow: React.FunctionComponent<{
           size="small"
           label={tag}
           title={tag}
-          data-testid="overflowTag"
+          data-testid={tagTestId}
           // only a lone tag gives way, ending in an ellipsis
-          sx={{ flexShrink: shown === 1 ? 1 : 0, minWidth: 0 }}
+          sx={{ flexShrink: shown === 1 ? 1 : 0, minWidth: 0, ...size }}
         />
       ))}
       {hidden.length > 0 && (
@@ -237,7 +248,7 @@ export const TagOverflow: React.FunctionComponent<{
               tags: hidden.join(", "),
             })}
             data-testid="overflowTagsMore"
-            sx={{ flexShrink: 0 }}
+            sx={{ flexShrink: 0, ...size }}
           />
         </Tooltip>
       )}
@@ -260,14 +271,14 @@ export const TagOverflow: React.FunctionComponent<{
             component="span"
             size="small"
             label={tag}
-            sx={{ flexShrink: 0 }}
+            sx={{ flexShrink: 0, ...size }}
           />
         ))}
         <Chip
           component="span"
           size="small"
           label={`+${tags.length}`}
-          sx={{ flexShrink: 0 }}
+          sx={{ flexShrink: 0, ...size }}
         />
       </Box>
     </Box>

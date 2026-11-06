@@ -216,3 +216,63 @@ test("filters with one Filters button and removable chips", async ({
   await expect(filtersButton).toHaveText("Filters");
   await expect(page.getByTestId("clearFilters")).toHaveCount(0);
 });
+
+test("lays out a baseline card as name, one row of tags, History and delete", async ({
+  openTestVariationListPage,
+}) => {
+  const listPage = await openTestVariationListPage(TEST_PROJECT.id);
+  const card = listPage.getCard(TEST_VARIATION_ONE.name);
+  await expect(card).toBeVisible();
+
+  // no coloured edge on the card, nor on a device inside it
+  const edges = await card.evaluate((el) => {
+    const style = getComputedStyle(el);
+    return [style.borderLeftColor, style.borderTopColor];
+  });
+  expect(edges[0]).toBe(edges[1]);
+  await expect(card.locator("[aria-pressed]")).toHaveCount(0);
+
+  // the device, then the branch and the custom tags, flowing in one block
+  const tags = card.getByTestId("baselineTags");
+  await expect(tags.getByTestId("deviceTag")).toHaveText([
+    "device",
+    "OS",
+    "browser",
+    "viewport",
+  ]);
+  await expect(tags.getByTestId("branchTag")).toHaveText("branch name");
+  await expect(tags).toContainText("customTags");
+
+  // History on the left, delete on the right, in one footer row
+  const history = await card.getByTestId("baselineHistory").boundingBox();
+  const remove = await card.getByTestId("baselineDelete").boundingBox();
+  expect(history.x).toBeLessThan(remove.x);
+  expect(
+    Math.abs(history.y + history.height / 2 - (remove.y + remove.height / 2)),
+  ).toBeLessThan(4);
+  await expect(card.getByTestId("baselineHistory")).toHaveAttribute(
+    "href",
+    `/variations/details/${TEST_VARIATION_ONE.id}`,
+  );
+});
+
+test("chooses the project in the sidebar, not on the page", async ({
+  openTestVariationListPage,
+  page,
+}) => {
+  const other = { ...TEST_PROJECT, id: "other-project", name: "Other shop" };
+  await mockGetProjects(page, [TEST_PROJECT, other]);
+  await mockGetTestVariations(page, other.id, []);
+  const listPage = await openTestVariationListPage(TEST_PROJECT.id);
+  await expect(listPage.getCard(TEST_VARIATION_ONE.name)).toBeVisible();
+
+  await expect(page.locator("#page-project-select")).toHaveCount(0);
+  await expect(listPage.sideNav.projectSwitcher).toContainText(
+    TEST_PROJECT.name,
+  );
+
+  await page.locator("#project-select").click();
+  await page.getByRole("option", { name: /Other shop/ }).click();
+  await expect(page).toHaveURL(`/variations/${other.id}`);
+  await expect(listPage.cards).toHaveCount(0);
+});

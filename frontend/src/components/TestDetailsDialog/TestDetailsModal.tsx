@@ -13,7 +13,9 @@ import {
   DialogTitle,
   Chip,
   Tooltip as MuiTooltip,
+  useMediaQuery,
 } from "@mui/material";
+import { visuallyHidden } from "@mui/utils";
 import { useHotkeys } from "react-hotkeys-hook";
 import { TestRun, VisualBug, VisualBugResult } from "../../types";
 import { testRunService, staticService } from "../../services";
@@ -21,6 +23,7 @@ import { TestStatus } from "../../types/testStatus";
 import { IgnoreArea, UpdateIgnoreAreaDto } from "../../types/ignoreArea";
 import Konva from "konva";
 import {
+  AdsClickOutlined,
   Close,
   ZoomIn,
   ZoomOut,
@@ -90,7 +93,11 @@ import { areaMarkId, ruleMarkId, testAreaMarkId } from "./WhatsCompared";
 import { useRuleSnackbar } from "../useRuleSnackbar";
 import { motion, tokens, type, radius } from "../../theme";
 import { StepProgress } from "./StepProgress";
-import { CompareToolbar, CompareView } from "./CompareToolbar";
+import {
+  COMPACT_TOOLS_QUERY,
+  CompareToolbar,
+  CompareView,
+} from "./CompareToolbar";
 import { DiffMeter } from "./DiffMeter";
 import { DeviceTags } from "../DeviceTags";
 import { prefersReducedMotion } from "../../_helpers/motion.helper";
@@ -757,6 +764,8 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
 
   // without a tree there are no elements: the button stays off (REQ-024-33)
   const canSelect = withUiTree && structure?.hasUiTree !== false;
+  // a narrow window keeps the toolbar in one row: the tools as icons, named on hover
+  const compactTools = useMediaQuery(COMPACT_TOOLS_QUERY, { noSsr: true });
   const toggleSelecting = () => {
     if (!canSelect) return;
     leaveAreasThen(() => {
@@ -1298,7 +1307,15 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
   const comparisonTools = () => (
     <Box display="flex" alignItems="center" gap={1}>
       {canEdit && (
-        <Tooltip title={canSelect ? "" : t("select.noTree")}>
+        <Tooltip
+          title={
+            canSelect
+              ? compactTools
+                ? t("select.button")
+                : ""
+              : t("select.noTree")
+          }
+        >
           {/* a disabled button takes no pointer, so the tooltip listens on its wrapper */}
           <span data-testid="selectElementsWrap">
             <Button
@@ -1323,8 +1340,20 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
                 },
               }}
             >
-              {/* the same label while selecting, so the bar keeps its width (REQ-024-12) */}
-              {t("select.button")}
+              {compactTools && (
+                <AdsClickOutlined
+                  aria-hidden
+                  sx={{ fontSize: type.title, ml: -0.25 }}
+                />
+              )}
+              {/* the same label while selecting, so the bar keeps its width (REQ-024-12);
+                  a narrow window hides it from sight, not from screen readers */}
+              <Box
+                component="span"
+                sx={compactTools ? visuallyHidden : undefined}
+              >
+                {t("select.button")}
+              </Box>
               {/* a child, not endIcon: MUI sizes the first child of an icon slot to 20px */}
               <Box
                 component="kbd"
@@ -1348,6 +1377,7 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
         </Tooltip>
       )}
       <AreasMenu
+        compact={compactTools}
         open={areasOpen}
         onToggle={toggleAreas}
         onClickAway={() => !isDrawMode && leaveAreasThen(() => undefined)}

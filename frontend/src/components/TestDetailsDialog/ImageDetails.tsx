@@ -1,6 +1,6 @@
 import React from "react";
-import { Box, IconButton, Link } from "@mui/material";
-import { WarningRounded, WarningAmberRounded } from "@mui/icons-material";
+import { Box, Link } from "@mui/material";
+import { WarningAmberRounded } from "@mui/icons-material";
 import { IgnoreArea } from "../../types/ignoreArea";
 import { Tooltip } from "../Tooltip";
 import { BranchTag } from "../DeviceTags";
@@ -118,10 +118,26 @@ const ImageDetails: React.FunctionComponent<ImageDetailsProps> = ({
         </Link>
       )}
       {ignoreAreas && ignoreAreas.length > 0 && (
+        // a pill that says what it is, like "Size differs": a bare warning sign said nothing
         <Tooltip title={t("review.uploadIgnore")}>
-          <IconButton size="small">
-            <WarningRounded color="secondary" fontSize="small" />
-          </IconButton>
+          <Box
+            component="span"
+            tabIndex={0}
+            data-testid="testAreasPill"
+            sx={{
+              display: "inline-flex",
+              alignItems: "center",
+              height: 22,
+              px: 1,
+              borderRadius: radius.pill,
+              bgcolor: tokens.status.neutral.bg,
+              color: tokens.status.neutral.fg,
+              fontSize: type.caption,
+              fontWeight: 600,
+            }}
+          >
+            {t("compare.testAreas", { count: ignoreAreas.length })}
+          </Box>
         </Tooltip>
       )}
     </Box>

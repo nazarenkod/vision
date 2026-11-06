@@ -22,7 +22,8 @@ const MAX_WIDTH = 180;
 
 /**
  * Where the review is: "N of M" (in a queue, "N of M in <queue>"), a bar with
- * one segment per step, and how many are decided and left (REQ-046-05).
+ * one segment per step, and how many are decided and left (REQ-046-05); a
+ * single screen only "1 of 1".
  */
 export const StepProgress: React.FunctionComponent<{
   statuses: string[];
@@ -36,6 +37,8 @@ export const StepProgress: React.FunctionComponent<{
   const states = stepStates(steps, currentIndex);
   const { decided, left } = stepProgress(steps, currentIndex);
   const squeezed = states.length * (SEGMENT + GAP) > MAX_WIDTH;
+  // one screen has nothing to track: a bar of one and "0 decided · 0 left" say no more than "1 of 1"
+  const single = steps.length === 1;
   return (
     <Box
       data-testid="stepProgress"
@@ -80,46 +83,50 @@ export const StepProgress: React.FunctionComponent<{
           </>
         )}
       </Box>
-      <Box
-        data-testid="stepDots"
-        role="img"
-        aria-label={t("compare.stepsLabel", {
-          approved: states.filter((s) => s === "approved").length,
-          rejected: states.filter((s) => s === "rejected").length,
-          waiting: states.filter((s) => s === "waiting").length,
-        })}
-        sx={{
-          display: "flex",
-          alignItems: "center",
-          gap: squeezed ? "1px" : `${GAP}px`,
-          width: squeezed ? MAX_WIDTH : "auto",
-          flexShrink: 0,
-        }}
-      >
-        {states.map((state, index) => (
+      {!single && (
+        <>
           <Box
-            key={index}
-            data-state={state}
+            data-testid="stepDots"
+            role="img"
+            aria-label={t("compare.stepsLabel", {
+              approved: states.filter((s) => s === "approved").length,
+              rejected: states.filter((s) => s === "rejected").length,
+              waiting: states.filter((s) => s === "waiting").length,
+            })}
             sx={{
-              flex: squeezed ? 1 : "none",
-              width: squeezed ? "auto" : SEGMENT,
-              // a string: the number 1 would be read as 100 %
-              minWidth: "1px",
-              height: 6,
-              borderRadius: radius.control,
-              bgcolor: COLOUR[state],
-              transition: `background-color ${motion.base}ms ${motion.easing}`,
+              display: "flex",
+              alignItems: "center",
+              gap: squeezed ? "1px" : `${GAP}px`,
+              width: squeezed ? MAX_WIDTH : "auto",
+              flexShrink: 0,
             }}
-          />
-        ))}
-      </Box>
-      <Box
-        component="span"
-        data-testid="stepCounts"
-        sx={{ fontSize: type.caption, color: tokens.textMuted }}
-      >
-        {t("compare.progress", { decided, left })}
-      </Box>
+          >
+            {states.map((state, index) => (
+              <Box
+                key={index}
+                data-state={state}
+                sx={{
+                  flex: squeezed ? 1 : "none",
+                  width: squeezed ? "auto" : SEGMENT,
+                  // a string: the number 1 would be read as 100 %
+                  minWidth: "1px",
+                  height: 6,
+                  borderRadius: radius.control,
+                  bgcolor: COLOUR[state],
+                  transition: `background-color ${motion.base}ms ${motion.easing}`,
+                }}
+              />
+            ))}
+          </Box>
+          <Box
+            component="span"
+            data-testid="stepCounts"
+            sx={{ fontSize: type.caption, color: tokens.textMuted }}
+          >
+            {t("compare.progress", { decided, left })}
+          </Box>
+        </>
+      )}
     </Box>
   );
 };

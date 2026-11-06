@@ -23,6 +23,7 @@ import { useSnackbar } from "notistack";
 import { useT } from "../i18n";
 import TestStatusChip from "../components/TestStatusChip";
 import { Baseline } from "../types/baseline";
+import { useProjectFromAddress } from "../contexts";
 
 const TestVariationDetailsPage: React.FunctionComponent = () => {
   const navigate = useNavigate();
@@ -30,6 +31,8 @@ const TestVariationDetailsPage: React.FunctionComponent = () => {
   const { t, formatDate } = useT();
   const { testVariationId } = useParams<{ testVariationId: string }>();
   const [testVariation, setTestVariation] = React.useState<TestVariation>();
+  // inside a project's baseline the sidebar shows that project, not "Choose project"
+  useProjectFromAddress(testVariation?.projectId);
 
   React.useEffect(() => {
     if (testVariationId) {

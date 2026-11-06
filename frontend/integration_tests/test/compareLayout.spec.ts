@@ -283,3 +283,50 @@ test("opens with the side panel unfolded when the screen has changes", async ({
   await expect(page.getByRole("tab", { name: "Changes" })).toBeVisible();
   await expect(page.getByTestId("panelFolded")).toHaveCount(0);
 });
+
+test("keeps the comparison toolbar in one row at 1280 px in Ukrainian", async ({
+  openProjectPage,
+  page,
+}) => {
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await inUkrainian(page);
+  await mockApi(page);
+  await openProjectPage(project.id, build.id, run.id);
+
+  const toolbar = page.getByTestId("compareToolbar");
+  const groups = [
+    "toolbarDevices",
+    "toolbarMeter",
+    "toolbarView",
+    "toolbarTools",
+  ].map((id) => toolbar.getByTestId(id));
+  await expect(groups[0].getByTestId("deviceTag")).toHaveCount(2);
+  await expect(groups[3].getByTestId("areasButton")).toBeVisible();
+  const rows = new Set(
+    await Promise.all(
+      groups.map(async (group) => Math.round(await middle(group))),
+    ),
+  );
+  expect(rows.size).toBe(1);
+  // the tools as icons, still named for screen readers and on hover
+  await expect(
+    toolbar.getByRole("button", { name: /Обрати елементи/ }),
+  ).toBeVisible();
+  await expect(toolbar.getByRole("button", { name: /Області/ })).toBeVisible();
+  await expect(
+    groups[2].getByRole("button", { name: "Прозорість" }),
+  ).toBeVisible();
+});
+
+test("names the areas that came from the test next to Current", async ({
+  openProjectPage,
+  page,
+}) => {
+  await mockApi(page);
+  await openProjectPage(project.id, build.id, run.id);
+
+  const pill = page.getByTestId("currentHeader").getByTestId("testAreasPill");
+  await expect(pill).toHaveText("Areas from the test · 1");
+  await pill.hover();
+  await expect(page.getByRole("tooltip")).toBeVisible();
+});

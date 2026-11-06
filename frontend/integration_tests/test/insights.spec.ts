@@ -203,3 +203,17 @@ test("deletes the selected unused baselines after confirming", async ({
 
   await expect.poll(() => deleted).toEqual(["old-1"]);
 });
+
+test("leaves the project to the sidebar and keeps the period", async ({
+  page,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  authUser,
+}) => {
+  await openInsights(page);
+  await expect(page.getByRole("row", { name: /Old promo/ })).toBeVisible();
+  await expect(page.locator("#page-project-select")).toHaveCount(0);
+  await expect(page.getByTestId("insightsPeriod")).toBeVisible();
+  await expect(page.getByTestId("projectSwitcher")).toContainText(
+    TEST_PROJECT.name,
+  );
+});

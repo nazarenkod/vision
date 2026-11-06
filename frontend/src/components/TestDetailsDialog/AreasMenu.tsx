@@ -10,6 +10,7 @@ import {
   Typography,
 } from "@mui/material";
 import { Add, ExpandLess, ExpandMore } from "@mui/icons-material";
+import { visuallyHidden } from "@mui/utils";
 import { IgnoreArea } from "../../types/ignoreArea";
 import { tokens, type, radius } from "../../theme";
 import { useT } from "../../i18n";
@@ -18,6 +19,8 @@ import { testAreaMarkId } from "./WhatsCompared";
 export type AreaKind = "ignore" | "compare";
 
 interface AreasMenuProps {
+  // a narrow window: the icon and the count, the name on hover
+  compact?: boolean;
   open: boolean;
   onToggle: () => void;
   // a press outside the menu that is not on the screenshot puts it away
@@ -67,6 +70,7 @@ const DashedSquare = () => (
  * working as before; the button shows how many there are (REQ-024-32).
  */
 export const AreasMenu: React.FunctionComponent<AreasMenuProps> = ({
+  compact,
   open,
   onToggle,
   onClickAway,
@@ -197,42 +201,46 @@ export const AreasMenu: React.FunctionComponent<AreasMenuProps> = ({
 
   return (
     <>
-      <Button
-        ref={anchor}
-        onClick={onToggle}
-        aria-expanded={open}
-        data-testid="areasButton"
-        startIcon={<DashedSquare />}
-        endIcon={open ? <ExpandLess /> : <ExpandMore />}
-        sx={{
-          height: 34,
-          px: 1.25,
-          color: open ? tokens.text : tokens.textSecondary,
-          bgcolor: open ? tokens.subtle : "transparent",
-          fontWeight: open ? 600 : 500,
-          fontSize: type.small,
-        }}
-      >
-        {t("areas.button")}
-        {count > 0 && (
-          <Box
-            component="span"
-            data-testid="areasCount"
-            sx={{
-              ml: 0.75,
-              fontSize: type.caption,
-              fontWeight: 600,
-              bgcolor: open ? tokens.surface : tokens.status.neutral.bg,
-              color: tokens.status.neutral.fg,
-              borderRadius: "999px",
-              px: 0.9,
-              lineHeight: "18px",
-            }}
-          >
-            {count}
+      <Tooltip title={compact && !open ? t("areas.button") : ""}>
+        <Button
+          ref={anchor}
+          onClick={onToggle}
+          aria-expanded={open}
+          data-testid="areasButton"
+          startIcon={<DashedSquare />}
+          endIcon={open ? <ExpandLess /> : <ExpandMore />}
+          sx={{
+            height: 34,
+            px: 1.25,
+            color: open ? tokens.text : tokens.textSecondary,
+            bgcolor: open ? tokens.subtle : "transparent",
+            fontWeight: open ? 600 : 500,
+            fontSize: type.small,
+          }}
+        >
+          <Box component="span" sx={compact ? visuallyHidden : undefined}>
+            {t("areas.button")}
           </Box>
-        )}
-      </Button>
+          {count > 0 && (
+            <Box
+              component="span"
+              data-testid="areasCount"
+              sx={{
+                ml: 0.75,
+                fontSize: type.caption,
+                fontWeight: 600,
+                bgcolor: open ? tokens.surface : tokens.status.neutral.bg,
+                color: tokens.status.neutral.fg,
+                borderRadius: "999px",
+                px: 0.9,
+                lineHeight: "18px",
+              }}
+            >
+              {count}
+            </Box>
+          )}
+        </Button>
+      </Tooltip>
       {/* not modal: drawing happens on the screenshot while this stays open */}
       <Popper
         open={open}

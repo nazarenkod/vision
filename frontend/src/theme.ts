@@ -386,6 +386,11 @@ function themeFor(mode: ThemeMode): Theme {
           root: { "& .MuiInputBase-root": { borderRadius: radius.control } },
         },
       },
+      // a hint under a field starts at the field's edge, like the label above it
+      // (046): MUI indents it 14px to line up with a floating label we dropped
+      MuiFormHelperText: {
+        styleOverrides: { root: { marginLeft: 0, marginRight: 0 } },
+      },
       // tags and devices: one grey chip; status pills are StatusPill, not chips
       MuiChip: {
         styleOverrides: {

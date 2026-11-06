@@ -5,6 +5,7 @@ import {
   TestRunDensity,
   TestRunListControls,
   TestRunView,
+  TOOLBAR_SX,
 } from "./TestRunListControls";
 import { TestRun } from "../../types";
 
@@ -44,7 +45,7 @@ export const DataGridCustomToolbar: React.FunctionComponent<{
   onShowDiffChange,
   onProcessed,
 }) => (
-  <Toolbar variant="dense">
+  <Toolbar variant="dense" sx={TOOLBAR_SX}>
     <TestRunListControls
       view={view}
       onViewChange={onViewChange}
@@ -53,7 +54,7 @@ export const DataGridCustomToolbar: React.FunctionComponent<{
       showDiff={showDiff}
       onShowDiffChange={onShowDiffChange}
     />
-    <Box marginLeft="auto">
+    <Box marginLeft="auto" display="flex" flexShrink={0}>
       <BulkOperation
         selectedIds={selectedIds}
         rows={rows}

@@ -12,6 +12,13 @@ import { Tooltip as MuiTooltip } from "@mui/material";
 import { tokens, type } from "../../theme";
 import { useT } from "../../i18n";
 
+/**
+ * Below this window width Select elements and Areas show as icons, named in
+ * their tooltips, so the toolbar keeps to one row at 1280 px in Ukrainian with
+ * two device tags (046).
+ */
+export const COMPACT_TOOLS_QUERY = "(max-width:1359.95px)";
+
 /** How Current is laid against the baseline. */
 export type CompareView = "side" | "overlay" | "fade";
 

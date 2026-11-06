@@ -1,5 +1,5 @@
 import React from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import {
   Box,
   Button,
@@ -16,13 +16,11 @@ import {
 } from "@mui/material";
 import { useSnackbar } from "notistack";
 import { pillField } from "../components/pillField";
-import ProjectSelect from "../components/ProjectSelect";
 import { BaseModal } from "../components/BaseModal";
 import { StatusPill } from "../components/StatusPill";
 import { insightsService, testVariationService } from "../services";
 import { ProjectInsights } from "../types";
-import { useUserState } from "../contexts";
-import { routes } from "../constants";
+import { useProjectFromAddress, useUserState } from "../contexts";
 import { motion, tokens, radius } from "../theme";
 import { Num } from "../components/SummaryParts";
 import { ErrorState } from "../components/EmptyState";
@@ -148,7 +146,8 @@ const Amount: React.FunctionComponent<{
  */
 const InsightsPage: React.FunctionComponent = () => {
   const { projectId = "" } = useParams<{ projectId: string }>();
-  const navigate = useNavigate();
+  // the sidebar's switcher chooses the project; this page follows its address
+  useProjectFromAddress(projectId);
   const { enqueueSnackbar } = useSnackbar();
   const { t, formatDate, formatNumber } = useT();
   // the parts toLocaleDateString shows
@@ -234,11 +233,6 @@ const InsightsPage: React.FunctionComponent = () => {
         <Typography variant="h4" component="h1">
           {t("insights.title")}
         </Typography>
-        <ProjectSelect
-          compact
-          projectId={projectId}
-          onProjectSelect={(id) => navigate(`${routes.INSIGHTS_PAGE}/${id}`)}
-        />
         <Box sx={{ flex: 1 }} />
         {/* one line where the period is chosen; why the history is short, on hover */}
         {data?.partialHistory && (

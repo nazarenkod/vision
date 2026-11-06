@@ -11,6 +11,7 @@ import { TestRun } from "~client/types";
 import { BuildOverview } from "~client/types/buildOverview";
 import {
   API_URL,
+  inUkrainian,
   mockGetBuildDetails,
   mockGetBuilds,
   mockGetProjects,
@@ -573,6 +574,16 @@ test("explains a result bar and shows zeros as a faint 0", async ({
   // Login has no bugs: a faint 0, so the column reads as numbers (039)
   await expect(login.getByTestId("overviewNum").last()).toHaveText("0");
 
+  // the card rises into place: a pointer resting where it lands opens nothing
+  await expect
+    .poll(() =>
+      page
+        .getByTestId("overviewFeatures")
+        .evaluate((el) =>
+          el.getAnimations().every((a) => a.playState === "finished"),
+        ),
+    )
+    .toBe(true);
   await login.getByTestId("resultBar").hover();
   await expect(page.getByRole("tooltip")).toHaveText("1 changed");
 });
@@ -759,3 +770,46 @@ test("puts screens without a feature under No feature", async ({
     rows.filter({ hasText: "Checkout" }).getByTestId("overviewNoFeature"),
   ).toHaveCount(0);
 });
+
+for (const width of [1280, 1440]) {
+  test(`shows the build overview tables without cut names at ${width} px in Ukrainian`, async ({
+    openProjectPage,
+    page,
+  }) => {
+    await page.setViewportSize({ width, height: 900 });
+    await inUkrainian(page);
+    await openProjectPage(project.id, build.id, undefined, "overview");
+    const features = page.getByTestId("overviewFeatures");
+    await expect(page.getByTestId("overviewFeature")).toHaveCount(4);
+
+    // "No feature" and the screen under it are never cut short
+    const cut = (locator) =>
+      locator.evaluateAll(
+        (elements) =>
+          elements.filter((el) => el.scrollWidth > el.clientWidth).length,
+      );
+    expect(await cut(features.getByTestId("overviewNoFeature"))).toBe(0);
+    expect(await cut(features.getByTestId("overviewScreenName"))).toBe(0);
+    // the name column keeps room for its header
+    const header = features.getByText("Функціонал", { exact: true });
+    const checks = features.getByText("Перевірки", { exact: true });
+    const a = await header.boundingBox();
+    const b = await checks.boundingBox();
+    expect(a.x + a.width).toBeLessThanOrEqual(b.x);
+    // a Jira summary is shown whole
+    expect(await cut(page.getByTestId("overviewBug").locator("p"))).toBe(0);
+
+    // a device's tags are whole or folded into +N, never cut mid-word
+    const tags = page.getByTestId("overviewDevices").getByTestId("deviceTag");
+    expect(
+      await tags.evaluateAll(
+        (elements) =>
+          elements.filter(
+            (el) =>
+              el.querySelector(".MuiChip-label").scrollWidth >
+              el.querySelector(".MuiChip-label").clientWidth,
+          ).length,
+      ),
+    ).toBe(0);
+  });
+}

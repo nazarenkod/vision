@@ -1,7 +1,7 @@
 import { expect, Page } from "@playwright/test";
 import { test } from "fixtures";
 import { TEST_PROJECT } from "~client/_test/test.data.helper";
-import { mockGetBuilds, mockGetProjects } from "utils/mocks";
+import { inUkrainian, mockGetBuilds, mockGetProjects } from "utils/mocks";
 
 const width = async (page: Page) =>
   (await page.getByTestId("sideNav").boundingBox())?.width;
@@ -159,4 +159,23 @@ test("folds to icons with tooltips below 1100 px", async ({
   await page.setViewportSize({ width: 1280, height: 768 });
   await expect.poll(() => width(page)).toBe(232);
   await expect(sideNav.nav).toHaveAttribute("data-folded", "false");
+});
+
+test("keeps every sidebar label whole in Ukrainian", async ({
+  openProjectPage,
+  page,
+}) => {
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await inUkrainian(page);
+  await openProjectPage(TEST_PROJECT.id);
+  const nav = page.getByTestId("sideNav");
+  await expect(nav.getByText("Довідка", { exact: true })).toBeVisible();
+  // no label of the open sidebar ends in an ellipsis
+  const cut = await nav.evaluate((root) =>
+    Array.from(root.querySelectorAll<HTMLElement>("*"))
+      .filter((el) => getComputedStyle(el).textOverflow === "ellipsis")
+      .filter((el) => el.scrollWidth > el.clientWidth)
+      .map((el) => el.textContent),
+  );
+  expect(cut).toEqual([]);
 });

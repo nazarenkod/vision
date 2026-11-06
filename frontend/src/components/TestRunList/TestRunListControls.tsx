@@ -8,7 +8,9 @@ import {
   Tooltip as MuiTooltip,
   TooltipProps,
   Typography,
+  useMediaQuery,
 } from "@mui/material";
+import { visuallyHidden } from "@mui/utils";
 import {
   DensityLarge,
   DensityMedium,
@@ -20,6 +22,17 @@ import { SlidingToggleGroup } from "../motion/SlidingToggleGroup";
 import { Tooltip } from "../Tooltip";
 import { useT } from "../../i18n";
 import { GridSortButton, TestRunSort } from "./TestRunGridHeader";
+
+/**
+ * The list's toolbar keeps the controls and the bulk actions in one row; only
+ * a window narrower than this lets the actions go under them (046).
+ */
+export const TOOLBAR_SX = {
+  gap: 1,
+  px: { xs: 2 },
+  flexWrap: "nowrap",
+  "@media (max-width:1099.95px)": { flexWrap: "wrap" },
+} as const;
 
 export type TestRunView = "table" | "grid";
 
@@ -38,12 +51,18 @@ export const CARD_SIZE_BY_DENSITY: Record<
   comfortable: { width: 210, imageHeight: 390 },
 };
 
-const switchLabel = (text: string) => (
-  <Typography variant="body2">{text}</Typography>
+// a narrow window keeps the toolbar in one row: the switch without its words,
+// still named for screen readers and in its tooltip (046)
+const COMPACT_QUERY = "(max-width:1359.95px)";
+
+const switchLabel = (text: string, compact: boolean) => (
+  <Typography variant="body2" noWrap sx={compact ? visuallyHidden : undefined}>
+    {text}
+  </Typography>
 );
 
 const groupDivider = (
-  <Divider orientation="vertical" flexItem sx={{ marginY: 1, marginX: 0.5 }} />
+  <Divider orientation="vertical" flexItem sx={{ marginY: 1, marginX: 0.25 }} />
 );
 
 /**
@@ -78,7 +97,12 @@ const IconToggle: React.FunctionComponent<IconToggleProps> = ({
     disableInteractive
     {...rest}
   >
-    <ToggleButton value={value} aria-label={ariaLabel} data-testid={testId}>
+    <ToggleButton
+      value={value}
+      aria-label={ariaLabel}
+      data-testid={testId}
+      sx={{ p: "5px" }}
+    >
       {icon}
     </ToggleButton>
   </MuiTooltip>
@@ -105,8 +129,10 @@ export const TestRunListControls: React.FunctionComponent<{
   onSortChange,
 }) => {
   const { t } = useT();
+  const compact = useMediaQuery(COMPACT_QUERY, { noSsr: true });
   return (
-    <Box display="flex" alignItems="center" gap={1}>
+    // shrinks before the bulk actions beside it go to a second row (046)
+    <Box display="flex" alignItems="center" gap={0.75} minWidth={0}>
       {/* laid out as a table or a grid */}
       <SlidingToggleGroup
         rememberAs="testRunView"
@@ -165,13 +191,21 @@ export const TestRunListControls: React.FunctionComponent<{
       </SlidingToggleGroup>
       {view === "grid" && sort && onSortChange && groupDivider}
       {view === "grid" && sort && onSortChange && (
-        <GridSortButton sort={sort} onSortChange={onSortChange} />
+        <Box flexShrink={0}>
+          <GridSortButton sort={sort} onSortChange={onSortChange} />
+        </Box>
       )}
       {/* only the cards carry a picture, so the table has nothing to swap; a
         switch rather than an icon, so "on" is unmistakable */}
       {view === "grid" && groupDivider}
       {view === "grid" && (
-        <Tooltip title={t("runs.diffHelp")}>
+        <Tooltip
+          title={
+            compact
+              ? `${t("runs.showDiff")} · ${t("runs.diffHelp")}`
+              : t("runs.diffHelp")
+          }
+        >
           <FormControlLabel
             control={
               <Switch
@@ -182,8 +216,8 @@ export const TestRunListControls: React.FunctionComponent<{
                 data-testid="showDiffToggle"
               />
             }
-            label={switchLabel(t("runs.showDiff"))}
-            sx={{ marginLeft: 0, marginRight: 0 }}
+            label={switchLabel(t("runs.showDiff"), compact)}
+            sx={{ marginLeft: 0, marginRight: 0, minWidth: 0 }}
           />
         </Tooltip>
       )}

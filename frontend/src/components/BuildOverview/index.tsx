@@ -13,7 +13,8 @@ import { BuildOverview as Overview } from "../../types/buildOverview";
 import { RULE_LABEL } from "../ProjectForm/A11yRulesSettings";
 import { StatusPill } from "../StatusPill";
 import { ResultBar } from "./ResultBar";
-import { DeviceTags } from "../DeviceTags";
+import { TagOverflow } from "../DeviceTags";
+import { DeviceParts, deviceTagsOf } from "../../_helpers/device.helper";
 import { EmptyState } from "../EmptyState";
 import {
   Card,
@@ -167,23 +168,25 @@ const OverviewTiles: React.FunctionComponent<{
 };
 
 // the result is a short bar and its words: "1 changed · 1 new" (046)
-const FEATURE_COLUMNS = "minmax(0, 1fr) 56px 148px 68px 40px";
+// the name keeps room for "No feature" and a screen's name under it in either language
+const FEATURE_COLUMNS = "minmax(150px, 1fr) 72px 140px 68px 40px";
 // the devices take the page's width; "Accessibility" fits over its numbers
-const DEVICE_COLUMNS = "minmax(0, 1fr) 180px 96px 96px";
+const DEVICE_COLUMNS = "minmax(0, 1fr) 150px 80px 96px";
 
 /**
  * A device's tags in one line (046): a row never grows to two lines for a long
- * model name; what does not fit is cut at the cell's edge.
+ * model name; the tags that do not fit become "+N" with their values on hover,
+ * so no tag is cut mid-word (REQ-046-31).
  */
 const OneLineDevice: React.FunctionComponent<{
-  parts: React.ComponentProps<typeof DeviceTags>["parts"];
+  parts: DeviceParts;
 }> = ({ parts }) => (
-  <Box
-    data-testid="overviewDeviceTags"
-    sx={{ minWidth: 0, overflow: "hidden", display: "flex" }}
-  >
-    <DeviceTags dense parts={parts} sx={{ flexWrap: "nowrap" }} />
-  </Box>
+  <TagOverflow
+    testId="overviewDeviceTags"
+    tagTestId="deviceTag"
+    dense
+    tags={deviceTagsOf(parts).map((tag) => tag.value)}
+  />
 );
 
 /**
@@ -365,7 +368,7 @@ const EmptyLine: React.FunctionComponent<{
 );
 
 // the problem, the device's tags, then New or Known pinned to the right edge
-const A11Y_COLUMNS = "minmax(0, 1fr) minmax(0, auto) 72px";
+const A11Y_COLUMNS = "minmax(0, 1fr) minmax(96px, 280px) 72px";
 
 /**
  * The accessibility problems of the build's screenshots (039): a row per
@@ -585,15 +588,15 @@ export const BuildOverview: React.FunctionComponent<{
       }}
     >
       <OverviewTiles overview={overview} actions={actions} />
-      {/* features beside the bugs; the devices and the accessibility problems take the
+      {/* features beside the bugs when both fit; the devices and the accessibility problems take the
           whole width, so a device keeps its tags on one line (046) */}
       <Box
         sx={{
           display: "grid",
-          gridTemplateColumns: {
-            xs: "1fr",
-            lg: "minmax(0, 1.3fr) minmax(0, 1fr)",
-          },
+          // side by side only when each gets room for its names and summaries;
+          // narrower, the bugs go under the features
+          gridTemplateColumns:
+            "repeat(auto-fit, minmax(min(100%, 520px), 1fr))",
           gap: 2,
           alignItems: "start",
         }}

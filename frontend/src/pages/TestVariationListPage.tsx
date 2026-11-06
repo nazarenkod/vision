@@ -2,7 +2,7 @@ import React from "react";
 import TestVariationList, {
   groupByCheck,
 } from "../components/TestVariationList";
-import { useNavigate, useParams } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import { TestVariation } from "../types";
 import { testVariationService } from "../services";
 import {
@@ -17,27 +17,26 @@ import {
 } from "@mui/material";
 import { MergeType } from "@mui/icons-material";
 import { motion, tokens, type } from "../theme";
-import ProjectSelect from "../components/ProjectSelect";
 import Filters from "../components/Filters";
 import { TestVariationMergeForm } from "../components/TestVariationMergeForm";
 import { useSnackbar } from "notistack";
 import { setHelpSteps, useHelpDispatch } from "../contexts/help.context";
 import {
-  LOCATOR_TEST_VARIATION_LIST_PAGE_SELECT_PROJECT,
   LOCATOR_TEST_VARIATION_MERGE_TOGGLE,
-  routes,
   TEST_VARIATION_LIST_PAGE,
 } from "../constants";
 import { useT } from "../i18n";
+import { useProjectFromAddress } from "../contexts";
 
 const PAGE_SIZE_OPTIONS = [12, 24, 48, 96];
 
 const TestVariationListPage: React.FunctionComponent = () => {
-  const navigate = useNavigate();
   const { enqueueSnackbar } = useSnackbar();
   const { t } = useT();
   const helpDispatch = useHelpDispatch();
   const { projectId = "" } = useParams<{ projectId: string }>();
+  // the sidebar's switcher chooses the project; this page follows its address
+  useProjectFromAddress(projectId);
   const [testVariations, setTestVariations] = React.useState<TestVariation[]>(
     [],
   );
@@ -154,15 +153,6 @@ const TestVariationListPage: React.FunctionComponent = () => {
           >
             {t("baselines.checks", { count: groups.length })}
           </Typography>
-          <Box id={LOCATOR_TEST_VARIATION_LIST_PAGE_SELECT_PROJECT}>
-            <ProjectSelect
-              compact
-              projectId={projectId}
-              onProjectSelect={(id) =>
-                navigate(`${routes.VARIATION_LIST_PAGE}/${id}`)
-              }
-            />
-          </Box>
           <Box sx={{ flex: 1 }} />
           <Button
             variant="outlined"

@@ -23,6 +23,13 @@ describe("StepProgress", () => {
     ).toEqual(["approved", "current", "waiting", "waiting"]);
   });
 
+  it("shows only the position when there is one screen", () => {
+    render(<StepProgress statuses={["unresolved"]} currentIndex={0} />);
+    expect(screen.getByTestId("stepProgress")).toHaveTextContent(/^1 of 1$/);
+    expect(screen.queryByTestId("stepDots")).toBeNull();
+    expect(screen.queryByTestId("stepCounts")).toBeNull();
+  });
+
   it("names the queue after the position", () => {
     render(
       <StepProgress
@@ -35,8 +42,5 @@ describe("StepProgress", () => {
       "1 of 1 in To review",
     );
     expect(screen.getByTestId("queuePosition")).toHaveTextContent("1 of 1");
-    expect(
-      screen.getByTestId("stepDots").querySelectorAll("[data-state]"),
-    ).toHaveLength(1);
   });
 });

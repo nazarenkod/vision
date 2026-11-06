@@ -413,6 +413,20 @@ test("labels the fields above them", async ({ openProjectPage, page }) => {
   await page.getByTestId("reportBug").click();
   const dialog = page.getByTestId("reportBugDialog");
   await expect(page.getByTestId("bugField-essence")).toBeVisible();
+  // the dialog grows from the button: measure it once it has its size
+  await expect
+    .poll(() =>
+      page.evaluate(() =>
+        document
+          .getAnimations()
+          .every(
+            (a) =>
+              a.playState !== "running" ||
+              a.effect?.getTiming().iterations === Infinity,
+          ),
+      ),
+    )
+    .toBe(true);
 
   // no floating labels: the focus outline never runs through a label
   await expect(dialog.locator(".MuiInputLabel-root")).toHaveCount(0);

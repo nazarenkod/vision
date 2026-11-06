@@ -570,7 +570,8 @@ test("groups the checks of a feature under it with their results", async ({
   const feature = await checkout.boundingBox();
   const under = await check.boundingBox();
   if (!feature || !under) throw new Error("not on screen");
-  expect(Math.round(under.y)).toBe(Math.round(feature.y + feature.height));
+  // right under it, nothing between (a pixel either way while the card rises)
+  expect(Math.abs(under.y - (feature.y + feature.height))).toBeLessThan(2);
 });
 
 test("opens a check in its feature's queue and a decided one on its own", async ({

@@ -64,7 +64,7 @@ server error». CORS — лише для origin `APP_FRONTEND_URL`; Swagger (`/a
 
 | Метод і шлях | Призначення |
 |---|---|
-| `GET /builds/:id/overview` | зведення збірки для вкладки Overview: вердикт, числа, прогрес рев'ю з іменами людей, пристрої з розміром екрана (`screen`, з PNG одного знімка), фічі й фічі без змін (`quietFeatures.features`; `grouped` — рядок фічі з `featureName`, інакше одна перевірка), баги Jira (нові й відомі), порівняння з попередньою збіркою гілки, `asOf`. Без AI |
+| `GET /builds/:id/overview` | зведення збірки для вкладки Overview: вердикт, числа, прогрес рев'ю з іменами людей, пристрої з розміром екрана (`screen`, з PNG одного знімка), фічі й фічі без змін (`quietFeatures.features`; `grouped` — рядок фічі з `featureName` і її перевірками в `checks`, [048](../specs/048-overview-checks-table/spec.md), інакше одна перевірка), баги Jira (нові й відомі), порівняння з попередньою збіркою гілки, `asOf`. Без AI |
 | `GET /builds/:id/report` | звіт збірки з усіма розділами: зведення, до 20 змін зі знімками (`moreChanges` — решта), рядки доступності |
 | `GET /builds/:id/report-links` | невідкликані публічні посилання збірки з автором і датою |
 | `POST /builds/:id/report-links` | `admin`, `editor`: `{ sections, language }` → посилання з `token`, без терміну дії |

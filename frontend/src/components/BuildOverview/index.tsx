@@ -1,8 +1,10 @@
 import React from "react";
-import { Box, ButtonBase, Link, Typography } from "@mui/material";
+import { Box, ButtonBase, IconButton, Link, Typography } from "@mui/material";
 import {
   AccessibilityNewOutlined,
   BugReportOutlined,
+  ChevronRightRounded,
+  ExpandMoreRounded,
   LinkRounded,
 } from "@mui/icons-material";
 import { tokens, type, radius } from "../../theme";
@@ -18,15 +20,20 @@ import { EmptyState } from "../EmptyState";
 import {
   Card,
   Head,
-  NameCell,
   Num,
   Row,
+  rowSx,
   TileDot,
   TileProps,
   Tiles,
 } from "../SummaryParts";
 import { BuildTab } from "../../_helpers/route.helpers";
-import { profileOf, QueueKey } from "../../_helpers/reviewQueue.helper";
+import {
+  featureOf,
+  isWaiting,
+  profileOf,
+  QueueKey,
+} from "../../_helpers/reviewQueue.helper";
 
 // a burst of events while screenshots arrive or decisions land: ask once it settles
 const REFRESH_DELAY_MS = 400;
@@ -166,179 +173,236 @@ const OverviewTiles: React.FunctionComponent<{
   );
 };
 
-// the result is a short bar and its words: "1 changed · 1 new" (046)
-// the name keeps room for "No feature" and a screen's name under it in either language
-const FEATURE_COLUMNS = "minmax(150px, 1fr) 72px 140px 68px 40px";
+// the check or feature, its result in a short bar and words ("3 changed · 9
+// unchanged"), its bugs: what waits is in the words already (REQ-048-01)
+const CHECK_COLUMNS = "minmax(0, 1fr) 220px 56px";
+
 /**
- * A screen sent without featureName: "No feature" in grey with the screen
- * under it, so its name is not read as a feature's (046).
+ * The build's devices (REQ-048-06): a set of tags per profile, in the build
+ * header on every tab. A device opens its screenshots waiting for a decision;
+ * with none waiting, its first screenshot.
  */
-const NoFeatureCell: React.FunctionComponent<{ name: string }> = ({ name }) => {
-  const { t } = useT();
+export const BuildDevices: React.FunctionComponent<{
+  overview: Overview;
+  actions: OverviewActions;
+}> = ({ overview, actions }) => {
+  const { testRuns } = useTestRunState();
+  if (!overview.devices.length) return null;
   return (
-    <Box sx={{ minWidth: 0 }}>
-      <Typography
-        data-testid="overviewNoFeature"
-        noWrap
-        sx={{ fontSize: type.small, color: tokens.textSecondary }}
-      >
-        {t("overview.noFeature")}
-      </Typography>
-      <Typography
-        data-testid="overviewScreenName"
-        noWrap
-        title={name}
-        sx={{ fontSize: type.caption, color: tokens.textSecondary }}
-      >
-        {name}
-      </Typography>
+    <Box
+      data-testid="buildDevices"
+      sx={{
+        display: "flex",
+        flexWrap: "wrap",
+        alignItems: "center",
+        // a wider gap between devices than between the tags of one
+        columnGap: 1.5,
+        rowGap: 0.5,
+        minWidth: 0,
+      }}
+    >
+      {overview.devices.map((row) => {
+        const waiting = row.changed + row.new;
+        const profile = [row.device, row.os, row.browser, row.viewport].join(
+          "|",
+        );
+        const first = testRuns.find(
+          (run) =>
+            run.buildId === overview.build.id && profileOf(run) === profile,
+        );
+        const open = waiting
+          ? () => actions.openQueue({ kind: "device", profile })
+          : first
+            ? () => actions.openQueue({ kind: "run", id: first.id })
+            : undefined;
+        return (
+          <ButtonBase
+            key={profile}
+            data-testid="buildDevice"
+            aria-label={`${row.device} ${row.os}`}
+            onClick={open}
+            disabled={!open}
+            sx={{
+              p: "2px",
+              borderRadius: radius.control,
+              "&:hover": { bgcolor: "action.hover" },
+            }}
+          >
+            <DeviceTags
+              testId="buildDeviceTags"
+              dense
+              parts={{
+                os: row.os,
+                device: row.device,
+                browser: row.browser,
+                // the size of the screen: what the test sent, else the screenshot's
+                viewport: row.viewport || row.screen,
+              }}
+            />
+          </ButtonBase>
+        );
+      })}
     </Box>
   );
 };
 
+type FeatureRow = Overview["features"][number];
+const waitingOf = (row: FeatureRow) => row.changed + row.new;
+// a feature opens by itself when something in it needs a look (REQ-048-04)
+const needsLook = (row: FeatureRow) =>
+  waitingOf(row) + row.rejected + row.bugs > 0;
+
+/** A check's whole name: names are sentences, so it wraps rather than being cut (REQ-048-03). */
+const CheckName: React.FunctionComponent<{
+  name: string;
+  indent?: boolean;
+}> = ({ name, indent }) => (
+  <Typography
+    data-testid="overviewCheckName"
+    sx={{
+      fontSize: 13,
+      lineHeight: 1.35,
+      overflowWrap: "anywhere",
+      pl: indent ? 3.5 : 0,
+    }}
+  >
+    {name}
+  </Typography>
+);
+
 /**
- * The build's devices (REQ-047-02): a set of tags per profile and nothing
- * else, since the features already show the results. A device opens its
- * screenshots waiting for a decision; with none waiting, its first screenshot
- * (REQ-047-03).
+ * The checks of the build in one table (REQ-048-01): a feature the tests named
+ * is a group with its checks under it (REQ-048-02); a check without one is a
+ * plain row (REQ-048-03). A check opens its screenshots waiting for a decision,
+ * in the feature's queue when it is in one, or its first screenshot (REQ-048-05).
  */
-const Devices: React.FunctionComponent<{
+const Checks: React.FunctionComponent<{
   overview: Overview;
   actions: OverviewActions;
 }> = ({ overview, actions }) => {
   const { t } = useT();
   const { testRuns } = useTestRunState();
-  return (
-    <Card title={t("overview.devices")} index={9} testId="overviewDevices">
-      {/* the devices in one wrapping line: which ones ran, nothing more */}
-      <Box
-        sx={{
-          display: "flex",
-          flexWrap: "wrap",
-          // a wider gap between devices than between the tags of one
-          columnGap: 2.5,
-          rowGap: 1,
-          px: 2,
-          pt: 0.5,
-          pb: 2,
-        }}
-      >
-        {overview.devices.map((row) => {
-          const waiting = row.changed + row.new;
-          const profile = [row.device, row.os, row.browser, row.viewport].join(
-            "|",
-          );
-          const first = testRuns.find(
-            (run) =>
-              run.buildId === overview.build.id && profileOf(run) === profile,
-          );
-          const open = waiting
-            ? () => actions.openQueue({ kind: "device", profile })
-            : first
-              ? () => actions.openQueue({ kind: "run", id: first.id })
-              : undefined;
-          return (
-            <ButtonBase
-              key={profile}
-              data-testid="overviewDevice"
-              aria-label={`${row.device} ${row.os}`}
-              onClick={open}
-              disabled={!open}
-              sx={{
-                p: "2px",
-                borderRadius: radius.control,
-                "&:hover": { bgcolor: "action.hover" },
-              }}
-            >
-              <DeviceTags
-                testId="overviewDeviceTags"
-                dense
-                parts={{
-                  os: row.os,
-                  device: row.device,
-                  browser: row.browser,
-                  // the size of the screen: what the test sent, else the screenshot's
-                  viewport: row.viewport || row.screen,
-                }}
-              />
-            </ButtonBase>
-          );
-        })}
-      </Box>
-    </Card>
-  );
-};
-
-const FeatureRows: React.FunctionComponent<{
-  rows: Overview["features"];
-  actions: OverviewActions;
-}> = ({ rows, actions }) => {
-  const { t } = useT();
-  return (
-    <>
-      {rows.map((row) => {
-        const waiting = row.changed + row.new;
-        return (
-          <Row
-            key={`${row.grouped}:${row.name}`}
-            columns={FEATURE_COLUMNS}
-            label={row.name}
-            testId="overviewFeature"
-            onClick={
-              waiting
-                ? () =>
-                    actions.openQueue({
-                      kind: row.grouped ? "feature" : "check",
-                      name: row.name,
-                    })
-                : undefined
-            }
-          >
-            {row.grouped ? (
-              <NameCell name={row.name} />
-            ) : (
-              <NoFeatureCell name={row.name} />
-            )}
-            {/* a check on its own counts itself: only a feature says how many it holds */}
-            {row.grouped ? (
-              <Num value={row.total} testId="overviewChecks" />
-            ) : (
-              <span />
-            )}
-            <ResultBar outcome={row} text={t} hint words />
-            <Num value={waiting} zero="0" />
-            <Num value={row.bugs} zero="0" />
-          </Row>
-        );
-      })}
-    </>
-  );
-};
-
-const Features: React.FunctionComponent<{
-  overview: Overview;
-  actions: OverviewActions;
-}> = ({ overview, actions }) => {
-  const { t } = useT();
-  // every feature at once: those with something to look at first, then the rest (REQ-039-02)
+  // every row at once: those with something to look at first, then the rest (REQ-039-02)
   const rows = [
     ...overview.features,
     // an older server folded them without listing them
     ...(overview.quietFeatures.features ?? []),
   ];
+  // the groups someone opened or closed; the rest follow needsLook
+  const [toggled, setToggled] = React.useState<Set<string>>(new Set());
+  const toggle = (name: string) =>
+    setToggled((current) => {
+      const next = new Set(current);
+      if (!next.delete(name)) next.add(name);
+      return next;
+    });
+  const runs = testRuns.filter((run) => run.buildId === overview.build.id);
+  const openCheck = (name: string, feature?: string) => {
+    const mine = runs.filter(
+      (run) => run.name === name && (featureOf(run) || undefined) === feature,
+    );
+    const waiting = mine.find(isWaiting);
+    if (waiting)
+      actions.openQueue(
+        feature ? { kind: "feature", name: feature } : { kind: "check", name },
+        waiting.id,
+      );
+    else if (mine[0]) actions.openQueue({ kind: "run", id: mine[0].id });
+  };
+  const checkRow = (row: FeatureRow, feature?: string) => (
+    <Row
+      key={`${feature ?? ""}\u0000${row.name}`}
+      columns={CHECK_COLUMNS}
+      label={row.name}
+      testId={feature ? "overviewFeatureCheck" : "overviewCheck"}
+      onClick={() => openCheck(row.name, feature)}
+    >
+      <CheckName name={row.name} indent={!!feature} />
+      <ResultBar outcome={row} text={t} hint words />
+      <Num value={row.bugs} zero="0" />
+    </Row>
+  );
   return (
-    <Card index={7} testId="overviewFeatures">
+    <Card index={7} testId="overviewTable">
       <Head
-        columns={FEATURE_COLUMNS}
+        columns={CHECK_COLUMNS}
         cells={[
-          [t("overview.feature")],
-          [t("overview.checks"), true],
+          [t("overview.check")],
           [t("overview.result")],
-          [t("overview.review"), true],
           [t("overview.bugs"), true],
         ]}
       />
-      <FeatureRows rows={rows} actions={actions} />
+      {rows.map((row) => {
+        if (!row.grouped) return checkRow(row);
+        const open = needsLook(row) !== toggled.has(row.name);
+        const checks = row.checks ?? [];
+        return (
+          <React.Fragment key={`f\u0000${row.name}`}>
+            <Box
+              data-testid="overviewFeature"
+              data-open={open || undefined}
+              sx={rowSx(CHECK_COLUMNS, false)}
+            >
+              <Box sx={{ display: "flex", alignItems: "flex-start", gap: 0.5 }}>
+                <IconButton
+                  size="small"
+                  data-testid="overviewFeatureToggle"
+                  aria-expanded={open}
+                  aria-label={t(open ? "overview.collapse" : "overview.expand")}
+                  onClick={() => toggle(row.name)}
+                  sx={{ p: 0.25, mt: "-1px", color: tokens.textSecondary }}
+                >
+                  {open ? (
+                    <ExpandMoreRounded sx={{ fontSize: type.title }} />
+                  ) : (
+                    <ChevronRightRounded sx={{ fontSize: type.title }} />
+                  )}
+                </IconButton>
+                <ButtonBase
+                  data-testid="overviewFeatureName"
+                  onClick={() =>
+                    waitingOf(row)
+                      ? actions.openQueue({ kind: "feature", name: row.name })
+                      : toggle(row.name)
+                  }
+                  sx={{
+                    justifyContent: "flex-start",
+                    textAlign: "left",
+                    borderRadius: radius.control,
+                    "&:hover": { textDecoration: "underline" },
+                  }}
+                >
+                  <Typography
+                    component="span"
+                    sx={{
+                      fontSize: 13,
+                      lineHeight: 1.35,
+                      overflowWrap: "anywhere",
+                    }}
+                  >
+                    <Box component="span" sx={{ fontWeight: 600 }}>
+                      {row.name}
+                    </Box>{" "}
+                    <Box
+                      component="span"
+                      data-testid="overviewFeatureCount"
+                      sx={{ color: tokens.textSecondary }}
+                    >
+                      ·{" "}
+                      {t("overview.checksCount", {
+                        count: checks.length || row.total,
+                      })}
+                    </Box>
+                  </Typography>
+                </ButtonBase>
+              </Box>
+              <ResultBar outcome={row} text={t} hint words />
+              <Num value={row.bugs} zero="0" />
+            </Box>
+            {open && checks.map((check) => checkRow(check, row.name))}
+          </React.Fragment>
+        );
+      })}
     </Card>
   );
 };
@@ -369,7 +433,7 @@ const EmptyLine: React.FunctionComponent<{
 );
 
 // the problem, then New or Known pinned to the right edge; the device is the
-// screen's, already named in the devices card (REQ-047-04)
+// screen's, already named in the build header (REQ-047-04)
 const A11Y_COLUMNS = "minmax(0, 1fr) 72px";
 
 /**
@@ -464,16 +528,8 @@ const Bugs: React.FunctionComponent<{
   actions: OverviewActions;
 }> = ({ overview, actions }) => {
   const { t } = useT();
-  // no bugs: one line, not a table's title and header over nothing
-  if (overview.bugs.length === 0) {
-    return (
-      <Card index={8} testId="overviewBugs" id="overview-bugs">
-        <EmptyLine testId="overviewNoBugs" icon={BugReportOutlined}>
-          {t("overview.noBugs")}
-        </EmptyLine>
-      </Card>
-    );
-  }
+  // no bugs: the tile says 0 already (REQ-048-07)
+  if (overview.bugs.length === 0) return null;
   return (
     <Card
       title={t("overview.jiraBugs")}
@@ -585,34 +641,14 @@ export const BuildOverview: React.FunctionComponent<{
       }}
     >
       <OverviewTiles overview={overview} actions={actions} />
-      {/* the features take the whole width, so a feature's name is never cut
-          (REQ-047-01); the devices and the bugs are small: side by side when
-          both fit, one under the other when not. A list of bugs needs room
-          for its summaries, so it takes the larger share */}
-      <Features
+      {/* the checks take the whole width, so a name is never cut (REQ-047-01) */}
+      <Checks
         // another build starts folded again
         key={overview.build.id}
         overview={overview}
         actions={actions}
       />
-      <Box
-        data-testid="overviewSmallCards"
-        sx={{
-          display: "flex",
-          flexWrap: "wrap",
-          gap: 2,
-          alignItems: "flex-start",
-          "& > *": { minWidth: 0 },
-        }}
-      >
-        {/* beside the bugs when both fit; the devices wrap inside */}
-        <Box sx={{ flex: "1 1 320px" }}>
-          <Devices overview={overview} actions={actions} />
-        </Box>
-        <Box sx={{ flex: "1 1 420px" }}>
-          <Bugs overview={overview} actions={actions} />
-        </Box>
-      </Box>
+      <Bugs overview={overview} actions={actions} />
       <A11yProblems overview={overview} actions={actions} />
     </Box>
   );

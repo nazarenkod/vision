@@ -26,6 +26,8 @@ export interface FeatureRow extends Outcome {
   // the test sent featureName: the row holds its checks; otherwise it is one check
   grouped: boolean;
   bugs: number;
+  // a feature's checks by name, summed over devices, those waiting first (REQ-048-02)
+  checks?: FeatureRow[];
 }
 
 export interface OverviewBug {

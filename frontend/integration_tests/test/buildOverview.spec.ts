@@ -136,6 +136,18 @@ const overview: BuildOverview = {
       rejected: 0,
       passed: 0,
       bugs: 1,
+      checks: [
+        {
+          name: "Checkout. Pay",
+          grouped: false,
+          total: 1,
+          changed: 1,
+          new: 0,
+          rejected: 0,
+          passed: 0,
+          bugs: 1,
+        },
+      ],
     },
     {
       name: "Login. Error",
@@ -161,6 +173,18 @@ const overview: BuildOverview = {
         rejected: 0,
         passed: 1,
         bugs: 0,
+        checks: [
+          {
+            name: "Home. Banner",
+            grouped: false,
+            total: 1,
+            changed: 0,
+            new: 0,
+            rejected: 0,
+            passed: 1,
+            bugs: 0,
+          },
+        ],
       },
       {
         name: "Search. Results",
@@ -231,6 +255,12 @@ const mockOverview = async (page: Page) => {
   );
 };
 
+// a row of the checks table: a feature or a check on its own, in their order
+const tableRows = (page: Page) =>
+  page.locator(
+    '[data-testid="overviewFeature"], [data-testid="overviewCheck"]',
+  );
+
 test.beforeEach(async ({ page }) => {
   await mockGetProjects(page, [project]);
   await mockGetBuilds(page, project.id, [build]);
@@ -259,12 +289,11 @@ test("opens a build on the Overview tab", async ({ openProjectPage, page }) => {
     "title",
     "1 of 4 decided\nOleh Koval: 1 approved · 0 rejected",
   );
-  await expect(page.getByTestId("overviewDevice")).toHaveCount(3);
-  await expect(page.getByTestId("overviewFeature")).toHaveCount(4);
-  // the features name themselves in their first column; the devices are a
-  // list, so they carry a title (REQ-047-02)
+  await expect(page.getByTestId("buildDevice")).toHaveCount(3);
+  await expect(tableRows(page)).toHaveCount(4);
+  // one table that names itself in its header; the devices are the header's
   await expect(page.getByRole("heading", { name: "Features" })).toHaveCount(0);
-  await expect(page.getByRole("heading", { name: "Devices" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Devices" })).toHaveCount(0);
   await expect(page.getByTestId("overviewBug")).toContainText("P24MOB-14231");
   expect(new URL(page.url()).searchParams.get("tab")).toBeNull();
 });
@@ -291,7 +320,7 @@ test("leaves change groups to the Changes tab", async ({
   page,
 }) => {
   await openProjectPage(project.id, build.id, undefined, "overview");
-  await expect(page.getByTestId("overviewFeatures")).toBeVisible();
+  await expect(page.getByTestId("overviewTable")).toBeVisible();
   // the groups repeated the features when screenshots came without UI trees
   await expect(page.getByTestId("overviewToDecide")).toHaveCount(0);
 });
@@ -324,7 +353,7 @@ test("each number opens its tab or queue", async ({
   await expect(page).toHaveURL(/queue=all&testId=/);
 });
 
-test("opens the queue of a device from the devices block", async ({
+test("opens the queue of a device from the build header", async ({
   openProjectPage,
   page,
 }) => {
@@ -340,7 +369,7 @@ test("opens the queue of a device from the devices block", async ({
   await mockTestRun(page, galaxy);
   await openProjectPage(project.id, build.id, undefined, "overview");
   await page
-    .getByTestId("overviewDevice")
+    .getByTestId("buildDevice")
     .filter({ hasText: "iPhone 15" })
     .click();
 
@@ -349,10 +378,10 @@ test("opens the queue of a device from the devices block", async ({
   await expect(page).toHaveURL(/queue=device%3AiPhone.*testId=login$/);
   await expect(page.getByTestId("screenName")).toHaveText("Login. Error");
 
-  // a device with nothing waiting opens its screen on its own (REQ-047-03)
+  // a device with nothing waiting opens its screen on its own (REQ-048-06)
   await page.keyboard.press("Escape");
   await page
-    .getByTestId("overviewDevice")
+    .getByTestId("buildDevice")
     .filter({ hasText: "Galaxy S23" })
     .click();
   await expect(page).toHaveURL(/queue=run%3Agalaxy.*testId=galaxy$/);
@@ -386,12 +415,12 @@ test("Esc returns to where the review was opened, focus on the same row", async 
 }) => {
   await openProjectPage(project.id, build.id, undefined, "overview");
   const row = page
-    .getByTestId("overviewDevice")
-    .filter({ hasText: "PIXEL_4_XL" });
+    .getByTestId("overviewCheck")
+    .filter({ hasText: "Login. Error" });
   await row.focus();
   await page.keyboard.press("Enter");
   await expect(page.getByRole("dialog")).toBeVisible();
-  await expect(page).toHaveURL(/queue=device%3APIXEL_4_XL/);
+  await expect(page).toHaveURL(/queue=check%3ALogin/);
 
   await page.keyboard.press("Escape");
 
@@ -420,7 +449,7 @@ test("shows every feature at once, those with changes first", async ({
 }) => {
   await openProjectPage(project.id, build.id, undefined, "overview");
   await expect(page.getByTestId("overviewQuietFeatures")).toHaveCount(0);
-  await expect(page.getByTestId("overviewFeature")).toHaveText([
+  await expect(tableRows(page)).toHaveText([
     /Checkout/,
     /Login/,
     /Home/,
@@ -508,25 +537,133 @@ test("says there are no accessibility problems in one line, and nothing without 
 
   a11y = { checked: false, problems: [], more: 0 };
   await page.reload();
-  await expect(page.getByTestId("overviewFeatures")).toBeVisible();
+  await expect(page.getByTestId("overviewTable")).toBeVisible();
   await expect(page.getByTestId("overviewA11y")).toHaveCount(0);
 });
 
-test("counts the checks of a feature and opens a check on its own", async ({
+test("groups the checks of a feature under it with their results", async ({
+  openProjectPage,
+  page,
+}) => {
+  await inUkrainian(page);
+  await openProjectPage(project.id, build.id, undefined, "overview");
+  const checkout = page
+    .getByTestId("overviewFeature")
+    .filter({ hasText: "Checkout" });
+  // the feature in bold with how many checks it holds (REQ-048-02)
+  await expect(checkout.getByTestId("overviewFeatureCount")).toHaveText(
+    "· 1 перевірка",
+  );
+  await expect(checkout.getByText("Checkout", { exact: true })).toHaveCSS(
+    "font-weight",
+    "600",
+  );
+  await expect(checkout.getByTestId("resultWords")).toHaveText("1 змінений");
+  // its check right under it, with its own result and bugs
+  const check = page.getByTestId("overviewFeatureCheck");
+  await expect(check).toHaveCount(1);
+  await expect(check.getByTestId("overviewCheckName")).toHaveText(
+    "Checkout. Pay",
+  );
+  await expect(check.getByTestId("resultWords")).toHaveText("1 змінений");
+  await expect(check.getByTestId("overviewNum")).toHaveText("1");
+  const feature = await checkout.boundingBox();
+  const under = await check.boundingBox();
+  if (!feature || !under) throw new Error("not on screen");
+  expect(Math.round(under.y)).toBe(Math.round(feature.y + feature.height));
+});
+
+test("opens a check in its feature's queue and a decided one on its own", async ({
+  openProjectPage,
+  page,
+}) => {
+  const banner = inBuild(TEST_RUN_APPROVED, {
+    id: "banner",
+    name: "Home. Banner",
+    featureName: "Home",
+  });
+  await mockGetTestRuns(page, build.id, [...runs, banner]);
+  await mockTestRun(page, banner);
+  await openProjectPage(project.id, build.id, undefined, "overview");
+
+  // a check in a feature: the feature's queue, from this check (REQ-048-05)
+  await page.getByTestId("overviewFeatureCheck").click();
+  await expect(page).toHaveURL(/queue=feature%3ACheckout.*testId=pay$/);
+  await expect(page.getByTestId("screenName")).toHaveText("Checkout. Pay");
+  await page.keyboard.press("Escape");
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+
+  // a check on its own: its waiting screens
+  await page.getByTestId("overviewCheck").filter({ hasText: "Login" }).click();
+  await expect(page).toHaveURL(/queue=check%3ALogin.*testId=login$/);
+  await expect(page.getByTestId("screenName")).toHaveText("Login. Error");
+  await page.keyboard.press("Escape");
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+
+  // the feature's name: the feature's queue
+  await page
+    .getByTestId("overviewFeature")
+    .filter({ hasText: "Checkout" })
+    .getByTestId("overviewFeatureName")
+    .click();
+  await expect(page).toHaveURL(/queue=feature%3ACheckout/);
+  await expect(page.getByTestId("screenName")).toHaveText("Checkout. Pay");
+  await page.keyboard.press("Escape");
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+
+  // nothing waits in it: the check's screen on its own
+  await page
+    .getByTestId("overviewFeature")
+    .filter({ hasText: "Home" })
+    .getByTestId("overviewFeatureToggle")
+    .click();
+  await page
+    .getByTestId("overviewFeatureCheck")
+    .filter({ hasText: "Home. Banner" })
+    .click();
+  await expect(page).toHaveURL(/queue=run%3Abanner.*testId=banner$/);
+});
+
+test("opens a feature with changes and folds one without them", async ({
   openProjectPage,
   page,
 }) => {
   await openProjectPage(project.id, build.id, undefined, "overview");
-  const rows = page.getByTestId("overviewFeature");
-  // the check's full name under No feature: no feature is guessed from it
-  const login = rows.nth(1);
-  await expect(login).toHaveText(/^No feature\s*Login\. Error/);
-  await expect(rows.first().getByTestId("overviewChecks")).toHaveText("1");
-  await expect(login.getByTestId("overviewChecks")).toHaveCount(0);
+  const feature = (name: string) =>
+    page.getByTestId("overviewFeature").filter({ hasText: name });
+  const checks = page.getByTestId("overviewFeatureCheck");
+  // Checkout has a change: open; Home has none: folded (REQ-048-04)
+  await expect(feature("Checkout")).toHaveAttribute("data-open", "true");
+  await expect(feature("Home")).not.toHaveAttribute("data-open", "true");
+  await expect(checks).toHaveText([/Checkout\. Pay/]);
 
-  await login.click();
-  await expect(page.getByTestId("screenName")).toHaveText("Login. Error");
-  await expect(page).toHaveURL(/queue=check%3ALogin/);
+  await feature("Home").getByTestId("overviewFeatureToggle").click();
+  await expect(feature("Home")).toHaveAttribute("data-open", "true");
+  await expect(checks).toHaveText([/Checkout\. Pay/, /Home\. Banner/]);
+
+  await feature("Checkout").getByTestId("overviewFeatureToggle").click();
+  await expect(
+    feature("Checkout").getByTestId("overviewFeatureToggle"),
+  ).toHaveAttribute("aria-expanded", "false");
+  await expect(checks).toHaveText([/Home\. Banner/]);
+});
+
+test("has the columns Check, Result and Bugs only", async ({
+  openProjectPage,
+  page,
+}) => {
+  await inUkrainian(page);
+  await openProjectPage(project.id, build.id, undefined, "overview");
+  const table = page.getByTestId("overviewTable");
+  const header = table.locator("> div").first();
+  // what waits is in the result's words already (REQ-048-01)
+  await expect(header.locator("> span")).toHaveText([
+    "Перевірка",
+    "Результат",
+    "Баги",
+  ]);
+  await expect(table.getByText("Перегляд", { exact: true })).toHaveCount(0);
+  await expect(table.getByText("Перевірки", { exact: true })).toHaveCount(0);
 });
 
 test("puts the count of All tests in a pill like the tabs beside it", async ({
@@ -543,7 +680,7 @@ test("shows a device's screen size when the run sent no viewport", async ({
   page,
 }) => {
   await openProjectPage(project.id, build.id, undefined, "overview");
-  const devices = page.getByTestId("overviewDevice");
+  const devices = page.getByTestId("buildDevice");
   // one grey tag per value, model first, the size last (spec 037)
   await expect(
     devices.filter({ hasText: "Galaxy S23" }).getByTestId("deviceTag"),
@@ -566,9 +703,7 @@ test("explains a result bar and shows zeros as a faint 0", async ({
   page,
 }) => {
   await openProjectPage(project.id, build.id, undefined, "overview");
-  const login = page
-    .getByTestId("overviewFeature")
-    .filter({ hasText: "Login" });
+  const login = page.getByTestId("overviewCheck").filter({ hasText: "Login" });
   // Login has no bugs: a faint 0, so the column reads as numbers (039)
   await expect(login.getByTestId("overviewNum").last()).toHaveText("0");
 
@@ -576,7 +711,7 @@ test("explains a result bar and shows zeros as a faint 0", async ({
   await expect
     .poll(() =>
       page
-        .getByTestId("overviewFeatures")
+        .getByTestId("overviewTable")
         .evaluate((el) =>
           el.getAnimations().every((a) => a.playState === "finished"),
         ),
@@ -586,7 +721,7 @@ test("explains a result bar and shows zeros as a faint 0", async ({
   await expect(page.getByRole("tooltip")).toHaveText("1 changed");
 });
 
-test("says there are no Jira bugs in one line", async ({
+test("shows no Jira bugs card when the build has none", async ({
   openProjectPage,
   page,
 }) => {
@@ -596,8 +731,10 @@ test("says there are no Jira bugs in one line", async ({
     }),
   );
   await openProjectPage(project.id, build.id, undefined, "overview");
-  const bugs = page.getByTestId("overviewBugs");
-  await expect(bugs).toHaveText("No Jira bugs on this build");
+  await expect(page.getByTestId("overviewTable")).toBeVisible();
+  // the tile says 0 already (REQ-048-07)
+  await expect(page.getByTestId("overviewValue-bugs")).toHaveText("0");
+  await expect(page.getByTestId("overviewBugs")).toHaveCount(0);
 });
 
 test("lays out the Accessibility tab like the Overview", async ({
@@ -666,44 +803,41 @@ test("keeps tile numbers neutral and colours only the marker", async ({
   await expect(page.getByTestId("overviewMarker-rejected")).toHaveCount(0);
 });
 
-test("lists the devices of the build without results", async ({
+test("shows the devices of the build in its header on every tab", async ({
   openProjectPage,
   page,
 }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
   await openProjectPage(project.id, build.id, undefined, "overview");
-  const devices = page.getByTestId("overviewDevices");
-  const rows = page.getByTestId("overviewDevice");
-  await expect(rows).toHaveCount(3);
+  const devices = page.getByTestId("buildDevice");
+  await expect(devices).toHaveCount(3);
   // a set of tags per device, model first (REQ-037-11)
-  await expect(rows.first().getByTestId("deviceTag")).toHaveText([
+  await expect(devices.first().getByTestId("deviceTag")).toHaveText([
     "PIXEL_4_XL",
     "AOS 14",
     "browser",
     "viewport",
   ]);
-  // the features show the results: no bars, no counts here (SC-047-01)
-  await expect(devices.getByTestId("resultBar")).toHaveCount(0);
-  await expect(devices.getByTestId("overviewNum")).toHaveCount(0);
-  await expect(page.getByTestId("resultBar")).toHaveCount(4);
-  // a small card beside the Jira bugs when there is room, once the cards
-  // have risen into place
-  await expect
-    .poll(() =>
-      page
-        .getByTestId("overviewSmallCards")
-        .evaluate((el) =>
-          el
-            .getAnimations({ subtree: true })
-            .every((a) => a.playState === "finished"),
-        ),
-    )
-    .toBe(true);
-  const a = await devices.boundingBox();
-  const b = await page.getByTestId("overviewBugs").boundingBox();
-  if (!a || !b) throw new Error("not on screen");
-  expect(Math.round(a.y)).toBe(Math.round(b.y));
-  expect(a.x + a.width).toBeLessThanOrEqual(b.x);
+  // after the time, in the header; no devices card on the Overview (REQ-048-06)
+  const period = await page.getByTestId("buildPeriod").boundingBox();
+  const first = await devices.first().boundingBox();
+  if (!period || !first) throw new Error("not on screen");
+  expect(first.x).toBeGreaterThan(period.x + period.width);
+  // on the line under the build's name
+  const title = await page.getByRole("heading", { level: 1 }).boundingBox();
+  expect(period.y).toBeGreaterThan((title?.y ?? 0) + (title?.height ?? 0) - 2);
+  expect(
+    Math.abs(first.y + first.height / 2 - (period.y + period.height / 2)),
+  ).toBeLessThan(4);
+  await expect(
+    page.getByTestId("buildOverview").getByTestId("deviceTag"),
+  ).toHaveCount(0);
+  await expect(page.getByTestId("overviewDevices")).toHaveCount(0);
+
+  for (const tab of [/Changes/, /All screens/, /Accessibility/]) {
+    await page.getByRole("tab", { name: tab }).click();
+    await expect(page.getByTestId("buildDevice")).toHaveCount(3);
+  }
 });
 
 test("shows the features across the whole page with whole names", async ({
@@ -722,11 +856,12 @@ test("shows the features across the whole page with whole names", async ({
     }),
   );
   await openProjectPage(project.id, build.id, undefined, "overview");
-  const features = page.getByTestId("overviewFeatures");
+  const features = page.getByTestId("overviewTable");
   const cell = page
     .getByTestId("overviewFeature")
     .filter({ hasText: name })
-    .getByText(name, { exact: true });
+    .getByTestId("overviewFeatureName")
+    .locator("> .MuiTypography-root");
   await expect(cell).toBeVisible();
   // the whole width of the overview, not half of it beside the bugs
   const card = await features.boundingBox();
@@ -815,6 +950,7 @@ test("names the result next to its bar", async ({ openProjectPage, page }) => {
           {
             ...overview.features[0],
             name: "Payments",
+            checks: [],
             total: 2,
             changed: 1,
             new: 1,
@@ -825,8 +961,7 @@ test("names the result next to its bar", async ({ openProjectPage, page }) => {
     }),
   );
   await openProjectPage(project.id, build.id, undefined, "overview");
-  const feature = (name: string) =>
-    page.getByTestId("overviewFeature").filter({ hasText: name });
+  const feature = (name: string) => tableRows(page).filter({ hasText: name });
   await expect(feature("Login").getByTestId("resultWords")).toHaveText(
     "1 changed",
   );
@@ -842,6 +977,9 @@ test("names the result next to its bar", async ({ openProjectPage, page }) => {
       .filter({ hasText: "Checkout" })
       .getByTestId("resultWords"),
   ).toHaveText("1 changed");
+  await expect(
+    page.getByTestId("overviewFeatureCheck").getByTestId("resultWords"),
+  ).toHaveText("1 changed");
   // bars of one width, so the words line up whatever the counts
   const widths = await page
     .getByTestId("resultBar")
@@ -851,28 +989,38 @@ test("names the result next to its bar", async ({ openProjectPage, page }) => {
   expect(new Set(widths)).toEqual(new Set([48]));
 });
 
-test("puts screens without a feature under No feature", async ({
+test("shows a check without a feature as a plain row with its whole name", async ({
   openProjectPage,
   page,
 }) => {
-  await openProjectPage(project.id, build.id, undefined, "overview");
-  const rows = page.getByTestId("overviewFeature");
-  // one row per screen sent without featureName
-  await expect(rows.getByTestId("overviewNoFeature")).toHaveCount(2);
-  const login = rows.filter({ hasText: "Login. Error" });
-  await expect(login.getByTestId("overviewNoFeature")).toHaveText("No feature");
-  await expect(login.getByTestId("overviewScreenName")).toHaveText(
-    "Login. Error",
+  await inUkrainian(page);
+  const name =
+    "Підписки - Оновлення підписки - доступно для клієнтів із активованою підпискою. e2e: Успішне оновлення підписки (без зміни тарифу) на всіх екранах застосунку";
+  await page.route(`${API_URL}/builds/${build.id}/overview`, (route) =>
+    route.fulfill({
+      json: {
+        ...overview,
+        features: [overview.features[0], { ...overview.features[1], name }],
+      },
+    }),
   );
-  await expect(
-    rows
-      .filter({ hasText: "Search. Results" })
-      .getByTestId("overviewNoFeature"),
-  ).toHaveText("No feature");
-  // a feature is named as before
-  await expect(
-    rows.filter({ hasText: "Checkout" }).getByTestId("overviewNoFeature"),
-  ).toHaveCount(0);
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await openProjectPage(project.id, build.id, undefined, "overview");
+  const table = page.getByTestId("overviewTable");
+  // no "No feature" anywhere: a check is just a check (REQ-048-03, SC-048-01)
+  await expect(table).not.toContainText("Без функціоналу");
+  await expect(page.getByTestId("overviewNoFeature")).toHaveCount(0);
+  const row = page.getByTestId("overviewCheck").filter({ hasText: "Підписки" });
+  const cell = row.getByTestId("overviewCheckName");
+  await expect(cell).toHaveText(name);
+  // the whole name, wrapped rather than cut
+  expect(
+    await cell.evaluate(
+      (el) =>
+        el.scrollHeight <= el.clientHeight && el.scrollWidth <= el.clientWidth,
+    ),
+  ).toBe(true);
+  await expect(row.getByTestId("overviewFeatureToggle")).toHaveCount(0);
 });
 
 for (const width of [1280, 1440]) {
@@ -883,28 +1031,28 @@ for (const width of [1280, 1440]) {
     await page.setViewportSize({ width, height: 900 });
     await inUkrainian(page);
     await openProjectPage(project.id, build.id, undefined, "overview");
-    const features = page.getByTestId("overviewFeatures");
-    await expect(page.getByTestId("overviewFeature")).toHaveCount(4);
+    const features = page.getByTestId("overviewTable");
+    await expect(tableRows(page)).toHaveCount(4);
 
-    // "No feature" and the screen under it are never cut short
     const cut = (locator) =>
       locator.evaluateAll(
         (elements) =>
           elements.filter((el) => el.scrollWidth > el.clientWidth).length,
       );
-    expect(await cut(features.getByTestId("overviewNoFeature"))).toBe(0);
-    expect(await cut(features.getByTestId("overviewScreenName"))).toBe(0);
+    // the names are whole, the result's words too
+    expect(await cut(features.getByTestId("overviewCheckName"))).toBe(0);
+    expect(await cut(features.getByTestId("resultWords"))).toBe(0);
     // the name column keeps room for its header
-    const header = features.getByText("Функціонал", { exact: true });
-    const checks = features.getByText("Перевірки", { exact: true });
+    const header = features.getByText("Перевірка", { exact: true });
+    const result = features.getByText("Результат", { exact: true });
     const a = await header.boundingBox();
-    const b = await checks.boundingBox();
+    const b = await result.boundingBox();
     expect(a.x + a.width).toBeLessThanOrEqual(b.x);
     // a Jira summary is shown whole
     expect(await cut(page.getByTestId("overviewBug").locator("p"))).toBe(0);
 
     // a device's tags are whole or folded into +N, never cut mid-word
-    const tags = page.getByTestId("overviewDevices").getByTestId("deviceTag");
+    const tags = page.getByTestId("buildDevices").getByTestId("deviceTag");
     expect(
       await tags.evaluateAll(
         (elements) =>

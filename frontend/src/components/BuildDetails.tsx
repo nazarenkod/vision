@@ -15,7 +15,9 @@ import { buildDuration, buildPeriod } from "../_helpers/buildPeriod.helper";
 const BuildDetails: React.FunctionComponent<{
   // what can be done with the build: Report, Review (031)
   actions?: React.ReactNode;
-}> = ({ actions }) => {
+  // the build's devices, after its time (REQ-048-06)
+  devices?: React.ReactNode;
+}> = ({ actions, devices }) => {
   const { selectedBuild } = useBuildState();
   const { t, formatDate } = useT();
   const buildNumber = React.useMemo(
@@ -72,6 +74,24 @@ const BuildDetails: React.FunctionComponent<{
           </Typography>
         </Tooltip>
         <BuildStatusChip status={selectedBuild.status} />
+        {actions && (
+          <Box sx={{ ml: "auto", display: "flex", gap: 1 }}>{actions}</Box>
+        )}
+      </Box>
+
+      {/* when it ran, then on which devices (REQ-048-06) */}
+      <Box
+        data-testid="buildMeta"
+        sx={{
+          display: "flex",
+          flexWrap: "wrap",
+          // the time beside the first line of devices when they wrap
+          alignItems: "flex-start",
+          gap: "6px 14px",
+          mt: -0.5,
+          minWidth: 0,
+        }}
+      >
         <Typography
           variant="body2"
           color="textSecondary"
@@ -88,8 +108,27 @@ const BuildDetails: React.FunctionComponent<{
             .filter(Boolean)
             .join(" · ")}
         </Typography>
-        {actions && (
-          <Box sx={{ ml: "auto", display: "flex", gap: 1 }}>{actions}</Box>
+        {devices && (
+          <Box
+            // stays beside the time; its devices wrap inside
+            sx={{
+              flex: "1 1 240px",
+              display: "flex",
+              alignItems: "flex-start",
+              gap: "14px",
+              minWidth: 0,
+              "&::before": {
+                flexShrink: 0,
+                content: '""',
+                width: "1px",
+                height: 16,
+                mt: "4px",
+                bgcolor: tokens.border,
+              },
+            }}
+          >
+            {devices}
+          </Box>
         )}
       </Box>
 

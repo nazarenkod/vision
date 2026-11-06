@@ -75,6 +75,8 @@ export interface FeatureRow extends Outcome {
   // the test sent featureName: the row holds its checks; otherwise it is one check by its full name
   grouped: boolean;
   bugs: number;
+  // a feature's checks by name, results summed over devices, those waiting first (REQ-048-02)
+  checks?: FeatureRow[];
 }
 
 export interface PersonDecisions {
@@ -193,26 +195,41 @@ function featureRowOf(run: Pick<OverviewRun, 'featureName' | 'name'>) {
     : { key: `c\u0000${run.name}`, name: run.name, grouped: false };
 }
 
+const byAttention = (a: FeatureRow, b: FeatureRow) =>
+  waiting(b) - waiting(a) || b.rejected - a.rejected || b.bugs - a.bugs || a.name.localeCompare(b.name);
+
 function featuresOf(runs: OverviewRun[], bugs: OverviewBugInput[]) {
   const runsById = new Map(runs.map((run) => [run.id, run]));
   const rows = new Map<string, FeatureRow>();
+  // feature key → its checks by name
+  const checks = new Map<string, Map<string, FeatureRow>>();
+  const checkOf = (key: string, run: OverviewRun) => {
+    const inFeature = checks.get(key) ?? new Map<string, FeatureRow>();
+    checks.set(key, inFeature);
+    const check = inFeature.get(run.name) ?? { name: run.name, grouped: false, bugs: 0, ...emptyOutcome() };
+    inFeature.set(run.name, check);
+    return check;
+  };
   for (const run of runs) {
     const { key, name, grouped } = featureRowOf(run);
     const row = rows.get(key) ?? { name, grouped, bugs: 0, ...emptyOutcome() };
     count(row, run.status);
     rows.set(key, row);
+    if (grouped) count(checkOf(key, run), run.status);
   }
   for (const bug of bugs) {
     const run = runsById.get(bug.testRunId);
-    if (run) rows.get(featureRowOf(run).key).bugs += 1;
+    if (!run) continue;
+    const { key, grouped } = featureRowOf(run);
+    rows.get(key).bugs += 1;
+    if (grouped) checkOf(key, run).bugs += 1;
   }
+  for (const [key, inFeature] of checks) rows.get(key).checks = [...inFeature.values()].sort(byAttention);
   const all = [...rows.values()];
   const quiet = all.filter((row) => !waiting(row) && !row.rejected && !row.bugs);
   const features = all
     .filter((row) => !quiet.includes(row))
-    .sort(
-      (a, b) => waiting(b) - waiting(a) || b.rejected - a.rejected || b.bugs - a.bugs || a.name.localeCompare(b.name)
-    );
+    .sort(byAttention);
   return {
     features,
     quietFeatures: {

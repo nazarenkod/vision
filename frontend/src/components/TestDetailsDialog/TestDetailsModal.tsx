@@ -1563,12 +1563,13 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
     });
   };
 
-  // what is on screen, where the review is and how the check went before (REQ-046-08, REQ-046-19)
+  // what is on screen and how the check went before (REQ-046-08, REQ-048-08)
   const header = () => (
     <Box
       data-testid="compareHeader"
       sx={{
-        minHeight: 56,
+        // one height for any name, so the screens below never move (REQ-048-08)
+        height: 64,
         flexShrink: 0,
         display: "flex",
         alignItems: "center",
@@ -1582,16 +1583,20 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
     >
       <Typography
         component="h1"
-        noWrap
         data-testid="screenName"
         title={testRun.name}
-        // the name gives way last: the trend shrinks before it does
+        // the whole name in up to two lines, all of it on hover (REQ-048-08)
         sx={{
           fontSize: type.title,
           fontWeight: 600,
+          lineHeight: 1.25,
           minWidth: 0,
-          flexShrink: 0,
-          maxWidth: "30%",
+          flex: "0 1 auto",
+          display: "-webkit-box",
+          WebkitLineClamp: 2,
+          WebkitBoxOrient: "vertical",
+          overflow: "hidden",
+          overflowWrap: "anywhere",
         }}
       >
         {testRun.name}

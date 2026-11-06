@@ -169,6 +169,22 @@ describe('buildOverview', () => {
     ]);
   });
 
+  it('lists the checks of a feature with their results over all devices, waiting first', () => {
+    const runs = [
+      run({ name: 'Login. Empty', featureName: 'Sign in', status: TestStatus.ok }),
+      run({ name: 'Login. Error state', featureName: 'Sign in', status: TestStatus.unresolved }),
+      run({ name: 'Login. Error state', featureName: 'Sign in', device: 'iPhone 15', status: TestStatus.ok }),
+      run({ status: TestStatus.unresolved }),
+    ];
+    const bugs = [bug({ testRunId: runs[2].id })];
+    const [feature, check] = buildOverview(input({ runs, bugs })).features;
+    expect(feature.checks.map((row) => [row.name, row.total, row.changed, row.passed, row.bugs])).toEqual([
+      ['Login. Error state', 2, 1, 1, 1],
+      ['Login. Empty', 1, 0, 1, 0],
+    ]);
+    expect(check.checks).toBeUndefined();
+  });
+
   it('keeps a feature and a check of the same name apart', () => {
     const runs = [
       run({ name: 'Sign in', status: TestStatus.unresolved }),

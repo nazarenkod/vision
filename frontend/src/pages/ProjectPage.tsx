@@ -10,6 +10,7 @@ import { ChangeGroups } from "../components/ChangeGroups";
 import { A11ySummary } from "../components/A11ySummary";
 import { StatusPill } from "../components/StatusPill";
 import {
+  BuildDevices,
   BuildOverview,
   OverviewActions,
   useBuildOverview,
@@ -137,6 +138,9 @@ const ProjectPage = () => {
           }}
         >
           <BuildDetails
+            devices={
+              overview && <BuildDevices overview={overview} actions={actions} />
+            }
             actions={
               selectedBuild && (
                 <>

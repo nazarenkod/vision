@@ -40,8 +40,8 @@
 | Вимога | Перевірка |
 |---|---|
 | REQ-047-01 | `frontend/integration_tests/test/buildOverview.spec.ts › shows the features across the whole page with whole names` |
-| REQ-047-02 | `frontend/integration_tests/test/buildOverview.spec.ts › lists the devices of the build without results` |
-| REQ-047-03 | `frontend/integration_tests/test/buildOverview.spec.ts › opens the queue of a device from the devices block` |
+| REQ-047-02 | `frontend/integration_tests/test/buildOverview.spec.ts › shows the devices of the build in its header on every tab` |
+| REQ-047-03 | `frontend/integration_tests/test/buildOverview.spec.ts › opens the queue of a device from the build header` |
 | REQ-047-04 | `frontend/integration_tests/test/buildOverview.spec.ts › lists accessibility problems without the device` |
 | REQ-047-05 | `frontend/integration_tests/test/compareLayout.spec.ts › shows neither the position nor the queue in the header` |
 | REQ-047-06 | `frontend/src/components/TestDetailsDialog/DiffMeter.test.tsx › says the changed share against the allowed one in words` |

@@ -122,9 +122,9 @@ flowchart LR
 | REQ-046-30 | `frontend/integration_tests/test/testRunGrid.spec.ts › shows cards without the table head, sorted by a button` |
 | REQ-046-31 | `frontend/src/components/DeviceTags.test.tsx › hides the tags that do not fit behind +N` |
 | REQ-046-32 | `frontend/integration_tests/test/buildOverview.spec.ts › keeps tile numbers neutral and colours only the marker` |
-| REQ-046-33 | `frontend/integration_tests/test/buildOverview.spec.ts › lists the devices of the build without results` |
+| REQ-046-33 | `frontend/integration_tests/test/buildOverview.spec.ts › shows the devices of the build in its header on every tab` |
 | REQ-046-34 | `frontend/integration_tests/test/buildOverview.spec.ts › names the result next to its bar` |
-| REQ-046-35 | `frontend/integration_tests/test/buildOverview.spec.ts › puts screens without a feature under No feature` |
+| REQ-046-35 | `frontend/integration_tests/test/buildOverview.spec.ts › shows a check without a feature as a plain row with its whole name` |
 | REQ-046-40 | `frontend/integration_tests/test/reportBug.spec.ts › makes Create bug the only primary action` |
 | REQ-046-41 | `frontend/integration_tests/test/reportBug.spec.ts › scrolls to the empty required field instead of filing` |
 | REQ-046-42 | `frontend/integration_tests/test/reportBug.spec.ts › labels the fields above them` |

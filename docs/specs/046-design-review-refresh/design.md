@@ -50,7 +50,8 @@
 | Старі шапка й рейка | `Header.tsx`, `NavRail.tsx` | видалено; Help-меню й тур переїжджають у `SideNav` |
 | Вхід | `frontend/src/components/AuthLayout.tsx`, `LoginForm.tsx` | дві половини, мова й тема в куті, SSO першим |
 | Тулбар порівняння | `frontend/src/components/TestDetailsDialog/CompareToolbar.tsx` (новий) | групи, `DiffMeter`, вигляд, Highlight diff, Select elements, Areas |
-| Прогрес черги | `frontend/src/components/TestDetailsDialog/StepProgress.tsx` (новий) | «N of M», сегменти, «K decided · L left» |
+| Прогрес черги | `frontend/src/components/TestDetailsDialog/StepProgress.tsx` (новий) | «N з M» |
+| Тренд перевірки | `frontend/src/components/TestDetailsDialog/CheckTrend.tsx` (новий), `backend/src/test-runs/check-trend.ts` (новий) | останні 20 прогонів перевірки: `GET /test-runs/:id/trend`, чиста `checkTrend` |
 | Вписування | `frontend/src/_helpers/fit.helper.ts` (новий) | `fitScale` |
 | Порівняння | `frontend/src/components/TestDetailsDialog/TestDetailsModal.tsx`, `DrawArea.tsx` | нова розкладка, масштаб «вписати», згорнута порожня панель |
 | Баг-діалог | `frontend/src/components/TestDetailsDialog/ReportBugDialog.tsx`, `JiraFieldInput.tsx` | підписи над полями, Create bug, Draft again, поле Jira |
@@ -95,7 +96,10 @@ flowchart LR
 | REQ-046-02 | `frontend/integration_tests/test/compareLayout.spec.ts › groups the comparison toolbar in one row` |
 | REQ-046-03 | `frontend/integration_tests/test/compareLayout.spec.ts › shows the changed share against the allowed one without a handle` |
 | REQ-046-04 | `frontend/integration_tests/test/compareLayout.spec.ts › says the size differs next to Current` |
-| REQ-046-05 | `frontend/src/components/TestDetailsDialog/StepProgress.test.tsx › says the position and how many are decided and left` |
+| REQ-046-05 | замінено REQ-046-08, REQ-046-09, REQ-046-19 |
+| REQ-046-08 | `frontend/integration_tests/test/compareLayout.spec.ts › shows the trend of the check in the header` |
+| REQ-046-09 | `frontend/src/components/TestDetailsDialog/CheckTrend.test.tsx › names the build, the share, the status and the date of a run on hover` |
+| REQ-046-19 | `frontend/src/components/TestDetailsDialog/StepProgress.test.tsx › says the position without counts` |
 | REQ-046-06 | `frontend/integration_tests/test/compareLayout.spec.ts › keeps the footer in one line with Auto-next` |
 | REQ-046-07 | `frontend/integration_tests/test/compareLayout.spec.ts › opens with the side panel folded when there is nothing in it` |
 | REQ-046-10 | `frontend/src/theme.test.ts › uses only the six type sizes and four weights` |

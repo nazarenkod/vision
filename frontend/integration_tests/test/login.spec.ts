@@ -139,7 +139,7 @@ test("shows the brand and the form side by side with one logo", async ({
 
   await expect(layout.getByTestId("brandMark")).toHaveCount(1);
   await expect(brand.getByTestId("brandMark")).toBeVisible();
-  await expect(brand).toContainText("Your tests can see now");
+  await expect(brand).toContainText("Review changes, not noise");
   await expect(form.getByRole("heading", { name: "Sign in" })).toBeVisible();
   await expect(loginPage.loginForm).toBeVisible();
 

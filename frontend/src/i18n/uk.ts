@@ -596,7 +596,7 @@ export const uk: Messages = {
   "compare.highlightDiff": "Підсвітити різницю",
   "compare.highlightDiffHelp":
     "Показати змінені пікселі на поточному. Клавіша: D",
-  "compare.testAreas": "Області з тесту · {count}",
+  "compare.testAreas": "З тесту · {count}",
   "compare.sizeDiffers": "Інший розмір · {width} × {height}",
   "compare.autoNext": "Автоперехід",
   "compare.autoNextHelp": "Переходити до наступного екрана після рішення",

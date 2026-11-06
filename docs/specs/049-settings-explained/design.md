@@ -5,8 +5,8 @@
 Три незалежні частини, усі на сторінці налаштувань проєкту.
 
 1. **Типи Jira зі списку.** Бекенд отримує новий запит `GET /projects/:id/jira/types?url=…`,
-   який іде в Jira з особистим токеном того, хто відкрив сторінку (ADR-0025, REQ-035-31), і лише
-   на дозволений хост (REQ-044-07). Адреса береться з параметра, а не з бази, бо списки
+   який іде в Jira з особистим токеном того, хто відкрив сторінку (ADR-0025, правило особистого токена зі специфікації 035), і лише
+   на дозволений хост (правило дозволених хостів зі специфікації 044). Адреса береться з параметра, а не з бази, бо списки
    перезавантажуються до збереження (REQ-049-09). Відповідь — завжди 200: або списки, або
    причина, чому їх немає (`notSet`, `hostNotAllowed`, `noToken`, `failed`): сторінка показує
    причину біля полів і не валить решту (SC-049-03). Типи задач — усі, які бачить людина
@@ -33,8 +33,9 @@
 | `JiraTypes` | `frontend/src/types/jira.ts` | тип відповіді |
 | `projectsService.getJiraTypes` | `frontend/src/services/projects.service.ts` | виклик API |
 | `jiraTypeOptions` | `frontend/src/_helpers/jiraTypes.helper.ts` | чиста: пункти списку — «Автоматично», групи, збережене значення з позначкою |
-| `JiraTypeSelect`, `JiraSettings` | `frontend/src/components/ProjectForm/ProjectForm.tsx` | списки, підказка без токена, «Спробувати ще», перезавантаження після виходу з поля адреси |
-| `OptionExplainer` | `frontend/src/components/ProjectForm/OptionExplainer.tsx` | «?», підказка, анімація, кадри для зменшеного руху, опис для читача екрана |
+| `JiraTypeSelect` | `frontend/src/components/ProjectForm/JiraTypeSelect.tsx` | список типів з групами; без списків — збережене значення, неактивне |
+| `JiraSettings`, `useJiraTypes` | `frontend/src/components/ProjectForm/ProjectForm.tsx` | підказка без токена, «Спробувати ще», перезавантаження після виходу з поля адреси |
+| `OptionExplainer`, `Explained` | `frontend/src/components/ProjectForm/OptionExplainer.tsx` | «?», підказка, анімація, кадри для зменшеного руху, опис для читача екрана; `Explained` ставить «?» поруч з опцією |
 | `explainerScene` | `frontend/src/components/ProjectForm/explainerScenes.ts` | чисті сцени для чотирьох опцій |
 | словники, пошук | `frontend/src/i18n/en.ts`, `uk.ts`, `frontend/src/_helpers/projectSettings.helper.ts` | назва «Screen structure», старі назви в пошуку, тексти пояснень |
 

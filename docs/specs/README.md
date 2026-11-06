@@ -115,7 +115,7 @@ docs/specs/NNN-коротка-назва/
 | [046](046-design-review-refresh/spec.md) | Оновлений вигляд після дизайн-ревю: одна система, бічне меню, порівняння на всю висоту | Implemented |
 | [047](047-overview-and-review-header/spec.md) | Огляд без дублів і тихіший заголовок порівняння | Implemented |
 | [048](048-overview-checks-table/spec.md) | Одна таблиця перевірок на огляді, пристрої в шапці збірки | Implemented |
-| [049](049-settings-explained/spec.md) | Налаштування, які пояснюють себе: назва розділу UI-дерева, анімації опцій, типи Jira зі списку | Approved |
+| [049](049-settings-explained/spec.md) | Налаштування, які пояснюють себе: назва розділу UI-дерева, анімації опцій, типи Jira зі списку | Implemented |
 | [050](050-web-ui-tree/spec.md) | Веб як джерело UI-дерева | Draft |
 
 Статусу `Verified` поки немає в жодної: інтеграцію з реальною Jira Cloud і прогони на сервері

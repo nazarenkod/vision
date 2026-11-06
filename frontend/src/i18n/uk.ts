@@ -1109,7 +1109,7 @@ export const uk: Messages = {
   "auth.subtitleSso": "Корпоративним акаунтом або локальним.",
   "auth.emailPlaceholder": "name@company.com",
   "auth.brandLine":
-    "Екрани, UI-дерево й доступність збірок Android та iOS — в одному місці.",
+    "Годинник, суми й банери не заважають. Справжні зміни й проблеми доступності йдуть першими.",
   "auth.lightTheme": "Світла тема",
   "auth.darkTheme": "Темна тема",
   "auth.sso": "Увійти через SSO",

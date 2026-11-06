@@ -1047,7 +1047,7 @@ export const en = {
   "auth.subtitleSso": "With your company account or a local one.",
   "auth.emailPlaceholder": "name@company.com",
   "auth.brandLine":
-    "Screens, UI tree and accessibility for Android and iOS builds — reviewed in one place.",
+    "Clocks, amounts and banners stay quiet. Real changes and accessibility issues come first.",
   "auth.lightTheme": "Light theme",
   "auth.darkTheme": "Dark theme",
   "auth.sso": "Sign in with SSO",

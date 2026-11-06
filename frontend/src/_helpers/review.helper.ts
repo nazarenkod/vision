@@ -25,7 +25,9 @@ export function diffMeter(
   return { fill: share(diff), mark: share(tolerance), over: diff > tolerance };
 }
 
-export type StepState = "current" | "approved" | "rejected" | "waiting";
+// "unchanged": the screen matched its baseline, so nobody had anything to decide
+export type StepState =
+  "current" | "approved" | "rejected" | "waiting" | "unchanged";
 
 const APPROVED: string[] = [
   TestStatus.approved,
@@ -41,18 +43,23 @@ export const stepStates = (
   statuses.map((status, index) =>
     index === currentIndex
       ? "current"
-      : APPROVED.includes(status)
-        ? "approved"
-        : status === TestStatus.failed
-          ? "rejected"
-          : "waiting",
+      : status === TestStatus.ok
+        ? "unchanged"
+        : APPROVED.includes(status)
+          ? "approved"
+          : status === TestStatus.failed
+            ? "rejected"
+            : "waiting",
   );
 
 /** Keys of the review; X has always rejected, so hints show it, not R. */
 export const REVIEW_KEYS = { approve: "A", reject: "X" } as const;
 
+// a screen without changes is no decision, and nothing is left to do on it
 const decided = (status: string | undefined) =>
-  !!status && (APPROVED.includes(status) || status === TestStatus.failed);
+  !!status &&
+  status !== TestStatus.ok &&
+  (APPROVED.includes(status) || status === TestStatus.failed);
 
 /**
  * How far the review has got, beside "N of M" (REQ-046-05): the steps already
@@ -66,9 +73,12 @@ export const stepProgress = (
   const count = statuses.filter(decided).length;
   const currentOpen =
     currentIndex < statuses.length && !decided(statuses[currentIndex]);
+  const unchanged = statuses.filter(
+    (status, index) => status === TestStatus.ok && index !== currentIndex,
+  ).length;
   return {
     decided: count,
-    left: statuses.length - count - (currentOpen ? 1 : 0),
+    left: statuses.length - count - unchanged - (currentOpen ? 1 : 0),
   };
 };
 

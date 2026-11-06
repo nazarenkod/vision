@@ -18,6 +18,12 @@ describe("stepProgress", () => {
     });
     expect(stepProgress(["unresolved"], 0)).toEqual({ decided: 0, left: 0 });
   });
+
+  it("counts screens without changes neither as decided nor as left", () => {
+    expect(
+      stepProgress(["unresolved", "unresolved", "ok", "ok", "ok"], 1),
+    ).toEqual({ decided: 0, left: 1 });
+  });
 });
 
 describe("panelStartsFolded", () => {
@@ -80,6 +86,11 @@ describe("review", () => {
       ),
     ).toEqual(["approved", "rejected", "current", "waiting", "approved"]);
     expect(stepStates(["approved"], 0)).toEqual(["current"]);
+    // a screen that matched its baseline is fine, but nobody decided it
+    expect(stepStates(["ok", "unresolved"], 1)).toEqual([
+      "unchanged",
+      "current",
+    ]);
   });
 
   it("shows the keys the review already has", () => {

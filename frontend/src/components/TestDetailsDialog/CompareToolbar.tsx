@@ -106,10 +106,14 @@ export const CompareToolbar: React.FunctionComponent<{
         flexShrink: 0,
       }}
     >
-      <Box data-testid="toolbarDevices" sx={group}>
-        {devices}
-      </Box>
-      {divider}
+      {devices && (
+        <>
+          <Box data-testid="toolbarDevices" sx={group}>
+            {devices}
+          </Box>
+          {divider}
+        </>
+      )}
       <Box data-testid="toolbarMeter" sx={group}>
         {meter}
       </Box>

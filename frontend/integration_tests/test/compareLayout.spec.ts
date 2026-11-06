@@ -330,3 +330,76 @@ test("names the areas that came from the test next to Current", async ({
   await pill.hover();
   await expect(page.getByRole("tooltip")).toBeVisible();
 });
+
+test("names the devices of a check in the header and keeps the toolbar in one row", async ({
+  openProjectPage,
+  page,
+}) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await inUkrainian(page);
+  await page.addInitScript(() =>
+    window.localStorage.setItem("vision.theme", "dark"),
+  );
+  const galaxy = {
+    ...run,
+    id: "galaxy",
+    name: "Курси валют",
+    device: "Galaxy S23",
+    os: "Android 14",
+  } as TestRun;
+  const pixel = {
+    ...galaxy,
+    id: "pixel",
+    device: "Pixel 7",
+    os: "Android 15",
+  } as TestRun;
+  const passed = Array.from({ length: 11 }, (_, index) => ({
+    ...run,
+    id: `ok-${index}`,
+    name: `Екран ${index + 1}`,
+    status: "ok",
+  })) as unknown as TestRun[];
+  const runs = [galaxy, pixel, ...passed];
+  await mockGetProjects(page, [project]);
+  await mockGetBuilds(page, project.id, [build]);
+  await mockGetBuildDetails(page, build);
+  await mockGetTestRuns(page, build.id, runs);
+  for (const item of runs) {
+    await mockTestRun(page, item);
+    await page.route(`${API_URL}/test-runs/${item.id}/structure`, (route) =>
+      route.fulfill({ body: JSON.stringify(changed) }),
+    );
+    await page.route(`${API_URL}/test-runs/${item.id}/bugs`, (route) =>
+      route.fulfill({ body: "[]" }),
+    );
+  }
+  await mockImage(page, "image.png");
+  await mockImage(page, "diff.png");
+  await mockImage(page, "baseline.png");
+  await openProjectPage(project.id, build.id, galaxy.id);
+
+  // the devices sit in the header, beside the steps, not in the toolbar
+  const header = page.getByTestId("compareHeader");
+  await expect(header.getByTestId("deviceStrip")).toBeVisible();
+  const toolbar = page.getByTestId("compareToolbar");
+  await expect(toolbar.getByTestId("deviceStrip")).toHaveCount(0);
+  // so the toolbar keeps one row
+  const rows = new Set(
+    await Promise.all(
+      ["toolbarMeter", "toolbarView", "toolbarTools"].map((id) =>
+        middle(toolbar.getByTestId(id)).then(Math.round),
+      ),
+    ),
+  );
+  expect(rows.size).toBe(1);
+  // screens without changes are no decisions: nothing decided yet, one left
+  await expect(page.getByTestId("stepCounts")).toHaveText(
+    "вирішено 0 · лишилось 1",
+  );
+  await expect(
+    page.getByTestId("stepDots").locator("[data-state=unchanged]"),
+  ).toHaveCount(11);
+  await page.screenshot({
+    path: "/tmp/claude-0/-home-user-vision/76addf5c-4fa7-50d4-896d-3444407828b9/scratchpad/two-devices.png",
+  });
+});

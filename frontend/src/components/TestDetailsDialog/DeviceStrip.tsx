@@ -43,7 +43,9 @@ export const DeviceStrip: React.FunctionComponent<{
   runs: TestRun[];
   currentId: string;
   onSelect: (id: string) => void;
-}> = ({ runs, currentId, onSelect }) => {
+  /** a narrow header: one line, each device by its model, the rest on hover */
+  compact?: boolean;
+}> = ({ runs, currentId, onSelect, compact }) => {
   const { enqueueSnackbar } = useSnackbar();
   const { t } = useT();
   const announce = useDecisionSnackbar();
@@ -73,13 +75,18 @@ export const DeviceStrip: React.FunctionComponent<{
         display: "flex",
         alignItems: "center",
         gap: 0.75,
-        flexWrap: "wrap",
+        flexWrap: compact ? "nowrap" : "wrap",
+        whiteSpace: "nowrap",
       }}
       data-testid="deviceStrip"
+      role="group"
+      aria-label={t("review.devices")}
     >
-      <Typography variant="body2" color="textSecondary" sx={{ mr: 0.5 }}>
-        {t("review.devices")}
-      </Typography>
+      {!compact && (
+        <Typography variant="body2" color="textSecondary" sx={{ mr: 0.5 }}>
+          {t("review.devices")}
+        </Typography>
+      )}
       {runs.map((run) => {
         const current = run.id === currentId;
         return (
@@ -114,7 +121,11 @@ export const DeviceStrip: React.FunctionComponent<{
                 bgcolor: dotColor(run.status),
               }}
             />
-            <DeviceTags parts={run} />
+            <DeviceTags
+              parts={
+                compact ? { ...run, os: "", browser: "", viewport: "" } : run
+              }
+            />
           </ButtonBase>
         );
       })}

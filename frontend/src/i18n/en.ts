@@ -554,7 +554,7 @@ export const en = {
   "compare.inQueue": "in",
   "compare.progress": "{decided} decided · {left} left",
   "compare.stepsLabel":
-    "{approved} approved, {rejected} rejected, {waiting} waiting",
+    "{approved} approved, {rejected} rejected, {waiting} waiting, {unchanged} unchanged",
   "compare.changed": "{value}% changed",
   "compare.allowed": "{value}% allowed",
   "compare.toolbar": "Comparison tools",

@@ -1581,7 +1581,15 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
         component="h1"
         noWrap
         data-testid="screenName"
-        sx={{ fontSize: type.title, fontWeight: 600, minWidth: 0 }}
+        title={testRun.name}
+        // the name gives way last: the steps and devices shrink before it does
+        sx={{
+          fontSize: type.title,
+          fontWeight: 600,
+          minWidth: 0,
+          flexShrink: 0,
+          maxWidth: "30%",
+        }}
       >
         {testRun.name}
       </Typography>
@@ -1591,8 +1599,19 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
           statuses={stepStatuses}
           currentIndex={currentRunIndex}
           queue={queueHeader}
+          compact={compactTools}
         />
       </Box>
+      {severalDevices && handleSelectRun && (
+        <Box sx={{ minWidth: 0, overflowX: "auto" }}>
+          <DeviceStrip
+            runs={deviceRuns}
+            currentId={testRun.id}
+            onSelect={handleSelectRun}
+            compact={compactTools}
+          />
+        </Box>
+      )}
       {bugs.slice(0, 3).map((bug) => (
         <Tooltip key={bug.id} title={bug.summary}>
           <Chip
@@ -1646,25 +1665,23 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
     </Box>
   );
 
-  // the device, as in the table; every device of the check when it ran on more
-  const devices = () => (
-    <>
-      {deviceRuns.length > 1 && handleSelectRun ? (
-        <DeviceStrip
-          runs={deviceRuns}
-          currentId={testRun.id}
-          onSelect={handleSelectRun}
-        />
-      ) : (
-        <DeviceTags parts={testRun} testId="compareDevice" />
-      )}
-      {testRun.customTags && (
-        <Tooltip title={t("review.attr.customTags")}>
-          <Chip size="small" label={testRun.customTags} />
-        </Tooltip>
-      )}
-    </>
-  );
+  // a check run on several devices names them in the header, beside the steps:
+  // in the toolbar the strip pushed the view and the tools onto a second row
+  const severalDevices = deviceRuns.length > 1 && !!handleSelectRun;
+  // the device, as in the table, when there is only one
+  const devices = () =>
+    severalDevices && !testRun.customTags ? null : (
+      <>
+        {!severalDevices && (
+          <DeviceTags parts={testRun} testId="compareDevice" />
+        )}
+        {testRun.customTags && (
+          <Tooltip title={t("review.attr.customTags")}>
+            <Chip size="small" label={testRun.customTags} />
+          </Tooltip>
+        )}
+      </>
+    );
 
   const toolbar = () => (
     <CompareToolbar

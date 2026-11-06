@@ -18,6 +18,7 @@ import {
   mockImage,
   mockSocket,
   mockTestRun,
+  unfoldPanel,
 } from "utils/mocks";
 
 const project = TEST_PROJECT;
@@ -497,8 +498,8 @@ test("has no Devices tab and no capture warnings", async ({
   );
 
   await openProjectPage(project.id, build.id, run.id);
-  // no changes and no findings: the side panel opens folded (REQ-046-07)
-  await page.getByTestId("panelUnfold").click();
+  // the folded panel opens like any other (folding itself: compareLayout)
+  await unfoldPanel(page);
   await expect(page.getByRole("tab", { name: "Changes" })).toBeVisible();
   await expect(page.getByRole("tab", { name: "Devices" })).toHaveCount(0);
   await page.getByRole("tab", { name: "Changes" }).click();

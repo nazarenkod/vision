@@ -585,7 +585,7 @@ export const uk: Messages = {
   "compare.inQueue": "у",
   "compare.progress": "вирішено {decided} · лишилось {left}",
   "compare.stepsLabel":
-    "прийнято {approved}, відхилено {rejected}, чекають {waiting}",
+    "прийнято {approved}, відхилено {rejected}, чекають {waiting}, без змін {unchanged}",
   "compare.changed": "змінено {value}%",
   "compare.allowed": "дозволено {value}%",
   "compare.toolbar": "Інструменти порівняння",

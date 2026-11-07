@@ -7,7 +7,7 @@ import { StaticService } from '../../../static/static.service';
 import { DiffWorkerPool } from '../../diff-worker-pool';
 import { DIFF_DIMENSION_RESULT, EQUAL_RESULT, NO_BASELINE_RESULT } from '../consts';
 import { DEFAULT_CONFIG, PixelmatchService } from './pixelmatch.service';
-import { PixelmatchConfig } from './pixelmatch.types';
+import { includeAAFor, PixelmatchConfig } from './pixelmatch.types';
 
 jest.mock('pixelmatch');
 
@@ -164,8 +164,9 @@ describe('getDiff', () => {
       }).data,
       2,
       5,
+      // the project ignores anti-aliasing, so pixelmatch must keep detecting it
       {
-        includeAA: true,
+        includeAA: false,
         threshold: 0.1,
       }
     );
@@ -317,10 +318,36 @@ describe('change signature', () => {
     // discarded when the project's config moves on
     expect(result.changeSignature).toEqual({
       threshold: DEFAULT_CONFIG.threshold,
-      includeAA: DEFAULT_CONFIG.ignoreAntialiasing,
+      includeAA: !DEFAULT_CONFIG.ignoreAntialiasing,
       signature: [0.25, 0.75],
     });
   });
+
+  // The project setting reads "ignore anti-aliasing"; pixelmatch's includeAA
+  // reads "count it". Handing one to the other unchanged inverted the checkbox.
+  it.each([
+    [true, false],
+    [false, true],
+  ])(
+    'hands pixelmatch includeAA=%s->%s so the anti-aliasing setting is not inverted',
+    async (ignoreAntialiasing, includeAA) => {
+      const { service, run } = await initWithPool({ equal: true });
+
+      await service.getDiff(
+        {
+          baseline: 'baseline.png',
+          image: 'image.png',
+          ignoreAreas: [],
+          diffTollerancePercent: 0,
+          saveDiffAsFile: false,
+        },
+        { threshold: 0.1, ignoreAntialiasing }
+      );
+
+      expect(run).toHaveBeenCalledWith(expect.objectContaining({ includeAA }));
+      expect(includeAAFor({ ignoreAntialiasing })).toBe(includeAA);
+    }
+  );
 
   const initSaving = async (output: Record<string, unknown>) => {
     const saveImage = jest

@@ -6,7 +6,7 @@ import { parseConfig } from '../../utils';
 import { DIFF_DIMENSION_RESULT, EQUAL_RESULT, NO_BASELINE_RESULT } from '../consts';
 import { ImageComparator } from '../image-comparator.interface';
 import { ImageCompareInput } from '../ImageCompareInput';
-import { PixelmatchConfig } from './pixelmatch.types';
+import { includeAAFor, PixelmatchConfig } from './pixelmatch.types';
 import { DiffWorkerPool } from '../../diff-worker-pool';
 
 export const DEFAULT_CONFIG: PixelmatchConfig = { threshold: 0.1, ignoreAntialiasing: true };
@@ -41,7 +41,7 @@ export class PixelmatchService implements ImageComparator {
       image: imageBuffer,
       ignoreAreas: data.ignoreAreas,
       threshold: config.threshold,
-      includeAA: config.ignoreAntialiasing,
+      includeAA: includeAAFor(config),
       allowDiffDimensions: config.allowDiffDimensions,
       diffTolerancePercent: data.diffTollerancePercent,
       saveDiff: data.saveDiffAsFile,
@@ -78,7 +78,7 @@ export class PixelmatchService implements ImageComparator {
         ? {
             changeSignature: {
               threshold: config.threshold,
-              includeAA: config.ignoreAntialiasing,
+              includeAA: includeAAFor(config),
               signature: output.signature,
             },
           }

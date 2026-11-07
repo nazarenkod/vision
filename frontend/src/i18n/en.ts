@@ -185,7 +185,7 @@ export const en = {
     "Enable comparison of images with different sizes.",
   "comparison.ignoreAntialiasing": "Ignore anti-aliasing",
   "comparison.ignoreAntialiasingHelp":
-    "Ignore detecting and ignoring anti-aliased pixels.",
+    "Anti-aliased pixels are not counted as a change.",
   // the original spelling, kept so English reads as before
   "comparison.ignoreAntialiasingLooksSame": "Ignore anti-alliasing",
   "comparison.threshold": "Pixel diff threshold",

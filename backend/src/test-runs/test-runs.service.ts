@@ -20,7 +20,7 @@ import {
   selectorProblem,
 } from '../ui-tree/comparison-inputs';
 import { CreateTestRequestDto } from './dto/create-test-request.dto';
-import { IgnoreAreaDto } from './dto/ignore-area.dto';
+import { IgnoreAreaDto, MAX_IGNORE_AREAS } from './dto/ignore-area.dto';
 import { compareOnlyStatus } from '../ui-tree/compare-only';
 import { partsProblem, variableTextStatus } from '../ui-tree/variable-text';
 import { StaticService } from '../static/static.service';
@@ -731,6 +731,23 @@ export class TestRunsService {
         });
         return this.calculateDiff(testVariation.projectId, testRun);
       });
+  }
+
+  /**
+   * Adds the areas to every run, or to none: a run that would pass the limit with them stops the
+   * request before anything is written (051, REQ-051-09).
+   */
+  async addIgnoreAreasToAll(ids: string[], ignoreAreas: IgnoreAreaDto[]): Promise<void> {
+    const runs = await Promise.all(ids.map((id) => this.findOne(id)));
+    for (const run of runs) {
+      const held = run ? ((JSON.parse(run.ignoreAreas ?? '[]') as IgnoreAreaDto[] | null) ?? []).length : 0;
+      if (held + ignoreAreas.length > MAX_IGNORE_AREAS) {
+        throw new BadRequestException(
+          `A screen takes at most ${MAX_IGNORE_AREAS} ignore areas: one has ${held}, and ${ignoreAreas.length} more would pass it`
+        );
+      }
+    }
+    for (const id of ids) await this.addIgnoreAreas(id, ignoreAreas);
   }
 
   async addIgnoreAreas(id: string, ignoreAreas: IgnoreAreaDto[]): Promise<TestRun> {

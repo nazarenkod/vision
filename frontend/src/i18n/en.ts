@@ -524,6 +524,8 @@ export const en = {
   "review.applyIgnoreArea":
     "Apply selected ignore area to all images in this build.",
   "review.ignoreSaved": "Ignore areas are updated.",
+  "review.ignoreLimit":
+    "A screen takes at most {limit} ignore areas: remove {extra} to save them.",
   "review.compareSaved":
     "Selected area has been inverted to ignore areas and saved.",
   "review.ignoreAppliedAll":

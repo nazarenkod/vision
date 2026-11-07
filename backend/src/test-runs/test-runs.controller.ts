@@ -337,9 +337,7 @@ export class TestRunsController {
   @Roles(Role.admin, Role.editor)
   async addIgnoreAreas(@Body() data: UpdateIgnoreAreasDto): Promise<void> {
     this.logger.debug(`Going to add IgnoreAreas for TestRuns: ${data.ids}`);
-    for (const id of data.ids) {
-      await this.testRunsService.addIgnoreAreas(id, data.ignoreAreas);
-    }
+    await this.testRunsService.addIgnoreAreasToAll(data.ids, data.ignoreAreas);
   }
 
   @ProjectFrom(inParam('testRunId', 'testRun'))

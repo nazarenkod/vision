@@ -553,6 +553,8 @@ export const uk: Messages = {
   "review.applyIgnoreArea":
     "Застосувати вибрану ігноровану область до всіх зображень цієї збірки.",
   "review.ignoreSaved": "Ігноровані області оновлено.",
+  "review.ignoreLimit":
+    "На екрані може бути не більше {limit} ігнорованих областей: приберіть {extra}, щоб зберегти.",
   "review.compareSaved":
     "Усе поза вибраною областю стало ігнорованим; збережено.",
   "review.ignoreAppliedAll":

@@ -879,6 +879,26 @@ describe('TestRunsService', () => {
     expect(result).toBeUndefined();
   });
 
+  it('adds no ignore area to any run when one would pass the limit', async () => {
+    const area = { x: 1, y: 1, width: 5, height: 5 };
+    const runs: Record<string, { id: string; ignoreAreas: string }> = {
+      few: { id: 'few', ignoreAreas: JSON.stringify([area]) },
+      full: { id: 'full', ignoreAreas: JSON.stringify(Array.from({ length: 19 }, () => area)) },
+    };
+    service = await initService({ testRunFindUniqueMock: jest.fn(async ({ where }) => runs[where.id]) });
+    service.addIgnoreAreas = jest.fn();
+
+    await expect(service.addIgnoreAreasToAll(['few', 'full'], [area, area])).rejects.toThrow(
+      'A screen takes at most 20 ignore areas: one has 19, and 2 more would pass it'
+    );
+    expect(service.addIgnoreAreas).not.toHaveBeenCalled();
+
+    // up to the limit, every run gets them as before
+    await service.addIgnoreAreasToAll(['few', 'full'], [area]);
+    expect(service.addIgnoreAreas).toHaveBeenCalledWith('few', [area]);
+    expect(service.addIgnoreAreas).toHaveBeenCalledWith('full', [area]);
+  });
+
   it('updateIgnoreAreas', async () => {
     const testRun = {
       id: 'testRunId',

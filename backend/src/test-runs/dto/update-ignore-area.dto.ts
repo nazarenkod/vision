@@ -1,7 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IgnoreAreaDto } from './ignore-area.dto';
+import { IgnoreAreaDto, MAX_IGNORE_AREAS } from './ignore-area.dto';
 import { Type } from 'class-transformer';
-import { ValidateNested, IsString } from 'class-validator';
+import { ArrayMaxSize, IsArray, ValidateNested, IsString } from 'class-validator';
 
 export class UpdateIgnoreAreasDto {
   @ApiProperty({ type: String, isArray: true })
@@ -9,6 +9,8 @@ export class UpdateIgnoreAreasDto {
   readonly ids: string[];
 
   @ApiProperty({ type: IgnoreAreaDto, isArray: true })
+  @IsArray()
+  @ArrayMaxSize(MAX_IGNORE_AREAS)
   @Type(() => IgnoreAreaDto)
   @ValidateNested({ each: true })
   readonly ignoreAreas: IgnoreAreaDto[];

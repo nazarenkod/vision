@@ -12,9 +12,10 @@ import {
   IsInt,
   Min,
   MaxLength,
+  ArrayMaxSize,
 } from 'class-validator';
 import { BaselineDataDto } from '../../shared/dto/baseline-data.dto';
-import { IgnoreAreaDto } from './ignore-area.dto';
+import { IgnoreAreaDto, MAX_IGNORE_AREAS } from './ignore-area.dto';
 
 export class CreateTestRequestDto extends BaselineDataDto {
   @ApiProperty()
@@ -38,6 +39,7 @@ export class CreateTestRequestDto extends BaselineDataDto {
   @ApiPropertyOptional({ type: IgnoreAreaDto, isArray: true })
   @IsOptional()
   @IsArray()
+  @ArrayMaxSize(MAX_IGNORE_AREAS)
   @Type(() => IgnoreAreaDto)
   @ValidateNested({ each: true })
   ignoreAreas?: IgnoreAreaDto[];

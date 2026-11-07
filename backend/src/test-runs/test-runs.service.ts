@@ -32,7 +32,7 @@ import { TestRunDto } from './dto/testRun.dto';
 import { getTestVariationUniqueData } from '../utils';
 import { CompareService } from '../compare/compare.service';
 import { UpdateTestRunDto } from './dto/update-test.dto';
-import { PixelmatchConfig } from '../compare/libs/pixelmatch/pixelmatch.types';
+import { includeAAFor, PixelmatchConfig } from '../compare/libs/pixelmatch/pixelmatch.types';
 import { SIGNATURE_LENGTH } from '../compare/libs/pixelmatch/signature.core';
 import { StructureInfo, UiTreeService } from '../ui-tree/ui-tree.service';
 import { UiTree } from '../ui-tree/ui-tree.types';
@@ -284,7 +284,7 @@ export class TestRunsService {
       image,
       ignoreAreas,
       threshold: config.threshold,
-      includeAA: config.ignoreAntialiasing,
+      includeAA: includeAAFor(config),
     });
     return signature;
   }
@@ -939,7 +939,7 @@ function parseStoredSignature(
     if (!wellFormed) {
       return null;
     }
-    const sameConfig = parsed.threshold === config.threshold && parsed.includeAA === config.ignoreAntialiasing;
+    const sameConfig = parsed.threshold === config.threshold && parsed.includeAA === includeAAFor(config);
     return sameConfig ? parsed.signature : null;
   } catch (error) {
     logger.warn(`Ignoring unreadable stored change signature: ${error}`);

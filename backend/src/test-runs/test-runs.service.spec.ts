@@ -1293,7 +1293,7 @@ describe('TestRunsService', () => {
     const histogram = (hot: number): number[] =>
       Array.from({ length: SIGNATURE_LENGTH }, (_unused, index) => (index === hot ? 1 : 0));
     const PALETTE = histogram(0);
-    const stamped = (signature: unknown, threshold = DEFAULT_CONFIG.threshold, includeAA = true) =>
+    const stamped = (signature: unknown, threshold = DEFAULT_CONFIG.threshold, includeAA = false) =>
       JSON.stringify({ threshold, includeAA, signature });
 
     const changedRun = (overrides: Partial<TestRun> = {}): TestRun =>
@@ -1335,6 +1335,21 @@ describe('TestRunsService', () => {
       await service.getChangeSignature(changedRun({ changeSignature: stamped(PALETTE, 0.9, false) }), DEFAULT_CONFIG);
 
       expect(compareGetChangeSignatureMock).toHaveBeenCalledTimes(1);
+    });
+
+    // Signatures stored before the anti-aliasing setting stopped being inverted
+    // were computed counting edge shading under the default config. They carry
+    // includeAA=true, so they no longer match and are computed afresh.
+    it('recomputes a signature that counted anti-aliasing the project ignores', async () => {
+      const { service, compareGetChangeSignatureMock } = await initSigningService();
+
+      await service.getChangeSignature(
+        changedRun({ changeSignature: stamped(PALETTE, DEFAULT_CONFIG.threshold, true) }),
+        DEFAULT_CONFIG
+      );
+
+      expect(compareGetChangeSignatureMock).toHaveBeenCalledTimes(1);
+      expect(compareGetChangeSignatureMock).toHaveBeenCalledWith(expect.objectContaining({ includeAA: false }));
     });
 
     // A signature is a fixed-length histogram. One of the wrong shape compared

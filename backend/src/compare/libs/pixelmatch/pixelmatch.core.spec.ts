@@ -1,5 +1,6 @@
 import { PNG } from 'pngjs';
 import { computePixelmatchDiff } from './pixelmatch.core';
+import { includeAAFor } from './pixelmatch.types';
 import { computeChangeSignature } from './signature.core';
 import { THUMBNAIL_MAX_DIMENSION } from './thumbnail.core';
 
@@ -170,5 +171,51 @@ describe('computePixelmatchDiff with measure areas', () => {
     const result = job(block(0, 0, RED), { ignoreAreas: outside, measureAreas: [element] });
     expect(result.pixelMisMatchCount).toBe(0);
     expect(result.diffPercent).toBe(0);
+  });
+});
+
+describe('anti-aliasing setting', () => {
+  // A disk whose edge is shaded by coverage, as any renderer does. Two radii a
+  // fraction of a pixel apart are what the same screen looks like on another
+  // GPU or Flutter engine: the shape is identical, only edge shades differ.
+  const disk = (radius: number): Buffer => {
+    const image = new PNG({ width: WIDTH, height: HEIGHT });
+    for (let y = 0; y < HEIGHT; y++) {
+      for (let x = 0; x < WIDTH; x++) {
+        let covered = 0;
+        for (let sy = 0; sy < 4; sy++) {
+          for (let sx = 0; sx < 4; sx++) {
+            const dx = x + (sx + 0.5) / 4 - WIDTH / 2;
+            const dy = y + (sy + 0.5) / 4 - HEIGHT / 2;
+            if (dx * dx + dy * dy <= radius * radius) covered++;
+          }
+        }
+        const shade = Math.round(255 - (covered / 16) * 255);
+        const index = (y * WIDTH + x) * 4;
+        image.data.set([shade, shade, shade, 255], index);
+      }
+    }
+    return PNG.sync.write(image);
+  };
+
+  const mismatches = (ignoreAntialiasing: boolean) =>
+    computePixelmatchDiff({
+      kind: 'diff',
+      baseline: disk(20),
+      image: disk(20.3),
+      ignoreAreas: [],
+      threshold: 0.1,
+      includeAA: includeAAFor({ ignoreAntialiasing }),
+      allowDiffDimensions: false,
+      diffTolerancePercent: 0,
+      saveDiff: false,
+    }).pixelMisMatchCount;
+
+  it('does not count edge shading as a change when the project ignores anti-aliasing', () => {
+    expect(mismatches(true)).toBe(0);
+  });
+
+  it('counts edge shading as a change when the project does not ignore anti-aliasing', () => {
+    expect(mismatches(false)).toBeGreaterThan(0);
   });
 });

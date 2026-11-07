@@ -1,10 +1,11 @@
 import { Injectable, Logger } from '@nestjs/common';
 import path from 'path';
 import { promises as fs, mkdirSync, existsSync } from 'fs';
-import { PNG, PNGWithMetadata } from 'pngjs';
+import { PNGWithMetadata } from 'pngjs';
 import { Static } from '../static.interface';
 import { HDD_IMAGE_PATH } from './constants';
 import { generateNewImageName } from '../utils';
+import { readPng } from '../../shared/screenshot-limits';
 
 @Injectable()
 export class HddService implements Static {
@@ -49,7 +50,7 @@ export class HddService implements Static {
     const imageBuffer = await this.getImageBuffer(imageName);
     if (!imageBuffer) return;
     try {
-      return PNG.sync.read(imageBuffer);
+      return readPng(imageBuffer);
     } catch (ex) {
       this.logger.error(`Cannot decode image: ${imageName}. ${ex}`);
     }

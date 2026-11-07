@@ -13,8 +13,9 @@ import { EventsGateway } from '../shared/events/events.gateway';
 import { TestVariationsService } from '../test-variations/test-variations.service';
 import { TestRunDto } from '../test-runs/dto/testRun.dto';
 import { BuildsService } from '../builds/builds.service';
-import { generateBaseline, generateTestRun, generateTestVariation, TEST_PROJECT } from '../_data_';
-import { UnprocessableEntityException } from '@nestjs/common';
+import { generateBaseline, generatePng, generateTestRun, generateTestVariation, TEST_PROJECT } from '../_data_';
+import { PNG } from 'pngjs';
+import { BadRequestException, PayloadTooLargeException, UnprocessableEntityException } from '@nestjs/common';
 import { getTestVariationUniqueData } from '../utils';
 import { BaselineDataDto } from '../shared/dto/baseline-data.dto';
 import { CompareService } from '../compare/compare.service';
@@ -147,9 +148,19 @@ const initService = async ({
 
   return module.get<TestRunsService>(TestRunsService);
 };
+
+// A tiny PNG whose header claims another size: what a decompression bomb looks like before decoding.
+function claimingSize(width: number, height: number): Buffer {
+  const png = Buffer.from(PNG.sync.write(generatePng(1, 1)));
+  png.writeUInt32BE(width, 16);
+  png.writeUInt32BE(height, 20);
+  return png;
+}
+
 describe('TestRunsService', () => {
   let service: TestRunsService;
-  const imageBuffer = Buffer.from('Image');
+  // a real PNG header: intake reads the size from it before anything else (VIS-SEC-014)
+  const imageBuffer = PNG.sync.write(generatePng(2, 2));
   const ignoreAreas = [{ x: 1, y: 2, width: 10, height: 20 }];
 
   it('findOne', async () => {
@@ -1066,6 +1077,24 @@ describe('TestRunsService', () => {
 
       expect(service.create).toHaveBeenCalledTimes(1);
       expect((service.create as jest.Mock).mock.calls[0][0].createTestRequestDto.buildId).toBe('buildId');
+    });
+
+    it.each([
+      ['not a PNG', Buffer.from('<html>not a screenshot</html>'), BadRequestException, 'not a PNG image'],
+      ['a PNG that claims 30000 × 30000 pixels', claimingSize(30000, 30000), PayloadTooLargeException, '30000 × 30000'],
+    ])('turns away an image that is %s before anything is created', async (_, image, error, message) => {
+      const { service, testVariationFindMock, testRunFindManyMock } = await setup();
+
+      const posting = service.postTestRun({
+        createTestRequestDto: snapshot(' pixel 7', 'Android 15'),
+        imageBuffer: image,
+      });
+
+      await expect(posting).rejects.toThrow(error);
+      await expect(posting).rejects.toThrow(message);
+      expect(testVariationFindMock).not.toHaveBeenCalled();
+      expect(testRunFindManyMock).not.toHaveBeenCalled();
+      expect(service.create).not.toHaveBeenCalled();
     });
 
     it('takes any device when the snapshot is not checked', async () => {

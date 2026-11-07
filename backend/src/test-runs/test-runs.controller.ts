@@ -35,6 +35,7 @@ import { fromVisionCli } from '../projects/allowed-devices';
 import { MixedGuard } from '../auth/guards/mixed.guard';
 import { TestRunDto } from './dto/testRun.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { screenshotLimits } from '../shared/screenshot-limits';
 import { CreateTestRequestBase64Dto } from './dto/create-test-request-base64.dto';
 import { CreateTestRequestMultipartDto } from './dto/create-test-request-multipart.dto';
 import { FileToBodyInterceptor } from '../shared/fite-to-body.interceptor';
@@ -380,7 +381,12 @@ export class TestRunsController {
   @UseGuards(ApiGuard, RoleGuard)
   @Roles(Role.admin, Role.editor)
   // the form is read by these, after the global interceptors: access is checked once it is (042)
-  @UseInterceptors(FileInterceptor('image'), FileToBodyInterceptor, ProjectAccessInterceptor)
+  // the file size is capped while it is read, before it is held in memory (VIS-SEC-014)
+  @UseInterceptors(
+    FileInterceptor('image', { limits: { fileSize: screenshotLimits().maxBytes, files: 1 } }),
+    FileToBodyInterceptor,
+    ProjectAccessInterceptor
+  )
   @UsePipes(new ValidationPipe({ transform: true, forbidUnknownValues: true }))
   postTestRunMultipart(
     @Body() createTestRequestDto: CreateTestRequestMultipartDto,

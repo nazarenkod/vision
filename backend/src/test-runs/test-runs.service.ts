@@ -5,8 +5,10 @@ import {
   Injectable,
   Logger,
   NotFoundException,
+  PayloadTooLargeException,
   UnprocessableEntityException,
 } from '@nestjs/common';
+import { screenshotProblem } from '../shared/screenshot-limits';
 import { randomUUID } from 'crypto';
 import { AddElementRuleDto, RemoveElementRuleDto, ReplaceAreaWithElementDto } from './dto/element-rule.dto';
 import {
@@ -87,6 +89,13 @@ export class TestRunsService {
     // hold the snapshot to the project's allowed devices (029); off for the Vision CLI
     checkDevice?: boolean;
   }): Promise<TestRunResultDto> {
+    // first of all: an image that is not a PNG, or claims too many pixels, is never stored or decoded (VIS-SEC-014)
+    const imageProblem = screenshotProblem(imageBuffer);
+    if (imageProblem) {
+      throw imageProblem.status === 413
+        ? new PayloadTooLargeException(imageProblem.message)
+        : new BadRequestException(imageProblem.message);
+    }
     const project = await this.prismaService.project.findUnique({ where: { id: createTestRequestDto.projectId } });
 
     // before anything is written: a rejected snapshot leaves no variation, run or baseline behind

@@ -55,6 +55,9 @@ services:
       JWT_LIFE_TIME: ${JWT_LIFE_TIME:-1d}
       APP_FRONTEND_URL: ${DEMO_UI_URL:-http://localhost:18080}
       BODY_PARSER_JSON_LIMIT: ${BODY_PARSER_JSON_LIMIT:-20mb}
+      # a screenshot larger than this, or claiming more pixels, is turned away before it is decoded (VIS-SEC-014)
+      VISION_MAX_SCREENSHOT_MB: ${VISION_MAX_SCREENSHOT_MB:-50}
+      VISION_MAX_SCREENSHOT_PIXELS: ${VISION_MAX_SCREENSHOT_PIXELS:-40000000}
       # the copy keeps the branches it was taken with
       TASKS_CLEANUP_ENABLED: "false"
       # AI features: gemini | ollama | none

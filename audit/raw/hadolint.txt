@@ -1,0 +1,8 @@
+== backend/Dockerfile
+backend/Dockerfile:38 DL3066 [92minfo[0m: Non-numeric user-id may not be resolvable by host system
+== backend/prisma/Dockerfile
+backend/prisma/Dockerfile:6 DL3008 [1m[93mwarning[0m: Pin versions in apt get install. Instead of `apt-get install <package>` use `apt-get install <package>=<version>`
+backend/prisma/Dockerfile:15 DL3066 [92minfo[0m: Non-numeric user-id may not be resolvable by host system
+== frontend/Dockerfile
+frontend/Dockerfile:37 DL3066 [92minfo[0m: Non-numeric user-id may not be resolvable by host system
+frontend/Dockerfile:39 DL3066 [92minfo[0m: Non-numeric user-id may not be resolvable by host system

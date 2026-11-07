@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { INestApplication, ValidationPipe } from '@nestjs/common';
+import { INestApplication } from '@nestjs/common';
 import { AppModule } from '../src/app.module';
 import { UsersService } from '../src/users/users.service';
 import { haveTestRunCreated, haveUserLogged, requestWithApiKey, requestWithAuth } from './preconditions';
@@ -12,6 +12,7 @@ import { TestRunsService } from '../src/test-runs/test-runs.service';
 import { BuildsController } from '../src/builds/builds.controller';
 import { TEST_PROJECT } from '../src/_data_';
 import { randomUUID } from 'crypto';
+import { globalPipes } from '../src/shared/strip-unknown-fields.pipe';
 
 describe('Builds (e2e)', () => {
   let app: INestApplication;
@@ -29,7 +30,7 @@ describe('Builds (e2e)', () => {
     }).compile();
 
     app = moduleFixture.createNestApplication();
-    app.useGlobalPipes(new ValidationPipe());
+    app.useGlobalPipes(...globalPipes());
     buildsService = moduleFixture.get<BuildsService>(BuildsService);
     buildsController = moduleFixture.get<BuildsController>(BuildsController);
     usersService = moduleFixture.get<UsersService>(UsersService);

@@ -59,6 +59,11 @@ npm run test:e2e / test:acceptance         # потрібні запущені P
   полів або `UserDto`.
 - **Новий секрет у базі** — через `sealSecret` при записі й `openSecret` лише там, де він іде назовні;
   у тестах ключ задає `src/jest.setup.ts`.
+- **Тіло запиту — DTO-клас, кожне поле з декоратором class-validator** (`@IsOptional()`, `@Allow()` для файла):
+  `StripUnknownFieldsPipe` (`src/shared/strip-unknown-fields.pipe.ts`) пропускає далі лише оголошені поля,
+  тож поле без декоратора до обробника не дійде. Тіло без класу (`string[]`, інлайн-тип) перевіряй руками й
+  додай маршрут у `CHECKED_BY_HAND` у `strip-unknown-fields.pipe.spec.ts`: тест падає на тілі без оголошених полів.
+  Застосунок і e2e ставлять одні й ті самі `globalPipes()`.
 - **Новий маршрут — з `@ProjectFrom(...)` або `@NoProjectData()`** (`src/projects/project-access.ts`):
   `project-access.routes.spec.ts` падає на маршруті без позначки й перевіряє відмову на кожному.
   Маршрут, що читає тіло пізніше (multipart), додає `ProjectAccessInterceptor` після свого (042).

@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { INestApplication, ValidationPipe } from '@nestjs/common';
+import { INestApplication } from '@nestjs/common';
 import { AppModule } from '../src/app.module';
 import { UsersService } from '../src/users/users.service';
 import { requestWithAuth, haveUserLogged } from './preconditions';
@@ -7,6 +7,7 @@ import { ProjectsService } from '../src/projects/projects.service';
 import { randomUUID } from 'crypto';
 import { UserLoginResponseDto } from '../src/users/dto/user-login-response.dto';
 import { ProjectDto } from '../src/projects/dto/project.dto';
+import { globalPipes } from '../src/shared/strip-unknown-fields.pipe';
 
 const project: ProjectDto = {
   id: randomUUID(),
@@ -47,7 +48,7 @@ describe('Projects (e2e)', () => {
       .compile();
 
     app = moduleFixture.createNestApplication();
-    app.useGlobalPipes(new ValidationPipe());
+    app.useGlobalPipes(...globalPipes());
     usersService = moduleFixture.get<UsersService>(UsersService);
 
     await app.init();

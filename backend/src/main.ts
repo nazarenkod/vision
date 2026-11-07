@@ -1,7 +1,7 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { setupSwagger } from './swagger';
-import { Logger, ValidationPipe } from '@nestjs/common';
+import { Logger } from '@nestjs/common';
 import * as bodyParser from 'body-parser';
 import compression from 'compression';
 import { readFileSync, existsSync } from 'fs';
@@ -10,6 +10,7 @@ import { NestExpressApplication } from '@nestjs/platform-express';
 import { RedisIoAdapter } from './redis-io.adapter';
 import { serverSecretKey } from './shared/secret-box';
 import { allowOwnInterface, securityHeaders, swaggerEnabled } from './security';
+import { globalPipes } from './shared/strip-unknown-fields.pipe';
 
 function getHttpsOptions(): HttpsOptions | null {
   const keyPath = './secrets/ssl.key';
@@ -39,7 +40,8 @@ async function bootstrap() {
   });
   app.disable('x-powered-by');
   app.use(securityHeaders);
-  app.useGlobalPipes(new ValidationPipe());
+  // validation first, on the body as sent; then only the fields the DTO declares go on (VIS-SEC-012)
+  app.useGlobalPipes(...globalPipes());
 
   // Large builds return multi-megabyte test-run lists; gzip shrinks them ~10x.
   // Images are already-compressed PNGs — recompressing them wastes CPU.

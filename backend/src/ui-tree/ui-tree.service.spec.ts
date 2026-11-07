@@ -100,6 +100,31 @@ describe('UiTreeService.analyze', () => {
 
     expect(Object.keys(result).sort()).toEqual(['components', 'invisible', 'report', 'reportName']);
   });
+
+  it('runs the accessibility rules on the worker pool, not on the thread that serves the API', async () => {
+    const run_ = jest.fn().mockResolvedValue({ violations: [] });
+    const saveFile = jest.fn().mockResolvedValue('a11y.json');
+    const instance = new UiTreeService(
+      { saveFile } as never,
+      {
+        project: { findUnique: jest.fn().mockResolvedValue({ mainBranchName: 'master' }) },
+        testVariation: { findMany: jest.fn().mockResolvedValue([]) },
+      } as never,
+      { run: run_ } as never
+    );
+    jest.spyOn(instance, 'load').mockImplementation(async (name) => (name === 'payment.json.gz' ? login : null));
+    jest.spyOn(instance as never, 'decode').mockResolvedValue(undefined as never);
+    jest.spyOn(instance, 'comparisonInputs').mockResolvedValue({
+      ignoreAreas: [],
+      compareOnly: { active: false, moves: [], keep: [], compared: [], ignoreOutside: [], problems: [] },
+    } as never);
+
+    await instance.analyze(run({ baselineUiTreeName: 'payment.json.gz' }), login);
+
+    // the run's screen and its baseline's, both off the event loop
+    expect(run_).toHaveBeenCalledTimes(2);
+    expect(run_.mock.calls.map(([job]) => job.kind)).toEqual(['a11y', 'a11y']);
+  });
 });
 
 describe('UiTreeService, a device without its own baseline', () => {

@@ -23,6 +23,7 @@ import { DiffWorkerPool } from './diff-worker-pool';
     GeminiService,
   ],
   imports: [StaticModule],
-  exports: [CompareService],
+  // the UI-tree analysis runs its accessibility rules on the same workers (VIS-SEC-004)
+  exports: [CompareService, DiffWorkerPool],
 })
 export class CompareModule {}

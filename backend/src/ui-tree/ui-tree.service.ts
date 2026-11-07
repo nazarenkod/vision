@@ -1,10 +1,12 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Optional } from '@nestjs/common';
 import { TestRun, TestVariation } from '@prisma/client';
 import { gunzipSync, gzipSync } from 'zlib';
 import { StaticService } from '../static/static.service';
 import { buildReport, findViolations } from '../a11y/a11y.rules';
 import { screenTitle } from '../a11y/a11y-problems';
-import { A11yReport, RgbaImage } from '../a11y/a11y.types';
+import { A11yReport, A11yViolation, RgbaImage } from '../a11y/a11y.types';
+import { A11yNorms } from '../a11y/a11y-norms';
+import { DiffWorkerPool } from '../compare/diff-worker-pool';
 import { describeNode, ownSpeakableText, parseUiTree } from './ui-tree.parser';
 import { readUiTreeXml } from './ui-tree.intake';
 import { Rect, UiNode, UiTree, UiTreeFormat } from './ui-tree.types';
@@ -248,8 +250,15 @@ export class UiTreeService {
 
   constructor(
     private staticService: StaticService,
-    private prismaService: PrismaService
+    private prismaService: PrismaService,
+    // off the event loop when there is a pool; tests without one run the rules here
+    @Optional() private diffWorkerPool?: DiffWorkerPool
   ) {}
+
+  private async violations(tree: UiTree, image: RgbaImage | undefined, norms: A11yNorms): Promise<A11yViolation[]> {
+    if (!this.diffWorkerPool) return findViolations(tree, image, norms);
+    return (await this.diffWorkerPool.run({ kind: 'a11y', tree, image, norms })).violations;
+  }
 
   /**
    * Parses the page source (base64 of XML, gzipped or not) against the
@@ -349,10 +358,10 @@ export class UiTreeService {
     const checkTree = baselineTree ?? otherTree;
 
     // the baseline by the same norms, so a changed norm alone fixes nothing
-    const current = findViolations(tree, image, settings.a11yNorms);
-    const baseline = checkTree
-      ? findViolations(checkTree, baselineTree ? baselineImage : otherImage, settings.a11yNorms)
-      : null;
+    const [current, baseline] = await Promise.all([
+      this.violations(tree, image, settings.a11yNorms),
+      checkTree ? this.violations(checkTree, baselineTree ? baselineImage : otherImage, settings.a11yNorms) : null,
+    ]);
     const report = {
       ...buildReport(tree, current, baseline),
       // problems that are not a component's are told apart by screen

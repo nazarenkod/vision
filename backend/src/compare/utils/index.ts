@@ -13,8 +13,10 @@ export function scaleImageToSize(image: PNG, width: number, height: number): PNG
 
 export function applyIgnoreAreas(image: PNG, ignoreAreas: IgnoreAreaDto[]): PNG {
   ignoreAreas.forEach((area) => {
-    for (let y = area.y; y < Math.min(area.y + area.height, image.height); y++) {
-      for (let x = area.x; x < Math.min(area.x + area.width, image.width); x++) {
+    // Start inside the image: an area far to the left or above (x = -1e9) would otherwise walk a
+    // billion rows of nothing and hang the comparison worker for every later screenshot (VIS-SEC-005).
+    for (let y = Math.max(0, area.y); y < Math.min(area.y + area.height, image.height); y++) {
+      for (let x = Math.max(0, area.x); x < Math.min(area.x + area.width, image.width); x++) {
         const k = 4 * (image.width * y + x);
         image.data[k + 0] = 0;
         image.data[k + 1] = 0;

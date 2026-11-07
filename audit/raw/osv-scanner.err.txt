@@ -1,0 +1,18 @@
+Scanning dir .
+Scanning /home/user/vision/ at commit a3b61043cd124d9603755052c8d8d9468f307f1a
+Scanned /home/user/vision/backend/package-lock.json file and found 1065 packages
+Scanned /home/user/vision/backend/prisma/package-lock.json file and found 462 packages
+Scanning directory for vendored libs: /home/user/vision/backend/prisma/vendor
+Scanning potential vendored dir: /home/user/vision/backend/prisma/vendor/deepmerge
+Error scanning sub-directory '/home/user/vision/backend/prisma/vendor/deepmerge' with error: failed to determine versions: Post "https://api.osv.dev/v1experimental/determineversion": ForbiddenScanning directory for vendored libs: /home/user/vision/backend/src/compare/libs
+Scanning potential vendored dir: /home/user/vision/backend/src/compare/libs/looks-same
+Error scanning sub-directory '/home/user/vision/backend/src/compare/libs/looks-same' with error: failed to determine versions: Post "https://api.osv.dev/v1experimental/determineversion": ForbiddenScanning potential vendored dir: /home/user/vision/backend/src/compare/libs/odiff
+Error scanning sub-directory '/home/user/vision/backend/src/compare/libs/odiff' with error: failed to determine versions: Post "https://api.osv.dev/v1experimental/determineversion": ForbiddenScanning potential vendored dir: /home/user/vision/backend/src/compare/libs/pixelmatch
+Error scanning sub-directory '/home/user/vision/backend/src/compare/libs/pixelmatch' with error: failed to determine versions: Post "https://api.osv.dev/v1experimental/determineversion": ForbiddenScanning potential vendored dir: /home/user/vision/backend/src/compare/libs/vlm
+Error scanning sub-directory '/home/user/vision/backend/src/compare/libs/vlm' with error: failed to determine versions: Post "https://api.osv.dev/v1experimental/determineversion": ForbiddenScanning directory for vendored libs: /home/user/vision/backend/vendor
+Scanning potential vendored dir: /home/user/vision/backend/vendor/deepmerge
+Error scanning sub-directory '/home/user/vision/backend/vendor/deepmerge' with error: failed to determine versions: Post "https://api.osv.dev/v1experimental/determineversion": ForbiddenScanned /home/user/vision/frontend/package-lock.json file and found 782 packages
+Scanning directory for vendored libs: /home/user/vision/frontend/vendor
+Scanning potential vendored dir: /home/user/vision/frontend/vendor/deepmerge
+Error scanning sub-directory '/home/user/vision/frontend/vendor/deepmerge' with error: failed to determine versions: Post "https://api.osv.dev/v1experimental/determineversion": ForbiddenFiltered 3 local package/s from the scan.
+API query failed: osv.dev query failed: Post "https://api.osv.dev/v1/querybatch": Forbidden

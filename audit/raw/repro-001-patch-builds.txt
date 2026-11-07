@@ -1,0 +1,13 @@
+Стенд: нативний, API http://localhost:14200 (коміт 7b13af1), синтетичні користувачі alice/bob (editor), проєкти Team A / Team B.
+alice має доступ лише до Team A; bob — лише до Team B. AKEY — API-ключ alice.
+
+$ curl -X POST /builds -H "apiKey: AKEY" -d '{"project":"<Team A>","branchName":"main"}'   -> build b07f92ee…
+$ curl /builds/<build> -H "Authorization: Bearer <bob>"                                    -> 404 (ізоляція працює)
+$ curl -X PATCH /builds/<build> -H "apiKey: AKEY" -d '{"branchName":"injected","number":999}' -> 200, number=999, branchName=injected (поля поза ModifyBuildDto)
+$ curl /users/all -H "Authorization: Bearer <alice>"                                      -> 403
+$ curl -X PATCH /builds/<build> -H "apiKey: AKEY" -d '{"user":{"connect":{"email":"alice@bank.test"}}}' -> 200
+$ curl -X PATCH /builds/<build> -H "apiKey: AKEY" -d '{"user":{"update":{"role":"admin"}}}'           -> 200
+$ curl /users/all -H "Authorization: Bearer <alice, той самий старий JWT>"                -> 200
+$ curl /users/me  -> {"email":"alice@bank.test",...,"role":"admin",...}
+$ curl -X PATCH /builds/<build> -H "apiKey: AKEY" -d '{"projectId":"<Team B>"}'           -> 200, projectId = Team B
+$ curl /builds/<build> -H "Authorization: Bearer <bob>"                                    -> 200 (збірка Team A тепер у Team B)

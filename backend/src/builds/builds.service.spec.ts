@@ -440,6 +440,16 @@ describe('BuildsService', () => {
     expect(result).toBe(buildDto);
   });
 
+  it('writes only the run state and CI build id, whatever else the caller passes', async () => {
+    const buildUpdateMock = jest.fn();
+    mocked(BuildDto).mockReturnValueOnce(buildDto as MockedObject<BuildDto>);
+    service = await initService({ buildUpdateMock, eventsBuildUpdatedMock: jest.fn() });
+
+    await service.update('id', { ciBuildId: 'ci-7', user: { connect: { email: 'x' } } } as never);
+
+    expect(buildUpdateMock).toHaveBeenCalledWith({ where: { id: 'id' }, data: { ciBuildId: 'ci-7' } });
+  });
+
   it('approve', async () => {
     const buildFindUniqueMock = jest.fn().mockResolvedValueOnce(build);
     const testRunApproveMock = jest.fn().mockResolvedValueOnce({

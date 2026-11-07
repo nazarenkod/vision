@@ -23,7 +23,7 @@ import { Build, Role } from '@prisma/client';
 import { BuildDto } from './dto/build.dto';
 import { MixedGuard } from '../auth/guards/mixed.guard';
 import { PaginatedBuildDto } from './dto/build-paginated.dto';
-import { ModifyBuildDto } from './dto/build-modify.dto';
+import { ModifyBuildDto, buildChanges } from './dto/build-modify.dto';
 import { ProjectsService } from '../projects/projects.service';
 import { RoleGuard } from '../auth/guards/role.guard';
 import { Roles } from '../shared/roles.decorator';
@@ -116,10 +116,8 @@ export class BuildsController {
   update(@Param('id', new ParseUUIDPipe()) id: string, @Body() modifyBuildDto?: ModifyBuildDto): Promise<BuildDto> {
     // Released SDKs (sdk-js, agent-cypress, sdk-python, sdk-java) stop a build with an empty PATCH body.
     // Express 5 leaves req.body undefined when there is no body, so handle both cases.
-    if (!modifyBuildDto || Object.keys(modifyBuildDto).length === 0) {
-      modifyBuildDto = { isRunning: false };
-    }
-    return this.buildsService.update(id, modifyBuildDto);
+    const changes = buildChanges(modifyBuildDto);
+    return this.buildsService.update(id, Object.keys(changes).length === 0 ? { isRunning: false } : changes);
   }
 
   @ProjectFrom(inParam('id', 'build'))

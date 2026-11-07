@@ -127,5 +127,20 @@ describe('Builds Controller', () => {
         expect(buildUpdateMock).toHaveBeenCalledWith(TEST_BUILD.id, body);
       }
     );
+
+    it('changes nothing but the run state and CI build id, so nobody makes themselves admin', async () => {
+      const buildUpdateMock = jest.fn().mockResolvedValueOnce(new BuildDto(TEST_BUILD));
+      controller = await initController({ buildUpdateMock });
+      const body = {
+        isRunning: false,
+        user: { update: { role: 'admin' } },
+        projectId: 'another-team',
+        number: 1,
+      };
+
+      await controller.update(TEST_BUILD.id, body as never);
+
+      expect(buildUpdateMock).toHaveBeenCalledWith(TEST_BUILD.id, { isRunning: false });
+    });
   });
 });

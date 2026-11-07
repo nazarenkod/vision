@@ -6,7 +6,7 @@ import { EventsGateway } from '../shared/events/events.gateway';
 import { BuildDto } from './dto/build.dto';
 import { getBuildsStats } from './build-stats';
 import { PaginatedBuildDto } from './dto/build-paginated.dto';
-import { ModifyBuildDto } from './dto/build-modify.dto';
+import { ModifyBuildDto, buildChanges } from './dto/build-modify.dto';
 
 // Newest first, with the id to break a tie: without a total order two builds
 // made in the same instant have no fixed place, so an offset page could show
@@ -107,7 +107,8 @@ export class BuildsService {
   async update(id: string, modifyBuildDto: ModifyBuildDto): Promise<BuildDto> {
     await this.prismaService.build.update({
       where: { id },
-      data: modifyBuildDto,
+      // picked again here: a caller that skips the controller must not write other fields either
+      data: buildChanges(modifyBuildDto),
     });
     this.eventsGateway.buildUpdated(id);
     return this.findOne(id);

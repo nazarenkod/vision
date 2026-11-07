@@ -20,7 +20,8 @@ cd backend
 npm install
 DATABASE_URL=postgresql://postgres:postgres@localhost:15433/vrt_dev npx prisma migrate deploy
 npm run build
-DATABASE_URL=postgresql://postgres:postgres@localhost:15433/vrt_dev JWT_SECRET=dev-secret \
+DATABASE_URL=postgresql://postgres:postgres@localhost:15433/vrt_dev \
+  JWT_SECRET="$(openssl rand -base64 32)" VISION_SECRET_KEY="$(openssl rand -base64 32)" \
   JWT_LIFE_TIME=7d APP_FRONTEND_URL=http://localhost:5173 APP_PORT=14201 \
   BODY_PARSER_JSON_LIMIT=20mb TASKS_CLEANUP_ENABLED=false AI_PROVIDER=none \
   node dist/src/main.js

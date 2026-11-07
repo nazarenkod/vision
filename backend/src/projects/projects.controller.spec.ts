@@ -101,4 +101,23 @@ describe('Projects Controller', () => {
     await admin.controller.create({ id: 'admin', role: 'admin' } as never, { name: 'Web' } as never);
     expect(admin.access.grant).not.toHaveBeenCalled();
   });
+
+  // an admin passes the access check for any id, an unknown one too: the page must not reach Jira then
+  it('checks the project before asking Jira for its types', async () => {
+    const projectsService = {
+      findOne: jest.fn().mockRejectedValue(new Error('Project not found')),
+      jiraTypes: jest.fn().mockResolvedValue({ issueTypes: [], linkTypes: [] }),
+    };
+    const controller = new ProjectsController(projectsService as never, {} as never, {} as never, {} as never);
+    const admin = { id: 'admin', role: 'admin' } as never;
+
+    await expect(
+      controller.jiraTypes('0b0b0b0b-0000-4000-8000-000000000000', 'https://jira.example.com', admin)
+    ).rejects.toThrow('Project not found');
+    expect(projectsService.jiraTypes).not.toHaveBeenCalled();
+
+    projectsService.findOne.mockResolvedValue({ id: 'p' });
+    await controller.jiraTypes('0b0b0b0b-0000-4000-8000-000000000000', 'https://jira.example.com', admin);
+    expect(projectsService.jiraTypes).toHaveBeenCalledWith('https://jira.example.com', 'admin');
+  });
 });

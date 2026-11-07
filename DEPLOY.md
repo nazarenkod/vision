@@ -105,9 +105,9 @@ cp .env.demo.example .env.demo
 
 | Переменная | Что указать |
 |---|---|
-| `JWT_SECRET` | любой длинный секрет (можно тот же, что у прода: тогда у пользователей работают выданные токены входа) |
-| `VISION_SECRET_KEY` | длинный случайный ключ (`openssl rand -base64 32`), **хранить навсегда**: им зашифрованы токены Jira и ключи Gemini в базе. Без него API не стартует; новый ключ — все вводят токены заново ([044](docs/specs/044-secrets-at-rest/spec.md)) |
-| `VISION_JIRA_HOSTS` | хосты Jira через запятую, куда можно отправлять личные токены, например `jira.bank.example`. Пусто — Vision в Jira не ходит, а адрес Jira в проекте не сохранить |
+| `JWT_SECRET` | новый случайный секрет (`openssl rand -base64 32`), **не** секрет рабочего VRT: с общим секретом вход в Vision открывал бы и рабочий VRT. API не стартует со значением из примера, с секретом короче 32 символов и с тем же значением, что у `VISION_SECRET_KEY` ([051](docs/specs/051-security-quick-fixes/spec.md)) |
+| `VISION_SECRET_KEY` | длинный случайный ключ (`openssl rand -base64 32`), **хранить навсегда**: им зашифрованы токены Jira и ключи Gemini в базе. Без него API не стартует; новый ключ — все вводят токены заново ([044](docs/specs/044-secrets-at-rest/spec.md)). Те же требования, что к `JWT_SECRET` ([051](docs/specs/051-security-quick-fixes/spec.md)) |
+| `VISION_JIRA_HOSTS` | хосты Jira через запятую, куда можно отправлять личные токены, например `jira.bank.example`: токен уходит только по `https` на стандартный порт и не идёт за переадресацией. Jira на другом порту или по `http` — запись со схемой и портом, например `https://jira.bank.example:8443` ([051](docs/specs/051-security-quick-fixes/spec.md)). Пусто — Vision в Jira не ходит, а адрес Jira в проекте не сохранить |
 | `DEMO_UI_URL` | адрес UI так, как его видит браузер, например `http://vision-host:18080` |
 | `DEMO_API_URL` | адрес API так, как его видит браузер и автотесты, например `http://vision-host:14200` |
 | `PROD_PG_CONTAINER` | имя контейнера Postgres прода, **или** |

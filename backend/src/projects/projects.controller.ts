@@ -68,7 +68,9 @@ export class ProjectsController {
   @ApiParam({ name: 'id', required: true })
   @ApiQuery({ name: 'url', required: false })
   // the address from the page, maybe not saved yet (REQ-049-09); the person's own token (REQ-049-03)
-  jiraTypes(@Param('id', new ParseUUIDPipe()) id: string, @Query('url') url: string, @CurrentUser() user: User) {
+  async jiraTypes(@Param('id', new ParseUUIDPipe()) id: string, @Query('url') url: string, @CurrentUser() user: User) {
+    // the access check lets an admin through for any id: an unknown project gets no Jira call (051)
+    await this.projectsService.findOne(id);
     return this.projectsService.jiraTypes(url, user.id);
   }
 

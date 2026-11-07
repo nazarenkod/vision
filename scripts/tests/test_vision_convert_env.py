@@ -52,15 +52,23 @@ class ConvertEnvTest(unittest.TestCase):
         self.assertEqual(len(changes), 7)
 
     def test_keeps_a_secret_key_already_set_and_a_database_named(self):
-        text, _ = convert.convert("VISION_SECRET_KEY=kept-key\nPOSTGRES_DB=vision\nVISION_JIRA_HOSTS=a.example\n",
+        kept = "k" * 43
+        text, _ = convert.convert(f"VISION_SECRET_KEY={kept}\nPOSTGRES_DB=vision\nVISION_JIRA_HOSTS=a.example\n",
                                   None, make_secret=lambda: "x")
         after = values(text)
-        self.assertEqual(after["VISION_SECRET_KEY"], "kept-key")
+        self.assertEqual(after["VISION_SECRET_KEY"], kept)
         self.assertEqual(after["POSTGRES_DB"], "vision")
         self.assertEqual(after["VISION_JIRA_HOSTS"], "a.example")
         # a placeholder is no key
         text, _ = convert.convert("VISION_SECRET_KEY=change-me\n", None, make_secret=lambda: "made")
         self.assertEqual(values(text)["VISION_SECRET_KEY"], "made")
+
+    def test_replaces_a_secret_key_the_api_would_refuse(self):
+        # under 32 characters or an example: the API does not start with it (051)
+        for weak in ["kept-key", "change-me-to-another-long-random-string", " " + "s" * 31 + " "]:
+            text, changes = convert.convert(f"VISION_SECRET_KEY={weak}\n", None, make_secret=lambda: "m" * 43)
+            self.assertEqual(values(text)["VISION_SECRET_KEY"], "m" * 43)
+            self.assertTrue(any(change[0] == "VISION_SECRET_KEY" for change in changes))
 
     def test_writes_only_after_yes_and_keeps_the_old_file(self):
         with tempfile.TemporaryDirectory() as folder:

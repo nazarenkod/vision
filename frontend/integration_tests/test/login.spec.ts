@@ -200,3 +200,18 @@ test("shows the end of the sign-in motion at once with reduced motion", async ({
     })
     .toBe("0");
 });
+
+test("the comparison drawing rests on its finished state with reduced motion", async ({
+  page,
+}) => {
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await page.goto("/login");
+  const style = (testId: string, property: "opacity" | "transform") =>
+    page
+      .getByTestId(testId)
+      .evaluate((node, name) => getComputedStyle(node)[name], property);
+
+  await expect.poll(() => style("authScanLine", "opacity")).toBe("0");
+  await expect.poll(() => style("authVariableClock", "opacity")).toBe("0");
+  await expect.poll(() => style("authMovedButton", "transform")).toBe("none");
+});

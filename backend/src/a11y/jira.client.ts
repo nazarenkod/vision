@@ -187,6 +187,12 @@ export class JiraClient {
     }
   }
 
+  /** Every issue type the person can see, across Jira projects: settings name no Jira project. */
+  async allIssueTypes(): Promise<JiraIssueType[]> {
+    const types = await this.request<Array<{ id: string; name: string; subtask?: boolean }>>('/rest/api/2/issuetype');
+    return (types ?? []).map((type) => ({ id: String(type.id), name: type.name, subtask: !!type.subtask }));
+  }
+
   /** Fields on the create screen of an issue type, with which of them are required. */
   async createFields(projectKey: string, issueTypeId: string): Promise<JiraField[]> {
     type RawField = Omit<JiraField, 'id'> & { fieldId?: string; key?: string };

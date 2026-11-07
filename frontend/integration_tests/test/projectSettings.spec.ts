@@ -6,6 +6,7 @@ import {
   API_URL,
   inUkrainian,
   mockGetDevices,
+  mockGetJiraTypes,
   mockGetProjects,
   mockGetUsers,
   mockSaveProject,
@@ -34,6 +35,15 @@ const project = {
       },
     ],
   }),
+};
+
+const JIRA_TYPES = {
+  issueTypes: [
+    { name: "Bug", subtask: false },
+    { name: "Defect", subtask: false },
+    { name: "Sub-bug", subtask: true },
+  ],
+  linkTypes: ["Blocks", "Relates"],
 };
 
 const open = async (page: Page, overrides: object = {}) => {
@@ -107,7 +117,7 @@ test("lists the sections and highlights the one in view", async ({
     "General",
     "Review",
     "Image comparison",
-    "Mobile screens",
+    "Screen structure",
     "Accessibility",
     "Jira",
     "Danger zone",
@@ -185,19 +195,21 @@ test("saves every field the old dialog had", async ({
   authUser,
 }) => {
   await mockSaveProject(page);
+  await mockGetJiraTypes(page, project.id, JIRA_TYPES);
   await open(page);
   await page.locator("#name").fill("Mobile Shop");
   await page.locator("#branchName").fill("develop");
   await page.locator("#buildCount").fill("40");
   await page.locator("#maxBranchLifetime").fill("14");
-  await page.getByLabel("Auto approve feature").uncheck();
+  await page.getByLabel("Auto-approve in feature branches").uncheck();
   await page.getByTestId(`engine-${ImageComparison.odiff}`).click();
   await page.getByLabel("Send hidden changes to review").uncheck();
-  await page.locator("#jiraIssueType").fill("Defect");
+  await page.getByTestId("jiraIssueType-select").click();
+  await page.getByRole("option", { name: "Defect" }).click();
 
   // the save bar names what changed
   await expect(page.getByTestId("saveBar")).toContainText(
-    "General, Review, Image comparison, Mobile screens, Jira",
+    "General, Review, Image comparison, Screen structure, Jira",
   );
   const [request] = await Promise.all([
     putRequest(page),
@@ -245,7 +257,7 @@ test("shows only the chosen engine's settings", async ({
   await expect(
     page.getByTestId(`engine-${ImageComparison.odiff}`),
   ).toHaveAttribute("aria-checked", "true");
-  await expect(page.getByLabel("Fail on layout diff")).toBeVisible();
+  await expect(page.getByLabel("Fail if the size differs")).toBeVisible();
   await expect(page.getByLabel("Allow diff dimensions")).toHaveCount(0);
 });
 
@@ -259,6 +271,61 @@ test("shows a dependent field only when its switch is on", async ({
   await expect(maxMove).toHaveCount(0);
   await page.getByLabel("Compare moved elements at their new place").check();
   await expect(maxMove).toBeVisible();
+});
+
+test("names the UI tree section Screen structure", async ({
+  page,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  authUser,
+}) => {
+  await open(page);
+  const section = page.getByTestId("section-mobile");
+  await expect(
+    section.getByRole("heading", { name: "Screen structure" }),
+  ).toBeVisible();
+  await expect(page.getByTestId("nav-mobile")).toHaveText("Screen structure");
+  // where trees come from today, and no promise of the web yet (REQ-049-12)
+  await expect(section).toContainText("Appium on Android and iOS");
+  await expect(section).not.toContainText(/web/i);
+  await page.getByTestId("settingsSearch").fill("mobile screens");
+  await expect(section).toBeVisible();
+  await expect(page.getByTestId("section-general")).toBeHidden();
+});
+
+test("explains the compare and ignore options with an animation", async ({
+  page,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  authUser,
+}) => {
+  await open(page);
+  // pixelmatch: sizes and anti-aliasing; screen structure: moves; nothing else
+  await expect(page.locator("[data-testid^=explain-]")).toHaveCount(3);
+  const moves = page.getByTestId("explain-moves");
+  await expect(moves).toHaveAccessibleName("What this option does");
+  const switchOf = page.locator("input[name=compensateMoves]");
+  const before = await switchOf.isChecked();
+
+  await moves.click();
+  const hint = page.getByTestId("explainer-moves");
+  await expect(hint.getByRole("img")).toHaveCount(4);
+  // the project has the option off: that outcome is marked as now
+  await expect(hint.getByTestId("explainerResult-off")).toContainText(
+    "now in this project",
+  );
+  await expect(hint).toContainText(
+    "A banner came in on top and pushed the list down.",
+  );
+  // the "?" explains; it does not flip the option
+  expect(await switchOf.isChecked()).toBe(before);
+  await page.keyboard.press("Escape");
+  await expect(hint).toBeHidden();
+
+  await page.getByTestId(`engine-${ImageComparison.lookSame}`).click();
+  await expect(page.getByTestId("explain-caret")).toBeVisible();
+  await page.getByTestId("explain-caret").click();
+  await expect(page.getByTestId("explainer-caret")).toContainText(
+    "The text caret was in the field on the baseline",
+  );
 });
 
 test("has no element rules section", async ({
@@ -283,7 +350,9 @@ test("has no settings for variations in the review section", async ({
   // a project saved with them on still has the columns (022)
   await open(page, { bulkApproveVariations: true, bulkApproveGroupBy: "os" });
   const review = page.getByTestId("section-review");
-  await expect(review.getByLabel("Auto approve feature")).toBeVisible();
+  await expect(
+    review.getByLabel("Auto-approve in feature branches"),
+  ).toBeVisible();
   await expect(review.getByText(/variations/i)).toHaveCount(0);
   await page.getByTestId("settingsSearch").fill("variation");
   await expect(page.getByText("Nothing matches")).toBeVisible();
@@ -352,7 +421,7 @@ test("keeps settings it no longer shows when saving", async ({
     }),
   });
   await page.getByLabel("Send hidden changes to review").uncheck();
-  await expect(page.getByTestId("saveBar")).toContainText("Mobile screens");
+  await expect(page.getByTestId("saveBar")).toContainText("Screen structure");
   const [request] = await Promise.all([
     putRequest(page),
     page.getByTestId("saveSettings").click(),
@@ -418,8 +487,8 @@ test("sets the project's touch target and turns a rule off", async ({
   await expect(
     page.getByTestId("nav-mobile").getByLabel("unsaved changes"),
   ).toHaveCount(0);
-  // the rail counts the rules on (REQ-026-16)
-  await expect(page.getByTestId("nav-a11y")).toContainText("6 of 7 on");
+  // the rail names the sections only, no counts beside them (REQ-026-16)
+  await expect(page.getByTestId("nav-a11y")).toHaveText("Accessibility");
 
   const [request] = await Promise.all([
     putRequest(page),
@@ -483,7 +552,6 @@ test("adds, edits and removes an allowed device", async ({
   await expect(section).toContainText(
     "No list: screens from any device come in.",
   );
-  await expect(page.getByTestId("nav-devices")).toContainText("any device");
 
   await page.getByTestId("newDevice-device").fill("Pixel 7");
   await page.getByTestId("newDevice-os").fill("Android 15");
@@ -497,7 +565,6 @@ test("adds, edits and removes an allowed device", async ({
   await expect(page.getByTestId("addDevice")).toBeDisabled();
   await page.getByTestId("newDevice-os").fill("26.*");
   await page.getByTestId("addDevice").click();
-  await expect(page.getByTestId("nav-devices")).toContainText("2 allowed");
   await expect(
     page.getByTestId("nav-devices").getByLabel("unsaved changes"),
   ).toBeVisible();
@@ -633,6 +700,105 @@ test("shows saved secrets as Saved and never their value", async ({
   expect(JSON.parse(request.postDataJSON().imageComparisonConfig).apiKey).toBe(
     "",
   );
+});
+
+test("picks the Jira issue and link type from the person's Jira", async ({
+  page,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  authUser,
+}) => {
+  await mockSaveProject(page);
+  await mockGetJiraTypes(page, project.id, JIRA_TYPES);
+  await open(page);
+  // the address stays a field; the types are lists (REQ-049-07)
+  await expect(page.locator("input#jiraUrl")).toHaveValue(project.jiraUrl);
+  await page.getByTestId("jiraIssueType-select").click();
+  // sub-tasks under a heading of their own (REQ-049-08)
+  await expect(page.getByRole("listbox").locator("li")).toHaveText([
+    "Automatic",
+    "Issue types",
+    "Bug",
+    "Defect",
+    "Sub-tasks",
+    "Sub-bug",
+  ]);
+  await page.getByRole("option", { name: "Defect" }).click();
+  await page.getByTestId("jiraLinkType-select").click();
+  await page.getByRole("option", { name: "Blocks" }).click();
+
+  const [request] = await Promise.all([
+    putRequest(page),
+    page.getByTestId("saveSettings").click(),
+  ]);
+  expect(request.postDataJSON()).toMatchObject({
+    jiraIssueType: "Defect",
+    jiraLinkType: "Blocks",
+  });
+});
+
+test("reloads the Jira types for a new address before saving", async ({
+  page,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  authUser,
+}) => {
+  const asked: string[] = [];
+  await mockGetJiraTypes(page, project.id, (url) => {
+    asked.push(url);
+    return url.includes("other")
+      ? {
+          issueTypes: [{ name: "Task", subtask: false }],
+          linkTypes: ["Relates"],
+        }
+      : JIRA_TYPES;
+  });
+  await open(page);
+  await expect.poll(() => asked).toEqual([project.jiraUrl]);
+  await page.locator("input#jiraUrl").fill("https://other.example.com");
+  await page.locator("input#jiraUrl").blur();
+  await expect
+    .poll(() => asked)
+    .toEqual([project.jiraUrl, "https://other.example.com"]);
+  await page.getByTestId("jiraIssueType-select").click();
+  await expect(page.getByRole("option")).toHaveText(["Automatic", "Task"]);
+});
+
+test("asks for a Jira token in the profile when the person has none", async ({
+  page,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  authUser,
+}) => {
+  await mockGetJiraTypes(page, project.id, { problem: "noToken" });
+  await open(page, { jiraIssueType: "Defect" });
+  await expect(page.getByTestId("jiraTypesNoToken")).toContainText(
+    "Add your Jira token in your profile",
+  );
+  await expect(
+    page
+      .getByTestId("jiraTypesNoToken")
+      .getByRole("link", { name: "Open profile" }),
+  ).toHaveAttribute("href", "/profile");
+  await expect(page.locator("input#jiraIssueType")).toHaveValue("Defect");
+  await expect(page.locator("input#jiraIssueType")).toBeDisabled();
+  await expect(page.locator("input#jiraLinkType")).toHaveValue("Automatic");
+});
+
+test("keeps the saved Jira types and offers a retry when Jira fails", async ({
+  page,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  authUser,
+}) => {
+  let calls = 0;
+  await mockGetJiraTypes(page, project.id, () =>
+    ++calls === 1 ? { problem: "failed" } : JIRA_TYPES,
+  );
+  await open(page, { jiraIssueType: "Defect" });
+  await expect(page.getByTestId("jiraTypesFailed")).toContainText(
+    "Could not load the types from Jira.",
+  );
+  await expect(page.locator("input#jiraIssueType")).toHaveValue("Defect");
+  await page.getByTestId("jiraTypesRetry").click();
+  await expect(page.getByTestId("jiraTypesFailed")).toHaveCount(0);
+  await expect(page.getByTestId("jiraIssueType-select")).toHaveText("Defect");
 });
 
 test("Jira settings have no shared token or email", async ({

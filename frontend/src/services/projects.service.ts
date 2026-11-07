@@ -1,4 +1,9 @@
-import { AllowedDevice, Project, ProjectMember } from "../types";
+import {
+  AllowedDevice,
+  JiraTypesResponse,
+  Project,
+  ProjectMember,
+} from "../types";
 import { handleResponse, authHeader } from "../_helpers/service.helpers";
 import { API_URL } from "../_config/env.config";
 
@@ -22,6 +27,22 @@ async function getDevices(projectId: string): Promise<AllowedDevice[]> {
     method: "GET",
     headers: authHeader(),
   });
+  return handleResponse(response);
+}
+
+/**
+ * Jira issue and link types at an address the page holds, saved or not,
+ * read with the person's own token (REQ-049-01, 03, 09).
+ */
+async function getJiraTypes(
+  projectId: string,
+  jiraUrl: string,
+): Promise<JiraTypesResponse> {
+  const query = new URLSearchParams({ url: jiraUrl });
+  const response = await fetch(
+    `${API_URL}/projects/${projectId}/jira/types?${query}`,
+    { method: "GET", headers: authHeader() },
+  );
   return handleResponse(response);
 }
 
@@ -138,6 +159,7 @@ export const projectsService = {
   updateSettings,
   getAll,
   getDevices,
+  getJiraTypes,
   remove,
   create,
   update,

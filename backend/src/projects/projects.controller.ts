@@ -1,6 +1,18 @@
-import { Controller, Get, UseGuards, Body, Post, Param, ParseUUIDPipe, Delete, Put, Logger } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  UseGuards,
+  Body,
+  Post,
+  Param,
+  ParseUUIDPipe,
+  Delete,
+  Put,
+  Logger,
+  Query,
+} from '@nestjs/common';
 import { User } from '@prisma/client';
-import { ApiTags, ApiBearerAuth, ApiOkResponse, ApiParam } from '@nestjs/swagger';
+import { ApiTags, ApiBearerAuth, ApiOkResponse, ApiParam, ApiQuery } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/guards/auth.guard';
 import { ProjectsService, toPublicProject } from './projects.service';
 import { CreateProjectDto } from './dto/create-project.dto';
@@ -46,6 +58,18 @@ export class ProjectsController {
   @ApiParam({ name: 'id', required: true })
   devices(@Param('id', new ParseUUIDPipe()) id: string) {
     return this.projectsService.findDevices(id);
+  }
+
+  @ProjectFrom(inParam('id', 'project'))
+  @Get(':id/jira/types')
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RoleGuard)
+  @Roles(Role.admin, Role.editor)
+  @ApiParam({ name: 'id', required: true })
+  @ApiQuery({ name: 'url', required: false })
+  // the address from the page, maybe not saved yet (REQ-049-09); the person's own token (REQ-049-03)
+  jiraTypes(@Param('id', new ParseUUIDPipe()) id: string, @Query('url') url: string, @CurrentUser() user: User) {
+    return this.projectsService.jiraTypes(url, user.id);
   }
 
   @NoProjectData()

@@ -193,11 +193,11 @@ export const AllowedDevicesSettings: React.FunctionComponent = () => {
 
       <Box sx={{ mt: 1 }} data-testid="receivedDevices">
         <Typography variant="subtitle2">{t("devices.received")}</Typography>
-        <Typography variant="caption" color="textSecondary" component="div">
-          {received.length
-            ? t("devices.receivedHint")
-            : t("devices.receivedNone")}
-        </Typography>
+        {!received.length && (
+          <Typography variant="caption" color="textSecondary" component="div">
+            {t("devices.receivedNone")}
+          </Typography>
+        )}
         {received.map((entry) => {
           const allowed = deviceAllowed(devices, entry.device, entry.os);
           const key = `${entry.device} / ${entry.os}`;

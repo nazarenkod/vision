@@ -1,5 +1,5 @@
 import { sealSecret } from '../shared/secret-box';
-import { jiraAccess } from './jira-access';
+import { jiraAccess, settingsJira } from './jira-access';
 import { JiraClient } from './jira.client';
 
 const env = { VISION_SECRET_KEY: 'jira-access-test-key', VISION_JIRA_HOSTS: 'jira.example.com' };
@@ -69,5 +69,29 @@ describe('jiraAccess', () => {
     await expect(
       jiraAccess(prismaWith(person), 'project', 'person', { VISION_SECRET_KEY: env.VISION_SECRET_KEY })
     ).rejects.toThrow('Jira is not set up on this server: VISION_JIRA_HOSTS lists no host');
+  });
+});
+
+describe('settingsJira', () => {
+  const people = (user: { jiraToken: string | null; jiraEmail: string | null } | null) =>
+    ({ user: { findUnique: jest.fn().mockResolvedValue(user) } }) as never;
+
+  it("reads the setting lists with the person's own token only", async () => {
+    const prisma = people({ jiraToken: sealed('mine'), jiraEmail: 'me@example.com' });
+    const jira = await settingsJira(prisma, 'https://jira.example.com', 'person', env);
+    expect(jira).toBeInstanceOf(JiraClient);
+    expect(JSON.stringify(jira)).toContain('mine');
+    expect(
+      await settingsJira(people({ jiraToken: null, jiraEmail: null }), 'https://jira.example.com', 'person', env)
+    ).toEqual({ problem: 'noToken' });
+  });
+
+  it('reads no Jira for an address the server does not allow', async () => {
+    const prisma = people({ jiraToken: sealed('mine'), jiraEmail: null });
+    expect(await settingsJira(prisma, 'https://evil.example.org', 'person', env)).toEqual({
+      problem: 'hostNotAllowed',
+    });
+    expect(await settingsJira(prisma, '  ', 'person', env)).toEqual({ problem: 'notSet' });
+    expect((prisma as unknown as { user: { findUnique: jest.Mock } }).user.findUnique).not.toHaveBeenCalled();
   });
 });

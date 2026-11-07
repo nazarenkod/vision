@@ -56,6 +56,86 @@ const StrayPixel: React.FunctionComponent = () => (
 // the brand half's cascade: lockup, baseline, current, words; then the change
 const DIFF_AT = 520;
 
+/*
+ * Once the cascade is over, the drawing replays a comparison on a loop: a new
+ * Current arrives, a scan line passes over both screens, the clock that ticked
+ * is outlined as variable text and let go, and the button that moved gets the
+ * difference frame. The resting state of every part is the last frame of the
+ * loop, so a screenshot (Playwright stops infinite animations) and reduced
+ * motion (the global rule plays one 1 ms iteration) both see the finished
+ * comparison. The loop has no fill: during its delay the cascade owns the parts.
+ */
+const LOOP_MS = 7000;
+const LOOP_AT = 1600;
+const loop = (name: string) =>
+  `${name} ${LOOP_MS}ms ${motion.easing} ${LOOP_AT}ms infinite`;
+// how far below its new place the button sat on the baseline
+const MOVED_BY = 36;
+
+const CLOCK_LINE = 14;
+
+/** The status bar clock: Current's minute has ticked, which is noise, not a change. */
+const Clock: React.FunctionComponent<{ current: boolean }> = ({ current }) => (
+  <Box
+    sx={{
+      position: "relative",
+      height: CLOCK_LINE,
+      overflow: "visible",
+    }}
+  >
+    <Box sx={{ height: CLOCK_LINE, overflow: "hidden" }}>
+      <Box
+        sx={{
+          fontSize: type.caption,
+          lineHeight: `${CLOCK_LINE}px`,
+          fontWeight: 600,
+          fontVariantNumeric: "tabular-nums",
+          color: tokens.surface,
+          opacity: 0.85,
+          transform: current ? `translateY(-${CLOCK_LINE}px)` : "none",
+          ...(current && {
+            "@keyframes v-auth-clock": {
+              "0%, 6%": {
+                transform: `translateY(-${CLOCK_LINE}px)`,
+                opacity: 0.85,
+              },
+              "8%": { transform: `translateY(-${CLOCK_LINE}px)`, opacity: 0 },
+              "9%": { transform: "none", opacity: 0 },
+              "11%, 14%": { transform: "none", opacity: 0.85 },
+              "18%, 100%": {
+                transform: `translateY(-${CLOCK_LINE}px)`,
+                opacity: 0.85,
+              },
+            },
+            animation: loop("v-auth-clock"),
+          }),
+        }}
+      >
+        <Box>9:41</Box>
+        {current && <Box>9:42</Box>}
+      </Box>
+    </Box>
+    {current && (
+      <Box
+        data-testid="authVariableClock"
+        sx={{
+          position: "absolute",
+          inset: "-3px -4px",
+          border: `1px dashed ${tokens.variable}`,
+          borderRadius: radius.control,
+          opacity: 0,
+          "@keyframes v-auth-variable": {
+            "0%, 17%": { opacity: 0, transform: "scale(1.15)" },
+            "21%, 32%": { opacity: 1, transform: "none" },
+            "38%, 100%": { opacity: 0, transform: "none" },
+          },
+          animation: loop("v-auth-variable"),
+        }}
+      />
+    )}
+  </Box>
+);
+
 /** A phone screen drawn from boxes: the header, rows, a total and a button. */
 const Phone: React.FunctionComponent<{
   width: number;
@@ -84,7 +164,19 @@ const Phone: React.FunctionComponent<{
         boxShadow: current ? tokens.shadowPop : "none",
       }}
     >
-      <Box sx={{ height: "11%", bgcolor: tokens.text }} />
+      <Box
+        sx={{
+          height: "11%",
+          bgcolor: tokens.text,
+          display: "flex",
+          alignItems: "flex-end",
+          px: 1.25,
+          pb: 0.5,
+          boxSizing: "border-box",
+        }}
+      >
+        <Clock current={current} />
+      </Box>
       <Box
         sx={{
           flex: 1,
@@ -126,23 +218,59 @@ const Phone: React.FunctionComponent<{
         {/* the change: the button moved up, and the difference is marked */}
         <Box
           sx={{
+            position: "relative",
             p: current ? 0.75 : 0,
             mb: current ? 4 : 0,
-            borderRadius: radius.control,
-            border: current ? `1.5px solid ${tokens.diff}` : "none",
-            bgcolor: current ? tokens.diffSoft : "transparent",
             // the difference is marked once both screens are in place
             ...(current && {
               animation: `v-grow ${motion.slow}ms ${motion.spring} both ${DIFF_AT}ms`,
+              "&::before": {
+                content: '""',
+                position: "absolute",
+                inset: 0,
+                borderRadius: radius.control,
+                border: `1.5px solid ${tokens.diff}`,
+                bgcolor: tokens.diffSoft,
+                "@keyframes v-auth-frame": {
+                  "0%, 5%": { opacity: 1, transform: "none" },
+                  "10%, 46%": { opacity: 0, transform: "scale(.9)" },
+                  "47%": {
+                    opacity: 0,
+                    transform: "scale(.9)",
+                    boxShadow: `0 0 0 0 ${tokens.diff}`,
+                    animationTimingFunction: motion.spring,
+                  },
+                  "54%": { opacity: 1, transform: "none" },
+                  "66%, 100%": {
+                    opacity: 1,
+                    transform: "none",
+                    boxShadow: `0 0 0 10px transparent`,
+                  },
+                },
+                animation: loop("v-auth-frame"),
+              },
             }),
           }}
         >
           <Box
+            data-testid={current ? "authMovedButton" : undefined}
             sx={{
+              position: "relative",
               height: 20,
               mx: current ? "15%" : 0,
               borderRadius: radius.control,
               bgcolor: tokens.brand,
+              ...(current && {
+                "@keyframes v-auth-move": {
+                  "0%, 6%": { transform: "none" },
+                  "12%, 42%": {
+                    transform: `translateY(${MOVED_BY}px) scaleX(1.4)`,
+                    animationTimingFunction: motion.spring,
+                  },
+                  "50%, 100%": { transform: "none" },
+                },
+                animation: loop("v-auth-move"),
+              }),
             }}
           />
         </Box>
@@ -150,6 +278,51 @@ const Phone: React.FunctionComponent<{
     </Box>
   );
 };
+
+/** The line that compares the two screens, top to bottom, once per loop. */
+const ScanLine: React.FunctionComponent = () => (
+  <Box
+    data-testid="authScanLine"
+    sx={{
+      position: "absolute",
+      left: -16,
+      right: -16,
+      top: 0,
+      height: 2,
+      opacity: 0,
+      pointerEvents: "none",
+      borderRadius: radius.pill,
+      background: `linear-gradient(90deg, transparent, ${tokens.brandSoft} 20%, rgba(255, 255, 255, 0.95) 50%, ${tokens.brandSoft} 80%, transparent)`,
+      boxShadow: `0 0 14px 2px color-mix(in srgb, ${tokens.brand} 70%, transparent)`,
+      // the light it leaves behind on the part already compared
+      "&::before": {
+        content: '""',
+        position: "absolute",
+        left: 0,
+        right: 0,
+        bottom: 2,
+        height: 48,
+        background: `linear-gradient(to top, color-mix(in srgb, ${tokens.brand} 22%, transparent), transparent)`,
+      },
+      "@keyframes v-auth-scan": {
+        "0%, 14%": { top: "0%", opacity: 0 },
+        "16%": { top: "0%", opacity: 1 },
+        "46%": { top: "100%", opacity: 1 },
+        "50%, 100%": { top: "100%", opacity: 0 },
+      },
+      animation: `v-auth-scan ${LOOP_MS}ms linear ${LOOP_AT}ms infinite`,
+    }}
+  />
+);
+
+// the two screens drift a little, out of step, so the drawing feels alive
+const floating = (delay: number) => ({
+  "@keyframes v-auth-float": {
+    from: { transform: "none" },
+    to: { transform: "translateY(-5px)" },
+  },
+  animation: `v-auth-float ${LOOP_MS / 2}ms ease-in-out ${LOOP_AT + delay}ms infinite alternate`,
+});
 
 const BrandPanel: React.FunctionComponent = () => {
   const { t } = useT();
@@ -190,7 +363,7 @@ const BrandPanel: React.FunctionComponent = () => {
           "& [data-testid='wordmark']": { color: "common.white" },
         }}
       >
-        <BrandLockup markSize={36} wordSize={type.section} />
+        <BrandLockup markSize={50} wordSize={type.page} gap={1.4} />
       </Box>
       {/* the product's idea, drawn: the baseline and the current screen with its change */}
       <Box
@@ -203,14 +376,28 @@ const BrandPanel: React.FunctionComponent = () => {
           justifyContent: "center",
         }}
       >
-        {/* the cascade moves the wrapper: its transform would undo the tilt */}
-        <Box {...staggered(2)}>
-          <Box sx={{ opacity: 0.85, transform: "rotate(-4deg)" }}>
-            <Phone width={150} />
+        <Box
+          sx={{
+            position: "relative",
+            display: "flex",
+            gap: 3,
+            alignItems: "flex-end",
+          }}
+        >
+          {/* the cascade moves the wrapper: its transform would undo the tilt */}
+          <Box {...staggered(2)}>
+            <Box sx={floating(0)}>
+              <Box sx={{ opacity: 0.85, transform: "rotate(-4deg)" }}>
+                <Phone width={150} />
+              </Box>
+            </Box>
           </Box>
-        </Box>
-        <Box {...staggered(4)}>
-          <Phone width={170} current />
+          <Box {...staggered(4)}>
+            <Box sx={floating(LOOP_MS / 4)}>
+              <Phone width={170} current />
+            </Box>
+          </Box>
+          <ScanLine />
         </Box>
       </Box>
       <Box
@@ -234,7 +421,13 @@ const BrandPanel: React.FunctionComponent = () => {
           {t("brand.tagline")}
         </Typography>
         <Typography
-          sx={{ fontSize: type.body, color: ON_PANEL, maxWidth: 420 }}
+          sx={{
+            fontSize: type.body,
+            color: ON_PANEL,
+            maxWidth: 420,
+            // The line break in the text starts the second sentence on its own line.
+            whiteSpace: "pre-line",
+          }}
         >
           {t("auth.brandLine")}
         </Typography>

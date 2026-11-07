@@ -248,6 +248,24 @@ describe('UiTreeService, compare only', () => {
     expect(compared.changes.length).toBeGreaterThan(0);
   });
 
+  it('shows why a stored rule with a pattern Vision no longer runs finds nothing', async () => {
+    const rules = [
+      { id: 'old', selector: 'text:/(Pay)\\1?/', action: 'ignore' },
+      { id: 'look', selector: 'id:tv_fee', action: 'variable', parts: [{ pattern: '(?<=\\s)\\d+' }] },
+      { id: 'fine', selector: 'text:/Pay/', action: 'ignore' },
+    ];
+    const settings = JSON.stringify({ checkRules: { '["Payment",""]': rules } });
+    const structure = await compareService({ 'here.json.gz': tree, 'base.json.gz': tree }, settings).structure(
+      run({ baselineUiTreeName: 'base.json.gz' })
+    );
+    const byId = Object.fromEntries(structure.rules.map((rule) => [rule.id, rule]));
+
+    expect(byId.old).toMatchObject({ problem: 'pattern', matches: 0 });
+    expect(byId.look).toMatchObject({ problem: 'pattern' });
+    expect(byId.fine.problem).toBeUndefined();
+    expect(byId.fine.matches).toBeGreaterThan(0);
+  });
+
   it('offers to ignore the element under a noise hint', async () => {
     const instance = compareService({ 'here.json.gz': tree }, JSON.stringify({}));
     jest.spyOn(instance, 'comparisonInputs').mockResolvedValue({

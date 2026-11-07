@@ -28,6 +28,7 @@ import {
   parseUiTreeSettings,
   resolveRules,
   ResolvedRules,
+  rulePatternProblem,
   UiTreeSettings,
   VariableCheck,
 } from './comparison-inputs';
@@ -87,6 +88,8 @@ export interface StructureInfo {
       found: { current: Rect[]; baseline: Rect[] };
       // a variable-text rule: how its texts on the snapshot fared (spec 033)
       check?: VariableCheck;
+      // its pattern holds what Vision does not run (051)
+      problem?: 'pattern';
     }
   >;
   // variable texts that did not hold, worst first in the Changes tab (REQ-033-34)
@@ -481,6 +484,8 @@ export class UiTreeService {
         matches: inputs.rules.matches[rule.id] ?? 0,
         found: inputs.rules.found[rule.id] ?? { current: [], baseline: [] },
         ...(inputs.rules.variable[rule.id] ? { check: inputs.rules.variable[rule.id] } : {}),
+        // saved before Vision stopped running back-references and look-around: finds nothing (REQ-051-12)
+        ...(rulePatternProblem(rule) ? { problem: 'pattern' as const } : {}),
       }));
     const elements = tree ? pickableElements(tree) : [];
     const nodesByKey = new Map((tree?.nodes ?? []).map((node) => [node.key, node]));

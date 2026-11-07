@@ -311,13 +311,15 @@ export const WhatsCompared: React.FunctionComponent<WhatsComparedProps> = ({
             ? "variable"
             : "ignore";
     const reason =
-      item.effect === "nothing-found"
-        ? t("compared.reason.nothingFound")
-        : item.effect === "no-tree"
-          ? t("compared.reason.noTree")
-          : item.effect === "overridden"
-            ? t("compared.variable.overridden")
-            : null;
+      item.rule?.problem === "pattern"
+        ? t("compared.reason.pattern")
+        : item.effect === "nothing-found"
+          ? t("compared.reason.nothingFound")
+          : item.effect === "no-tree"
+            ? t("compared.reason.noTree")
+            : item.effect === "overridden"
+              ? t("compared.variable.overridden")
+              : null;
     const opens = item.kind === "area" || item.kind === "testArea";
     const open = () => {
       if (item.kind === "area" && item.area) onOpenArea(String(item.area.id));

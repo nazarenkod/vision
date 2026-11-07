@@ -1,3 +1,5 @@
+import { compileLinear, isLinearRegex, LinearRegex } from './linear-regex';
+
 /**
  * A text with places that change between runs (spec 033): the fixed parts must
  * match literally, each place its pattern. The patterns come from the review
@@ -23,13 +25,16 @@ const escape = (text: string) => text.replace(/[.*+?^${}()|[\]\\/]/g, '\\$&');
 // a fixed part keeps the spaces at its ends: they sit between it and a place
 const literal = (text: string) => escape(spaces(text)).replace(/ /g, ' +');
 
-function compile(source: string): RegExp | null {
-  try {
-    return new RegExp(`^ *${source} *$`, 'u');
-  } catch {
-    return null;
-  }
+// in linear time whatever the pattern (051): a place's pattern comes from the review screen
+function compile(source: string): LinearRegex | null {
+  const pattern = compileLinear(`^ *${source} *$`, 'u');
+  return isLinearRegex(pattern) ? pattern : null;
 }
+
+export const unrunnablePattern = (pattern: string) => {
+  const problem = compileLinear(`^ *(?:${pattern}) *$`, 'u');
+  return problem === 'backreference' || problem === 'lookaround';
+};
 
 /** Why parts cannot be saved as a check, or null when they can. */
 export function partsProblem(parts: unknown): string | null {
@@ -42,6 +47,9 @@ export function partsProblem(parts: unknown): string | null {
       if (typeof part.pattern !== 'string' || !part.pattern || part.pattern.length > MAX_PATTERN) {
         return `A place needs a pattern of 1 to ${MAX_PATTERN} characters`;
       }
+      if (unrunnablePattern(part.pattern)) {
+        return `The pattern ${part.pattern} uses a back-reference or look-around, which Vision does not run`;
+      }
       if (!compile(part.pattern)) return `The pattern ${part.pattern} does not parse`;
       places++;
     } else if (typeof (part as { text: unknown }).text !== 'string') {
@@ -52,12 +60,12 @@ export function partsProblem(parts: unknown): string | null {
 }
 
 /** The whole check as one expression: fixed parts literally, places by their patterns. */
-export function partsRegex(parts: TextPart[]): RegExp | null {
+export function partsRegex(parts: TextPart[]): LinearRegex | null {
   return compile(parts.map((part) => (isPlace(part) ? `(?:${part.pattern})` : literal(part.text))).join(''));
 }
 
 /** The same check with any value in the places: tells a changed fixed text from a wrong value. */
-function skeleton(parts: TextPart[]): RegExp | null {
+function skeleton(parts: TextPart[]): LinearRegex | null {
   return compile(parts.map((part) => (isPlace(part) ? '.*?' : literal(part.text))).join(''));
 }
 

@@ -2,7 +2,8 @@ import { Rect, UiNode, UiTree } from './ui-tree.types';
 import { A11yNorms, DEFAULT_A11Y_NORMS, parseA11yNorms } from '../a11y/a11y-norms';
 import { AllowedDevice, parseAllowedDevices } from '../projects/allowed-devices';
 import { evaluateXpath, isXpathSelector, parseXpath, XPATH_PREFIX, XpathProblem, xpathProblem } from './xpath-selector';
-import { checkVariableText, TextPart, VariableTextReason } from './variable-text';
+import { checkVariableText, TextPart, unrunnablePattern, VariableTextReason } from './variable-text';
+import { compileLinear, isLinearRegex, LinearRegex } from './linear-regex';
 
 // compare: only the elements the check's compare rules match are compared (spec 015)
 // variable: pixels left out, the text checked against parts with patterns (spec 033)
@@ -101,7 +102,8 @@ export function parseUiTreeSettings(value: string | null | undefined): UiTreeSet
   }
 }
 
-type Selector = { by: 'id'; value: string } | { by: 'class'; value: string } | { by: 'text'; value: string | RegExp };
+type Selector =
+  { by: 'id'; value: string } | { by: 'class'; value: string } | { by: 'text'; value: string | LinearRegex };
 
 export function parseSelector(selector: string): Selector | null {
   const match = /^(id|class|text):(.+)$/s.exec(selector.trim());
@@ -110,13 +112,11 @@ export function parseSelector(selector: string): Selector | null {
   if (by === 'text') {
     const regex = /^\/(.+)\/([a-z]*)$/.exec(raw);
     if (regex) {
-      try {
-        // u lets a pattern name letters of any alphabet (\p{L}), as variable texts do (spec 033)
-        const flags = ['i', 'u'].filter((flag) => regex[2].includes(flag)).join('');
-        return { by: 'text', value: new RegExp(regex[1], flags) };
-      } catch {
-        return null;
-      }
+      // u lets a pattern name letters of any alphabet (\p{L}), as variable texts do (spec 033);
+      // the engine runs in linear time whatever the pattern (051)
+      const flags = ['i', 'u'].filter((flag) => regex[2].includes(flag)).join('');
+      const pattern = compileLinear(regex[1], flags);
+      return isLinearRegex(pattern) ? { by: 'text', value: pattern } : null;
     }
     return { by: 'text', value: raw };
   }
@@ -138,7 +138,7 @@ export function matchesSelector(node: UiNode, selector: Selector): boolean {
     case 'text': {
       const text = (node.text || node.label).trim();
       if (!text) return false;
-      return selector.value instanceof RegExp ? selector.value.test(text) : text === selector.value;
+      return typeof selector.value === 'string' ? text === selector.value : selector.value.test(text);
     }
   }
 }
@@ -158,9 +158,30 @@ export function findBySelector(tree: UiTree, selector: string): UiNode[] | null 
   return parsed ? tree.nodes.filter((node) => shown(node) && matchesSelector(node, parsed)) : null;
 }
 
-/** Why a selector cannot be saved: no known prefix, or what its XPath may not do (REQ-027-31). */
-export function selectorProblem(selector: string): 'prefix' | XpathProblem | null {
+/** A text:/…/ pattern Vision does not run: back-references and look-around (REQ-051-10). */
+function textPatternProblem(selector: string): boolean {
+  const regex = /^text:\/(.+)\/([a-z]*)$/s.exec(selector.trim());
+  if (!regex) return false;
+  const flags = ['i', 'u'].filter((flag) => regex[2].includes(flag)).join('');
+  const problem = compileLinear(regex[1], flags);
+  return problem === 'backreference' || problem === 'lookaround';
+}
+
+/** Whether a stored rule holds a pattern Vision does not run, in its selector or its parts (051). */
+export function rulePatternProblem(rule: Pick<ElementRule, 'selector' | 'parts'>): boolean {
+  return (
+    textPatternProblem(rule.selector) ||
+    (rule.parts ?? []).some((part) => 'pattern' in part && unrunnablePattern(part.pattern))
+  );
+}
+
+/**
+ * Why a selector cannot be saved: no known prefix, what its XPath may not do (REQ-027-31), or
+ * a pattern Vision does not run (REQ-051-10).
+ */
+export function selectorProblem(selector: string): 'prefix' | 'pattern' | XpathProblem | null {
   if (isXpathSelector(selector)) return xpathProblem(selector);
+  if (textPatternProblem(selector)) return 'pattern';
   return parseSelector(selector) ? null : 'prefix';
 }
 

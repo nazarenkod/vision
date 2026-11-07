@@ -115,6 +115,44 @@ describe('LdapUsersService match from ldap', () => {
     await service.login({ email: 'exists@example.com', password: 'password' });
     expect(prismaUserCreateMock).not.toHaveBeenCalled();
   });
+
+  it.each(['', '   '])('turns away a sign-in with the password %p before asking the directory', async (password) => {
+    const bind = new LdapClient({ url: '' }).bind as jest.Mock;
+    bind.mockClear();
+    await expect(service.login({ email: 'exists@example.com', password })).rejects.toThrow(
+      'Invalid email or password.'
+    );
+    expect(bind).not.toHaveBeenCalled();
+  });
+
+  it("does not let anyone take a colleague's email for their account", async () => {
+    jest.spyOn(prismaService.user, 'findUnique').mockResolvedValue({ email: 'mallory@example.com' } as never);
+    const update = jest.spyOn(prismaService.user, 'update');
+
+    await expect(
+      service.update('mallory', { email: 'exists@example.com', firstName: 'M', lastName: 'M' })
+    ).rejects.toThrow('cannot be changed here');
+    expect(update).not.toHaveBeenCalled();
+  });
+
+  it('keeps the email and takes the names from the directory', async () => {
+    jest.spyOn(prismaService.user, 'findUnique').mockResolvedValue({ email: 'exists@example.com' } as never);
+    const update = jest.spyOn(prismaService.user, 'update').mockResolvedValue(user);
+
+    await service.update('1', { email: 'Exists@example.com', firstName: 'Typed', lastName: 'Name' });
+
+    expect(update).toHaveBeenCalledWith({ where: { id: '1' }, data: { firstName: 'first', lastName: 'last' } });
+  });
+
+  it('lets a local account beside the directory rename itself, but not change its email', async () => {
+    jest.spyOn(prismaService.user, 'findUnique').mockResolvedValue({ email: 'local@example.com' } as never);
+    const update = jest.spyOn(prismaService.user, 'update').mockResolvedValue(user);
+
+    await service.update('2', { email: 'local@example.com', firstName: 'Ann', lastName: 'Lee' });
+
+    expect(update).toHaveBeenCalledWith({ where: { id: '2' }, data: { firstName: 'Ann', lastName: 'Lee' } });
+    expect(await service.isInDirectory('local@example.com')).toBe(false);
+  });
 });
 
 describe('LdapUsersService with no results from ldap', () => {

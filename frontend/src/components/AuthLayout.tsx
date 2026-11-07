@@ -234,7 +234,13 @@ const BrandPanel: React.FunctionComponent = () => {
           {t("brand.tagline")}
         </Typography>
         <Typography
-          sx={{ fontSize: type.body, color: ON_PANEL, maxWidth: 420 }}
+          sx={{
+            fontSize: type.body,
+            color: ON_PANEL,
+            maxWidth: 420,
+            // The line break in the text starts the second sentence on its own line.
+            whiteSpace: "pre-line",
+          }}
         >
           {t("auth.brandLine")}
         </Typography>

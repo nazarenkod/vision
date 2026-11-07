@@ -138,8 +138,7 @@ export const en = {
   "section.access": "Access",
   "section.danger": "Danger zone",
   "section.devices": "Devices",
-  "section.devicesIntro":
-    "The SDK rejects screens from devices not in the list, and the test fails. This way baselines are made only on the devices CI runs on. Manual checks from the CLI are not held to the list.",
+  "section.devicesIntro": "Screens from devices not in the list are rejected.",
   "section.comparisonIntro":
     "How the current screen is compared with its baseline. The method's own settings are under the cards.",
   "section.mobileIntro":

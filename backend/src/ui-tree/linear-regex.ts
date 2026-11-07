@@ -12,7 +12,9 @@ import { RE2JS } from 're2js';
  * back-references and look-around.
  */
 
-export type PatternProblem = 'backreference' | 'lookaround' | 'syntax';
+// syntax: JavaScript does not take it either; unsupported: JavaScript takes it, RE2 cannot run it
+// as it means (a repeat over 1000, a property RE2 does not know, dotAll inside a group)
+export type PatternProblem = 'backreference' | 'lookaround' | 'unsupported' | 'syntax';
 
 export interface LinearRegex {
   readonly source: string;
@@ -45,7 +47,8 @@ const ANY = '\\x{0}-\\x{10ffff}';
 // long names of Unicode properties JavaScript takes that RE2 spells short
 const PROPERTY_NAMES: Record<string, string> = {
   Letter: 'L',
-  Cased_Letter: 'L',
+  LC: 'Lu}\\p{Ll}\\p{Lt',
+  Cased_Letter: 'Lu}\\p{Ll}\\p{Lt',
   Uppercase_Letter: 'Lu',
   Lowercase_Letter: 'Ll',
   Titlecase_Letter: 'Lt',
@@ -67,6 +70,37 @@ const PROPERTY_NAMES: Record<string, string> = {
   Other: 'C',
   Control: 'Cc',
   cntrl: 'Cc',
+  Format: 'Cf',
+  Unassigned: 'Cn',
+  Private_Use: 'Co',
+  Surrogate: 'Cs',
+  Spacing_Mark: 'Mc',
+  Enclosing_Mark: 'Me',
+  Nonspacing_Mark: 'Mn',
+  Connector_Punctuation: 'Pc',
+  Dash_Punctuation: 'Pd',
+  Close_Punctuation: 'Pe',
+  Final_Punctuation: 'Pf',
+  Initial_Punctuation: 'Pi',
+  Other_Punctuation: 'Po',
+  Open_Punctuation: 'Ps',
+  Modifier_Symbol: 'Sk',
+  Other_Symbol: 'So',
+  Line_Separator: 'Zl',
+  Paragraph_Separator: 'Zp',
+  // short script codes JavaScript takes after Script=
+  Arab: 'Arabic',
+  Armn: 'Armenian',
+  Cyrl: 'Cyrillic',
+  Geor: 'Georgian',
+  Grek: 'Greek',
+  Hani: 'Han',
+  Hebr: 'Hebrew',
+  Hira: 'Hiragana',
+  Kana: 'Katakana',
+  Latn: 'Latin',
+  Thai: 'Thai',
+  Zyyy: 'Common',
 };
 
 const hex = (code: number) => `\\x{${code.toString(16)}}`;
@@ -98,6 +132,9 @@ export function translate(source: string, unicode: boolean): string {
   let inClass = false;
   let classStart = false;
   const peek = (offset = 0) => source[at + offset];
+  // the last thing in a class was a set (\s, \d, \p{…}): a - after it is a dash, not a range
+  let afterSet = false;
+  const SET_ESCAPE = /^\\[sSdDwWpP]/;
   const literal = (char: string) => (!unicode && isHalf(char.charCodeAt(0)) ? hex(asHalf(char.charCodeAt(0))) : char);
 
   // an escape; `inClass` decides what \b and \s turn into
@@ -105,6 +142,7 @@ export function translate(source: string, unicode: boolean): string {
     const next = source[at + 1];
     if (next === undefined) throw new Problem('syntax');
     at += 2;
+    afterSet = (inClass && /[sSdDwW]/.test(next)) || (inClass && unicode && /[pP]/.test(next));
     if (/[1-9]/.test(next)) {
       // in a class without u, \1 is the character 1 in octal and \8 the digit itself
       if (inClass && !unicode) return /[1-7]/.test(next) ? hex(Number(next)) : next;
@@ -189,7 +227,14 @@ export function translate(source: string, unicode: boolean): string {
           }
           name = value;
         }
-        return `\\${next}{${PROPERTY_NAMES[name] ?? name}}`;
+        const property = `\\${next}{${PROPERTY_NAMES[name] ?? name}}`;
+        // a property RE2 spells as several: a class of them, or a list inside one
+        if (!property.includes('}\\p{')) return property;
+        if (next === 'P') {
+          if (inClass) throw new Problem('unsupported');
+          return `[^${property.replace('\\P{', '\\p{')}]`;
+        }
+        return inClass ? property : `[${property}]`;
       }
       default:
         // an identity escape: a letter or digit stands for itself, punctuation stays escaped
@@ -218,10 +263,14 @@ export function translate(source: string, unicode: boolean): string {
         inClass = false;
       } else if (char === '[') {
         out += '\\[';
+      } else if (char === '-' && (afterSet || SET_ESCAPE.test(source.slice(at + 1)))) {
+        // JavaScript reads [\s-x] and [x-\s] as three things; RE2 would read a range
+        out += '\\-';
       } else {
         out += literal(char);
       }
       classStart = false;
+      afterSet = false;
       at++;
       continue;
     }
@@ -244,6 +293,9 @@ export function translate(source: string, unicode: boolean): string {
     if (char === '(' && peek(1) === '?') {
       const head = source.slice(at, at + 4);
       if (/^\(\?[=!]/.test(head) || /^\(\?<[=!]/.test(head)) throw new Problem('lookaround');
+      // dotAll inside a group changes what . means there, which the translation of . does not follow
+      const modifiers = /^\(\?([a-z]*)(?:-[a-z]*)?:/.exec(source.slice(at));
+      if (modifiers?.[1].includes('s')) throw new Problem('unsupported');
       if (/^\(\?<[A-Za-z_$]/.test(head)) {
         out += '(?P<';
         at += 3;
@@ -287,15 +339,18 @@ export function compileLinear(source: string, flags = ''): LinearRegex | Pattern
   const known = compiled.get(key);
   if (known) return known;
   let result: LinearRegex | PatternProblem;
+  const unicode = flags.includes('u');
   try {
     // JavaScript itself must take it first: what it refuses, a rule never held
     new RegExp(source, flags.replace(/[^iu]/g, ''));
-    const pattern = RE2JS.compile(
-      translate(source, flags.includes('u')),
-      flags.includes('i') ? RE2JS.CASE_INSENSITIVE : 0
-    );
-    const unicode = flags.includes('u');
-    result = { source, test: (text: string) => pattern.matcher(unicode ? text : halvesApart(text)).find() };
+    const translated = translate(source, unicode);
+    try {
+      const pattern = RE2JS.compile(translated, flags.includes('i') ? RE2JS.CASE_INSENSITIVE : 0);
+      result = { source, test: (text: string) => pattern.matcher(unicode ? text : halvesApart(text)).find() };
+    } catch {
+      // JavaScript takes it and RE2 cannot: said so, never a rule that silently stops working
+      result = 'unsupported';
+    }
   } catch (error) {
     result = error instanceof Problem ? error.problem : 'syntax';
   }

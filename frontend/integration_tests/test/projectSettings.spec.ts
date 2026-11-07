@@ -801,6 +801,27 @@ test("keeps the saved Jira types and offers a retry when Jira fails", async ({
   await expect(page.getByTestId("jiraIssueType-select")).toHaveText("Defect");
 });
 
+test("names where Jira redirected, and sends no token there", async ({
+  page,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  authUser,
+}) => {
+  await mockGetJiraTypes(page, project.id, {
+    problem: "redirected",
+    location: "https://jira.bank.example/jira/rest/api/2/issuetype",
+  });
+  await open(page, { jiraIssueType: "Defect" });
+  await expect(page.getByTestId("jiraTypesRedirected")).toContainText(
+    "sends Vision on to https://jira.bank.example/jira/rest/api/2/issuetype",
+  );
+  await expect(page.getByTestId("jiraTypesRedirected")).toContainText(
+    "Vision does not send your token there",
+  );
+  // the saved type stays, as when Jira fails
+  await expect(page.locator("input#jiraIssueType")).toHaveValue("Defect");
+  await expect(page.getByTestId("jiraTypesFailed")).toHaveCount(0);
+});
+
 test("Jira settings have no shared token or email", async ({
   page,
   // eslint-disable-next-line @typescript-eslint/no-unused-vars

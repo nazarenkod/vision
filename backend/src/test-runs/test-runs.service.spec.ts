@@ -716,7 +716,7 @@ describe('TestRunsService', () => {
       for (const selector of ['text:/(a)\\1/', 'text:/Pay(?= now)/']) {
         await expect(
           service.addElementRule('run', { scope: 'screen', selector, action: 'ignore' } as never)
-        ).rejects.toThrow('uses a back-reference or look-around, which Vision does not run');
+        ).rejects.toThrow('uses a back-reference, look-around or another part Vision does not run');
       }
       await expect(
         service.addElementRule('run', {
@@ -725,7 +725,7 @@ describe('TestRunsService', () => {
           action: 'variable',
           parts: [{ text: 'Fee ' }, { pattern: '(?<=\\s)\\d+' }],
         } as never)
-      ).rejects.toThrow('uses a back-reference or look-around, which Vision does not run');
+      ).rejects.toThrow('uses a back-reference, look-around or another part Vision does not run');
       expect(service.findOne).not.toHaveBeenCalled();
     });
   });

@@ -46,7 +46,8 @@ const isPng = (bytes: Buffer) =>
  * anything. A PNG has one IHDR, but pngjs takes the last it meets: a small first one used to
  * hide a huge second one from the limit (VIS-SEC-045). Stops at IEND, as pngjs does.
  */
-function pngChunks(bytes: Buffer): { headers: PngHeader[]; data: Buffer[] } {
+// the image data only when asked: a file of millions of tiny chunks must not cost a list of them
+function pngChunks(bytes: Buffer, withData = false): { headers: PngHeader[]; data: Buffer[] } {
   const headers: PngHeader[] = [];
   const data: Buffer[] = [];
   for (let at = 8; at + 8 <= bytes.length;) {
@@ -62,7 +63,7 @@ function pngChunks(bytes: Buffer): { headers: PngHeader[]; data: Buffer[] } {
         colorType: bytes[start + 9],
         interlace: bytes[start + 12],
       });
-    } else if (type === 'IDAT') {
+    } else if (type === 'IDAT' && withData) {
       data.push(bytes.subarray(start, start + length));
     } else if (type === 'IEND') {
       break;
@@ -119,9 +120,10 @@ function interlacedSize({ width, height, depth, colorType }: PngHeader): number 
  * refused here before any of it is kept (VIS-SEC-045).
  */
 function checkInterlacedData(bytes: Buffer): void {
-  const { headers, data } = pngChunks(bytes);
+  const { headers } = pngChunks(bytes);
   const header = headers[headers.length - 1];
   if (!header?.interlace) return;
+  const { data } = pngChunks(bytes, true);
   try {
     inflateSync(Buffer.concat(data), { maxOutputLength: Math.max(1, interlacedSize(header)) });
   } catch (error) {
@@ -148,6 +150,8 @@ export function screenshotProblem(
   const size = readPngSize(buffer);
   if (!size || !size.width || !size.height) return { status: 400, message: 'The screenshot is not a PNG image' };
   const largest = largestHeader(asBuffer(buffer));
+  // a header cut short or claiming more than the file holds: not a PNG anyone can read
+  if (!largest) return { status: 400, message: 'The screenshot is not a PNG image' };
   if (largest.width * largest.height > limits.maxPixels) {
     return {
       status: 413,

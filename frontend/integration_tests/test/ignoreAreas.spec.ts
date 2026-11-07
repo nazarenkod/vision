@@ -304,3 +304,56 @@ test("puts the Areas menu away on a press beside it, not while drawing", async (
   await drag(page, toPage(500, 300), toPage(700, 450));
   await expect(menu).toBeVisible();
 });
+
+// A screen takes at most 20 ignore areas (051): more are not sent, and none drawn is lost
+const areasOf = (count: number): IgnoreArea[] =>
+  Array.from({ length: count }, (_, i) => ({
+    id: String(i + 1),
+    x: 20 + (i % 10) * 120,
+    y: 20 + Math.floor(i / 10) * 200,
+    width: 60,
+    height: 60,
+  }));
+
+test("saves 20 ignore areas as before", async ({ openProjectPage, page }) => {
+  const areas = areasOf(20);
+  const toPage = await openRunWith(page, openProjectPage, areas.slice(0, 19));
+  if (!(await page.getByTestId("areasMenu").isVisible())) {
+    await page.getByTestId("areasButton").click();
+  }
+  await page.getByTestId("areaDraw").click();
+  // at the left of the screenshot: with many areas their list covers its right side
+  await drag(page, toPage(100, 600), toPage(160, 660));
+
+  const saved = await saveIgnoreAreas(page);
+  expect(saved).toHaveLength(20);
+});
+
+test("names the limit and keeps the areas when there are more than 20", async ({
+  openProjectPage,
+  page,
+}) => {
+  // saved before the limit: 21 areas on the screen, and one more drawn now
+  const toPage = await openRunWith(page, openProjectPage, areasOf(21));
+  let sent = 0;
+  await page.route(`${API_URL}/test-runs/ignoreAreas/update`, (route) => {
+    sent++;
+    return route.fulfill({ status: 200, body: "{}" });
+  });
+  if (!(await page.getByTestId("areasMenu").isVisible())) {
+    await page.getByTestId("areasButton").click();
+  }
+  await page.getByTestId("areaDraw").click();
+  // at the left of the screenshot: with many areas their list covers its right side
+  await drag(page, toPage(100, 600), toPage(160, 660));
+  await page.getByTestId("areasSave").click();
+
+  await expect(
+    page.getByText(
+      "A screen takes at most 20 ignore areas: remove 2 to save them.",
+    ),
+  ).toBeVisible();
+  expect(sent).toBe(0);
+  // nothing drawn is lost: the save is still there, with the changes unsaved
+  await expect(page.getByTestId("areasSave")).toBeEnabled();
+});

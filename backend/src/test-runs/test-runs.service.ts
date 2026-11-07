@@ -539,7 +539,8 @@ export class TestRunsService {
     if (problem === 'prefix') throw new BadRequestException('Selector must start with id:, class:, text: or xpath:');
     if (problem === 'pattern') {
       throw new BadRequestException(
-        'This pattern uses a back-reference or look-around, which Vision does not run: rewrite it without them'
+        'This pattern uses a back-reference, look-around or another part Vision does not run ' +
+          '(a repeat over 1000, a Unicode property it does not know): rewrite it without them'
       );
     }
     // the rule form shows the reason in the person's language; this is for the API

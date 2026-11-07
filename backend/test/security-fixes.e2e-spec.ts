@@ -330,7 +330,10 @@ describe('Fixes of the 2026-11-07 audit (e2e)', () => {
       const editor = await user('editor');
       const team = await project({}, [editor]);
       const tree = androidTree(
-        textView('Pay', 0) + textView('a'.repeat(30) + '!', 200) + textView('1\u00a0250,00', 400)
+        textView('Pay', 0) +
+          textView('a'.repeat(30) + '!', 200) +
+          textView('1\u00a0250,00', 400) +
+          textView('+380 (44) 123-45-67', 600)
       );
       const run = await upload(
         editor.apiKey,
@@ -350,11 +353,15 @@ describe('Fixes of the 2026-11-07 audit (e2e)', () => {
         });
 
       await rule('text:/^Pay$/').expect(201);
+      // a dash after a set in a class, as phone patterns have it (found in review)
+      await rule('text:/^\\+?[\\d\\s-()]+$/').expect(201);
       await rule('text:/^\\d{1,3}(?:\\s\\d{3})*,\\d{2}$/u').expect(201);
       const started = Date.now();
       await rule('text:/(a+)+$/').expect(201);
       expect(Date.now() - started).toBeLessThan(2000);
-      expect((await rule('text:/(a)\\1/').expect(400)).body.message).toContain('back-reference or look-around');
+      expect((await rule('text:/(a)\\1/').expect(400)).body.message).toContain(
+        'back-reference, look-around or another part'
+      );
       await rule('text:/Pay(?= now)/').expect(400);
 
       const structure = await requestWithAuth(app, 'get', `/test-runs/${run.body.id}/structure`, editor.token).expect(
@@ -364,6 +371,7 @@ describe('Fixes of the 2026-11-07 audit (e2e)', () => {
         structure.body.rules.map((saved: { selector: string; matches: number }) => [saved.selector, saved.matches])
       );
       expect(matches['text:/^Pay$/']).toBe(1);
+      expect(matches['text:/^\\+?[\\d\\s-()]+$/']).toBe(1);
       // the amount with a no-break space as an app prints it
       expect(matches['text:/^\\d{1,3}(?:\\s\\d{3})*,\\d{2}$/u']).toBe(1);
       // it does not hold on a text ending in "!", as RegExp says too, but it no longer takes seconds

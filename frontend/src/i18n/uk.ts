@@ -1292,7 +1292,7 @@ export const uk: Messages = {
   "panel.matchCount": "{baseline} на еталоні · {current} на поточному",
   "panel.selectorProblem.prefix": "Почніть з id:, class:, text: або xpath:",
   "panel.selectorProblem.pattern":
-    "Vision не виконує у виразі зворотні посилання (\\1) і перевірки вперед чи назад ((?=…), (?<=…))",
+    "Vision не виконує у виразі зворотні посилання (\\1), перевірки вперед чи назад ((?=…), (?<=…)) і повтори понад 1000",
   "panel.selectorProblem.syntax": "Цей XPath не розбирається",
   "panel.selectorProblem.anchor":
     "Почніть з одного стабільного елемента: //*[@resource-id='…'] або //*[@text='…']",
@@ -1419,7 +1419,7 @@ export const uk: Messages = {
     "Вони нічого не знайшли ні на поточному, ні в еталоні.",
   "compared.reason.nothingFound": "нічого не знайдено",
   "compared.reason.pattern":
-    "у виразі є зворотне посилання чи перевірка вперед або назад, яких Vision не виконує",
+    "у виразі є зворотне посилання, перевірка вперед чи назад або інша частина, якої Vision не виконує",
   "compared.reason.noTree": "немає UI-дерева",
   "compared.source.screen": "цей екран",
   "compared.source.project": "усі екрани",

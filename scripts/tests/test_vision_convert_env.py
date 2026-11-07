@@ -65,10 +65,14 @@ class ConvertEnvTest(unittest.TestCase):
 
     def test_replaces_a_secret_key_the_api_would_refuse(self):
         # under 32 characters or an example: the API does not start with it (051)
-        for weak in ["kept-key", "change-me-to-another-long-random-string", " " + "s" * 31 + " "]:
+        for weak in ["kept-key", "change-me-to-another-long-random-string", " " + "s" * 31 + " ", '"' + "q" * 31 + '"', "'change-me'"]:
             text, changes = convert.convert(f"VISION_SECRET_KEY={weak}\n", None, make_secret=lambda: "m" * 43)
             self.assertEqual(values(text)["VISION_SECRET_KEY"], "m" * 43)
             self.assertTrue(any(change[0] == "VISION_SECRET_KEY" for change in changes))
+        # a long key in quotes is kept as it is
+        quoted = '"' + "k" * 43 + '"'
+        text, _ = convert.convert(f"VISION_SECRET_KEY={quoted}\n", None, make_secret=lambda: "m" * 43)
+        self.assertEqual(values(text)["VISION_SECRET_KEY"], quoted)
 
     def test_writes_only_after_yes_and_keeps_the_old_file(self):
         with tempfile.TemporaryDirectory() as folder:

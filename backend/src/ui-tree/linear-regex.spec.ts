@@ -136,6 +136,80 @@ describe('patterns on an engine with linear time (051)', () => {
     expect(compared).toBeGreaterThan(50_000);
   });
 
+  // found in review: a dash after a set in a class is a dash in JavaScript, a range to RE2
+  it('reads a dash next to a set in a class as JavaScript does', () => {
+    const patterns: Array<[string, string]> = [
+      ['^\\+?[\\d\\s-()]+$', ''],
+      ['[\\w\\s-.]+', ''],
+      ['[\\s-.]', ''],
+      ['[\\s-x]', ''],
+      ['[\\s-\\d]', ''],
+      ['[a-\\s]', ''],
+      ['[\\S-x]', ''],
+      ['[\\d-x]+', ''],
+      ['[\\w-.]+', ''],
+      ['[a-c-e]', ''],
+      ['[-a]', ''],
+      ['[a-]', ''],
+    ];
+    const texts = [
+      '+380 (44) 123-45-67',
+      '-',
+      '.',
+      'x',
+      ' ',
+      'a',
+      'b',
+      'd',
+      '5',
+      'word-word.x',
+      'Б',
+      'e',
+      'c',
+      '\u00a0',
+      '',
+    ];
+    const differences: string[] = [];
+    for (const [source, flags] of patterns) {
+      const linear = compileLinear(source, flags);
+      if (!isLinearRegex(linear)) {
+        differences.push(`/${source}/${flags}: ${linear}`);
+        continue;
+      }
+      for (const text of texts) {
+        if (linear.test(text) !== new RegExp(source, flags).test(text))
+          differences.push(`/${source}/${flags} on ${JSON.stringify(text)}`);
+      }
+    }
+    expect(differences).toEqual([]);
+  });
+
+  it('names what JavaScript takes and RE2 cannot run, instead of dropping the rule', () => {
+    for (const [source, flags] of [
+      ['\\d{1,2000}', ''],
+      ['(?:[a-z]{1,50}\\s?){1,30}', ''],
+      ['(?s:a.b)', ''],
+    ]) {
+      expect([source, compileLinear(source, flags)]).toEqual([source, 'unsupported']);
+    }
+    // the long names and short scripts JavaScript takes run as they mean
+    const same = (source: string, texts: string[]) => {
+      const linear = compileLinear(source, 'u');
+      if (!isLinearRegex(linear)) throw new Error(`${source}: ${linear}`);
+      for (const text of texts)
+        expect([source, text, linear.test(text)]).toEqual([source, text, new RegExp(source, 'u').test(text)]);
+    };
+    same('^\\p{Script=Cyrl}+$', ['Привіт', 'Hello', 'Привіт1']);
+    same('^\\p{sc=Latn}+$', ['Hello', 'Привіт']);
+    same('\\p{Dash_Punctuation}', ['a-b', 'ab', 'a—b']);
+    same('^\\p{Cased_Letter}+$', ['Aa', '中', 'ǅ']);
+    same('^\\P{Cased_Letter}+$', ['中文', 'Aa', '12']);
+    same('^[\\p{Cased_Letter}\\d]+$', ['Aa1', '中1']);
+    same('^\\p{Lowercase}+$', ['abc', 'ªß', 'Abc']);
+    same('\\p{White_Space}', ['a b', 'a\u00a0b', 'ab']);
+    same('^\\p{Alphabetic}+$', ['Привіт', 'a1']);
+  });
+
   it('refuses back-references and look-around with a reason', () => {
     expect(compileLinear('(a)\\1')).toBe('backreference');
     expect(compileLinear('(?<x>a)\\k<x>')).toBe('backreference');

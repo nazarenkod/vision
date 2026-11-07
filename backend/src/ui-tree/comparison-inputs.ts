@@ -164,7 +164,7 @@ function textPatternProblem(selector: string): boolean {
   if (!regex) return false;
   const flags = ['i', 'u'].filter((flag) => regex[2].includes(flag)).join('');
   const problem = compileLinear(regex[1], flags);
-  return problem === 'backreference' || problem === 'lookaround';
+  return problem === 'backreference' || problem === 'lookaround' || problem === 'unsupported';
 }
 
 /** Whether a stored rule holds a pattern Vision does not run, in its selector or its parts (051). */

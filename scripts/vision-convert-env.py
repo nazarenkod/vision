@@ -34,7 +34,10 @@ MIN_SECRET_LENGTH = 32
 
 
 def refused_key(value):
+    # compose reads KEY="value" without the quotes, and so does the API
     value = value.strip()
+    if len(value) >= 2 and value[0] == value[-1] and value[0] in "\"'":
+        value = value[1:-1].strip()
     return value.lower() in PLACEHOLDER or value.lower().startswith("change-me") or len(value) < MIN_SECRET_LENGTH
 LINE = re.compile(r"^(?P<key>[A-Za-z_][A-Za-z0-9_]*)=(?P<value>.*)$")
 

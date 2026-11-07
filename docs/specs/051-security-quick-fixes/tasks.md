@@ -2,7 +2,7 @@
 
 - [x] **T0** Порожня конфігурація порівняння: тест на поточну поведінку повної конфігурації, потім
   типові значення для відсутніх ключів (баг, не вимога 051).
-  - Файли: `backend/src/compare/libs/{pixelmatch,looks-same,odiff}/*.service.ts` і їхні тести.
+  - Файли: `backend/src/compare/libs/pixelmatch/pixelmatch.service.ts` і його тест (лише поріг, рев'ю 2026-11-08).
   - Готово, коли: `"{}"` дає `threshold: 0.1`, повна конфігурація — як раніше.
 - [x] **T1** [P] (REQ-051-01…04) Перевірка секретів і документація.
   - Файли: `backend/src/shared/server-secrets.ts`, `main.ts`, `DEPLOY.md`,

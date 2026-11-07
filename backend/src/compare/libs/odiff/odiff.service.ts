@@ -28,9 +28,7 @@ export class OdiffService implements ImageComparator {
   ) {}
 
   parseConfig(configJson: string): OdiffConfig {
-    // a key the project has not saved takes its default: without a threshold pixelmatch saw no
-    // change at all, so a project saved with "{}" passed every screenshot
-    return { ...DEFAULT_CONFIG, ...parseConfig(configJson, DEFAULT_CONFIG, this.logger) };
+    return parseConfig(configJson, DEFAULT_CONFIG, this.logger);
   }
 
   async getDiff(data: ImageCompareInput, config: OdiffConfig): Promise<DiffResult> {

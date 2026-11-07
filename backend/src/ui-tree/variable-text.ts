@@ -33,7 +33,7 @@ function compile(source: string): LinearRegex | null {
 
 export const unrunnablePattern = (pattern: string) => {
   const problem = compileLinear(`^ *(?:${pattern}) *$`, 'u');
-  return problem === 'backreference' || problem === 'lookaround';
+  return problem === 'backreference' || problem === 'lookaround' || problem === 'unsupported';
 };
 
 /** Why parts cannot be saved as a check, or null when they can. */
@@ -48,7 +48,7 @@ export function partsProblem(parts: unknown): string | null {
         return `A place needs a pattern of 1 to ${MAX_PATTERN} characters`;
       }
       if (unrunnablePattern(part.pattern)) {
-        return `The pattern ${part.pattern} uses a back-reference or look-around, which Vision does not run`;
+        return `The pattern ${part.pattern} uses a back-reference, look-around or another part Vision does not run`;
       }
       if (!compile(part.pattern)) return `The pattern ${part.pattern} does not parse`;
       places++;

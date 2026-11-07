@@ -108,4 +108,32 @@ describe('screenshot limits', () => {
       expect(png).toMatchObject({ width: 37, height: 23 });
     });
   });
+
+  // found in review: a header cut short made the intake throw, a 500 instead of a refusal
+  it('refuses a header cut short or longer than the file as not a PNG', () => {
+    const whole = png(4, 3);
+    const cut = whole.subarray(0, 24);
+    const shortHeader = Buffer.from(whole);
+    shortHeader.writeUInt32BE(12, 8);
+    const overlong = Buffer.from(whole);
+    overlong.writeUInt32BE(0xffffffff, 8);
+    for (const file of [cut, whole.subarray(0, 28), shortHeader, overlong]) {
+      expect(screenshotProblem(file, limits)).toEqual({ status: 400, message: 'The screenshot is not a PNG image' });
+      expect(safeToDecode(file, limits)).toBe(false);
+      expect(() => readPng(file, limits)).toThrow('Not a PNG image');
+    }
+  });
+
+  it('reads the headers of a file of a million tiny chunks quickly', () => {
+    const empty = pngChunk('IDAT');
+    const file = Buffer.concat([
+      PNG_SIGNATURE,
+      ihdr(100, 100),
+      Buffer.concat(Array(1_000_000).fill(empty)),
+      pngChunk('IEND'),
+    ]);
+    const started = Date.now();
+    expect(screenshotProblem(file)).toBeNull();
+    expect(Date.now() - started).toBeLessThan(1000);
+  });
 });

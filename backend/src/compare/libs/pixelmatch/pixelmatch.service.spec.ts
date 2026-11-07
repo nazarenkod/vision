@@ -39,7 +39,7 @@ const initService = async ({
 let service: PixelmatchService;
 
 describe('parseConfig', () => {
-  it.each<[string, PixelmatchConfig]>([
+  it.each<[string, Partial<PixelmatchConfig>]>([
     [
       '{"threshold":21.2,"ignoreAntialiasing":false,"allowDiffDimensions":true}',
       { threshold: 21.2, ignoreAntialiasing: false, allowDiffDimensions: true },
@@ -47,8 +47,10 @@ describe('parseConfig', () => {
     ['', DEFAULT_CONFIG],
     ['invalid', DEFAULT_CONFIG],
     // a project saved with an empty or partial config compared with no threshold and saw no change
-    ['{}', DEFAULT_CONFIG],
-    ['{"allowDiffDimensions":true}', { ...DEFAULT_CONFIG, allowDiffDimensions: true }],
+    ['{}', { threshold: 0.1 }],
+    // the other keys as saved: anti-aliasing is counted when the setting is missing, as before
+    ['{"allowDiffDimensions":true}', { allowDiffDimensions: true, threshold: 0.1 }],
+    ['{"threshold":0,"ignoreAntialiasing":false}', { threshold: 0, ignoreAntialiasing: false }],
   ])('should parse config', async (json, expected) => {
     service = await initService({});
 

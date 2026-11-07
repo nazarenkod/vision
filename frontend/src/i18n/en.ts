@@ -1225,7 +1225,7 @@ export const en = {
   "panel.matchCount": "{baseline} on baseline · {current} on current",
   "panel.selectorProblem.prefix": "Start with id:, class:, text: or xpath:",
   "panel.selectorProblem.pattern":
-    "Vision does not run back-references (\\1) or look-around ((?=…), (?<=…)) in a pattern",
+    "Vision does not run back-references (\\1), look-around ((?=…), (?<=…)) or repeats over 1000 in a pattern",
   "panel.selectorProblem.syntax": "This XPath does not parse",
   "panel.selectorProblem.anchor":
     "Start from one stable element: //*[@resource-id='…'] or //*[@text='…']",
@@ -1346,7 +1346,7 @@ export const en = {
     "These found nothing on the current screen or the baseline.",
   "compared.reason.nothingFound": "nothing found",
   "compared.reason.pattern":
-    "its pattern has a back-reference or look-around, which Vision does not run",
+    "its pattern has a back-reference, look-around or another part Vision does not run",
   "compared.reason.noTree": "no UI tree",
   "compared.source.screen": "this screen",
   "compared.source.project": "all screens",

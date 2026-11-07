@@ -6,13 +6,13 @@
  "deployment_model": "внутрішній on-prem сервіс у банківському контурі; кілька команд; поруч із робочим VRT",
  "counts": {
   "Critical": 0,
-  "High": 4,
-  "Medium": 18,
+  "High": 3,
+  "Medium": 17,
   "Low": 27,
   "Info": 5,
-  "Closed": 3
+  "Closed": 5
  },
- "counts_open_total": 54,
+ "counts_open_total": 52,
  "findings": [
   {
    "id": "VIS-SEC-002",
@@ -82,7 +82,7 @@
    "id": "VIS-SEC-043",
    "previous_id": null,
    "title": "Квадратична побудова елементів для вибору (structure) блокує event loop на хвилини одним широким UI-деревом",
-   "severity": "High",
+   "severity": "Closed",
    "cvss": "CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:N/I:N/A:H (6.5)",
    "cwe": "CWE-407",
    "owasp": "A04:2021-Insecure Design",
@@ -110,9 +110,11 @@
    "effort": "M",
    "confidence": "High",
    "source_agent_id": "NEW-C-1",
-   "status": "new",
-   "status_uk": "Нова",
-   "severity_2026_11_05": null
+   "status": "fixed",
+   "status_uk": "Закрито",
+   "severity_2026_11_05": null,
+   "severity_before_fix": "High",
+   "fix": "Виправлено (2026-11-07): позиції серед братів того самого класу рахуються один раз на дерево (xpath-selector.ts sameClassSiblings), крок /Клас[n] бере дітей з цієї карти. Характеризаційні знімки (structure.characterization.spec.ts) не змінились; 20 000 безіменних рядків — менше 1 с у тесті (було 42,9 с). Стенд: 10 000 вузлів — structure за 0,16 с (було 6,8 с), 30 000 — 0,42 с, паралельний запит не чекає."
   },
   {
    "id": "VIS-SEC-044",
@@ -620,7 +622,7 @@
    "id": "VIS-SEC-045",
    "previous_id": "VIS-SEC-014",
    "title": "Обхід ліміту пікселів: перевіряється лише перший IHDR, а pngjs розпаковує інше (повторний IHDR, interlace-бомба, канва різних розмірів)",
-   "severity": "Medium",
+   "severity": "Closed",
    "cvss": "CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:N/I:N/A:H (6.5)",
    "cwe": "CWE-409",
    "owasp": "A04:2021-Insecure Design",
@@ -644,9 +646,11 @@
    "effort": "S",
    "confidence": "High",
    "source_agent_id": "NEW-C-3",
-   "status": "new",
-   "status_uk": "Нова",
-   "severity_2026_11_05": null
+   "status": "fixed",
+   "status_uk": "Закрито",
+   "severity_2026_11_05": null,
+   "severity_before_fix": "Medium",
+   "fix": "Виправлено (2026-11-07): ліміт пікселів перевіряється за кожним IHDR до IEND; interlaced PNG спершу розпаковується з maxOutputLength за розміром із заголовка; канва порівняння різних розмірів — не більше 2× ліміту. Характеризаційні знімки 23 видів PNG не змінились. Стенд: dbl.png (IHDR 10×10 + 12000×12000) → 413."
   },
   {
    "id": "VIS-SEC-046",

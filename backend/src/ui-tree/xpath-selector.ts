@@ -136,6 +136,50 @@ export function childrenOf(tree: UiTree): number[][] {
 
 const fits = (node: UiNode, test: string) => test === '*' || node.className === test;
 
+interface SameClassSiblings {
+  // per parent: its children of each class, in page-source order
+  byClass: Map<string, number[]>[];
+  // per node: its place among the siblings of its class, from 1
+  position: number[];
+}
+
+const sameClassCache = new WeakMap<UiTree, SameClassSiblings>();
+
+// A step like /View[n] and a node's own [n] both mean "among the siblings of this class". Looked up
+// for every element of a screen, filtering the siblings each time made a long list quadratic: a
+// tree of 20 000 rows held the API for half a minute (VIS-SEC-043).
+function sameClassSiblings(tree: UiTree): SameClassSiblings {
+  let found = sameClassCache.get(tree);
+  if (!found) {
+    const children = childrenOf(tree);
+    const byClass = children.map(() => new Map<string, number[]>());
+    const position: number[] = tree.nodes.map(() => 0);
+    children.forEach((indices, parent) => {
+      for (const child of indices) {
+        const className = tree.nodes[child].className;
+        let ofClass = byClass[parent].get(className);
+        if (!ofClass) byClass[parent].set(className, (ofClass = []));
+        ofClass.push(child);
+        position[child] = ofClass.length;
+      }
+    });
+    found = { byClass, position };
+    sameClassCache.set(tree, found);
+  }
+  return found;
+}
+
+/** A node's place among its parent's children of the same class, from 1, as XPath counts it. */
+export function positionAmongSameClass(tree: UiTree, node: UiNode): number {
+  return sameClassSiblings(tree).position[node.index];
+}
+
+const NONE: number[] = [];
+
+function childrenThatFit(tree: UiTree, parent: number, test: string): number[] {
+  return test === '*' ? childrenOf(tree)[parent] : (sameClassSiblings(tree).byClass[parent].get(test) ?? NONE);
+}
+
 // every nameless element of a screen is offered with a path, and most share an anchor
 const anchorCache = new WeakMap<UiTree, Map<string, number[]>>();
 
@@ -174,8 +218,7 @@ export function evaluateXpath(tree: UiTree, xpath: ParsedXpath): UiNode[] {
       if (step.axis === 'child' || step.axis === 'descendant') {
         const parents = step.axis === 'child' ? [index] : descendantsOrSelf(index);
         for (const parent of parents) {
-          const matching = children[parent].filter((child) => fits(tree.nodes[child], step.test));
-          nth(matching, step.position).forEach((child) => next.add(child));
+          nth(childrenThatFit(tree, parent, step.test), step.position).forEach((child) => next.add(child));
         }
       } else if (step.axis === 'parent') {
         const parent = tree.nodes[index].parent;

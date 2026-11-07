@@ -158,3 +158,31 @@ describe('pickableElements: texts for variable-text rules (spec 033)', () => {
     expect(fee?.stableSelector).toBeUndefined();
   });
 });
+
+describe('pickableElements on a long list of rows with no name (VIS-SEC-043)', () => {
+  const rows = (count: number) =>
+    `<?xml version='1.0' encoding='UTF-8' standalone='yes' ?><hierarchy rotation="0" width="1080" height="2400">` +
+    `<android.widget.FrameLayout class="android.widget.FrameLayout" resource-id="com.bank.app:id/root" text="" ` +
+    `content-desc="" displayed="true" bounds="[0,0][1080,2400]">` +
+    Array.from(
+      { length: count },
+      (_, i) =>
+        `<android.view.View class="android.view.View" resource-id="" text="" content-desc="" displayed="true" ` +
+        `bounds="[${(i % 100) * 10},${Math.floor(i / 100) * 10}][${(i % 100) * 10 + 9},${Math.floor(i / 100) * 10 + 9}]"/>`
+    ).join('') +
+    '</android.widget.FrameLayout></hierarchy>';
+
+  // 20 000 rows took about 25 s, and the API answered nobody meanwhile
+  it('offers every row in well under a second, each by its own place in the list', () => {
+    const tree = parse(rows(20_000));
+    const started = Date.now();
+    const elements = pickableElements(tree);
+    expect(Date.now() - started).toBeLessThan(1000);
+
+    expect(elements.filter((e) => e.nameless)).toHaveLength(20_000);
+    expect(elements.find((e) => e.index === 12_346)).toMatchObject({
+      selector: "xpath://*[@resource-id='com.bank.app:id/root']/android.view.View[12346]",
+      variants: [expect.objectContaining({ count: 1, levels: 1, direction: 'down' })],
+    });
+  });
+});

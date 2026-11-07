@@ -5,7 +5,7 @@ import { applyIgnoreAreas, scaleImageToSize } from '../../utils';
 import { signatureOfDecoded } from './signature.core';
 import { encodeThumbnail } from './thumbnail.core';
 import { DiffRegion, findDiffRegions } from './regions.core';
-import { readPng } from '../../../shared/screenshot-limits';
+import { readPng, screenshotLimits } from '../../../shared/screenshot-limits';
 
 /**
  * CPU-bound part of the pixelmatch comparison, extracted so it can run inside
@@ -187,6 +187,15 @@ export function computePixelmatchDiff(input: PixelmatchJobInput): PixelmatchJobO
   // scale image to max size
   const maxWidth = Math.max(baseline.width, image.width);
   const maxHeight = Math.max(baseline.height, image.height);
+  // Each screenshot is within the limit, but the canvas takes the width of one and the height of
+  // the other: a row and a column made one of their lengths multiplied (VIS-SEC-045). Twice the
+  // limit leaves room for two large screenshots of different shape, as real devices give.
+  const canvasLimit = 2 * screenshotLimits().maxPixels;
+  if (maxWidth * maxHeight > canvasLimit) {
+    throw new Error(
+      `Screenshots of ${baseline.width} × ${baseline.height} and ${image.width} × ${image.height} pixels are too large to compare`
+    );
+  }
   const scaledBaseline = scaleImageToSize(baseline, maxWidth, maxHeight);
   const scaledImage = scaleImageToSize(image, maxWidth, maxHeight);
 

@@ -1,5 +1,5 @@
 import { findBySelector } from './comparison-inputs';
-import { childrenOf, XPATH_PREFIX } from './xpath-selector';
+import { childrenOf, positionAmongSameClass, XPATH_PREFIX } from './xpath-selector';
 import { Rect, UiNode, UiTree } from './ui-tree.types';
 
 /** A way to find an element with no name of its own: a path from a stable one (spec 027). */
@@ -84,9 +84,7 @@ function* descendants(tree: UiTree, node: UiNode) {
 
 /** The step from a node's parent to it: its class and its place among siblings of that class. */
 function stepTo(tree: UiTree, node: UiNode): string {
-  const siblings = childrenOf(tree)[node.parent];
-  const position = siblings.filter((index) => tree.nodes[index].className === node.className).indexOf(node.index) + 1;
-  return `/${node.className}[${position}]`;
+  return `/${node.className}[${positionAmongSameClass(tree, node)}]`;
 }
 
 /**

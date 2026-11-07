@@ -85,6 +85,13 @@ npm run test:e2e / test:acceptance         # потрібні запущені P
 - `npx jest` без `--projects src` запускає ще e2e й acceptance, і вони падають без бази.
   Один файл — `npm test -- --testPathPatterns <шлях>` (Jest 30): голий шлях після `--projects src` jest
   вважає ще одним проєктом і падає з «jest is not defined».
+- **Знімки поведінки** `src/ui-tree/__snapshots__/structure.characterization…` і
+  `src/shared/__snapshots__/screenshot-limits.characterization…` фіксують, що пропонує вигляд
+  структури, що знаходять селектори правил і як приймаються PNG. Змінився знімок — змінилась
+  поведінка: це специфікація, а не `jest -u`.
+- **PNG декодуємо лише через `readPng`** (`src/shared/screenshot-limits.ts`): він перевіряє ліміт
+  пікселів за кожним IHDR файла і не дає interlaced PNG розпакуватися більше, ніж обіцяє заголовок
+  (VIS-SEC-045). Канва порівняння різних розмірів — не більше двох лімітів.
 - `parseUiTreeSettings` відкидає записи, яких не розуміє. Додаючи поле в налаштування проєкту,
   онови й парсер, і його тест (`comparison-inputs.spec.ts`).
 - Нове поле в публічному звіті (`src/reports/report-links.ts`) бачать люди без акаунта: лише

@@ -363,7 +363,7 @@ const BrandPanel: React.FunctionComponent = () => {
           "& [data-testid='wordmark']": { color: "common.white" },
         }}
       >
-        <BrandLockup markSize={36} wordSize={type.section} />
+        <BrandLockup markSize={50} wordSize={type.page} gap={1.4} />
       </Box>
       {/* the product's idea, drawn: the baseline and the current screen with its change */}
       <Box

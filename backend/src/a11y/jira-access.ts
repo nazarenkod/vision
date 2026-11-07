@@ -2,6 +2,7 @@ import { BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { openSecret } from '../shared/secret-box';
 import { JiraClient } from './jira.client';
+import { JiraTypesProblem } from './jira-types';
 import { allowedJiraHosts, JIRA_HOSTS_VARIABLE, jiraHostProblem } from './jira-hosts';
 
 export interface JiraAccess {
@@ -41,4 +42,24 @@ export async function jiraAccess(
     issueType: project.jiraIssueType,
     linkType: project.jiraLinkType,
   };
+}
+
+/**
+ * Jira at an address the settings page holds, maybe not saved yet (REQ-049-09), as the person
+ * looking at the page (REQ-049-03). The same host check as on save keeps their token off an
+ * address nobody vetted (REQ-049-13). A reason instead of an exception: the page shows it.
+ */
+export async function settingsJira(
+  prisma: PrismaService,
+  jiraUrl: string | null | undefined,
+  userId: string,
+  env: NodeJS.ProcessEnv = process.env
+): Promise<JiraClient | { problem: JiraTypesProblem }> {
+  const url = jiraUrl?.trim();
+  if (!url) return { problem: 'notSet' };
+  if (jiraHostProblem(url, allowedJiraHosts(env[JIRA_HOSTS_VARIABLE]))) return { problem: 'hostNotAllowed' };
+  const user = await prisma.user.findUnique({ where: { id: userId }, select: { jiraToken: true, jiraEmail: true } });
+  const token = openSecret(user?.jiraToken, env);
+  if (!token) return { problem: 'noToken' };
+  return new JiraClient({ url, token, email: user.jiraEmail });
 }

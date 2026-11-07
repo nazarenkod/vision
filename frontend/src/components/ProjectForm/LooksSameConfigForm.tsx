@@ -4,6 +4,7 @@ import { TextValidator } from "react-material-ui-form-validator";
 import { LooksSameConfig } from "../../types/imageComparison";
 import { useConfigHook } from "./useConfigHook";
 import { useT } from "../../i18n";
+import { Explained } from "./OptionExplainer";
 
 export const LooksSameConfigForm: React.FunctionComponent = () => {
   const [config, updateConfig] = useConfigHook<LooksSameConfig>();
@@ -44,19 +45,21 @@ export const LooksSameConfigForm: React.FunctionComponent = () => {
           updateConfig("tolerance", parseFloat(value));
         }}
       />
-      <FormControlLabel
-        label={t("comparison.ignoreAntialiasingLooksSame")}
-        control={
-          <Switch
-            checked={config.ignoreAntialiasing}
-            onChange={(event, checked) =>
-              updateConfig("ignoreAntialiasing", checked)
-            }
-            color="primary"
-            name="ignoreAntialiasing"
-          />
-        }
-      />
+      <Explained option="antialiasing" on={!!config.ignoreAntialiasing}>
+        <FormControlLabel
+          label={t("comparison.ignoreAntialiasingLooksSame")}
+          control={
+            <Switch
+              checked={config.ignoreAntialiasing}
+              onChange={(event, checked) =>
+                updateConfig("ignoreAntialiasing", checked)
+              }
+              color="primary"
+              name="ignoreAntialiasing"
+            />
+          }
+        />
+      </Explained>
       <TextValidator
         name="antialiasingTolerance"
         validators={["minNumber:0"]}
@@ -79,30 +82,36 @@ export const LooksSameConfigForm: React.FunctionComponent = () => {
           updateConfig("antialiasingTolerance", parseFloat(value));
         }}
       />
-      <FormControlLabel
-        label={t("comparison.ignoreCaret")}
-        control={
-          <Switch
-            checked={config.ignoreCaret}
-            onChange={(event, checked) => updateConfig("ignoreCaret", checked)}
-            color="primary"
-            name="ignoreCaret"
-          />
-        }
-      />
-      <FormControlLabel
-        label={t("comparison.allowDiffDimensions")}
-        control={
-          <Switch
-            checked={config.allowDiffDimensions}
-            onChange={(event, checked) =>
-              updateConfig("allowDiffDimensions", checked)
-            }
-            color="primary"
-            name="diffDimensionsFeature"
-          />
-        }
-      />
+      <Explained option="caret" on={!!config.ignoreCaret}>
+        <FormControlLabel
+          label={t("comparison.ignoreCaret")}
+          control={
+            <Switch
+              checked={config.ignoreCaret}
+              onChange={(event, checked) =>
+                updateConfig("ignoreCaret", checked)
+              }
+              color="primary"
+              name="ignoreCaret"
+            />
+          }
+        />
+      </Explained>
+      <Explained option="diffDimensions" on={!!config.allowDiffDimensions}>
+        <FormControlLabel
+          label={t("comparison.allowDiffDimensions")}
+          control={
+            <Switch
+              checked={config.allowDiffDimensions}
+              onChange={(event, checked) =>
+                updateConfig("allowDiffDimensions", checked)
+              }
+              color="primary"
+              name="diffDimensionsFeature"
+            />
+          }
+        />
+      </Explained>
     </React.Fragment>
   );
 };

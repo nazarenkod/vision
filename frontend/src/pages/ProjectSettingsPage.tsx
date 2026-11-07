@@ -38,11 +38,6 @@ import {
   SETTINGS_SECTIONS,
 } from "../_helpers/projectSettings.helper";
 import {
-  A11Y_RULES,
-  a11yNormsOf,
-  parseUiTreeSettings,
-} from "../types/insights";
-import {
   ComparisonFields,
   GeneralFields,
   JiraSettings,
@@ -51,10 +46,9 @@ import {
 } from "../components/ProjectForm";
 import { A11yRulesSettings } from "../components/ProjectForm/A11yRulesSettings";
 import { AllowedDevicesSettings } from "../components/ProjectForm/AllowedDevicesSettings";
-import { allowedDevicesOf } from "../_helpers/allowedDevices.helper";
 import { EmptyState } from "../components/EmptyState";
 import { ProjectAccessSettings } from "../components/ProjectForm/ProjectAccessSettings";
-import { MessageKey, Text, useT } from "../i18n";
+import { MessageKey, useT } from "../i18n";
 
 const DESCRIPTION: Partial<Record<SectionId, MessageKey>> = {
   comparison: "section.comparisonIntro",
@@ -66,38 +60,6 @@ const DESCRIPTION: Partial<Record<SectionId, MessageKey>> = {
 };
 
 const asDto = (project: Project): ProjectDto => ({ ...project });
-
-/** A short status beside each section in the contents. */
-function sectionMeta(id: SectionId, project: ProjectDto, t: Text): string {
-  const tree = parseUiTreeSettings(project.uiTreeSettings);
-  switch (id) {
-    case "comparison":
-      return project.imageComparison;
-    case "mobile": {
-      const on = [
-        tree.excludeSystemBars,
-        tree.compensateMoves,
-        tree.detectSemanticChanges,
-      ].filter(Boolean).length;
-      return t("settings.meta.mobileOn", { count: on });
-    }
-    case "devices": {
-      const count = allowedDevicesOf(project.uiTreeSettings).length;
-      return count
-        ? t("settings.meta.devices", { count })
-        : t("settings.meta.anyDevice");
-    }
-    case "a11y":
-      return t("settings.meta.rulesOn", {
-        count: A11Y_RULES.length - a11yNormsOf(tree).disabledRules.length,
-        total: A11Y_RULES.length,
-      });
-    case "jira":
-      return t(project.jiraUrl ? "settings.meta.set" : "settings.meta.notSet");
-    default:
-      return "";
-  }
-}
 
 /**
  * A project's settings as a page of their own (018, US-5): contents and search
@@ -462,8 +424,7 @@ const ProjectSettingsPage: React.FunctionComponent = () => {
                       px: 1.25,
                       borderRadius: radius.control,
                       display: "flex",
-                      justifyContent: "space-between",
-                      gap: 1,
+                      justifyContent: "flex-start",
                       textAlign: "left",
                       whiteSpace: "nowrap",
                       fontWeight: 500,
@@ -492,18 +453,6 @@ const ProjectSettingsPage: React.FunctionComponent = () => {
                         />
                       )}
                     </span>
-                    <Typography
-                      component="span"
-                      variant="caption"
-                      noWrap
-                      sx={{
-                        fontVariantNumeric: "tabular-nums",
-                        color: tokens.textMuted,
-                        flexShrink: 0,
-                      }}
-                    >
-                      {sectionMeta(id, edited, t)}
-                    </Typography>
                   </ButtonBase>
                 );
               })}

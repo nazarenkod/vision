@@ -17,9 +17,9 @@ export class ProjectListPage extends BasePage {
   mainBranch = this.dialog.locator("#branchName");
   buildCount = this.dialog.locator("#buildCount");
   maxBranchLifetime = this.dialog.locator("#maxBranchLifetime");
-  autoApprove = this.dialog.getByLabel("Auto approve feature");
+  autoApprove = this.dialog.getByLabel("Auto-approve in feature branches");
   imageComparison = this.dialog.getByRole("combobox", {
-    name: "Image comparison library",
+    name: "Image comparison",
   });
 
   async confirmDelete(name: string) {

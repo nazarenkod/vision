@@ -54,6 +54,8 @@ export const SETTINGS_SECTIONS = [
     id: "mobile",
     title: "section.mobile",
     labels: [
+      // the section was "Mobile screens" before 049: the old name still finds it (REQ-049-11)
+      "section.mobileFormer",
       "mobile.systemBars",
       "mobile.moves",
       "mobile.maxMove",

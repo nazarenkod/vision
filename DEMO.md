@@ -76,7 +76,7 @@ With `AI_PROVIDER=none` the AI parts of the UI are hidden; accessibility, Jira a
 
 ## Jira
 
-In project settings: Jira URL and token. Use a personal access token for Server or Data Center. For Jira Cloud, also add the account email and use an API token. The token is never returned by the API. Issue type defaults to Bug, link type to Relates.
+In project settings: the Jira URL, and the issue and link type picked from the lists your own Jira returns (Automatic by default). Each person adds their own token in their profile: a personal access token for Server or Data Center; for Jira Cloud, the account email and an API token. The token is never returned by the API.
 
 ## Send UI trees from tests
 

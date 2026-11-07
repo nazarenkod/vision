@@ -27,7 +27,7 @@ const nameOf = (person: {
 
 /**
  * Who sees and works in the project (042): an admin gives and takes access here, and it applies
- * from the next request. Admins are not listed: they reach every project.
+ * from the next request. Admins are not offered: they reach every project.
  */
 export const ProjectAccessSettings: React.FunctionComponent<{
   projectId: string;

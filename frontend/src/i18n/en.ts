@@ -138,8 +138,7 @@ export const en = {
   "section.access": "Access",
   "section.danger": "Danger zone",
   "section.devices": "Devices",
-  "section.devicesIntro":
-    "The SDK rejects screens from devices not in the list, and the test fails. This way baselines are made only on the devices CI runs on. Manual checks from the CLI are not held to the list.",
+  "section.devicesIntro": "Screens from devices not in the list are rejected.",
   "section.comparisonIntro":
     "How the current screen is compared with its baseline. The method's own settings are under the cards.",
   "section.mobileIntro":
@@ -147,8 +146,8 @@ export const en = {
   "section.a11yIntro":
     "What Vision checks on every screen sent with a UI tree, by your team's norms.",
   "section.accessIntro":
-    "Who sees and works in this project. Admins reach every project and are not listed.",
-  "access.pick": "Person",
+    "Who sees and works in this project. Admins reach every project anyway.",
+  "access.pick": "Give access to",
   "access.add": "Give access",
   "access.remove": "Take access away",
   "access.removeOf": "Take access away from {name}",
@@ -168,8 +167,6 @@ export const en = {
   "devices.wildcard": "* only at the end of the OS, as in 26.*",
   "devices.duplicate": "Already in the list",
   "devices.received": "Devices screens came from",
-  "devices.receivedHint":
-    "As the tests send them. Add the ones CI runs on before anything else.",
   "devices.receivedNone": "No screens yet.",
   "devices.notInList": "not in the list",
   "devices.allowed": "allowed",

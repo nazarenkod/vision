@@ -132,8 +132,7 @@ export const uk: Messages = {
   "section.access": "Доступ",
   "section.danger": "Небезпечна зона",
   "section.devices": "Пристрої",
-  "section.devicesIntro":
-    "Екрани з пристроїв поза переліком SDK відхиляє, і тест падає. Так еталони створюються лише на пристроях, де працює CI. Ручних перевірок з CLI перелік не стосується.",
+  "section.devicesIntro": "Екрани з пристроїв поза переліком відхиляються.",
   "section.comparisonIntro":
     "Як поточний екран порівнюється з еталоном. Параметри обраного способу — під картками.",
   "section.mobileIntro":
@@ -141,8 +140,8 @@ export const uk: Messages = {
   "section.a11yIntro":
     "Що Vision перевіряє на кожному екрані з UI-деревом, за нормами вашої команди.",
   "section.accessIntro":
-    "Хто бачить цей проєкт і працює в ньому. Адміни мають доступ до всіх проєктів і тут не показані.",
-  "access.pick": "Людина",
+    "Хто бачить цей проєкт і працює в ньому. Адміни й так мають доступ до всіх проєктів.",
+  "access.pick": "Кому дати доступ",
   "access.add": "Дати доступ",
   "access.remove": "Забрати доступ",
   "access.removeOf": "Забрати доступ у {name}",
@@ -162,8 +161,6 @@ export const uk: Messages = {
   "devices.wildcard": "* лише в кінці OS, як у 26.*",
   "devices.duplicate": "Уже в переліку",
   "devices.received": "Пристрої, з яких приходили екрани",
-  "devices.receivedHint":
-    "Так, як їх надсилають тести. Спершу додайте ті, на яких працює CI.",
   "devices.receivedNone": "Екранів ще немає.",
   "devices.notInList": "не в переліку",
   "devices.allowed": "дозволено",

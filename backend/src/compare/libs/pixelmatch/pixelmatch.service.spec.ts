@@ -46,6 +46,9 @@ describe('parseConfig', () => {
     ],
     ['', DEFAULT_CONFIG],
     ['invalid', DEFAULT_CONFIG],
+    // a project saved with an empty or partial config compared with no threshold and saw no change
+    ['{}', DEFAULT_CONFIG],
+    ['{"allowDiffDimensions":true}', { ...DEFAULT_CONFIG, allowDiffDimensions: true }],
   ])('should parse config', async (json, expected) => {
     service = await initService({});
 

@@ -56,6 +56,8 @@ describe('parseConfig', () => {
     ],
     ['', DEFAULT_CONFIG],
     ['invalid', DEFAULT_CONFIG],
+    ['{}', DEFAULT_CONFIG],
+    ['{"threshold":0.3}', { ...DEFAULT_CONFIG, threshold: 0.3 }],
   ])('should parse config', async (json, expected) => {
     service = await initService({});
 

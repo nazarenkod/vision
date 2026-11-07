@@ -28,7 +28,7 @@ const project: ProjectDto = {
 };
 
 const projectServiceMock = {
-  findAll: () => ['test'],
+  findAll: () => [project],
   create: () => project,
   remove: () => project,
   update: () => project,
@@ -91,7 +91,8 @@ describe('Projects (e2e)', () => {
     it('200', async () => {
       const res = await requestWithAuth(app, 'get', '/projects', loggedUser.token).send().expect(200);
 
-      expect(res.body).toEqual(expect.arrayContaining(projectServiceMock.findAll()));
+      // answers carry whether a Gemini key is set, never the key (044)
+      expect(res.body).toEqual([expect.objectContaining({ id: project.id, geminiApiKeySet: false })]);
     });
 
     it('401', async () => {
@@ -105,6 +106,7 @@ describe('Projects (e2e)', () => {
 
       expect(res.body).toStrictEqual({
         ...projectServiceMock.remove(),
+        geminiApiKeySet: false,
         createdAt: expect.any(String),
         updatedAt: expect.any(String),
       });
@@ -125,6 +127,7 @@ describe('Projects (e2e)', () => {
 
       expect(res.body).toStrictEqual({
         ...projectServiceMock.update(),
+        geminiApiKeySet: false,
         createdAt: expect.any(String),
         updatedAt: expect.any(String),
       });

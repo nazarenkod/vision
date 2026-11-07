@@ -8,6 +8,7 @@ import { compareSync } from 'bcryptjs';
 import { requestWithAuth, generateUser, haveUserLogged } from './preconditions';
 import { User } from '@prisma/client';
 import { globalPipes } from '../src/shared/strip-unknown-fields.pipe';
+import { hashApiKey } from '../src/shared/api-key-hash';
 
 describe('Users (e2e)', () => {
   let app: INestApplication;
@@ -35,7 +36,7 @@ describe('Users (e2e)', () => {
 
   it('POST / by an admin creates the account', async () => {
     const admin = await haveUserLogged(usersService, 'admin');
-    user = generateUser('123456', 'editor');
+    user = generateUser('long-enough-password', 'editor');
     await requestWithAuth(app, 'post', '/users', admin.token)
       .send(user)
       .expect(201)
@@ -51,17 +52,17 @@ describe('Users (e2e)', () => {
   it('POST / is refused to anyone but an admin', async () => {
     user = await haveUserLogged(usersService, 'editor');
     await requestWithAuth(app, 'post', '/users', (user as { token?: string }).token)
-      .send(generateUser('123456'))
+      .send(generateUser('long-enough-password'))
       .expect(403);
   });
 
   it('POST /register no longer exists', async () => {
     user = await haveUserLogged(usersService, 'guest');
-    await request(app.getHttpServer()).post('/users/register').send(generateUser('123456')).expect(404);
+    await request(app.getHttpServer()).post('/users/register').send(generateUser('long-enough-password')).expect(404);
   });
 
   it('POST /login', async () => {
-    const password = '123456';
+    const password = 'long-enough-password';
     user = await usersService.createAccount(generateUser(password));
     const loginData: UserLoginRequestDto = {
       email: user.email,
@@ -83,7 +84,7 @@ describe('Users (e2e)', () => {
   });
 
   it('GET /newApiKey', async () => {
-    const password = '123456';
+    const password = 'long-enough-password';
     user = await usersService.createAccount(generateUser(password));
     const loggedUser = await usersService.login({
       email: user.email,
@@ -94,12 +95,13 @@ describe('Users (e2e)', () => {
 
     const newUser = await usersService.findOne(user.id);
     expect(res.text).not.toBe(user.apiKey);
-    expect(res.text).toBe(newUser.apiKey);
+    // the key is shown once and stored as its hash (044)
+    expect(hashApiKey(res.text)).toBe(newUser.apiKey);
   });
 
   it('PUT /password', async () => {
-    const newPassword = 'newPassword';
-    const password = '123456';
+    const newPassword = 'new-long-enough-password';
+    const password = 'long-enough-password';
     user = await usersService.createAccount(generateUser(password));
     const loggedUser = await usersService.login({
       email: user.email,
@@ -113,7 +115,7 @@ describe('Users (e2e)', () => {
   });
 
   it('PUT /', async () => {
-    const password = '123456';
+    const password = 'long-enough-password';
     user = await usersService.createAccount(generateUser(password));
     const editedUser = {
       email: 'edited' + user.email,

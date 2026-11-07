@@ -22,6 +22,8 @@
 | `src/builds/build-overview*.ts` | зведення збірки для Overview і звіту: чиста `buildOverview`, сервіс вантажить рядки; баги й проблеми доступності (`a11yOf`, лише Overview, не публічний звіт) — з файлів звітів за один прохід, кеш за збіркою | [031](../docs/specs/031-build-overview/spec.md), [039](../docs/specs/039-overview-polish/spec.md) |
 | `src/reports/` | публічні посилання на звіт, `report-links.ts` — білий список полів публічного звіту; `GET /public/reports/:token` — єдиний маршрут з даними без входу ([ADR-0022](../docs/decisions/0022-public-report-links.md)) | [031](../docs/specs/031-build-overview/spec.md) |
 | `src/projects/project-access*.ts` | доступ до проєктів: `@ProjectFrom(...)` / `@NoProjectData()` на кожному маршруті, `ProjectAccessInterceptor` перевіряє до обробника (адмін — усе, решта — рядок `ProjectAccess`), `404`, для автотестів `403` | [042](../docs/specs/042-project-access/spec.md) |
+| `src/shared/server-secrets.ts` | секрети при старті: `JWT_SECRET` і `VISION_SECRET_KEY` не з прикладу, ≥ 32 символи й різні, інакше API не стартує | [051](../docs/specs/051-security-quick-fixes/spec.md) |
+| `src/ui-tree/linear-regex.ts` | вирази правил (`text:/…/`, нестабільний текст) — на RE2 з лінійним часом, з перекладом зі значення JavaScript; зворотні посилання й перевірки вперед і назад — відмова | [051](../docs/specs/051-security-quick-fixes/spec.md) |
 | `src/users/sign-in-limit.ts`, `account.ts`, `src/security.ts`, `src/http-exception.filter.ts` | вхід і API назовні: 5 спроб за 15 хв, пароль ≥ 12, LDAP чи SSO поряд з локальними акаунтами; CORS лише для `APP_FRONTEND_URL`, Swagger за `VISION_SWAGGER`, заголовки безпеки; помилка — `{ statusCode, message, path }` | [045](../docs/specs/045-sign-in-and-api-hardening/spec.md) |
 | `src/compare/` | піксельне порівняння (успадковане + області змін, пул воркерів); пул виконує й правила доступності (`src/a11y/a11y.job.ts`), а завдання довше за `DIFF_JOB_TIMEOUT_MS` (60 с) зупиняє й не повторює | — |
 | `src/static/file-links*.ts`, `static.controller.ts` | знімки лише за підписом: `FileLinksInterceptor` додає `fileSignatures` у відповіді маршрутів з guard-ом, сокет і публічний звіт — самі; `/images/:name?sig=` віддає PNG, решта — 404 | [043](../docs/specs/043-protected-images/spec.md) |
@@ -89,6 +91,13 @@ npm run test:e2e / test:acceptance         # потрібні запущені P
   `src/shared/__snapshots__/screenshot-limits.characterization…` фіксують, що пропонує вигляд
   структури, що знаходять селектори правил і як приймаються PNG. Змінився знімок — змінилась
   поведінка: це специфікація, а не `jest -u`.
+- **Вираз із правила — лише через `compileLinear`** (`src/ui-tree/linear-regex.ts`), не `new RegExp`:
+  інакше повільний вираз однієї команди зупиняє API для всіх (051). Змінюєш переклад — диференційний
+  тест `linear-regex.spec.ts` порівнює з `RegExp`.
+- **Список у тілі запиту з `@ArrayMaxSize`** перевіряє `ListLengthPipe` ще до `ValidationPipe`:
+  довгий список не перевіряється поелементно. Областей ігнорування — не більше 20 (`MAX_IGNORE_AREAS`).
+- **`VISION_JIRA_HOSTS`:** ім'я хоста — лише `https` на 443; інший порт чи `http` — запис
+  `схема://хост:порт`. Клієнт Jira не йде за переадресацією (051).
 - **PNG декодуємо лише через `readPng`** (`src/shared/screenshot-limits.ts`): він перевіряє ліміт
   пікселів за кожним IHDR файла і не дає interlaced PNG розпакуватися більше, ніж обіцяє заголовок
   (VIS-SEC-045). Канва порівняння різних розмірів — не більше двох лімітів.

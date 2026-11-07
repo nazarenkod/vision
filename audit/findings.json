@@ -6,19 +6,19 @@
  "deployment_model": "внутрішній on-prem сервіс у банківському контурі; кілька команд; поруч із робочим VRT",
  "counts": {
   "Critical": 0,
-  "High": 3,
-  "Medium": 17,
-  "Low": 27,
+  "High": 2,
+  "Medium": 14,
+  "Low": 26,
   "Info": 5,
-  "Closed": 5
+  "Closed": 10
  },
- "counts_open_total": 52,
+ "counts_open_total": 47,
  "findings": [
   {
    "id": "VIS-SEC-002",
    "previous_id": "S-4",
    "title": "Приймаються відомі/слабкі секрети підпису; DEPLOY.md радить секрет робочого VRT",
-   "severity": "High",
+   "severity": "Closed",
    "cvss": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:C/C:H/I:H/A:N (9.3)",
    "cwe": "CWE-1392",
    "owasp": "A07:2021-Identification and Authentication Failures",
@@ -39,12 +39,14 @@
    "effort": "S",
    "confidence": "High",
    "severity_2026_11_05": "High",
-   "status": "deferred",
-   "status_uk": "Відкладено",
+   "status": "fixed",
+   "status_uk": "Закрито",
    "recheck": {
     "evidence": "backend/src/main.ts:29-35 — перевіряється лише наявність VISION_SECRET_KEY (serverSecretKey, backend/src/shared/secret-box.ts:13-15,43-52: будь-який непорожній рядок → SHA-256); JWT_SECRET так само. .env.demo.example:16,19 `JWT_SECRET=change-me`, `VISION_SECRET_KEY=change-me`; backend/.env.example:2,5; DEPLOY.md:108 досі радить `JWT_SECRET` «можна той же, что у прода». Змін з 7b13af1 немає.",
     "gap": "Відкладено рішенням власника; без змін: слабкі/відомі секрети приймаються, порада взяти секрет проду в DEPLOY.md лишилась. Слабкий VISION_SECRET_KEY також робить розшифровуваним sealed apiKey Gemini у Project.imageComparisonConfig, що йде в бекап (VIS-SEC-013)."
-   }
+   },
+   "severity_before_fix": "High",
+   "fix": "Виправлено (2026-11-08, спец. 051): API не стартує з JWT_SECRET чи VISION_SECRET_KEY з прикладу, коротшим за 32 символи чи однаковими (server-secrets.ts); DEPLOY.md більше не радить секрет робочого VRT; vision-convert-env.py замінює ключ, який API відхилить. Стенд: change-me / короткий / однакові — старий API стартує, новий — ні, з причиною."
   },
   {
    "id": "VIS-SEC-003",
@@ -188,7 +190,7 @@
    "id": "VIS-SEC-005",
    "previous_id": null,
    "title": "Області ігнорування без меж координат зависають воркер порівняння без тайм-ауту",
-   "severity": "Medium",
+   "severity": "Closed",
    "cvss": "CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:C/C:N/I:N/A:H (7.7)",
    "cwe": "CWE-400",
    "owasp": "A05:2021-Security Misconfiguration",
@@ -207,18 +209,20 @@
    "effort": "S",
    "confidence": "High",
    "severity_2026_11_05": "High",
-   "status": "partially_fixed",
-   "status_uk": "Частково",
+   "status": "fixed",
+   "status_uk": "Закрито",
    "recheck": {
     "evidence": "backend/src/compare/utils/index.ts:18-19 (Math.max(0, area.y/x), межі зображення); backend/src/compare/diff-worker-pool.ts:46,177,185-196 (тайм-аут 60 с, воркер замінюється, без повтору, не рахується як spawn failure); тести backend/src/compare/utils/index.spec.ts, backend/src/compare/diff-worker-pool.spec.ts:86. Таймер знімається в message/replace (96, 127), terminated-воркер не повертається в idle (99, 122) — витоку воркерів не видно.",
     "gap": "Кількість областей не обмежена: CreateTestRequestDto.ignoreAreas — лише @IsArray/@ValidateNested (backend/src/test-runs/dto/create-test-request.dto.ts:38-43), UpdateIgnoreAreasDto без ArrayMaxSize (update-ignore-area.dto.ts:11-14), IgnoreAreaDto лише @IsNumber. N областей на весь кадр = N×W×H ітерацій на кожне з двох зображень (index.ts:15-26), аналогічно coveredPixels/applyTolerance (pixelmatch.core.ts:97-160). Тисячі областей у JSON до BODY_PARSER_JSON_LIMIT (20 МБ у демо) гарантують завдання на всі 60 с; збережені на варіації області роблять так кожне наступне порівняння. Зависання «назавжди» закрито, лишилась дешева DoS пулу на 60 с за запит."
-   }
+   },
+   "severity_before_fix": "Medium",
+   "fix": "Виправлено (2026-11-08, спец. 051): не більше 20 областей на знімок на всіх маршрутах, довжина перевіряється до поелементної валідації (ListLengthPipe), add — все або нічого. Стенд: 200 000 областей — старий API прийняв за 2,6 с і заблокував інших на 2 с, новий відмовив за 0,09 с."
   },
   {
    "id": "VIS-SEC-008",
    "previous_id": "S-2",
    "title": "Allowlist Jira перевіряє лише hostname: проходять http, будь-який порт і редиректи",
-   "severity": "Medium",
+   "severity": "Closed",
    "cvss": "CVSS:3.1/AV:N/AC:H/PR:L/UI:N/S:C/C:H/I:L/A:N (6.8)",
    "cwe": "CWE-918",
    "owasp": "A10:2021-Server-Side Request Forgery",
@@ -236,12 +240,14 @@
    "effort": "S",
    "confidence": "High",
    "severity_2026_11_05": "Medium",
-   "status": "not_fixed",
-   "status_uk": "Не виправлено",
+   "status": "fixed",
+   "status_uk": "Закрито",
    "recheck": {
     "evidence": "backend/src/a11y/jira-hosts.ts:80-87 — досі лише `new URL(url).hostname`; backend/src/a11y/jira.client.ts:101-105 — fetch без `redirect`, схема/порт не перевіряються. Змін у jira-hosts.ts немає з 7b13af1.",
     "gap": "Нова поверхня з #23–#31: GET /projects/:id/jira/types?url=… (projects.controller.ts:63-73 → jira-access.ts:52-65) бере НЕЗБЕРЕЖЕНУ адресу з query і шле на неї особистий токен після тієї ж перевірки лише hostname: проходять http://дозволений-хост:будь-який-порт/будь-який-шлях. Відповідь не віддзеркалюється (лише 'failed'/типи, projects.service.ts:143-154), токен — власний, тож вплив як у 008. `@`-трюк закритий (hostname після @), DNS rebinding — у межах DNS банку. Node fetch прибирає Authorization при міжоріджинному редиректі."
-   }
+   },
+   "severity_before_fix": "Medium",
+   "fix": "Виправлено (2026-11-08, спец. 051): хост з VISION_JIRA_HOSTS — лише https на 443, інші схема й порт — явним записом; клієнт Jira не йде за переадресацією й називає адресу. Стенд: переадресація на той самий сервер — старий API віддав туди Bearer-токен, новий не пішов; http:// на дозволеному хості — новий відмовляє."
   },
   {
    "id": "VIS-SEC-009",
@@ -394,7 +400,7 @@
    "id": "VIS-SEC-015",
    "previous_id": null,
    "title": "ReDoS: регулярний вираз із text-селектора правила елемента виконується над текстами дерева в головному потоці",
-   "severity": "Medium",
+   "severity": "Closed",
    "cvss": "CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:N/I:N/A:H (6.5)",
    "cwe": "CWE-1333",
    "owasp": "A05:2021-Security Misconfiguration",
@@ -412,12 +418,14 @@
    "effort": "M",
    "confidence": "Medium",
    "severity_2026_11_05": "Medium",
-   "status": "not_fixed",
-   "status_uk": "Не виправлено",
+   "status": "fixed",
+   "status_uk": "Закрито",
    "recheck": {
     "evidence": "backend/src/ui-tree/comparison-inputs.ts:106-120 (new RegExp(regex[1], flags) з селектора правила, без змін з 7b13af1); backend/src/ui-tree/variable-text.ts:26-31 (new RegExp(`^ *${source} *$`,'u') з шаблону до 200 символів, тексти до 2000 — MAX_CHECKED_TEXT:11); селектор обмежено лише @MaxLength(300) (backend/src/test-runs/dto/element-rule.dto.ts:13). Застосування — resolveRules/findBySelector у головному потоці (comparison-inputs.ts:206-227, ui-tree.service.ts:614).",
     "gap": "Виправлення не було. (a+)+$ вміщається в 300 символів; текст до 2000 символів дає катастрофічний бектрекінг на кожному порівнянні й відкритті structure. Суміжне — алгоритмічна складність XPath-селекторів (NEW-C-5)."
-   }
+   },
+   "severity_before_fix": "Medium",
+   "fix": "Виправлено (2026-11-08, спец. 051): вирази правил і нестабільного тексту — на RE2 з лінійним часом (linear-regex.ts) з перекладом зі значення JavaScript; знімок збігів до зміни не змінився, 30 000 згенерованих виразів збігаються з RegExp; зворотні посилання й перевірки вперед/назад відхиляються. Стенд: text:/(a+)+$/ на 30 літерах — старий API завис на 98 с для всіх, новий зберіг правило за 0,04 с."
   },
   {
    "id": "VIS-SEC-016",
@@ -1238,7 +1246,7 @@
    "id": "VIS-SEC-048",
    "previous_id": null,
    "title": "Новий GET /projects/:id/jira/types надсилає особистий токен Jira на адресу з query-рядка; перевірка проєкту декоративна (розширення VIS-SEC-008)",
-   "severity": "Low",
+   "severity": "Closed",
    "cvss": "CVSS:3.1/AV:A/AC:H/PR:L/UI:R/S:U/C:L/I:N/A:N (2.6)",
    "cwe": "CWE-319",
    "owasp": "A01:2021-Broken Access Control",
@@ -1261,9 +1269,11 @@
    "effort": "S",
    "confidence": "High",
    "source_agent_id": "NEW-B-1",
-   "status": "new",
-   "status_uk": "Нова",
-   "severity_2026_11_05": null
+   "status": "fixed",
+   "status_uk": "Закрито",
+   "severity_2026_11_05": null,
+   "severity_before_fix": "Low",
+   "fix": "Виправлено (2026-11-08, спец. 051): типи Jira для незбереженої адреси — за тими самими правилами (https/443, без переадресації), неіснуючий проєкт — 404 до виклику Jira."
   },
   {
    "id": "VIS-SEC-049",

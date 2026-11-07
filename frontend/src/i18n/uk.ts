@@ -307,6 +307,8 @@ export const uk: Messages = {
   "jira.openProfile": "Відкрити профіль",
   "jira.hostNotAllowed": "Сервер не дозволяє Jira за цією адресою.",
   "jira.failed": "Не вдалося завантажити типи з Jira.",
+  "jira.redirected":
+    "Jira за цією адресою переадресовує Vision на {location}. Vision не надсилає туди ваш токен: якщо це Jira, вкажіть цю адресу.",
   "jira.retry": "Спробувати ще",
 
   "secret.replace": "Замінити",

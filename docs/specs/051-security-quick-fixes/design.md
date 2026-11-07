@@ -9,7 +9,7 @@
 - **Секрети (US-1).** Чиста функція `secretProblems(env)` перевіряє `JWT_SECRET` і
   `VISION_SECRET_KEY` на відомі значення, довжину після обрізання й однаковість.
   - Викликає її `bootstrap` у `main.ts` до створення застосунку, поруч із наявною перевіркою
-    ключа (REQ-044-03), і зупиняє процес.
+    ключа зі специфікації 044, і зупиняє процес.
   - Застосунок у e2e-тестах збирається без `main.ts`, тож тести не зачіпаються. Контрольний
     сценарій, інструкція розробника й приклади отримують довгі значення.
 - **Jira (US-2).** Уся перевірка адреси вже йде через `jiraHostProblem` / `isAllowedJiraUrl`
@@ -41,9 +41,9 @@
   - **Старі правила.** Збережене правило з таким виразом має проблему `'pattern'`, не знаходить
     елемента (вже так для виразів, що не розбираються), а в `structure` у правила є поле
     `problem` (REQ-051-12).
-- **Порожня конфігурація порівняння (баг, не вимога 051).** `parseConfig` доповнює
-  розібраний об'єкт типовими значеннями для відсутніх ключів. Повна конфігурація лишається як
-  є.
+- **Порожня конфігурація порівняння (баг, не вимога 051).** `parseConfig` у pixelmatch, looks-same
+  й odiff доповнює розібраний об'єкт типовими значеннями для відсутніх ключів, як уже робили групи
+  змін. VLM лишається як був: його тест фіксує часткову конфігурацію. Повна конфігурація — як є.
 
 ## Компоненти
 
@@ -59,8 +59,8 @@
 | Лінійні вирази | `backend/src/ui-tree/linear-regex.ts` | переклад і компіляція, причина відмови |
 | Селектори й 033 | `backend/src/ui-tree/comparison-inputs.ts`, `variable-text.ts` | лінійний вираз замість `RegExp` |
 | Правила в структурі | `backend/src/ui-tree/ui-tree.service.ts` | поле `problem` у правила |
-| Конфігурація порівняння | `backend/src/compare/utils/index.ts` | типові значення для відсутніх ключів |
-| Інтерфейс | `frontend/src/components/TestDetailsDialog/TestDetailsModal.tsx`, `InsightsPanel.tsx`, `frontend/src/i18n/{en,uk}.ts`, `frontend/src/types/insights.ts` | ліміт областей, проблема `pattern` |
+| Конфігурація порівняння | `backend/src/compare/libs/{pixelmatch,looks-same,odiff}/*.service.ts` | типові значення для відсутніх ключів |
+| Інтерфейс | `frontend/src/components/TestDetailsDialog/TestDetailsModal.tsx`, `WhatsCompared.tsx`, `frontend/src/i18n/{en,uk}.ts`, `frontend/src/types/insights.ts` | ліміт областей, проблема `pattern` |
 | Документація | `DEPLOY.md`, `docs/guides/development.md`, `.env.demo.example`, `backend/.env.example`, `scripts/control-scenario.sh` | нові секрети, формат `VISION_JIRA_HOSTS` |
 
 ## Дані

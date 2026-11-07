@@ -313,6 +313,8 @@ export const en = {
   "jira.openProfile": "Open profile",
   "jira.hostNotAllowed": "This server does not allow Jira at this address.",
   "jira.failed": "Could not load the types from Jira.",
+  "jira.redirected":
+    "Jira at this address sends Vision on to {location}. Vision does not send your token there: if that is Jira, enter it as the address.",
   "jira.retry": "Try again",
 
   "secret.replace": "Replace",

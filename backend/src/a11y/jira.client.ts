@@ -8,7 +8,9 @@ export interface JiraConfig {
 export class JiraError extends Error {
   constructor(
     message: string,
-    readonly status?: number
+    readonly status?: number,
+    // where Jira redirected the call to: Vision does not follow it with the token (051)
+    readonly location?: string
   ) {
     super(message);
   }
@@ -106,11 +108,13 @@ export class JiraClient {
       redirect: 'manual',
     });
     if (response.status >= 300 && response.status < 400) {
-      const location = response.headers?.get('location') ?? 'an address it did not give';
+      const given = response.headers?.get('location') ?? undefined;
+      const location = given ? new URL(given, `${this.base}${path}`).toString() : undefined;
       throw new JiraError(
-        `Jira ${init.method ?? 'GET'} ${path} redirected to ${location}: Vision does not send the token there. ` +
-          "If that is Jira's address, put it in the project's Jira settings",
-        response.status
+        `Jira ${init.method ?? 'GET'} ${path} redirected to ${location ?? 'an address it did not give'}: ` +
+          "Vision does not send the token there. If that is Jira's address, put it in the project's Jira settings",
+        response.status,
+        location
       );
     }
     const text = await response.text();

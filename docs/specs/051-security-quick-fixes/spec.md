@@ -2,9 +2,9 @@
 
 | | |
 |---|---|
-| Статус | Approved |
+| Статус | Implemented |
 | Власник | Дмитро Назаренко |
-| Оновлено | 2026-11-07 |
+| Оновлено | 2026-11-08 |
 | Дизайн | [design.md](design.md), [tasks.md](tasks.md) |
 | Пов'язане | аудит `audit/report.pdf` (VIS-SEC-002, 005, 008, 015, 048); змінює [044](../044-secrets-at-rest/spec.md) REQ-044-03 і REQ-044-07; спирається на [045](../045-sign-in-and-api-hardening/spec.md), [027](../027-nameless-elements/spec.md), [033](../033-variable-text/spec.md) |
 

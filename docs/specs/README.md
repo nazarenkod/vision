@@ -117,7 +117,7 @@ docs/specs/NNN-коротка-назва/
 | [048](048-overview-checks-table/spec.md) | Одна таблиця перевірок на огляді, пристрої в шапці збірки | Implemented |
 | [049](049-settings-explained/spec.md) | Налаштування, які пояснюють себе: назва розділу UI-дерева, анімації опцій, типи Jira зі списку | Implemented |
 | [050](050-web-ui-tree/spec.md) | Веб як джерело UI-дерева | Draft |
-| [051](051-security-quick-fixes/spec.md) | Швидкі виправлення безпеки за аудитом 2026-11-07 | Approved |
+| [051](051-security-quick-fixes/spec.md) | Швидкі виправлення безпеки за аудитом 2026-11-07 | Implemented |
 
 Статусу `Verified` поки немає в жодної: інтеграцію з реальною Jira Cloud і прогони на сервері
 команда ще не підтвердила.

@@ -709,6 +709,25 @@ describe('TestRunsService', () => {
       ).rejects.toThrow('not a path from a stable element (function)');
       expect(service.findOne).not.toHaveBeenCalled();
     });
+
+    it('refuses to save a pattern with a back-reference or look-around, and says why', async () => {
+      service = await initService({});
+      service.findOne = jest.fn();
+      for (const selector of ['text:/(a)\\1/', 'text:/Pay(?= now)/']) {
+        await expect(
+          service.addElementRule('run', { scope: 'screen', selector, action: 'ignore' } as never)
+        ).rejects.toThrow('uses a back-reference or look-around, which Vision does not run');
+      }
+      await expect(
+        service.addElementRule('run', {
+          scope: 'screen',
+          selector: 'id:tv_fee',
+          action: 'variable',
+          parts: [{ text: 'Fee ' }, { pattern: '(?<=\\s)\\d+' }],
+        } as never)
+      ).rejects.toThrow('uses a back-reference or look-around, which Vision does not run');
+      expect(service.findOne).not.toHaveBeenCalled();
+    });
   });
 
   describe('saveDiffResult', () => {

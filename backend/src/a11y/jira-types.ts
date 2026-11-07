@@ -7,9 +7,10 @@ export interface JiraTypeLists {
 }
 
 /** Why the settings show no lists, for the person looking at them (REQ-049-04, 05, 13). */
-export type JiraTypesProblem = 'notSet' | 'hostNotAllowed' | 'noToken' | 'failed';
+export type JiraTypesProblem = 'notSet' | 'hostNotAllowed' | 'noToken' | 'failed' | 'redirected';
 
-export type JiraTypesResponse = JiraTypeLists | { problem: JiraTypesProblem };
+// redirected: where Jira sent the call, for the person to put in the settings if it is Jira (051)
+export type JiraTypesResponse = JiraTypeLists | { problem: JiraTypesProblem; location?: string };
 
 const byName = (a: string, b: string) => a.localeCompare(b, undefined, { sensitivity: 'base' });
 

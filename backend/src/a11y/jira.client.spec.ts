@@ -33,7 +33,11 @@ describe('JiraClient and redirects (051)', () => {
       const client = new JiraClient({ url: jira.url, token: 'personal-token' });
 
       await expect(client.getIssue('MOB-1')).rejects.toThrow(`redirected to ${elsewhere.url}/rest/api/2/issue/MOB-1`);
-      expect(jira.seen).toHaveLength(1);
+      await expect(client.getIssue('MOB-1')).rejects.toMatchObject({
+        status: 302,
+        location: `${elsewhere.url}/rest/api/2/issue/MOB-1`,
+      });
+      expect(jira.seen).toHaveLength(2);
       expect(elsewhere.seen).toEqual([]);
     } finally {
       await Promise.all([jira.close(), elsewhere.close()]);

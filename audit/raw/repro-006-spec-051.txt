@@ -1,0 +1,70 @@
+Стенд 2026-11-08: нативний Postgres 16 (синтетичні дані), API до 051 (коміт 77b5ded) на :14301 і після на :14302, мок-Jira на 127.0.0.1:47101-47103.
+
+=== VIS-SEC-002: старт API з різними секретами
+Terminated
+  before051  JWT_SECRET=change-me              → API стартував; 
+  after051   JWT_SECRET=change-me              → API не стартував; JWT_SECRET is a value from an example: replace it with a new random one (openssl rand -base64 32)
+Terminated
+  before051  JWT_SECRET=short-secret-123       → API стартував; 
+  after051   JWT_SECRET=short-secret-123       → API не стартував; JWT_SECRET is shorter than 32 characters: replace it with a new random one (openssl rand -base64 32)
+Terminated
+  before051  JWT_SECRET=однакові       → API стартував; 
+  after051   JWT_SECRET=однакові       → API не стартував; JWT_SECRET and VISION_SECRET_KEY are the same: each needs its own random value (openssl rand -base64 32)
+
+############ before
+--- VIS-SEC-008: зберегти адресу Jira http://127.0.0.1 (хост дозволений як ім'я)
+   onstraints; maxBranchLifetime must be a number conforming to the specified constraints; imageComparisonConfig must be a json string","path":"/projects"} -> 400
+--- VIS-SEC-008: типи Jira з адреси, що переадресовує на інший сервер
+   {"issueTypes":[],"linkTypes":[]} -> 200
+   сервер, куди вела переадресація, отримав: TARGET got /rest/api/2/issuetype Authorization=None TARGET got /rest/api/2/issueLinkType Authorization=None 
+--- VIS-SEC-048: типи Jira для проєкту, якого немає (адмін)
+   {"problem":"noToken"} -> 200
+   Jira отримала: 
+--- VIS-SEC-005: знімок з 21 і з 200 000 областей ігнорування (JSON)
+   21 областей: 201 за 0.060299s  new
+   паралельно /users/me: 0.004421s
+   паралельно /users/me: 1.974660s
+   200000 областей: 201 за 2.581926s  new
+--- VIS-SEC-015: правило text:/(a+)+$/ на екрані з текстом aaa…a! (30 літер)
+   паралельно /users/me: 97.910543s
+   зберегти правило: 000 за 120.001127s
+   правило зі зворотним посиланням: {"id":"708a2d8d-8c15-4101-8d94-d3d15a0d6c11","selector":"text:/(a)\\1/","action":"ignore"} -> 201
+############ after
+--- VIS-SEC-008: зберегти адресу Jira http://127.0.0.1 (хост дозволений як ім'я)
+   onstraints; maxBranchLifetime must be a number conforming to the specified constraints; imageComparisonConfig must be a json string","path":"/projects"} -> 400
+--- VIS-SEC-008: типи Jira з адреси, що переадресовує на інший сервер
+   {"problem":"failed"} -> 200
+   сервер, куди вела переадресація, отримав: 
+--- VIS-SEC-048: типи Jira для проєкту, якого немає (адмін)
+   {"statusCode":404,"message":"Project not found","path":"/projects/0b0b0b0b-0000-4000-8000-000000000000/jira/types?url=http://127.0.0.1:47102"} -> 404
+   Jira отримала: 
+--- VIS-SEC-005: знімок з 21 і з 200 000 областей ігнорування (JSON)
+   21 областей: 400 за 0.011346s  ignoreAreas must contain no more than 20 elements
+   паралельно /users/me: 0.004164s
+   200000 областей: 400 за 0.094420s  ignoreAreas must contain no more than 20 elements
+   паралельно /users/me: 0.004878s
+--- VIS-SEC-015: правило text:/(a+)+$/ на екрані з текстом aaa…a! (30 літер)
+   зберегти правило: 201 за 0.040493s
+   паралельно /users/me: 0.003902s
+   правило зі зворотним посиланням: {"statusCode":400,"message":"This xpath is not a path from a stable element (pattern)","path":"/test-runs/08c97471-910c-4cbc-92f7-d6f09dc7ff38/element-rules"} -> 400
+
+############ before
+--- VIS-SEC-008: переадресація на іншу адресу того самого сервера
+   {"issueTypes":[],"linkTypes":[]} -> 200
+   отримала адреса, куди вела переадресація: SAME-HOST got /stolen/rest/api/2/issuetype Authorization=Bearer personal-token-of-alice
+--- VIS-SEC-008: адреса Jira http:// на хості з VISION_JIRA_HOSTS=127.0.0.1 (типи задач)
+   {"issueTypes":[],"linkTypes":[]} -> 200
+--- VIS-SEC-015: правило зі зворотним посиланням
+   {"id":"c1c19be8-e932-4853-8a2a-ddc3dda7f4f5","selector":"text:/(a)\\1/","action":"ignore"} -> 201
+############ after
+--- VIS-SEC-008: переадресація на іншу адресу того самого сервера
+   {"problem":"failed"} -> 200
+   отримала адреса, куди вела переадресація: 
+--- VIS-SEC-008: адреса Jira http:// на хості з VISION_JIRA_HOSTS=127.0.0.1 (типи задач)
+   {"problem":"hostNotAllowed"} -> 200
+--- VIS-SEC-015: правило зі зворотним посиланням
+   {"statusCode":400,"message":"This pattern uses a back-reference or look-around, which Vision does not run: rewrite it without them","path":"/test-runs/08c97471-910c-4cbc-92f7-d6f09dc7ff38/element-rule
+{"problem":"redirected","location":"http://127.0.0.1:47103/stolen/rest/api/2/issuetype"}
+{"problem":"redirected","location":"http://127.0.0.1:47102/rest/api/2/issuetype"}
+
+Примітка: у repro-051 збереження адреси Jira через PUT /projects дало 400 на обох версіях через неповне тіло запиту в сценарії — перевірку правил адреси замінено запитом типів Jira (repro-051b).

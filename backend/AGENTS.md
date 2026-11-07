@@ -23,7 +23,7 @@
 | `src/reports/` | публічні посилання на звіт, `report-links.ts` — білий список полів публічного звіту; `GET /public/reports/:token` — єдиний маршрут з даними без входу ([ADR-0022](../docs/decisions/0022-public-report-links.md)) | [031](../docs/specs/031-build-overview/spec.md) |
 | `src/projects/project-access*.ts` | доступ до проєктів: `@ProjectFrom(...)` / `@NoProjectData()` на кожному маршруті, `ProjectAccessInterceptor` перевіряє до обробника (адмін — усе, решта — рядок `ProjectAccess`), `404`, для автотестів `403` | [042](../docs/specs/042-project-access/spec.md) |
 | `src/users/sign-in-limit.ts`, `account.ts`, `src/security.ts`, `src/http-exception.filter.ts` | вхід і API назовні: 5 спроб за 15 хв, пароль ≥ 12, LDAP чи SSO поряд з локальними акаунтами; CORS лише для `APP_FRONTEND_URL`, Swagger за `VISION_SWAGGER`, заголовки безпеки; помилка — `{ statusCode, message, path }` | [045](../docs/specs/045-sign-in-and-api-hardening/spec.md) |
-| `src/compare/` | піксельне порівняння (успадковане + області змін, пул воркерів) | — |
+| `src/compare/` | піксельне порівняння (успадковане + області змін, пул воркерів); пул виконує й правила доступності (`src/a11y/a11y.job.ts`), а завдання довше за `DIFF_JOB_TIMEOUT_MS` (60 с) зупиняє й не повторює | — |
 | `src/static/file-links*.ts`, `static.controller.ts` | знімки лише за підписом: `FileLinksInterceptor` додає `fileSignatures` у відповіді маршрутів з guard-ом, сокет і публічний звіт — самі; `/images/:name?sig=` віддає PNG, решта — 404 | [043](../docs/specs/043-protected-images/spec.md) |
 | `src/shared/events/` | сокет подій: вхід JWT на рукостисканні (`events-auth.ts`, `AuthService.verifyToken`), розрив на `exp`, підписка `subscribe` і розсилка в кімнату проєкту (`events-rooms.ts`) | [032](../docs/specs/032-authenticated-events/spec.md) |
 | `src/backups/` | сторінка Backups: стан бекапу, вхід у Google Drive кодом, розклад і запит на бекап у файлах для `scripts/vision-backup.sh` (ADR-0013) | [013](../docs/specs/013-backups-and-secrets/spec.md), [017](../docs/specs/017-backup-settings-ui/spec.md) |
@@ -59,6 +59,11 @@ npm run test:e2e / test:acceptance         # потрібні запущені P
   полів або `UserDto`.
 - **Новий секрет у базі** — через `sealSecret` при записі й `openSecret` лише там, де він іде назовні;
   у тестах ключ задає `src/jest.setup.ts`.
+- **Тіло запиту — DTO-клас, кожне поле з декоратором class-validator** (`@IsOptional()`, `@Allow()` для файла):
+  `StripUnknownFieldsPipe` (`src/shared/strip-unknown-fields.pipe.ts`) пропускає далі лише оголошені поля,
+  тож поле без декоратора до обробника не дійде. Тіло без класу (`string[]`, інлайн-тип) перевіряй руками й
+  додай маршрут у `CHECKED_BY_HAND` у `strip-unknown-fields.pipe.spec.ts`: тест падає на тілі без оголошених полів.
+  Застосунок і e2e ставлять одні й ті самі `globalPipes()`.
 - **Новий маршрут — з `@ProjectFrom(...)` або `@NoProjectData()`** (`src/projects/project-access.ts`):
   `project-access.routes.spec.ts` падає на маршруті без позначки й перевіряє відмову на кожному.
   Маршрут, що читає тіло пізніше (multipart), додає `ProjectAccessInterceptor` після свого (042).

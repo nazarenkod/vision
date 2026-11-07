@@ -3,6 +3,7 @@ import Pixelmatch from 'pixelmatch';
 import { IgnoreAreaDto } from '../../../test-runs/dto/ignore-area.dto';
 import { RawImage } from '../../utils';
 import { applyIgnoreAreas, downscale } from '../../utils';
+import { readPng } from '../../../shared/screenshot-limits';
 
 /**
  * CPU-bound part of "do these two screens carry the same change?": PNG decode,
@@ -66,8 +67,8 @@ export function computeChangeSignature(input: SignatureJobInput): SignatureJobOu
   let baselineImage: PNG;
   let checkpointImage: PNG;
   try {
-    baselineImage = PNG.sync.read(toBuffer(input.baseline));
-    checkpointImage = PNG.sync.read(toBuffer(input.image));
+    baselineImage = readPng(toBuffer(input.baseline));
+    checkpointImage = readPng(toBuffer(input.image));
   } catch {
     return { signature: null };
   }

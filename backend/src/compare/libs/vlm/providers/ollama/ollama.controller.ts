@@ -10,6 +10,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { FilesInterceptor } from '@nestjs/platform-express';
+import { screenshotLimits } from '../../../../../shared/screenshot-limits';
 import { ApiTags, ApiConsumes, ApiBody, ApiBearerAuth } from '@nestjs/swagger';
 import { Role } from '@prisma/client';
 import { OllamaService } from './ollama.service';
@@ -50,7 +51,7 @@ export class OllamaController {
       },
     },
   })
-  @UseInterceptors(FilesInterceptor('images', 2))
+  @UseInterceptors(FilesInterceptor('images', 2, { limits: { fileSize: screenshotLimits().maxBytes } }))
   async compareImages(
     @UploadedFiles() files: Express.Multer.File[],
     @Query('model') model: string,

@@ -3,7 +3,7 @@ import { ApiFile } from '../../shared/api-file.decorator';
 import { CreateTestRequestDto } from './create-test-request.dto';
 import { Transform, Type } from 'class-transformer';
 import { IgnoreAreaDto } from './ignore-area.dto';
-import { IsBoolean, IsNumber, IsOptional } from 'class-validator';
+import { Allow, IsBoolean, IsNumber, IsOptional } from 'class-validator';
 
 export class CreateTestRequestMultipartDto extends OmitType(CreateTestRequestDto, [
   'ignoreAreas',
@@ -11,6 +11,8 @@ export class CreateTestRequestMultipartDto extends OmitType(CreateTestRequestDto
   'diffTollerancePercent',
 ]) {
   @ApiFile()
+  // FileToBodyInterceptor puts the uploaded file here; declared, so the body pipe keeps it
+  @Allow()
   image: Express.Multer.File;
 
   @ApiPropertyOptional()

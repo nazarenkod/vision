@@ -53,7 +53,17 @@ export class LdapUsersService implements Users {
 
   /** Whether the directory has this person: then it decides their sign-in, not a local password (045). */
   async isInDirectory(email: string): Promise<boolean> {
-    return !!(await this.findUserInLdap(email));
+    return !!(await this.findInDirectory(email));
+  }
+
+  // The search answers "not found" with the sign-in error; here not found is an answer, not a failure.
+  private async findInDirectory(email: string): Promise<LdapEntry | null> {
+    try {
+      return await this.findUserInLdap(email);
+    } catch (error) {
+      if (error instanceof HttpException && error.getStatus() === HttpStatus.BAD_REQUEST) return null;
+      throw error;
+    }
   }
 
   private async findUserInLdap(email: string): Promise<LdapEntry> {
@@ -110,15 +120,31 @@ export class LdapUsersService implements Users {
     throw new HttpException('User creation is disabled. Use your LDAP-Credentials to login.', HttpStatus.BAD_REQUEST);
   }
 
+  /**
+   * The email is who the account is: sign-in through the directory finds the account by it. Taking
+   * it from the request let anyone give their account a colleague's email, and the colleague's first
+   * directory sign-in then landed in the attacker's account (VIS-SEC-006). So the email stays as it
+   * is, as with SSO; the directory's people get their names from the directory, by the email the
+   * account already has.
+   */
   async update(id: string, userDto: UpdateUserDto): Promise<UserLoginResponseDto> {
-    const userFromLdap = await this.findUserInLdap(userDto.email);
+    const current = await this.prismaService.user.findUnique({ where: { id }, select: { email: true } });
+    if (!current) throw new HttpException('User not found', HttpStatus.NOT_FOUND);
+    if (userDto.email !== undefined && userDto.email.trim().toLowerCase() !== current.email.toLowerCase()) {
+      throw new HttpException(
+        'The email comes from the company directory and cannot be changed here',
+        HttpStatus.BAD_REQUEST
+      );
+    }
+    const fromDirectory = await this.findInDirectory(current.email);
     const user = await this.prismaService.user.update({
       where: { id },
-      data: {
-        email: userFromLdap.mail.toString().trim().toLowerCase(),
-        firstName: userFromLdap.givenName.toString(),
-        lastName: userFromLdap.sn.toString(),
-      },
+      data: fromDirectory
+        ? {
+            firstName: fromDirectory[this.ldapConfig.attributeFirstName].toString(),
+            lastName: fromDirectory[this.ldapConfig.attributeLastName].toString(),
+          }
+        : { firstName: userDto.firstName, lastName: userDto.lastName },
     });
     const token = this.authService.signToken(user);
     return new UserLoginResponseDto(user, token);
@@ -131,6 +157,11 @@ export class LdapUsersService implements Users {
   }
 
   async login(userLoginRequestDto: UserLoginRequestDto) {
+    // A bind with an empty password is an anonymous bind, and many directories answer it with
+    // success: without this check anyone signed in as anyone (VIS-SEC-007).
+    if (!userLoginRequestDto.password?.trim()) {
+      throw new HttpException('Invalid email or password.', HttpStatus.BAD_REQUEST);
+    }
     const userFromLdap = await this.findUserInLdap(userLoginRequestDto.email);
     if (!userFromLdap) {
       throw new HttpException('Invalid email or password.', HttpStatus.BAD_REQUEST);

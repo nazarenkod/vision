@@ -6,6 +6,7 @@ import { join } from 'path';
 import { PixelmatchJobInput, PixelmatchJobOutput } from './libs/pixelmatch/pixelmatch.core';
 import { SignatureJobInput, SignatureJobOutput } from './libs/pixelmatch/signature.core';
 import { runWorkerJob, WorkerJobInput, WorkerJobOutput } from './libs/pixelmatch/worker-job';
+import { A11yJobInput, A11yJobOutput } from '../a11y/a11y.job';
 
 const WORKER_FILE = join(__dirname, 'libs', 'pixelmatch', 'pixelmatch.worker.js');
 
@@ -13,12 +14,16 @@ const WORKER_FILE = join(__dirname, 'libs', 'pixelmatch', 'pixelmatch.worker.js'
 const MAX_SPAWN_FAILURES = 3;
 // how many times a job may be handed to a worker before it is given up on
 const MAX_JOB_ATTEMPTS = 2;
+// A real screenshot compares in well under a second; a job still running after this is stuck
+// (a crafted input, VIS-SEC-005) and would hold its worker, and every upload queued behind it, forever.
+const DEFAULT_JOB_TIMEOUT_MS = 60_000;
 
 interface Job {
   input: WorkerJobInput;
   resolve: (output: WorkerJobOutput) => void;
   reject: (error: Error) => void;
   attempts: number;
+  timer?: NodeJS.Timeout;
 }
 
 /**
@@ -38,9 +43,10 @@ export class DiffWorkerPool implements OnModuleDestroy {
   // Queued jobs hold both full image buffers, so an unbounded queue could
   // exhaust memory under a flood of concurrent uploads.
   private readonly queueLimit = Number(process.env.DIFF_QUEUE_LIMIT) || 256;
+  protected readonly jobTimeoutMs = Number(process.env.DIFF_JOB_TIMEOUT_MS) || DEFAULT_JOB_TIMEOUT_MS;
   // The compiled worker file only exists in the built app (dist). Under
   // ts-jest / ts-node run the job inline instead.
-  private inline = !existsSync(WORKER_FILE);
+  protected inline = !existsSync(WORKER_FILE);
   private workers: Worker[] = [];
   private idle: Worker[] = [];
   private queue: Job[] = [];
@@ -51,6 +57,7 @@ export class DiffWorkerPool implements OnModuleDestroy {
 
   async run(input: PixelmatchJobInput): Promise<PixelmatchJobOutput>;
   async run(input: SignatureJobInput): Promise<SignatureJobOutput>;
+  async run(input: A11yJobInput): Promise<A11yJobOutput>;
   async run(input: WorkerJobInput): Promise<WorkerJobOutput> {
     if (this.inline) {
       return runWorkerJob(input);
@@ -77,11 +84,16 @@ export class DiffWorkerPool implements OnModuleDestroy {
     this.logger.log(`Started ${this.size} image diff workers`);
   }
 
+  protected createWorker(): Worker {
+    return new Worker(WORKER_FILE);
+  }
+
   private spawn(): void {
-    const worker = new Worker(WORKER_FILE);
+    const worker = this.createWorker();
     worker.on('message', (output: WorkerJobOutput & { error?: string }) => {
       const job = this.inFlight.get(worker);
       this.inFlight.delete(worker);
+      clearTimeout(job?.timer);
       // a message can arrive after the worker was dropped or the pool shut
       // down; taking it back would hand it a job it will never answer
       if (this.workers.includes(worker)) {
@@ -112,6 +124,7 @@ export class DiffWorkerPool implements OnModuleDestroy {
     this.idle = this.idle.filter((w) => w !== worker);
     const job = this.inFlight.get(worker);
     this.inFlight.delete(worker);
+    clearTimeout(job?.timer);
     if (job) {
       // a worker dying takes its job down with it; give the job one more run
       // rather than failing the upload waiting behind it
@@ -161,8 +174,25 @@ export class DiffWorkerPool implements OnModuleDestroy {
       const worker = this.idle.pop();
       const job = this.queue.shift();
       this.inFlight.set(worker, job);
+      job.timer = setTimeout(() => this.timeOut(worker, job), this.jobTimeoutMs);
       worker.postMessage(job.input);
     }
+  }
+
+  // A stuck job is failed, not retried: the same input would get stuck again. Its worker cannot be
+  // interrupted, so it is dropped and a fresh one takes its place. This is not a spawn failure:
+  // counting it would push the pool onto the main thread, where the next stuck job freezes the API.
+  private timeOut(worker: Worker, job: Job): void {
+    if (this.inFlight.get(worker) !== job) return;
+    this.inFlight.delete(worker);
+    this.workers = this.workers.filter((w) => w !== worker);
+    this.idle = this.idle.filter((w) => w !== worker);
+    job.reject(new Error(`Image comparison took longer than ${this.jobTimeoutMs} ms and was stopped`));
+    this.logger.error(`Image diff job ran over ${this.jobTimeoutMs} ms, replacing its worker`);
+    void worker.terminate();
+    if (this.destroyed) return;
+    this.spawn();
+    this.dispatch();
   }
 
   async onModuleDestroy(): Promise<void> {
@@ -173,6 +203,7 @@ export class DiffWorkerPool implements OnModuleDestroy {
     }
     this.queue = [];
     for (const job of this.inFlight.values()) {
+      clearTimeout(job.timer);
       job.reject(shutdownError);
     }
     this.inFlight.clear();

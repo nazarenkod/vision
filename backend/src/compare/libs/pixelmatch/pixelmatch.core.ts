@@ -5,6 +5,7 @@ import { applyIgnoreAreas, scaleImageToSize } from '../../utils';
 import { signatureOfDecoded } from './signature.core';
 import { encodeThumbnail } from './thumbnail.core';
 import { DiffRegion, findDiffRegions } from './regions.core';
+import { readPng } from '../../../shared/screenshot-limits';
 
 /**
  * CPU-bound part of the pixelmatch comparison, extracted so it can run inside
@@ -171,8 +172,8 @@ function toBuffer(data: Buffer | Uint8Array): Buffer {
 }
 
 export function computePixelmatchDiff(input: PixelmatchJobInput): PixelmatchJobOutput {
-  const baseline = PNG.sync.read(toBuffer(input.baseline));
-  const image = PNG.sync.read(toBuffer(input.image));
+  const baseline = readPng(toBuffer(input.baseline));
+  const image = readPng(toBuffer(input.image));
 
   if (baseline.data.equals(new Uint8Array(image.data.buffer, image.data.byteOffset, image.data.byteLength))) {
     return { equal: true };

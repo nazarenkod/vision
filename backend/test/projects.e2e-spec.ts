@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { INestApplication, ValidationPipe } from '@nestjs/common';
+import { INestApplication } from '@nestjs/common';
 import { AppModule } from '../src/app.module';
 import { UsersService } from '../src/users/users.service';
 import { requestWithAuth, haveUserLogged } from './preconditions';
@@ -7,6 +7,7 @@ import { ProjectsService } from '../src/projects/projects.service';
 import { randomUUID } from 'crypto';
 import { UserLoginResponseDto } from '../src/users/dto/user-login-response.dto';
 import { ProjectDto } from '../src/projects/dto/project.dto';
+import { globalPipes } from '../src/shared/strip-unknown-fields.pipe';
 
 const project: ProjectDto = {
   id: randomUUID(),
@@ -27,7 +28,7 @@ const project: ProjectDto = {
 };
 
 const projectServiceMock = {
-  findAll: () => ['test'],
+  findAll: () => [project],
   create: () => project,
   remove: () => project,
   update: () => project,
@@ -47,7 +48,7 @@ describe('Projects (e2e)', () => {
       .compile();
 
     app = moduleFixture.createNestApplication();
-    app.useGlobalPipes(new ValidationPipe());
+    app.useGlobalPipes(...globalPipes());
     usersService = moduleFixture.get<UsersService>(UsersService);
 
     await app.init();
@@ -90,7 +91,8 @@ describe('Projects (e2e)', () => {
     it('200', async () => {
       const res = await requestWithAuth(app, 'get', '/projects', loggedUser.token).send().expect(200);
 
-      expect(res.body).toEqual(expect.arrayContaining(projectServiceMock.findAll()));
+      // answers carry whether a Gemini key is set, never the key (044)
+      expect(res.body).toEqual([expect.objectContaining({ id: project.id, geminiApiKeySet: false })]);
     });
 
     it('401', async () => {
@@ -104,6 +106,7 @@ describe('Projects (e2e)', () => {
 
       expect(res.body).toStrictEqual({
         ...projectServiceMock.remove(),
+        geminiApiKeySet: false,
         createdAt: expect.any(String),
         updatedAt: expect.any(String),
       });
@@ -124,6 +127,7 @@ describe('Projects (e2e)', () => {
 
       expect(res.body).toStrictEqual({
         ...projectServiceMock.update(),
+        geminiApiKeySet: false,
         createdAt: expect.any(String),
         updatedAt: expect.any(String),
       });

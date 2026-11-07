@@ -1,4 +1,4 @@
-import { PNG, PNGWithMetadata } from 'pngjs';
+import { PNGWithMetadata } from 'pngjs';
 import { Logger } from '@nestjs/common';
 import { Static } from '../static.interface';
 import {
@@ -11,6 +11,7 @@ import {
 import { Readable } from 'stream';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { generateNewImageName } from '../utils';
+import { readPng } from '../../shared/screenshot-limits';
 
 // How long one pre-signed URL is reused before a new one is minted. Also the
 // lifetime S3 is asked to advertise on the object itself.
@@ -51,7 +52,7 @@ export class AWSS3Service implements Static {
       // baseline, so storage failures stay contained here
       const imageBuffer = await this.getImageBuffer(fileName);
       if (!imageBuffer) return undefined;
-      return PNG.sync.read(imageBuffer);
+      return readPng(imageBuffer);
     } catch (ex) {
       this.logger.error(`Error from read : Cannot get image: ${fileName}. ${ex}`);
     }

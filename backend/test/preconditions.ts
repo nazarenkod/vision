@@ -35,7 +35,7 @@ export const requestWithApiKey = (
 ): Test => request(app.getHttpServer())[method](url).set('apiKey', apiKey);
 
 export const haveUserLogged = async (usersService: UsersService, role: Role = 'admin') => {
-  const password = '123456';
+  const password = 'long-enough-password';
   const user = await usersService.createAccount(generateUser(password, role));
   const login = await usersService.login({
     email: user.email,

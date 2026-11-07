@@ -1,4 +1,5 @@
 import { PNG } from 'pngjs';
+import { Worker } from 'worker_threads';
 import { DiffWorkerPool } from './diff-worker-pool';
 
 // Opaque throughout: pixelmatch composites transparent pixels onto white, so a
@@ -53,5 +54,41 @@ describe('DiffWorkerPool', () => {
 
     expect(output.signature).toHaveLength(64);
     expect(output.signature.reduce((sum, value) => sum + value, 0)).toBeCloseTo(1);
+  });
+
+  describe('with a job that never finishes', () => {
+    // A worker that answers a job only when it is not marked stuck; a stuck one spins for good,
+    // as a crafted ignore area once did (VIS-SEC-005).
+    class StuckPool extends DiffWorkerPool {
+      protected readonly jobTimeoutMs = 300;
+      protected inline = false;
+      protected createWorker(): Worker {
+        return new Worker(
+          `const { parentPort } = require('worker_threads');
+           parentPort.on('message', (job) => {
+             if (job.stuck) for (;;) {}
+             parentPort.postMessage({ equal: true });
+           });`,
+          { eval: true }
+        );
+      }
+    }
+    let stuckPool: StuckPool;
+
+    beforeEach(() => {
+      stuckPool = new StuckPool();
+    });
+
+    afterEach(async () => {
+      await stuckPool.onModuleDestroy();
+    });
+
+    it('fails the stuck job after the timeout and keeps comparing the next ones', async () => {
+      const stuck = { kind: 'signature', stuck: true } as never;
+      const fine = { kind: 'signature' } as never;
+
+      await expect(stuckPool.run(stuck)).rejects.toThrow('took longer than 300 ms');
+      await expect(stuckPool.run(fine)).resolves.toEqual({ equal: true });
+    });
   });
 });

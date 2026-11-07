@@ -81,24 +81,22 @@ export const uk: Messages = {
   "settings.findPlaceholder": "Пошук",
   "settings.unsavedMark": "незбережені зміни",
   "explainer.button": "Що робить ця опція",
-  "explainer.before": "До",
-  "explainer.after": "Після",
-  "explainer.moves.on":
-    "Банер штовхає список униз. З увімкненою опцією зміна — лише банер: рядки просто зсунулися.",
-  "explainer.moves.off":
-    "Банер штовхає список униз. З вимкненою опцією зміни — і банер, і кожен зсунутий рядок.",
-  "explainer.diffDimensions.on":
-    "Екран приходить вищим. З увімкненою опцією зображення все одно порівнюються.",
-  "explainer.diffDimensions.off":
-    "Екран приходить вищим. З вимкненою опцією інший розмір — і порівняння не проходить.",
-  "explainer.antialiasing.on":
-    "Край літери виходить трохи іншого відтінку. З увімкненою опцією це не зміна.",
-  "explainer.antialiasing.off":
-    "Край літери виходить трохи іншого відтінку. З вимкненою опцією ці пікселі краю — зміна.",
-  "explainer.caret.on":
-    "Курсор у полі блимає. З увімкненою опцією його поява й зникнення — не зміна.",
-  "explainer.caret.off":
-    "Курсор у полі блимає. З вимкненою опцією курсор — зміна.",
+  "explainer.reference": "Еталон",
+  "explainer.current": "Поточний",
+  "explainer.whatVisionShows": "Що покаже Vision:",
+  "explainer.optionOff": "Опцію вимкнено",
+  "explainer.optionOn": "Опцію увімкнено",
+  "explainer.now": "зараз у проєкті",
+  "explainer.verdict.none": "Без змін",
+  "explainer.verdict.changes": "Змін: {count}",
+  "explainer.verdict.fails": "Не пройшло: інший розмір",
+  "explainer.moves": "Згори з’явився банер і зсунув список униз.",
+  "explainer.diffDimensions":
+    "Той самий екран прийшов з пристрою з вищим екраном.",
+  "explainer.antialiasing":
+    "Збільшено: згладжені пікселі на краю літери вийшли трохи світлішими.",
+  "explainer.caret":
+    "На еталоні курсор стояв у полі, а на поточному екрані блимнув і зник.",
   "settings.noSuchProject": "Такого проєкту немає",
   "settings.maybeDeleted": "Можливо, його видалили.",
   "settings.nothingMatches": "Нічого не знайдено за «{query}»",

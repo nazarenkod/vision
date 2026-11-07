@@ -307,8 +307,14 @@ test("explains the compare and ignore options with an animation", async ({
 
   await moves.click();
   const hint = page.getByTestId("explainer-moves");
-  await expect(hint.getByRole("img")).toBeVisible();
-  await expect(hint).toContainText("A banner pushes the list down.");
+  await expect(hint.getByRole("img")).toHaveCount(4);
+  // the project has the option off: that outcome is marked as now
+  await expect(hint.getByTestId("explainerResult-off")).toContainText(
+    "now in this project",
+  );
+  await expect(hint).toContainText(
+    "A banner came in on top and pushed the list down.",
+  );
   // the "?" explains; it does not flip the option
   expect(await switchOf.isChecked()).toBe(before);
   await page.keyboard.press("Escape");
@@ -318,7 +324,7 @@ test("explains the compare and ignore options with an animation", async ({
   await expect(page.getByTestId("explain-caret")).toBeVisible();
   await page.getByTestId("explain-caret").click();
   await expect(page.getByTestId("explainer-caret")).toContainText(
-    "The text caret blinks in a field.",
+    "The text caret was in the field on the baseline",
   );
 });
 

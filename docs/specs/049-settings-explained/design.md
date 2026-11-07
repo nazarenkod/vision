@@ -17,10 +17,11 @@
    тож `matchSettings` знаходить його за ними (REQ-049-11). Ідентифікатор розділу (`mobile`,
    `nav-mobile`, `section-mobile`) не змінюємо: на нього спираються тести й адреса.
 3. **«?» з анімацією.** Компонент `OptionExplainer`: кнопка «?» і `Popover` MUI з
-   SVG-схемою екрана. Кожна з чотирьох опцій має свою сцену — чисту функцію, що за станом опції
-   (`on`/`off`) і кадром (`before`/`after`) повертає опис фігур. Анімація — CSS keyframes на
-   SVG між двома кадрами циклом 2,4 с; при `prefers-reduced-motion` — два нерухомі кадри поруч
-   (REQ-049-25). Кольори — `tokens` (REQ-049-27), тож темна тема працює сама.
+   SVG-схемою екрана. Кожна з чотирьох опцій має свою сцену — чисту функцію, що повертає фігури еталона й
+   поточного екрана і два результати: з вимкненою й з увімкненою опцією (позначки й підсумок).
+   Підказка показує еталон, поточний екран і обидва результати, підсвічуючи стан проєкту:
+   так видно саме те, що змінює опція (REQ-049-22). Анімація — CSS keyframes на поточному
+   екрані циклом 2,4 с; при `prefers-reduced-motion` — нерухомий кадр (REQ-049-25). Кольори — `tokens` (REQ-049-27), тож темна тема працює сама.
 
 ## Компоненти
 
@@ -95,9 +96,9 @@ sequenceDiagram
 | REQ-049-20 | `frontend/integration_tests/test/projectSettings.spec.ts › explains the compare and ignore options with an animation` |
 | REQ-049-21 | `frontend/integration_tests/test/projectSettings.spec.ts › explains the compare and ignore options with an animation` |
 | REQ-049-28 | `frontend/integration_tests/test/projectSettings.spec.ts › explains the compare and ignore options with an animation` |
-| REQ-049-22 | `frontend/src/components/ProjectForm/explainerScenes.test.ts › marks the change only when the option lets it through` |
+| REQ-049-22 | `frontend/src/components/ProjectForm/explainerScenes.test.ts › marks the change only when the option lets it through`; `frontend/src/components/ProjectForm/OptionExplainer.test.tsx › shows the outcome with the option off and on…` |
 | REQ-049-23 | `frontend/src/components/ProjectForm/explainerScenes.test.ts › draws every scene from shapes alone` |
 | REQ-049-24 | `frontend/src/components/ProjectForm/OptionExplainer.test.tsx › plays the animation only while the hint is open` |
-| REQ-049-25 | `frontend/src/components/ProjectForm/OptionExplainer.test.tsx › shows two still frames when motion is reduced` |
+| REQ-049-25 | `frontend/src/components/ProjectForm/OptionExplainer.test.tsx › shows still pictures when motion is reduced` |
 | REQ-049-26 | `frontend/src/components/ProjectForm/OptionExplainer.test.tsx › describes the animation for screen readers` |
 | REQ-049-27 | `manual: перемкнути тему (⇧D) з відкритою підказкою → схема в кольорах теми, без білих плям у темній` |

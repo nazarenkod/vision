@@ -2,10 +2,10 @@
 
 | | |
 |---|---|
-| Статус | Draft |
+| Статус | Approved |
 | Власник | Дмитро Назаренко |
 | Оновлено | 2026-11-08 |
-| Дизайн | design.md з'явиться після `Approved` |
+| Дизайн | [design.md](design.md), [tasks.md](tasks.md) |
 | Пов'язане | аудит `audit/report.pdf` (VIS-SEC-009, 011, 018, 020); змінює [032](../032-authenticated-events/spec.md) REQ-032-04 і [045](../045-sign-in-and-api-hardening/spec.md) REQ-045-08; спирається на [043](../043-protected-images/spec.md), [051](../051-security-quick-fixes/spec.md) |
 
 ## Контекст і проблема

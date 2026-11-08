@@ -251,6 +251,42 @@ describe('OidcUsersService', () => {
       expect(result.token).toBe('vision-jwt');
     });
 
+    it('keeps the role an admin gave when SSO names no admin group', async () => {
+      mockCallback.mockResolvedValue({
+        claims: () => ({ email: 'test@example.com', email_verified: true, groups: ['qa'] }),
+      });
+      for (const role of [Role.guest, Role.editor]) {
+        update.mockClear();
+        findUnique.mockResolvedValue({ ...user, role });
+        await service.handleCallback({ code: 'code', state: 'mock-state' }, checks);
+        expect(update).not.toHaveBeenCalled();
+      }
+    });
+
+    it('takes admin away from someone out of the admin group, as before', async () => {
+      mockCallback.mockResolvedValue({
+        claims: () => ({ email: 'test@example.com', email_verified: true, groups: ['qa'] }),
+      });
+      findUnique.mockResolvedValue({ ...user, role: Role.admin });
+      update.mockResolvedValue({ ...user, role: Role.editor });
+
+      await service.handleCallback({ code: 'code', state: 'mock-state' }, checks);
+
+      expect(update).toHaveBeenCalledWith({ where: { id: user.id }, data: { role: Role.editor } });
+    });
+
+    it('makes a guest in the admin group an admin, as before', async () => {
+      mockCallback.mockResolvedValue({
+        claims: () => ({ email: 'test@example.com', email_verified: true, groups: ['vision-admin'] }),
+      });
+      findUnique.mockResolvedValue({ ...user, role: Role.guest });
+      update.mockResolvedValue({ ...user, role: Role.admin });
+
+      await service.handleCallback({ code: 'code', state: 'mock-state' }, checks);
+
+      expect(update).toHaveBeenCalledWith({ where: { id: user.id }, data: { role: Role.admin } });
+    });
+
     it('throws when the email claim is missing', async () => {
       mockCallback.mockResolvedValue({
         claims: () => ({ given_name: 'No', family_name: 'Mail' }),

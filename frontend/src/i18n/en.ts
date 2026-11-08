@@ -1078,6 +1078,8 @@ export const en = {
 
   // auth
   "auth.orLocal": "or with a local account",
+  "auth.ssoNotStartedHere":
+    "This sign-in was not started in this browser. Sign in again.",
   "auth.subtitleSso": "With your company account or a local one.",
   "auth.emailPlaceholder": "name@company.com",
   "auth.brandLine":

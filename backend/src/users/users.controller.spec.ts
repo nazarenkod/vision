@@ -243,6 +243,51 @@ describe('Users Controller', () => {
     expect(res.redirect).toHaveBeenCalledWith('http://localhost:8080/login#token=jwt');
   });
 
+  // the tab that started the sign-in is the only one that takes its token (052, REQ-052-07)
+  it('hands the nonce of the sign-in back with the token', async () => {
+    usersService.isOidcEnabled.mockReturnValue(true);
+    usersService.oidcGetAuthorizationUrl.mockResolvedValue({
+      url: 'https://idp.example.com/authorize',
+      state: 'state',
+      codeVerifier: 'verifier',
+    });
+    const login = { cookie: jest.fn(), redirect: jest.fn() };
+    const nonce = 'Zm9vYmFyYmF6cXV4MTIzNDU2';
+
+    await controller.oidcLogin(login as never, nonce);
+
+    expect(login.cookie).toHaveBeenCalledWith('oidc_state', `state.verifier.${nonce}`, expect.anything());
+    usersService.oidcHandleCallback.mockResolvedValue({ token: 'jwt' });
+    usersService.oidcBuildFrontendRedirect.mockReturnValue('http://localhost:8080/login#token=jwt&nonce=x');
+    const res = { clearCookie: jest.fn(), redirect: jest.fn(), status: jest.fn().mockReturnThis(), send: jest.fn() };
+
+    await controller.oidcCallback(
+      { headers: { cookie: `oidc_state=state.verifier.${nonce}` }, query: { code: 'code', state: 'state' } } as never,
+      res as never
+    );
+
+    expect(usersService.oidcHandleCallback).toHaveBeenCalledWith(
+      { code: 'code', state: 'state' },
+      { state: 'state', codeVerifier: 'verifier' }
+    );
+    expect(usersService.oidcBuildFrontendRedirect).toHaveBeenLastCalledWith('jwt', undefined, nonce);
+  });
+
+  it('keeps no value that is not one the interface makes', async () => {
+    usersService.isOidcEnabled.mockReturnValue(true);
+    usersService.oidcGetAuthorizationUrl.mockResolvedValue({
+      url: 'https://idp',
+      state: 'state',
+      codeVerifier: 'verifier',
+    });
+    const login = { cookie: jest.fn(), redirect: jest.fn() };
+
+    await controller.oidcLogin(login as never, 'short');
+    await controller.oidcLogin(login as never, 'with.a.dot.in.it.and.long.enough');
+
+    expect(login.cookie.mock.calls.map((call) => call[1])).toEqual(['state.verifier', 'state.verifier']);
+  });
+
   it('returns 404 on the callback when OIDC is disabled', async () => {
     usersService.isOidcEnabled.mockReturnValue(false);
     const res = { clearCookie: jest.fn(), redirect: jest.fn(), status: jest.fn().mockReturnThis(), send: jest.fn() };

@@ -12,6 +12,7 @@ import {
   HttpStatus,
   HttpCode,
   Param,
+  Query,
 } from '@nestjs/common';
 import { Request, Response } from 'express';
 import { UsersService } from './users.service';
@@ -34,6 +35,7 @@ import { Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { NoProjectData } from '../projects/project-access';
 import { AuthService } from '../auth/auth.service';
+import { browserNonce, readStateCookie, stateCookieValue } from './oidc/oidc-browser';
 
 const OIDC_STATE_COOKIE = 'oidc_state';
 
@@ -98,7 +100,7 @@ export class UsersController {
 
   @NoProjectData()
   @Get('oidc/login')
-  async oidcLogin(@Res() res: Response): Promise<void> {
+  async oidcLogin(@Res() res: Response, @Query('nonce') nonce?: string): Promise<void> {
     if (!this.usersService.isOidcEnabled()) {
       res.status(HttpStatus.NOT_FOUND).send('OIDC is not enabled.');
       return;
@@ -115,7 +117,8 @@ export class UsersController {
       return;
     }
     const { url, state, codeVerifier } = authorization;
-    res.cookie(OIDC_STATE_COOKIE, `${state}.${codeVerifier}`, {
+    // the tab's value rides in the cookie and comes back with the token (REQ-052-07)
+    res.cookie(OIDC_STATE_COOKIE, stateCookieValue({ state, codeVerifier, nonce: browserNonce(nonce) }), {
       httpOnly: true,
       sameSite: 'lax',
       secure: this.configService.get<string>('OIDC_REDIRECT_URI', '').startsWith('https'),
@@ -136,10 +139,11 @@ export class UsersController {
     let target = this.usersService.oidcBuildFrontendRedirect(undefined, 'oidc_login_failed');
     try {
       // Inside the try: decodeURIComponent throws on a malformed cookie value.
-      const [state, codeVerifier] = (readCookie(req, OIDC_STATE_COOKIE) ?? '').split('.');
-      if (!state || !codeVerifier) {
+      const started = readStateCookie(readCookie(req, OIDC_STATE_COOKIE));
+      if (!started) {
         throw new Error('Missing or malformed OIDC state cookie.');
       }
+      const { state, codeVerifier } = started;
       // Repeated query keys produce arrays; keep only scalar strings so the
       // callback sees a plain parameter map.
       const params: Record<string, string> = {};
@@ -152,7 +156,7 @@ export class UsersController {
         state,
         codeVerifier,
       });
-      target = this.usersService.oidcBuildFrontendRedirect(token);
+      target = this.usersService.oidcBuildFrontendRedirect(token, undefined, started.nonce);
     } catch (e) {
       this.logger.warn(`OIDC callback failed: ${e?.message ?? e}`);
     } finally {

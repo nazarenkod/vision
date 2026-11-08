@@ -215,3 +215,103 @@ test("the comparison drawing rests on its finished state with reduced motion", a
   await expect.poll(() => style("authVariableClock", "opacity")).toBe("0");
   await expect.poll(() => style("authMovedButton", "transform")).toBe("none");
 });
+
+// A sign-in through SSO counts only in the tab that started it (052, REQ-052-07)
+test.describe("signing in after SSO", () => {
+  const nonce = "Zm9vYmFyYmF6cXV4MTIzNDU2Nzg5";
+  const user = {
+    id: "u1",
+    email: "ann@bank.test",
+    firstName: "Ann",
+    lastName: "B",
+    role: "editor",
+  };
+
+  test("starts SSO with a value this tab keeps", async ({ page }) => {
+    await page.route("**/users/oidc/enabled", (route) =>
+      route.fulfill({ body: "true" }),
+    );
+    // 204 to the way to the provider: the browser stays on Vision, so the tab can be read
+    await page.route("**/users/oidc/login*", (route) =>
+      route.fulfill({ status: 204 }),
+    );
+    await page.goto("/login");
+    // an explicit sign-out keeps the page from going to the provider by itself
+    await page.evaluate(() => sessionStorage.setItem("oidcLoggedOut", "true"));
+    await page.reload();
+
+    const [request] = await Promise.all([
+      page.waitForRequest("**/users/oidc/login*"),
+      // the navigation the 204 answers never finishes: nothing to wait for
+      page.getByTestId("oidcLoginBtn").click({ noWaitAfter: true }),
+    ]);
+    const sent = new URL(request.url()).searchParams.get("nonce");
+    expect(sent).toMatch(/^[A-Za-z0-9_-]{16,128}$/);
+    expect(await page.evaluate(() => sessionStorage.getItem("oidcNonce"))).toBe(
+      sent,
+    );
+  });
+
+  test("signs in when the token comes back to the tab that started it", async ({
+    page,
+  }) => {
+    let asked = 0;
+    await page.route("**/users/me", (route) => {
+      asked++;
+      return route.fulfill({ body: JSON.stringify(user) });
+    });
+    await page.route("**/projects", (route) => route.fulfill({ body: "[]" }));
+    await page.goto("/login");
+    await page.evaluate(
+      (value) => sessionStorage.setItem("oidcNonce", value),
+      nonce,
+    );
+    // away and back, as the provider sends the tab: a new fragment alone loads nothing
+    await page.goto("about:blank");
+
+    await page.goto(`/login#token=the-token&nonce=${nonce}`);
+
+    await expect(page).not.toHaveURL(/\/login/);
+    expect(asked).toBeGreaterThan(0);
+    expect(
+      await page.evaluate(
+        () => JSON.parse(localStorage.getItem("user") ?? "{}").token,
+      ),
+    ).toBe("the-token");
+    // the value is used once
+    expect(
+      await page.evaluate(() => sessionStorage.getItem("oidcNonce")),
+    ).toBeNull();
+  });
+
+  test("does not sign in from a link the browser did not start", async ({
+    page,
+  }) => {
+    let asked = 0;
+    await page.route("**/users/me", (route) => {
+      asked++;
+      return route.fulfill({ body: JSON.stringify(user) });
+    });
+
+    await page.goto(`/login#token=someone-elses-token&nonce=${nonce}`);
+
+    await expect(
+      page.getByText(
+        "This sign-in was not started in this browser. Sign in again.",
+      ),
+    ).toBeVisible();
+    expect(page.url()).not.toContain("token");
+    expect(asked).toBe(0);
+    expect(await page.evaluate(() => localStorage.getItem("user"))).toBeNull();
+
+    // the same with a link that carries no value at all, as links before 052 did
+    await page.goto("about:blank");
+    await page.goto("/login#token=someone-elses-token");
+    await expect(
+      page.getByText(
+        "This sign-in was not started in this browser. Sign in again.",
+      ),
+    ).toBeVisible();
+    expect(asked).toBe(0);
+  });
+});

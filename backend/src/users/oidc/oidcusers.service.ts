@@ -28,6 +28,17 @@ type OIDCConfig = {
   requireVerifiedEmail: boolean;
 };
 
+/**
+ * The role a person has after signing in through SSO (052, VIS-SEC-020). The provider decides
+ * only who is an admin: its admin group makes one, and an admin out of the group falls back to
+ * the default role. Editor and guest are an admin's decision in Vision, which a sign-in keeps:
+ * before, someone the admin made a guest was an editor again on the next sign-in.
+ */
+export function roleAtSignIn(current: Role, inAdminGroup: boolean, defaultRole: Role): Role {
+  if (inAdminGroup) return Role.admin;
+  return current === Role.admin ? defaultRole : current;
+}
+
 export class OidcUsersService implements Users {
   private readonly logger: Logger = new Logger(OidcUsersService.name);
   private readonly oidcConfig: OIDCConfig;
@@ -145,10 +156,12 @@ export class OidcUsersService implements Users {
    * URL the browser is redirected to after OIDC finished (success or error).
    * The token travels in the URL fragment so it never reaches server logs.
    */
-  buildFrontendRedirect(token?: string, error?: string): string {
+  buildFrontendRedirect(token?: string, error?: string, nonce?: string | null): string {
     const base = `${this.appFrontendUrl}/login`;
     if (token) {
-      return `${base}#token=${encodeURIComponent(token)}`;
+      // the tab that started the sign-in checks this value before it takes the token (REQ-052-07)
+      const tab = nonce ? `&nonce=${encodeURIComponent(nonce)}` : '';
+      return `${base}#token=${encodeURIComponent(token)}${tab}`;
     }
     return `${base}#error=${encodeURIComponent(error ?? 'oidc_login_failed')}`;
   }
@@ -210,9 +223,12 @@ export class OidcUsersService implements Users {
       user = await this.createUserFromClaimsOrFindConcurrent(claims, email, role);
     } else if (!hasRoleClaim) {
       this.logger.warn(`Claim '${this.oidcConfig.roleClaim}' not found for '${email}'. Keeping role '${user.role}'.`);
-    } else if (user.role !== role) {
-      this.logger.log(`Updating role of '${email}' from '${user.role}' to '${role}' based on OIDC claims.`);
-      user = await this.prismaService.user.update({ where: { id: user.id }, data: { role } });
+    } else {
+      const next = roleAtSignIn(user.role, role === Role.admin, this.oidcConfig.defaultRole);
+      if (next !== user.role) {
+        this.logger.log(`Updating role of '${email}' from '${user.role}' to '${next}' based on OIDC claims.`);
+        user = await this.prismaService.user.update({ where: { id: user.id }, data: { role: next } });
+      }
     }
 
     const token = await this.authService.signToken(user);

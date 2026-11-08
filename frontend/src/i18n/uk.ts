@@ -1138,6 +1138,8 @@ export const uk: Messages = {
   "backups.open": "Відкрити резервні копії",
 
   // auth
+  "auth.ssoNotStartedHere":
+    "Цей вхід почато не в цьому браузері. Увійдіть ще раз.",
   "auth.orLocal": "або локальним акаунтом",
   "auth.subtitleSso": "Корпоративним акаунтом або локальним.",
   "auth.emailPlaceholder": "name@company.com",

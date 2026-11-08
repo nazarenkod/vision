@@ -180,8 +180,8 @@ export class UsersService {
     return result;
   }
 
-  oidcBuildFrontendRedirect(token?: string, error?: string): string {
-    return this.oidcUsersService.buildFrontendRedirect(token, error);
+  oidcBuildFrontendRedirect(token?: string, error?: string, nonce?: string | null): string {
+    return this.oidcUsersService.buildFrontendRedirect(token, error, nonce);
   }
 
   private get oidcUsersService(): OidcUsersService {

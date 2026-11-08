@@ -36,6 +36,12 @@ const LoginPage = () => {
     // Drop the fragment so the token is not kept in history or bookmarked.
     window.history.replaceState(null, "", window.location.pathname);
 
+    // a link with someone's token signs in nobody: only the tab that started the sign-in (REQ-052-07)
+    if (token && !usersService.takesOidcToken(params.get("nonce"))) {
+      enqueueSnackbar(t("auth.ssoNotStartedHere"), { variant: "warning" });
+      return;
+    }
+
     if (token) {
       usersService
         .completeOidcLogin(token)
@@ -47,7 +53,7 @@ const LoginPage = () => {
     } else {
       enqueueSnackbar("SSO login failed.", { variant: "error" });
     }
-  }, [enqueueSnackbar, navigate, userDispatch]);
+  }, [enqueueSnackbar, navigate, userDispatch, t]);
 
   return (
     <AuthLayout

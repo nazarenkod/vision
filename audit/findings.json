@@ -253,7 +253,7 @@
    "id": "VIS-SEC-009",
    "previous_id": null,
    "title": "Немає відкликання сесій: logout, зміна пароля, блокування й зміна ролі не гасять JWT і сокет",
-   "severity": "Medium",
+   "severity": "Closed",
    "cvss": "CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:H/I:L/A:N (7.1)",
    "cwe": "CWE-613",
    "owasp": "A07:2021-Identification and Authentication Failures",
@@ -271,12 +271,14 @@
    "effort": "M",
    "confidence": "High",
    "severity_2026_11_05": "Medium",
-   "status": "not_fixed",
-   "status_uk": "Не виправлено",
+   "status": "fixed",
+   "status_uk": "Закрито",
    "recheck": {
     "evidence": "backend/src/auth/auth.service.ts:59-66 (у JWT лише email, без jti/версії); backend/src/auth/jwt.strategy.ts:94-104 (перевірка лише наявності рядка за email, isActive не перевіряється — grep isActive у backend/src дає лише тести); frontend/src/services/users.service.ts:189-191 (logout лише чистить localStorage); users.service.ts:77-98 (зміна/встановлення пароля не гасить токени), :188-197 (зміна ролі не гасить); events.gateway.ts:65-81 (сокет перевіряється лише при рукостисканні).",
     "gap": "Частково пом'якшено лише для доступу до проєкту: leaveProject (events.gateway.ts:115, projects.controller.ts:152) виводить сокети з кімнати при знятті доступу. Видалений акаунт/понижена роль/змінений пароль — токен і сокет живуть до exp (JWT_LIFE_TIME, типово 1d). Дає основу для NEW-A-1 (зміна пароля чужим живим токеном) і NEW-A-3."
-   }
+   },
+   "fix": "Виправлено (2026-11-08, спец. 052): кожен вхід (пароль, LDAP, SSO) — рядок Session, його id у токені (sid); JwtStrategy і рукостискання сокета відмовляють завершеній сесії. POST /users/logout завершує цей браузер; нова власна пароль — усі інші входи; пароль від адміна і видалення — усі; сокети закриваються (fetchSockets, і через Redis), зміна ролі наново перевіряє кімнати. Токени до оновлення діють до виходу чи зміни пароля (User.tokensValidAfter). Стенд: audit/raw/repro-007-spec-052.txt — 8 тестів падають на старому коді, 11/11 на новому.",
+   "severity_before_fix": "Medium"
   },
   {
    "id": "VIS-SEC-010",
@@ -330,12 +332,13 @@
    "effort": "M",
    "confidence": "High",
    "severity_2026_11_05": "Medium",
-   "status": "not_fixed",
-   "status_uk": "Не виправлено",
+   "status": "partially_fixed",
+   "status_uk": "Частково",
    "recheck": {
     "evidence": "backend/src/security.ts:33-38 (лише nosniff, X-Frame-Options, Referrer-Policy, COOP — без Content-Security-Policy і Strict-Transport-Security); frontend/nginx/default.conf:4-8 (те саме); docker-compose.demo.yml:31 `\"${DEMO_UI_PORT:-18080}:8080\"`, :109 `\"${DEMO_API_PORT:-14200}:3000\"` — публікація на 0.0.0.0 по HTTP; backend/src/main.ts:15-26 — HTTPS лише якщо є ./secrets/ssl.*.",
     "gap": "Без CSP будь-який XSS забирає JWT з localStorage (S-13); без TLS — JWT, паролі й API-ключі в мережі банку відкритим текстом. Диф 7b13af1..HEAD цих файлів не змінював."
-   }
+   },
+   "fix": "Частково (2026-11-08, спец. 052): CSP в nginx (шаблон nginx/csp.template, адреса API — при старті контейнера) і в API (default-src 'none'); весь Playwright іде під тією самою політикою й падає на порушенні. HSTS — лише на запит, що прийшов по https (X-Forwarded-Proto), бо Vision поки працює без сертифіката (рішення власника). TLS-термінація в поставці не додана — лишається."
   },
   {
    "id": "VIS-SEC-013",
@@ -488,7 +491,7 @@
    "id": "VIS-SEC-018",
    "previous_id": null,
    "title": "Login CSRF / фіксація сесії: /login#token=<будь-який JWT> входить без state",
-   "severity": "Medium",
+   "severity": "Closed",
    "cvss": "CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:U/C:L/I:H/A:N (6.3)",
    "cwe": "CWE-352",
    "owasp": "A01:2021-Broken Access Control",
@@ -505,12 +508,14 @@
    "effort": "S",
    "confidence": "Medium",
    "severity_2026_11_05": "Medium",
-   "status": "not_fixed",
-   "status_uk": "Не виправлено",
+   "status": "fixed",
+   "status_uk": "Закрито",
    "recheck": {
     "evidence": "frontend/src/pages/LoginPage.tsx:27-46 бере будь-який `#token=` з фрагмента, викликає /users/me і зберігає сесію; frontend/src/services/users.service.ts:240-247 completeOidcLogin без жодної прив'язки до запущеного входу; backend/src/users/oidc/oidcusers.service.ts:148-154 видає токен у фрагменті.",
     "gap": "Login CSRF/фіксація сесії лишається: посилання https://vision/login#token=<JWT нападника> мовчки входить жертвою в акаунт нападника (жертва далі завантажує туди дані/рішення, вводить свій токен Jira у профіль — PUT /users/jira пише в акаунт нападника). Зміни #23–#31 LoginPage не зачепили (7 рядків — лише макет)."
-   }
+   },
+   "fix": "Виправлено (2026-11-08, спец. 052): інтерфейс перед SSO кладе випадковий nonce у sessionStorage вкладки; API несе його в cookie стану й повертає у фрагменті; LoginPage приймає #token= лише з тим самим nonce, інакше прибирає фрагмент. Чуже посилання /login#token=… більше не входить. Тести: login.spec.ts (Playwright), users.controller.spec.ts, oidc-browser.spec.ts.",
+   "severity_before_fix": "Medium"
   },
   {
    "id": "VIS-SEC-019",
@@ -563,12 +568,13 @@
    "effort": "M",
    "confidence": "Medium",
    "severity_2026_11_05": "Medium",
-   "status": "not_fixed",
-   "status_uk": "Не виправлено",
+   "status": "partially_fixed",
+   "status_uk": "Частково",
    "recheck": {
     "evidence": "backend/src/users/oidc/oidcusers.service.ts:53 типове `'vision-admin,admin'`; :213-215 роль з IdP перетирає локальну при кожному вході; docker-compose.demo.yml:82 `OIDC_ADMIN_VALUES: ${OIDC_ADMIN_VALUES:-vision-admin,admin}` (у .env.demo.example:36 закоментовано `vision-admin`).",
     "gap": "Понижений адміном до guest при наступному SSO-вході знову editor/admin; група IdP з назвою «admin» (будь-якої системи) дає адміна Vision."
-   }
+   },
+   "fix": "Частково (2026-11-08, спец. 052): SSO більше не повертає роль, яку змінив адмін: адміном робить лише група адмінів, без неї адмін стає типовою роллю, інакше лишається роль з бази (roleAtSignIn); сокети перевіряються наново. Типові OIDC_ADMIN_VALUES (vision-admin,admin) лишено рішенням власника."
   },
   {
    "id": "VIS-SEC-021",

@@ -118,7 +118,7 @@ docs/specs/NNN-коротка-назва/
 | [049](049-settings-explained/spec.md) | Налаштування, які пояснюють себе: назва розділу UI-дерева, анімації опцій, типи Jira зі списку | Implemented |
 | [050](050-web-ui-tree/spec.md) | Веб як джерело UI-дерева | Draft |
 | [051](051-security-quick-fixes/spec.md) | Швидкі виправлення безпеки за аудитом 2026-11-07 | Implemented |
-| [052](052-sessions-and-browser-hardening/spec.md) | Сесії й захист браузера | Approved |
+| [052](052-sessions-and-browser-hardening/spec.md) | Сесії й захист браузера | Implemented |
 
 Статусу `Verified` поки немає в жодної: інтеграцію з реальною Jira Cloud і прогони на сервері
 команда ще не підтвердила.

@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| Статус | Approved |
+| Статус | Implemented |
 | Власник | Дмитро Назаренко |
 | Оновлено | 2026-11-08 |
 | Дизайн | [design.md](design.md), [tasks.md](tasks.md) |

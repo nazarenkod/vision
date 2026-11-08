@@ -146,7 +146,7 @@ export class LdapUsersService implements Users {
           }
         : { firstName: userDto.firstName, lastName: userDto.lastName },
     });
-    const token = this.authService.signToken(user);
+    const token = await this.authService.signToken(user);
     return new UserLoginResponseDto(user, token);
   }
 
@@ -191,7 +191,7 @@ export class LdapUsersService implements Users {
       user = await this.createUserFromLdapEntry(userFromLdap);
     }
 
-    const token = this.authService.signToken(user);
+    const token = await this.authService.signToken(user);
     return new UserLoginResponseDto(user, token);
   }
 

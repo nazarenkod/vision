@@ -186,8 +186,26 @@ function setPassword(id: string, password: string): Promise<boolean> {
   ).then(handleResponse);
 }
 
+// The server ends this sign-in, so the token opens nothing even if someone copied it (052).
+// Sent and not waited for: signing out never hangs on the network, and the token is forgotten here
+// whatever the server answers.
 function logout() {
+  const token = (() => {
+    try {
+      return JSON.parse(localStorage.getItem("user") ?? "{}")?.token as
+        string | undefined;
+    } catch {
+      return undefined;
+    }
+  })();
   localStorage.removeItem("user");
+  if (token) {
+    fetch(`${API_URL}${ENDPOINT_URL}/logout`, {
+      method: "POST",
+      headers: { Authorization: "Bearer " + token },
+      keepalive: true,
+    }).catch(() => undefined);
+  }
 }
 
 let oidcEnabledPromise: Promise<boolean> | undefined;

@@ -66,6 +66,11 @@ describe('Sign-ins and their sessions (e2e)', () => {
     return created;
   };
   const me = (token: string) => requestWithAuth(app, 'get', '/users/me', token);
+  const buildIn = async (projectId: string) => {
+    const owner = await person('admin');
+    const key = await usersService.generateNewApiKey({ id: owner.id } as never);
+    await requestWithApiKey(app, 'post', '/builds', key).send({ project: projectId, branchName: 'master' }).expect(201);
+  };
 
   // the events socket of the interface; resolves once connected, rejects with the server's reason
   const connect = (token: string) =>
@@ -115,6 +120,135 @@ describe('Sign-ins and their sessions (e2e)', () => {
       await me(token).expect(401);
       await me('').expect(401);
       await expect(connect(token)).rejects.toThrow();
+    });
+  });
+
+  describe('spec 052', () => {
+    const closed = (socket: Socket) =>
+      new Promise<void>((resolve, reject) => {
+        if (socket.disconnected) return resolve();
+        const timer = setTimeout(() => reject(new Error('the socket is still open after 5 s')), 5000);
+        socket.once('disconnect', () => {
+          clearTimeout(timer);
+          resolve();
+        });
+      });
+
+    it('signing out ends this browser only', async () => {
+      const editor = await person('editor');
+      const laptop = await signIn(editor.email);
+      const phone = await signIn(editor.email);
+      const laptopSocket = await connect(laptop);
+      const phoneSocket = await connect(phone);
+
+      await requestWithAuth(app, 'post', '/users/logout', laptop).expect(204);
+
+      await me(laptop).expect(401);
+      await closed(laptopSocket);
+      await expect(connect(laptop)).rejects.toThrow();
+      // the other browser is still in
+      await me(phone).expect(200);
+      expect(phoneSocket.connected).toBe(true);
+    });
+
+    it('a new password ends the other sign-ins and keeps this one', async () => {
+      const editor = await person('editor');
+      const laptop = await signIn(editor.email);
+      const phone = await signIn(editor.email);
+      const laptopSocket = await connect(laptop);
+      const phoneSocket = await connect(phone);
+
+      await requestWithAuth(app, 'put', '/users/password', laptop)
+        .send({ password: 'another-long-password' })
+        .expect(200);
+
+      await me(phone).expect(401);
+      await closed(phoneSocket);
+      await me(laptop).expect(200);
+      expect(laptopSocket.connected).toBe(true);
+      // the new password signs in, the old one does not
+      await requestWithAuth(app, 'post', '/users/login', '')
+        .send({ email: editor.email, password: 'another-long-password' })
+        .expect(201);
+      await requestWithAuth(app, 'post', '/users/login', '').send({ email: editor.email, password }).expect(400);
+    });
+
+    it('a password set by an admin ends every sign-in', async () => {
+      const admin = await person('admin');
+      const editor = await person('editor');
+      const adminToken = await signIn(admin.email);
+      const laptop = await signIn(editor.email);
+      const socket = await connect(laptop);
+
+      await requestWithAuth(app, 'put', `/users/${editor.id}/password`, adminToken)
+        .send({ password: 'given-by-the-admin-1' })
+        .expect(200);
+
+      await me(laptop).expect(401);
+      await closed(socket);
+      await me(adminToken).expect(200);
+    });
+
+    it('closes the event sockets of an ended sign-in and a deleted account', async () => {
+      const admin = await person('admin');
+      const editor = await person('editor');
+      const adminToken = await signIn(admin.email);
+      const socket = await connect(await signIn(editor.email));
+
+      await requestWithAuth(app, 'delete', '/users', adminToken).send([editor.id]).expect(200);
+
+      await closed(socket);
+    });
+
+    it('the API key works whatever the person does with their sign-ins', async () => {
+      const editor = await person('editor');
+      const team = await project([editor.id]);
+      const key = await usersService.generateNewApiKey({ id: editor.id } as never);
+      const token = await signIn(editor.email);
+
+      await requestWithAuth(app, 'put', '/users/password', token)
+        .send({ password: 'another-long-password' })
+        .expect(200);
+      await requestWithAuth(app, 'post', '/users/logout', token).expect(204);
+
+      await requestWithApiKey(app, 'post', '/builds', key).send({ project: team.id, branchName: 'master' }).expect(201);
+    });
+
+    it('stops the events of a project after a new role takes it away', async () => {
+      const admin = await person('admin');
+      const lead = await person('admin');
+      const team = await project();
+      const shared = await project([lead.id]);
+      const socket = await connect(await signIn(lead.email));
+      expect(await subscribe(socket, team.id)).toEqual({ ok: true });
+      const events: unknown[] = [];
+      socket.on('build_created', (payload) => events.push(payload));
+
+      await requestWithAuth(app, 'patch', '/users/assignRole', await signIn(admin.email))
+        .send({ id: lead.id, role: 'editor' })
+        .expect(200);
+      await new Promise((resolve) => setTimeout(resolve, 500));
+      await buildIn(team.id);
+      await new Promise((resolve) => setTimeout(resolve, 1500));
+      expect(events).toEqual([]);
+
+      // a project the person has access to keeps sending its events
+      expect(await subscribe(socket, shared.id)).toEqual({ ok: true });
+      await buildIn(shared.id);
+      await new Promise((resolve) => setTimeout(resolve, 1500));
+      expect(events.length).toBeGreaterThan(0);
+    });
+
+    it('ends the old tokens of a person who signs out with one', async () => {
+      const editor = await person('editor');
+      const old = jwt.sign({ email: editor.email, iat: Math.floor(Date.now() / 1000) - 60 });
+      const fresh = await signIn(editor.email);
+
+      await requestWithAuth(app, 'post', '/users/logout', old).expect(204);
+
+      await me(old).expect(401);
+      // a sign-in with a session of its own is not an old token
+      await me(fresh).expect(200);
     });
   });
 });

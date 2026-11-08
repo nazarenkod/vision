@@ -37,6 +37,7 @@ const user: User = {
   jiraEmail: null,
   geminiApiKey: null,
   lastSignInAt: null,
+  tokensValidAfter: null,
   role: Role.editor,
   updatedAt: new Date(),
   createdAt: new Date(),

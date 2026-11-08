@@ -10,6 +10,7 @@ import {
   Req,
   Res,
   HttpStatus,
+  HttpCode,
   Param,
 } from '@nestjs/common';
 import { Request, Response } from 'express';
@@ -32,6 +33,7 @@ import { AssignRoleDto } from './dto/assign-role.dto';
 import { Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { NoProjectData } from '../projects/project-access';
+import { AuthService } from '../auth/auth.service';
 
 const OIDC_STATE_COOKIE = 'oidc_state';
 
@@ -57,7 +59,8 @@ export class UsersController {
   constructor(
     private usersService: UsersService,
     private prismaService: PrismaService,
-    private configService: ConfigService
+    private configService: ConfigService,
+    private authService: AuthService
   ) {}
 
   // There is no self sign-up (035): accounts come from an admin, or from the
@@ -181,8 +184,27 @@ export class UsersController {
   @ApiOkResponse({ type: Boolean })
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
-  changePassword(@CurrentUser() user: User, @Body('password') password: string): Promise<boolean> {
-    return this.usersService.changePassword(user, password);
+  changePassword(
+    @CurrentUser() user: User,
+    @Body('password') password: string,
+    @Req() request: Request
+  ): Promise<boolean> {
+    // this browser stays signed in; every other sign-in of the person ends (REQ-052-02)
+    return this.usersService.changePassword(
+      user,
+      password,
+      this.authService.sessionIdOf(request.headers.authorization)
+    );
+  }
+
+  @NoProjectData()
+  @Post('logout')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  // the token of this sign-in opens nothing after this, in every API process (REQ-052-01)
+  logout(@CurrentUser() user: User, @Req() request: Request): Promise<void> {
+    return this.usersService.logout(user, this.authService.sessionIdOf(request.headers.authorization));
   }
 
   @NoProjectData()

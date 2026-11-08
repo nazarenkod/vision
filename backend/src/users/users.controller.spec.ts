@@ -1,3 +1,4 @@
+import { AuthService } from '../auth/auth.service';
 import { openSecret } from '../shared/secret-box';
 import { Test, TestingModule } from '@nestjs/testing';
 import { PrismaService } from '../prisma/prisma.service';
@@ -43,6 +44,7 @@ describe('Users Controller', () => {
     jiraEmail: null,
     geminiApiKey: null,
     lastSignInAt: null,
+    tokensValidAfter: null,
     role: Role.editor,
     updatedAt: new Date(),
     createdAt: new Date(),
@@ -62,6 +64,7 @@ describe('Users Controller', () => {
         { provide: UsersService, useValue: usersService },
         { provide: PrismaService, useValue: {} },
         { provide: ConfigService, useValue: { get: jest.fn((_key: string, defaultValue?: string) => defaultValue) } },
+        { provide: AuthService, useValue: { sessionIdOf: jest.fn() } },
       ],
     }).compile();
 
@@ -81,7 +84,12 @@ describe('Users Controller', () => {
   it('stores a personal Gemini key and answers only whether one is set', async () => {
     const update = jest.fn(async ({ data }) => ({ ...user, ...data }));
     const prisma = { user: { update } };
-    const withPrisma = new UsersController(usersService as never, prisma as never, { get: jest.fn() } as never);
+    const withPrisma = new UsersController(
+      usersService as never,
+      prisma as never,
+      { get: jest.fn() } as never,
+      {} as never
+    );
 
     const saved = await withPrisma.setGemini(user, { geminiApiKey: ' key-1 ' });
     // stored sealed (044), and readable back with the server's key only
@@ -117,7 +125,12 @@ describe('Users Controller', () => {
 
   it('says whether accounts can be created here', () => {
     const canCreateAccounts = jest.fn(() => false);
-    const withService = new UsersController({ canCreateAccounts } as never, {} as never, { get: jest.fn() } as never);
+    const withService = new UsersController(
+      { canCreateAccounts } as never,
+      {} as never,
+      { get: jest.fn() } as never,
+      {} as never
+    );
     expect(withService.accountsEnabled()).toBe(false);
   });
 
@@ -126,7 +139,8 @@ describe('Users Controller', () => {
     const withPrisma = new UsersController(
       usersService as never,
       { user: { update } } as never,
-      { get: jest.fn() } as never
+      { get: jest.fn() } as never,
+      {} as never
     );
 
     const jira = await withPrisma.setJira(user, { jiraToken: 'token-1', jiraEmail: 'me@example.com' });

@@ -1,3 +1,4 @@
+import { EventsGateway } from '../shared/events/events.gateway';
 import { HttpException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { UsersService } from './users.service';
@@ -27,6 +28,7 @@ const user: User = {
   jiraEmail: null,
   geminiApiKey: null,
   lastSignInAt: null,
+  tokensValidAfter: null,
   role: Role.editor,
   updatedAt: new Date(),
   createdAt: new Date(),
@@ -41,6 +43,7 @@ describe('UsersService with DbUserService implementation', () => {
       providers: [
         UsersService,
         UsersFactoryService,
+        { provide: EventsGateway, useValue: { endSessions: jest.fn(), recheckAccess: jest.fn() } },
         {
           provide: ConfigService,
           useValue: {
@@ -63,6 +66,8 @@ describe('UsersService with DbUserService implementation', () => {
         {
           provide: AuthService,
           useValue: {
+            endSessions: jest.fn(),
+            endSession: jest.fn(),
             generateApiKey: jest.fn(() => ({ key: 'newKey', stored: { apiKey: 'sha256:hash', apiKeyEnding: 'wKey' } })),
             unknownApiKey: jest.fn(() => 'generatedApiKey'),
             encryptPassword: jest.fn(() => 'encryptedPassword'),
@@ -324,6 +329,7 @@ describe('UsersService with OidcUsersService implementation', () => {
         { provide: UsersFactoryService, useValue: { getUsersService: () => oidcUsersService } },
         { provide: PrismaService, useValue: { user: { update: jest.fn() } } },
         { provide: AuthService, useValue: {} },
+        { provide: EventsGateway, useValue: { endSessions: jest.fn(), recheckAccess: jest.fn() } },
       ],
     }).compile();
 
@@ -351,7 +357,8 @@ describe('UsersService with OidcUsersService implementation', () => {
     const withLdap = new UsersService(
       { getUsersService: () => ldap } as never,
       { user: { findUnique, update: jest.fn() } } as never,
-      auth as never
+      auth as never,
+      { endSessions: jest.fn(), recheckAccess: jest.fn() } as never
     );
     expect((await withLdap.login({ email: 'ann@bank.test', password: 'x' })).token).toBe('from-ldap');
     expect((await withLdap.login({ email: 'contractor@bank.test', password: 'x' })).token).toBe('jwt');

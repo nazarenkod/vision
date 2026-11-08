@@ -215,7 +215,7 @@ export class OidcUsersService implements Users {
       user = await this.prismaService.user.update({ where: { id: user.id }, data: { role } });
     }
 
-    const token = this.authService.signToken(user);
+    const token = await this.authService.signToken(user);
     return new UserLoginResponseDto(user, token);
   }
 
@@ -322,7 +322,7 @@ export class OidcUsersService implements Users {
         lastName: userDto.lastName,
       },
     });
-    const token = this.authService.signToken(user);
+    const token = await this.authService.signToken(user);
     return new UserLoginResponseDto(user, token);
   }
 

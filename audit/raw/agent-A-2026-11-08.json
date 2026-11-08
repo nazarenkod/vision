@@ -1,0 +1,155 @@
+{
+ "recheck": [
+  {
+   "id": "VIS-SEC-009",
+   "status": "partially_fixed",
+   "evidence": "backend/src/auth/sessions.ts:32-46 (sid → рядок Session, перевірка userId/endedAt); auth.service.ts:40-49,78-106; users.service.ts:83-120,206-213; events.gateway.ts:50-63,139-165; jwt.strategy.ts:22-28",
+   "note": "Вихід/зміна пароля/пароль від адміна/видалення/зміна ролі працюють і в API, і в сокетах (fetchSockets, повторна перевірка через 1 с). Але новий баг реалізації: PUT /users видає новий токен з новим sid, фронтенд його зберігає, а попередній sid цього ж браузера не завершується — вихід після збереження профілю не гасить скопійований раніше токен (див. нову знахідку). Решта (лише цей браузер, токени до оновлення, немає переліку сесій/блокування) — виключено."
+  },
+  {
+   "id": "VIS-SEC-010",
+   "status": "not_fixed",
+   "evidence": "backend/prisma/seed.ts:43 `process.env.DEFAULT_USER_PASSWORD || '123456'`; seed.ts:72-74 друкує пароль у лог; docker-compose.demo.yml:132 `${DEFAULT_USER_PASSWORD:-123456}`",
+   "note": "Без змін: 6 символів < політики 12 (account.ts MIN_PASSWORD_LENGTH), пароль у stdout, примусової зміни немає."
+  },
+  {
+   "id": "VIS-SEC-017",
+   "status": "not_fixed",
+   "evidence": "backend/src/users/users.service.ts:109-121 setPassword(id,…) без перевірки, що акаунт локальний; users.controller.ts:223-230",
+   "note": "052 лише додав завершення сесій після пароля від адміна; адмін і далі ставить локальний пароль акаунту LDAP/SSO і входить ним (діє його токеном Jira)."
+  },
+  {
+   "id": "VIS-SEC-018",
+   "status": "fixed",
+   "evidence": "frontend/src/pages/LoginPage.tsx:38-42 takesOidcToken; frontend/src/services/users.service.ts newOidcNonce/startOidcLogin/takesOidcToken (sessionStorage, одноразово); backend users.controller.ts oidcLogin (browserNonce, nonce у httpOnly-cookie state), oidc-browser.ts:8-29, oidcusers.service.ts buildFrontendRedirect",
+   "note": "Токен з фрагмента приймається лише при збігу nonce з sessionStorage вкладки, яка почала вхід (24 випадкові байти). Посилання з чужим токеном і без/з чужим nonce не входить; підкинутий /users/oidc/login?nonce=… лише вводить жертву в її власний акаунт і відкидається фронтендом. Open redirect немає: ціль — APP_FRONTEND_URL з конфігу."
+  },
+  {
+   "id": "VIS-SEC-033",
+   "status": "not_fixed",
+   "evidence": "backend/src/users/db/dbusers.service.ts:59-66 — для невідомого email виняток до bcrypt compare; немає фіктивного bcrypt",
+   "note": "Час відповіді й далі відрізняє наявний акаунт (~bcrypt cost 10) від невідомого."
+  },
+  {
+   "id": "VIS-SEC-034",
+   "status": "not_fixed",
+   "evidence": "backend/src/users/sign-in-limit.ts:17,28-39 — ключ лише email; users.service.ts:123-139",
+   "note": "Ліміту за IP немає; анонім блокує вхід відомого email на 15 хв 5 запитами."
+  },
+  {
+   "id": "VIS-SEC-035",
+   "status": "not_fixed",
+   "evidence": "backend/src/auth/guards/api.guard.ts:11-21 — лише findUnique за хешем, без строку дії і стану акаунта; REQ-052-05 свідомо лишає ключ живим після виходу/зміни пароля",
+   "note": "Лише частина про API-ключ: строку дії, перевірки каталогу/IdP, автоматичної ротації немає. Ентропія (140 біт, randomBytes) і зберігання (SHA-256) — гаразд; ротація вручну через GET /users/newApiKey замінює хеш."
+  },
+  {
+   "id": "VIS-SEC-036",
+   "status": "partially_fixed",
+   "evidence": "backend/src/users/db/dbusers.service.ts:35-41 `email: userDto.email` без accountEmail(); унікальний індекс email чутливий до регістру",
+   "note": "createAccount (users.service.ts:53-60), LDAP і OIDC нормалізують; режим БД у PUT /users — ні: можна поставити `BOB@bank` поряд з `bob@bank`."
+  },
+  {
+   "id": "VIS-SEC-040",
+   "status": "not_fixed",
+   "evidence": "backend/src/auth/auth.module.ts:13-19 і jwt.strategy.ts:14-18 без algorithms/issuer/audience; перевірка: токен HS512 тим самим секретом приймається `verifyAsync` (вивід: `HS512 accepted { email:'a', sid:'s', … }`)",
+   "note": "Ризик низький (лише HS* з симетричним секретом, alg=none не проходить у jsonwebtoken 9.0.3)."
+  },
+  {
+   "id": "VIS-SEC-047",
+   "status": "fixed",
+   "evidence": "backend/src/auth/sessions.ts:37-40 — токен із sid приймається лише якщо session.userId === user.id; auth.service.ts:40-49 кожен новий токен має sid",
+   "note": "«Накарбований» на чужу майбутню адресу токен тепер несе sid сесії нападника і відхиляється як unknown-session для нового власника email. Залишок: токени без sid, видані до оновлення, діють до exp (≤ JWT_LIFE_TIME, типово доба) — перехідний період, свідомо в 052. JWT_LIFE_TIME без значення ламає підпис (expiresIn undefined → помилка jsonwebtoken), тож вічних токенів не буває."
+  },
+  {
+   "id": "VIS-SEC-049",
+   "status": "not_fixed",
+   "evidence": "backend/src/users/sign-in-limit.ts:46-50 forgetOld() O(n) на кожну невдачу при size ≥ 10000; closedUntil (рядок 13, 33) чиститься лише при перевірці того самого email",
+   "note": "Код не змінювався з попередньої ітерації."
+  },
+  {
+   "id": "VIS-SEC-050",
+   "status": "not_fixed",
+   "evidence": "backend/src/users/ldap/ldapusers.service.ts:83 `usersSearchFilter.replaceAll('{{email}}', email)` — рядок-заміна з $' $` $&",
+   "note": "Без змін; виправлення — функція-заміна `() => email`."
+  },
+  {
+   "id": "VIS-SEC-051",
+   "status": "not_fixed",
+   "evidence": "backend/src/users/ldap/ldapusers.service.ts:44-51 rejectUnauthorized: !tlsNoVerify без попередження; ldap:// приймається мовчки",
+   "note": "Для OIDC попередження є (oidcusers.service.ts:82-84), для LDAP — ні."
+  }
+ ],
+ "findings": [
+  {
+   "title": "Збереження профілю (PUT /users) відкриває новий вхід, а старий токен цього браузера лишається дійсним і після виходу",
+   "severity": "Medium",
+   "cvss": "CVSS:3.1/AV:N/AC:H/PR:N/UI:R/S:U/C:H/I:L/A:N",
+   "cvss_score": 5.9,
+   "cwe": "CWE-613",
+   "owasp": "A07:2021-Identification and Authentication Failures",
+   "location": "backend/src/users/db/dbusers.service.ts:44; backend/src/users/ldap/ldapusers.service.ts:149; backend/src/users/oidc/oidcusers.service.ts:346; frontend/src/services/users.service.ts:78-83; backend/src/auth/auth.service.ts:78-84",
+   "origin": "code",
+   "component": "backend",
+   "previous_id": "VIS-SEC-009",
+   "description": "Усі три реалізації update() викликають authService.signToken(user), який створює НОВИЙ рядок Session з новим sid. Фронтенд після збереження профілю замінює токен у localStorage на новий. Попередній sid цього ж браузера ніхто не завершує (endedAt лишається null). Вихід надсилає лише новий токен, тож endSession() завершує лише новий sid; старий токен — той, що міг бути скопійований раніше, — працює до свого exp. Це ламає REQ-052-01 / SC-052-01 («після виходу 100% запитів зі старим токеном — не авторизовано») для будь-кого, хто хоч раз зберіг профіль. Тест sessions.e2e-spec.ts цей сценарій не покриває.",
+   "evidence": "dbusers.service.ts:35-45: `const user = await this.prismaService.user.update(...); const token = await this.authService.signToken(user); return new UserLoginResponseDto(user, token);`\nauth.service.ts:41-48: `const sid = randomUUID(); ... await this.prismaService.session.create({ data: { id: sid, userId: user.id, ... } })`\nfrontend users.service.ts:78-83 (update): `.then(handleResponse).then((user) => { setUserInLocalStorage(user); ...})` — токен замінено.\nusers.controller.ts:220 logout: `this.authService.sessionIdOf(request.headers.authorization)` — лише sid нового токена.",
+   "impact": "Украдений до збереження профілю токен переживає вихід людини (і, якщо вона не змінює пароль, діє до кінця доби). Людина вважає, що вийшла. Також у режимі БД зміна email у профілі робить старі токени тимчасово «no-user», але не завершує їхні сесії: повернення попереднього email знову їх оживляє.",
+   "recommendation": "У update() не відкривати новий вхід: або повертати той самий токен (без нового sid), або підписувати новий токен із sid поточного запиту (sessionIdOf) і не створювати новий рядок; альтернатива — завершувати попередній sid у тій самій транзакції. Додати e2e: увійти → PUT /users → вийти → старий і новий токени дають 401.",
+   "effort": "S",
+   "confidence": "High"
+  },
+  {
+   "title": "Зміна пароля, email і випуск API-ключа без повторної автентифікації: викрадений токен закріплюється й виганяє власника",
+   "severity": "Medium",
+   "cvss": "CVSS:3.1/AV:N/AC:H/PR:L/UI:N/S:U/C:H/I:H/A:N",
+   "cvss_score": 6.8,
+   "cwe": "CWE-620",
+   "owasp": "A07:2021-Identification and Authentication Failures",
+   "location": "backend/src/users/users.controller.ts:196-210 (PUT /users/password), 183-190 (GET /users/newApiKey), 231-238 (PUT /users); backend/src/users/users.service.ts:83-98",
+   "origin": "code",
+   "component": "backend",
+   "previous_id": null,
+   "description": "PUT /users/password приймає лише новий пароль: поточний не перевіряється. Після 052 зміна пароля завершує всі ІНШІ входи й лишає вхід того, хто змінив (REQ-052-02). Отже той, хто заволодів токеном (XSS, скопійований localStorage, чужий ПК), міняє пароль локального акаунта, лишається увійденим, а власник втрачає всі сесії і не може увійти. Додатково GET /users/newApiKey з тим самим токеном видає безстроковий API-ключ, який за REQ-052-05 переживає вихід і зміну пароля, а в режимі БД PUT /users без пароля змінює email (логін).",
+   "evidence": "users.controller.ts:200-210: `changePassword(@CurrentUser() user, @Body('password') password, @Req() request) { return this.usersService.changePassword(user, password, this.authService.sessionIdOf(...)) }` — жодного currentPassword.\nusers.service.ts:93-97: `if (changed && (!ldap || local)) { await this.authService.endSessions(user.id, sessionId); await this.eventsGateway.endSessions(user.id, { keep: sessionId }); }`\napi.guard.ts:13-19 — ключ без строку дії; spec 052 REQ-052-05.",
+   "impact": "Короткочасна крадіжка токена (доба) перетворюється на постійне захоплення локального акаунта (зокрема адміна) з виселенням власника; API-ключ дає доступ після будь-яких дій власника, крім ручної ротації ключа чи видалення акаунта адміном.",
+   "recommendation": "Вимагати поточний пароль для PUT /users/password і зміни email (у режимі БД) та, бажано, для випуску API-ключа; при зміні пароля людиною також інвалідовувати API-ключ або показувати попередження. Потребує невеликої специфікації (зміна API, фронтенд-форма).",
+   "effort": "M",
+   "confidence": "High"
+  },
+  {
+   "title": "Таблиця Session росте без меж: рядки чистяться лише при новому вході того самого користувача, а PUT /users додає рядок без bcrypt і ліміту",
+   "severity": "Low",
+   "cvss": "CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:N/I:N/A:L",
+   "cvss_score": 4.3,
+   "cwe": "CWE-770",
+   "owasp": "A04:2021-Insecure Design",
+   "location": "backend/src/auth/auth.service.ts:46-48; backend/src/users/db/dbusers.service.ts:35-46; backend/src/users/users.controller.ts:231-238",
+   "origin": "code",
+   "component": "backend",
+   "previous_id": null,
+   "description": "Єдине прибирання — `session.deleteMany({ userId, expiresAt < now })` у signToken того ж користувача; ні таймера, ні межі кількості входів. Завершені (endedAt) рядки лежать до expiresAt + наступного входу; рядки людей, що більше не входять, лишаються назавжди. Будь-який увійдений (зокрема guest) циклом PUT /users (один UPDATE + DELETE + INSERT, без bcrypt і без ліміту) додає скільки завгодно рядків за термін токена (типово доба).",
+   "evidence": "auth.service.ts:46-48: `// rows of sign-ins whose tokens expired go as the person signs in again: no job needed\\n await this.prismaService.session.deleteMany({ where: { userId: user.id, expiresAt: { lt: now } } });\\n await this.prismaService.session.create(...)`",
+   "impact": "Зростання бази й диска на хості, де поруч працює робочий VRT; деградація запитів. Потребує облікового запису, тому Low.",
+   "recommendation": "Не створювати сесію в update() (див. попередню знахідку); періодично видаляти рядки з expiresAt < now або endedAt не null (за таймером), індекс на expiresAt (додавальний); межа активних сесій на людину (стару найдавнішу завершувати).",
+   "effort": "S",
+   "confidence": "High"
+  }
+ ],
+ "areas_checked": [
+  "JWT: секрет (server-secrets.ts, main.ts), JwtModule/JwtStrategy (алгоритм, exp, JWT_LIFE_TIME порожній/відсутній — підпис падає, вічних токенів немає)",
+  "Сесії 052: sessions.ts, auth.service.ts (signToken/userForToken/endSession/endSessions/sessionIdOf), міграція 20261108120000_add_sessions (додавальна), токени без sid і tokensValidAfter",
+  "Відкликання: logout, зміна пароля, пароль від адміна, видалення акаунта, зміна ролі, OIDC-вхід (recheckAccess); EventsGateway (authenticate, closeIfEnded, endSessions, recheckAccess, subscribe/mayFollow)",
+  "Гонки: вихід під час рукостискання сокета (покрито повторною перевіркою через 1 с), subscribe vs recheckAccess (вікно мікросекунди — не знахідка), вхід старим паролем паралельно зі зміною пароля (вікно ~bcrypt, непрактично)",
+  "Прив'язка токена до userId через Session.userId (VIS-SEC-047)",
+  "OIDC: state/PKCE у httpOnly-cookie, nonce вкладки в sessionStorage (oidc-browser.ts, LoginPage.tsx, LoginForm.tsx, users.service.ts фронтенду), redirect лише на APP_FRONTEND_URL, roleAtSignIn (VIS-SEC-020 без generic admin)",
+  "LDAP: екранування фільтра й replaceAll, TLS, порожній пароль, update без зміни email",
+  "Локальні акаунти: політика пароля, нормалізація email (createAccount/update/login), ліміт входу SignInLimit, енумерація за часом",
+  "Дефолтний адмін у seed.ts і docker-compose.demo.yml",
+  "API-ключі: генерація (randomBytes, 140 біт), SHA-256, ApiGuard, MixedGuard (JWT має пріоритет), ротація"
+ ],
+ "limitations": [
+  "e2e-тести з Postgres не запускались (без бази); поведінку перевірено читанням коду й невеликим node-скриптом з @nestjs/jwt (expiresIn undefined → помилка, HS512 приймається)",
+  "Redis-адаптер (кілька процесів API) для fetchSockets/disconnect не перевірявся наживо",
+  "Реальні LDAP/IdP не використовувались"
+ ]
+}

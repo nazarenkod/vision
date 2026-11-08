@@ -1,0 +1,158 @@
+
+> vision-backend@1.1.0 test
+> node --experimental-vm-modules node_modules/jest/bin/jest.js --projects src --silent
+
+[31m[Nest] 6619  - [39m11/08/2026, 7:33:41 PM [31m  ERROR[39m [38;5;3m[GeminiService] [39m[31mGemini generate request failed: API Error[39m
+Error: API Error
+    at /home/user/vision/backend/src/compare/libs/vlm/providers/gemini/gemini.service.spec.ts:118:47
+    at Object.<anonymous> (/home/user/vision/backend/node_modules/jest-each/build/index.js:80:140)
+    at Promise.finally.completed (/home/user/vision/backend/node_modules/jest-circus/build/jestAdapterInit.js:1834:28)
+    at new Promise (<anonymous>)
+    at callAsyncCircusFn (/home/user/vision/backend/node_modules/jest-circus/build/jestAdapterInit.js:1774:10)
+    at _callCircusTest (/home/user/vision/backend/node_modules/jest-circus/build/jestAdapterInit.js:1167:40)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at _runTestInContext (/home/user/vision/backend/node_modules/jest-circus/build/jestAdapterInit.js:1103:3)
+    at runTestWithContext (/home/user/vision/backend/node_modules/jest-circus/build/jestAdapterInit.js:996:5)
+    at _runTestsForDescribeBlockOnce (/home/user/vision/backend/node_modules/jest-circus/build/jestAdapterInit.js:1008:11)
+    at _runTestsForDescribeBlock (/home/user/vision/backend/node_modules/jest-circus/build/jestAdapterInit.js:824:5)
+    at _runTestsForDescribeBlockOnce (/home/user/vision/backend/node_modules/jest-circus/build/jestAdapterInit.js:1003:11)
+    at _runTestsForDescribeBlock (/home/user/vision/backend/node_modules/jest-circus/build/jestAdapterInit.js:824:5)
+    at _runTestsForDescribeBlockOnce (/home/user/vision/backend/node_modules/jest-circus/build/jestAdapterInit.js:1003:11)
+    at _runTestsForDescribeBlock (/home/user/vision/backend/node_modules/jest-circus/build/jestAdapterInit.js:824:5)
+    at run (/home/user/vision/backend/node_modules/jest-circus/build/jestAdapterInit.js:789:3)
+    at runAndTransformResultsToJestFormat (/home/user/vision/backend/node_modules/jest-circus/build/jestAdapterInit.js:2300:21)
+    at jestAdapter (/home/user/vision/backend/node_modules/jest-circus/build/runner.js:111:19)
+    at runTestInternal (/home/user/vision/backend/node_modules/jest-runner/build/testWorker.js:247:16)
+    at runTest (/home/user/vision/backend/node_modules/jest-runner/build/testWorker.js:315:7)
+    at Object.worker (/home/user/vision/backend/node_modules/jest-runner/build/testWorker.js:479:12)
+(node:6619) ExperimentalWarning: VM Modules is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+[31m[Nest] 6612  - [39m11/08/2026, 7:33:41 PM [31m  ERROR[39m [38;5;3m[OllamaService] [39m[31mOllama generate request failed: Connection refused[39m
+(node:6613) ExperimentalWarning: VM Modules is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+[31m[Nest] 6612  - [39m11/08/2026, 7:33:41 PM [31m  ERROR[39m [38;5;3m[OllamaService] [39m[31mFailed to list models: Service Unavailable[39m
+(node:6612) ExperimentalWarning: VM Modules is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+[31m[Nest] 6613  - [39m11/08/2026, 7:33:41 PM [31m  ERROR[39m [38;5;3m[OdiffService] [39m[31mCannot parse config, fallback to default one SyntaxError: Unexpected end of JSON input[39m
+[31m[Nest] 6613  - [39m11/08/2026, 7:33:41 PM [31m  ERROR[39m [38;5;3m[OdiffService] [39m[31mCannot parse config, fallback to default one SyntaxError: Unexpected token 'i', "invalid" is not valid JSON[39m
+[31m[Nest] 6619  - [39m11/08/2026, 7:33:41 PM [31m  ERROR[39m [38;5;3m[VlmService] [39m[31mVLM comparison failed: Unexpected token 'I', "Invalid JS"... is not valid JSON[39m
+SyntaxError: Unexpected token 'I', "Invalid JS"... is not valid JSON
+    at JSON.parse (<anonymous>)
+    at VlmService.parseVlmResponse (/home/user/vision/backend/src/compare/libs/vlm/vlm.service.ts:140:25)
+    at VlmService.compareImagesWithVLM (/home/user/vision/backend/src/compare/libs/vlm/vlm.service.ts:159:17)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at VlmService.getDiff (/home/user/vision/backend/src/compare/libs/vlm/vlm.service.ts:90:37)
+    at /home/user/vision/backend/src/compare/libs/vlm/vlm.service.spec.ts:159:20
+[31m[Nest] 6619  - [39m11/08/2026, 7:33:42 PM [31m  ERROR[39m [38;5;3m[VlmService] [39m[31mVLM comparison failed: Connection refused[39m
+Error: Connection refused
+    at /home/user/vision/backend/src/compare/libs/vlm/vlm.service.spec.ts:156:37
+    at Object.<anonymous> (/home/user/vision/backend/node_modules/jest-each/build/index.js:80:140)
+    at Promise.finally.completed (/home/user/vision/backend/node_modules/jest-circus/build/jestAdapterInit.js:1834:28)
+    at new Promise (<anonymous>)
+    at callAsyncCircusFn (/home/user/vision/backend/node_modules/jest-circus/build/jestAdapterInit.js:1774:10)
+    at _callCircusTest (/home/user/vision/backend/node_modules/jest-circus/build/jestAdapterInit.js:1167:40)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at _runTestInContext (/home/user/vision/backend/node_modules/jest-circus/build/jestAdapterInit.js:1103:3)
+    at runTestWithContext (/home/user/vision/backend/node_modules/jest-circus/build/jestAdapterInit.js:996:5)
+    at _runTestsForDescribeBlockOnce (/home/user/vision/backend/node_modules/jest-circus/build/jestAdapterInit.js:1008:11)
+    at _runTestsForDescribeBlock (/home/user/vision/backend/node_modules/jest-circus/build/jestAdapterInit.js:824:5)
+    at _runTestsForDescribeBlockOnce (/home/user/vision/backend/node_modules/jest-circus/build/jestAdapterInit.js:1003:11)
+    at _runTestsForDescribeBlock (/home/user/vision/backend/node_modules/jest-circus/build/jestAdapterInit.js:824:5)
+    at run (/home/user/vision/backend/node_modules/jest-circus/build/jestAdapterInit.js:789:3)
+    at runAndTransformResultsToJestFormat (/home/user/vision/backend/node_modules/jest-circus/build/jestAdapterInit.js:2300:21)
+    at jestAdapter (/home/user/vision/backend/node_modules/jest-circus/build/runner.js:111:19)
+    at runTestInternal (/home/user/vision/backend/node_modules/jest-runner/build/testWorker.js:247:16)
+    at runTest (/home/user/vision/backend/node_modules/jest-runner/build/testWorker.js:315:7)
+    at Object.worker (/home/user/vision/backend/node_modules/jest-runner/build/testWorker.js:479:12)
+[31m[Nest] 6612  - [39m11/08/2026, 7:33:42 PM [31m  ERROR[39m [38;5;3m[PixelmatchService] [39m[31mCannot parse config, fallback to default one SyntaxError: Unexpected end of JSON input[39m
+[31m[Nest] 6612  - [39m11/08/2026, 7:33:42 PM [31m  ERROR[39m [38;5;3m[PixelmatchService] [39m[31mCannot parse config, fallback to default one SyntaxError: Unexpected token 'i', "invalid" is not valid JSON[39m
+[31m[Nest] 6619  - [39m11/08/2026, 7:33:42 PM [31m  ERROR[39m [38;5;3m[VlmService] [39m[31mCannot parse config, fallback to default one SyntaxError: Unexpected end of JSON input[39m
+[31m[Nest] 6619  - [39m11/08/2026, 7:33:42 PM [31m  ERROR[39m [38;5;3m[VlmService] [39m[31mCannot parse config, fallback to default one SyntaxError: Unexpected token 'i', "invalid" is not valid JSON[39m
+[31m[Nest] 6619  - [39m11/08/2026, 7:33:42 PM [31m  ERROR[39m [38;5;3m[VlmService] [39m[31mVLM comparison failed: Cannot read properties of undefined (reading 'content')[39m
+TypeError: Cannot read properties of undefined (reading 'content')
+    at VlmService.extractResponseContent (/home/user/vision/backend/src/compare/libs/vlm/vlm.service.ts:127:73)
+    at VlmService.compareImagesWithVLM (/home/user/vision/backend/src/compare/libs/vlm/vlm.service.ts:158:26)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at VlmService.getDiff (/home/user/vision/backend/src/compare/libs/vlm/vlm.service.ts:90:37)
+    at Object.<anonymous> (/home/user/vision/backend/src/compare/libs/vlm/vlm.service.spec.ts:353:22)
+[31m[Nest] 6613  - [39m11/08/2026, 7:33:42 PM [31m  ERROR[39m [38;5;3m[LookSameService] [39m[31mCannot parse config, fallback to default one SyntaxError: Unexpected end of JSON input[39m
+[31m[Nest] 6613  - [39m11/08/2026, 7:33:42 PM [31m  ERROR[39m [38;5;3m[LookSameService] [39m[31mCannot parse config, fallback to default one SyntaxError: Unexpected token 'i', "invalid" is not valid JSON[39m
+[31m[Nest] 6613  - [39m11/08/2026, 7:33:42 PM [31m  ERROR[39m [38;5;3m[LookSameService] [39m[31mThe value of "offset" is out of range. It must be >= 0 and <= 5. Received 16[39m
+[31m[Nest] 6613  - [39m11/08/2026, 7:33:42 PM [31m  ERROR[39m [38;5;3m[LookSameService] [39m[31mdisk full[39m
+[33m[Nest] 6619  - [39m11/08/2026, 7:33:43 PM [33m   WARN[39m [38;5;3m[OidcUsersService] [39m[33mOIDC TLS certificate verification is disabled for the configured issuer only[39m
+[33m[Nest] 6619  - [39m11/08/2026, 7:33:43 PM [33m   WARN[39m [38;5;3m[OidcUsersService] [39m[33mOIDC TLS certificate verification is disabled for the configured issuer only[39m
+[32m[Nest] 6619  - [39m11/08/2026, 7:33:43 PM [32m    LOG[39m [38;5;3m[OidcUsersService] [39m[32m'new.user@example.com' authenticated via OIDC but not found in Vision database. Creating user.[39m
+[32m[Nest] 6619  - [39m11/08/2026, 7:33:43 PM [32m    LOG[39m [38;5;3m[OidcUsersService] [39m[32m'plain@example.com' authenticated via OIDC but not found in Vision database. Creating user.[39m
+[32m[Nest] 6619  - [39m11/08/2026, 7:33:43 PM [32m    LOG[39m [38;5;3m[OidcUsersService] [39m[32mUpdating role of 'test@example.com' from 'editor' to 'admin' based on OIDC claims.[39m
+[32m[Nest] 6619  - [39m11/08/2026, 7:33:43 PM [32m    LOG[39m [38;5;3m[OidcUsersService] [39m[32mUpdating role of 'test@example.com' from 'admin' to 'editor' based on OIDC claims.[39m
+[32m[Nest] 6619  - [39m11/08/2026, 7:33:43 PM [32m    LOG[39m [38;5;3m[OidcUsersService] [39m[32mUpdating role of 'test@example.com' from 'guest' to 'admin' based on OIDC claims.[39m
+[33m[Nest] 6619  - [39m11/08/2026, 7:33:43 PM [33m   WARN[39m [38;5;3m[OidcUsersService] [39m[33mAttribute 'email' not found in OIDC claims[39m
+[33m[Nest] 6619  - [39m11/08/2026, 7:33:43 PM [33m   WARN[39m [38;5;3m[OidcUsersService] [39m[33mOIDC callback validation failed: Error: state mismatch[39m
+[32m[Nest] 6619  - [39m11/08/2026, 7:33:43 PM [32m    LOG[39m [38;5;3m[OidcUsersService] [39m[32m'from.userinfo@example.com' authenticated via OIDC but not found in Vision database. Creating user.[39m
+[33m[Nest] 6619  - [39m11/08/2026, 7:33:43 PM [33m   WARN[39m [38;5;3m[OidcUsersService] [39m[33mOIDC userinfo request failed: Error: userinfo down[39m
+[33m[Nest] 6619  - [39m11/08/2026, 7:33:43 PM [33m   WARN[39m [38;5;3m[OidcUsersService] [39m[33mAttribute 'email' not found in OIDC claims[39m
+[33m[Nest] 6619  - [39m11/08/2026, 7:33:43 PM [33m   WARN[39m [38;5;3m[OidcUsersService] [39m[33mOIDC login rejected: email 'unverified@example.com' is not verified by the identity provider[39m
+[33m[Nest] 6619  - [39m11/08/2026, 7:33:43 PM [33m   WARN[39m [38;5;3m[OidcUsersService] [39m[33mClaim 'groups' not found for 'unverified@example.com'. Keeping role 'editor'.[39m
+[33m[Nest] 6619  - [39m11/08/2026, 7:33:43 PM [33m   WARN[39m [38;5;3m[OidcUsersService] [39m[33mAttribute 'email' not found in OIDC claims[39m
+[32m[Nest] 6619  - [39m11/08/2026, 7:33:43 PM [32m    LOG[39m [38;5;3m[OidcUsersService] [39m[32mUpdating role of 'test@example.com' from 'editor' to 'admin' based on OIDC claims.[39m
+[32m[Nest] 6619  - [39m11/08/2026, 7:33:43 PM [32m    LOG[39m [38;5;3m[OidcUsersService] [39m[32mUpdating role of 'test@example.com' from 'editor' to 'admin' based on OIDC claims.[39m
+[32m[Nest] 6619  - [39m11/08/2026, 7:33:43 PM [32m    LOG[39m [38;5;3m[OidcUsersService] [39m[32m'race@example.com' authenticated via OIDC but not found in Vision database. Creating user.[39m
+[32m[Nest] 6619  - [39m11/08/2026, 7:33:43 PM [32m    LOG[39m [38;5;3m[OidcUsersService] [39m[32m'race@example.com' authenticated via OIDC but not found in Vision database. Creating user.[39m
+[33m[Nest] 6619  - [39m11/08/2026, 7:33:43 PM [33m   WARN[39m [38;5;3m[OidcUsersService] [39m[33mClaim 'groups' not found for 'test@example.com'. Keeping role 'admin'.[39m
+[33m[Nest] 6619  - [39m11/08/2026, 7:33:43 PM [33m   WARN[39m [38;5;3m[OidcUsersService] [39m[33mtest@example.com tried to change password - this is not supported for OIDC users[39m
+[32m[Nest] 6619  - [39m11/08/2026, 7:33:48 PM [32m    LOG[39m [38;5;3m[TestRunsService] [39m[32mApproving testRun: on-main merge: false autoApprove: false[39m
+[32m[Nest] 6619  - [39m11/08/2026, 7:33:48 PM [32m    LOG[39m [38;5;3m[TestRunsService] [39m[32mApproving testRun: on-feature merge: false autoApprove: false[39m
+[32m[Nest] 6619  - [39m11/08/2026, 7:33:48 PM [32m    LOG[39m [38;5;3m[TestRunsService] [39m[32mApproving testRun: a merge: false autoApprove: false[39m
+[32m[Nest] 6619  - [39m11/08/2026, 7:33:48 PM [32m    LOG[39m [38;5;3m[TestRunsService] [39m[32mApproving testRun: b merge: false autoApprove: false[39m
+[32m[Nest] 6619  - [39m11/08/2026, 7:33:48 PM [32m    LOG[39m [38;5;3m[TestRunsService] [39m[32mApproving testRun: c merge: false autoApprove: false[39m
+[32m[Nest] 6619  - [39m11/08/2026, 7:33:48 PM [32m    LOG[39m [38;5;3m[TestRunsService] [39m[32mApproving testRun: a merge: false autoApprove: false[39m
+[32m[Nest] 6619  - [39m11/08/2026, 7:33:48 PM [32m    LOG[39m [38;5;3m[TestRunsService] [39m[32mApproving testRun: b merge: false autoApprove: false[39m
+[32m[Nest] 6619  - [39m11/08/2026, 7:33:48 PM [32m    LOG[39m [38;5;3m[TestRunsService] [39m[32mApproving testRun: a merge: false autoApprove: false[39m
+[32m[Nest] 6619  - [39m11/08/2026, 7:34:13 PM [32m    LOG[39m [38;5;3m[AWSS3Service] [39m[32mAWS S3 service is being used for file storage.[39m
+[32m[Nest] 6619  - [39m11/08/2026, 7:34:13 PM [32m    LOG[39m [38;5;3m[AWSS3Service] [39m[32mAWS S3 service is being used for file storage.[39m
+[32m[Nest] 6619  - [39m11/08/2026, 7:34:13 PM [32m    LOG[39m [38;5;3m[AWSS3Service] [39m[32mAWS S3 service is being used for file storage.[39m
+[32m[Nest] 6619  - [39m11/08/2026, 7:34:13 PM [32m    LOG[39m [38;5;3m[AWSS3Service] [39m[32mAWS S3 service is being used for file storage.[39m
+[32m[Nest] 6619  - [39m11/08/2026, 7:34:13 PM [32m    LOG[39m [38;5;3m[AWSS3Service] [39m[32mAWS S3 service is being used for file storage.[39m
+[32m[Nest] 6619  - [39m11/08/2026, 7:34:13 PM [32m    LOG[39m [38;5;3m[AWSS3Service] [39m[32mAWS S3 service is being used for file storage.[39m
+[32m[Nest] 6619  - [39m11/08/2026, 7:34:13 PM [32m    LOG[39m [38;5;3m[AWSS3Service] [39m[32mAWS S3 service is being used for file storage.[39m
+[32m[Nest] 6619  - [39m11/08/2026, 7:34:13 PM [32m    LOG[39m [38;5;3m[AWSS3Service] [39m[32mAWS S3 service is being used for file storage.[39m
+[32m[Nest] 6619  - [39m11/08/2026, 7:34:13 PM [32m    LOG[39m [38;5;3m[AWSS3Service] [39m[32mAWS S3 service is being used for file storage.[39m
+[32m[Nest] 6619  - [39m11/08/2026, 7:34:13 PM [32m    LOG[39m [38;5;3m[AWSS3Service] [39m[32mAWS S3 service is being used for file storage.[39m
+[32m[Nest] 6619  - [39m11/08/2026, 7:34:13 PM [32m    LOG[39m [38;5;3m[AWSS3Service] [39m[32mAWS S3 service is being used for file storage.[39m
+[32m[Nest] 6619  - [39m11/08/2026, 7:34:13 PM [32m    LOG[39m [38;5;3m[AWSS3Service] [39m[32mAWS S3 service is being used for file storage.[39m
+[32m[Nest] 6619  - [39m11/08/2026, 7:34:13 PM [32m    LOG[39m [38;5;3m[AWSS3Service] [39m[32mAWS S3 service is being used for file storage.[39m
+[32m[Nest] 6619  - [39m11/08/2026, 7:34:13 PM [32m    LOG[39m [38;5;3m[DiffWorkerPool] [39m[32mStarted 3 image diff workers[39m
+[31m[Nest] 6619  - [39m11/08/2026, 7:34:13 PM [31m  ERROR[39m [38;5;3m[DiffWorkerPool] [39m[31mImage diff job ran over 300 ms, replacing its worker[39m
+[33m[Nest] 6613  - [39m11/08/2026, 7:34:15 PM [33m   WARN[39m [38;5;3m[HttpExceptionFilter] [39m[33mGET /projects/x: 404 Not found[39m
+[31m[Nest] 6613  - [39m11/08/2026, 7:34:15 PM [31m  ERROR[39m [38;5;3m[HttpExceptionFilter] [39m[31mGET /projects/x[39m
+Error: connect ECONNREFUSED 10.0.0.5:5432 at PrismaClient.query
+    at Object.<anonymous> (/home/user/vision/backend/src/http-exception.filter.spec.ts:21:26)
+    at Promise.finally.completed (/home/user/vision/backend/node_modules/jest-circus/build/jestAdapterInit.js:1834:28)
+    at new Promise (<anonymous>)
+    at callAsyncCircusFn (/home/user/vision/backend/node_modules/jest-circus/build/jestAdapterInit.js:1774:10)
+    at _callCircusTest (/home/user/vision/backend/node_modules/jest-circus/build/jestAdapterInit.js:1167:40)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at _runTestInContext (/home/user/vision/backend/node_modules/jest-circus/build/jestAdapterInit.js:1103:3)
+    at runTestWithContext (/home/user/vision/backend/node_modules/jest-circus/build/jestAdapterInit.js:996:5)
+    at _runTestsForDescribeBlockOnce (/home/user/vision/backend/node_modules/jest-circus/build/jestAdapterInit.js:1008:11)
+    at _runTestsForDescribeBlock (/home/user/vision/backend/node_modules/jest-circus/build/jestAdapterInit.js:824:5)
+    at _runTestsForDescribeBlockOnce (/home/user/vision/backend/node_modules/jest-circus/build/jestAdapterInit.js:1003:11)
+    at _runTestsForDescribeBlock (/home/user/vision/backend/node_modules/jest-circus/build/jestAdapterInit.js:824:5)
+    at run (/home/user/vision/backend/node_modules/jest-circus/build/jestAdapterInit.js:789:3)
+    at runAndTransformResultsToJestFormat (/home/user/vision/backend/node_modules/jest-circus/build/jestAdapterInit.js:2300:21)
+    at jestAdapter (/home/user/vision/backend/node_modules/jest-circus/build/runner.js:111:19)
+    at runTestInternal (/home/user/vision/backend/node_modules/jest-runner/build/testWorker.js:247:16)
+    at runTest (/home/user/vision/backend/node_modules/jest-runner/build/testWorker.js:315:7)
+    at Object.worker (/home/user/vision/backend/node_modules/jest-runner/build/testWorker.js:479:12)
+[33m[Nest] 6613  - [39m11/08/2026, 7:34:15 PM [33m   WARN[39m [38;5;3m[HttpExceptionFilter] [39m[33mGET /projects/x: 400 name must be a string; id must be a UUID[39m
+[33m[Nest] 6613  - [39m11/08/2026, 7:34:15 PM [33m   WARN[39m [38;5;3m[HttpExceptionFilter] [39m[33mGET /projects/x: 403 You do not have permission to perform this operation.[39m
+[33m[Nest] 6613  - [39m11/08/2026, 7:34:15 PM [33m   WARN[39m [38;5;3m[HttpExceptionFilter] [39m[33mGET /projects/x: 409 Someone changed these settings[39m
+[33m[Nest] 6613  - [39m11/08/2026, 7:34:15 PM [33m   WARN[39m [38;5;3m[HttpExceptionFilter] [39m[33mGET /projects/x: 400 Project exists with this name.[39m
+[31m[Nest] 6613  - [39m11/08/2026, 7:34:15 PM [31m  ERROR[39m [38;5;3m[HddService] [39m[31mCannot get image: definitely-missing.png. Error: ENOENT: no such file or directory, open '/home/user/vision/backend/imageUploads/definitely-missing.png'[39m
+[31m[Nest] 6613  - [39m11/08/2026, 7:34:15 PM [31m  ERROR[39m [38;5;3m[HddService] [39m[31mCannot get image: ../../etc/passwd. Error: Image name outside of the image directory: ../../etc/passwd[39m
+A worker process has failed to exit gracefully and has been force exited. This is likely caused by tests leaking due to improper teardown. Try running with --detectOpenHandles to find leaks. Active timers can also cause this, ensure that .unref() was called on them.
+
+Test Suites: 114 passed, 114 total
+Tests:       929 passed, 929 total
+Snapshots:   59 passed, 59 total
+Time:        62.766 s

@@ -1,0 +1,5 @@
+# pickableElements (GET /test-runs/:id/structure) on lists whose rows share one resource-id; agent-C/pick.ts, Node 24.11, HEAD fe7a82c
+# rows: 2000, 4000, 8000 (each row = 2 nodes)
+nodes 4001 pickable 4000 sample "xpath://*[@resource-id='com.bank.app:id/row']/android.view.View[1]" ms 946
+nodes 8001 pickable 8000 sample "xpath://*[@resource-id='com.bank.app:id/row']/android.view.View[1]" ms 4101
+nodes 16001 pickable 16000 sample "xpath://*[@resource-id='com.bank.app:id/row']/android.view.View[1]" ms 18834

@@ -1,0 +1,105 @@
+{
+  "recheck": [
+    {"id":"VIS-SEC-011","status":"partially_fixed","evidence":"backend/src/security.ts:44,63-68 (API CSP default-src 'none'; HSTS лише коли cameOverHttps); frontend/nginx/default.conf:3-6,12-19 + nginx/csp.template + env.sh:53-66 (CSP з адресою API, HSTS через map $http_x_forwarded_proto); docker-compose.demo.yml:31,109 (порти досі на 0.0.0.0 по HTTP)","note":"CSP і HSTS-логіка реалізовані коректно: підробка X-Forwarded-Proto клієнтом дає HSTS лише у власній http-відповіді, яку браузер ігнорує (RFC 6797 §8.1); помилки HSTS на http немає. env.sh перевірено локально: origin/ws-origin виводяться правильно (http→ws, https→wss), відносна адреса → 'self'. Залишок (немає власної TLS-термінації, порти 0.0.0.0 без TLS) — виключений брифом. Окремо: успадкований ssl/default.conf (TLS на 5000) не має жодного заголовка безпеки — див. нову знахідку."},
+    {"id":"VIS-SEC-019","status":"not_fixed","evidence":"backend/docker-compose.yml:48 `container_name: postgres`, :55-56 `\"${POSTGRES_PORT}:5432\"` (0.0.0.0); backend/docker-compose.ldap.yml:26-27 `\"636:636\"`, :8 LDAP_BIND_PASSWORD 'adminpass'; backend/docker-compose.oidc.yml:41-42 `'8090:8080'`, :10 'vision-secret'","note":"Без змін з a3b6104. Redis у dev-compose лише expose (без публікації) — гаразд."},
+    {"id":"VIS-SEC-021","status":"not_fixed","evidence":".claude/hooks/guard.py:126-136 (перевірка лише args[:1]=='compose' після позиційних аргументів; немає розбору bash -c/eval, docker container stop, docker exec). Прямий виклик check(): `docker --context default compose -p vrt down -v` → ALLOW; `bash -c 'docker compose down'` → ALLOW; `docker container stop postgres` → ALLOW; `docker exec postgres dropdb vrt` → ALLOW; `git push --force vision main` → ALLOW; `docker -H unix:///var/run/docker.sock compose down` → ALLOW; `eval docker\\ compose\\ down` → ALLOW (скрипт scratchpad/agent-D/g3.py)","note":"guard.py не змінювався з a3b6104. Як і раніше — зручність, не контроль безпеки."},
+    {"id":"VIS-SEC-023","status":"not_fixed","evidence":"backend/src/ui-tree/ui-tree.service.ts:281-283 `this.logger.warn(`UI tree of \"${check.name ?? '?'}\" in project ${check.projectId ?? '?'} left out (${intake.left}): ${intake.detail}`)` — без екранування \\r\\n; також :302, :322 `${error}`","note":"Рядки змістилися (було 269-271), логіка та сама."},
+    {"id":"VIS-SEC-029","status":"not_fixed","evidence":"frontend/package.json:48 `\"test:pw:install\": \"NODE_TLS_REJECT_UNAUTHORIZED=0 npx playwright install --with-deps chromium\"`; викликається з test:pw:local і test:pw:debug (:49-50)","note":"Лише dev."},
+    {"id":"VIS-SEC-030","status":"not_fixed","evidence":".github/workflows/docs.yml:12-13 `actions/checkout@v4`, `actions/setup-python@v5`; немає `permissions:` ні на рівні workflow, ні job","note":"Єдиний workflow; тригер pull_request (не pull_request_target) — ризик обмежений."},
+    {"id":"VIS-SEC-031","status":"not_fixed","evidence":"sdk-java/gradle/wrapper/gradle-wrapper.properties: distributionUrl=gradle-6.1-all.zip без distributionSha256Sum; sha256(gradle-wrapper.jar)=96f793a18e056c23ffeec67c1f3bb8eccff5a4a407fc9ceac183527e7eedf4b6 (не звірено з офіційною — мережа); build.gradle: shadow 5.2.0, lombok-plugin 5.1.1","note":"Без змін."},
+    {"id":"VIS-SEC-037","status":"not_fixed","evidence":"scripts/lib/vision-safety.sh:96 `docker run --rm --network host postgres:16-alpine psql -X \"$PROD_DATABASE_URL\"` (тег без digest, креденшали проду в argv → видно в ps); scripts/demo-clone-from-prod.sh:139 те саме для pg_dump; scripts/lib/vision-backup.sh:146 `VB_RCLONE_IMAGE=\"rclone/rclone:1.68.2\"` без digest; scripts/control-scenario.sh:82 postgres:16-alpine без digest","note":"У compose образ postgres закріплений digest (docker-compose.demo.yml:140), у скриптах — ні."},
+    {"id":"VIS-SEC-038","status":"not_fixed","evidence":"scripts/lib/vision-safety.sh:28-34 `set -a; . \"$VISION_ENV_FILE\"; set +a` — виконується як shell після встановлення VISION_PROJECT/VISION_COMPOSE_FILE (:13-14), тож рядок `VISION_PROJECT=vrt` у .env.demo перенаправляє vision_compose і vision_guard на інший compose-проєкт; VISION_ENV_FILE (:15) береться з оточення","note":"Файл без shebang (бібліотека). vision-convert-env.py ставить 600 на .env.demo, але vision.sh права файла не перевіряє."},
+    {"id":"VIS-SEC-039","status":"not_fixed","evidence":"backend/Dockerfile:31-41, backend/prisma/Dockerfile (COPY . . з контексту backend/prisma — там немає LICENSE/NOTICE), frontend/Dockerfile:95-110 — жоден не копіює LICENSE/NOTICE; sdk-java/build.gradle — jar без META-INF/LICENSE, NOTICE","note":"Корінь має LICENSE і NOTICE з атрибуцією VRT і deepmerge (NOTICE ок; vendor/deepmerge/license.txt присутній у всіх трьох копіях). backend/frontend/sdk-java мають LICENSE, але не NOTICE. Для внутрішнього використання — Info."},
+    {"id":"VIS-SEC-042","status":"not_fixed","evidence":"backend/test/image.png (sha256 e2a7df17…c245), image_edited.png, image_edited_2.png — переглянуто: фото реальних упізнаваних людей; файли не змінювались з a3b6104","note":""},
+    {"id":"VIS-SEC-057","status":"not_fixed","evidence":"DEPLOY.md:654 «если не заданы — `visual-regression-tracker@example.com` / `123456`» (compose ставить admin@vision.local, docker-compose.demo.yml:131-132); sdk-java/README.md:89 `\"apiUrl\": \"[http://162.243.161.172:4200](http://localhost:4200)\"`; sdk-java/src/test/java/ua/vision/sdk/VisionConfigTest.java:52,62","note":"Рядок у DEPLOY.md змістився з 642 на 654."}
+  ],
+  "findings": [
+    {
+      "title":"API (будь-який його компроміс) пише rclone.conf, який хостовий rclone виконує без перевірки — обхід межі ADR-0013",
+      "severity":"Low","cvss":"CVSS:3.1/AV:N/AC:H/PR:H/UI:N/S:C/C:H/I:H/A:H","cvss_score":7.2,
+      "cwe":"CWE-15","owasp":"A04:2021-Insecure Design","location":"scripts/lib/vision-backup.sh:37-44,147-150; backend/src/backups/drive-auth.ts:103-119; docker-compose.demo.yml:115",
+      "origin":"code","component":"scripts","previous_id":null,
+      "description":"ADR-0013 обрав обмін файлами, щоб «API не може зачепити контейнери проду». Але API-контейнер має rw-монтування demo-data/backup-config і сам пише туди rclone.conf. Хостовий скрипт (cron) перевіряє лише, що у файлі є рядок `[vision-drive]` (`grep -qx`), і далі запускає `rclone` З ХОСТА (якщо rclone встановлено) з цим конфігом. rclone.conf — довільний конфіг rclone: можна задати інший type (наприклад sftp з опцією `ssh = <команда>` у rclone ≥1.64, local, alias) з довільними параметрами. Крім того, rcloneConf() вставляє clientId/clientSecret від адміна без екранування переносів рядка (trim лише по краях) — але для цього шляху Google має прийняти такі значення, тож практично досяжний лише варіант із уже скомпрометованим API.",
+      "evidence":"vision-backup.sh:39 `grep -qx '\\[vision-drive\\]' \"$VB_CONFIG_DIR/rclone.conf\" 2>/dev/null || return 0` → :40 `RCLONE_CONFIG_DIR=\"$VB_CONFIG_DIR\"`; :148-149 `if command -v rclone >/dev/null; then ... RCLONE_CONFIG=\"$RCLONE_CONFIG_DIR/rclone.conf\" rclone \"$@\"`. docker-compose.demo.yml:115 `- ./demo-data/backup-config:/backup-config` (rw). drive-auth.ts:113-114 `client_id = ${connection.clientId}`, `client_secret = ${connection.clientSecret}`; backups.service.ts:170-171 лише `.trim()`.",
+      "impact":"RCE в API (або зловмисний адмін за умови, що Google прийме значення) перетворюється на виконання команд на хості від імені користувача, який запускає vision-backup.sh, — того, хто має доступ до Docker і поряд робочий VRT (правило 1). Потрібен попередній компроміс API і хостовий rclone ≥1.64, тому Low.",
+      "recommendation":"Хостовий скрипт не повинен брати конфіг rclone з теки, у яку пише API: API пише лише дані (drive.json з токенами), а скрипт сам генерує rclone.conf з фіксованим шаблоном (type=drive, scope=drive.file) і валідує поля (client_id за шаблоном `^[0-9A-Za-z._-]+$`, без \\n). Або завжди запускати rclone у контейнері (як у fallback-гілці) без доступу до Docker. На API-стороні відхиляти clientId/clientSecret з керівними символами.",
+      "effort":"S","confidence":"Medium"
+    },
+    {
+      "title":"frontend/package-lock.json: 162 пакети без resolved/integrity — npm ci не перевіряє їх цілісність",
+      "severity":"Low","cvss":"CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:L/I:H/A:N","cvss_score":5.9,
+      "cwe":"CWE-494","owasp":"A08:2021-Software and Data Integrity Failures","location":"frontend/package-lock.json (lockfileVersion 2)",
+      "origin":"dependency","component":"frontend","previous_id":null,
+      "description":"У lock-файлі інтерфейсу 162 з 846 записів не мають ні `resolved`, ні `integrity` (лише version/license). npm ci для них завантажує тарбол за версією з поточного реєстру (зокрема NPM_REGISTRY-дзеркала банку з frontend/Dockerfile:87) без звірки з хешем. Серед них 51 prod-залежність, що потрапляє в бандл інтерфейсу (classnames, clsx, prop-types, @socket.io/component-emitter, pako, readable-stream, stylis, react-material-ui-form-validator…). У backend/ і backend/prisma усі записи мають integrity.",
+      "evidence":"python-аналіз lock: `162 846`, `no integrity 162`; приклад запису `{\"version\": \"1.2.6\", \"dev\": true, \"license\": \"MIT\", \"engines\": {...}}` (node_modules/@aashutoshrathi/word-wrap); prod без integrity: ['node_modules/@socket.io/component-emitter','node_modules/classnames','node_modules/clsx',... 'node_modules/stylis'].",
+      "impact":"Підміна пакета на дзеркалі/проксі з перепідписуванням TLS (VISION_EXTRA_CA_FILE) або компрометація реєстру для цих версій не буде виявлена — код потрапить у JS інтерфейсу (доступ до токена в localStorage та знімків).",
+      "recommendation":"Перегенерувати lock (`rm -rf node_modules && npm install --package-lock-only` на npm ≥9, lockfileVersion 3) і додати в verify перевірку, що кожен запис з `node_modules/` має integrity.",
+      "effort":"S","confidence":"High"
+    },
+    {
+      "title":"Успадкований TLS-конфіг ssl/ без заголовків безпеки й CSP",
+      "severity":"Info","cvss":"CVSS:3.1/AV:N/AC:H/PR:N/UI:R/S:U/C:L/I:L/A:N","cvss_score":3.1,
+      "cwe":"CWE-1021","owasp":"A05:2021-Security Misconfiguration","location":"ssl/default.conf:1-21, ssl/nginx.conf",
+      "origin":"config","component":"infra","previous_id":"VIS-SEC-011",
+      "description":"Єдиний TLS-конфіг у дереві (upstream VRT, слухає 5000 ssl) не має server_tokens off, X-Frame-Options, nosniff, Referrer-Policy, COOP, HSTS і не підключає /tmp/vision-csp.conf. Він ніде не використовується (Dockerfile копіює лише nginx/), але як «готовий TLS» може бути взятий при розгортанні — і тоді CSP/HSTS з 052 зникнуть саме там, де з'явиться https. Блок 1 робить 301 з `$host` (Host з запиту).",
+      "evidence":"ssl/default.conf:11-20 `listen 5000 ssl; ssl_certificate ...; location / { root ...; try_files ... }` — жодного add_header; grep по DEPLOY.md/README/compose — посилань на ssl/ немає.",
+      "impact":"Ризик неправильного розгортання TLS без заголовків безпеки.",
+      "recommendation":"Видалити ssl/ або переписати як include поточного default.conf + `listen 8443 ssl` + HSTS безумовно на https; описати TLS у DEPLOY.md.",
+      "effort":"S","confidence":"High"
+    },
+    {
+      "title":"Postgres демо-стенду з паролем postgres/postgres досяжний з хоста через IP мережі Docker",
+      "severity":"Low","cvss":"CVSS:3.1/AV:L/AC:L/PR:L/UI:N/S:C/C:H/I:H/A:N","cvss_score":7.7,
+      "cwe":"CWE-1393","owasp":"A07:2021-Identification and Authentication Failures","location":"docker-compose.demo.yml:49,142-144; .env.demo.example:11-12",
+      "origin":"config","component":"infra","previous_id":null,
+      "description":"Порт бази не публікується (коментар :147), але дефолти POSTGRES_USER/PASSWORD=postgres у compose і в прикладі .env.demo, і API їх не перевіряє (secretProblems перевіряє лише JWT_SECRET і VISION_SECRET_KEY). На Linux контейнер у bridge-мережі досяжний з хоста за IP 172.x.y.z:5432 будь-яким локальним процесом/користувачем спільного з продом хоста без доступу до Docker.",
+      "evidence":"docker-compose.demo.yml:143 `POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}`; .env.demo.example:12 `POSTGRES_PASSWORD=postgres`; backend/src/shared/server-secrets.ts:33 перевіряє лише [JWT_SECRET, VISION_SECRET_KEY].",
+      "impact":"Будь-хто з shell на хості (зокрема сервіси сусіднього VRT) читає/змінює всю базу Vision: користувачі, хеші, знімки-метадані, токени звітів. Не перевірено на стенді (немає Docker), тому Medium confidence.",
+      "recommendation":"Вимагати POSTGRES_PASSWORD (`${POSTGRES_PASSWORD:?}`), прибрати дефолт з прикладу (генерувати в vision-convert-env.py як JWT_SECRET), за потреби `internal: true` для мережі бази.",
+      "effort":"S","confidence":"Medium"
+    },
+    {
+      "title":"Звіт аудиту з відкритими вразливостями й репро закомічено і потрапить в експорт у git банку",
+      "severity":"Info","cvss":"CVSS:3.1/AV:N/AC:H/PR:L/UI:N/S:U/C:L/I:N/A:N","cvss_score":3.1,
+      "cwe":"CWE-538","owasp":"A05:2021-Security Misconfiguration","location":"audit/ (git ls-files); scripts/export-without-history.sh:36",
+      "origin":"process","component":"scripts","previous_id":null,
+      "description":"audit/REVIEW-PROMPT.md каже «Артефакти в audit/ (не комітити)», але audit/findings.json, report*.pdf/md, raw/repro-*.txt, raw/agent-*.json відстежуються git. export-without-history.sh робить `git archive` усіх відстежуваних файлів, тож детальний перелік невиправлених вразливостей з кроками відтворення потрапить у репозиторій банку для всіх, хто має до нього доступ.",
+      "evidence":"`git ls-files audit` → audit/PROGRESS.md, audit/findings.json, audit/raw/agent-A-2026-11-07.json, …, audit/raw/repro-001-patch-builds.txt; .gitignore не містить audit/.",
+      "impact":"Розкриття карти вразливостей ширшому колу, ніж власник і безпека банку.",
+      "recommendation":"Додати audit/ у .gitignore і `git rm --cached -r audit` (окрім, можливо, REVIEW-PROMPT.md), або виключити audit/ у export-without-history.sh (`export-ignore` у .gitattributes); звіт передавати окремим захищеним каналом.",
+      "effort":"S","confidence":"High"
+    },
+    {
+      "title":"Образ інтерфейсу віддає source maps",
+      "severity":"Info","cvss":"CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:L/I:N/A:N","cvss_score":5.3,
+      "cwe":"CWE-540","owasp":"A05:2021-Security Misconfiguration","location":"frontend/vite.config.ts:42 (`sourcemap: true`); frontend/Dockerfile:99",
+      "origin":"config","component":"frontend","previous_id":null,
+      "description":"Збірка робиться з sourcemap: true, і build/ цілком копіюється в nginx, тож *.js.map з повним вихідним кодом інтерфейсу (з коментарями) доступні без входу. Код не секретний (власний репозиторій), але банківські сканери позначають це як розкриття інформації.",
+      "evidence":"vite.config.ts `build: { outDir: \"build\", sourcemap: true, ... }`; Dockerfile `COPY --from=builder /app/build .`; nginx default.conf location / без обмежень на .map.",
+      "impact":"Мінімальний: полегшує розвідку.",
+      "recommendation":"`sourcemap: 'hidden'` або видаляти *.map в образі; або `location ~ \\.map$ { return 404; }`.",
+      "effort":"S","confidence":"High"
+    }
+  ],
+  "areas_checked": [
+    "backend/src/security.ts, main.ts: CORS (allowOwnInterface, origin з APP_FRONTEND_URL), CSP API, HSTS-логіка cameOverHttps (підробка X-Forwarded-Proto — без шкоди: HSTS по http ігнорується), X-Powered-By, Swagger за VISION_SWAGGER (маршрути API не під /api — виняток CSP лише для документації коректний)",
+      "backend/src/http-exception.filter.ts: stack/текст 5xx не віддаються",
+      "frontend/nginx/default.conf, csp.template, env.sh (локальний прогін з різними REACT_APP_API_URL), Dockerfile, index.html, global-polyfill.js, vite.config.ts preview CSP; успадкування add_header у location; потреби UI (немає inline-скриптів/eval, зовнішніх шрифтів, ws: до API покрито)",
+      "ssl/default.conf, ssl/nginx.conf",
+      "docker-compose.demo.yml (порти, дефолтні паролі, user, ліміти, digest, healthcheck postgres), backend/docker-compose*.yml (019), Redis (лише dev, не публікується)",
+      "Dockerfile-и: backend, backend/prisma, frontend — USER не root, базові образи за digest, секрет CA через build secret; немає HEALTHCHECK і LICENSE/NOTICE",
+      "scripts/lib/vision-safety.sh, vision-backup.sh (lib і скрипт), vision-convert-env.py (diff 051, права 600), export-without-history.sh, control-scenario.sh (diff 051), --network host/теги образів",
+      "Файловий канал бекапів ADR-0013: settings.json (time/keep валідуються регулярками в скрипті), status.json, backup-requested, rclone.conf (знахідка)",
+      ".github/workflows/docs.yml, lock-файли (integrity/resolved, install-скрипти: protobufjs, @google/genai, @prisma/engines, @scarf/scarf — SCARF_ANALYTICS=false у backend Dockerfile), test:pw:install, Gradle wrapper, .claude/hooks/guard.py (прямий виклик check()), session-start.sh",
+      "Ліцензії: LICENSE/NOTICE у корені й пакетах, vendor/deepmerge license.txt ×3, jar SDK; бренд VRT поза LICENSE/NOTICE (лише в історичних рядках DEPLOY.md:329-342,654, тестах на відсутність бренду і NOTICE/README-атрибуції — гаразд)",
+      "Фікстури з фото (042), внутрішні хости/IP (057)",
+      "Банківські контрольні питання: аудит-лог безпеки — окремої таблиці/журналу немає (у schema.prisma лише Session, ReviewDecision; входи, зміни ролей, видача доступу, скидання паролів адміном лише частково в звичайному лозі Nest); строки зберігання — demo compose вимикає очищення (TASKS_CLEANUP_ENABLED=false, docker-compose.demo.yml:62), отже знімки з ПІБ/картками зберігаються безстроково; Session чиститься лише при наступному вході користувача (auth.service.ts:47); процедури видалення даних суб'єкта ПД немає — потребує юриста/DPO"
+  ],
+  "limitations": [
+    "Docker недоступний: compose, образи, досяжність Postgres з хоста за bridge-IP і nginx-конфіг у реальному контейнері не перевірені на стенді; nginx -t не запускався.",
+    "Контрольна сума gradle-wrapper.jar не звірена з офіційною (мережа).",
+    "Наявність опції `ssh` у бекенді sftp залежить від версії хостового rclone (≥1.64) — не перевірено на хості.",
+    "Ін'єкція переносів у rclone.conf через clientId/clientSecret адміна залежить від того, чи прийме Google такі значення — потребує перевірки; у знахідку включено лише шлях через компроміс API.",
+    "Юридичні питання ПД/НБУ/PCI — лише контрольні питання, без висновків."
+  ]
+}

@@ -1,0 +1,85 @@
+{
+  "recheck": [
+    {
+      "id": "VIS-SEC-026",
+      "status": "not_fixed",
+      "evidence": "backend/src/ai/ai.controller.ts:95-120 — POST /ai/group-summary, /ai/a11y-labels, /ai/bug-draft мають лише @UseGuards(JwtAuthGuard), без RoleGuard/@Roles (файл не змінювався з 7b13af1). backend/src/reports/reports.controller.ts:43-49 — GET /builds/:id/report-links лише JwtAuthGuard: guest отримує token кожного чинного публічного звіту, хоча створювати їх може лише editor/admin (REQ-031-69, рядок 30).",
+      "note": "Ізоляція проєктів на цих маршрутах працює (@ProjectFrom на buildId/testRunId). Лишається: guest запускає LLM-виклики на ключі проєкту чи інстансу і може роздати назовні вже створене посилання на звіт."
+    },
+    {
+      "id": "VIS-SEC-041",
+      "status": "not_fixed",
+      "evidence": "backend/src/projects/projects.controller.ts:88-103 (PUT /projects, @Roles(admin, editor), @ProjectFrom(inBody('id'))), 105-114 (DELETE /projects/:id, admin, editor). У 051/052 не змінювалось; рішення власника в audit/PROGRESS.md немає.",
+      "note": "Узгоджено з глобальною моделлю ролей 042. Потрібне рішення власника або специфікація про роль на рівні проєкту."
+    },
+    {
+      "id": "VIS-SEC-054",
+      "status": "not_fixed",
+      "evidence": "backend/src/a11y/jira-bug.ts:43 `const escapeWiki = (value) => value.replace(/\\|/g, '/').replace(/[{}]/g, '')` застосовується лише до рядків таблиці (:97); `# ${v.message}` (:86), `* ${key}: ${value}` (:89) і backend/src/visual-bugs/visual-bug.ts:92 `Перевірка: ${check}` вставляються як є. Опис іде як wiki-розмітка через /rest/api/2/issue (jira.client.ts:278). git diff a3b6104..HEAD цих файлів не торкається.",
+      "note": "JQL і шляхи REST і далі екрановані. jiraKey перевіряється регулярним виразом /^[A-Za-z][A-Za-z0-9_]*-\\d+$/ (a11y-issue.dto.ts:4, visual-bug.dto.ts:15), тому `key = \"${jiraKey}\"` у a11y-issues.service.ts:546 не дає JQL-ін'єкції."
+    },
+    {
+      "id": "VIS-SEC-056",
+      "status": "not_fixed",
+      "evidence": "backend/src/shared/strip-unknown-fields.pipe.ts:33 — фільтр і далі лише верхнього рівня (у 051 додано тільки ListLengthPipe). backend/src/test-runs/test-runs.service.ts:731 `ignoreAreas: JSON.stringify(ignoreAreas)` і :459 `tempIgnoreAreas: JSON.stringify(createTestRequestDto.ignoreAreas)` зберігають елементи як прийшли.",
+      "note": "Тепер ≤20 областей на запит (051), тож обсяг сміття обмежений. Виправляючи, збережіть поле `id`: інтерфейс на нього покладається (replaceAreaWithElement, test-runs.service.ts:615; WhatsCompared.tsx `item.area.id`). Тобто мапити на {id?, x, y, width, height}, а не на 4 поля."
+    }
+  ],
+  "findings": [
+    {
+      "title": "Зміна профілю (PUT /users) відкриває новий вхід і не завершує попередній: після виходу старий токен цього браузера діє далі",
+      "severity": "Low",
+      "cvss": "CVSS:3.1/AV:N/AC:H/PR:L/UI:R/S:U/C:L/I:L/A:N",
+      "cvss_score": 3.7,
+      "cwe": "CWE-613",
+      "owasp": "A07:2021-Identification and Authentication Failures",
+      "location": "backend/src/users/db/dbusers.service.ts:44",
+      "origin": "code",
+      "component": "backend",
+      "previous_id": "VIS-SEC-009",
+      "description": "У 052 кожен виклик AuthService.signToken створює новий рядок Session з новим sid (auth.service.ts:40-50). PUT /users (зміна імені чи email) у всіх трьох режимах повертає новий токен через signToken: dbusers.service.ts:44, ldapusers.service.ts:149, oidcusers.service.ts:346. Поточна сесія при цьому не завершується. Інтерфейс мовчки замінює токен у localStorage (frontend/src/services/users.service.ts:81). Коли людина потім виходить, POST /users/logout завершує лише sid нового токена (users.controller.ts:219-221 → auth.service.ts:78-84). Сесія старого токена лишається відкритою до кінця його строку (JWT_LIFE_TIME, без нього — 365 днів рядка). Сокет подій, відкритий зі старим токеном, теж не закривається: endSessions(only: новий sid) його оминає (events.gateway.ts:135-147). Це порушує REQ-052-01 («після виходу запити з токеном цього входу відхиляються») для кожного, хто хоч раз зберіг профіль.",
+      "evidence": "dbusers.service.ts:35-46:\n  async update(id, userDto) { const user = await this.prismaService.user.update({...}); const token = await this.authService.signToken(user); return new UserLoginResponseDto(user, token); }\nauth.service.ts:40-50: signToken → `const sid = randomUUID(); ... await this.prismaService.session.create({ data: { id: sid, userId: user.id, ... } })` — без endSession для поточного sid.\nfrontend users.service.ts:78-83: `.then((user) => { setUserInLocalStorage(user); ...` — старий токен забуто, але на сервері живий.\nusers.controller.ts:233-239: `update(@CurrentUser() user, @Body() dto)` — sessionIdOf(request) не передається.",
+      "impact": "Вихід не скасовує токен, виданий до останнього збереження профілю. Якщо токен колись скопіювали (S-13 localStorage, спільний комп'ютер, логи проксі, HAR), він і далі відкриває API й події проєктів після виходу. Саме від цього мала захистити 052. Кожне збереження профілю ще й додає «осиротілу» сесію, яку людина не може завершити інакше, ніж зміною пароля.",
+      "recommendation": "У PUT /users передавати sessionIdOf(request.headers.authorization) і завершувати цю сесію разом з видачею нового токена (або не видавати новий токен: email у JWT змінюється лише в режимі БД; для LDAP/OIDC email не змінюється, і токен можна лишити). Додати e2e-тест: update → logout → старий токен 401, старий сокет закрито.",
+      "effort": "S",
+      "confidence": "High"
+    },
+    {
+      "title": "Зміна пароля й випуск API-ключа без повторного підтвердження: викрадений токен стає постійним доступом, а 052 ще й викидає власника з інших входів",
+      "severity": "Low",
+      "cvss": "CVSS:3.1/AV:N/AC:H/PR:L/UI:N/S:U/C:L/I:L/A:L",
+      "cvss_score": 4.2,
+      "cwe": "CWE-620",
+      "owasp": "A07:2021-Identification and Authentication Failures",
+      "location": "backend/src/users/users.controller.ts:196-209",
+      "origin": "code",
+      "component": "backend",
+      "previous_id": null,
+      "description": "PUT /users/password приймає лише {password} і не питає поточного пароля (users.controller.ts:200-209; frontend users.service.ts:153-167 теж надсилає лише новий). GET /users/newApiKey (:187-193) випускає новий API-ключ будь-якому власникові JWT. Після 052 зміна пароля завершує всі інші входи людини, крім того, з якого її зроблено (users.service.ts:94-96). API-ключ навмисно переживає вихід і зміну пароля (REQ-052-05). Хто заволодів токеном (S-13 — localStorage, XSS-клас, спільний ПК), той за два запити закріплюється: задає свій пароль, і власника з усіх його браузерів викидає, а сам він лишається. Або випускає собі API-ключ, що діє незалежно від подальших виходів і змін пароля власника. Для локальних акаунтів (режим БД і локальні акаунти поруч із LDAP) це повне захоплення.",
+      "evidence": "users.controller.ts:196-209:\n  @Put('password') @UseGuards(JwtAuthGuard)\n  changePassword(@CurrentUser() user, @Body('password') password, @Req() request) { return this.usersService.changePassword(user, password, this.authService.sessionIdOf(request.headers.authorization)); }\nusers.service.ts:83-97: passwordProblem(newPassword) — лише правила складності; далі `await this.authService.endSessions(user.id, sessionId)` (решта входів власника закрито).\nusers.controller.ts:187-193: `@Get('newApiKey') @UseGuards(JwtAuthGuard) generateNewApiKey(@CurrentUser() user)`.\ngrep currentPassword|oldPassword по backend/src і frontend/src — 0 збігів.",
+      "impact": "Тимчасове викрадення сесії перетворюється на постійне захоплення акаунта editor/admin. Власник втрачає входи й не може повернутись без адміна, а API-ключ зловмисника лишається чинним. Вимагає наявного токена, тому Low.",
+      "recommendation": "Вимагати поточний пароль у PUT /users/password для локальних акаунтів (і в UI). Для випуску API-ключа вимагати свіжий вхід (iat не старший за N хвилин) або пароль. Показувати власникові дату останньої зміни пароля і ключа. Потребує специфікації (зміна поведінки).",
+      "effort": "S",
+      "confidence": "High"
+    }
+  ],
+  "areas_checked": [
+    "Усі 13 контролерів (88 маршрутів) і шлюз socket.io: guards, @Roles, ProjectFrom/NoProjectData — таблиця в scratchpad/agent-B/endpoints.md; тест project-access.routes.spec.ts справді охоплює всі файли *.controller.ts",
+    "ProjectAccessInterceptor/ProjectAccessService: джерела id (param/query/body, масиви, назви проєктів, uuid-фільтр, рішення undo, report link), гілка `!projectIds.length`, multipart (локальний повтор interceptor після FileToBodyInterceptor)",
+    "IDOR: testRun, testVariation, build, baseline/trend (testVariationId), ignore areas, element rules (scope project — projectId з testRun), групи змін, Insights ($queryRaw параметризовано projectId), a11y-рішення (problemsOf лише з violations цього запуску), visual bugs (forCheck з projectId), report links (revoke — автор/admin), undo (лише автор рішення), aroundBuildId (в межах projectId), API-ключ A→B (грант власника ключа)",
+    "WS: subscribe → mayFollow (admin або ProjectAccess), leaveProject при відкликанні, recheckAccess при зміні ролі, endSessions при виході/зміні пароля/видаленні; нестрокові projectId дають помилку Prisma → false",
+    "Mass assignment: глобальні пайпи ListLengthPipe → ValidationPipe → StripUnknownFieldsPipe; UpdateProjectDto (поля мапляться явно), UpdateUserDto (email/firstName/lastName; email заборонено в LDAP/OIDC), UpdateTestRunDto (comment), ModifyBuildDto (buildChanges), AssignRoleDto (лише admin), CreateAccountDto (лише admin); вкладені ignoreAreas — VIS-SEC-056",
+    "Правило 7: UserDto/UserLoginResponseDto (jiraTokenSet, geminiKeySet, apiKeyEnding), усі prisma.user.find*/update у коді, select користувача у builds/reports/test-variations/project-access; модель Session (sid лише в підписаному JWT, жодним маршрутом не віддається, onDelete Cascade), tokensValidAfter не віддається; toPublicProject ховає jiraToken/jiraEmail і ключ Gemini",
+    "Ін'єкції: $queryRaw/$executeRaw (analytics, test-variations, health — лише tagged template), без $queryRawUnsafe/Prisma.raw; JQL (jiraKey перевіряється regex, encodeURIComponent у REST-шляхах); Jira wiki (VIS-SEC-054); new RegExp лише в linear-regex.ts",
+    "Frontend: немає dangerouslySetInnerHTML/innerHTML/eval; href з даних — лише jiraUrl, який будується сервером з дозволеного https-хоста Jira; location з редиректу Jira (051) показано текстом; CSV-експорту немає",
+    "Open redirect / header injection: res.redirect лише на URL IdP, APP_FRONTEND_URL і підписаний URL сховища; Content-Disposition з імені файла лише після перевірки HMAC-підпису й basename",
+    "052 diff: sessions.ts, auth.service.ts, jwt.strategy.ts, users.controller/service (logout, changePassword, setPassword, delete, assignRole), oidc-browser.ts, LoginPage/users.service.ts (nonce)",
+    "CLI/MCP (frontend/public/cli/vision.py): apiKey у заголовку, інструменти vision_check/devices/session — нових проблем авторизації не знайдено (CLI діє правами власника ключа)"
+  ],
+  "limitations": [
+    "Тести й e2e не запускав; висновки зі статичного аналізу коду з посиланнями на рядки. Знахідку 1 видно безпосередньо з коду (signToken завжди створює сесію; update не завершує поточну), але e2e-сценарієм не відтворено.",
+    "Знахідка 2 лежить на межі напрямку 2.1 (автентифікація): можливий дубль з агентом A — зведіть.",
+    "Логіку JiraClient/SSRF, ReDoS/XPath, ліміти PNG/UI-дерева та CSP/HSTS не перевіряв глибоко — це напрямки інших агентів.",
+    "a11y-issues.service.ts (1100+ рядків) і visual-bugs.service.ts переглянуто вибірково: шляхи, що визначають projectId і набір проблем; поля fieldValues передаються в Jira з особистим токеном людини, тож це не підвищує її прав."
+  ]
+}

@@ -1,0 +1,1724 @@
+{
+ "commit": "a3b6104",
+ "previous_commit": "7b13af1",
+ "date": "2026-11-07",
+ "scope": "Vision (nazarenkod/vision), поточне дерево main",
+ "deployment_model": "внутрішній on-prem сервіс у банківському контурі; кілька команд; поруч із робочим VRT",
+ "counts": {
+  "Critical": 0,
+  "High": 2,
+  "Medium": 14,
+  "Low": 26,
+  "Info": 5,
+  "Closed": 10
+ },
+ "counts_open_total": 47,
+ "findings": [
+  {
+   "id": "VIS-SEC-002",
+   "previous_id": "S-4",
+   "title": "Приймаються відомі/слабкі секрети підпису; DEPLOY.md радить секрет робочого VRT",
+   "severity": "Closed",
+   "cvss": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:C/C:H/I:H/A:N (9.3)",
+   "cwe": "CWE-1392",
+   "owasp": "A07:2021-Identification and Authentication Failures",
+   "location": [
+    "backend/src/main.ts:29-34",
+    "backend/src/shared/secret-box.ts:43-53",
+    "backend/src/shared/secret-box.spec.ts:25",
+    "docker-compose.demo.yml",
+    "DEPLOY.md:108"
+   ],
+   "origin": "config",
+   "component": "backend",
+   "description": "Старт перевіряє лише, що `JWT_SECRET` і `VISION_SECRET_KEY` непорожні; значення `change-me` чи `x` приймаються (тест secret-box.spec.ts:25 це закріплює). Приклади середовища містять `change-me`. DEPLOY.md радить узяти секрет робочого VRT — тоді JWT Vision дійсні й на проді (порушення правила 1).",
+   "evidence": "main.ts:29-34 викликає serverSecretKey() лише на непорожність; .env*-приклади з `change-me`; DEPLOY.md:108.",
+   "impact": "Якщо оператор не змінив JWT_SECRET, будь-хто підписує собі JWT адміна. Спільний із продом секрет дає токени, дійсні на робочому VRT.",
+   "recommendation": "Відмовлятися стартувати, якщо секрет у чорному списку відомих значень або коротший за N; вимагати різні секрети для Vision і VRT; прибрати пораду з DEPLOY.md. Потребує мінімальної зміни bootstrap.",
+   "related": "S-4",
+   "effort": "S",
+   "confidence": "High",
+   "severity_2026_11_05": "High",
+   "status": "fixed",
+   "status_uk": "Закрито",
+   "recheck": {
+    "evidence": "backend/src/main.ts:29-35 — перевіряється лише наявність VISION_SECRET_KEY (serverSecretKey, backend/src/shared/secret-box.ts:13-15,43-52: будь-який непорожній рядок → SHA-256); JWT_SECRET так само. .env.demo.example:16,19 `JWT_SECRET=change-me`, `VISION_SECRET_KEY=change-me`; backend/.env.example:2,5; DEPLOY.md:108 досі радить `JWT_SECRET` «можна той же, что у прода». Змін з 7b13af1 немає.",
+    "gap": "Відкладено рішенням власника; без змін: слабкі/відомі секрети приймаються, порада взяти секрет проду в DEPLOY.md лишилась. Слабкий VISION_SECRET_KEY також робить розшифровуваним sealed apiKey Gemini у Project.imageComparisonConfig, що йде в бекап (VIS-SEC-013)."
+   },
+   "severity_before_fix": "High",
+   "fix": "Виправлено (2026-11-08, спец. 051): API не стартує з JWT_SECRET чи VISION_SECRET_KEY з прикладу, коротшим за 32 символи чи однаковими (server-secrets.ts); DEPLOY.md більше не радить секрет робочого VRT; vision-convert-env.py замінює ключ, який API відхилить. Стенд: change-me / короткий / однакові — старий API стартує, новий — ні, з причиною."
+  },
+  {
+   "id": "VIS-SEC-003",
+   "previous_id": null,
+   "title": "VLM-рушій автоматично надсилає знімки банку в Gemini при прийомі (напруга з правилом 6 / ADR-0007)",
+   "severity": "High",
+   "cvss": "CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:C/C:H/I:L/A:N (8.5)",
+   "cwe": "CWE-200",
+   "owasp": "A01:2021-Broken Access Control",
+   "location": [
+    "backend/src/test-runs/test-runs.service.ts:140-150",
+    "backend/src/compare/compare.service.ts:62-63",
+    "backend/src/compare/libs/vlm/vlm.service.ts:90-99",
+    "backend/src/ai/gemini.service.ts:44",
+    "docs/specs/035-admin-accounts/spec.md:192-193"
+   ],
+   "origin": "code",
+   "component": "backend",
+   "description": "Якщо проєкт обрав рушій порівняння `vlm`, прийом знімка (POST /test-runs → calculateDiff → compareService.getDiff → getComparator → VlmService → GeminiService.generate) СИНХРОННО надсилає в Gemini три повні PNG (еталон, новий, diff). Вмикає будь-який editor проєкту; вимикача рівня інстансу немає, `AI_PROVIDER=none` на це не впливає. Вердикт моделі сам ставить статус (vlm.service.ts:98-99).",
+   "evidence": "Ланцюжок викликів у коді (див. location); спека 035:192-193 фіксує це як рішення власника 2026-11-02, що прямо суперечить правилу 6 «LLM ніколи при прийомі».",
+   "impact": "Скриншоти й тексти екранів банківського застосунку (ПІБ, номери карток/рахунків, баланси) автоматично, без людини, залишають контур і йдуть у Google. Для банку це потенційний витік ПДн/банківської таємниці. Prompt injection у тексті екрана може приховати регресію.",
+   "recommendation": "Для банку: вимикач рівня інстансу (hard off, напр. VISION_VLM_ALLOWED=false), що перекриває вибір проєкту; явне погодження ІБ на кожен проєкт із VLM; ніколи не дозволяти вердикту моделі самому затверджувати. Зміна поведінки — потребує специфікації (/spec).",
+   "related": "правило 6, ADR-0007, ADR-0020, спека 035",
+   "effort": "M",
+   "confidence": "High",
+   "severity_2026_11_05": "High",
+   "status": "accepted_risk",
+   "status_uk": "Прийнятий ризик",
+   "recheck": {
+    "evidence": "Що йде в Gemini: три повні PNG — еталон і новий знімок (з замальованими ignore-областями) та diff (backend/src/compare/libs/vlm/vlm.service.ts:76-90), промпт із налаштувань проєкту і модель (gemini.service.ts:42-52), ключ — з Project.imageComparisonConfig, розшифровується лише тут (vlm.service.ts:51-54). Коли: лише якщо project.imageComparison=vlm І config.provider='gemini' І pixelmatch дав не ok/new (vlm.service.ts:66-72). Точки виклику: прийом POST /test-runs → calculateDiff (test-runs.service.ts:343-357); автоапрув за новими еталонами — по одному getDiff на кожен approved run гілки (test-runs.service.ts:798-822, 837); перепорівняння після зміни правила/ignore-областей (test-runs.service.ts:661-678, до MAX_RECOMPARE_AFTER_RULE). Вимикач: немає ні на інстанс (жодної змінної; compare.service.ts:45-64 повертає VlmService без перевірок; AI_PROVIDER читає лише ai.service.ts:53-58), ні окремого на проєкт, крім зміни рушія editor-ом. Правило 6 поза VLM: AiFeaturesService/AiService викликаються лише з ai.controller.ts:96-119 (на вимогу); у test-runs/, ui-tree/, a11y/ викликів AI немає (grep AiService|GeminiService|OllamaService).",
+    "gap": "Прийнятий ризик (контракт з Gemini). Лишається: (1) немає вимикача рівня інстансу на випадок відкликання погодження; (2) немає денного ліміту/обліку VLM-викликів (AI_DAILY_CALL_LIMIT стосується лише AiService), а автоапрув і перепорівняння множать виклики на один знімок; (3) вердикт моделі сам ставить ok і може запустити автоапрув (NEW-D-1)."
+   }
+  },
+  {
+   "id": "VIS-SEC-043",
+   "previous_id": null,
+   "title": "Квадратична побудова елементів для вибору (structure) блокує event loop на хвилини одним широким UI-деревом",
+   "severity": "Closed",
+   "cvss": "CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:N/I:N/A:H (6.5)",
+   "cwe": "CWE-407",
+   "owasp": "A04:2021-Insecure Design",
+   "location": [
+    "backend/src/ui-tree/ui-tree.service.ts:154-186",
+    "backend/src/ui-tree/ui-tree.service.ts:485",
+    "backend/src/ui-tree/ui-tree.service.ts:535",
+    "backend/src/ui-tree/selector-variants.ts:86-90",
+    "backend/src/ui-tree/selector-variants.ts:97-106",
+    "backend/src/ui-tree/selector-variants.ts:113-145",
+    "backend/src/ui-tree/xpath-selector.ts:171-179",
+    "backend/src/test-runs/test-runs.controller.ts:246"
+   ],
+   "origin": "code",
+   "component": "backend",
+   "description": "GET /test-runs/:id/structure (відкриття знімка в інтерфейсі) синхронно в головному потоці викликає pickableElements для дерева і для дерева еталона. Для кожного безіменного видимого вузла selectorVariants будує шлях через stepTo, який фільтрує ВСІХ сиблінгів (siblings.filter(...).indexOf), і одразу виконує XPath через findBySelector, де крок child знову фільтрує всіх дітей батька (children[parent].filter). Для текстових вузлів те саме робить pathFromIdAbove. На дереві, де під одним вузлом з id лежать n безіменних сиблінгів, це ~2·n² операцій на дерево. Обмеження 10 МиБ (040) дозволяє сотні тисяч вузлів (`<n bounds=\"[0,0][1,2]\"/>` ≈ 25 байт).",
+   "evidence": "Підтверджено на стенді (repro-005): дерево з 10 000 безіменних сусідніх вузлів (826 КБ XML, 110 КБ у gzip+base64) — GET /test-runs/:id/structure 6,8 с, паралельний GET /users/me чекав 5,8 с (event loop заблоковано для всіх команд). Складність квадратична: 30 000 вузлів — орієнтовно хвилина на кожне відкриття знімка. selector-variants.ts:86-90: `const siblings = childrenOf(tree)[node.parent]; const position = siblings.filter((index) => tree.nodes[index].className === node.className).indexOf(node.index) + 1;` викликається для кожного вузла з ui-tree.service.ts:162-163 (`selectorVariants(tree, node)`) і 181 (`textFields` → pathFromIdAbove). xpath-selector.ts:177: `const matching = children[parent].filter((child) => fits(tree.nodes[child], step.test));`. Офлайн-симуляція саме цих двох циклів (node 22, scratchpad sim/wide.js): 10 000 сиблінгів — 1,96 с, 30 000 — 28,9 с (≈1,7 МБ XML); 100 000 сиблінгів екстраполюється в ~5 хв; викликається двічі (tree і baselineTree). Живий запит не виконувався.",
+   "impact": "Будь-хто з правом завантаження (API-ключ CI, editor) один раз надсилає знімок із широким деревом; кожне відкриття цього знімка будь-яким переглядачем (і відкриття знімків, для яких дерево стало еталоном) зупиняє API для всіх команд на десятки секунд–хвилини. Повторні відкриття множать ефект.",
+   "recommendation": "Обчислювати позицію серед сиблінгів одним проходом (Map className→лічильник для кожного батька, кешувати як childrenOf); не перевіряти кожен варіант повним XPath, або кешувати результати; обмежити кількість вузлів дерева при прийомі (напр. 20–50 тис.) і кількість елементів, для яких будуються варіанти; винести structure у воркер з тайм-аутом. Тест: дерево з 50 000 сиблінгів відповідає structure за < 1 с.",
+   "related": [
+    "VIS-SEC-004",
+    "NEW-C-2",
+    "NEW-C-5"
+   ],
+   "effort": "M",
+   "confidence": "High",
+   "source_agent_id": "NEW-C-1",
+   "status": "fixed",
+   "status_uk": "Закрито",
+   "severity_2026_11_05": null,
+   "severity_before_fix": "High",
+   "fix": "Виправлено (2026-11-07): позиції серед братів того самого класу рахуються один раз на дерево (xpath-selector.ts sameClassSiblings), крок /Клас[n] бере дітей з цієї карти. Характеризаційні знімки (structure.characterization.spec.ts) не змінились; 20 000 безіменних рядків — менше 1 с у тесті (було 42,9 с). Стенд: 10 000 вузлів — structure за 0,16 с (було 6,8 с), 30 000 — 0,42 с, паралельний запит не чекає."
+  },
+  {
+   "id": "VIS-SEC-044",
+   "previous_id": null,
+   "title": "Локальний пароль діє для людей каталогу й SSO: паролі з робочого VRT обходять SSO, а звільнені з каталогу входять і самі ставлять собі пароль",
+   "severity": "High",
+   "cvss": "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:H/I:H/A:N (7.4)",
+   "cwe": "CWE-288",
+   "owasp": "A07:2021-Identification and Authentication Failures",
+   "location": [
+    "backend/src/users/users.service.ts:123-129",
+    "backend/src/users/users.service.ts:77-85",
+    "backend/src/users/ldap/ldapusers.service.ts:54-67",
+    "backend/src/users/db/dbusers.service.ts:58-74",
+    "docs/specs/045-sign-in-and-api-hardening/design.md:5-11",
+    "DEPLOY.md:124-126",
+    "DEPLOY.md:174-175"
+   ],
+   "origin": "code",
+   "component": "backend",
+   "description": "У User немає ознаки походження (локальний / каталог / SSO). Рішення «каталог чи локальний пароль» приймається на кожен вхід за поточною відповіддю каталогу, а в режимі SSO форма пароля працює для будь-якого email. Дизайн 045 стверджує: «Акаунти з каталогу й SSO мають пароль, якого ніхто не знає, тож локальний вхід їм не відкривається» — це неправда для акаунтів, скопійованих з робочого VRT разом з хешами паролів (DEPLOY.md: «Копируется вся база VRT … пользователи с паролями»), і для паролів, заданих адміном (VIS-SEC-017). Виправлення 41b15e0 (isInDirectory=false замість 400) розширило це на LDAP: людина, яку прибрали з каталогу або перенесли за межі LDAP_SEARCH_DN (типово для блокування в AD), стає «локальною».",
+   "evidence": "Перевірено за кодом: users.service.ts:123-129 — у режимі SSO форма завжди йде в localUsers.login; у режимі LDAP — щойно isInDirectory=false. Ознаки походження акаунта немає (schema.prisma, User). Специфікація 045 (REQ-045-01) пускає «локальні акаунти, створені адміном», але код не відрізняє їх від скопійованих з VRT. users.service.ts:124-127:\n  if (this.usersService instanceof LdapUsersService && !(await this.usersService.isInDirectory(dto.email))) {\n    return this.localUsers.login(dto);\n  }\n  if (this.usersService instanceof OidcUsersService) return this.localUsers.login(dto);\nusers.service.ts:81-83 — зміна пароля: якщо людини немає в каталозі, `this.localUsers.changePassword(user, newPassword)`.\nldapusers.service.ts:64 — «не знайдено» і «бракує атрибута» (400) -> null -> «не в каталозі».\nDbUsersService.login (dbusers.service.ts:58-70) перевіряє збережений хеш, яким би шляхом він не з'явився (скопійований з VRT, від адміна).",
+   "impact": "(1) SSO-режим: кожен користувач VRT входить старим паролем VRT повз SSO/MFA банку; паролі VRT не проходили політику 12 символів (spec 045: короткий наявний пароль працює), тож можливий spraying (VIS-SEC-034) по всіх скопійованих email. (2) LDAP-режим: звільнений, якого вивели з області пошуку, входить старим паролем VRT; а з ще живим JWT (до 1 доби, VIS-SEC-009) може викликати PUT /users/password і поставити собі постійний локальний пароль — безстроковий доступ до знімків банківських застосунків. (3) Те саме для акаунтів VRT з неіснуючими в каталозі адресами (тестові, сервісні, дефолтний адмін VRT — див. needs_verification).",
+   "recommendation": "Потребує специфікації. Додавальна nullable-колонка походження акаунта (authSource: local|ldap|oidc, ADR-0003); локальний вхід і зміну пароля дозволяти лише для local. При переході з VRT у режимі LDAP/SSO — анулювати скопійовані хеші людей каталогу/IdP (або позначити їх як ldap/oidc). Відсутність людини в каталозі для акаунта з authSource=ldap — відмова у вході й блокування, а не локальний пароль. Заборонити setPassword для не-local (VIS-SEC-017).",
+   "related": [
+    "VIS-SEC-035",
+    "VIS-SEC-017",
+    "VIS-SEC-009",
+    "VIS-SEC-034",
+    "VIS-SEC-006"
+   ],
+   "effort": "M",
+   "confidence": "High",
+   "source_agent_id": "NEW-A-1",
+   "status": "new",
+   "status_uk": "Нова",
+   "severity_2026_11_05": null
+  },
+  {
+   "id": "VIS-SEC-004",
+   "previous_id": null,
+   "title": "Обчислювальна DoS: аналіз доступності UI-дерева блокує event loop для всіх команд",
+   "severity": "Medium",
+   "cvss": "CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:C/C:N/I:N/A:H (7.7)",
+   "cwe": "CWE-400",
+   "owasp": "A05:2021-Security Misconfiguration",
+   "location": [
+    "backend/src/test-runs/test-runs.service.ts:144",
+    "backend/src/ui-tree/ui-tree.service.ts:352",
+    "backend/src/a11y/a11y.rules.ts:238-241",
+    "backend/src/a11y/contrast.ts:26,49"
+   ],
+   "origin": "code",
+   "component": "backend",
+   "description": "На шляху прийому `analyzeUiTree` синхронно викликає `findViolations`, яка для кожного текстового вузла рахує контраст, семплюючи до MAX_SAMPLES=40000 пікселів (contrast.ts). Усе синхронно в головному потоці, без воркера. Дерево обмежене лише 10 МиБ після розпакування — це десятки тисяч вузлів.",
+   "evidence": "Статично підтверджено (audit/raw/repro-003-ignore-areas.txt): intake→analyzeUiTree(test-runs.service.ts:144)→findViolations (синхронно). Вартість ~O(N_textual×40000). Поправка до оцінки агента: checkDuplicateLabels лінійний, не квадратичний. Живий payload не запускався.",
+   "impact": "Один невеликий після стиснення запит від CI будь-якої команди зупиняє API для всіх команд інстансу на секунди-десятки секунд (event loop зайнятий). Поруч робочий VRT на тій самій машині — спільний CPU.",
+   "recommendation": "Винести аналіз доступності у воркер-пул із тайм-аутом; обмежити кількість вузлів дерева і сумарну площу контрастних боксів; відхиляти дерева понад розумну кількість вузлів. Потребує специфікації (зміна поведінки прийому).",
+   "related": "спека 040",
+   "effort": "M",
+   "confidence": "High",
+   "severity_2026_11_05": "High",
+   "status": "partially_fixed",
+   "status_uk": "Частково",
+   "recheck": {
+    "evidence": "backend/src/ui-tree/ui-tree.service.ts:257-260 (violations → diffWorkerPool.run({kind:'a11y'})); backend/src/a11y/a11y.job.ts:23-25; backend/src/compare/libs/pixelmatch/worker-job.ts:14; тест backend/src/a11y/a11y.job.spec.ts:11. Правила доступності справді у воркері під тайм-аутом 60 с. Знижено до Medium: правила a11y виконуються в пулі (a11y.job.ts), API не блокують; залишок у головному потоці винесено в VIS-SEC-046, виснаження пулу 8 одночасними 60-с завданнями зупиняє лише порівняння.",
+    "gap": "(1) Решта роботи прийому з деревом лишилась у головному потоці: розбір XML (ui-tree.service.ts:276-290, parseUiTree), JSON.stringify+gzipSync дерева (293-298), декодування PNG знімка, еталона і еталона іншого пристрою (analyze → decode → hdd.service.ts:53 readPng, ui-tree.service.ts:337-349), diffTrees/componentChanges (381-391) — див. NEW-C-2. (2) GET /test-runs/:id/structure будує pickableElements з квадратичною складністю в головному потоці — NEW-C-1 (гірше за вихідну 004). (3) Велике дерево і декодований RGBA (до 160 МБ на 40 Мпкс) копіюються в воркер structured clone без transferList (diff-worker-pool.ts:178), по два завдання на analyze; черга (256) рахує завдання, а не байти — сотні МБ на завдання в пам'яті головного потоку. (4) Пул можна виснажити: size ≤ 8 воркерів (diff-worker-pool.ts:39-42), кожне важке завдання тримає воркер до 60 с; 8 паралельних завантажень на хвилину тримають пул зайнятим, далі 'Image diff queue is full' для всіх команд (68-70). (5) Перехід на головний потік після 3 падінь поспіль — NEW-C-4."
+   }
+  },
+  {
+   "id": "VIS-SEC-005",
+   "previous_id": null,
+   "title": "Області ігнорування без меж координат зависають воркер порівняння без тайм-ауту",
+   "severity": "Closed",
+   "cvss": "CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:C/C:N/I:N/A:H (7.7)",
+   "cwe": "CWE-400",
+   "owasp": "A05:2021-Security Misconfiguration",
+   "location": [
+    "backend/src/compare/utils/index.ts:14-26",
+    "backend/src/test-runs/dto/ignore-area.dto.ts:5-19",
+    "backend/src/compare/diff-worker-pool.ts:52-70"
+   ],
+   "origin": "code",
+   "component": "backend",
+   "description": "`applyIgnoreAreas` ітерує від `area.y`/`area.x` без нижньої межі; `IgnoreAreaDto` перевіряє лише `@IsNumber`. Величезні від'ємні координати з великими width/height дають майже нескінченний цикл. Пул воркерів порівняння не має тайм-ауту завдання. Область зберігається й застосовується до кожного наступного знімка перевірки.",
+   "evidence": "Офлайн-замір скомпільованої функції (repro-003): applyIgnoreAreas(PNG 100×100, {x:-1e9,y:-1e9,width:2e9,height:2e9}) не повертається за 5 с (timeout).",
+   "impact": "Кілька запитів editor-а зупиняють увесь пул порівняння — завантаження знімків стоїть у всіх проєктах; перезапуск не допомагає, бо отруєна область збережена.",
+   "recommendation": "Обмежувати координати межами зображення при валідації і в applyIgnoreAreas (Math.max(0,...)); тайм-аут на завдання воркера. Потребує специфікації.",
+   "related": null,
+   "effort": "S",
+   "confidence": "High",
+   "severity_2026_11_05": "High",
+   "status": "fixed",
+   "status_uk": "Закрито",
+   "recheck": {
+    "evidence": "backend/src/compare/utils/index.ts:18-19 (Math.max(0, area.y/x), межі зображення); backend/src/compare/diff-worker-pool.ts:46,177,185-196 (тайм-аут 60 с, воркер замінюється, без повтору, не рахується як spawn failure); тести backend/src/compare/utils/index.spec.ts, backend/src/compare/diff-worker-pool.spec.ts:86. Таймер знімається в message/replace (96, 127), terminated-воркер не повертається в idle (99, 122) — витоку воркерів не видно.",
+    "gap": "Кількість областей не обмежена: CreateTestRequestDto.ignoreAreas — лише @IsArray/@ValidateNested (backend/src/test-runs/dto/create-test-request.dto.ts:38-43), UpdateIgnoreAreasDto без ArrayMaxSize (update-ignore-area.dto.ts:11-14), IgnoreAreaDto лише @IsNumber. N областей на весь кадр = N×W×H ітерацій на кожне з двох зображень (index.ts:15-26), аналогічно coveredPixels/applyTolerance (pixelmatch.core.ts:97-160). Тисячі областей у JSON до BODY_PARSER_JSON_LIMIT (20 МБ у демо) гарантують завдання на всі 60 с; збережені на варіації області роблять так кожне наступне порівняння. Зависання «назавжди» закрито, лишилась дешева DoS пулу на 60 с за запит."
+   },
+   "severity_before_fix": "Medium",
+   "fix": "Виправлено (2026-11-08, спец. 051): не більше 20 областей на знімок на всіх маршрутах, довжина перевіряється до поелементної валідації (ListLengthPipe), add — все або нічого. Стенд: 200 000 областей — старий API прийняв за 2,6 с і заблокував інших на 2 с, новий відмовив за 0,09 с."
+  },
+  {
+   "id": "VIS-SEC-008",
+   "previous_id": "S-2",
+   "title": "Allowlist Jira перевіряє лише hostname: проходять http, будь-який порт і редиректи",
+   "severity": "Closed",
+   "cvss": "CVSS:3.1/AV:N/AC:H/PR:L/UI:N/S:C/C:H/I:L/A:N (6.8)",
+   "cwe": "CWE-918",
+   "owasp": "A10:2021-Server-Side Request Forgery",
+   "location": [
+    "backend/src/a11y/jira-hosts.ts:15-22",
+    "backend/src/a11y/jira.client.ts:102"
+   ],
+   "origin": "code",
+   "component": "backend",
+   "description": "`isAllowedJiraUrl` звіряє лише `new URL(url).hostname`. Проходять `http://` (токен відкритим текстом), будь-який порт, інші схеми. `fetch` іде за редиректами; Node прибирає Authorization при зміні хоста, але тіло POST з вкладеннями-скриншотами при 307 пересилається, а частина відповіді внутрішнього сервісу повертається користувачу (SSRF).",
+   "evidence": "jira-hosts.ts:15-22 (лише hostname); jira.client.ts:102 fetch з редиректами.",
+   "impact": "Editor скеровує особисті токени Jira й скриншоти банку на http або внутрішній сервіс; обмежена SSRF у мережу банку / на localhost (робочий VRT).",
+   "recommendation": "Вимагати https, звіряти host+port, заборонити редиректи (`redirect: 'error'`) або повторно валідувати кінцевий URL; заборонити приватні IP.",
+   "related": "S-2, спека 044 REQ-044-07/08",
+   "effort": "S",
+   "confidence": "High",
+   "severity_2026_11_05": "Medium",
+   "status": "fixed",
+   "status_uk": "Закрито",
+   "recheck": {
+    "evidence": "backend/src/a11y/jira-hosts.ts:80-87 — досі лише `new URL(url).hostname`; backend/src/a11y/jira.client.ts:101-105 — fetch без `redirect`, схема/порт не перевіряються. Змін у jira-hosts.ts немає з 7b13af1.",
+    "gap": "Нова поверхня з #23–#31: GET /projects/:id/jira/types?url=… (projects.controller.ts:63-73 → jira-access.ts:52-65) бере НЕЗБЕРЕЖЕНУ адресу з query і шле на неї особистий токен після тієї ж перевірки лише hostname: проходять http://дозволений-хост:будь-який-порт/будь-який-шлях. Відповідь не віддзеркалюється (лише 'failed'/типи, projects.service.ts:143-154), токен — власний, тож вплив як у 008. `@`-трюк закритий (hostname після @), DNS rebinding — у межах DNS банку. Node fetch прибирає Authorization при міжоріджинному редиректі."
+   },
+   "severity_before_fix": "Medium",
+   "fix": "Виправлено (2026-11-08, спец. 051): хост з VISION_JIRA_HOSTS — лише https на 443, інші схема й порт — явним записом; клієнт Jira не йде за переадресацією й називає адресу. Стенд: переадресація на той самий сервер — старий API віддав туди Bearer-токен, новий не пішов; http:// на дозволеному хості — новий відмовляє."
+  },
+  {
+   "id": "VIS-SEC-009",
+   "previous_id": null,
+   "title": "Немає відкликання сесій: logout, зміна пароля, блокування й зміна ролі не гасять JWT і сокет",
+   "severity": "Closed",
+   "cvss": "CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:H/I:L/A:N (7.1)",
+   "cwe": "CWE-613",
+   "owasp": "A07:2021-Identification and Authentication Failures",
+   "location": [
+    "backend/src/auth",
+    "backend/src/shared/events/events.gateway.ts"
+   ],
+   "origin": "code",
+   "component": "backend",
+   "description": "JWT містить лише email; немає чорного списку/версії токена. Logout лише в браузері. Зміна пароля не гасить старі токени (підтверджено на стенді). `isActive` ніде не перевіряється — заблокувати акаунт без видалення неможливо. Відкрите сокет-з'єднання отримує події до exp навіть після видалення акаунта чи зняття ролі.",
+   "evidence": "Стенд (repro-002): PUT /users/password → старий JWT далі дає 200 на /users/me. Сокет leaveProject лише при revoke доступу.",
+   "impact": "Вкрадений/виданий до звільнення токен або API-ключ діє до доби; неможливо швидко відрізати скомпрометований акаунт — критично для банку.",
+   "recommendation": "Версія токена в User (додавальна колонка, ADR-0003), перевірка при кожному запиті й при рукостисканні сокета; інвалідація при зміні пароля/ролі/блокуванні. Потребує специфікації.",
+   "related": "S-13; спека 032/045",
+   "effort": "M",
+   "confidence": "High",
+   "severity_2026_11_05": "Medium",
+   "status": "fixed",
+   "status_uk": "Закрито",
+   "recheck": {
+    "evidence": "backend/src/auth/auth.service.ts:59-66 (у JWT лише email, без jti/версії); backend/src/auth/jwt.strategy.ts:94-104 (перевірка лише наявності рядка за email, isActive не перевіряється — grep isActive у backend/src дає лише тести); frontend/src/services/users.service.ts:189-191 (logout лише чистить localStorage); users.service.ts:77-98 (зміна/встановлення пароля не гасить токени), :188-197 (зміна ролі не гасить); events.gateway.ts:65-81 (сокет перевіряється лише при рукостисканні).",
+    "gap": "Частково пом'якшено лише для доступу до проєкту: leaveProject (events.gateway.ts:115, projects.controller.ts:152) виводить сокети з кімнати при знятті доступу. Видалений акаунт/понижена роль/змінений пароль — токен і сокет живуть до exp (JWT_LIFE_TIME, типово 1d). Дає основу для NEW-A-1 (зміна пароля чужим живим токеном) і NEW-A-3."
+   },
+   "fix": "Виправлено (2026-11-08, спец. 052): кожен вхід (пароль, LDAP, SSO) — рядок Session, його id у токені (sid); JwtStrategy і рукостискання сокета відмовляють завершеній сесії. POST /users/logout завершує цей браузер; нова власна пароль — усі інші входи; пароль від адміна і видалення — усі; сокети закриваються (fetchSockets, і через Redis), зміна ролі наново перевіряє кімнати. Токени до оновлення діють до виходу чи зміни пароля (User.tokensValidAfter). Стенд: audit/raw/repro-007-spec-052.txt — 8 тестів падають на старому коді, 11/11 на новому.",
+   "severity_before_fix": "Medium"
+  },
+  {
+   "id": "VIS-SEC-010",
+   "previous_id": "S-4",
+   "title": "Дефолтний адмін із паролем 123456: нижче політики, друкується в лог, без примусової зміни",
+   "severity": "Medium",
+   "cvss": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:N (8.1)",
+   "cwe": "CWE-798",
+   "owasp": "A07:2021-Identification and Authentication Failures",
+   "location": [
+    "backend/prisma/seed.ts:43",
+    "docker-compose.demo.yml:129"
+   ],
+   "origin": "config",
+   "component": "prisma",
+   "description": "На порожній базі seed створює admin@vision.local з паролем за замовчуванням (у demo — 123456), коротшим за політику 12 символів, і друкує факт у лог. Примусової зміни при першому вході немає (свідомо, рішення власника).",
+   "evidence": "seed.ts:43; demo compose DEFAULT_USER_PASSWORD; лог seed на стенді друкує email і пароль.",
+   "impact": "Якщо дефолт не змінено до першого доступу в мережу банку — повний адмін-доступ за відомим паролем.",
+   "recommendation": "Генерувати випадковий пароль, не друкувати його, вимагати зміну при першому вході; demo-пароль не тягнути в поставку. Примусова зміна — потребує специфікації.",
+   "related": "S-4, спека 035",
+   "effort": "S",
+   "confidence": "High",
+   "severity_2026_11_05": "Medium",
+   "status": "not_fixed",
+   "status_uk": "Не виправлено",
+   "recheck": {
+    "evidence": "backend/prisma/seed.ts:43 `process.env.DEFAULT_USER_PASSWORD || '123456'`; seed.ts:73 друкує в лог сам пароль: `The user with the email \"${defaultEmail}\" and password \"${defaultPassword}\" was created`; docker-compose.demo.yml:132 `DEFAULT_USER_PASSWORD: ${DEFAULT_USER_PASSWORD:-123456}`; backend/prisma/entrypoint.sh:14 запускає seed при кожному старті міграцій.",
+    "gap": "Пароль 123456 нижчий за REQ-045-04 (12 символів) і потрапляє відкритим текстом у `docker logs` контейнера міграції. Примусової зміни немає. Додатково: seed.ts:46-54 при відсутності активного адміна робить upsert з update:{role: admin} — наявний акаунт з DEFAULT_USER_EMAIL стає адміном без зміни пароля."
+   }
+  },
+  {
+   "id": "VIS-SEC-011",
+   "previous_id": "S-7",
+   "title": "Немає CSP і HSTS; поставка публікує HTTP на всіх інтерфейсах без TLS-термінації",
+   "severity": "Medium",
+   "cvss": "CVSS:3.1/AV:N/AC:H/PR:N/UI:R/S:U/C:H/I:H/A:N (6.8)",
+   "cwe": "CWE-693",
+   "owasp": "A05:2021-Security Misconfiguration",
+   "location": [
+    "backend/src/security.ts",
+    "frontend/nginx/default.conf",
+    "docker-compose.demo.yml:31,106"
+   ],
+   "origin": "config",
+   "component": "infra",
+   "description": "Власний middleware і nginx інтерфейсу ставлять X-Frame-Options/X-Content-Type-Options/Referrer-Policy, але НЕ CSP і НЕ HSTS (підтверджено на стенді для API). docker-compose.demo.yml публікує UI 18080 і API 14200 на 0.0.0.0 по HTTP; TLS-термінації в поставці немає, DEPLOY.md її не описує (конфіг ssl/ з TLS на 5000 у compose не задіяний).",
+   "evidence": "Стенд: GET /health віддає X-Frame-Options/Referrer-Policy, але без Content-Security-Policy і Strict-Transport-Security. demo compose: `18080:8080`, `14200:3000` без 127.0.0.1.",
+   "impact": "Відсутність CSP робить ризик S-13 (JWT у localStorage) реальним: будь-який XSS краде сесію. HTTP на всіх інтерфейсах у банку — перехоплення токенів і знімків.",
+   "recommendation": "Додати CSP (default-src 'self') і HSTS; у поставці термінувати TLS (reverse-proxy) і прив'язувати порти до 127.0.0.1 за проксі; описати TLS у DEPLOY.md.",
+   "related": "S-7, S-13",
+   "effort": "M",
+   "confidence": "High",
+   "severity_2026_11_05": "Medium",
+   "status": "partially_fixed",
+   "status_uk": "Частково",
+   "recheck": {
+    "evidence": "backend/src/security.ts:33-38 (лише nosniff, X-Frame-Options, Referrer-Policy, COOP — без Content-Security-Policy і Strict-Transport-Security); frontend/nginx/default.conf:4-8 (те саме); docker-compose.demo.yml:31 `\"${DEMO_UI_PORT:-18080}:8080\"`, :109 `\"${DEMO_API_PORT:-14200}:3000\"` — публікація на 0.0.0.0 по HTTP; backend/src/main.ts:15-26 — HTTPS лише якщо є ./secrets/ssl.*.",
+    "gap": "Без CSP будь-який XSS забирає JWT з localStorage (S-13); без TLS — JWT, паролі й API-ключі в мережі банку відкритим текстом. Диф 7b13af1..HEAD цих файлів не змінював."
+   },
+   "fix": "Частково (2026-11-08, спец. 052): CSP в nginx (шаблон nginx/csp.template, адреса API — при старті контейнера) і в API (default-src 'none'); весь Playwright іде під тією самою політикою й падає на порушенні. HSTS — лише на запит, що прийшов по https (X-Forwarded-Proto), бо Vision поки працює без сертифіката (рішення власника). TLS-термінація в поставці не додана — лишається."
+  },
+  {
+   "id": "VIS-SEC-013",
+   "previous_id": null,
+   "title": "Бекап у Google Drive не шифрується і містить тексти екранів, email і токени публічних звітів",
+   "severity": "Medium",
+   "cvss": "CVSS:3.1/AV:N/AC:L/PR:H/UI:N/S:C/C:H/I:N/A:N (6.8)",
+   "cwe": "CWE-311",
+   "owasp": "A02:2021-Cryptographic Failures",
+   "location": [
+    "backend/src/backups",
+    "scripts/vision-backup.sh:14",
+    "docs/decisions/0012-backups-without-secrets.md"
+   ],
+   "origin": "process",
+   "component": "backend",
+   "description": "Дамп бекапу анулює секретні колонки (jiraToken, geminiApiKey), але залишає тексти екранів у збережених UI-деревах, email співробітників і діючі токени публічних звітів (256-біт посилання без входу). Бекап вивантажується в Google Drive без наскрізного шифрування (ADR-0012).",
+   "evidence": "vision-backup.sh:14 (анулювання секретів); схема ReportLink.token; ADR-0012.",
+   "impact": "Для банку: банківські дані екранів і діючі анонімні посилання на звіти залишають контур у Google без шифрування.",
+   "recommendation": "Для контуру — вимкнути Google Drive (внутрішнє сховище) або шифрувати бекап перед вивантаженням; відкликати/виключити токени звітів із бекапу. Рішення власника (ADR-0012) — переоцінити для банку.",
+   "related": "ADR-0012, S-?",
+   "effort": "M",
+   "confidence": "High",
+   "severity_2026_11_05": "Medium",
+   "status": "not_fixed",
+   "status_uk": "Не виправлено",
+   "recheck": {
+    "evidence": "scripts/lib/vision-backup.sh:14 `VB_SECRET_COLUMNS=\"User.password=!restored User.jiraToken= User.geminiApiKey= Project.jiraToken=\"` — Project.imageComparisonConfig (sealed apiKey Gemini), ReportLink.token, emails, тексти екранів ідуть у бекап; шифрування архіву немає. Змін у scripts/ і backend/src/backups з 7b13af1 немає.",
+    "gap": "Без змін; ADR-0012 не переглянуто для контуру."
+   }
+  },
+  {
+   "id": "VIS-SEC-014",
+   "previous_id": "S-1",
+   "title": "Немає меж розміру файла й розмірів PNG: multer без limits, повне декодування в головному потоці",
+   "severity": "Medium",
+   "cvss": "CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:N/I:N/A:H (6.5)",
+   "cwe": "CWE-400",
+   "owasp": "A05:2021-Security Misconfiguration",
+   "location": [
+    "backend/src/test-runs/test-runs.controller.ts:374",
+    "backend/src/static/hdd/hdd.service.ts:48-55"
+   ],
+   "origin": "code",
+   "component": "backend",
+   "description": "`FileInterceptor('image')` без `limits`; вміст не перевіряється на PNG; розміри з IHDR не обмежуються, декодування повне (pngjs) у головному потоці. Малий файл із великими заявленими розмірами (напр. 30000×30000) розпухає в пам'яті.",
+   "evidence": "test-runs.controller.ts:374 (без limits); hdd.service.ts:48-55 (повне декодування). Живий payload не запускався.",
+   "impact": "Вичерпання пам'яті процесу API одним запитом; відмова для всіх команд.",
+   "recommendation": "`FileInterceptor('image',{limits:{fileSize}})`; перевірка сигнатури PNG; межа ширини×висоти до декодування; декодувати у воркері.",
+   "related": "S-1, спека 040",
+   "effort": "S",
+   "confidence": "Medium",
+   "severity_2026_11_05": "Medium",
+   "status": "partially_fixed",
+   "status_uk": "Частково",
+   "recheck": {
+    "evidence": "backend/src/shared/screenshot-limits.ts:31-35 (сигнатура + 'IHDR' на зсуві 12), 44-61 (413/400), 63-75 (readPng); backend/src/test-runs/test-runs.service.ts:93-98; backend/src/test-runs/test-runs.controller.ts:367 (base64 → той самий screenshotProblem у сервісі), 386 (multer fileSize, files:1); ollama.controller.ts:54; hdd.service.ts:53, s3.service.ts:55, pixelmatch.core.ts:175-176, signature.core.ts:70-71 через readPng. Тести backend/src/shared/screenshot-limits.spec.ts:16-57. JSON-шлях обмежений body-parser (main.ts:60-62; Nest не додає свій jsonParser, коли middleware з таким ім'ям уже є). width*height — Number, переповнення немає. Стенд (repro-004): 30000×30000 і не-PNG відхиляються (413/400) у multipart і JSON; але обхід другим IHDR підтверджено наживо — див. VIS-SEC-045.",
+    "gap": "Перевіряється лише перший IHDR; декодер (pngjs PNG.sync.read) потім бачить інше: повторний IHDR, черезрядкове (interlace) зображення з бомбою в IDAT, 16-бітна глибина, і канва max(w)×max(h) при allowDiffDimensions — див. NEW-C-3. Декодування в головному потоці (hdd.service.ts:53 з ui-tree.service.ts:321-327) лишилось."
+   }
+  },
+  {
+   "id": "VIS-SEC-015",
+   "previous_id": null,
+   "title": "ReDoS: регулярний вираз із text-селектора правила елемента виконується над текстами дерева в головному потоці",
+   "severity": "Closed",
+   "cvss": "CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:N/I:N/A:H (6.5)",
+   "cwe": "CWE-1333",
+   "owasp": "A05:2021-Security Misconfiguration",
+   "location": [
+    "backend/src/ui-tree/comparison-inputs.ts:105-120",
+    "frontend/src/components/TestDetailsDialog/TestDetailsModal.tsx:660"
+   ],
+   "origin": "code",
+   "component": "backend",
+   "description": "Селектор `text:/.../` компілюється в RegExp без обмеження довжини/складності й застосовується до текстів дерева в головному потоці. Вкладені квантифікатори + майже-збіг дають катастрофічний бектрекінг.",
+   "evidence": "comparison-inputs.ts:116 new RegExp з даних editor-а; застосування в compare-шляху.",
+   "impact": "Editor зупиняє порівняння/рев'ю одним правилом + відповідним деревом.",
+   "recommendation": "Обмежити довжину селектора; використати безпечний движок або тайм-аут; винести у воркер.",
+   "related": "ADR-0021",
+   "effort": "M",
+   "confidence": "Medium",
+   "severity_2026_11_05": "Medium",
+   "status": "fixed",
+   "status_uk": "Закрито",
+   "recheck": {
+    "evidence": "backend/src/ui-tree/comparison-inputs.ts:106-120 (new RegExp(regex[1], flags) з селектора правила, без змін з 7b13af1); backend/src/ui-tree/variable-text.ts:26-31 (new RegExp(`^ *${source} *$`,'u') з шаблону до 200 символів, тексти до 2000 — MAX_CHECKED_TEXT:11); селектор обмежено лише @MaxLength(300) (backend/src/test-runs/dto/element-rule.dto.ts:13). Застосування — resolveRules/findBySelector у головному потоці (comparison-inputs.ts:206-227, ui-tree.service.ts:614).",
+    "gap": "Виправлення не було. (a+)+$ вміщається в 300 символів; текст до 2000 символів дає катастрофічний бектрекінг на кожному порівнянні й відкритті structure. Суміжне — алгоритмічна складність XPath-селекторів (NEW-C-5)."
+   },
+   "severity_before_fix": "Medium",
+   "fix": "Виправлено (2026-11-08, спец. 051): вирази правил і нестабільного тексту — на RE2 з лінійним часом (linear-regex.ts) з перекладом зі значення JavaScript; знімок збігів до зміни не змінився, 30 000 згенерованих виразів збігаються з RegExp; зворотні посилання й перевірки вперед/назад відхиляються. Стенд: text:/(a+)+$/ на 30 літерах — старий API завис на 98 с для всіх, новий зберіг правило за 0,04 с."
+  },
+  {
+   "id": "VIS-SEC-016",
+   "previous_id": null,
+   "title": "AI_PROVIDER=none не вимикає зовнішній AI: особисті ключі Gemini і ключ проєкту діють далі",
+   "severity": "Medium",
+   "cvss": "CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:C/C:H/I:N/A:N (7.7)",
+   "cwe": "CWE-16",
+   "owasp": "A05:2021-Security Misconfiguration",
+   "location": [
+    "backend/src/ai/ai.service.ts",
+    "docs/decisions/0020-personal-gemini-keys.md"
+   ],
+   "origin": "code",
+   "component": "backend",
+   "description": "Налаштування `AI_PROVIDER=none` стосується лише чернеток багів на вимогу, але не перекриває особисті ключі Gemini користувачів і ключ Gemini проєкту (VLM-рушій, VIS-SEC-003). Єдиного вимикача зовнішнього AI на рівні інстансу немає.",
+   "evidence": "ai.service.ts (гілки провайдерів); ADR-0020.",
+   "impact": "Адмін банку не може однією настройкою гарантувати, що жодні дані не підуть у Gemini.",
+   "recommendation": "Жорсткий вимикач рівня інстансу, що перекриває і VLM-рушій, і особисті/проєктні ключі. Потребує специфікації.",
+   "related": "VIS-SEC-003, ADR-0007/0020",
+   "effort": "M",
+   "confidence": "High",
+   "severity_2026_11_05": "Medium",
+   "status": "not_fixed",
+   "status_uk": "Не виправлено",
+   "recheck": {
+    "evidence": "backend/src/ai/ai.service.ts:101-108 — `personalGeminiKey` дає provider 'gemini' незалежно від AI_PROVIDER=none; VLM-рушій взагалі не дивиться на AI_PROVIDER (compare.service.ts:62-64). Змін у backend/src/ai з 7b13af1 немає.",
+    "gap": "Єдиного вимикача зовнішнього AI немає."
+   }
+  },
+  {
+   "id": "VIS-SEC-017",
+   "previous_id": null,
+   "title": "Адмін задає пароль будь-якому акаунту (зокрема SSO/LDAP) і діє його токеном Jira",
+   "severity": "Medium",
+   "cvss": "CVSS:3.1/AV:N/AC:L/PR:H/UI:N/S:U/C:H/I:H/A:N (6.0)",
+   "cwe": "CWE-269",
+   "owasp": "A01:2021-Broken Access Control",
+   "location": [
+    "backend/src/users/users.controller.ts:189"
+   ],
+   "origin": "code",
+   "component": "backend",
+   "description": "PUT /users/:id/password дозволяє адміну поставити локальний пароль будь-якому акаунту, навіть створеному через SSO/LDAP, і увійти ним локально — діючи його особистим токеном Jira (обхід духу REQ-035-33 «лише особисті токени»).",
+   "evidence": "users.controller.ts:189 (admin-only, без заборони для зовнішніх акаунтів).",
+   "impact": "Адмін підміняє особу співробітника в Jira й журналі рішень; немає розділення обов'язків.",
+   "recommendation": "Заборонити локальний пароль для SSO/LDAP-акаунтів; аудит-лог адмінських дій над акаунтами. Потребує специфікації.",
+   "related": "REQ-035-33",
+   "effort": "M",
+   "confidence": "Medium",
+   "severity_2026_11_05": "Medium",
+   "status": "not_fixed",
+   "status_uk": "Не виправлено",
+   "recheck": {
+    "evidence": "backend/src/users/users.service.ts:89-98 setPassword оновлює password будь-якого id без перевірки походження акаунта; users.controller.ts:188-196 (лише @Roles(admin)).",
+    "gap": "У режимі SSO заданий адміном пароль одразу діє через локальну форму (users.service.ts:127); у режимі LDAP — щойно людини немає в каталозі (NEW-A-1). Аудит-логу адмінських дій немає."
+   }
+  },
+  {
+   "id": "VIS-SEC-018",
+   "previous_id": null,
+   "title": "Login CSRF / фіксація сесії: /login#token=<будь-який JWT> входить без state",
+   "severity": "Closed",
+   "cvss": "CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:U/C:L/I:H/A:N (6.3)",
+   "cwe": "CWE-352",
+   "owasp": "A01:2021-Broken Access Control",
+   "location": [
+    "frontend/src/pages/LoginPage.tsx:25-48"
+   ],
+   "origin": "code",
+   "component": "frontend",
+   "description": "Сторінка входу приймає JWT із фрагмента URL (#token=) без перевірки state/прив'язки. Зловмисник підсовує жертві посилання з власним токеном і фіксує її сесію під підконтрольним акаунтом.",
+   "evidence": "LoginPage.tsx:25-48.",
+   "impact": "Жертва непомітно працює в акаунті нападника (завантажує туди знімки) або нападник підставляє токен, щоб перехопити дії.",
+   "recommendation": "Не приймати токен із URL-фрагмента; лише через контрольований OIDC-redirect зі state/nonce.",
+   "related": "спека 045",
+   "effort": "S",
+   "confidence": "Medium",
+   "severity_2026_11_05": "Medium",
+   "status": "fixed",
+   "status_uk": "Закрито",
+   "recheck": {
+    "evidence": "frontend/src/pages/LoginPage.tsx:27-46 бере будь-який `#token=` з фрагмента, викликає /users/me і зберігає сесію; frontend/src/services/users.service.ts:240-247 completeOidcLogin без жодної прив'язки до запущеного входу; backend/src/users/oidc/oidcusers.service.ts:148-154 видає токен у фрагменті.",
+    "gap": "Login CSRF/фіксація сесії лишається: посилання https://vision/login#token=<JWT нападника> мовчки входить жертвою в акаунт нападника (жертва далі завантажує туди дані/рішення, вводить свій токен Jira у профіль — PUT /users/jira пише в акаунт нападника). Зміни #23–#31 LoginPage не зачепили (7 рядків — лише макет)."
+   },
+   "fix": "Виправлено (2026-11-08, спец. 052): інтерфейс перед SSO кладе випадковий nonce у sessionStorage вкладки; API несе його в cookie стану й повертає у фрагменті; LoginPage приймає #token= лише з тим самим nonce, інакше прибирає фрагмент. Чуже посилання /login#token=… більше не входить. Тести: login.spec.ts (Playwright), users.controller.spec.ts, oidc-browser.spec.ts.",
+   "severity_before_fix": "Medium"
+  },
+  {
+   "id": "VIS-SEC-019",
+   "previous_id": "S-9",
+   "title": "Dev-compose у дереві: Postgres на 0.0.0.0 з postgres/postgres, ім'я контейнера збігається з продом, моки LDAP/OIDC",
+   "severity": "Medium",
+   "cvss": "CVSS:3.1/AV:A/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H (8.0)",
+   "cwe": "CWE-1188",
+   "owasp": "A05:2021-Security Misconfiguration",
+   "location": [
+    "backend/docker-compose.yml:48,56",
+    "backend/docker-compose.ldap.yml",
+    "backend/docker-compose.oidc.yml"
+   ],
+   "origin": "config",
+   "component": "infra",
+   "description": "Dev-compose публікує Postgres `${POSTGRES_PORT}:5432` на всіх інтерфейсах з postgres/postgres і `container_name: postgres` — те саме ім'я, що в робочого VRT (ризик колізії на спільній машині, правило 1). Моки LDAP/OIDC із відомими секретами. Якщо dev-compose випадково потрапить у поставку — відкрита база.",
+   "evidence": "backend/docker-compose.yml:48 (container_name: postgres), :56 (${POSTGRES_PORT}:5432).",
+   "impact": "На спільній із продом машині запуск dev-compose може зіткнутися з контейнером VRT; відкритий Postgres із дефолтним паролем у мережі банку.",
+   "recommendation": "Прив'язати порт до 127.0.0.1, унікальне ім'я контейнера, явно виключити dev-compose з поставки (вони лише для розробки); demo compose вже не публікує Postgres.",
+   "related": "S-9",
+   "effort": "S",
+   "confidence": "High",
+   "severity_2026_11_05": "Medium",
+   "status": "not_fixed",
+   "status_uk": "Не виправлено",
+   "recheck": {
+    "evidence": "backend/docker-compose.yml:47-58 — `container_name: postgres`, `ports: \"${POSTGRES_PORT}:5432\"` (усі інтерфейси); backend/.env.example:19-21 postgres/postgres; docker-compose.ldap.yml:26-27 `636:636`.",
+    "gap": "Без змін."
+   }
+  },
+  {
+   "id": "VIS-SEC-020",
+   "previous_id": null,
+   "title": "SSO повертає роль editor тим, кого адмін понизив до guest; generic 'admin' у типовій групі",
+   "severity": "Medium",
+   "cvss": "CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:H/I:H/A:N (7.4)",
+   "cwe": "CWE-266",
+   "owasp": "A01:2021-Broken Access Control",
+   "location": [
+    "backend/src/users/oidc"
+   ],
+   "origin": "code",
+   "component": "backend",
+   "description": "При вході через OIDC роль перераховується з груп IdP і перетирає локально понижену (admin→guest повертається до editor). Типове `OIDC_ADMIN_VALUES` містить загальну назву групи `admin`, що легко збігається з чужою групою IdP.",
+   "evidence": "Логіка мапінгу ролей OIDC (users/oidc).",
+   "impact": "Понижений чи обмежений співробітник повертає собі права наступним входом; надто широке типове значення дає адміна зайвим людям.",
+   "recommendation": "Локальне пониження має мати пріоритет або блокувати підвищення; типове OIDC_ADMIN_VALUES лишити порожнім і вимагати явного налаштування.",
+   "related": "спека 045/035",
+   "effort": "M",
+   "confidence": "Medium",
+   "severity_2026_11_05": "Medium",
+   "status": "partially_fixed",
+   "status_uk": "Частково",
+   "recheck": {
+    "evidence": "backend/src/users/oidc/oidcusers.service.ts:53 типове `'vision-admin,admin'`; :213-215 роль з IdP перетирає локальну при кожному вході; docker-compose.demo.yml:82 `OIDC_ADMIN_VALUES: ${OIDC_ADMIN_VALUES:-vision-admin,admin}` (у .env.demo.example:36 закоментовано `vision-admin`).",
+    "gap": "Понижений адміном до guest при наступному SSO-вході знову editor/admin; група IdP з назвою «admin» (будь-якої системи) дає адміна Vision."
+   },
+   "fix": "Частково (2026-11-08, спец. 052): SSO більше не повертає роль, яку змінив адмін: адміном робить лише група адмінів, без неї адмін стає типовою роллю, інакше лишається роль з бази (roleAtSignIn); сокети перевіряються наново. Типові OIDC_ADMIN_VALUES (vision-admin,admin) лишено рішенням власника."
+  },
+  {
+   "id": "VIS-SEC-021",
+   "previous_id": null,
+   "title": "Запобіжник агентів guard.py легко обходиться — правила 1–4 тримаються лише на дисципліні",
+   "severity": "Medium",
+   "cvss": "CVSS:3.1/AV:L/AC:L/PR:L/UI:N/S:C/C:L/I:H/A:H (7.3)",
+   "cwe": "CWE-807",
+   "owasp": "A04:2021-Insecure Design",
+   "location": [
+    ".claude/hooks/guard.py"
+   ],
+   "origin": "process",
+   "component": "ci",
+   "description": "Перевірка аргументів у guard.py обходиться: `docker --context … compose`, `bash -c '…'`, `docker container stop`, `docker exec … dropdb`, `git push --force vision main`. Хук — зручність, не бар'єр безпеки; непорушні правила 1–4 (захист робочого VRT і бази) тримаються на дисципліні агента.",
+   "evidence": "Пряма перевірка функції check() (scratchpad/agent-D/g.py).",
+   "impact": "На спільній із продом машині агент (або скомпрометований агентський процес) може зачепити робочий VRT попри хук.",
+   "recommendation": "Не покладатися на guard.py як на контроль безпеки; ізолювати права Docker/БД агента на рівні ОС (окремий користувач, обмежений доступ до сокета Docker, read-only до прод-даних).",
+   "related": "ADR-0002/0027, правила 1–4",
+   "effort": "M",
+   "confidence": "High",
+   "severity_2026_11_05": "Medium",
+   "status": "not_fixed",
+   "status_uk": "Не виправлено",
+   "recheck": {
+    "evidence": ".claude/hooks/guard.py:119-150 — check_segment дивиться лише на tokens[0]; `bash -c 'docker compose …'` (program=bash) і `docker --context x compose` (positional бере 'x' як args[0], guard.py:80-93) не блокуються. Змін з 7b13af1 немає.",
+    "gap": "Без змін; хук — зручність, не контроль."
+   }
+  },
+  {
+   "id": "VIS-SEC-035",
+   "previous_id": null,
+   "title": "Звільнені з каталогу/IdP зберігають доступ через API-ключ і локальний вхід",
+   "severity": "Medium",
+   "cvss": "n/a (Low)",
+   "cwe": "CWE-613",
+   "owasp": "A07:2021-Identification and Authentication Failures",
+   "location": [
+    "backend/src/users"
+   ],
+   "origin": "code",
+   "component": "backend",
+   "description": "API-ключ не має строку дії й не перевіряє стан акаунта в каталозі; після вимкнення в LDAP/IdP доступ через ключ (і локальний пароль, якщо заданий) лишається.",
+   "evidence": "Аналіз: немає перевірки isActive/каталогу при apiKey.",
+   "impact": "Обмежений; див. опис.",
+   "recommendation": "Перевіряти стан акаунта при кожному запиті; строк дії й ротація ключів.",
+   "related": null,
+   "effort": "S",
+   "confidence": "High",
+   "severity_2026_11_05": "Low",
+   "status": "not_fixed",
+   "status_uk": "Не виправлено",
+   "recheck": {
+    "evidence": "backend/src/auth/guards/api.guard.ts:10-21 і role.guard.ts:164-177 — ключ без строку дії, без перевірки isActive/каталогу; users.service.ts:123-126 — людина, якої немає в каталозі, входить локальним паролем.",
+    "gap": "Погіршено виправленням 41b15e0: раніше для відсутньої в каталозі людини findUserInLdap кидав 400 і вхід не проходив; тепер isInDirectory=false переводить її на локальний пароль — зокрема скопійований з VRT або встановлений самою людиною живим токеном. Окремо — NEW-A-1 (High)."
+   }
+  },
+  {
+   "id": "VIS-SEC-045",
+   "previous_id": "VIS-SEC-014",
+   "title": "Обхід ліміту пікселів: перевіряється лише перший IHDR, а pngjs розпаковує інше (повторний IHDR, interlace-бомба, канва різних розмірів)",
+   "severity": "Closed",
+   "cvss": "CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:N/I:N/A:H (6.5)",
+   "cwe": "CWE-409",
+   "owasp": "A04:2021-Insecure Design",
+   "location": [
+    "backend/src/shared/screenshot-limits.ts:31-35",
+    "backend/src/shared/screenshot-limits.ts:63-75",
+    "backend/src/static/hdd/hdd.service.ts:53",
+    "backend/src/compare/libs/pixelmatch/pixelmatch.core.ts:175-199",
+    "backend/src/compare/utils/index.ts:5-12"
+   ],
+   "origin": "code",
+   "component": "backend",
+   "description": "readPngSize читає ширину/висоту з байтів 16–23 і перевіряє лише, що на зсуві 12 є 'IHDR'; довжину чанка, CRC, наступні чанки, interlace і глибину не дивиться. readPng після цього викликає PNG.sync.read на тих самих байтах. За кодом pngjs 6/7 (parser.js/parser-sync.js — не перевірено локально, node_modules немає): (а) другий IHDR не відкидається, а метадані перезаписуються останнім, тож заголовок 1×1, а розпаковується 20000×20000; (б) для interlace=1 IDAT розпаковується zlib.inflateSync без maxLength — кілька МБ нулів у IDAT дають гігабайти; (в) при 16-бітній глибині проміжні буфери 8 байт/піксель, а не 4, як припускає коментар. Окремо: при allowDiffDimensions (налаштування проєкту) pixelmatch.core.ts будує канву max(w)×max(h) — знімок 20000×2000 і еталон 2000×20000 кожен у межах 40 Мпкс, але scaleImageToSize і diff дають три буфери по 1,6 ГБ.",
+   "evidence": "Підтверджено наживо (repro-005): PNG 560 КБ з першим IHDR 10×10 і другим 12000×12000 (144 Мпкс, у 3,6 раза понад ліміт) прийнято (201); при порівнянні з еталоном RSS процесу API зріс до 2,4 ГБ. Офлайн: 249 КБ → 8000×8000, 256 МБ RGBA за 1,2 с (readPng пропускає). Розміри 20000×20000 не пробувались (обмеження DoS-тестів), але за пропорцією це кілька ГБ — падіння процесу. screenshot-limits.ts:34: `if (!bytes.subarray(0, 8).equals(PNG_SIGNATURE) || bytes.toString('latin1', 12, 16) !== 'IHDR') return null; return { width: bytes.readUInt32BE(16), height: bytes.readUInt32BE(20) };` і :74 `return PNG.sync.read(buffer);`. pixelmatch.core.ts:189-190: `const maxWidth = Math.max(baseline.width, image.width); const maxHeight = Math.max(baseline.height, image.height);` → index.ts:7 `new PNG({ width, height, fill: true })`.",
+   "impact": "Буфери поза V8 heap (ArrayBuffer) не обмежуються ліміт heap воркера: виділення в гігабайти у воркері або в головному потоці (decode при analyze) виснажує пам'ять контейнера і OOM-killer вбиває весь API (усі команди). Виправлення VIS-SEC-014 обходиться файлом у кілька кілобайт–мегабайт.",
+   "recommendation": "Перед декодуванням пройти всі чанки: рівно один IHDR довжини 13 першим, перевірити CRC, interlace=0 (або обмежити розпаковку), bit depth ≤ 8 (або рахувати байти/піксель), відкидати після IEND. Розпаковувати IDAT з maxOutputLength = очікуваний розмір. Обмежити max(w)×max(h) канви при allowDiffDimensions тим самим лімітом. Додати тести: PNG з двома IHDR, interlace-бомба, 16-біт, різні орієнтації.",
+   "related": [
+    "VIS-SEC-014",
+    "NEW-C-2"
+   ],
+   "effort": "S",
+   "confidence": "High",
+   "source_agent_id": "NEW-C-3",
+   "status": "fixed",
+   "status_uk": "Закрито",
+   "severity_2026_11_05": null,
+   "severity_before_fix": "Medium",
+   "fix": "Виправлено (2026-11-07): ліміт пікселів перевіряється за кожним IHDR до IEND; interlaced PNG спершу розпаковується з maxOutputLength за розміром із заголовка; канва порівняння різних розмірів — не більше 2× ліміту. Характеризаційні знімки 23 видів PNG не змінились. Стенд: dbl.png (IHDR 10×10 + 12000×12000) → 413."
+  },
+  {
+   "id": "VIS-SEC-046",
+   "previous_id": "VIS-SEC-004",
+   "title": "Розбір XML, серіалізація дерева і декодування PNG при прийомі досі в головному потоці; глибина дерева дає ×200 підсилення",
+   "severity": "Medium",
+   "cvss": "CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:N/I:N/A:H (6.5)",
+   "cwe": "CWE-400",
+   "owasp": "A04:2021-Insecure Design",
+   "location": [
+    "backend/src/ui-tree/ui-tree.service.ts:276-298",
+    "backend/src/ui-tree/ui-tree.parser.ts:20-27",
+    "backend/src/ui-tree/ui-tree.parser.ts:166-190",
+    "backend/src/ui-tree/ui-tree.parser.ts:220-228",
+    "backend/src/ui-tree/ui-tree.service.ts:305-320",
+    "backend/src/ui-tree/ui-tree.service.ts:336-349",
+    "backend/src/static/hdd/hdd.service.ts:49-57",
+    "backend/src/ui-tree/ui-tree.intake.ts:20-38"
+   ],
+   "origin": "code",
+   "component": "backend",
+   "description": "Після 88669e6 у воркер пішли лише правила доступності. При кожному прийомі з деревом у головному потоці синхронно: fast-xml-parser.parse до 10 МиБ XML, рекурсивний walk, обчислення ключів `path:${node.path}`, JSON.stringify і gzipSync усього дерева (store), а в analyze — декодування до трьох PNG до 40 Мпкс (знімок, еталон, еталон іншого пристрою) через StaticService.getImage → readPng → PNG.sync.read, diffTrees і componentChanges. Ключ безіменного вузла містить повний шлях від кореня, тож розмір збереженого JSON росте як глибина², а ліміт 10 МиБ рахує вхід, а не результат. Захист від XXE/billion laughs працює: DOCTYPE/ENTITY відкидається (ui-tree.intake.ts:35), gunzip обмежено maxOutputLength (24), fast-xml-parser не тягне зовнішніх сутностей.",
+   "evidence": "ui-tree.parser.ts:186: `path = `${parentPath}/${shortClass(node.className)}[${siblingIndex}]`;` і :222 `: `path:${node.path}``; ui-tree.service.ts:293-298 `gzipSync(JSON.stringify(tree))`. Офлайн-симуляція того самого walk/ключів/stringify/gzip (scratchpad sim/depth2.js, node 22): 12 ланцюжків глибиною 3000 (≈2,2 МБ XML, gzip ще менше) → walk+ключі 2,0 с, JSON 434 МБ за 2,6 с, gzip 1,8 с: разом 6,4 с блокування event loop і ~0,7 ГБ пам'яті на один запит без урахування самого fast-xml-parser. Глибше ≈3500 рекурсія walk падає з RangeError (перехоплюється в store:296 — дерево відкидається). Далі збережене дерево читає load() (JSON.parse 434 МБ у головному потоці, кеш до 300 дерев — ui-tree.service.ts:36,305-320) і копіює в воркер для a11y.",
+   "impact": "Кілька паралельних завантажень на хвилину від одного CI-ключа тримають API недоступним для всіх команд; кеш дерев на 300 записів із деревами по сотні МБ веде до вичерпання heap і падіння процесу.",
+   "recommendation": "Винести store (розбір, серіалізацію) і analyze повністю у воркер-пул із тайм-аутом; обмежити глибину (напр. 200) і кількість вузлів дерева при розборі; не тримати повний шлях у ключі (хеш шляху або індекс), обмежити розмір серіалізованого дерева; кеш дерев обмежувати за байтами. Декодування PNG для a11y робити у воркері, передавати буфер PNG, а не RGBA. Потребує специфікації (зміна поведінки прийому).",
+   "related": [
+    "VIS-SEC-004",
+    "VIS-SEC-014",
+    "NEW-C-1"
+   ],
+   "effort": "M",
+   "confidence": "Medium",
+   "source_agent_id": "NEW-C-2",
+   "status": "new",
+   "status_uk": "Нова",
+   "severity_2026_11_05": null
+  },
+  {
+   "id": "VIS-SEC-006",
+   "previous_id": null,
+   "title": "Режим LDAP: будь-який користувач перепривʼязує свій акаунт до чужої особи з каталогу",
+   "severity": "Low",
+   "cvss": "CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:C/C:H/I:H/A:N (9.3)",
+   "cwe": "CWE-287",
+   "owasp": "A07:2021-Identification and Authentication Failures",
+   "location": [
+    "backend/src/users/ldap/ldapusers.service.ts:113-121"
+   ],
+   "origin": "code",
+   "component": "backend",
+   "description": "`LdapUsersService.update` бере email з тіла PUT /users і записує в акаунт того, хто викликає, дані знайденої в каталозі людини. Нападник ставить собі email колеги; коли справжня людина вперше входить через LDAP, вона потрапляє в акаунт нападника.",
+   "evidence": "ldapusers.service.ts:113-121 (аналіз коду; стенда LDAP не піднімали).",
+   "impact": "Захоплення акаунта: підміна особи в журналі рішень, доступ нападника через заздалегідь виданий API-ключ, токен Jira жертви в руках нападника.",
+   "recommendation": "Не дозволяти змінювати email у LDAP-режимі; прив'язка лише за незмінним ідентифікатором каталогу (objectGUID/sAMAccountName), не за email із тіла запиту. Потребує специфікації.",
+   "related": "спека 045, ADR-0025",
+   "effort": "M",
+   "confidence": "Medium",
+   "severity_2026_11_05": "High",
+   "status": "partially_fixed",
+   "status_uk": "Частково",
+   "recheck": {
+    "evidence": "backend/src/users/ldap/ldapusers.service.ts:130-151 (email з тіла, що відрізняється від current.email, -> 400; імена людей каталогу беруться з каталогу); тест backend/src/users/ldap/ldapusers.service.spec.ts:128-158 («does not let anyone take a colleague's email…», «keeps the email…», «lets a local account … rename itself»). Інших шляхів змінити email у режимі LDAP немає: UsersService.update делегує в LdapUsersService (users.service.ts:73-75), адмінського ендпоінта зміни email немає (users.controller.ts).",
+    "gap": "(1) Прив'язка до акаунта досі за email, не за незмінним ідентифікатором каталогу (objectGUID/sAMAccountName): якщо банк повторно видасть адресу (новий співробітник з тим самим ім'ям), він увійде в старий акаунт звільненого (ldapusers.service.ts:179-183). (2) У режимі БД DbUsersService.update (dbusers.service.ts:35-46) і далі записує будь-який email з тіла — при переході БД→LDAP/SSO заздалегідь «зайнята» адреса колеги ловить його перший корпоративний вхід; також дає попереднє карбування JWT (NEW-A-3). (3) Наслідок самого виправлення: isInDirectory=false для невідомих відкрив локальний вхід для людей, яких більше немає в каталозі (NEW-A-1)."
+   }
+  },
+  {
+   "id": "VIS-SEC-022",
+   "previous_id": "S-5",
+   "title": "Підписане посилання на знімок безстрокове й не прив'язане до користувача",
+   "severity": "Low",
+   "cvss": "n/a (Low)",
+   "cwe": "CWE-200",
+   "owasp": "A05:2021-Security Misconfiguration",
+   "location": [
+    "backend/src/static/file-links.ts:5-9,29",
+    "backend/src/static/static.controller.ts:16"
+   ],
+   "origin": "code",
+   "component": "backend",
+   "description": "HMAC-підпис рахується лише від імені файла: посилання діє вічно й будь-хто з ним бачить знімок; потрапивши в Jira/лог/історію браузера, не відкликається. Це закріплено в REQ-043-03 як рішення.",
+   "evidence": "file-links.ts:29 (підпис лише від імені).",
+   "impact": "Обмежений; див. опис.",
+   "recommendation": "Додати строк дії й прив'язку до користувача/сесії; переоцінити REQ-043-03 для банку.",
+   "related": null,
+   "effort": "S",
+   "confidence": "High",
+   "severity_2026_11_05": "Low",
+   "status": "not_fixed",
+   "status_uk": "Не виправлено",
+   "recheck": {
+    "evidence": "backend/src/static/file-links.ts:4-9,29 (signFile = HMAC('file\\n'+name), без строку і користувача); backend/src/static/static.controller.ts:37-51,76-80. Закріплено як рішення 043 (REQ-043-03); рішення власника щодо прийняття ризику в PROGRESS.md немає.",
+    "gap": "Посилання безстрокове й не відкликається, доки існує файл; FILE_CACHE 'private, max-age=31536000, immutable' (static.controller.ts:16) тримає знімок у кеші браузера рік. Для звіту підпис прив'язаний до токена звіту (signReportFile:31-32) — це гаразд."
+   }
+  },
+  {
+   "id": "VIS-SEC-023",
+   "previous_id": null,
+   "title": "Підробка записів у лозі через назву перевірки",
+   "severity": "Low",
+   "cvss": "n/a (Low)",
+   "cwe": "CWE-117",
+   "owasp": "A09:2021-Security Logging and Monitoring Failures",
+   "location": [
+    "backend/src/ui-tree/ui-tree.service.ts:269-271"
+   ],
+   "origin": "code",
+   "component": "backend",
+   "description": "Назва перевірки з недовіреного джерела логується без екранування переносів рядків — можна вписати фальшиві рядки логу (log injection).",
+   "evidence": "ui-tree.service.ts:270.",
+   "impact": "Обмежений; див. опис.",
+   "recommendation": "Екранувати переноси в логованих значеннях; структуроване логування.",
+   "related": null,
+   "effort": "S",
+   "confidence": "High",
+   "severity_2026_11_05": "Low",
+   "status": "not_fixed",
+   "status_uk": "Не виправлено",
+   "recheck": {
+    "evidence": "backend/src/ui-tree/ui-tree.service.ts:278-280: this.logger.warn(`UI tree of \"${check.name ?? '?'}\" in project ...`) — name з тіла запиту без екранування \\r\\n; також 'Ignoring UI tree that cannot be read: ${error}' (297) може містити фрагменти вводу.",
+    "gap": "Без змін: перенос рядка в назві перевірки дає підроблений рядок логу."
+   }
+  },
+  {
+   "id": "VIS-SEC-024",
+   "previous_id": "S-3",
+   "title": "Шифрування секретів без AAD, KDF = один SHA-256; приймається вже зашифроване значення",
+   "severity": "Low",
+   "cvss": "n/a (Low)",
+   "cwe": "CWE-327",
+   "owasp": "A02:2021-Cryptographic Failures",
+   "location": [
+    "backend/src/shared/secret-box.ts:12-23,34"
+   ],
+   "origin": "code",
+   "component": "backend",
+   "description": "AES-256-GCM без AAD; ключ — простий SHA-256 від рядка без перевірки довжини/ентропії. `keepConfigSecrets` приймає від клієнта вже зашифроване значення з префіксом enc:v1: (можлива підстава чужого шифротексту).",
+   "evidence": "secret-box.ts:12 (sha256 KDF), :19 (без AAD). semgrep gcm-no-tag-length.",
+   "impact": "Обмежений; див. опис.",
+   "recommendation": "Додати AAD (контекст поля), вимагати достатню ентропію ключа, не приймати enc:-значення ззовні.",
+   "related": null,
+   "effort": "S",
+   "confidence": "High",
+   "severity_2026_11_05": "Low",
+   "status": "not_fixed",
+   "status_uk": "Не виправлено",
+   "recheck": {
+    "evidence": "backend/src/shared/secret-box.ts:13-15 (KDF = SHA-256 рядка), :21-23 (GCM без AAD); backend/src/projects/project-secrets.ts:96-98 — значення з префіксом enc:v1: від клієнта зберігається як є. Semgrep (gcm-no-tag-length): secret-box.ts:34 — createDecipheriv без authTagLength, setAuthTag приймає й укорочений тег (4–16 байт); для знаючого запис у БД це спрощує підробку. Додати { authTagLength: 16 } і перевірку tag.length.",
+    "gap": "Без змін."
+   }
+  },
+  {
+   "id": "VIS-SEC-025",
+   "previous_id": null,
+   "title": "Токени публічних звітів і токени Google Drive зберігаються відкрито",
+   "severity": "Low",
+   "cvss": "n/a (Low)",
+   "cwe": "CWE-312",
+   "owasp": "A02:2021-Cryptographic Failures",
+   "location": [
+    "backend/prisma/schema.prisma (ReportLink.token)",
+    "backend/src/backups/drive-auth.ts"
+   ],
+   "origin": "code",
+   "component": "backend",
+   "description": "ReportLink.token (256-біт анонімний доступ) і облікові дані Google Drive лежать у БД/файлі відкритим текстом; дамп БД або бекап дає анонімний доступ до звітів.",
+   "evidence": "schema ReportLink; drive-auth.ts.",
+   "impact": "Обмежений; див. опис.",
+   "recommendation": "Зберігати лише хеш токена звіту (перевірка за хешем); токени Drive — через secret-box.",
+   "related": null,
+   "effort": "S",
+   "confidence": "High",
+   "severity_2026_11_05": "Low",
+   "status": "not_fixed",
+   "status_uk": "Не виправлено",
+   "recheck": {
+    "evidence": "backend/prisma/schema.prisma:379-382 — ReportLink.token відкритим текстом; backend/src/backups/drive-auth.ts:28,89 refreshToken, запис файлом 0600 (backups.service.ts:97).",
+    "gap": "Без змін."
+   }
+  },
+  {
+   "id": "VIS-SEC-026",
+   "previous_id": null,
+   "title": "AI-ендпоінти на вимогу доступні ролі guest (платні виклики й дані проєкту)",
+   "severity": "Low",
+   "cvss": "n/a (Low)",
+   "cwe": "CWE-285",
+   "owasp": "A01:2021-Broken Access Control",
+   "location": [
+    "backend/src/ai"
+   ],
+   "origin": "code",
+   "component": "backend",
+   "description": "Частина AI-ендпоінтів (group-summary, a11y-labels, перелік report-link) доступна guest; guest запускає платні виклики моделі інстансу з даними проєкту.",
+   "evidence": "endpoints.md (guest-доступні AI-маршрути).",
+   "impact": "Обмежений; див. опис.",
+   "recommendation": "Обмежити щонайменше editor; окремий ліміт на guest.",
+   "related": null,
+   "effort": "S",
+   "confidence": "High",
+   "severity_2026_11_05": "Low",
+   "status": "not_fixed",
+   "status_uk": "Не виправлено",
+   "recheck": {
+    "evidence": "backend/src/ai/ai.controller.ts:95-120 — POST /ai/group-summary, /ai/a11y-labels, /ai/bug-draft лише @UseGuards(JwtAuthGuard), без RoleGuard/@Roles; файл не змінювався з 7b13af1. GET /builds/:id/report-links (reports.controller.ts:44-50) також без @Roles — guest бачить токени публічних звітів.",
+    "gap": "Guest проєкту запускає LLM-виклики ключем проєкту/інстансу (правило 6: на вимогу, але не обмежено роллю). Ізоляція проєктів при цьому працює (@ProjectFrom на buildId/testRunId)."
+   }
+  },
+  {
+   "id": "VIS-SEC-027",
+   "previous_id": null,
+   "title": "У логи потрапляють відповіді моделі (тексти екранів) і URL із підписами/токенами звітів",
+   "severity": "Low",
+   "cvss": "n/a (Low)",
+   "cwe": "CWE-532",
+   "owasp": "A09:2021-Security Logging and Monitoring Failures",
+   "location": [
+    "backend/src/ai",
+    "backend/src (Logger)"
+   ],
+   "origin": "code",
+   "component": "backend",
+   "description": "Debug/логи містять відповіді VLM (тексти банківських екранів) і повні URL із підписами знімків та токенами публічних звітів.",
+   "evidence": "grep Logger/console у ai та static.",
+   "impact": "Обмежений; див. опис.",
+   "recommendation": "Не логувати тіла відповідей моделі й повні підписані URL; редагувати токени.",
+   "related": null,
+   "effort": "S",
+   "confidence": "High",
+   "severity_2026_11_05": "Low",
+   "status": "not_fixed",
+   "status_uk": "Не виправлено",
+   "recheck": {
+    "evidence": "backend/src/compare/libs/vlm/vlm.service.ts:135 debug повної відповіді VLM; backend/src/ai/ai.service.ts:144 — 200 символів відповіді моделі; backend/src/http-exception.filter.ts:20-21 — повний request.url (з ?sig= і токенами у шляху) на помилках.",
+    "gap": "Без змін."
+   }
+  },
+  {
+   "id": "VIS-SEC-028",
+   "previous_id": null,
+   "title": "CLI пересилає заголовок apiKey при редиректі на інший хост/схему",
+   "severity": "Low",
+   "cvss": "n/a (Low)",
+   "cwe": "CWE-200",
+   "owasp": "A07:2021-Identification and Authentication Failures",
+   "location": [
+    "frontend/public/cli/vision.py:102,212"
+   ],
+   "origin": "code",
+   "component": "cli",
+   "description": "urllib за замовчуванням іде за редиректами й повторно шле заголовок apiKey; зловмисний сервер (або MITM на http) перенаправляє на свій хост і збирає ключі.",
+   "evidence": "vision.py:102,212 (urlopen без заборони редиректів); bandit B310.",
+   "impact": "Обмежений; див. опис.",
+   "recommendation": "Заборонити редиректи або не пересилати apiKey на інший origin; вимагати https.",
+   "related": null,
+   "effort": "S",
+   "confidence": "High",
+   "severity_2026_11_05": "Low",
+   "status": "not_fixed",
+   "status_uk": "Не виправлено",
+   "recheck": {
+    "evidence": "frontend/public/cli/vision.py:99-102,212 — urllib.request.urlopen з дефолтним HTTPRedirectHandler, заголовок apiKey не прибирається; https не вимагається. frontend/public без змін з 7b13af1.",
+    "gap": "Без змін."
+   }
+  },
+  {
+   "id": "VIS-SEC-029",
+   "previous_id": "S-8",
+   "title": "test:pw:install вимикає перевірку TLS під час завантаження браузера",
+   "severity": "Low",
+   "cvss": "n/a (Low)",
+   "cwe": "CWE-295",
+   "owasp": "A05:2021-Security Misconfiguration",
+   "location": [
+    "frontend/package.json:48"
+   ],
+   "origin": "code",
+   "component": "frontend",
+   "description": "`NODE_TLS_REJECT_UNAUTHORIZED=0 npx playwright install` — MITM під час завантаження браузера може підмінити бінарник. Лише dev-скрипт, у поставку не йде.",
+   "evidence": "frontend/package.json:48.",
+   "impact": "Обмежений; див. опис.",
+   "recommendation": "Прибрати прапорець; у контурі — корпоративний CA через NODE_EXTRA_CA_CERTS.",
+   "related": null,
+   "effort": "S",
+   "confidence": "High",
+   "severity_2026_11_05": "Low",
+   "status": "not_fixed",
+   "status_uk": "Не виправлено",
+   "recheck": {
+    "evidence": "frontend/package.json:48 `NODE_TLS_REJECT_UNAUTHORIZED=0 npx playwright install --with-deps chromium`.",
+    "gap": "Без змін."
+   }
+  },
+  {
+   "id": "VIS-SEC-030",
+   "previous_id": null,
+   "title": "CI: actions за тегами, не за SHA; не обмежено permissions GITHUB_TOKEN",
+   "severity": "Low",
+   "cvss": "n/a (Low)",
+   "cwe": "CWE-1357",
+   "owasp": "A08:2021-Software and Data Integrity Failures",
+   "location": [
+    ".github/workflows/docs.yml:12,13"
+   ],
+   "origin": "code",
+   "component": "ci",
+   "description": "actions/checkout@v4 і setup-python@v5 закріплені тегом, не SHA (ризик підміни тега); job без явного `permissions:` (успадковує широкі права токена).",
+   "evidence": "docs.yml:12-13; semgrep github-actions-mutable-action-tag.",
+   "impact": "Обмежений; див. опис.",
+   "recommendation": "Закріпити actions за SHA; додати `permissions: contents: read`.",
+   "related": null,
+   "effort": "S",
+   "confidence": "High",
+   "severity_2026_11_05": "Low",
+   "status": "not_fixed",
+   "status_uk": "Не виправлено",
+   "recheck": {
+    "evidence": ".github/workflows/docs.yml:12-13 `actions/checkout@v4`, `actions/setup-python@v5`; блоку `permissions:` немає.",
+    "gap": "Без змін."
+   }
+  },
+  {
+   "id": "VIS-SEC-031",
+   "previous_id": null,
+   "title": "Gradle wrapper 6.1 без distributionSha256Sum і без перевіреної контрольної суми jar",
+   "severity": "Low",
+   "cvss": "n/a (Low)",
+   "cwe": "CWE-494",
+   "owasp": "A08:2021-Software and Data Integrity Failures",
+   "location": [
+    "sdk-java/gradle/wrapper/gradle-wrapper.properties",
+    "sdk-java/gradle/wrapper/gradle-wrapper.jar"
+   ],
+   "origin": "code",
+   "component": "sdk-java",
+   "description": "У gradle-wrapper.properties немає distributionSha256Sum; дистрибутив Gradle завантажується без перевірки цілісності. Контрольна сума gradle-wrapper.jar (96f793a1…f4b6) не звірена з офіційною (мережа заблокувала завантаження офіційної суми).",
+   "evidence": "gradle-wrapper.properties (без distributionSha256Sum).",
+   "impact": "Обмежений; див. опис.",
+   "recommendation": "Додати distributionSha256Sum; звірити jar з офіційним для версії; оновити застарілі плагіни (shadow 5.2.0, lombok 5.1.1).",
+   "related": null,
+   "effort": "S",
+   "confidence": "Medium",
+   "severity_2026_11_05": "Low",
+   "status": "not_fixed",
+   "status_uk": "Не виправлено",
+   "recheck": {
+    "evidence": "sdk-java/gradle/wrapper/gradle-wrapper.properties — distributionUrl gradle-6.1-all.zip без distributionSha256Sum; sha256 gradle-wrapper.jar = 96f793a18e056c23ffeec67c1f3bb8eccff5a4a407fc9ceac183527e7eedf4b6 (не звірено з офіційною — без мережі).",
+    "gap": "Без змін."
+   }
+  },
+  {
+   "id": "VIS-SEC-032",
+   "previous_id": null,
+   "title": "Prompt injection: тексти екрана й назви перевірок у промптах; вердикт VLM сам ставить статус",
+   "severity": "Low",
+   "cvss": "n/a (Low)",
+   "cwe": "CWE-94",
+   "owasp": "A03:2021-Injection",
+   "location": [
+    "backend/src/ai/gemini.service.ts",
+    "backend/src/compare/libs/vlm/vlm.service.ts:98-99"
+   ],
+   "origin": "code",
+   "component": "backend",
+   "description": "Тексти з UI-дерева й назви тестів потрапляють у промпт чернетки бага і VLM-порівняння; зловмисний текст на екрані може спотворити чернетку або (для VLM) вплинути на вердикт, який сам ставить статус ok.",
+   "evidence": "vlm.service.ts:98-99.",
+   "impact": "Обмежений; див. опис.",
+   "recommendation": "Не дозволяти вердикту моделі самому затверджувати; розділяти інструкції й дані в промпті; екранувати.",
+   "related": null,
+   "effort": "S",
+   "confidence": "Medium",
+   "severity_2026_11_05": "Low",
+   "status": "not_fixed",
+   "status_uk": "Не виправлено",
+   "recheck": {
+    "evidence": "backend/src/compare/libs/vlm/vlm.service.ts:98-102 — `identical:true` від моделі ставить TestStatus.ok; промпт і дані в одному запиті (gemini.service.ts:42). Додатково: test-runs.service.ts:828-850 — ok від VLM у shouldAutoApprove веде до `this.approve(testRun.id, false, true)` (:784 і :821 — два шляхи автоапруву).",
+    "gap": "Вердикт моделі не лише ставить ok, а й автоматично затверджує знімок у гілці (NEW-D-1)."
+   }
+  },
+  {
+   "id": "VIS-SEC-033",
+   "previous_id": null,
+   "title": "Енумерація користувачів за часом відповіді входу",
+   "severity": "Low",
+   "cvss": "n/a (Low)",
+   "cwe": "CWE-203",
+   "owasp": "A07:2021-Identification and Authentication Failures",
+   "location": [
+    "backend/src/users"
+   ],
+   "origin": "code",
+   "component": "backend",
+   "description": "Текст відповіді однаковий, але bcrypt виконується лише для наявного акаунта — час відповіді видає наявність email.",
+   "evidence": "Стенд (repro-002): nobody 3-7 мс vs bob 89-90 мс.",
+   "impact": "Обмежений; див. опис.",
+   "recommendation": "Виконувати фіктивний bcrypt для невідомих email (константний час).",
+   "related": null,
+   "effort": "S",
+   "confidence": "High",
+   "severity_2026_11_05": "Low",
+   "status": "not_fixed",
+   "status_uk": "Не виправлено",
+   "recheck": {
+    "evidence": "backend/src/users/db/dbusers.service.ts:58-70 — для невідомого email одразу 400 без bcrypt.compare; для наявного — compare (~десятки мс, cost 10). У режимі LDAP ще й різний шлях (LDAP bind vs локальний) — users.service.ts:123-126.",
+    "gap": "Час відповіді й далі видає наявність акаунта. SignInLimit маскує лише 429, не час."
+   }
+  },
+  {
+   "id": "VIS-SEC-034",
+   "previous_id": "S-6",
+   "title": "Ліміт входу лише за email: password spraying і блокування чужих акаунтів",
+   "severity": "Low",
+   "cvss": "n/a (Low)",
+   "cwe": "CWE-307",
+   "owasp": "A07:2021-Identification and Authentication Failures",
+   "location": [
+    "backend/src/users"
+   ],
+   "origin": "code",
+   "component": "backend",
+   "description": "Ліміт 5/15хв рахується за email, не за IP. Один пароль проти багатьох акаунтів не обмежений; і навпаки — будь-хто анонімно блокує вхід відомого email на 15 хв (DoS).",
+   "evidence": "Стенд (repro-002): 6 хибних спроб → 429; правильний пароль з іншого X-Forwarded-For → 429.",
+   "impact": "Обмежений; див. опис.",
+   "recommendation": "Додати ліміт за IP (з коректним trust proxy) поряд з лімітом за акаунтом; не блокувати легітимного користувача.",
+   "related": null,
+   "effort": "S",
+   "confidence": "High",
+   "severity_2026_11_05": "Low",
+   "status": "not_fixed",
+   "status_uk": "Не виправлено",
+   "recheck": {
+    "evidence": "backend/src/users/sign-in-limit.ts:271-306 лише за email; docs/specs/045-sign-in-and-api-hardening/spec.md «Поза межами: … обмеження за IP-адресою» — свідомо поза специфікацією; trust proxy не налаштовано й IP ніде не використовується (grep `trust proxy|x-forwarded|req.ip` у backend/src — порожньо), тож X-Forwarded-For зараз нічого не обходить.",
+    "gap": "Password spraying (один пароль, напр. 123456 з VRT, по всіх скопійованих email) не обмежений; анонім блокує будь-який відомий email на 15 хв. Сам лічильник — нова DoS-поверхня (NEW-A-2). Ліміт у пам'яті процесу: при кількох репліках (RedisIoAdapter це передбачає, main.ts:56-58) — окремий на кожну."
+   }
+  },
+  {
+   "id": "VIS-SEC-036",
+   "previous_id": null,
+   "title": "PUT /users записує email без нормалізації й перевірки дублікатів в іншому регістрі",
+   "severity": "Low",
+   "cvss": "n/a (Low)",
+   "cwe": "CWE-706",
+   "owasp": "A04:2021-Insecure Design",
+   "location": [
+    "backend/src/users/dbusers.service.ts:35"
+   ],
+   "origin": "code",
+   "component": "backend",
+   "description": "Email записується як є; два акаунти з різним регістром однакового email можливі — плутанина в журналі рішень і при вході.",
+   "evidence": "dbusers.service.ts:35.",
+   "impact": "Обмежений; див. опис.",
+   "recommendation": "Нормалізувати email (lowercase) і забезпечити унікальність без урахування регістру (додавальний індекс).",
+   "related": null,
+   "effort": "S",
+   "confidence": "High",
+   "severity_2026_11_05": "Low",
+   "status": "partially_fixed",
+   "status_uk": "Частково",
+   "recheck": {
+    "evidence": "Виправлено: users.service.ts:51-59 (createAccount — accountEmail() і перевірка mode:'insensitive'), ldapusers.service.ts:105,179 і oidcusers.service.ts:184 — lowercase. Не виправлено: backend/src/users/db/dbusers.service.ts:35-43 (PUT /users у режимі БД пише email як є, без trim/lowercase і без перевірки дубліката без регістру); dbusers.service.ts:59-61 (вхід — точний збіг без нормалізації).",
+    "gap": "У режимі БД можна мати «Ann@bank.ua» поруч з «ann@bank.ua»; людина з великою літерою в email не входить (а спроби рахуються лімітом за lowercase-ключем). Унікального індексу без регістру немає."
+   }
+  },
+  {
+   "id": "VIS-SEC-037",
+   "previous_id": null,
+   "title": "Скрипти запускають образи за тегом з обліковими даними проду і --network host",
+   "severity": "Low",
+   "cvss": "n/a (Low)",
+   "cwe": "CWE-494",
+   "owasp": "A08:2021-Software and Data Integrity Failures",
+   "location": [
+    "scripts/demo-clone-from-prod.sh",
+    "scripts/lib/vision-backup.sh"
+   ],
+   "origin": "code",
+   "component": "scripts",
+   "description": "Частина скриптів запускає образи за рухомим тегом і з --network host/обліковими даними проду; підміна тега або компрометація образу дає доступ у мережу/до даних проду.",
+   "evidence": "demo-clone-from-prod.sh; shellcheck SC2010 та ін.",
+   "impact": "Обмежений; див. опис.",
+   "recommendation": "Закріпити образи за digest; мінімізувати мережу; не передавати прод-креденшали у скрипти demo.",
+   "related": null,
+   "effort": "S",
+   "confidence": "Medium",
+   "severity_2026_11_05": "Low",
+   "status": "not_fixed",
+   "status_uk": "Не виправлено",
+   "recheck": {
+    "evidence": "scripts/demo-clone-from-prod.sh:139 `docker run --rm --network host postgres:16-alpine … pg_dump \"$PROD_DATABASE_URL\"` (тег, не digest, --network host, прод-креденшали); scripts/lib/vision-backup.sh:146 `VB_RCLONE_IMAGE=\"rclone/rclone:1.68.2\"` (тег).",
+    "gap": "Без змін (compose-образи postgres/redis уже за digest)."
+   }
+  },
+  {
+   "id": "VIS-SEC-038",
+   "previous_id": null,
+   "title": "vision-safety.sh: .env.demo виконується як shell і може перевизначити закріплені VISION_*",
+   "severity": "Low",
+   "cvss": "n/a (Low)",
+   "cwe": "CWE-94",
+   "owasp": "A08:2021-Software and Data Integrity Failures",
+   "location": [
+    "scripts/lib/vision-safety.sh",
+    "scripts/lib/vision-backup.sh"
+   ],
+   "origin": "code",
+   "component": "scripts",
+   "description": "Файли оточення підключаються як shell (source); спеціально сформований .env.demo може перевизначити змінні-запобіжники або виконати код.",
+   "evidence": "shellcheck SC2148 (vision-safety.sh без shebang); патерн source .env.",
+   "impact": "Обмежений; див. опис.",
+   "recommendation": "Парсити .env без виконання (grep/export лише KEY=VALUE); права 600 на .env.",
+   "related": null,
+   "effort": "S",
+   "confidence": "Medium",
+   "severity_2026_11_05": "Low",
+   "status": "not_fixed",
+   "status_uk": "Не виправлено",
+   "recheck": {
+    "evidence": "scripts/lib/vision-safety.sh:28-34 — `set -a; . \"$VISION_ENV_FILE\"; set +a`; VISION_ENV_FILE береться з оточення (:15).",
+    "gap": "Без змін."
+   }
+  },
+  {
+   "id": "VIS-SEC-042",
+   "previous_id": "L-2",
+   "title": "Тестові фікстури містять фотографію реальних людей (успадковано від upstream)",
+   "severity": "Low",
+   "cvss": "n/a (Low)",
+   "cwe": "CWE-359",
+   "owasp": "A04:2021-Insecure Design",
+   "location": [
+    "backend/test/image.png",
+    "backend/test/image_edited.png",
+    "backend/test/image_edited_2.png"
+   ],
+   "origin": "code",
+   "component": "backend",
+   "description": "Тестові знімки backend/test/image*.png (360×360) — фотографія реальних упізнаваних людей, успадкована від upstream VRT, а не синтетичний контент. Не екран банку, але чужі персональні дані (зображення осіб) у дереві.",
+   "evidence": "Перегляд backend/test/image.png (фото людей).",
+   "impact": "Обмежений; див. опис.",
+   "recommendation": "Замінити синтетичними зображеннями (як frontend/integration_tests/images/generate.mjs) або нейтральними патернами; переоцінити для банку.",
+   "related": null,
+   "effort": "S",
+   "confidence": "High",
+   "severity_2026_11_05": "Low",
+   "status": "not_fixed",
+   "status_uk": "Не виправлено",
+   "recheck": {
+    "evidence": "backend/test/image.png, image_edited.png, image_edited_2.png — та сама фотографія упізнаваних людей (переглянуто image.png 360×360).",
+    "gap": "Без змін."
+   }
+  },
+  {
+   "id": "VIS-SEC-047",
+   "previous_id": null,
+   "title": "JWT прив'язаний лише до змінного email: у режимі БД можна заздалегідь «накарбувати» токен для чужої майбутньої адреси",
+   "severity": "Low",
+   "cvss": "CVSS:3.1/AV:N/AC:H/PR:L/UI:N/S:U/C:H/I:H/A:N (6.8)",
+   "cwe": "CWE-287",
+   "owasp": "A07:2021-Identification and Authentication Failures",
+   "location": [
+    "backend/src/auth/auth.service.ts:59-66",
+    "backend/src/auth/jwt.strategy.ts:94-104",
+    "backend/src/users/db/dbusers.service.ts:35-46",
+    "backend/src/shared/events/events.gateway.ts:68-73"
+   ],
+   "origin": "code",
+   "component": "backend",
+   "description": "Токен містить лише { email }, без sub (id), jti чи версії; JwtStrategy шукає користувача за email із токена. У режимі локальних акаунтів PUT /users (DbUsersService.update) дозволяє будь-якому користувачу поставити собі довільний ще не зайнятий email і отримати у відповіді токен на нього, а потім повернути свій email. Токен лишається дійсним до exp і автентифікує того, хто ПІЗНІШЕ отримає цю адресу: акаунт, який адмін створить новому співробітнику (передбачувана firstname.lastname@bank), відновлений після видалення акаунт, або акаунт, що з'явиться при першому вході через LDAP/SSO після зміни режиму.",
+   "evidence": "Знижено з Medium: потрібен автентифікований користувач режиму БД, знання майбутньої адреси й створення акаунта з нею в межах JWT_LIFE_TIME. auth.service.ts:60-62 `const payload: JwtPayload = { email: user.email };`\njwt.strategy.ts:95-97 `findUnique({ where: { email: payload.email } })`\ndbusers.service.ts:36-45 `update({ where: { id }, data: { email: userDto.email, … } }); const token = this.authService.signToken(user);`",
+   "impact": "Захоплення нового акаунта (включно з адміністраторським, якщо адмін створює нового адміна) інсайдером із будь-якою роллю протягом JWT_LIFE_TIME (типово 1d, у dev 7d). Те саме — старі токени видаленого акаунта діють для нового акаунта з тією ж адресою.",
+   "recommendation": "Класти в JWT sub=user.id (і версію токена з VIS-SEC-009), шукати користувача за id і звіряти email; у режимі БД нормалізувати email і, за потреби, заборонити зміну email без адміна. Зворотна сумісність: старі токени (лише email) приймати до їхнього exp або примусити повторний вхід.",
+   "related": [
+    "VIS-SEC-009",
+    "VIS-SEC-036",
+    "VIS-SEC-040",
+    "VIS-SEC-006"
+   ],
+   "effort": "S",
+   "confidence": "Medium",
+   "source_agent_id": "NEW-A-3",
+   "status": "new",
+   "status_uk": "Нова",
+   "severity_2026_11_05": null
+  },
+  {
+   "id": "VIS-SEC-048",
+   "previous_id": null,
+   "title": "Новий GET /projects/:id/jira/types надсилає особистий токен Jira на адресу з query-рядка; перевірка проєкту декоративна (розширення VIS-SEC-008)",
+   "severity": "Closed",
+   "cvss": "CVSS:3.1/AV:A/AC:H/PR:L/UI:R/S:U/C:L/I:N/A:N (2.6)",
+   "cwe": "CWE-319",
+   "owasp": "A01:2021-Broken Access Control",
+   "location": [
+    "backend/src/projects/projects.controller.ts:63-73",
+    "backend/src/projects/projects.service.ts:144-154",
+    "backend/src/a11y/jira-access.ts:52-65",
+    "backend/src/a11y/jira-hosts.ts:15-22"
+   ],
+   "origin": "code",
+   "component": "backend",
+   "description": "Ендпоінт з #27 (специфікація 049) бере `url` із query (не збережений Jira URL проєкту) і відкриває JiraClient з особистим токеном того, хто дивиться сторінку. Єдина перевірка — jiraHostProblem, яка звіряє лише hostname (VIS-SEC-008): `http://`, будь-який порт і будь-який шлях на дозволеному хості проходять. Параметр `id` у сервіс не передається: він потрібен лише інтерцептору, а неіснуючий UUID інтерцептор пропускає («рядок не знайдено — лишається маршруту», project-access.interceptor.ts:46), тож editor без жодного проєкту теж викликає маршрут.",
+   "evidence": "Та сама вада, що VIS-SEC-008 (перевірка лише hostname), на новому маршруті з #27; відповідь Jira людині не повертається. projects.controller.ts:71-72: `jiraTypes(@Param('id', new ParseUUIDPipe()) id: string, @Query('url') url: string, @CurrentUser() user: User) { return this.projectsService.jiraTypes(url, user.id); }`; jira-access.ts:59-64: `const url = jiraUrl?.trim(); ... if (jiraHostProblem(url, allowedJiraHosts(...))) return { problem: 'hostNotAllowed' }; ... const token = openSecret(user?.jiraToken, env); ... return new JiraClient({ url, token, email: user.jiraEmail });`; jira-hosts.ts:19: `return hosts.includes(new URL(url).hostname.toLowerCase());`. Раніше токен ішов лише на збережений jiraUrl проєкту; тепер — на значення поля форми до збереження (frontend надсилає те, що введено).",
+   "impact": "Чужий токен цим не отримати (тільки власний, JWT лише в заголовку Bearer — CSRF немає). Ризик: людина, що вводить `http://jira.bank/...` або адресу з нестандартним портом, ще до збереження відправляє свій токен Jira (Basic email:token або Bearer) відкритим текстом через внутрішню мережу банку; також маршрут дає перебір портів/шляхів дозволеного хоста зі статусом ok/failed. Масив `?url=a&url=b` дає 500 (TypeError на trim), не більше.",
+   "recommendation": "Під час виправлення VIS-SEC-008 перевіряти схему https і порт (і `redirect: 'manual'`) в isAllowedJiraUrl — це закриє обидва шляхи. Валідувати `url` як рядок (@IsUrl у DTO запиту або ручна перевірка typeof). Або передавати id у сервіс і вимагати наявний проєкт, або позначити маршрут @NoProjectData, щоб не створювати хибного враження перевірки.",
+   "related": [
+    "VIS-SEC-008",
+    "спека 049 REQ-049-03/09/13"
+   ],
+   "effort": "S",
+   "confidence": "High",
+   "source_agent_id": "NEW-B-1",
+   "status": "fixed",
+   "status_uk": "Закрито",
+   "severity_2026_11_05": null,
+   "severity_before_fix": "Low",
+   "fix": "Виправлено (2026-11-08, спец. 051): типи Jira для незбереженої адреси — за тими самими правилами (https/443, без переадресації), неіснуючий проєкт — 404 до виклику Jira."
+  },
+  {
+   "id": "VIS-SEC-049",
+   "previous_id": null,
+   "title": "Лічильник спроб входу: квадратична CPU-DoS і необмежене зростання пам'яті від анонімних запитів",
+   "severity": "Low",
+   "cvss": "CVSS:3.1/AV:A/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H (6.5)",
+   "cwe": "CWE-407",
+   "owasp": "A04:2021-Insecure Design",
+   "location": [
+    "backend/src/users/sign-in-limit.ts:291-313",
+    "backend/src/users/users.service.ts:100-117"
+   ],
+   "origin": "code",
+   "component": "backend",
+   "description": "Кожна невдала спроба викликає forgetOld(), який при failures.size >= 10000 перебирає ВСЮ мапу і видаляє лише записи старші за 15 хв. Анонім, надсилаючи невдалі входи з різними вигаданими email (для невідомого email у режимі БД/SSO немає bcrypt — запит дешевий), тримає мапу заповненою свіжими записами: кожен наступний запит коштує O(n) у головному потоці, сумарно O(n²). Мапа closedUntil не чиститься взагалі (запис видаляється лише при перевірці того самого email) — кожні 5 невдач по новому email додають запис назавжди до перезапуску.",
+   "evidence": "Знижено з Medium за заміром: після 10 000 записів кожна невдала спроба коштує 0,2–0,5 мс (40 000 записів), тобто для помітного блокування потрібні сотні тисяч запитів за 15 хв; пам'ять closedUntil не чиститься. sign-in-limit.ts:309-313:\n  private forgetOld(): void {\n    if (this.failures.size < 10000) return;\n    const since = this.now() - SIGN_IN_WINDOW_MS;\n    for (const [key, times] of this.failures) if (!times.some((at) => at > since)) this.failures.delete(key);\n  }\nsign-in-limit.ts:295-297 — closedUntil.set(...) без жодного очищення, крім closed() для того ж ключа.",
+   "impact": "Один процес API (spec 045: «Vision працює одним процесом API») обслуговує і UI, і прийом знімків із CI всіх команд. Сотні тисяч свіжих записів роблять кожну невдалу спробу мілісекундами синхронного CPU — event loop насичується, прийом знімків і UI зависають для всіх. У режимі LDAP кожен такий запит ще й робить bind+search у корпоративний каталог (навантаження на AD банку).",
+   "recommendation": "Обмежити розмір обох мап (LRU/кільцевий буфер з жорсткою межею), чистити closedUntil разом із failures, прибирати застарілі записи амортизовано (за таймером раз на хвилину, а не на кожен запит). Додатково — грубий ліміт частоти /users/login на з'єднання/IP за коректним trust proxy (поза 045 — потребує рішення).",
+   "related": [
+    "VIS-SEC-034",
+    "VIS-SEC-004"
+   ],
+   "effort": "S",
+   "confidence": "High",
+   "source_agent_id": "NEW-A-2",
+   "status": "new",
+   "status_uk": "Нова",
+   "severity_2026_11_05": null
+  },
+  {
+   "id": "VIS-SEC-050",
+   "previous_id": null,
+   "title": "Фільтр LDAP: String.replaceAll трактує $', $` і $& з email як шаблони заміни — обхід екранування",
+   "severity": "Low",
+   "cvss": "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:L/I:N/A:N (3.7)",
+   "cwe": "CWE-90",
+   "owasp": "A03:2021-Injection",
+   "location": [
+    "backend/src/users/ldap/ldapusers.service.ts:71",
+    "backend/src/users/ldap/ldapusers.service.ts:83"
+   ],
+   "origin": "code",
+   "component": "backend",
+   "description": "Email екранується за RFC 4515 (* ( ) \\ NUL), але далі підставляється рядком-заміною: `usersSearchFilter.replaceAll('{{email}}', email)`. У рядку заміни JS інтерпретує `$'` (текст після збігу), `` $` `` (текст до збігу), `$&`, `$$`. Ці символи дозволені @IsEmail у локальній частині (validator.js допускає $ ' ` у local part). Так у фільтр потрапляють неекрановані дужки з самого шаблону, напр. для `(|(sAMAccountName={{email}})(mail={{email}}))` email `alice$'@x.yz` дає `(|(sAMAccountName=alice)(mail={{email}}))@x.yz)…`.",
+   "evidence": "Перевірено: \"(mail={{email}})\".replaceAll(\"{{email}}\", \"a$'b\") → \"(mail=a)b)\". ldapusers.service.ts:83 `filter: this.ldapConfig.usersSearchFilter.replaceAll('{{email}}', email),`; escapeLdap (205-230) не чіпає `$`.",
+   "impact": "Пошук за значенням, яке не є email (напр. sAMAccountName=alice), і структурні зміни фільтра; пароль однаково перевіряє bind, тож прямого обходу автентифікації немає. Якщо парсер ldapts приймає хвіст після збалансованого фільтра, різні «домени» дають різні ключі SignInLimit для однієї людини — необмежений підбір пароля людини каталогу (див. needs_verification). Інакше — 500 замість 400 (такі спроби не рахуються лімітом).",
+   "recommendation": "Підставляти функцією: `replaceAll('{{email}}', () => email)`; додатково відхиляти email з `$` до пошуку; тест на `$'`/`` $` ``.",
+   "related": [
+    "VIS-SEC-034"
+   ],
+   "effort": "S",
+   "confidence": "High",
+   "source_agent_id": "NEW-A-4",
+   "status": "new",
+   "status_uk": "Нова",
+   "severity_2026_11_05": null
+  },
+  {
+   "id": "VIS-SEC-051",
+   "previous_id": "S-12",
+   "title": "LDAP: вимкнення перевірки TLS діє на весь клієнт без попередження, ldap:// без TLS приймається мовчки",
+   "severity": "Low",
+   "cvss": "CVSS:3.1/AV:A/AC:H/PR:N/UI:N/S:U/C:H/I:N/A:N (4.8)",
+   "cwe": "CWE-295",
+   "owasp": "A02:2021-Cryptographic Failures",
+   "location": [
+    "backend/src/users/ldap/ldapusers.service.ts:44-51",
+    "docker-compose.demo.yml:87,95"
+   ],
+   "origin": "config",
+   "component": "backend",
+   "description": "На відміну від OIDC (обмежено origin issuer + warn), LDAP_TLS_NO_VERIFY=true ставить rejectUnauthorized:false для всього клієнта і нічого не пише в лог; LDAP_URL зі схемою ldap:// (без StartTLS) приймається без попередження. Через цей клієнт ідуть сервісний bind (LDAP_BIND_PASSWORD) і bind кожної людини з її паролем.",
+   "evidence": "ldapusers.service.ts:44 `tlsNoVerify: … 'LDAP_TLS_NO_VERIFY' … === 'true'`, :46-51 `new LdapClient({ url, tlsOptions: { rejectUnauthorized: !this.ldapConfig.tlsNoVerify } })` — без перевірки схеми й без logger.warn.",
+   "impact": "Помилка конфігурації в контурі банку непомітно віддає доменні паролі співробітників і пароль сервісного акаунта каталогу на перехоплення в мережі.",
+   "recommendation": "Попередження в лог при NO_VERIFY і ldap://; у прод-профілі — відмова стартувати без ldaps:// або StartTLS; описати в DEPLOY.md.",
+   "related": [
+    "S-12",
+    "VIS-SEC-011"
+   ],
+   "effort": "S",
+   "confidence": "High",
+   "source_agent_id": "NEW-A-5",
+   "status": "new",
+   "status_uk": "Нова",
+   "severity_2026_11_05": null
+  },
+  {
+   "id": "VIS-SEC-052",
+   "previous_id": "VIS-SEC-005",
+   "title": "Три падіння воркера поспіль (зокрема повтори одного завдання) назавжди переводять пул порівняння в головний потік без тайм-ауту",
+   "severity": "Low",
+   "cvss": "CVSS:3.1/AV:N/AC:H/PR:L/UI:N/S:U/C:N/I:N/A:H (5.3)",
+   "cwe": "CWE-636",
+   "owasp": "A04:2021-Insecure Design",
+   "location": [
+    "backend/src/compare/diff-worker-pool.ts:108-157",
+    "backend/src/compare/diff-worker-pool.ts:159-170",
+    "backend/src/compare/diff-worker-pool.ts:62-64"
+   ],
+   "origin": "code",
+   "component": "backend",
+   "description": "Падіння воркера ('error' або exit≠0) повертає його завдання в чергу (до MAX_JOB_ATTEMPTS=2 повторів) і збільшує spawnFailures, яке скидається лише успішним повідомленням. Отже, одне вхідне завдання, що детерміновано валить воркер, сам по собі дає 3 падіння поспіль → inline=true назавжди, черга виконується синхронно в головному потоці (drainQueueInline), і всі подальші порівняння й a11y-завдання ідуть у головному потоці без тайм-ауту — VIS-SEC-004/005 повертаються до перезапуску процесу. Логіка «скрипт воркера не вантажиться» не відрізняється від «завдання вбиває воркер».",
+   "evidence": "diff-worker-pool.ts:131-133 `if (!this.destroyed && job.attempts < MAX_JOB_ATTEMPTS) { job.attempts += 1; this.queue.unshift(job);` і 145-151 `this.spawnFailures += 1; if (this.spawnFailures >= MAX_SPAWN_FAILURES) { this.inline = true; ... this.drainQueueInline();`; скидання лише в message (101).",
+   "impact": "Якщо знайдеться вхід, що валить воркер (ERR_WORKER_OUT_OF_MEMORY на великому дереві/зображенні, нативна помилка), один запит вимикає захист від DoS для всього інстансу.",
+   "recommendation": "Рахувати spawn failures лише для воркерів, що впали до першого завдання (або під час старту); завдання, що впало двічі, відхиляти без зміни режиму пулу; не переходити на головний потік автоматично (краще відмовляти з помилкою), або повертатись до воркерів за часом; задати resourceLimits воркерам.",
+   "related": [
+    "VIS-SEC-004",
+    "VIS-SEC-005"
+   ],
+   "effort": "S",
+   "confidence": "Low",
+   "source_agent_id": "NEW-C-4",
+   "status": "new",
+   "status_uk": "Нова",
+   "severity_2026_11_05": null
+  },
+  {
+   "id": "VIS-SEC-053",
+   "previous_id": null,
+   "title": "XPath-селектори правил з осями // і ancestor мають необмежену складність і виконуються в головному потоці",
+   "severity": "Low",
+   "cvss": "CVSS:3.1/AV:N/AC:L/PR:H/UI:N/S:U/C:N/I:N/A:H (4.9)",
+   "cwe": "CWE-407",
+   "owasp": "A04:2021-Insecure Design",
+   "location": [
+    "backend/src/ui-tree/xpath-selector.ts:160-195",
+    "backend/src/ui-tree/comparison-inputs.ts:152-159",
+    "backend/src/ui-tree/comparison-inputs.ts:206-227",
+    "backend/src/test-runs/dto/element-rule.dto.ts:13"
+   ],
+   "origin": "code",
+   "component": "backend",
+   "description": "evaluateXpath для кожного кроку descendant для кожного вузла контексту будує descendantsOrSelf (O(розмір піддерева)), для ancestor — проходить усіх предків. Селектор до 300 символів дає десятки кроків `//*`; на глибокому/широкому дереві (до 10 МиБ) кожен крок ~n·глибина, а правило проєкту застосовується до кожного порівняння кожного знімка (resolveRules) і до structure. ADR-0021 обмежує граматику (без функцій, or, інших осей), але не вартість.",
+   "evidence": "xpath-selector.ts:165-168 `const descendantsOrSelf = (index) => { const all = [index]; for (let i = 0; i < all.length; i++) all.push(...children[all[i]]); return all; };` і 174-179 цикл по context × parents; кількість кроків обмежена лише @MaxLength(300).",
+   "impact": "Editor проєкту може зробити кожне порівняння свого (і спільного, якщо проєкт спільний) проєкту повільним, блокуючи event loop для всіх команд; потрібна роль editor.",
+   "recommendation": "Обмежити кількість кроків (напр. ≤ 8) і кількість descendant-кроків (≤ 2); рахувати descendant один раз на крок (позначка відвіданих), обмежити розмір контексту; виконувати резолв правил у воркері.",
+   "related": [
+    "VIS-SEC-015",
+    "NEW-C-1"
+   ],
+   "effort": "S",
+   "confidence": "Medium",
+   "source_agent_id": "NEW-C-5",
+   "status": "new",
+   "status_uk": "Нова",
+   "severity_2026_11_05": null
+  },
+  {
+   "id": "VIS-SEC-054",
+   "previous_id": null,
+   "title": "Тексти з UI-дерева і назва перевірки потрапляють у wiki-розмітку Jira без екранування",
+   "severity": "Low",
+   "cvss": "CVSS:3.1/AV:N/AC:H/PR:L/UI:R/S:C/C:L/I:L/A:N (3.4)",
+   "cwe": "CWE-74",
+   "owasp": "A03:2021-Injection",
+   "location": [
+    "backend/src/a11y/jira-bug.ts:43",
+    "backend/src/a11y/jira-bug.ts:85-110",
+    "backend/src/visual-bugs/visual-bug.ts:64-94",
+    "backend/src/ui-tree/ui-tree.parser.ts:273-280"
+   ],
+   "origin": "code",
+   "component": "backend",
+   "description": "Опис бага будується як Jira wiki markup. escapeWiki прибирає лише | і {} і застосовується тільки до рядків таблиці; `# ${v.message}` (містить describeNode — до 40 символів тексту елемента і повний resource-id з дерева), `* ${key}: ${value}` деталей і `Перевірка: ${check}` (назва перевірки з SDK) у visual-bug вставляються як є. Текст `[Увійти|https://evil.example]` або `!https://host/x.png!` стає посиланням/зовнішнім зображенням у баг-трекері банку. JQL і шляхи REST екрановані (encodeURIComponent, jira.client.ts:133-303; jqlFor бере лише код a11y-hex і asLabel).",
+   "evidence": "jira-bug.ts:43 `const escapeWiki = (value: string) => value.replace(/\\|/g, '/').replace(/[{}]/g, '');`, :86 `...violations.map((v) => `# ${v.message}`)`; visual-bug.ts:91 `Перевірка: ${check}`.",
+   "impact": "Фішингові посилання або трекінг-зображення в баг-репортах, що їх створює довірений користувач від свого імені; вимагає контролю над текстами застосунку/назвою перевірки і дії людини.",
+   "recommendation": "Екранувати спецсимволи wiki-розмітки ([ ] ! { } | * _ # h1.) у всіх рядках з даних (або загортати у {noformat}); для Jira Cloud — ADF з текстовими вузлами.",
+   "related": [],
+   "effort": "S",
+   "confidence": "Medium",
+   "source_agent_id": "NEW-C-6",
+   "status": "new",
+   "status_uk": "Нова",
+   "severity_2026_11_05": null
+  },
+  {
+   "id": "VIS-SEC-055",
+   "previous_id": null,
+   "title": "VLM-вердикт при прийомі запускає автоапрув і множить виклики Gemini без ліміту",
+   "severity": "Low",
+   "cvss": "CVSS:3.1/AV:N/AC:H/PR:L/UI:N/S:U/C:L/I:L/A:N (4.2)",
+   "cwe": "CWE-1039",
+   "owasp": "A04:2021-Insecure Design",
+   "location": [
+    "backend/src/test-runs/test-runs.service.ts:770-850",
+    "backend/src/compare/libs/vlm/vlm.service.ts:57-104",
+    "backend/src/test-runs/test-runs.service.ts:661-678"
+   ],
+   "origin": "code",
+   "component": "backend",
+   "description": "Для проєкту з рушієм vlm tryAutoApproveByNewBaselines при прийомі знімка викликає compareService.getDiff для кожного approved run з тим самим еталоном (цикл до першого збігу); кожен виклик — окремий запит у Gemini з трьома повними PNG і окремий diff-файл (VlmService примусово ставить saveDiffAsFile:true, :58-63, хоча shouldAutoApprove просить false). Якщо модель відповіла identical:true, знімок автоматично затверджується. Перепорівняння після зміни правила також шле в Gemini до MAX_RECOMPARE_AFTER_RULE=200 знімків фоново (:870). Денного ліміту чи обліку VLM-викликів немає (AI_DAILY_CALL_LIMIT — лише для AiService).",
+   "evidence": "test-runs.service.ts:804-818 findMany approved runs → :820-821 (і аналогічно :783-784) `if (await this.shouldAutoApprove(...)) return this.approve(testRun.id, false, true);`; :837 `const diffResult = await this.compareService.getDiff({...saveDiffAsFile: false})`; :848 `if (diffResult.status === TestStatus.ok) return true`; vlm.service.ts:58-63 `saveDiffAsFile: true`, :98-99 `if (pass) result.status = TestStatus.ok`.",
+   "impact": "Обсяг даних банку в Gemini на один знімок більший, ніж очевидно з налаштувань (вплив на умови контракту, VIS-SEC-003). Текст на екрані (prompt injection) або помилка моделі може не лише сховати зміну, а й автоматично затвердити її в гілці без людини. Накопичуються зайві diff-файли.",
+   "recommendation": "Не дозволяти вердикту VLM вести до approve (автоапрув — лише за детермінованим порівнянням); рахувати VLM-виклики в ліміті інстансу; не зберігати diff у shouldAutoApprove. Зміна поведінки — через /spec.",
+   "related": [
+    "VIS-SEC-003",
+    "VIS-SEC-032"
+   ],
+   "effort": "S",
+   "confidence": "High",
+   "source_agent_id": "NEW-D-1",
+   "status": "new",
+   "status_uk": "Нова",
+   "severity_2026_11_05": null
+  },
+  {
+   "id": "VIS-SEC-039",
+   "previous_id": null,
+   "title": "Образи не містять LICENSE і NOTICE (Apache-2.0 §4(a),(d))",
+   "severity": "Info",
+   "cvss": "n/a",
+   "cwe": "CWE-1104",
+   "owasp": "n/a",
+   "location": [
+    "backend/Dockerfile",
+    "backend/prisma/Dockerfile",
+    "frontend/Dockerfile"
+   ],
+   "origin": "process",
+   "component": "infra",
+   "description": "Vision — похідний твір від Visual Regression Tracker (Apache-2.0). Docker-образи не включають LICENSE і NOTICE. При передачі образів/коду компанії (навіть без продажу) Apache-2.0 §4(a),(d) вимагає зберегти LICENSE і NOTICE у кожній копії.",
+   "evidence": "Dockerfile-и не копіюють LICENSE/NOTICE в образ.",
+   "impact": "Невідповідність умовам Apache-2.0 при передачі образів іншій особі/компанії (див. розділ 2.8 звіту).",
+   "recommendation": "COPY LICENSE NOTICE в кожен образ і в jar SDK; зберегти copyright-заголовки upstream і примітку про зміни в NOTICE.",
+   "related": "NOTICE, ADR-0027",
+   "effort": "S",
+   "confidence": "High",
+   "severity_2026_11_05": "Info",
+   "status": "not_fixed",
+   "status_uk": "Не виправлено",
+   "recheck": {
+    "evidence": "backend/Dockerfile:31-41, backend/prisma/Dockerfile (COPY . . лише з backend/prisma), frontend/Dockerfile:93-105 — LICENSE/NOTICE не копіюються; sdk-java/build.gradle не додає LICENSE/NOTICE у jar (grep LICENSE|NOTICE|META-INF — 0), у sdk-java/ є LICENSE, але немає NOTICE. NOTICE у корені є й коректний (атрибуція VRT і deepmerge).",
+    "gap": "Без змін; додатково шрифти @fontsource (OFL-1.1) потрапляють у build фронтенду без тексту ліцензії (frontend/src/index.tsx:14-22)."
+   }
+  },
+  {
+   "id": "VIS-SEC-040",
+   "previous_id": null,
+   "title": "JWT без явного алгоритму, issuer і audience",
+   "severity": "Info",
+   "cvss": "n/a",
+   "cwe": "CWE-345",
+   "owasp": "A07:2021-Identification and Authentication Failures",
+   "location": [
+    "backend/src/auth"
+   ],
+   "origin": "code",
+   "component": "backend",
+   "description": "Перевірка JWT не задає явно `algorithms`, `issuer`, `audience`. Ризик низький (секрет симетричний, alg=none у @nestjs/jwt не проходить), але явне задання — захист на майбутнє.",
+   "evidence": "Конфіг JwtModule без algorithms/issuer/audience.",
+   "impact": "Захист глибини; прямої вразливості не підтверджено.",
+   "recommendation": "Задати `algorithms:['HS256']`, issuer, audience при verify.",
+   "related": null,
+   "effort": "S",
+   "confidence": "Medium",
+   "severity_2026_11_05": "Info",
+   "status": "not_fixed",
+   "status_uk": "Не виправлено",
+   "recheck": {
+    "evidence": "backend/src/auth/auth.module.ts:13-19 (secret, expiresIn — без algorithm/issuer/audience); backend/src/auth/jwt.strategy.ts:87-91 (без algorithms/issuer/audience); auth.service.ts:70-72 verifyAsync без опцій.",
+    "gap": "Додатково: JWT_LIFE_TIME читається без типового значення (auth.module.ts:17) і не валідується при старті; поведінка при відсутній змінній (токен без exp або помилка підпису) — див. needs_verification. Ідентичність у токені — змінний email без sub (NEW-A-3)."
+   }
+  },
+  {
+   "id": "VIS-SEC-041",
+   "previous_id": null,
+   "title": "Editor може змінювати налаштування й видаляти будь-який доступний проєкт (зокрема ключ Gemini)",
+   "severity": "Info",
+   "cvss": "n/a",
+   "cwe": "CWE-284",
+   "owasp": "A01:2021-Broken Access Control",
+   "location": [
+    "backend/src/projects/projects.controller.ts:134,151"
+   ],
+   "origin": "code",
+   "component": "backend",
+   "description": "Роль editor (глобальна, 042) може через PUT /projects і DELETE /projects/:id змінювати jiraUrl, ключ Gemini, назву й видаляти будь-який доступний проєкт. Узгоджується з глобальною рольовою моделлю 042, але варте рішення власника для банку (немає ролі «лише свій проєкт»).",
+   "evidence": "projects.controller.ts:134,151 (admin,editor).",
+   "impact": "Editor однієї команди впливає на налаштування проєктів інших команд, до яких має доступ.",
+   "recommendation": "Розглянути права на рівні проєкту (owner) поверх глобальних ролей. Потребує специфікації.",
+   "related": "спека 042",
+   "effort": "M",
+   "confidence": "High",
+   "severity_2026_11_05": "Info",
+   "status": "not_fixed",
+   "status_uk": "Не виправлено",
+   "recheck": {
+    "evidence": "backend/src/projects/projects.controller.ts:88-103 (PUT /projects, @Roles(admin, editor)), 105-114 (DELETE /projects/:id, admin, editor). Новий GET /projects/:id/jira/types (рядки 63-73) теж admin/editor. Рішення власника в PROGRESS.md не зафіксовано.",
+    "gap": "Editor з доступом до проєкту змінює його налаштування (Jira URL у межах VISION_JIRA_HOSTS, ключ Gemini, правила, allowedDevices) і видаляє проєкт з усіма даними. Узгоджено з глобальною моделлю ролей 042; потребує рішення/специфікації про роль на рівні проєкту."
+   }
+  },
+  {
+   "id": "VIS-SEC-056",
+   "previous_id": null,
+   "title": "StripUnknownFieldsPipe не чистить вкладені DTO: зайві ключі областей ігнорування зберігаються в JSON",
+   "severity": "Info",
+   "cvss": "n/a (Info)",
+   "cwe": "CWE-915",
+   "owasp": "A08:2021-Software and Data Integrity Failures",
+   "location": [
+    "backend/src/shared/strip-unknown-fields.pipe.ts:33",
+    "backend/src/test-runs/dto/update-ignore-area.dto.ts:11-14",
+    "backend/src/test-runs/dto/create-test-request.dto.ts:38-43",
+    "backend/src/test-runs/test-runs.service.ts:459",
+    "backend/src/test-runs/test-runs.service.ts:725"
+   ],
+   "origin": "code",
+   "component": "backend",
+   "description": "Пайп фільтрує лише ключі верхнього рівня; ValidationPipe без transform повертає вихідний plain-об'єкт, тож елементи `ignoreAreas` (IgnoreAreaDto — x, y, width, height) зберігають будь-які додаткові ключі. Вони потрапляють у `JSON.stringify(ignoreAreas)` → TestRun.ignoreAreas/tempIgnoreAreas і TestVariation.ignoreAreas і віддаються клієнтам (у т.ч. через socket.io testRun_updated). Вкладених записів Prisma це не дає (поле — String), marks у visual-bugs нормалізуються (visual-bugs.service.ts:157).",
+   "evidence": "strip-unknown-fields.pipe.ts:33: `return Object.fromEntries(Object.entries(value).filter(([key]) => declared.has(key)));` — без рекурсії; test-runs.service.ts:725: `ignoreAreas: JSON.stringify(ignoreAreas)`.",
+   "impact": "Немає ескалації чи обходу ізоляції; лише сміттєві дані в межах власного проєкту editor (обмежені лімітом тіла JSON) і ризик, що майбутній код почне передавати вкладений DTO у Prisma, покладаючись на пайп.",
+   "recommendation": "Перед збереженням мапити області на {x,y,width,height} (як normalizeMarks) або зробити пайп рекурсивним для властивостей з @ValidateNested/@Type. Задокументувати в backend/AGENTS.md, що пайп діє лише на верхньому рівні.",
+   "related": [
+    "VIS-SEC-012"
+   ],
+   "effort": "S",
+   "confidence": "High",
+   "source_agent_id": "NEW-B-2",
+   "status": "new",
+   "status_uk": "Нова",
+   "severity_2026_11_05": null
+  },
+  {
+   "id": "VIS-SEC-057",
+   "previous_id": null,
+   "title": "Застарілі облікові дані й чужа IP-адреса в документації та тестах",
+   "severity": "Info",
+   "cvss": "CVSS:3.1/AV:N/AC:H/PR:N/UI:R/S:U/C:N/I:N/A:N (0.0)",
+   "cwe": "CWE-1188",
+   "owasp": "A05:2021-Security Misconfiguration",
+   "location": [
+    "DEPLOY.md:640-642",
+    "sdk-java/README.md:89",
+    "sdk-java/src/test/resources/vision_config_example.json:2",
+    "sdk-java/src/test/java/ua/vision/sdk/VisionConfigTest.java:52"
+   ],
+   "origin": "process",
+   "component": "infra",
+   "description": "DEPLOY.md радить входити `visual-regression-tracker@example.com / 123456`, хоча seed/compose вже створюють admin@vision.local (docker-compose.demo.yml:131-132) — розбіжність підштовхує лишати дефолтний пароль і несе стару назву бренду. У SDK (README і тести) — публічна IP 162.243.161.172 з upstream як приклад apiUrl.",
+   "evidence": "DEPLOY.md:642 «если не заданы — `visual-regression-tracker@example.com` / `123456`»; sdk-java/README.md:89 `\"apiUrl\": \"[http://162.243.161.172:4200](http://localhost:4200)\"`.",
+   "impact": "Плутанина при відновленні, пароль 123456 як «нормальний» крок; копіювання прикладу з чужою IP шле знімки на сторонній хост.",
+   "recommendation": "Виправити DEPLOY.md (admin@vision.local, вимога змінити пароль); замінити IP на localhost/example у README і тестах SDK.",
+   "related": [
+    "VIS-SEC-010"
+   ],
+   "effort": "S",
+   "confidence": "High",
+   "source_agent_id": "NEW-D-2",
+   "status": "new",
+   "status_uk": "Нова",
+   "severity_2026_11_05": null
+  },
+  {
+   "id": "VIS-SEC-001",
+   "previous_id": "S-7",
+   "title": "Масове присвоєння в PATCH /builds/:id: ескалація editor→admin і крадіжка даних між командами",
+   "severity": "Closed",
+   "cvss": "CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:C/C:H/I:H/A:H (9.6)",
+   "cwe": "CWE-915",
+   "owasp": "A08:2021-Software and Data Integrity Failures",
+   "location": [
+    "backend/src/builds/dto/build-modify.dto.ts:1",
+    "backend/src/builds/builds.service.ts:110",
+    "backend/src/builds/builds.controller.ts:116",
+    "backend/src/main.ts:42"
+   ],
+   "origin": "code",
+   "component": "backend",
+   "description": "`ModifyBuildDto` — це TypeScript-інтерфейс без валідаторів, а глобальний `ValidationPipe` у main.ts:42 створений без `whitelist`. Тіло запиту повністю йде в `prisma.build.update({ data: modifyBuildDto })`. Через вкладені записи Prisma (`user.connect`/`user.update`, `projectId`) власник API-ключа будь-якої команди (роль editor) переписує чужі рядки.",
+   "evidence": "Відтворено на стенді (audit/raw/repro-001-patch-builds.txt): editor-ключ alice (доступ лише до Team A) → PATCH /builds/<b> {\"user\":{\"connect\":{\"email\":\"alice\"}}} 200, потім {\"user\":{\"update\":{\"role\":\"admin\"}}} 200; GET /users/all зі старим JWT alice → 200 (було 403), /users/me role=admin. Окремо PATCH {\"projectId\":\"<Team B>\"} переносить збірку зі знімками банківського застосунку в чужий проєкт — bob (Team B) починає її бачити.",
+   "impact": "Будь-який CI-ключ або editor однієї команди банку стає admin всього інстансу: читає/змінює всі проєкти, скидає паролі й API-ключі, видаляє акаунти, краде знімки й UI-дерева (ПІБ, номери карток) інших команд. Повний обхід ізоляції 042 і рольової моделі.",
+   "recommendation": "`new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true, transform: true })` у main.ts; зробити `ModifyBuildDto` класом з `@IsOptional()/@IsString()/@IsBoolean()` лише для `ciBuildId`,`isRunning`. Сервіс має приймати лише ці поля (явний вибір, не весь DTO).",
+   "related": "S-7; спека 042 REQ-042-03/09; правило 7",
+   "effort": "S",
+   "confidence": "High",
+   "severity_2026_11_05": "Critical",
+   "status": "fixed",
+   "status_uk": "Виправлено",
+   "recheck": {
+    "evidence": "backend/src/builds/dto/build-modify.dto.ts:4-30 — ModifyBuildDto тепер клас з @IsOptional/@IsString/@IsBoolean, buildChanges() бере лише ciBuildId (string) і isRunning (boolean); builds.controller.ts:113-119 (MixedGuard, RoleGuard, admin/editor; buildChanges у контролері) і builds.service.ts:108-112 (`data: buildChanges(modifyBuildDto)` — повторний вибір у сервісі). Тести: builds.controller.spec.ts:131, builds.service.spec.ts:448 (`user: { connect }` відкидається), strip-unknown-fields.pipe.spec.ts:34-38. Пошук `data: dto|...dto|data: body|...body` по backend/src (крім spec) не знайшов жодного update/updateMany/upsert/create, що отримує тіло запиту цілком: усі 46 викликів Prisma на запис мають явний перелік полів (projects.service.ts:128-139,194-210; users.service.ts:60,192; dbusers.service.ts:28,36; test-runs.service.ts:742-748 (лише comment); test-variations.service.ts:69-80; reports.service.ts:45; visual-bugs.service.ts:221; a11y-issues.service.ts:325 `...entry` — entry збирається в коді, не з тіла). Стенд (repro-004): PATCH /builds з branchName/number/user.update.role/projectId → поля ігноруються, роль alice лишається editor, bob отримує 404.",
+    "gap": "Обходу не знайдено. Залишкова зміна поведінки: `{\"isRunning\":\"false\"}` (рядок) тепер 400 від ValidationPipe, а не запис — для випущених SDK (булеві значення або порожнє тіло) не впливає. ciBuildId editor може змінити лише в межах свого проєкту (унікальність projectId_ciBuildId)."
+   }
+  },
+  {
+   "id": "VIS-SEC-007",
+   "previous_id": null,
+   "title": "Вхід через LDAP з порожнім паролем не відхиляється (ризик unauthenticated bind)",
+   "severity": "Closed",
+   "cvss": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:N (8.1)",
+   "cwe": "CWE-287",
+   "owasp": "A07:2021-Identification and Authentication Failures",
+   "location": [
+    "backend/src/users/ldap/ldapusers.service.ts:141"
+   ],
+   "origin": "code",
+   "component": "backend",
+   "description": "DTO входу перевіряє лише `@IsString()`; далі `bind(dn, '')` без перевірки непорожності пароля. Багато LDAP/AD за замовчуванням трактують bind із порожнім паролем як успішний анонімний bind.",
+   "evidence": "ldapusers.service.ts:141 (аналіз коду). Чи ldapts 9.2.0 сам відкидає порожній пароль — не перевірено.",
+   "impact": "На типовому AD без DenyUnauthenticatedBind — вхід у будь-який акаунт каталогу без пароля.",
+   "recommendation": "Відхиляти порожній/пробільний пароль до bind; увімкнути відмову від unauthenticated bind. Потребує специфікації.",
+   "related": "спека 045",
+   "effort": "S",
+   "confidence": "Medium",
+   "severity_2026_11_05": "High",
+   "status": "fixed",
+   "status_uk": "Виправлено",
+   "recheck": {
+    "evidence": "backend/src/users/ldap/ldapusers.service.ts:162-164 `if (!userLoginRequestDto.password?.trim()) throw …` до будь-якого bind; тест ldapusers.service.spec.ts:119-126 (it.each(['', '   ']) — bind не викликається).",
+    "gap": "Обходу не знайдено: String.prototype.trim прибирає й Unicode-пробіли (NBSP, U+2028, BOM); символ нульової ширини (U+200B) лишає пароль непорожнім — це вже автентифікований bind, а не unauthenticated (RFC 4513 §5.1.2 — лише нульова довжина). Тип гарантує @IsString (user-login-request.dto.ts). Варто додатково вимкнути unauthenticated bind на боці каталогу."
+   }
+  },
+  {
+   "id": "VIS-SEC-012",
+   "previous_id": "S-7",
+   "title": "Глобальний ValidationPipe без whitelist/forbidNonWhitelisted/transform (системний корінь mass assignment)",
+   "severity": "Closed",
+   "cvss": "CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:L/I:H/A:N (6.5)",
+   "cwe": "CWE-915",
+   "owasp": "A08:2021-Software and Data Integrity Failures",
+   "location": [
+    "backend/src/main.ts:42"
+   ],
+   "origin": "code",
+   "component": "backend",
+   "description": "`new ValidationPipe()` без опцій: невідомі поля тіла не відсікаються в усьому API. Захист від mass assignment тримається лише на ручному виборі полів у кожному сервісі; VIS-SEC-001 — відомий інстанс, але ризик системний.",
+   "evidence": "main.ts:42.",
+   "impact": "Будь-який ендпоінт, що передає DTO в Prisma, потенційно вразливий до підміни полів.",
+   "recommendation": "`new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true, transform: true })` і перевести решту DTO-інтерфейсів на класи з валідаторами.",
+   "related": "S-7, VIS-SEC-001",
+   "effort": "S",
+   "confidence": "High",
+   "severity_2026_11_05": "Medium",
+   "status": "fixed",
+   "status_uk": "Виправлено",
+   "recheck": {
+    "evidence": "backend/src/shared/strip-unknown-fields.pipe.ts:26-38 — StripUnknownFieldsPipe після ValidationPipe (globalPipes(), main.ts:44; e2e використовують той самий globalPipes). Лише metadata.type==='body' і metadata.data===undefined (рядок 29); поля — з class-validator metadata, з батьками (рядки 8-14; OmitType/PickType з @nestjs/swagger копіюють метадані). Object.fromEntries над Object.entries: ключ `__proto__` із JSON.parse — власна властивість, відкидається фільтром, а fromEntries створює дані через CreateDataProperty — prototype pollution немає; class-transformer 0.5.1 (lock) без відомої PP. Порядок: глобальні пайпи → пайп методу (multipart: ValidationPipe({transform:true}) у test-runs.controller.ts:390) — strip іде до transform, тест strip-unknown-fields.pipe.spec.ts:63-86 і http.spec.ts:63. Тест маршрутів pipe.spec.ts:94-142 + project-access.routes.spec.ts:88-95 (кількість *.controller.ts = кількість відомих контролерів) не дає новому контролеру пройти непоміченим. Перевірені руками маршрути (spec:111-119): BackupsController.connect/saveSettings — клас admin-only (backups.controller.ts:14-15), saveSettings через checkSettings (backups.service.ts:263-272); ReportsController.create — sectionsOf/languageOf з білого списку (reports/report-links.ts:17-23), пишуться явні поля (reports.service.ts:45-54); TestRuns approve/reject/delete — ids йдуть лише як `where: { id }` у findUnique/update; нерядкові елементи інтерцептор пропускає (project-access.ts:49-50), але Prisma відхиляє не-string для унікального id до будь-якого запису; UsersController.delete — admin-only, `user.delete({ where: { id } })`. Query/param: єдиний `@Query()` цілим об'єктом — MergeParams (test-variations.controller.ts:54, types.ts:3-10), поля деструктуруються явно. Стенд (repro-004): зайві поля в PATCH /builds відкидаються; юніт-тести strip-unknown-fields.*.spec.ts зелені.",
+    "gap": "Свідомі межі, не обхід: (1) лише верхній рівень — вкладені DTO (@ValidateNested: UpdateIgnoreAreasDto.ignoreAreas, CreateTestRequestDto.ignoreAreas) зберігають невідомі ключі; вони потрапляють лише в JSON.stringify(...) (test-runs.service.ts:459,725), не у вкладені записи Prisma — див. NEW-B-2 (Info). (2) Тіла без класу (масиви id, inline-типи) не фільтруються — покриті списком CHECKED_BY_HAND; ручна перевірка підтверджує, що вони безпечні. (3) Захист тримається на тому, що сервіси самі перелічують поля (як і раніше) — пайп є другим шаром. forbidNonWhitelisted свідомо не ввімкнено (правило 5, сумісність SDK)."
+   }
+  }
+ ]
+}

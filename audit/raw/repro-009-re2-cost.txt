@@ -1,0 +1,10 @@
+pattern length 289
+compile accepted 219 ms
+heap + 46 MiB after one compiled pattern
+test len 17 false 122 ms
+test len 200 false 1335 ms
+(a+)+$ on 2001 chars 6 ms
+
+## Through the API (temporary e2e, deleted after the run): a guest member of the project, one GET
+GET /test-runs/:id/selector-matches?selector=text:/(?:x*×137){1000}[qz]$/  (296 chars), tree of 50 texts
+guest selector-matches 200 {"current":0,"baseline":0,"problem":null} 7526 ms; event loop blocked up to 7034 ms; heap + 46 MiB

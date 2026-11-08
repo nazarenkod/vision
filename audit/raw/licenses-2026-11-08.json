@@ -1,0 +1,186 @@
+{
+ "backend": {
+  "counts": {
+   "MIT|dev": 570,
+   "BSD-3-Clause|dev": 18,
+   "Apache-2.0|prod": 59,
+   "ISC|dev": 31,
+   "MIT|prod": 347,
+   "Apache-2.0|dev": 22,
+   "BlueOak-1.0.0|prod": 8,
+   "ISC|prod": 35,
+   "BSD-3-Clause|prod": 16,
+   "MIT and ISC|prod": 1,
+   "Python-2.0|dev": 1,
+   "BSD-2-Clause|prod": 4,
+   "CC-BY-4.0|dev": 1,
+   "EPL-2.0|prod": 1,
+   "BSD-2-Clause|dev": 11,
+   "PSF-2.0|prod": 1,
+   "UNKNOWN|prod": 2,
+   "Unlicense|prod": 2,
+   "(MIT OR CC0-1.0)|dev": 2,
+   "0BSD|prod": 1
+  },
+  "non_permissive": [
+   [
+    "elkjs",
+    "EPL-2.0",
+    "prod"
+   ],
+   [
+    "js-yaml/argparse",
+    "PSF-2.0",
+    "prod"
+   ],
+   [
+    "parse-color/color-convert",
+    "UNKNOWN",
+    "prod"
+   ],
+   [
+    "pause",
+    "UNKNOWN",
+    "prod"
+   ]
+  ]
+ },
+ "backend/prisma": {
+  "counts": {
+   "MIT|dev": 270,
+   "Apache-2.0|prod": 22,
+   "BlueOak-1.0.0|dev": 6,
+   "ISC|dev": 21,
+   "ISC|prod": 23,
+   "MIT|prod": 107,
+   "BSD-3-Clause|dev": 11,
+   "MIT and ISC|prod": 1,
+   "Apache-2.0|dev": 5,
+   "CC-BY-4.0|dev": 1,
+   "BSD-3-Clause|prod": 2,
+   "BSD-2-Clause|prod": 1,
+   "EPL-2.0|prod": 1,
+   "BSD-2-Clause|dev": 2,
+   "Unlicense|prod": 2,
+   "(MIT OR CC0-1.0)|dev": 2
+  },
+  "non_permissive": [
+   [
+    "elkjs",
+    "EPL-2.0",
+    "prod"
+   ]
+  ]
+ },
+ "frontend": {
+  "counts": {
+   "MIT|dev": 543,
+   "ISC|dev": 32,
+   "MIT|prod": 172,
+   "MIT-0|dev": 1,
+   "Apache-2.0|dev": 29,
+   "OFL-1.1|prod": 4,
+   "(MIT OR CC0-1.0)|prod": 1,
+   "BlueOak-1.0.0|dev": 8,
+   "BSD-3-Clause|dev": 14,
+   "(MIT OR CC0-1.0)|dev": 2,
+   "Python-2.0|dev": 1,
+   "MPL-2.0|dev": 13,
+   "CC-BY-4.0|dev": 1,
+   "ISC|prod": 4,
+   "BSD-2-Clause|dev": 11,
+   "BSD-3-Clause|prod": 5,
+   "(MIT OR GPL-3.0-or-later)|prod": 1,
+   "CC0-1.0|dev": 1,
+   "(MIT AND Zlib)|prod": 1,
+   "0BSD|dev": 1
+  },
+  "non_permissive": [
+   [
+    "@fontsource/geist-sans",
+    "OFL-1.1",
+    "prod"
+   ],
+   [
+    "@fontsource/inter",
+    "OFL-1.1",
+    "prod"
+   ],
+   [
+    "@fontsource/jetbrains-mono",
+    "OFL-1.1",
+    "prod"
+   ],
+   [
+    "@fontsource/roboto",
+    "OFL-1.1",
+    "prod"
+   ],
+   [
+    "axe-core",
+    "MPL-2.0",
+    "dev"
+   ],
+   [
+    "lightningcss",
+    "MPL-2.0",
+    "dev"
+   ],
+   [
+    "lightningcss-android-arm64",
+    "MPL-2.0",
+    "dev"
+   ],
+   [
+    "lightningcss-darwin-arm64",
+    "MPL-2.0",
+    "dev"
+   ],
+   [
+    "lightningcss-darwin-x64",
+    "MPL-2.0",
+    "dev"
+   ],
+   [
+    "lightningcss-freebsd-x64",
+    "MPL-2.0",
+    "dev"
+   ],
+   [
+    "lightningcss-linux-arm-gnueabihf",
+    "MPL-2.0",
+    "dev"
+   ],
+   [
+    "lightningcss-linux-arm64-gnu",
+    "MPL-2.0",
+    "dev"
+   ],
+   [
+    "lightningcss-linux-arm64-musl",
+    "MPL-2.0",
+    "dev"
+   ],
+   [
+    "lightningcss-linux-x64-gnu",
+    "MPL-2.0",
+    "dev"
+   ],
+   [
+    "lightningcss-linux-x64-musl",
+    "MPL-2.0",
+    "dev"
+   ],
+   [
+    "lightningcss-win32-arm64-msvc",
+    "MPL-2.0",
+    "dev"
+   ],
+   [
+    "lightningcss-win32-x64-msvc",
+    "MPL-2.0",
+    "dev"
+   ]
+  ]
+ }
+}

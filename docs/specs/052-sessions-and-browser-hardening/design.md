@@ -101,10 +101,10 @@
 | REQ-052-05 | `backend/test/sessions.e2e-spec.ts › the API key works whatever the person does with their sign-ins` |
 | REQ-052-06 | `backend/test/sessions.e2e-spec.ts › stops the events of a project after a new role takes it away` |
 | REQ-052-07 | `frontend/integration_tests/test/login.spec.ts › does not sign in from a link the browser did not start`; `backend/src/users/users.controller.spec.ts › hands the nonce of the sign-in back with the token` |
-| REQ-052-08 | `backend/src/security.spec.ts › answers with a content security policy`; `scripts/tests/test_api_hardening.py › test_ui_has_the_content_security_policy` |
+| REQ-052-08 | `backend/src/security.spec.ts › answers with a content security policy`; `frontend/integration_tests/test/contentSecurityPolicy.spec.ts › answers with a content security policy for Vision's own scripts and API`; `scripts/tests/test_api_hardening.py › test_ui_has_the_content_security_policy` |
 | REQ-052-09 | `backend/src/security.spec.ts › asks for https only on a request that came over https` |
 | REQ-052-10 | `backend/src/security.spec.ts › sends no HSTS over http`; `scripts/tests/test_api_hardening.py › test_ui_sends_hsts_only_over_https` |
-| REQ-052-11 | `frontend/integration_tests/fixtures/index.ts › fails a test on any content security policy violation` (увесь набір Playwright) |
+| REQ-052-11 | `frontend/integration_tests/test/contentSecurityPolicy.spec.ts › runs no script put into the page from elsewhere`; `manual: увесь набір Playwright іде під тією самою політикою — фікстура page у frontend/integration_tests/fixtures/index.ts валить тест на кожному заблокованому ресурсі` |
 | REQ-052-12 | `backend/src/users/oidc/oidcusers.service.spec.ts › keeps the role an admin gave when SSO names no admin group` |
 | REQ-052-13 | `manual: знято рішенням власника — OIDC_ADMIN_VALUES типово vision-admin,admin, як і було` |
 | REQ-052-14 | `backend/test/sessions.e2e-spec.ts › keeps working as before for people who stay signed in`; `backend/test/sessions.e2e-spec.ts › takes a token issued before the update until the person signs out` |

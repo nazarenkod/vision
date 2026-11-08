@@ -1,4 +1,4 @@
-import { test as base } from "@playwright/test";
+import { expect, test as base } from "@playwright/test";
 import { LoginPage, ProfilePage, ProjectListPage, ProjectPage } from "pages";
 import { TestVariationDetailsPage } from "pages/TestVariationDetailsPage";
 import { TestVariationListPage } from "pages/TestVariationListPage";
@@ -45,6 +45,20 @@ export const AUTH_USER = {
 };
 
 export const test = base.extend<Fixtures & Options>({
+  // Every test runs under the content security policy nginx sends (052): the preview server takes
+  // it from nginx/csp.template, and a resource the policy blocks fails the test that met it.
+  page: async ({ page }, use) => {
+    const violations: string[] = [];
+    page.on("console", (message) => {
+      if (/Content Security Policy/i.test(message.text())) {
+        violations.push(message.text());
+      }
+    });
+    await use(page);
+    expect(violations, "resources the content security policy blocked").toEqual(
+      [],
+    );
+  },
   userRole: ["admin", { option: true }],
   userJiraToken: [false, { option: true }],
   loginPage: async ({ page }, use) => {

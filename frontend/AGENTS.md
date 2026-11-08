@@ -59,6 +59,12 @@ npx playwright test <spec> --ignore-snapshots   # функціональні т�
 
 ## Пастки
 
+- **CSP** (052): політика — у `nginx/csp.template`, `env.sh` підставляє адресу API при старті
+  контейнера, `vite preview` бере той самий шаблон. Будь-який тест Playwright падає на ресурсі, який
+  політика заблокувала. Вбудованих `<script>` в `index.html` не буває: скрипт — окремим файлом у
+  `public/`. Новий зовнішній ресурс — спершу в шаблон.
+- **Вхід через SSO** приймає токен з `#token=` лише разом зі значенням `nonce`, яке ця вкладка
+  поклала в `sessionStorage` перед переходом до провайдера (`usersService.startOidcLogin`).
 - Вкладка збірки й черга живуть в адресі (`tab`, `status`, `queue`; `testId` — останній). Хто
   відкриває прогін з вкладки, передає її в `buildTestRunLocation(…, { tab })`, інакше Esc
   поверне на Overview. Фікстура `openProjectPage` типово відкриває збірку на All tests.

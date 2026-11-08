@@ -1,5 +1,15 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
+import { readFileSync } from "fs";
+
+// The content security policy nginx sends (052), from the same template, for the API the tests
+// mock: Playwright runs the whole interface under it.
+const apiUrl = process.env.REACT_APP_API_URL ?? "http://localhost:4200";
+const apiOrigin = new URL(apiUrl).origin;
+const contentSecurityPolicy = readFileSync("nginx/csp.template", "utf8")
+  .trim()
+  .replaceAll("${API_ORIGIN}", apiOrigin)
+  .replaceAll("${API_WS_ORIGIN}", apiOrigin.replace(/^http/, "ws"));
 
 // https://vitejs.dev/config/
 export default defineConfig({
@@ -9,6 +19,9 @@ export default defineConfig({
       // Allow using "npm link" for packages when developing, that are in different base path
       strict: false,
     },
+  },
+  preview: {
+    headers: { "Content-Security-Policy": contentSecurityPolicy },
   },
   optimizeDeps: {
     // Dependencies to pre-bundle

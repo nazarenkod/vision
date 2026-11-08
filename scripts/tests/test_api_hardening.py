@@ -5,8 +5,12 @@
 The API in docker-compose.demo.yml gets every LDAP and SSO setting the API reads, and the
 interface's nginx sends the same security headers as the API.
 """
+import os
 import pathlib
 import re
+import shutil
+import subprocess
+import tempfile
 import unittest
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
@@ -34,6 +38,46 @@ class ApiHardeningTest(unittest.TestCase):
         for name, value in headers.items():
             self.assertRegex(nginx, rf'add_header {re.escape(name)} "{re.escape(value)}" always;')
         self.assertIn("server_tokens off;", nginx)
+
+    # 052: the policy is written at the container's start with the API's address, from one template
+    def start_interface(self, api_url):
+        with tempfile.TemporaryDirectory() as folder:
+            work = pathlib.Path(folder)
+            shutil.copy(ROOT / "frontend" / "env.sh", work / "env.sh")
+            shutil.copy(ROOT / "frontend" / "env.defaults", work / "env.defaults")
+            shutil.copy(ROOT / "frontend" / "nginx" / "csp.template", work / "csp.template")
+            env = {"PATH": os.environ.get("PATH", ""), "REACT_APP_API_URL": api_url,
+                   "VISION_CSP_FILE": str(work / "csp.conf")}
+            subprocess.run(["sh", "./env.sh"], cwd=work, env=env, check=True)
+            return (work / "csp.conf").read_text(encoding="utf-8"), (work / "env-config.js").read_text(encoding="utf-8")
+
+    def test_ui_has_the_content_security_policy(self):
+        nginx = (ROOT / "frontend" / "nginx" / "default.conf").read_text(encoding="utf-8")
+        self.assertIn("include /tmp/vision-csp.conf;", nginx)
+        header, config = self.start_interface("https://vision-api.bank.example:14200/base")
+        self.assertTrue(header.startswith('add_header Content-Security-Policy "default-src \'self\'; script-src \'self\';'))
+        self.assertTrue(header.rstrip().endswith('" always;'))
+        self.assertIn("connect-src 'self' https://vision-api.bank.example:14200 wss://vision-api.bank.example:14200;", header)
+        self.assertIn("img-src 'self' data: blob: https://vision-api.bank.example:14200;", header)
+        self.assertIn("frame-ancestors 'none'", header)
+        self.assertNotIn("${", header)
+        # the interface's own settings are written as before
+        self.assertIn('REACT_APP_API_URL: "https://vision-api.bank.example:14200/base"', config)
+        # the default API address, as in env.defaults
+        header, _ = self.start_interface("")
+        self.assertIn("connect-src 'self' http://localhost:4200 ws://localhost:4200;", header)
+        # no inline script left for the policy to block
+        index = (ROOT / "frontend" / "index.html").read_text(encoding="utf-8")
+        self.assertNotRegex(index, r"<script>(?!\s*</script>)")
+        # the image ships the template env.sh fills
+        self.assertIn("COPY nginx/csp.template ./csp.template", (ROOT / "frontend" / "Dockerfile").read_text(encoding="utf-8"))
+
+    def test_ui_sends_hsts_only_over_https(self):
+        nginx = (ROOT / "frontend" / "nginx" / "default.conf").read_text(encoding="utf-8")
+        hsts_map = re.search(r"map \$http_x_forwarded_proto \$vision_hsts \{(.*?)\}", nginx, re.S).group(1)
+        self.assertRegex(hsts_map, r'default "";')
+        self.assertRegex(hsts_map, r'~\^https "max-age=31536000";')
+        self.assertIn("add_header Strict-Transport-Security $vision_hsts always;", nginx)
 
 
 if __name__ == "__main__":

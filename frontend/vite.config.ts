@@ -1,5 +1,26 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
+import { existsSync, readFileSync } from "fs";
+
+// The content security policy nginx sends (052), from the same template, for the API the tests
+// mock: Playwright runs the whole interface under it.
+const apiUrl = process.env.REACT_APP_API_URL ?? "http://localhost:4200";
+// an address on the interface's own host has no origin of its own: 'self' covers it
+const apiOrigin = (() => {
+  try {
+    return new URL(apiUrl).origin;
+  } catch {
+    return "";
+  }
+})();
+// Only the preview server sends it: the image's build stage has no nginx/ and needs none.
+const CSP_TEMPLATE = "nginx/csp.template";
+const contentSecurityPolicy = existsSync(CSP_TEMPLATE)
+  ? readFileSync(CSP_TEMPLATE, "utf8")
+      .trim()
+      .replaceAll("${API_ORIGIN}", apiOrigin)
+      .replaceAll("${API_WS_ORIGIN}", apiOrigin.replace(/^http/, "ws"))
+  : undefined;
 
 // https://vitejs.dev/config/
 export default defineConfig({
@@ -10,6 +31,9 @@ export default defineConfig({
       strict: false,
     },
   },
+  preview: contentSecurityPolicy
+    ? { headers: { "Content-Security-Policy": contentSecurityPolicy } }
+    : {},
   optimizeDeps: {
     // Dependencies to pre-bundle
   },

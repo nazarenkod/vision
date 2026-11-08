@@ -186,8 +186,26 @@ function setPassword(id: string, password: string): Promise<boolean> {
   ).then(handleResponse);
 }
 
+// The server ends this sign-in, so the token opens nothing even if someone copied it (052).
+// Sent and not waited for: signing out never hangs on the network, and the token is forgotten here
+// whatever the server answers.
 function logout() {
+  const token = (() => {
+    try {
+      return JSON.parse(localStorage.getItem("user") ?? "{}")?.token as
+        string | undefined;
+    } catch {
+      return undefined;
+    }
+  })();
   localStorage.removeItem("user");
+  if (token) {
+    fetch(`${API_URL}${ENDPOINT_URL}/logout`, {
+      method: "POST",
+      headers: { Authorization: "Bearer " + token },
+      keepalive: true,
+    }).catch(() => undefined);
+  }
 }
 
 let oidcEnabledPromise: Promise<boolean> | undefined;
@@ -219,9 +237,31 @@ function isOidcLoggedOut(): boolean {
   return sessionStorage.getItem(OIDC_LOGGED_OUT_KEY) === "true";
 }
 
+// The value that ties a sign-in through SSO to this tab (052): a token comes back with it, and a
+// link with a token someone else made does not have the value this tab keeps.
+const OIDC_NONCE_KEY = "oidcNonce";
+
+function newOidcNonce(): string {
+  const bytes = new Uint8Array(24);
+  crypto.getRandomValues(bytes);
+  return btoa(String.fromCharCode(...bytes))
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_")
+    .replace(/=+$/, "");
+}
+
 function startOidcLogin() {
   sessionStorage.removeItem(OIDC_LOGGED_OUT_KEY);
-  window.location.href = getOidcLoginUrl();
+  const nonce = newOidcNonce();
+  sessionStorage.setItem(OIDC_NONCE_KEY, nonce);
+  window.location.href = `${getOidcLoginUrl()}?nonce=${encodeURIComponent(nonce)}`;
+}
+
+/** Whether a token came back to the tab that started its sign-in; the value is used once. */
+function takesOidcToken(nonce: string | null): boolean {
+  const expected = sessionStorage.getItem(OIDC_NONCE_KEY);
+  sessionStorage.removeItem(OIDC_NONCE_KEY);
+  return !!nonce && !!expected && nonce === expected;
 }
 
 function getMe(token: string): Promise<User> {
@@ -310,6 +350,7 @@ export const usersService = {
   markOidcLoggedOut,
   isOidcLoggedOut,
   startOidcLogin,
+  takesOidcToken,
   getMe,
   completeOidcLogin,
 };

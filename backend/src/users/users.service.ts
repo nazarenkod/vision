@@ -16,6 +16,7 @@ import { DbUsersService } from './db/dbusers.service';
 import { accountEmail, passwordProblem } from './account';
 import { LdapUsersService } from './ldap/ldapusers.service';
 import { SignInLimit } from './sign-in-limit';
+import { EventsGateway } from '../shared/events/events.gateway';
 
 @Injectable()
 export class UsersService {
@@ -28,7 +29,8 @@ export class UsersService {
   constructor(
     private readonly usersFactoryService: UsersFactoryService,
     private prismaService: PrismaService,
-    private authService: AuthService
+    private authService: AuthService,
+    private eventsGateway: EventsGateway
   ) {
     this.usersService = this.usersFactoryService.getUsersService();
     this.localUsers =
@@ -74,14 +76,32 @@ export class UsersService {
     return this.usersService.update(id, userDto);
   }
 
-  async changePassword(user: User, newPassword: string): Promise<boolean> {
+  /**
+   * A new password ends every other sign-in of the person (REQ-052-02): whoever has an old token
+   * of theirs is out. The sign-in that changed it, `sessionId`, stays.
+   */
+  async changePassword(user: User, newPassword: string, sessionId?: string): Promise<boolean> {
     const problem = passwordProblem(newPassword);
     if (problem) throw new HttpException(problem, HttpStatus.BAD_REQUEST);
     // a local account beside LDAP changes its own password; the directory's people change theirs there
-    if (this.usersService instanceof LdapUsersService && !(await this.usersService.isInDirectory(user.email))) {
-      return this.localUsers.changePassword(user, newPassword);
+    const ldap = this.usersService instanceof LdapUsersService;
+    const local = ldap && !(await (this.usersService as LdapUsersService).isInDirectory(user.email));
+    const changed = local
+      ? await this.localUsers.changePassword(user, newPassword)
+      : await this.usersService.changePassword(user, newPassword);
+    // the directory's people change their password in the directory: here nothing changed, so
+    // their other sign-ins stay (LDAP answers true and stores nothing)
+    if (changed && (!ldap || local)) {
+      await this.authService.endSessions(user.id, sessionId);
+      await this.eventsGateway.endSessions(user.id, { keep: sessionId });
     }
-    return this.usersService.changePassword(user, newPassword);
+    return changed;
+  }
+
+  /** Signing out ends this sign-in only (REQ-052-01): its token and its events socket. */
+  async logout(user: User, sessionId: string | undefined): Promise<void> {
+    await this.authService.endSession(user.id, sessionId);
+    await this.eventsGateway.endSessions(user.id, { only: sessionId ?? null });
   }
 
   // After a restore nobody but the master user has a password (backups carry none), so an
@@ -94,6 +114,9 @@ export class UsersService {
       data: { password: await this.authService.encryptPassword(password) },
       select: { id: true },
     });
+    // a password an admin gave ends every sign-in of the person (REQ-052-03)
+    await this.authService.endSessions(id);
+    await this.eventsGateway.endSessions(id);
     return true;
   }
 
@@ -157,11 +180,17 @@ export class UsersService {
   ): Promise<UserLoginResponseDto> {
     const result = await this.oidcUsersService.handleCallback(params, checks);
     await this.recordSignIn(result.id);
+    // the sign-in may have changed the role: open sockets follow only what it still reaches (052)
+    await this.eventsGateway.recheckAccess(result.id);
     return result;
   }
 
-  oidcBuildFrontendRedirect(token?: string, error?: string): string {
-    return this.oidcUsersService.buildFrontendRedirect(token, error);
+  oidcBuildStartPage(): string {
+    return this.oidcUsersService.buildStartPage();
+  }
+
+  oidcBuildFrontendRedirect(token?: string, error?: string, nonce?: string | null): string {
+    return this.oidcUsersService.buildFrontendRedirect(token, error, nonce);
   }
 
   private get oidcUsersService(): OidcUsersService {
@@ -177,7 +206,10 @@ export class UsersService {
 
   async delete(id: string): Promise<User> {
     this.logger.debug(`Removing User: ${id}`);
-    return this.prismaService.user.delete({ where: { id } });
+    const deleted = await this.prismaService.user.delete({ where: { id } });
+    // the sessions go with the account; its sockets close now, not when their tokens expire (REQ-052-04)
+    await this.eventsGateway.endSessions(id);
+    return deleted;
   }
 
   async get(id: string): Promise<UserDto> {
@@ -193,6 +225,8 @@ export class UsersService {
       where: { id },
       data: { role },
     });
+    // a project the new role does not reach sends the person no more events (REQ-052-06)
+    await this.eventsGateway.recheckAccess(id);
     return new UserDto(user);
   }
 

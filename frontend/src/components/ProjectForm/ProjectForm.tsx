@@ -407,6 +407,8 @@ interface JiraLists {
   issueTypes: Array<{ name: string; subtask: boolean }> | null;
   linkTypes: string[] | null;
   problem?: JiraTypesProblem;
+  // where Jira redirected to, when the problem is "redirected" (051)
+  location?: string;
 }
 
 const NO_LISTS: JiraLists = { issueTypes: null, linkTypes: null };
@@ -428,7 +430,11 @@ function useJiraTypes(projectId: string | undefined, savedUrl?: string | null) {
         .then((answer) =>
           setLists(
             "problem" in answer
-              ? { ...NO_LISTS, problem: answer.problem }
+              ? {
+                  ...NO_LISTS,
+                  problem: answer.problem,
+                  location: answer.location,
+                }
               : answer,
           ),
         )
@@ -502,6 +508,15 @@ export const JiraSettings: React.FunctionComponent<{ bare?: boolean }> = ({
           <Link component={RouterLink} to={routes.PROFILE_PAGE}>
             {t("jira.openProfile")}
           </Link>
+        </Typography>
+      )}
+      {lists.problem === "redirected" && (
+        <Typography
+          variant="body2"
+          color="textSecondary"
+          data-testid="jiraTypesRedirected"
+        >
+          {t("jira.redirected", { location: lists.location ?? "" })}
         </Typography>
       )}
       {lists.problem === "failed" && (

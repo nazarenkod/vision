@@ -219,3 +219,41 @@ describe('anti-aliasing setting', () => {
     expect(mismatches(false)).toBeGreaterThan(0);
   });
 });
+
+describe('comparing screenshots of different sizes (VIS-SEC-045)', () => {
+  const plain = (width: number, height: number, shade = 0) => {
+    const image = new PNG({ width, height, fill: true });
+    image.data.fill(shade);
+    return Buffer.from(PNG.sync.write(image));
+  };
+  const compare = (baseline: Buffer, image: Buffer) =>
+    computePixelmatchDiff({
+      kind: 'diff',
+      baseline,
+      image,
+      ignoreAreas: [],
+      threshold: 0.1,
+      includeAA: false,
+      allowDiffDimensions: true,
+      diffTolerancePercent: 0,
+      saveDiff: false,
+    });
+  const limit = process.env.VISION_MAX_SCREENSHOT_PIXELS;
+  beforeEach(() => (process.env.VISION_MAX_SCREENSHOT_PIXELS = '1000'));
+  afterEach(() => {
+    if (limit === undefined) delete process.env.VISION_MAX_SCREENSHOT_PIXELS;
+    else process.env.VISION_MAX_SCREENSHOT_PIXELS = limit;
+  });
+
+  // a row and a column within the limit each made a canvas of their two lengths multiplied
+  it('does not build a canvas far larger than any screenshot Vision takes', () => {
+    expect(() => compare(plain(1000, 1), plain(1, 1000, 255))).toThrow('too large to compare');
+  });
+
+  it('still compares a portrait and a landscape screenshot of the same size', () => {
+    expect(compare(plain(40, 25), plain(25, 40, 255))).toMatchObject({
+      equal: false,
+      pixelMisMatchCount: expect.any(Number),
+    });
+  });
+});

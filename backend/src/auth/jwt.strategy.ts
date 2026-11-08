@@ -3,13 +3,13 @@ import { PassportStrategy } from '@nestjs/passport';
 import { Injectable, HttpException, HttpStatus } from '@nestjs/common';
 import { JwtPayload } from './jwt-payload.model';
 import { ConfigService } from '@nestjs/config';
-import { PrismaService } from '../prisma/prisma.service';
+import { AuthService } from './auth.service';
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
   constructor(
     configService: ConfigService,
-    private prismaService: PrismaService
+    private authService: AuthService
   ) {
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
@@ -18,15 +18,12 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     });
   }
 
-  async validate(payload: JwtPayload, done: VerifiedCallback) {
-    const user = await this.prismaService.user.findUnique({
-      where: { email: payload.email },
-    });
-
-    if (!user) {
+  // a signed-out sign-in, an ended session or a gone account opens nothing (052)
+  async validate(payload: JwtPayload & { iat?: number }, done: VerifiedCallback) {
+    const found = await this.authService.userForToken(payload);
+    if ('problem' in found) {
       return done(new HttpException({}, HttpStatus.UNAUTHORIZED), false);
     }
-
-    return done(null, user, payload.expire);
+    return done(null, found.user, payload.expire);
   }
 }

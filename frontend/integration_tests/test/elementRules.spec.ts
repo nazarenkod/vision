@@ -519,3 +519,36 @@ test("widens the side panel by its edge and remembers the width", async ({
   await page.getByTestId("panelResize").dblclick();
   await expect.poll(width).toBe(420);
 });
+
+// a rule saved before Vision stopped running back-references and look-around finds nothing,
+// and its row says why (051, REQ-051-12)
+test("says why a rule with a pattern Vision no longer runs finds nothing", async ({
+  openProjectPage,
+  page,
+}) => {
+  await withStructure(page, {
+    ...structure,
+    rules: [
+      ...structure.rules,
+      {
+        id: "old",
+        selector: "text:/(Pay)\\1/",
+        action: "ignore",
+        scope: "screen",
+        matches: 0,
+        problem: "pattern",
+      },
+    ],
+  });
+  await openProjectPage(project.id, build.id, testRun.id);
+  await unfoldPanel(page);
+  if (await page.getByTestId("outsideToggle").isVisible()) {
+    await page.getByTestId("outsideToggle").click();
+  }
+  await expect(rule(page, "text:/(Pay)\\1/")).toContainText(
+    "back-reference, look-around or another part Vision does not run",
+  );
+  // the other rules read as before
+  await expect(rule(page, "id:clock")).toContainText("nothing found");
+  await expect(rule(page, "id:balance")).toContainText("±5%");
+});

@@ -7,7 +7,8 @@ What changes, and why:
   - VRT_* settings get their VISION_* names (041); a VISION_* already set wins.
   - VISION_SECRET_KEY is made when there is none (044): it seals Jira tokens and Gemini keys,
     and the API does not start without it. One already set is kept: a new one would make
-    everyone enter their tokens again.
+    everyone enter their tokens again. One the API refuses (an example, under 32 characters, 051)
+    is replaced: the API would not start with it.
   - VISION_JIRA_HOSTS from --jira-hosts (044): without hosts Vision calls no Jira.
   - JWT_SECRET is new: everyone signs in again, sessions of the old version open nothing.
   - POSTGRES_DB keeps the database the old version used (vrt_demo) when it was never set:
@@ -28,6 +29,16 @@ ROOT = pathlib.Path(__file__).resolve().parent.parent
 OLD_POSTGRES_DB = "vrt_demo"
 SECRET = re.compile(r"SECRET|PASSWORD|TOKEN|_KEY$", re.I)
 PLACEHOLDER = {"", "change-me", "changeme"}
+# the API does not start with a shorter one (051, backend/src/shared/server-secrets.ts)
+MIN_SECRET_LENGTH = 32
+
+
+def refused_key(value):
+    # compose reads KEY="value" without the quotes, and so does the API
+    value = value.strip()
+    if len(value) >= 2 and value[0] == value[-1] and value[0] in "\"'":
+        value = value[1:-1].strip()
+    return value.lower() in PLACEHOLDER or value.lower().startswith("change-me") or len(value) < MIN_SECRET_LENGTH
 LINE = re.compile(r"^(?P<key>[A-Za-z_][A-Za-z0-9_]*)=(?P<value>.*)$")
 
 
@@ -68,7 +79,7 @@ def convert(text, jira_hosts=None, make_secret=new_secret):
             out.append(f"{key}={fresh}")
             changes.append((key, value, fresh, "new: everyone signs in again"))
             continue
-        if key == "VISION_SECRET_KEY" and value.strip() in PLACEHOLDER:
+        if key == "VISION_SECRET_KEY" and refused_key(value):
             fresh = make_secret()
             out.append(f"{key}={fresh}")
             changes.append((key, value, fresh, "made: seals Jira tokens and Gemini keys; keep it"))

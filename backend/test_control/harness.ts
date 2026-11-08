@@ -154,7 +154,9 @@ export class FakeJira {
     });
     // the API in a container reaches the host as host.docker.internal: then all interfaces
     const host = process.env.CONTROL_JIRA_HOST || '127.0.0.1';
-    await new Promise<void>((resolve) => this.server!.listen(0, host === '127.0.0.1' ? host : '0.0.0.0', resolve));
+    // on the port the script allowed in VISION_JIRA_HOSTS: a host name alone means https on 443 (051)
+    const port = Number(process.env.CONTROL_JIRA_PORT) || 0;
+    await new Promise<void>((resolve) => this.server!.listen(port, host === '127.0.0.1' ? host : '0.0.0.0', resolve));
     this.url = `http://${host}:${(this.server!.address() as AddressInfo).port}`;
   }
 

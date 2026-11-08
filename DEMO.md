@@ -36,7 +36,7 @@ The demo has its own ports, Postgres and image folder and works on a **copy** of
 cp .env.demo.example .env.demo
 ```
 
-In `.env.demo`, set `JWT_SECRET`, the demo URLs, and where production lives: `PROD_PG_CONTAINER` (or `PROD_DATABASE_URL`) and `PROD_IMAGES_DIR`. Then:
+In `.env.demo`, set `JWT_SECRET` and `VISION_SECRET_KEY` to two different values from `openssl rand -base64 32` (the API does not start with the examples or shorter ones), the demo URLs, and where production lives: `PROD_PG_CONTAINER` (or `PROD_DATABASE_URL`) and `PROD_IMAGES_DIR`. Then:
 
 ```bash
 ./scripts/demo-clone-from-prod.sh

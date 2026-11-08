@@ -23,7 +23,7 @@ import { wipeSharedJiraCredentials } from './shared-jira-credentials';
 import { sealSecret } from '../shared/secret-box';
 import { allowedJiraHosts, JIRA_HOSTS_VARIABLE, jiraHostProblem } from '../a11y/jira-hosts';
 import { settingsJira } from '../a11y/jira-access';
-import { JiraClient } from '../a11y/jira.client';
+import { JiraClient, JiraError } from '../a11y/jira.client';
 import { jiraTypesFor, JiraTypesResponse } from '../a11y/jira-types';
 
 const blankToNull = (value: string | null | undefined) =>
@@ -149,6 +149,7 @@ export class ProjectsService implements OnModuleInit {
       return jiraTypesFor(issueTypes, linkTypes);
     } catch (error) {
       this.logger.warn(`Jira types for the settings failed: ${error}`);
+      if (error instanceof JiraError && error.location) return { problem: 'redirected', location: error.location };
       return { problem: 'failed' };
     }
   }

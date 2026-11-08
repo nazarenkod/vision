@@ -111,6 +111,7 @@ import { panelStartsFolded } from "../../_helpers/review.helper";
 import { canCompareToBaseline } from "../../_helpers/testRunStatus.helper";
 import TestStatusChip from "../TestStatusChip";
 import { useT } from "../../i18n";
+import { ignoreAreasOverLimit, MAX_IGNORE_AREAS } from "./ignoreAreaLimit";
 
 // the height the selection panel takes at the bottom of the screenshots, with its margin
 const PANEL_ROOM = 190;
@@ -1201,6 +1202,15 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
   };
 
   const saveIgnoreAreasOrCompareArea = () => {
+    // the areas stay drawn: the person removes some and saves again (REQ-051-14)
+    const extra = ignoreAreasOverLimit(ignoreAreas.length);
+    if (areaKind === "ignore" && extra !== null) {
+      enqueueSnackbar(
+        t("review.ignoreLimit", { limit: MAX_IGNORE_AREAS, extra }),
+        { variant: "error" },
+      );
+      return;
+    }
     if (areaKind === "ignore") {
       saveTestRun(ignoreAreas, t("review.ignoreSaved"));
     } else if (currentImage) {
@@ -1270,7 +1280,8 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
             ignoreAreas: [newIgnoreArea],
           };
 
-          testRunService.addIgnoreAreas(data).then(() => {
+          // returned, so a refusal (the limit, 051) reaches the catch below and ends processing
+          return testRunService.addIgnoreAreas(data).then(() => {
             setProcessing(false);
             setSelectedRectId(undefined);
             enqueueSnackbar(t("review.ignoreAppliedAll"), {

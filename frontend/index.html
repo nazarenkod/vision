@@ -6,15 +6,20 @@
     <link rel="alternate icon" href="/favicon.png" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="theme-color" content="#F5F7F6" media="(prefers-color-scheme: light)" />
-    <meta name="theme-color" content="#0F1211" media="(prefers-color-scheme: dark)" />
+    <meta
+      name="theme-color"
+      content="#F5F7F6"
+      media="(prefers-color-scheme: light)"
+    />
+    <meta
+      name="theme-color"
+      content="#0F1211"
+      media="(prefers-color-scheme: dark)"
+    />
 
     <title>Vision</title>
 
-    <script>
-      // Polyfill for libraries (e.g. react-joyride) that expect the Node.js global object.
-      window.global = window;
-    </script>
+    <script src="/global-polyfill.js"></script>
     <script src="/env-config.js"></script>
   </head>
   <body>

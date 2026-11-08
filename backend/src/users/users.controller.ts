@@ -10,7 +10,9 @@ import {
   Req,
   Res,
   HttpStatus,
+  HttpCode,
   Param,
+  Query,
 } from '@nestjs/common';
 import { Request, Response } from 'express';
 import { UsersService } from './users.service';
@@ -32,6 +34,8 @@ import { AssignRoleDto } from './dto/assign-role.dto';
 import { Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { NoProjectData } from '../projects/project-access';
+import { AuthService } from '../auth/auth.service';
+import { browserNonce, readStateCookie, stateCookieValue } from './oidc/oidc-browser';
 
 const OIDC_STATE_COOKIE = 'oidc_state';
 
@@ -57,7 +61,8 @@ export class UsersController {
   constructor(
     private usersService: UsersService,
     private prismaService: PrismaService,
-    private configService: ConfigService
+    private configService: ConfigService,
+    private authService: AuthService
   ) {}
 
   // There is no self sign-up (035): accounts come from an admin, or from the
@@ -95,9 +100,18 @@ export class UsersController {
 
   @NoProjectData()
   @Get('oidc/login')
-  async oidcLogin(@Res() res: Response): Promise<void> {
+  async oidcLogin(@Res() res: Response, @Query('nonce') nonce?: string): Promise<void> {
     if (!this.usersService.isOidcEnabled()) {
       res.status(HttpStatus.NOT_FOUND).send('OIDC is not enabled.');
+      return;
+    }
+
+    // Started outside Vision's page (a tile of the identity provider, a bookmark): no tab holds a
+    // value for it. The page starts it again with one, so the token comes back to a tab that
+    // takes it (REQ-052-07) and such links keep working.
+    const tab = browserNonce(nonce);
+    if (!tab) {
+      res.redirect(this.usersService.oidcBuildStartPage());
       return;
     }
 
@@ -112,7 +126,8 @@ export class UsersController {
       return;
     }
     const { url, state, codeVerifier } = authorization;
-    res.cookie(OIDC_STATE_COOKIE, `${state}.${codeVerifier}`, {
+    // the tab's value rides in the cookie and comes back with the token (REQ-052-07)
+    res.cookie(OIDC_STATE_COOKIE, stateCookieValue({ state, codeVerifier, nonce: tab }), {
       httpOnly: true,
       sameSite: 'lax',
       secure: this.configService.get<string>('OIDC_REDIRECT_URI', '').startsWith('https'),
@@ -133,10 +148,11 @@ export class UsersController {
     let target = this.usersService.oidcBuildFrontendRedirect(undefined, 'oidc_login_failed');
     try {
       // Inside the try: decodeURIComponent throws on a malformed cookie value.
-      const [state, codeVerifier] = (readCookie(req, OIDC_STATE_COOKIE) ?? '').split('.');
-      if (!state || !codeVerifier) {
+      const started = readStateCookie(readCookie(req, OIDC_STATE_COOKIE));
+      if (!started) {
         throw new Error('Missing or malformed OIDC state cookie.');
       }
+      const { state, codeVerifier } = started;
       // Repeated query keys produce arrays; keep only scalar strings so the
       // callback sees a plain parameter map.
       const params: Record<string, string> = {};
@@ -149,7 +165,7 @@ export class UsersController {
         state,
         codeVerifier,
       });
-      target = this.usersService.oidcBuildFrontendRedirect(token);
+      target = this.usersService.oidcBuildFrontendRedirect(token, undefined, started.nonce);
     } catch (e) {
       this.logger.warn(`OIDC callback failed: ${e?.message ?? e}`);
     } finally {
@@ -181,8 +197,27 @@ export class UsersController {
   @ApiOkResponse({ type: Boolean })
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
-  changePassword(@CurrentUser() user: User, @Body('password') password: string): Promise<boolean> {
-    return this.usersService.changePassword(user, password);
+  changePassword(
+    @CurrentUser() user: User,
+    @Body('password') password: string,
+    @Req() request: Request
+  ): Promise<boolean> {
+    // this browser stays signed in; every other sign-in of the person ends (REQ-052-02)
+    return this.usersService.changePassword(
+      user,
+      password,
+      this.authService.sessionIdOf(request.headers.authorization)
+    );
+  }
+
+  @NoProjectData()
+  @Post('logout')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  // the token of this sign-in opens nothing after this, in every API process (REQ-052-01)
+  logout(@CurrentUser() user: User, @Req() request: Request): Promise<void> {
+    return this.usersService.logout(user, this.authService.sessionIdOf(request.headers.authorization));
   }
 
   @NoProjectData()

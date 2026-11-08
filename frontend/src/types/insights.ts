@@ -285,6 +285,8 @@ export type ScreenRule = ElementRule & {
   found?: { current: Rect[]; baseline: Rect[] };
   // a variable-text rule: how its texts fared (spec 033)
   check?: VariableCheck;
+  // saved with a pattern Vision no longer runs: it finds nothing (051)
+  problem?: "pattern";
 };
 
 export interface ComparedElement {
@@ -407,7 +409,9 @@ export type SelectorProblem =
   | "axis"
   | "function"
   | "or"
-  | "mixed";
+  | "mixed"
+  // a text pattern with a back-reference or look-around: Vision does not run those (051)
+  | "pattern";
 
 export interface SelectorMatches {
   current: number;

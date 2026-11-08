@@ -1,0 +1,213 @@
+{
+ "area": "D — зовнішні виклики, LLM/VLM, секрети, інфраструктура, скрипти, CI, supply chain, ліцензії",
+ "regression": [
+  {
+   "id": "VIS-SEC-002",
+   "status": "deferred",
+   "evidence": "backend/src/main.ts:29-35 — перевіряється лише наявність VISION_SECRET_KEY (serverSecretKey, backend/src/shared/secret-box.ts:13-15,43-52: будь-який непорожній рядок → SHA-256); JWT_SECRET так само. .env.demo.example:16,19 `JWT_SECRET=change-me`, `VISION_SECRET_KEY=change-me`; backend/.env.example:2,5; DEPLOY.md:108 досі радить `JWT_SECRET` «можна той же, что у прода». Змін з 7b13af1 немає.",
+   "bypass_or_gap": "Відкладено рішенням власника; без змін: слабкі/відомі секрети приймаються, порада взяти секрет проду в DEPLOY.md лишилась. Слабкий VISION_SECRET_KEY також робить розшифровуваним sealed apiKey Gemini у Project.imageComparisonConfig, що йде в бекап (VIS-SEC-013).",
+   "severity_now": "High"
+  },
+  {
+   "id": "VIS-SEC-003",
+   "status": "accepted_risk",
+   "evidence": "Що йде в Gemini: три повні PNG — еталон і новий знімок (з замальованими ignore-областями) та diff (backend/src/compare/libs/vlm/vlm.service.ts:76-90), промпт із налаштувань проєкту і модель (gemini.service.ts:42-52), ключ — з Project.imageComparisonConfig, розшифровується лише тут (vlm.service.ts:51-54). Коли: лише якщо project.imageComparison=vlm І config.provider='gemini' І pixelmatch дав не ok/new (vlm.service.ts:66-72). Точки виклику: прийом POST /test-runs → calculateDiff (test-runs.service.ts:343-357); автоапрув за новими еталонами — по одному getDiff на кожен approved run гілки (test-runs.service.ts:798-822, 837); перепорівняння після зміни правила/ignore-областей (test-runs.service.ts:661-678, до MAX_RECOMPARE_AFTER_RULE). Вимикач: немає ні на інстанс (жодної змінної; compare.service.ts:45-64 повертає VlmService без перевірок; AI_PROVIDER читає лише ai.service.ts:53-58), ні окремого на проєкт, крім зміни рушія editor-ом. Правило 6 поза VLM: AiFeaturesService/AiService викликаються лише з ai.controller.ts:96-119 (на вимогу); у test-runs/, ui-tree/, a11y/ викликів AI немає (grep AiService|GeminiService|OllamaService).",
+   "bypass_or_gap": "Прийнятий ризик (контракт з Gemini). Лишається: (1) немає вимикача рівня інстансу на випадок відкликання погодження; (2) немає денного ліміту/обліку VLM-викликів (AI_DAILY_CALL_LIMIT стосується лише AiService), а автоапрув і перепорівняння множать виклики на один знімок; (3) вердикт моделі сам ставить ok і може запустити автоапрув (NEW-D-1).",
+   "severity_now": "High"
+  },
+  {
+   "id": "VIS-SEC-008",
+   "status": "not_fixed",
+   "evidence": "backend/src/a11y/jira-hosts.ts:80-87 — досі лише `new URL(url).hostname`; backend/src/a11y/jira.client.ts:101-105 — fetch без `redirect`, схема/порт не перевіряються. Змін у jira-hosts.ts немає з 7b13af1.",
+   "bypass_or_gap": "Нова поверхня з #23–#31: GET /projects/:id/jira/types?url=… (projects.controller.ts:63-73 → jira-access.ts:52-65) бере НЕЗБЕРЕЖЕНУ адресу з query і шле на неї особистий токен після тієї ж перевірки лише hostname: проходять http://дозволений-хост:будь-який-порт/будь-який-шлях. Відповідь не віддзеркалюється (лише 'failed'/типи, projects.service.ts:143-154), токен — власний, тож вплив як у 008. `@`-трюк закритий (hostname після @), DNS rebinding — у межах DNS банку. Node fetch прибирає Authorization при міжоріджинному редиректі.",
+   "severity_now": "Medium"
+  },
+  {
+   "id": "VIS-SEC-013",
+   "status": "not_fixed",
+   "evidence": "scripts/lib/vision-backup.sh:14 `VB_SECRET_COLUMNS=\"User.password=!restored User.jiraToken= User.geminiApiKey= Project.jiraToken=\"` — Project.imageComparisonConfig (sealed apiKey Gemini), ReportLink.token, emails, тексти екранів ідуть у бекап; шифрування архіву немає. Змін у scripts/ і backend/src/backups з 7b13af1 немає.",
+   "bypass_or_gap": "Без змін; ADR-0012 не переглянуто для контуру.",
+   "severity_now": "Medium"
+  },
+  {
+   "id": "VIS-SEC-016",
+   "status": "not_fixed",
+   "evidence": "backend/src/ai/ai.service.ts:101-108 — `personalGeminiKey` дає provider 'gemini' незалежно від AI_PROVIDER=none; VLM-рушій взагалі не дивиться на AI_PROVIDER (compare.service.ts:62-64). Змін у backend/src/ai з 7b13af1 немає.",
+   "bypass_or_gap": "Єдиного вимикача зовнішнього AI немає.",
+   "severity_now": "Medium"
+  },
+  {
+   "id": "VIS-SEC-019",
+   "status": "not_fixed",
+   "evidence": "backend/docker-compose.yml:47-58 — `container_name: postgres`, `ports: \"${POSTGRES_PORT}:5432\"` (усі інтерфейси); backend/.env.example:19-21 postgres/postgres; docker-compose.ldap.yml:26-27 `636:636`.",
+   "bypass_or_gap": "Без змін.",
+   "severity_now": "Medium"
+  },
+  {
+   "id": "VIS-SEC-021",
+   "status": "not_fixed",
+   "evidence": ".claude/hooks/guard.py:119-150 — check_segment дивиться лише на tokens[0]; `bash -c 'docker compose …'` (program=bash) і `docker --context x compose` (positional бере 'x' як args[0], guard.py:80-93) не блокуються. Змін з 7b13af1 немає.",
+   "bypass_or_gap": "Без змін; хук — зручність, не контроль.",
+   "severity_now": "Medium"
+  },
+  {
+   "id": "VIS-SEC-024",
+   "status": "not_fixed",
+   "evidence": "backend/src/shared/secret-box.ts:13-15 (KDF = SHA-256 рядка), :21-23 (GCM без AAD); backend/src/projects/project-secrets.ts:96-98 — значення з префіксом enc:v1: від клієнта зберігається як є.",
+   "bypass_or_gap": "Без змін.",
+   "severity_now": "Low"
+  },
+  {
+   "id": "VIS-SEC-025",
+   "status": "not_fixed",
+   "evidence": "backend/prisma/schema.prisma:379-382 — ReportLink.token відкритим текстом; backend/src/backups/drive-auth.ts:28,89 refreshToken, запис файлом 0600 (backups.service.ts:97).",
+   "bypass_or_gap": "Без змін.",
+   "severity_now": "Low"
+  },
+  {
+   "id": "VIS-SEC-027",
+   "status": "not_fixed",
+   "evidence": "backend/src/compare/libs/vlm/vlm.service.ts:135 debug повної відповіді VLM; backend/src/ai/ai.service.ts:144 — 200 символів відповіді моделі; backend/src/http-exception.filter.ts:20-21 — повний request.url (з ?sig= і токенами у шляху) на помилках.",
+   "bypass_or_gap": "Без змін.",
+   "severity_now": "Low"
+  },
+  {
+   "id": "VIS-SEC-028",
+   "status": "not_fixed",
+   "evidence": "frontend/public/cli/vision.py:99-102,212 — urllib.request.urlopen з дефолтним HTTPRedirectHandler, заголовок apiKey не прибирається; https не вимагається. frontend/public без змін з 7b13af1.",
+   "bypass_or_gap": "Без змін.",
+   "severity_now": "Low"
+  },
+  {
+   "id": "VIS-SEC-029",
+   "status": "not_fixed",
+   "evidence": "frontend/package.json:48 `NODE_TLS_REJECT_UNAUTHORIZED=0 npx playwright install --with-deps chromium`.",
+   "bypass_or_gap": "Без змін.",
+   "severity_now": "Low"
+  },
+  {
+   "id": "VIS-SEC-030",
+   "status": "not_fixed",
+   "evidence": ".github/workflows/docs.yml:12-13 `actions/checkout@v4`, `actions/setup-python@v5`; блоку `permissions:` немає.",
+   "bypass_or_gap": "Без змін.",
+   "severity_now": "Low"
+  },
+  {
+   "id": "VIS-SEC-031",
+   "status": "not_fixed",
+   "evidence": "sdk-java/gradle/wrapper/gradle-wrapper.properties — distributionUrl gradle-6.1-all.zip без distributionSha256Sum; sha256 gradle-wrapper.jar = 96f793a18e056c23ffeec67c1f3bb8eccff5a4a407fc9ceac183527e7eedf4b6 (не звірено з офіційною — без мережі).",
+   "bypass_or_gap": "Без змін.",
+   "severity_now": "Low"
+  },
+  {
+   "id": "VIS-SEC-032",
+   "status": "not_fixed",
+   "evidence": "backend/src/compare/libs/vlm/vlm.service.ts:98-102 — `identical:true` від моделі ставить TestStatus.ok; промпт і дані в одному запиті (gemini.service.ts:42). Додатково: test-runs.service.ts:828-850 — ok від VLM у shouldAutoApprove веде до `this.approve(testRun.id, false, true)` (:784 і :821 — два шляхи автоапруву).",
+   "bypass_or_gap": "Вердикт моделі не лише ставить ok, а й автоматично затверджує знімок у гілці (NEW-D-1).",
+   "severity_now": "Low"
+  },
+  {
+   "id": "VIS-SEC-037",
+   "status": "not_fixed",
+   "evidence": "scripts/demo-clone-from-prod.sh:139 `docker run --rm --network host postgres:16-alpine … pg_dump \"$PROD_DATABASE_URL\"` (тег, не digest, --network host, прод-креденшали); scripts/lib/vision-backup.sh:146 `VB_RCLONE_IMAGE=\"rclone/rclone:1.68.2\"` (тег).",
+   "bypass_or_gap": "Без змін (compose-образи postgres/redis уже за digest).",
+   "severity_now": "Low"
+  },
+  {
+   "id": "VIS-SEC-038",
+   "status": "not_fixed",
+   "evidence": "scripts/lib/vision-safety.sh:28-34 — `set -a; . \"$VISION_ENV_FILE\"; set +a`; VISION_ENV_FILE береться з оточення (:15).",
+   "bypass_or_gap": "Без змін.",
+   "severity_now": "Low"
+  },
+  {
+   "id": "VIS-SEC-039",
+   "status": "not_fixed",
+   "evidence": "backend/Dockerfile:31-41, backend/prisma/Dockerfile (COPY . . лише з backend/prisma), frontend/Dockerfile:93-105 — LICENSE/NOTICE не копіюються; sdk-java/build.gradle не додає LICENSE/NOTICE у jar (grep LICENSE|NOTICE|META-INF — 0), у sdk-java/ є LICENSE, але немає NOTICE. NOTICE у корені є й коректний (атрибуція VRT і deepmerge).",
+   "bypass_or_gap": "Без змін; додатково шрифти @fontsource (OFL-1.1) потрапляють у build фронтенду без тексту ліцензії (frontend/src/index.tsx:14-22).",
+   "severity_now": "Info"
+  },
+  {
+   "id": "VIS-SEC-042",
+   "status": "not_fixed",
+   "evidence": "backend/test/image.png, image_edited.png, image_edited_2.png — та сама фотографія упізнаваних людей (переглянуто image.png 360×360).",
+   "bypass_or_gap": "Без змін.",
+   "severity_now": "Low"
+  }
+ ],
+ "findings": [
+  {
+   "id": "NEW-D-1",
+   "previous_id": null,
+   "title": "VLM-вердикт при прийомі запускає автоапрув і множить виклики Gemini без ліміту",
+   "severity": "Low",
+   "cvss": "CVSS:3.1/AV:N/AC:H/PR:L/UI:N/S:U/C:L/I:L/A:N (4.2)",
+   "cwe": "CWE-1039",
+   "owasp": "A04:2021-Insecure Design",
+   "location": [
+    "backend/src/test-runs/test-runs.service.ts:770-850",
+    "backend/src/compare/libs/vlm/vlm.service.ts:57-104",
+    "backend/src/test-runs/test-runs.service.ts:661-678"
+   ],
+   "origin": "code",
+   "component": "backend",
+   "description": "Для проєкту з рушієм vlm tryAutoApproveByNewBaselines при прийомі знімка викликає compareService.getDiff для кожного approved run з тим самим еталоном (цикл до першого збігу); кожен виклик — окремий запит у Gemini з трьома повними PNG і окремий diff-файл (VlmService примусово ставить saveDiffAsFile:true, :58-63, хоча shouldAutoApprove просить false). Якщо модель відповіла identical:true, знімок автоматично затверджується. Перепорівняння після зміни правила також шле в Gemini до MAX_RECOMPARE_AFTER_RULE=200 знімків фоново (:870). Денного ліміту чи обліку VLM-викликів немає (AI_DAILY_CALL_LIMIT — лише для AiService).",
+   "evidence": "test-runs.service.ts:804-818 findMany approved runs → :820-821 (і аналогічно :783-784) `if (await this.shouldAutoApprove(...)) return this.approve(testRun.id, false, true);`; :837 `const diffResult = await this.compareService.getDiff({...saveDiffAsFile: false})`; :848 `if (diffResult.status === TestStatus.ok) return true`; vlm.service.ts:58-63 `saveDiffAsFile: true`, :98-99 `if (pass) result.status = TestStatus.ok`.",
+   "impact": "Обсяг даних банку в Gemini на один знімок більший, ніж очевидно з налаштувань (вплив на умови контракту, VIS-SEC-003). Текст на екрані (prompt injection) або помилка моделі може не лише сховати зміну, а й автоматично затвердити її в гілці без людини. Накопичуються зайві diff-файли.",
+   "recommendation": "Не дозволяти вердикту VLM вести до approve (автоапрув — лише за детермінованим порівнянням); рахувати VLM-виклики в ліміті інстансу; не зберігати diff у shouldAutoApprove. Зміна поведінки — через /spec.",
+   "related": [
+    "VIS-SEC-003",
+    "VIS-SEC-032"
+   ],
+   "effort": "S",
+   "confidence": "Medium"
+  },
+  {
+   "id": "NEW-D-2",
+   "previous_id": null,
+   "title": "Застарілі облікові дані й чужа IP-адреса в документації та тестах",
+   "severity": "Info",
+   "cvss": "CVSS:3.1/AV:N/AC:H/PR:N/UI:R/S:U/C:N/I:N/A:N (0.0)",
+   "cwe": "CWE-1188",
+   "owasp": "A05:2021-Security Misconfiguration",
+   "location": [
+    "DEPLOY.md:640-642",
+    "sdk-java/README.md:89",
+    "sdk-java/src/test/resources/vision_config_example.json:2",
+    "sdk-java/src/test/java/ua/vision/sdk/VisionConfigTest.java:52"
+   ],
+   "origin": "process",
+   "component": "infra",
+   "description": "DEPLOY.md радить входити `visual-regression-tracker@example.com / 123456`, хоча seed/compose вже створюють admin@vision.local (docker-compose.demo.yml:131-132) — розбіжність підштовхує лишати дефолтний пароль і несе стару назву бренду. У SDK (README і тести) — публічна IP 162.243.161.172 з upstream як приклад apiUrl.",
+   "evidence": "DEPLOY.md:642 «если не заданы — `visual-regression-tracker@example.com` / `123456`»; sdk-java/README.md:89 `\"apiUrl\": \"[http://162.243.161.172:4200](http://localhost:4200)\"`.",
+   "impact": "Плутанина при відновленні, пароль 123456 як «нормальний» крок; копіювання прикладу з чужою IP шле знімки на сторонній хост.",
+   "recommendation": "Виправити DEPLOY.md (admin@vision.local, вимога змінити пароль); замінити IP на localhost/example у README і тестах SDK.",
+   "related": [
+    "VIS-SEC-010"
+   ],
+   "effort": "S",
+   "confidence": "High"
+  }
+ ],
+ "needs_verification": [
+  "@google/genai 1.52.0 і protobufjs 7.6.5 у backend/package-lock.json мають hasInstallScript=true (PROD); node_modules відсутні — вміст install-скриптів не перевірено. @scarf/scarf (телеметрія) нейтралізовано SCARF_ANALYTICS=false лише в backend/Dockerfile:10, не в локальному npm ci / session-start.sh.",
+  "Офіційна контрольна сума gradle-wrapper.jar для Gradle 6.1 не звірена (немає мережі), як і в попередньому аудиті.",
+  "Чи Node 24 (undici) прибирає Authorization при редиректі з http://дозволений-хост на https://той-самий-хост (same-host, інша схема = інший origin) — за специфікацією fetch так, на стенді не перевірено."
+ ],
+ "checked_areas": [
+  "REQ-044-01…09: тести з design.md існують (secret-box.spec.ts:6,22; secrets-at-rest.service.spec.ts:56,79; api-key-hash.spec.ts:5; profile.spec.ts:91; jira-hosts.spec.ts:6; jira-access.spec.ts:58,67); код відповідає (secret-box.ts, secrets-at-rest.service.ts:24-78 запечатує jiraToken, geminiApiKey, apiKey у imageComparisonConfig, хешує API-ключі; jiraAccess перевіряє хост перед кожним зверненням). Розбіжностей не знайдено, окрім слабкостей 024/008.",
+  "REQ-043-01…07: усі тести з design.md на місці (file-links.interceptor.spec.ts:36, static.controller.spec.ts:43,57, file-links.spec.ts:8, test_protected_images.py:26, reports.controller.spec.ts:113, visual-bugs.service.spec.ts:144); frontend/nginx/default.conf:16-18 віддає 404 на /static/imageUploads/, docker-compose.demo.yml:32 не монтує знімки в UI.",
+  "REQ-049-13 (нова поверхня jira/types): перевірка хоста є (jira-access.ts:60) і тест jira-access.spec.ts:89.",
+  "Правило 6: окрім VLM-рушія, LLM при прийомі не викликається (AiFeaturesService лише з ai.controller.ts).",
+  "OLLAMA_BASE_URL — лише зі змінної оточення (ollama.service.ts:18), не з налаштувань проєкту; SSRF через проєкт неможливий. /ollama/* — admin/editor, ліміт файла з VIS-SEC-014 (ollama.controller.ts:54).",
+  "git diff 7b13af1..HEAD у scripts/, docker-compose*, Dockerfile-ах, frontend/nginx, .github, ssl/, .claude, sdk-java: змінено лише docker-compose.demo.yml (+VISION_MAX_SCREENSHOT_MB/PIXELS) і scripts/seed-insights-demo.py (API-ключ з VISION_API_KEY, бо після 044 сервер його не віддає) — нових вад не внесено.",
+  "docker-compose.demo.yml: Postgres без порту на хості, образ postgres за digest, api не root (user VISION_UID), ліміти cpus/mem на всіх сервісах, секрети JWT/VISION_SECRET_KEY обов'язкові (:?), Redis відсутній (in-memory adapter). Дефолтні POSTGRES_PASSWORD=postgres і DEFAULT_USER_PASSWORD=123456 — внутрішня мережа compose / VIS-SEC-010.",
+  "Dockerfile-и: базові образи за digest, USER node / nginx-unprivileged, TLS перевіряється (extra_ca як build secret), .dockerignore виключає .env*; backend/prisma/.dockerignore — node_modules.",
+  "frontend/nginx/default.conf: server_tokens off, nosniff, DENY, no-referrer, COOP; блок ../ → 403. ssl/default.conf і ssl/nginx.conf у compose не задіяні, ключів/сертифікатів у дереві немає.",
+  "scripts/export-without-history.sh: лише git archive трекнутих файлів, відмова при незакомічених змінах і цілі всередині репозиторію, нічого не пушить.",
+  "Lock-файли: усі resolved — registry.npmjs.org, крім локального vendor/deepmerge; ознак typosquatting серед install-скриптів не помічено.",
+  ".claude/hooks/session-start.sh: лише npm ci у хмарній сесії, без curl|sh.",
+  "LICENSE (Apache-2.0) і NOTICE у корені коректні; бренд «Visual Regression Tracker» у UI/i18n/frontend/src не знайдено (BRAND.name='Vision'); згадки лише в NOTICE, README, DEMO, DEPLOY і тестах перейменування SDK. Шрифти — @fontsource (OFL), самохостинг, без зовнішніх CDN.",
+  "Чужі email у дереві — лише тестові/мок-домени (example.com, ldapmock.local, oidcmock.local, shop.app у spec)."
+ ]
+}

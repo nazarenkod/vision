@@ -1,0 +1,281 @@
+{
+ "area": "A — автентифікація, сесії, HTTP-шар (повторний аудит на HEAD a3b6104; статичний аналіз, тести не запускались: node_modules немає)",
+ "regression": [
+  {
+   "id": "VIS-SEC-006",
+   "status": "fixed",
+   "evidence": "backend/src/users/ldap/ldapusers.service.ts:130-151 (email з тіла, що відрізняється від current.email, -> 400; імена людей каталогу беруться з каталогу); тест backend/src/users/ldap/ldapusers.service.spec.ts:128-158 («does not let anyone take a colleague's email…», «keeps the email…», «lets a local account … rename itself»). Інших шляхів змінити email у режимі LDAP немає: UsersService.update делегує в LdapUsersService (users.service.ts:73-75), адмінського ендпоінта зміни email немає (users.controller.ts).",
+   "bypass_or_gap": "(1) Прив'язка до акаунта досі за email, не за незмінним ідентифікатором каталогу (objectGUID/sAMAccountName): якщо банк повторно видасть адресу (новий співробітник з тим самим ім'ям), він увійде в старий акаунт звільненого (ldapusers.service.ts:179-183). (2) У режимі БД DbUsersService.update (dbusers.service.ts:35-46) і далі записує будь-який email з тіла — при переході БД→LDAP/SSO заздалегідь «зайнята» адреса колеги ловить його перший корпоративний вхід; також дає попереднє карбування JWT (NEW-A-3). (3) Наслідок самого виправлення: isInDirectory=false для невідомих відкрив локальний вхід для людей, яких більше немає в каталозі (NEW-A-1).",
+   "severity_now": "Low"
+  },
+  {
+   "id": "VIS-SEC-007",
+   "status": "fixed",
+   "evidence": "backend/src/users/ldap/ldapusers.service.ts:162-164 `if (!userLoginRequestDto.password?.trim()) throw …` до будь-якого bind; тест ldapusers.service.spec.ts:119-126 (it.each(['', '   ']) — bind не викликається).",
+   "bypass_or_gap": "Обходу не знайдено: String.prototype.trim прибирає й Unicode-пробіли (NBSP, U+2028, BOM); символ нульової ширини (U+200B) лишає пароль непорожнім — це вже автентифікований bind, а не unauthenticated (RFC 4513 §5.1.2 — лише нульова довжина). Тип гарантує @IsString (user-login-request.dto.ts). Варто додатково вимкнути unauthenticated bind на боці каталогу.",
+   "severity_now": "Closed"
+  },
+  {
+   "id": "VIS-SEC-009",
+   "status": "not_fixed",
+   "evidence": "backend/src/auth/auth.service.ts:59-66 (у JWT лише email, без jti/версії); backend/src/auth/jwt.strategy.ts:94-104 (перевірка лише наявності рядка за email, isActive не перевіряється — grep isActive у backend/src дає лише тести); frontend/src/services/users.service.ts:189-191 (logout лише чистить localStorage); users.service.ts:77-98 (зміна/встановлення пароля не гасить токени), :188-197 (зміна ролі не гасить); events.gateway.ts:65-81 (сокет перевіряється лише при рукостисканні).",
+   "bypass_or_gap": "Частково пом'якшено лише для доступу до проєкту: leaveProject (events.gateway.ts:115, projects.controller.ts:152) виводить сокети з кімнати при знятті доступу. Видалений акаунт/понижена роль/змінений пароль — токен і сокет живуть до exp (JWT_LIFE_TIME, типово 1d). Дає основу для NEW-A-1 (зміна пароля чужим живим токеном) і NEW-A-3.",
+   "severity_now": "Medium"
+  },
+  {
+   "id": "VIS-SEC-010",
+   "status": "not_fixed",
+   "evidence": "backend/prisma/seed.ts:43 `process.env.DEFAULT_USER_PASSWORD || '123456'`; seed.ts:73 друкує в лог сам пароль: `The user with the email \"${defaultEmail}\" and password \"${defaultPassword}\" was created`; docker-compose.demo.yml:132 `DEFAULT_USER_PASSWORD: ${DEFAULT_USER_PASSWORD:-123456}`; backend/prisma/entrypoint.sh:14 запускає seed при кожному старті міграцій.",
+   "bypass_or_gap": "Пароль 123456 нижчий за REQ-045-04 (12 символів) і потрапляє відкритим текстом у `docker logs` контейнера міграції. Примусової зміни немає. Додатково: seed.ts:46-54 при відсутності активного адміна робить upsert з update:{role: admin} — наявний акаунт з DEFAULT_USER_EMAIL стає адміном без зміни пароля.",
+   "severity_now": "Medium"
+  },
+  {
+   "id": "VIS-SEC-011",
+   "status": "not_fixed",
+   "evidence": "backend/src/security.ts:33-38 (лише nosniff, X-Frame-Options, Referrer-Policy, COOP — без Content-Security-Policy і Strict-Transport-Security); frontend/nginx/default.conf:4-8 (те саме); docker-compose.demo.yml:31 `\"${DEMO_UI_PORT:-18080}:8080\"`, :109 `\"${DEMO_API_PORT:-14200}:3000\"` — публікація на 0.0.0.0 по HTTP; backend/src/main.ts:15-26 — HTTPS лише якщо є ./secrets/ssl.*.",
+   "bypass_or_gap": "Без CSP будь-який XSS забирає JWT з localStorage (S-13); без TLS — JWT, паролі й API-ключі в мережі банку відкритим текстом. Диф 7b13af1..HEAD цих файлів не змінював.",
+   "severity_now": "Medium"
+  },
+  {
+   "id": "VIS-SEC-017",
+   "status": "not_fixed",
+   "evidence": "backend/src/users/users.service.ts:89-98 setPassword оновлює password будь-якого id без перевірки походження акаунта; users.controller.ts:188-196 (лише @Roles(admin)).",
+   "bypass_or_gap": "У режимі SSO заданий адміном пароль одразу діє через локальну форму (users.service.ts:127); у режимі LDAP — щойно людини немає в каталозі (NEW-A-1). Аудит-логу адмінських дій немає.",
+   "severity_now": "Medium"
+  },
+  {
+   "id": "VIS-SEC-018",
+   "status": "not_fixed",
+   "evidence": "frontend/src/pages/LoginPage.tsx:27-46 бере будь-який `#token=` з фрагмента, викликає /users/me і зберігає сесію; frontend/src/services/users.service.ts:240-247 completeOidcLogin без жодної прив'язки до запущеного входу; backend/src/users/oidc/oidcusers.service.ts:148-154 видає токен у фрагменті.",
+   "bypass_or_gap": "Login CSRF/фіксація сесії лишається: посилання https://vision/login#token=<JWT нападника> мовчки входить жертвою в акаунт нападника (жертва далі завантажує туди дані/рішення, вводить свій токен Jira у профіль — PUT /users/jira пише в акаунт нападника). Зміни #23–#31 LoginPage не зачепили (7 рядків — лише макет).",
+   "severity_now": "Medium"
+  },
+  {
+   "id": "VIS-SEC-020",
+   "status": "not_fixed",
+   "evidence": "backend/src/users/oidc/oidcusers.service.ts:53 типове `'vision-admin,admin'`; :213-215 роль з IdP перетирає локальну при кожному вході; docker-compose.demo.yml:82 `OIDC_ADMIN_VALUES: ${OIDC_ADMIN_VALUES:-vision-admin,admin}` (у .env.demo.example:36 закоментовано `vision-admin`).",
+   "bypass_or_gap": "Понижений адміном до guest при наступному SSO-вході знову editor/admin; група IdP з назвою «admin» (будь-якої системи) дає адміна Vision.",
+   "severity_now": "Medium"
+  },
+  {
+   "id": "VIS-SEC-033",
+   "status": "not_fixed",
+   "evidence": "backend/src/users/db/dbusers.service.ts:58-70 — для невідомого email одразу 400 без bcrypt.compare; для наявного — compare (~десятки мс, cost 10). У режимі LDAP ще й різний шлях (LDAP bind vs локальний) — users.service.ts:123-126.",
+   "bypass_or_gap": "Час відповіді й далі видає наявність акаунта. SignInLimit маскує лише 429, не час.",
+   "severity_now": "Low"
+  },
+  {
+   "id": "VIS-SEC-034",
+   "status": "not_fixed",
+   "evidence": "backend/src/users/sign-in-limit.ts:271-306 лише за email; docs/specs/045-sign-in-and-api-hardening/spec.md «Поза межами: … обмеження за IP-адресою» — свідомо поза специфікацією; trust proxy не налаштовано й IP ніде не використовується (grep `trust proxy|x-forwarded|req.ip` у backend/src — порожньо), тож X-Forwarded-For зараз нічого не обходить.",
+   "bypass_or_gap": "Password spraying (один пароль, напр. 123456 з VRT, по всіх скопійованих email) не обмежений; анонім блокує будь-який відомий email на 15 хв. Сам лічильник — нова DoS-поверхня (NEW-A-2). Ліміт у пам'яті процесу: при кількох репліках (RedisIoAdapter це передбачає, main.ts:56-58) — окремий на кожну.",
+   "severity_now": "Low"
+  },
+  {
+   "id": "VIS-SEC-035",
+   "status": "not_fixed",
+   "evidence": "backend/src/auth/guards/api.guard.ts:10-21 і role.guard.ts:164-177 — ключ без строку дії, без перевірки isActive/каталогу; users.service.ts:123-126 — людина, якої немає в каталозі, входить локальним паролем.",
+   "bypass_or_gap": "Погіршено виправленням 41b15e0: раніше для відсутньої в каталозі людини findUserInLdap кидав 400 і вхід не проходив; тепер isInDirectory=false переводить її на локальний пароль — зокрема скопійований з VRT або встановлений самою людиною живим токеном. Окремо — NEW-A-1 (High).",
+   "severity_now": "Medium"
+  },
+  {
+   "id": "VIS-SEC-036",
+   "status": "partially_fixed",
+   "evidence": "Виправлено: users.service.ts:51-59 (createAccount — accountEmail() і перевірка mode:'insensitive'), ldapusers.service.ts:105,179 і oidcusers.service.ts:184 — lowercase. Не виправлено: backend/src/users/db/dbusers.service.ts:35-43 (PUT /users у режимі БД пише email як є, без trim/lowercase і без перевірки дубліката без регістру); dbusers.service.ts:59-61 (вхід — точний збіг без нормалізації).",
+   "bypass_or_gap": "У режимі БД можна мати «Ann@bank.ua» поруч з «ann@bank.ua»; людина з великою літерою в email не входить (а спроби рахуються лімітом за lowercase-ключем). Унікального індексу без регістру немає.",
+   "severity_now": "Low"
+  },
+  {
+   "id": "VIS-SEC-040",
+   "status": "not_fixed",
+   "evidence": "backend/src/auth/auth.module.ts:13-19 (secret, expiresIn — без algorithm/issuer/audience); backend/src/auth/jwt.strategy.ts:87-91 (без algorithms/issuer/audience); auth.service.ts:70-72 verifyAsync без опцій.",
+   "bypass_or_gap": "Додатково: JWT_LIFE_TIME читається без типового значення (auth.module.ts:17) і не валідується при старті; поведінка при відсутній змінній (токен без exp або помилка підпису) — див. needs_verification. Ідентичність у токені — змінний email без sub (NEW-A-3).",
+   "severity_now": "Info"
+  },
+  {
+   "id": "S-12",
+   "status": "accepted_risk",
+   "evidence": "backend/src/users/oidc/oidcusers.service.ts:61 типово false, :71-87 вимкнення перевірки обмежене origin issuer і логується warn; docker-compose.demo.yml:85. Але LDAP: ldapusers.service.ts:44-51 `LDAP_TLS_NO_VERIFY` вимикає перевірку для всього клієнта без жодного попередження в лозі, і схема ldap:// (без TLS) приймається мовчки.",
+   "bypass_or_gap": "Для банку OIDC-частина прийнятна (Low). LDAP-частина гірша: паролі людей передаються в bind; при ldap:// або NO_VERIFY=true — перехоплення облікових даних каталогу (NEW-A-5). Рекомендація: у прод-профілі відмовлятись стартувати з *_TLS_NO_VERIFY=true і з ldap:// без StartTLS.",
+   "severity_now": "Low"
+  },
+  {
+   "id": "S-13",
+   "status": "deferred",
+   "evidence": "frontend/src/services/users.service.ts:10-13 (JWT в localStorage 'user'), :240-247; рішення власника — httpOnly-кука відкладена (docs/security/audit-2026-11-04.md:48).",
+   "bypass_or_gap": "Для банку ризик вищий, ніж оцінено в S-13: CSP досі немає (VIS-SEC-011), а JWT живе до exp без відкликання (VIS-SEC-009) — одна XSS дає повний доступ на добу без можливості погасити. Нових XSS-синків у змінах #23–#31 не знайдено (нема dangerouslySetInnerHTML/innerHTML/eval; href лише з серверних jiraUrl і внутрішніх маршрутів).",
+   "severity_now": "Low"
+  },
+  {
+   "id": "S-14",
+   "status": "not_fixed",
+   "evidence": "backend/src/auth/auth.service.ts:39-42 `genSalt(10)`; scripts/vision-restore.sh:153 `bcrypt.hash(password, 10)`; backend/prisma/seed.ts:44.",
+   "bypass_or_gap": "Для банку — Low: cost 10 + політика 12 символів прийнятні, але старі хеші з VRT (невідомої довжини, без політики) переносяться як є і перевіряються при вході (spec 045 «Наявний короткий пароль → вхід працює»). Підвищення до 12 збільшить CPU головного потоку на кожну спробу входу для наявного email (bcryptjs — чистий JS) — враховувати разом з NEW-A-2.",
+   "severity_now": "Low"
+  }
+ ],
+ "findings": [
+  {
+   "id": "NEW-A-1",
+   "previous_id": null,
+   "title": "Локальний пароль діє для людей каталогу й SSO: паролі з робочого VRT обходять SSO, а звільнені з каталогу входять і самі ставлять собі пароль",
+   "severity": "High",
+   "cvss": "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:H/I:H/A:N (7.4)",
+   "cwe": "CWE-288",
+   "owasp": "A07:2021-Identification and Authentication Failures",
+   "location": [
+    "backend/src/users/users.service.ts:123-129",
+    "backend/src/users/users.service.ts:77-85",
+    "backend/src/users/ldap/ldapusers.service.ts:54-67",
+    "backend/src/users/db/dbusers.service.ts:58-74",
+    "docs/specs/045-sign-in-and-api-hardening/design.md:5-11",
+    "DEPLOY.md:124-126",
+    "DEPLOY.md:174-175"
+   ],
+   "origin": "code",
+   "component": "backend",
+   "description": "У User немає ознаки походження (локальний / каталог / SSO). Рішення «каталог чи локальний пароль» приймається на кожен вхід за поточною відповіддю каталогу, а в режимі SSO форма пароля працює для будь-якого email. Дизайн 045 стверджує: «Акаунти з каталогу й SSO мають пароль, якого ніхто не знає, тож локальний вхід їм не відкривається» — це неправда для акаунтів, скопійованих з робочого VRT разом з хешами паролів (DEPLOY.md: «Копируется вся база VRT … пользователи с паролями»), і для паролів, заданих адміном (VIS-SEC-017). Виправлення 41b15e0 (isInDirectory=false замість 400) розширило це на LDAP: людина, яку прибрали з каталогу або перенесли за межі LDAP_SEARCH_DN (типово для блокування в AD), стає «локальною».",
+   "evidence": "users.service.ts:124-127:\n  if (this.usersService instanceof LdapUsersService && !(await this.usersService.isInDirectory(dto.email))) {\n    return this.localUsers.login(dto);\n  }\n  if (this.usersService instanceof OidcUsersService) return this.localUsers.login(dto);\nusers.service.ts:81-83 — зміна пароля: якщо людини немає в каталозі, `this.localUsers.changePassword(user, newPassword)`.\nldapusers.service.ts:64 — «не знайдено» і «бракує атрибута» (400) -> null -> «не в каталозі».\nDbUsersService.login (dbusers.service.ts:58-70) перевіряє збережений хеш, яким би шляхом він не з'явився (скопійований з VRT, від адміна).",
+   "impact": "(1) SSO-режим: кожен користувач VRT входить старим паролем VRT повз SSO/MFA банку; паролі VRT не проходили політику 12 символів (spec 045: короткий наявний пароль працює), тож можливий spraying (VIS-SEC-034) по всіх скопійованих email. (2) LDAP-режим: звільнений, якого вивели з області пошуку, входить старим паролем VRT; а з ще живим JWT (до 1 доби, VIS-SEC-009) може викликати PUT /users/password і поставити собі постійний локальний пароль — безстроковий доступ до знімків банківських застосунків. (3) Те саме для акаунтів VRT з неіснуючими в каталозі адресами (тестові, сервісні, дефолтний адмін VRT — див. needs_verification).",
+   "recommendation": "Потребує специфікації. Додавальна nullable-колонка походження акаунта (authSource: local|ldap|oidc, ADR-0003); локальний вхід і зміну пароля дозволяти лише для local. При переході з VRT у режимі LDAP/SSO — анулювати скопійовані хеші людей каталогу/IdP (або позначити їх як ldap/oidc). Відсутність людини в каталозі для акаунта з authSource=ldap — відмова у вході й блокування, а не локальний пароль. Заборонити setPassword для не-local (VIS-SEC-017).",
+   "related": [
+    "VIS-SEC-035",
+    "VIS-SEC-017",
+    "VIS-SEC-009",
+    "VIS-SEC-034",
+    "VIS-SEC-006"
+   ],
+   "effort": "M",
+   "confidence": "High"
+  },
+  {
+   "id": "NEW-A-2",
+   "previous_id": null,
+   "title": "Лічильник спроб входу: квадратична CPU-DoS і необмежене зростання пам'яті від анонімних запитів",
+   "severity": "Medium",
+   "cvss": "CVSS:3.1/AV:A/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H (6.5)",
+   "cwe": "CWE-407",
+   "owasp": "A04:2021-Insecure Design",
+   "location": [
+    "backend/src/users/sign-in-limit.ts:291-313",
+    "backend/src/users/users.service.ts:100-117"
+   ],
+   "origin": "code",
+   "component": "backend",
+   "description": "Кожна невдала спроба викликає forgetOld(), який при failures.size >= 10000 перебирає ВСЮ мапу і видаляє лише записи старші за 15 хв. Анонім, надсилаючи невдалі входи з різними вигаданими email (для невідомого email у режимі БД/SSO немає bcrypt — запит дешевий), тримає мапу заповненою свіжими записами: кожен наступний запит коштує O(n) у головному потоці, сумарно O(n²). Мапа closedUntil не чиститься взагалі (запис видаляється лише при перевірці того самого email) — кожні 5 невдач по новому email додають запис назавжди до перезапуску.",
+   "evidence": "sign-in-limit.ts:309-313:\n  private forgetOld(): void {\n    if (this.failures.size < 10000) return;\n    const since = this.now() - SIGN_IN_WINDOW_MS;\n    for (const [key, times] of this.failures) if (!times.some((at) => at > since)) this.failures.delete(key);\n  }\nsign-in-limit.ts:295-297 — closedUntil.set(...) без жодного очищення, крім closed() для того ж ключа.",
+   "impact": "Один процес API (spec 045: «Vision працює одним процесом API») обслуговує і UI, і прийом знімків із CI всіх команд. Сотні тисяч свіжих записів роблять кожну невдалу спробу мілісекундами синхронного CPU — event loop насичується, прийом знімків і UI зависають для всіх. У режимі LDAP кожен такий запит ще й робить bind+search у корпоративний каталог (навантаження на AD банку).",
+   "recommendation": "Обмежити розмір обох мап (LRU/кільцевий буфер з жорсткою межею), чистити closedUntil разом із failures, прибирати застарілі записи амортизовано (за таймером раз на хвилину, а не на кожен запит). Додатково — грубий ліміт частоти /users/login на з'єднання/IP за коректним trust proxy (поза 045 — потребує рішення).",
+   "related": [
+    "VIS-SEC-034",
+    "VIS-SEC-004"
+   ],
+   "effort": "S",
+   "confidence": "Medium"
+  },
+  {
+   "id": "NEW-A-3",
+   "previous_id": null,
+   "title": "JWT прив'язаний лише до змінного email: у режимі БД можна заздалегідь «накарбувати» токен для чужої майбутньої адреси",
+   "severity": "Medium",
+   "cvss": "CVSS:3.1/AV:N/AC:H/PR:L/UI:N/S:U/C:H/I:H/A:N (6.8)",
+   "cwe": "CWE-287",
+   "owasp": "A07:2021-Identification and Authentication Failures",
+   "location": [
+    "backend/src/auth/auth.service.ts:59-66",
+    "backend/src/auth/jwt.strategy.ts:94-104",
+    "backend/src/users/db/dbusers.service.ts:35-46",
+    "backend/src/shared/events/events.gateway.ts:68-73"
+   ],
+   "origin": "code",
+   "component": "backend",
+   "description": "Токен містить лише { email }, без sub (id), jti чи версії; JwtStrategy шукає користувача за email із токена. У режимі локальних акаунтів PUT /users (DbUsersService.update) дозволяє будь-якому користувачу поставити собі довільний ще не зайнятий email і отримати у відповіді токен на нього, а потім повернути свій email. Токен лишається дійсним до exp і автентифікує того, хто ПІЗНІШЕ отримає цю адресу: акаунт, який адмін створить новому співробітнику (передбачувана firstname.lastname@bank), відновлений після видалення акаунт, або акаунт, що з'явиться при першому вході через LDAP/SSO після зміни режиму.",
+   "evidence": "auth.service.ts:60-62 `const payload: JwtPayload = { email: user.email };`\njwt.strategy.ts:95-97 `findUnique({ where: { email: payload.email } })`\ndbusers.service.ts:36-45 `update({ where: { id }, data: { email: userDto.email, … } }); const token = this.authService.signToken(user);`",
+   "impact": "Захоплення нового акаунта (включно з адміністраторським, якщо адмін створює нового адміна) інсайдером із будь-якою роллю протягом JWT_LIFE_TIME (типово 1d, у dev 7d). Те саме — старі токени видаленого акаунта діють для нового акаунта з тією ж адресою.",
+   "recommendation": "Класти в JWT sub=user.id (і версію токена з VIS-SEC-009), шукати користувача за id і звіряти email; у режимі БД нормалізувати email і, за потреби, заборонити зміну email без адміна. Зворотна сумісність: старі токени (лише email) приймати до їхнього exp або примусити повторний вхід.",
+   "related": [
+    "VIS-SEC-009",
+    "VIS-SEC-036",
+    "VIS-SEC-040",
+    "VIS-SEC-006"
+   ],
+   "effort": "S",
+   "confidence": "High"
+  },
+  {
+   "id": "NEW-A-4",
+   "previous_id": null,
+   "title": "Фільтр LDAP: String.replaceAll трактує $', $` і $& з email як шаблони заміни — обхід екранування",
+   "severity": "Low",
+   "cvss": "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:L/I:N/A:N (3.7)",
+   "cwe": "CWE-90",
+   "owasp": "A03:2021-Injection",
+   "location": [
+    "backend/src/users/ldap/ldapusers.service.ts:71",
+    "backend/src/users/ldap/ldapusers.service.ts:83"
+   ],
+   "origin": "code",
+   "component": "backend",
+   "description": "Email екранується за RFC 4515 (* ( ) \\ NUL), але далі підставляється рядком-заміною: `usersSearchFilter.replaceAll('{{email}}', email)`. У рядку заміни JS інтерпретує `$'` (текст після збігу), `` $` `` (текст до збігу), `$&`, `$$`. Ці символи дозволені @IsEmail у локальній частині (validator.js допускає $ ' ` у local part). Так у фільтр потрапляють неекрановані дужки з самого шаблону, напр. для `(|(sAMAccountName={{email}})(mail={{email}}))` email `alice$'@x.yz` дає `(|(sAMAccountName=alice)(mail={{email}}))@x.yz)…`.",
+   "evidence": "ldapusers.service.ts:83 `filter: this.ldapConfig.usersSearchFilter.replaceAll('{{email}}', email),`; escapeLdap (205-230) не чіпає `$`.",
+   "impact": "Пошук за значенням, яке не є email (напр. sAMAccountName=alice), і структурні зміни фільтра; пароль однаково перевіряє bind, тож прямого обходу автентифікації немає. Якщо парсер ldapts приймає хвіст після збалансованого фільтра, різні «домени» дають різні ключі SignInLimit для однієї людини — необмежений підбір пароля людини каталогу (див. needs_verification). Інакше — 500 замість 400 (такі спроби не рахуються лімітом).",
+   "recommendation": "Підставляти функцією: `replaceAll('{{email}}', () => email)`; додатково відхиляти email з `$` до пошуку; тест на `$'`/`` $` ``.",
+   "related": [
+    "VIS-SEC-034"
+   ],
+   "effort": "S",
+   "confidence": "Medium"
+  },
+  {
+   "id": "NEW-A-5",
+   "previous_id": "S-12",
+   "title": "LDAP: вимкнення перевірки TLS діє на весь клієнт без попередження, ldap:// без TLS приймається мовчки",
+   "severity": "Low",
+   "cvss": "CVSS:3.1/AV:A/AC:H/PR:N/UI:N/S:U/C:H/I:N/A:N (4.8)",
+   "cwe": "CWE-295",
+   "owasp": "A02:2021-Cryptographic Failures",
+   "location": [
+    "backend/src/users/ldap/ldapusers.service.ts:44-51",
+    "docker-compose.demo.yml:87,95"
+   ],
+   "origin": "config",
+   "component": "backend",
+   "description": "На відміну від OIDC (обмежено origin issuer + warn), LDAP_TLS_NO_VERIFY=true ставить rejectUnauthorized:false для всього клієнта і нічого не пише в лог; LDAP_URL зі схемою ldap:// (без StartTLS) приймається без попередження. Через цей клієнт ідуть сервісний bind (LDAP_BIND_PASSWORD) і bind кожної людини з її паролем.",
+   "evidence": "ldapusers.service.ts:44 `tlsNoVerify: … 'LDAP_TLS_NO_VERIFY' … === 'true'`, :46-51 `new LdapClient({ url, tlsOptions: { rejectUnauthorized: !this.ldapConfig.tlsNoVerify } })` — без перевірки схеми й без logger.warn.",
+   "impact": "Помилка конфігурації в контурі банку непомітно віддає доменні паролі співробітників і пароль сервісного акаунта каталогу на перехоплення в мережі.",
+   "recommendation": "Попередження в лог при NO_VERIFY і ldap://; у прод-профілі — відмова стартувати без ldaps:// або StartTLS; описати в DEPLOY.md.",
+   "related": [
+    "S-12",
+    "VIS-SEC-011"
+   ],
+   "effort": "S",
+   "confidence": "High"
+  }
+ ],
+ "needs_verification": [
+  "Чи є в базі робочого VRT дефолтний адмін upstream (visual-regression-tracker@example.com / 123456) або інші тестові акаунти з відомими паролями: їх копіює demo-clone-from-prod.sh, і через NEW-A-1 вони входять локально в будь-якому режимі (у LDAP — бо їх немає в каталозі). Якщо так — Critical. Перевірити лише запитом count/email без хешів, з дозволу власника (правило 1).",
+  "Поведінка парсера фільтрів ldapts на хвіст після збалансованого фільтра (NEW-A-4): якщо хвіст ігнорується — обхід SignInLimit для людей каталогу при шаблоні, де sAMAccountName/uid іде першим. Перевірити юніт-тестом з ldapts.FilterParser на стенді.",
+  "Що відбувається, коли JWT_LIFE_TIME не задано (auth.module.ts:17 без типового значення; backend/docker-compose.yml:15 передає `${JWT_LIFE_TIME}` як порожній рядок): токен без exp (безстрокова сесія, events-auth.ts msUntilExpiry → undefined — сокет без таймера) чи помилка підпису jsonwebtoken. Перевірити на стенді.",
+  "Реальна вартість forgetOld (NEW-A-2) — заміряти на стенді час відповіді /users/login при 10^5–10^6 записах (короткий тест, без навантаження довше кількох секунд).",
+  "Логи 4xx (http-exception.filter.ts:21) пишуть request.url разом із query: підписи посилань на знімки й токени публічних звітів (прострочені/відкликані) у лозі — уже VIS-SEC-027; перевірити, чи не потрапляють туди чинні токени (напр. 403 на /images при чинному підписі іншого файла)."
+ ],
+ "checked_areas": [
+  "REQ-045-01: users.service.ts:123-129, тест users.service.spec.ts:334-357 — реалізовано (але див. NEW-A-1: твердження дизайну про «пароль, якого ніхто не знає» хибне).",
+  "REQ-045-02: docker-compose.demo.yml:72-95 передає всі OIDC_* і LDAP_*; тест scripts/tests/test_api_hardening.py:22.",
+  "REQ-045-03: sign-in-limit.ts, users.service.ts:100-117 (лічиться лише 400, недоступний каталог не рахується; 429 до перевірки пароля); тест sign-in-limit.spec.ts:4,21 — реалізовано (DoS — NEW-A-2).",
+  "REQ-045-04: account.ts:257-263; перевіряють createAccount (users.service.ts:49), changePassword (:78), setPassword (:90); restore — vision-restore.sh:42; тест users.service.spec.ts:167.",
+  "REQ-045-05: http-exception.filter.ts зареєстрований глобально (app.module.ts:47-48), віддає лише statusCode/message/path(/fields), stack — лише в лог; тест http-exception.filter.spec.ts:15,29.",
+  "REQ-045-06: security.ts:10-28 — точний збіг origin з APP_FRONTEND_URL, без нього CORS вимкнено; той самий для socket.io (events.gateway.ts:28); тест security.spec.ts:4.",
+  "REQ-045-07: swagger лише при VISION_SWAGGER=true (security.ts:30-31, main.ts:54); тест security.spec.ts:26.",
+  "REQ-045-08: заголовки в API (security.ts:33-45) і nginx (frontend/nginx/default.conf:4-8, server_tokens off); тести security.spec.ts:32, test_api_hardening.py:29.",
+  "OIDC: state + PKCE S256 (oidcusers.service.ts:131-142), state/verifier у httpOnly SameSite=Lax cookie на 10 хв, очищується в finally (users.controller.ts:115-121,155-157); підпис id_token і state перевіряє openid-client callback; email_verified обов'язковий за замовчуванням (:194-198); userinfo зливається з перевіркою sub. nonce не використовується — при code flow з PKCE і state прийнятно. Redirect на фронт будується лише з APP_FRONTEND_URL (open redirect немає). Cookie secure залежить від схеми OIDC_REDIRECT_URI (у demo типово http) — Info.",
+  "Open redirect у фронті: LoginForm.tsx:54-55 navigate(location.state.from) — state ставить лише PrivateRoute.tsx:20 з location.pathname; ?local лише перемикає форму; PrintReportPage читає sections/lang через allowlist.",
+  "XSS у нових сторінках #23–#31 (LoginPage, LoginForm, ProfilePage, ProjectSettingsPage, OptionExplainer, CheckTrend, SideNav, Overview): немає dangerouslySetInnerHTML/innerHTML/eval/new Function; href лише з внутрішніх маршрутів, BRAND.supportUrl і серверних jiraUrl, які сервер будує як `${base}/browse/${key}` (jira.client.ts:127-128).",
+  "API-ключі: 140 біт з crypto.randomBytes (random-key.ts:11-13), у базі лише sha256 і 4 останні символи (api-key-hash.ts), показ один раз; ключі в query не приймаються; MixedGuard віддає перевагу JWT. Відкликання/строк — VIS-SEC-035.",
+  "LDAP-ін'єкція через екранування: escapeLdap коректний за RFC 4515 для * ( ) \\ NUL (обхід лише через replaceAll — NEW-A-4); пошук з sizeLimit 1, bind сервісним акаунтом і unbind у finally.",
+  "Пароль LDAP/SSO-акаунтів при створенні: genSaltSync(1).slice(-12) — 12 символів з 16 випадкових байтів bcryptjs (crypto.randomBytes), невгадуваний; проблема не в ньому, а в перенесених/заданих хешах (NEW-A-1).",
+  "trust proxy / X-Forwarded-For: не налаштовано і ніде не читається; обмежень за IP немає, тож підробка заголовка нічого не обходить (і нічого не захищає — VIS-SEC-034).",
+  "Логи: паролі, JWT, API-ключі й токени Jira не логуються (grep logger.* з token/apiKey/password/secret — лише повідомлення без значень); винятки — seed.ts:73 (пароль адміна, VIS-SEC-010) і URL з query у 4xx (VIS-SEC-027).",
+  "JWT_SECRET: без нього JwtStrategy/JwtModule не стартують, але силу/відомі значення ('change-me' у .env.demo.example:16) ніхто не перевіряє — це VIS-SEC-002 (відкладено власником), не дублюю."
+ ]
+}

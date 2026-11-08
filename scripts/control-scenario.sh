@@ -66,6 +66,8 @@ fi
 
 PG_PORT="$(free_port)"
 API_PORT="$(free_port)"
+# the fake Jira listens on a port known before the API starts: VISION_JIRA_HOSTS names it (051)
+JIRA_PORT="$(free_port)"
 DB_URL="postgresql://control:control@127.0.0.1:$PG_PORT/control?schema=public"
 
 NETWORK_ARGS=()
@@ -135,15 +137,15 @@ if $IMAGES; then
   docker run -d --rm --name "$API_NAME" --network "$NET_NAME" --user "$(id -u):$(id -g)" \
     -p "127.0.0.1:$API_PORT:3000" -v "$WORK/api:/imageUploads" --add-host host.docker.internal:host-gateway \
     -e DATABASE_URL="postgresql://control:control@postgres:5432/control?schema=public" \
-    -e JWT_SECRET="control-jwt-secret" -e JWT_LIFE_TIME="1d" -e APP_FRONTEND_URL="http://vision.control.test" \
-    -e VISION_SECRET_KEY="control-secret-key" -e VISION_JIRA_HOSTS="host.docker.internal" \
+    -e JWT_SECRET="control-scenario-jwt-secret-of-32-characters-or-more" -e JWT_LIFE_TIME="1d" -e APP_FRONTEND_URL="http://vision.control.test" \
+    -e VISION_SECRET_KEY="control-scenario-secret-key-of-32-characters-or-more" -e VISION_JIRA_HOSTS="http://host.docker.internal:$JIRA_PORT" \
     -e BODY_PARSER_JSON_LIMIT="20mb" -e TZ="UTC" vision-control-api >/dev/null
 else
 (
   cd "$WORK/api"
   env -i PATH="$PATH" HOME="$WORK/api" DATABASE_URL="$DB_URL" APP_PORT="$API_PORT" \
-    JWT_SECRET="control-jwt-secret" JWT_LIFE_TIME="1d" APP_FRONTEND_URL="http://vision.control.test" \
-    VISION_SECRET_KEY="control-secret-key" VISION_JIRA_HOSTS="127.0.0.1" \
+    JWT_SECRET="control-scenario-jwt-secret-of-32-characters-or-more" JWT_LIFE_TIME="1d" APP_FRONTEND_URL="http://vision.control.test" \
+    VISION_SECRET_KEY="control-scenario-secret-key-of-32-characters-or-more" VISION_JIRA_HOSTS="http://127.0.0.1:$JIRA_PORT" \
     BODY_PARSER_JSON_LIMIT="20mb" TZ="UTC" \
     node "$MAIN_JS" >"$WORK/api.log" 2>&1
 ) &
@@ -169,7 +171,7 @@ set +e
   CONTROL_API="http://127.0.0.1:$API_PORT" CONTROL_SDK_CLASSPATH="$SDK_CP" CONTROL_WORK="$WORK" \
     CONTROL_CLI="$VISION_ROOT/frontend/public/cli/vision.py" CONTROL_FIXTURES="$BACKEND/src/ui-tree/__fixtures__" \
     CONTROL_ADMIN_EMAIL="$DEFAULT_USER_EMAIL" CONTROL_ADMIN_PASSWORD="$DEFAULT_USER_PASSWORD" \
-    CONTROL_JIRA_HOST="$($IMAGES && echo host.docker.internal || echo 127.0.0.1)" \
+    CONTROL_JIRA_HOST="$($IMAGES && echo host.docker.internal || echo 127.0.0.1)" CONTROL_JIRA_PORT="$JIRA_PORT" \
     node --experimental-vm-modules node_modules/jest/bin/jest.js "${JEST_ARGS[@]}"
 )
 status=$?

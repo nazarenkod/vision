@@ -20,7 +20,9 @@ import { serverFileLinkKey, signFile, withFileSignatures } from '../../static/fi
 import { allowOwnInterface } from '../../security';
 
 // The message a rejected client gets in connect_error; the UI signs out on it.
-export const UNAUTHORIZED = 'unauthorized';
+export // how soon a new socket's sign-in is looked at again (052)
+const SESSION_RECHECK_MS = 1000;
+const UNAUTHORIZED = 'unauthorized';
 
 // Only signed-in users get events, and only of the project they subscribed to
 // (spec 032, ADR-0023), never to anyone listening.
@@ -48,7 +50,13 @@ export class EventsGateway implements OnGatewayInit, OnModuleDestroy {
   afterInit(server: Server): void {
     server.use((socket, next) => {
       this.authenticate(socket).then(
-        () => next(),
+        () => {
+          next();
+          // a sign-out between the check above and the socket joining the server's list missed
+          // this socket; one more look once it is in the list closes that gap (052)
+          const recheck = setTimeout(() => this.closeIfEnded(socket), SESSION_RECHECK_MS);
+          socket.on('disconnect', () => clearTimeout(recheck));
+        },
         () => next(new Error(UNAUTHORIZED))
       );
     });
@@ -62,16 +70,26 @@ export class EventsGateway implements OnGatewayInit, OnModuleDestroy {
     this.buildUpdatedDebounced.cancel();
   }
 
+  private async closeIfEnded(socket: Socket): Promise<void> {
+    try {
+      const token = tokenFromHandshake(socket.handshake.auth);
+      const payload = token ? await this.authService.verifyToken(token) : null;
+      const found = payload ? await this.authService.userForToken(payload) : { problem: 'no-user' };
+      if ('problem' in found) socket.disconnect(true);
+    } catch {
+      socket.disconnect(true);
+    }
+  }
+
   private async authenticate(socket: Socket): Promise<void> {
     const token = tokenFromHandshake(socket.handshake.auth);
     if (!token) throw new Error(UNAUTHORIZED);
     const payload = await this.authService.verifyToken(token);
-    const user = await this.prismaService.user.findUnique({
-      where: { email: payload.email },
-      select: { id: true },
-    });
-    if (!user) throw new Error(UNAUTHORIZED);
-    socket.data.userId = user.id;
+    // the same check as the API: a signed-out sign-in or a gone account opens no socket (052)
+    const found = await this.authService.userForToken(payload);
+    if ('problem' in found) throw new Error(UNAUTHORIZED);
+    socket.data.userId = found.user.id;
+    socket.data.sessionId = payload.sid;
 
     const expiresIn = msUntilExpiry(payload.exp, Date.now());
     if (expiresIn !== undefined) {
@@ -94,21 +112,56 @@ export class EventsGateway implements OnGatewayInit, OnModuleDestroy {
     }
     if (!projectId) return { ok: true };
 
-    // only a project the person may reach (042): an admin any, anyone else one they were given
-    const allowed = await Promise.all([
+    if (!(await this.mayFollow(socket.data.userId, projectId))) return { ok: false };
+    if (socket.data.projectId === projectId) socket.join(projectRoom(projectId));
+    return { ok: true };
+  }
+
+  // only a project the person may reach (042): an admin any, anyone else one they were given
+  private mayFollow(userId: string, projectId: string): Promise<boolean> {
+    return Promise.all([
       this.prismaService.project.findUnique({ where: { id: projectId }, select: { id: true } }),
-      this.prismaService.user.findUnique({ where: { id: socket.data.userId }, select: { id: true, role: true } }),
+      this.prismaService.user.findUnique({ where: { id: userId }, select: { id: true, role: true } }),
       this.prismaService.projectAccess.findUnique({
-        where: { userId_projectId: { userId: socket.data.userId, projectId } },
+        where: { userId_projectId: { userId, projectId } },
         select: { projectId: true },
       }),
     ]).then(
       ([project, user, access]) => !!project && !!user && (user.role === Role.admin || !!access),
       () => false
     );
-    if (!allowed) return { ok: false };
-    if (socket.data.projectId === projectId) socket.join(projectRoom(projectId));
-    return { ok: true };
+  }
+
+  /**
+   * Sign-ins that ended (052): signing out ends one, a new password every one but the person's
+   * own, a deleted account all. Through fetchSockets, so the sockets of every API process close.
+   */
+  async endSessions(userId: string, which: { only?: string | null; keep?: string } = {}): Promise<void> {
+    try {
+      const sockets = await this.server.fetchSockets();
+      for (const socket of sockets) {
+        if (socket.data.userId !== userId) continue;
+        // a socket of a token from before sessions has no session: only=null names those
+        if (which.only !== undefined && (socket.data.sessionId ?? null) !== which.only) continue;
+        if (which.keep && socket.data.sessionId === which.keep) continue;
+        socket.disconnect(true);
+      }
+    } catch (error) {
+      this.logger.warn(`Could not close the sockets of ${userId}: ${error}`);
+    }
+  }
+
+  /** A new role (052): each project the person's sockets follow is checked again, as on subscribe. */
+  async recheckAccess(userId: string): Promise<void> {
+    try {
+      const sockets = (await this.server.fetchSockets()).filter((socket) => socket.data.userId === userId);
+      for (const socket of sockets) {
+        const projectId = socket.data.projectId as string | null;
+        if (projectId && !(await this.mayFollow(userId, projectId))) socket.leave(projectRoom(projectId));
+      }
+    } catch (error) {
+      this.logger.warn(`Could not check the sockets of ${userId} again: ${error}`);
+    }
   }
 
   /** Access was taken away: that person's sockets stop getting the project's events now. */

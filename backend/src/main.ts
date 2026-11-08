@@ -9,6 +9,7 @@ import { HttpsOptions } from '@nestjs/common/interfaces/external/https-options.i
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { RedisIoAdapter } from './redis-io.adapter';
 import { serverSecretKey } from './shared/secret-box';
+import { secretProblems } from './shared/server-secrets';
 import { allowOwnInterface, securityHeaders, swaggerEnabled } from './security';
 import { globalPipes } from './shared/strip-unknown-fields.pipe';
 
@@ -26,11 +27,16 @@ function getHttpsOptions(): HttpsOptions | null {
 }
 
 async function bootstrap() {
-  // before anything else: without the key, stored tokens could be neither sealed nor read (044)
+  // before anything else: without the key, stored tokens could be neither sealed nor read (044);
+  // with a weak or example secret, anyone could sign an admin's sign-in (051)
+  const problems = secretProblems();
   try {
     serverSecretKey();
   } catch (error) {
-    Logger.error((error as Error).message, 'Bootstrap');
+    problems.push((error as Error).message);
+  }
+  if (problems.length) {
+    [...new Set(problems)].forEach((problem) => Logger.error(problem, 'Bootstrap'));
     process.exit(1);
   }
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {

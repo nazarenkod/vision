@@ -1,3 +1,4 @@
+import { EventsGateway } from '../shared/events/events.gateway';
 import { HttpException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { UsersService } from './users.service';
@@ -27,6 +28,7 @@ const user: User = {
   jiraEmail: null,
   geminiApiKey: null,
   lastSignInAt: null,
+  tokensValidAfter: null,
   role: Role.editor,
   updatedAt: new Date(),
   createdAt: new Date(),
@@ -41,6 +43,7 @@ describe('UsersService with DbUserService implementation', () => {
       providers: [
         UsersService,
         UsersFactoryService,
+        { provide: EventsGateway, useValue: { endSessions: jest.fn(), recheckAccess: jest.fn() } },
         {
           provide: ConfigService,
           useValue: {
@@ -63,6 +66,8 @@ describe('UsersService with DbUserService implementation', () => {
         {
           provide: AuthService,
           useValue: {
+            endSessions: jest.fn(),
+            endSession: jest.fn(),
             generateApiKey: jest.fn(() => ({ key: 'newKey', stored: { apiKey: 'sha256:hash', apiKeyEnding: 'wKey' } })),
             unknownApiKey: jest.fn(() => 'generatedApiKey'),
             encryptPassword: jest.fn(() => 'encryptedPassword'),
@@ -324,6 +329,7 @@ describe('UsersService with OidcUsersService implementation', () => {
         { provide: UsersFactoryService, useValue: { getUsersService: () => oidcUsersService } },
         { provide: PrismaService, useValue: { user: { update: jest.fn() } } },
         { provide: AuthService, useValue: {} },
+        { provide: EventsGateway, useValue: { endSessions: jest.fn(), recheckAccess: jest.fn() } },
       ],
     }).compile();
 
@@ -351,11 +357,47 @@ describe('UsersService with OidcUsersService implementation', () => {
     const withLdap = new UsersService(
       { getUsersService: () => ldap } as never,
       { user: { findUnique, update: jest.fn() } } as never,
-      auth as never
+      auth as never,
+      { endSessions: jest.fn(), recheckAccess: jest.fn() } as never
     );
     expect((await withLdap.login({ email: 'ann@bank.test', password: 'x' })).token).toBe('from-ldap');
     expect((await withLdap.login({ email: 'contractor@bank.test', password: 'x' })).token).toBe('jwt');
     expect(ldap.login).toHaveBeenCalledTimes(1);
+  });
+
+  // found in review of 052: LDAP answers true for its people and stores nothing
+  it('ends no sign-in of a directory person whose password Vision cannot change', async () => {
+    const ldap = Object.assign(Object.create(LdapUsersService.prototype), {
+      isInDirectory: jest.fn(async (email: string) => email === 'ann@bank.test'),
+      changePassword: jest.fn(async () => true),
+    });
+    const auth = { endSessions: jest.fn(), encryptPassword: jest.fn(async () => 'hash') };
+    const events = { endSessions: jest.fn(), recheckAccess: jest.fn() };
+    const withLdap = new UsersService(
+      { getUsersService: () => ldap } as never,
+      { user: { update: jest.fn(async () => ({})) } } as never,
+      auth as never,
+      events as never
+    );
+
+    await withLdap.changePassword({ ...user, id: 'ann', email: 'ann@bank.test' }, 'new-password-1', 'sid');
+    expect(auth.endSessions).not.toHaveBeenCalled();
+    expect(events.endSessions).not.toHaveBeenCalled();
+
+    // a local account beside LDAP has a password here: its other sign-ins end
+    await withLdap.changePassword({ ...user, id: 'bob', email: 'bob@bank.test' }, 'new-password-1', 'sid');
+    expect(auth.endSessions).toHaveBeenCalledWith('bob', 'sid');
+    expect(events.endSessions).toHaveBeenCalledWith('bob', { keep: 'sid' });
+  });
+
+  it('checks the projects of open sockets again after a sign-in through SSO', async () => {
+    const events = (service as unknown as { eventsGateway: { recheckAccess: jest.Mock } }).eventsGateway;
+    const oidc = (service as unknown as { usersService: { handleCallback?: unknown } }).usersService;
+    Object.assign(oidc, { handleCallback: jest.fn(async () => ({ id: 'ann', token: 't' })) });
+
+    await service.oidcHandleCallback({ code: 'c' }, { state: 's', codeVerifier: 'v' });
+
+    expect(events.recheckAccess).toHaveBeenCalledWith('ann');
   });
 
   it('reports OIDC as enabled', () => {

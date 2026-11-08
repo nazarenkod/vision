@@ -307,6 +307,8 @@ export const uk: Messages = {
   "jira.openProfile": "Відкрити профіль",
   "jira.hostNotAllowed": "Сервер не дозволяє Jira за цією адресою.",
   "jira.failed": "Не вдалося завантажити типи з Jira.",
+  "jira.redirected":
+    "Jira за цією адресою переадресовує Vision на {location}. Vision не надсилає туди ваш токен: якщо це Jira, вкажіть цю адресу.",
   "jira.retry": "Спробувати ще",
 
   "secret.replace": "Замінити",
@@ -553,6 +555,8 @@ export const uk: Messages = {
   "review.applyIgnoreArea":
     "Застосувати вибрану ігноровану область до всіх зображень цієї збірки.",
   "review.ignoreSaved": "Ігноровані області оновлено.",
+  "review.ignoreLimit":
+    "На екрані може бути не більше {limit} ігнорованих областей: приберіть {extra}, щоб зберегти.",
   "review.compareSaved":
     "Усе поза вибраною областю стало ігнорованим; збережено.",
   "review.ignoreAppliedAll":
@@ -1134,6 +1138,8 @@ export const uk: Messages = {
   "backups.open": "Відкрити резервні копії",
 
   // auth
+  "auth.ssoNotStartedHere":
+    "Цей вхід почато не в цьому браузері. Увійдіть ще раз.",
   "auth.orLocal": "або локальним акаунтом",
   "auth.subtitleSso": "Корпоративним акаунтом або локальним.",
   "auth.emailPlaceholder": "name@company.com",
@@ -1287,6 +1293,8 @@ export const uk: Messages = {
   "select.found": "знайдено {count}",
   "panel.matchCount": "{baseline} на еталоні · {current} на поточному",
   "panel.selectorProblem.prefix": "Почніть з id:, class:, text: або xpath:",
+  "panel.selectorProblem.pattern":
+    "Vision не виконує у виразі зворотні посилання (\\1), перевірки вперед чи назад ((?=…), (?<=…)) і повтори понад 1000",
   "panel.selectorProblem.syntax": "Цей XPath не розбирається",
   "panel.selectorProblem.anchor":
     "Почніть з одного стабільного елемента: //*[@resource-id='…'] або //*[@text='…']",
@@ -1412,6 +1420,8 @@ export const uk: Messages = {
   "compared.nothingFoundHelp":
     "Вони нічого не знайшли ні на поточному, ні в еталоні.",
   "compared.reason.nothingFound": "нічого не знайдено",
+  "compared.reason.pattern":
+    "у виразі є зворотне посилання, перевірка вперед чи назад або інша частина, якої Vision не виконує",
   "compared.reason.noTree": "немає UI-дерева",
   "compared.source.screen": "цей екран",
   "compared.source.project": "усі екрани",

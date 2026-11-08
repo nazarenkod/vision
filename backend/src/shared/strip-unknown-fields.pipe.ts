@@ -1,4 +1,4 @@
-import { ArgumentMetadata, Injectable, PipeTransform, ValidationPipe } from '@nestjs/common';
+import { ArgumentMetadata, BadRequestException, Injectable, PipeTransform, ValidationPipe } from '@nestjs/common';
 import { getMetadataStorage } from 'class-validator';
 
 /**
@@ -34,5 +34,33 @@ export class StripUnknownFieldsPipe implements PipeTransform {
   }
 }
 
+/**
+ * Refuses a list longer than its DTO's `@ArrayMaxSize` before anything looks inside it.
+ * ValidationPipe checks every element of a nested list first: 100 000 ignore areas held the API
+ * for seconds before the limit said no (051, VIS-SEC-005). Same message as class-validator's.
+ */
+@Injectable()
+export class ListLengthPipe implements PipeTransform {
+  transform(value: unknown, metadata: ArgumentMetadata): unknown {
+    if (metadata.type !== 'body' || metadata.data !== undefined) return value;
+    if (!value || typeof value !== 'object' || typeof metadata.metatype !== 'function') return value;
+    const limits = getMetadataStorage()
+      .getTargetValidationMetadatas(metadata.metatype, '', true, false)
+      .filter((rule) => rule.name === 'arrayMaxSize');
+    for (const rule of limits) {
+      const list = (value as Record<string, unknown>)[rule.propertyName];
+      const max = Number(rule.constraints?.[0]);
+      if (Array.isArray(list) && list.length > max) {
+        throw new BadRequestException([`${rule.propertyName} must contain no more than ${max} elements`]);
+      }
+    }
+    return value;
+  }
+}
+
 /** The pipes every request goes through, in order: the API and the e2e tests set up the same. */
-export const globalPipes = (): PipeTransform[] => [new ValidationPipe(), new StripUnknownFieldsPipe()];
+export const globalPipes = (): PipeTransform[] => [
+  new ListLengthPipe(),
+  new ValidationPipe(),
+  new StripUnknownFieldsPipe(),
+];

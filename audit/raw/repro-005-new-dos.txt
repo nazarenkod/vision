@@ -1,0 +1,29 @@
+Стенд той самий (див. repro-004). Кожен тест — один запит, кілька секунд (правило 3 промту).
+
+1) VIS-SEC-045 — обхід ліміту пікселів другим IHDR
+   Офлайн (dist/shared/screenshot-limits.js + pngjs з lock-файлу):
+     PNG 248 924 байт: IHDR 10×10, далі IHDR 8000×8000, IDAT з нулями
+     readPngSize → {width:10,height:10}; screenshotProblem → null; safeToDecode → true
+     readPng → DECODED 8000 x 8000, data 256 000 000 байт, 1173 мс, RSS 829 МБ
+   Наживо:
+     dbl.png 559 956 байт (IHDR 10×10 + IHDR 12000×12000 = 144 Мпкс, ліміт 40 Мпкс)
+     POST /test-runs/multipart (apiKey alice) -> 201, status "new"
+     POST /test-runs/approve?merge=false [id] -> 201 (знімок став еталоном)
+     POST /test-runs/multipart той самий файл у новій збірці -> 201 за 5,4 с, status "ok"
+     пік RSS процесу API (разом із потоками-воркерами) = 2419 МБ (до того ~180 МБ)
+   Більші розміри не пробувались (кілька ГБ → падіння процесу; поза межами дозволених тестів).
+
+2) VIS-SEC-043 — квадратичний GET /test-runs/:id/structure
+     uiTree: <hierarchy> → FrameLayout(resource-id) → 10 000 android.view.View без text/id, різні bounds
+     XML 826 933 байт; gzip+base64 110 КБ; POST /test-runs/multipart (uiTree=..., appium-android) -> 201 за 0,28 с
+     GET /test-runs/<id>/structure (JWT alice) -> 200 за 6,77 с, відповідь 3,57 МБ
+     паралельно через 1 с GET /users/me -> 5,77 с (event loop API заблоковано для всіх)
+   Контроль: 10 000 вузлів ІЗ text -> structure за 0,026 с (квадратичний лише шлях безіменних вузлів,
+   selectorVariants/addsSomething у ui-tree.service.ts:154-186).
+
+3) VIS-SEC-049 — лічильник спроб входу (офлайн, dist/users/sign-in-limit.js)
+     перші 10 000 невдач: 19 мс; наступні 10 000: 2259 мс; наступні 20 000: 9532 мс (≈0,48 мс на виклик при 40 000)
+     200 справжніх запитів POST /users/login з різними email: 1,56 с разом (дорожче за лічильник сам HTTP)
+
+4) VIS-SEC-050 — String.replaceAll у фільтрі LDAP
+     node -e "'(mail={{email}})'.replaceAll('{{email}}', \"a\$'b\")" -> (mail=a)b)

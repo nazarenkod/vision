@@ -41,7 +41,7 @@ export class DbUsersService implements Users {
         lastName: userDto.lastName,
       },
     });
-    const token = this.authService.signToken(user);
+    const token = await this.authService.signToken(user);
     return new UserLoginResponseDto(user, token);
   }
 
@@ -69,7 +69,7 @@ export class DbUsersService implements Users {
       throw new HttpException('Invalid email or password.', HttpStatus.BAD_REQUEST);
     }
 
-    const token = this.authService.signToken(user);
+    const token = await this.authService.signToken(user);
     return new UserLoginResponseDto(user, token);
   }
 }

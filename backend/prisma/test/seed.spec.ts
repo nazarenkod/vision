@@ -41,6 +41,7 @@ const mockDefaultUser = {
   jiraEmail: null,
   geminiApiKey: null,
   lastSignInAt: null,
+  tokensValidAfter: null,
   updatedAt: new Date(),
   createdAt: new Date(),
 } as const;

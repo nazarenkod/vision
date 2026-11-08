@@ -21,7 +21,10 @@ export class PixelmatchService implements ImageComparator {
   ) {}
 
   parseConfig(configJson: string): PixelmatchConfig {
-    return parseConfig(configJson, DEFAULT_CONFIG, this.logger);
+    const config = parseConfig(configJson, DEFAULT_CONFIG, this.logger);
+    // without a threshold pixelmatch saw no change at all: a project saved with "{}" passed every
+    // screenshot. Only the threshold is filled in; every other key reads as it always has.
+    return typeof config?.threshold === 'number' ? config : { ...config, threshold: DEFAULT_CONFIG.threshold };
   }
 
   async getDiff(data: ImageCompareInput, config: PixelmatchConfig): Promise<DiffResult> {

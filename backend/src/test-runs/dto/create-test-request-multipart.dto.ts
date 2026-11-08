@@ -2,8 +2,8 @@ import { ApiPropertyOptional, OmitType } from '@nestjs/swagger';
 import { ApiFile } from '../../shared/api-file.decorator';
 import { CreateTestRequestDto } from './create-test-request.dto';
 import { Transform, Type } from 'class-transformer';
-import { IgnoreAreaDto } from './ignore-area.dto';
-import { Allow, IsBoolean, IsNumber, IsOptional } from 'class-validator';
+import { IgnoreAreaDto, MAX_IGNORE_AREAS } from './ignore-area.dto';
+import { Allow, ArrayMaxSize, IsArray, IsBoolean, IsNumber, IsOptional } from 'class-validator';
 
 export class CreateTestRequestMultipartDto extends OmitType(CreateTestRequestDto, [
   'ignoreAreas',
@@ -31,5 +31,8 @@ export class CreateTestRequestMultipartDto extends OmitType(CreateTestRequestDto
   @IsOptional()
   @Type(() => String)
   @Transform(({ value }) => (value ? JSON.parse(value) : []))
+  // the parsed list, as before: only its length is new (051)
+  @IsArray()
+  @ArrayMaxSize(MAX_IGNORE_AREAS)
   ignoreAreas?: IgnoreAreaDto[];
 }

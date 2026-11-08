@@ -313,6 +313,8 @@ export const en = {
   "jira.openProfile": "Open profile",
   "jira.hostNotAllowed": "This server does not allow Jira at this address.",
   "jira.failed": "Could not load the types from Jira.",
+  "jira.redirected":
+    "Jira at this address sends Vision on to {location}. Vision does not send your token there: if that is Jira, enter it as the address.",
   "jira.retry": "Try again",
 
   "secret.replace": "Replace",
@@ -524,6 +526,8 @@ export const en = {
   "review.applyIgnoreArea":
     "Apply selected ignore area to all images in this build.",
   "review.ignoreSaved": "Ignore areas are updated.",
+  "review.ignoreLimit":
+    "A screen takes at most {limit} ignore areas: remove {extra} to save them.",
   "review.compareSaved":
     "Selected area has been inverted to ignore areas and saved.",
   "review.ignoreAppliedAll":
@@ -1074,6 +1078,8 @@ export const en = {
 
   // auth
   "auth.orLocal": "or with a local account",
+  "auth.ssoNotStartedHere":
+    "This sign-in was not started in this browser. Sign in again.",
   "auth.subtitleSso": "With your company account or a local one.",
   "auth.emailPlaceholder": "name@company.com",
   "auth.brandLine":
@@ -1220,6 +1226,8 @@ export const en = {
   "select.found": "{count} found",
   "panel.matchCount": "{baseline} on baseline · {current} on current",
   "panel.selectorProblem.prefix": "Start with id:, class:, text: or xpath:",
+  "panel.selectorProblem.pattern":
+    "Vision does not run back-references (\\1), look-around ((?=…), (?<=…)) or repeats over 1000 in a pattern",
   "panel.selectorProblem.syntax": "This XPath does not parse",
   "panel.selectorProblem.anchor":
     "Start from one stable element: //*[@resource-id='…'] or //*[@text='…']",
@@ -1339,6 +1347,8 @@ export const en = {
   "compared.nothingFoundHelp":
     "These found nothing on the current screen or the baseline.",
   "compared.reason.nothingFound": "nothing found",
+  "compared.reason.pattern":
+    "its pattern has a back-reference, look-around or another part Vision does not run",
   "compared.reason.noTree": "no UI tree",
   "compared.source.screen": "this screen",
   "compared.source.project": "all screens",

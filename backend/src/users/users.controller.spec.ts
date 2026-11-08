@@ -1,3 +1,4 @@
+import { AuthService } from '../auth/auth.service';
 import { openSecret } from '../shared/secret-box';
 import { Test, TestingModule } from '@nestjs/testing';
 import { PrismaService } from '../prisma/prisma.service';
@@ -27,6 +28,7 @@ describe('Users Controller', () => {
     isOidcEnabled: jest.Mock;
     oidcGetAuthorizationUrl: jest.Mock;
     oidcBuildFrontendRedirect: jest.Mock;
+    oidcBuildStartPage: jest.Mock;
     oidcHandleCallback: jest.Mock;
   };
 
@@ -43,6 +45,7 @@ describe('Users Controller', () => {
     jiraEmail: null,
     geminiApiKey: null,
     lastSignInAt: null,
+    tokensValidAfter: null,
     role: Role.editor,
     updatedAt: new Date(),
     createdAt: new Date(),
@@ -53,6 +56,7 @@ describe('Users Controller', () => {
       isOidcEnabled: jest.fn(),
       oidcGetAuthorizationUrl: jest.fn(),
       oidcBuildFrontendRedirect: jest.fn(),
+      oidcBuildStartPage: jest.fn(),
       oidcHandleCallback: jest.fn(),
     };
 
@@ -62,6 +66,7 @@ describe('Users Controller', () => {
         { provide: UsersService, useValue: usersService },
         { provide: PrismaService, useValue: {} },
         { provide: ConfigService, useValue: { get: jest.fn((_key: string, defaultValue?: string) => defaultValue) } },
+        { provide: AuthService, useValue: { sessionIdOf: jest.fn() } },
       ],
     }).compile();
 
@@ -81,7 +86,12 @@ describe('Users Controller', () => {
   it('stores a personal Gemini key and answers only whether one is set', async () => {
     const update = jest.fn(async ({ data }) => ({ ...user, ...data }));
     const prisma = { user: { update } };
-    const withPrisma = new UsersController(usersService as never, prisma as never, { get: jest.fn() } as never);
+    const withPrisma = new UsersController(
+      usersService as never,
+      prisma as never,
+      { get: jest.fn() } as never,
+      {} as never
+    );
 
     const saved = await withPrisma.setGemini(user, { geminiApiKey: ' key-1 ' });
     // stored sealed (044), and readable back with the server's key only
@@ -117,7 +127,12 @@ describe('Users Controller', () => {
 
   it('says whether accounts can be created here', () => {
     const canCreateAccounts = jest.fn(() => false);
-    const withService = new UsersController({ canCreateAccounts } as never, {} as never, { get: jest.fn() } as never);
+    const withService = new UsersController(
+      { canCreateAccounts } as never,
+      {} as never,
+      { get: jest.fn() } as never,
+      {} as never
+    );
     expect(withService.accountsEnabled()).toBe(false);
   });
 
@@ -126,7 +141,8 @@ describe('Users Controller', () => {
     const withPrisma = new UsersController(
       usersService as never,
       { user: { update } } as never,
-      { get: jest.fn() } as never
+      { get: jest.fn() } as never,
+      {} as never
     );
 
     const jira = await withPrisma.setJira(user, { jiraToken: 'token-1', jiraEmail: 'me@example.com' });
@@ -175,7 +191,7 @@ describe('Users Controller', () => {
     usersService.oidcBuildFrontendRedirect.mockReturnValue('http://localhost:8080/login#error=oidc_login_failed');
     const res = { cookie: jest.fn(), redirect: jest.fn() };
 
-    await controller.oidcLogin(res as never);
+    await controller.oidcLogin(res as never, 'Zm9vYmFyYmF6cXV4MTIzNDU2');
 
     expect(res.cookie).not.toHaveBeenCalled();
     expect(res.redirect).toHaveBeenCalledWith('http://localhost:8080/login#error=oidc_login_failed');
@@ -200,11 +216,11 @@ describe('Users Controller', () => {
     });
     const res = { cookie: jest.fn(), redirect: jest.fn() };
 
-    await controller.oidcLogin(res as never);
+    await controller.oidcLogin(res as never, 'Zm9vYmFyYmF6cXV4MTIzNDU2');
 
     expect(res.cookie).toHaveBeenCalledWith(
       'oidc_state',
-      'state.verifier',
+      `state.verifier.${'Zm9vYmFyYmF6cXV4MTIzNDU2'}`,
       expect.objectContaining({ httpOnly: true, sameSite: 'lax' })
     );
     expect(res.redirect).toHaveBeenCalledWith('https://idp.example.com/authorize');
@@ -227,6 +243,55 @@ describe('Users Controller', () => {
       { state: 'state', codeVerifier: 'verifier' }
     );
     expect(res.redirect).toHaveBeenCalledWith('http://localhost:8080/login#token=jwt');
+  });
+
+  // the tab that started the sign-in is the only one that takes its token (052, REQ-052-07)
+  it('hands the nonce of the sign-in back with the token', async () => {
+    usersService.isOidcEnabled.mockReturnValue(true);
+    usersService.oidcGetAuthorizationUrl.mockResolvedValue({
+      url: 'https://idp.example.com/authorize',
+      state: 'state',
+      codeVerifier: 'verifier',
+    });
+    const login = { cookie: jest.fn(), redirect: jest.fn() };
+    const nonce = 'Zm9vYmFyYmF6cXV4MTIzNDU2';
+
+    await controller.oidcLogin(login as never, nonce);
+
+    expect(login.cookie).toHaveBeenCalledWith('oidc_state', `state.verifier.${nonce}`, expect.anything());
+    usersService.oidcHandleCallback.mockResolvedValue({ token: 'jwt' });
+    usersService.oidcBuildFrontendRedirect.mockReturnValue('http://localhost:8080/login#token=jwt&nonce=x');
+    const res = { clearCookie: jest.fn(), redirect: jest.fn(), status: jest.fn().mockReturnThis(), send: jest.fn() };
+
+    await controller.oidcCallback(
+      { headers: { cookie: `oidc_state=state.verifier.${nonce}` }, query: { code: 'code', state: 'state' } } as never,
+      res as never
+    );
+
+    expect(usersService.oidcHandleCallback).toHaveBeenCalledWith(
+      { code: 'code', state: 'state' },
+      { state: 'state', codeVerifier: 'verifier' }
+    );
+    expect(usersService.oidcBuildFrontendRedirect).toHaveBeenLastCalledWith('jwt', undefined, nonce);
+  });
+
+  // a tile of the provider or a bookmark opens /users/oidc/login with no value of a tab (052)
+  it('sends a sign-in started outside Vision to its page to start again from the tab', async () => {
+    usersService.isOidcEnabled.mockReturnValue(true);
+    usersService.oidcBuildStartPage.mockReturnValue('http://localhost:8080/login?sso');
+    const login = { cookie: jest.fn(), redirect: jest.fn() };
+
+    for (const nonce of [undefined, 'short', 'with.a.dot.in.it.and.long.enough']) {
+      await controller.oidcLogin(login as never, nonce);
+    }
+
+    expect(login.cookie).not.toHaveBeenCalled();
+    expect(usersService.oidcGetAuthorizationUrl).not.toHaveBeenCalled();
+    expect(login.redirect.mock.calls).toEqual([
+      ['http://localhost:8080/login?sso'],
+      ['http://localhost:8080/login?sso'],
+      ['http://localhost:8080/login?sso'],
+    ]);
   });
 
   it('returns 404 on the callback when OIDC is disabled', async () => {

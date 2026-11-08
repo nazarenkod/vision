@@ -7,6 +7,7 @@ import { AddressInfo } from 'net';
 import { io, Socket } from 'socket.io-client';
 import { TEST_PROJECT } from '../src/_data_';
 import { AppModule } from '../src/app.module';
+import { AuthService } from '../src/auth/auth.service';
 import { ProjectAccessService } from '../src/projects/project-access.service';
 import { ProjectsService } from '../src/projects/projects.service';
 import { globalPipes } from '../src/shared/strip-unknown-fields.pipe';
@@ -26,6 +27,7 @@ describe('Sign-ins and their sessions (e2e)', () => {
   let projectsService: ProjectsService;
   let access: ProjectAccessService;
   let jwt: JwtService;
+  let auth: AuthService;
   const cleanup: Array<() => Promise<unknown>> = [];
   const sockets: Socket[] = [];
 
@@ -37,6 +39,7 @@ describe('Sign-ins and their sessions (e2e)', () => {
     projectsService = moduleFixture.get(ProjectsService);
     access = moduleFixture.get(ProjectAccessService);
     jwt = moduleFixture.get(JwtService);
+    auth = moduleFixture.get(AuthService);
     await app.listen(0);
     url = `http://127.0.0.1:${(app.getHttpServer().address() as AddressInfo).port}`;
   });
@@ -237,6 +240,17 @@ describe('Sign-ins and their sessions (e2e)', () => {
       await buildIn(shared.id);
       await new Promise((resolve) => setTimeout(resolve, 1500));
       expect(events.length).toBeGreaterThan(0);
+    });
+
+    // found in review: a sign-out between the socket's check and its joining the server's list
+    it('closes a socket whose sign-in ended while it was connecting', async () => {
+      const editor = await person('editor');
+      const token = await signIn(editor.email);
+      const socket = await connect(token);
+      // ended in the database only, as a sign-out the socket list did not yet see
+      await auth.endSession(editor.id, auth.sessionIdOf(`Bearer ${token}`));
+
+      await closed(socket);
     });
 
     it('ends the old tokens of a person who signs out with one', async () => {

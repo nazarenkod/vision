@@ -96,6 +96,10 @@ npm run test:e2e / test:acceptance         # потрібні запущені P
   тест `linear-regex.spec.ts` порівнює з `RegExp`.
 - **Список у тілі запиту з `@ArrayMaxSize`** перевіряє `ListLengthPipe` ще до `ValidationPipe`:
   довгий список не перевіряється поелементно. Областей ігнорування — не більше 20 (`MAX_IGNORE_AREAS`).
+- **Токен входу — лише через `AuthService.signToken`** (`src/auth/auth.service.ts`): він створює рядок
+  `Session`, чий `id` лежить у токені як `sid`. `JwtStrategy` і сокет подій перевіряють сесію через
+  `userForToken`. Новий спосіб завершити вхід — `authService.endSession(s)` і `eventsGateway.endSessions`,
+  зміна ролі чи доступу — `eventsGateway.recheckAccess` (052).
 - **`VISION_JIRA_HOSTS`:** ім'я хоста — лише `https` на 443; інший порт чи `http` — запис
   `схема://хост:порт`. Клієнт Jira не йде за переадресацією (051).
 - **PNG декодуємо лише через `readPng`** (`src/shared/screenshot-limits.ts`): він перевіряє ліміт

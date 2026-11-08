@@ -20,7 +20,9 @@ import { serverFileLinkKey, signFile, withFileSignatures } from '../../static/fi
 import { allowOwnInterface } from '../../security';
 
 // The message a rejected client gets in connect_error; the UI signs out on it.
-export const UNAUTHORIZED = 'unauthorized';
+export // how soon a new socket's sign-in is looked at again (052)
+const SESSION_RECHECK_MS = 1000;
+const UNAUTHORIZED = 'unauthorized';
 
 // Only signed-in users get events, and only of the project they subscribed to
 // (spec 032, ADR-0023), never to anyone listening.
@@ -48,7 +50,13 @@ export class EventsGateway implements OnGatewayInit, OnModuleDestroy {
   afterInit(server: Server): void {
     server.use((socket, next) => {
       this.authenticate(socket).then(
-        () => next(),
+        () => {
+          next();
+          // a sign-out between the check above and the socket joining the server's list missed
+          // this socket; one more look once it is in the list closes that gap (052)
+          const recheck = setTimeout(() => this.closeIfEnded(socket), SESSION_RECHECK_MS);
+          socket.on('disconnect', () => clearTimeout(recheck));
+        },
         () => next(new Error(UNAUTHORIZED))
       );
     });
@@ -60,6 +68,17 @@ export class EventsGateway implements OnGatewayInit, OnModuleDestroy {
     this.testRunUpdatedDebounced.cancel();
     this.testRunDeletedDebounced.cancel();
     this.buildUpdatedDebounced.cancel();
+  }
+
+  private async closeIfEnded(socket: Socket): Promise<void> {
+    try {
+      const token = tokenFromHandshake(socket.handshake.auth);
+      const payload = token ? await this.authService.verifyToken(token) : null;
+      const found = payload ? await this.authService.userForToken(payload) : { problem: 'no-user' };
+      if ('problem' in found) socket.disconnect(true);
+    } catch {
+      socket.disconnect(true);
+    }
   }
 
   private async authenticate(socket: Socket): Promise<void> {

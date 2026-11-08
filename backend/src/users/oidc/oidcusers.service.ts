@@ -156,6 +156,11 @@ export class OidcUsersService implements Users {
    * URL the browser is redirected to after OIDC finished (success or error).
    * The token travels in the URL fragment so it never reaches server logs.
    */
+  /** Vision's sign-in page, told to start SSO from the tab, with a value of its own (052). */
+  buildStartPage(): string {
+    return `${this.appFrontendUrl}/login?sso`;
+  }
+
   buildFrontendRedirect(token?: string, error?: string, nonce?: string | null): string {
     const base = `${this.appFrontendUrl}/login`;
     if (token) {

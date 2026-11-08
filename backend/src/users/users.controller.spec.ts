@@ -28,6 +28,7 @@ describe('Users Controller', () => {
     isOidcEnabled: jest.Mock;
     oidcGetAuthorizationUrl: jest.Mock;
     oidcBuildFrontendRedirect: jest.Mock;
+    oidcBuildStartPage: jest.Mock;
     oidcHandleCallback: jest.Mock;
   };
 
@@ -55,6 +56,7 @@ describe('Users Controller', () => {
       isOidcEnabled: jest.fn(),
       oidcGetAuthorizationUrl: jest.fn(),
       oidcBuildFrontendRedirect: jest.fn(),
+      oidcBuildStartPage: jest.fn(),
       oidcHandleCallback: jest.fn(),
     };
 
@@ -189,7 +191,7 @@ describe('Users Controller', () => {
     usersService.oidcBuildFrontendRedirect.mockReturnValue('http://localhost:8080/login#error=oidc_login_failed');
     const res = { cookie: jest.fn(), redirect: jest.fn() };
 
-    await controller.oidcLogin(res as never);
+    await controller.oidcLogin(res as never, 'Zm9vYmFyYmF6cXV4MTIzNDU2');
 
     expect(res.cookie).not.toHaveBeenCalled();
     expect(res.redirect).toHaveBeenCalledWith('http://localhost:8080/login#error=oidc_login_failed');
@@ -214,11 +216,11 @@ describe('Users Controller', () => {
     });
     const res = { cookie: jest.fn(), redirect: jest.fn() };
 
-    await controller.oidcLogin(res as never);
+    await controller.oidcLogin(res as never, 'Zm9vYmFyYmF6cXV4MTIzNDU2');
 
     expect(res.cookie).toHaveBeenCalledWith(
       'oidc_state',
-      'state.verifier',
+      `state.verifier.${'Zm9vYmFyYmF6cXV4MTIzNDU2'}`,
       expect.objectContaining({ httpOnly: true, sameSite: 'lax' })
     );
     expect(res.redirect).toHaveBeenCalledWith('https://idp.example.com/authorize');
@@ -273,19 +275,23 @@ describe('Users Controller', () => {
     expect(usersService.oidcBuildFrontendRedirect).toHaveBeenLastCalledWith('jwt', undefined, nonce);
   });
 
-  it('keeps no value that is not one the interface makes', async () => {
+  // a tile of the provider or a bookmark opens /users/oidc/login with no value of a tab (052)
+  it('sends a sign-in started outside Vision to its page to start again from the tab', async () => {
     usersService.isOidcEnabled.mockReturnValue(true);
-    usersService.oidcGetAuthorizationUrl.mockResolvedValue({
-      url: 'https://idp',
-      state: 'state',
-      codeVerifier: 'verifier',
-    });
+    usersService.oidcBuildStartPage.mockReturnValue('http://localhost:8080/login?sso');
     const login = { cookie: jest.fn(), redirect: jest.fn() };
 
-    await controller.oidcLogin(login as never, 'short');
-    await controller.oidcLogin(login as never, 'with.a.dot.in.it.and.long.enough');
+    for (const nonce of [undefined, 'short', 'with.a.dot.in.it.and.long.enough']) {
+      await controller.oidcLogin(login as never, nonce);
+    }
 
-    expect(login.cookie.mock.calls.map((call) => call[1])).toEqual(['state.verifier', 'state.verifier']);
+    expect(login.cookie).not.toHaveBeenCalled();
+    expect(usersService.oidcGetAuthorizationUrl).not.toHaveBeenCalled();
+    expect(login.redirect.mock.calls).toEqual([
+      ['http://localhost:8080/login?sso'],
+      ['http://localhost:8080/login?sso'],
+      ['http://localhost:8080/login?sso'],
+    ]);
   });
 
   it('returns 404 on the callback when OIDC is disabled', async () => {

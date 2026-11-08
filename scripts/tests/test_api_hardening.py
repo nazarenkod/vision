@@ -72,6 +72,20 @@ class ApiHardeningTest(unittest.TestCase):
         # the image ships the template env.sh fills
         self.assertIn("COPY nginx/csp.template ./csp.template", (ROOT / "frontend" / "Dockerfile").read_text(encoding="utf-8"))
 
+    def test_ui_policy_takes_an_api_on_its_own_host_and_refuses_to_start_without_a_policy(self):
+        header, _ = self.start_interface("/api")
+        self.assertNotIn("/api", header)
+        self.assertIn("connect-src 'self'", header)
+        with tempfile.TemporaryDirectory() as folder:
+            work = pathlib.Path(folder)
+            shutil.copy(ROOT / "frontend" / "env.sh", work / "env.sh")
+            shutil.copy(ROOT / "frontend" / "env.defaults", work / "env.defaults")
+            (work / "csp.template").write_text("", encoding="utf-8")
+            env = {"PATH": os.environ.get("PATH", ""), "VISION_CSP_FILE": str(work / "csp.conf")}
+            result = subprocess.run(["sh", "./env.sh"], cwd=work, env=env, capture_output=True, text=True)
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("no content security policy", result.stderr)
+
     def test_ui_sends_hsts_only_over_https(self):
         nginx = (ROOT / "frontend" / "nginx" / "default.conf").read_text(encoding="utf-8")
         hsts_map = re.search(r"map \$http_x_forwarded_proto \$vision_hsts \{(.*?)\}", nginx, re.S).group(1)

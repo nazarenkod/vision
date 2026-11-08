@@ -365,6 +365,41 @@ describe('UsersService with OidcUsersService implementation', () => {
     expect(ldap.login).toHaveBeenCalledTimes(1);
   });
 
+  // found in review of 052: LDAP answers true for its people and stores nothing
+  it('ends no sign-in of a directory person whose password Vision cannot change', async () => {
+    const ldap = Object.assign(Object.create(LdapUsersService.prototype), {
+      isInDirectory: jest.fn(async (email: string) => email === 'ann@bank.test'),
+      changePassword: jest.fn(async () => true),
+    });
+    const auth = { endSessions: jest.fn(), encryptPassword: jest.fn(async () => 'hash') };
+    const events = { endSessions: jest.fn(), recheckAccess: jest.fn() };
+    const withLdap = new UsersService(
+      { getUsersService: () => ldap } as never,
+      { user: { update: jest.fn(async () => ({})) } } as never,
+      auth as never,
+      events as never
+    );
+
+    await withLdap.changePassword({ ...user, id: 'ann', email: 'ann@bank.test' }, 'new-password-1', 'sid');
+    expect(auth.endSessions).not.toHaveBeenCalled();
+    expect(events.endSessions).not.toHaveBeenCalled();
+
+    // a local account beside LDAP has a password here: its other sign-ins end
+    await withLdap.changePassword({ ...user, id: 'bob', email: 'bob@bank.test' }, 'new-password-1', 'sid');
+    expect(auth.endSessions).toHaveBeenCalledWith('bob', 'sid');
+    expect(events.endSessions).toHaveBeenCalledWith('bob', { keep: 'sid' });
+  });
+
+  it('checks the projects of open sockets again after a sign-in through SSO', async () => {
+    const events = (service as unknown as { eventsGateway: { recheckAccess: jest.Mock } }).eventsGateway;
+    const oidc = (service as unknown as { usersService: { handleCallback?: unknown } }).usersService;
+    Object.assign(oidc, { handleCallback: jest.fn(async () => ({ id: 'ann', token: 't' })) });
+
+    await service.oidcHandleCallback({ code: 'c' }, { state: 's', codeVerifier: 'v' });
+
+    expect(events.recheckAccess).toHaveBeenCalledWith('ann');
+  });
+
   it('reports OIDC as enabled', () => {
     expect(service.isOidcEnabled()).toBe(true);
   });

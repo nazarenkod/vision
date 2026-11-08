@@ -196,7 +196,10 @@ successfully applied`:
 делает только группа из `OIDC_ADMIN_VALUES`. Интерфейс и API отдают политику CSP; адрес API в неё
 подставляется при старте контейнера `ui` из `DEMO_API_URL`. Vision работает по http без сертификата;
 если перед ним будет прокси с https, он должен передавать `X-Forwarded-Proto: https` — тогда
-ответы получают HSTS (браузер год ходит только по https).
+ответы получают HSTS (браузер год ходит только по https). Образы `ui` и `api` обновляются
+вместе (`./scripts/vision.sh` так и делает): новый интерфейс со старым API не пускает через SSO.
+Плитка SSO на портале может вести прямо на `<API>/users/oidc/login` — Vision сам откроет свою
+страницу входа и продолжит.
 
 Projects → карандаш у проекта:
 - **Jira**: URL Jira — только на хосте из `VISION_JIRA_HOSTS`. Токен у каждого свой: **Profile → Jira** (Server/DC — personal access

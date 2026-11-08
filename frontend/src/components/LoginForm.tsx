@@ -36,6 +36,16 @@ const LoginForm = () => {
     // Do not auto-redirect while a callback result (token/error) is being
     // processed by LoginPage, otherwise we would bounce back to the IdP.
     // /login?local keeps the form for a local account beside SSO (045)
+    // /login?sso: a sign-in started outside this page (the provider's tile, a bookmark of the
+    // API's address) comes here to start again from the tab, with its own value (052)
+    if (
+      oidcEnabled &&
+      new URLSearchParams(location.search).has("sso") &&
+      !isOidcCallback
+    ) {
+      usersService.startOidcLogin();
+      return;
+    }
     if (
       oidcEnabled &&
       OIDC_AUTO_REDIRECT &&

@@ -84,11 +84,14 @@ export class UsersService {
     const problem = passwordProblem(newPassword);
     if (problem) throw new HttpException(problem, HttpStatus.BAD_REQUEST);
     // a local account beside LDAP changes its own password; the directory's people change theirs there
-    const changed =
-      this.usersService instanceof LdapUsersService && !(await this.usersService.isInDirectory(user.email))
-        ? await this.localUsers.changePassword(user, newPassword)
-        : await this.usersService.changePassword(user, newPassword);
-    if (changed) {
+    const ldap = this.usersService instanceof LdapUsersService;
+    const local = ldap && !(await (this.usersService as LdapUsersService).isInDirectory(user.email));
+    const changed = local
+      ? await this.localUsers.changePassword(user, newPassword)
+      : await this.usersService.changePassword(user, newPassword);
+    // the directory's people change their password in the directory: here nothing changed, so
+    // their other sign-ins stay (LDAP answers true and stores nothing)
+    if (changed && (!ldap || local)) {
       await this.authService.endSessions(user.id, sessionId);
       await this.eventsGateway.endSessions(user.id, { keep: sessionId });
     }
@@ -177,7 +180,13 @@ export class UsersService {
   ): Promise<UserLoginResponseDto> {
     const result = await this.oidcUsersService.handleCallback(params, checks);
     await this.recordSignIn(result.id);
+    // the sign-in may have changed the role: open sockets follow only what it still reaches (052)
+    await this.eventsGateway.recheckAccess(result.id);
     return result;
+  }
+
+  oidcBuildStartPage(): string {
+    return this.oidcUsersService.buildStartPage();
   }
 
   oidcBuildFrontendRedirect(token?: string, error?: string, nonce?: string | null): string {

@@ -106,6 +106,15 @@ export class UsersController {
       return;
     }
 
+    // Started outside Vision's page (a tile of the identity provider, a bookmark): no tab holds a
+    // value for it. The page starts it again with one, so the token comes back to a tab that
+    // takes it (REQ-052-07) and such links keep working.
+    const tab = browserNonce(nonce);
+    if (!tab) {
+      res.redirect(this.usersService.oidcBuildStartPage());
+      return;
+    }
+
     let authorization: { url: string; state: string; codeVerifier: string };
     try {
       authorization = await this.usersService.oidcGetAuthorizationUrl();
@@ -118,7 +127,7 @@ export class UsersController {
     }
     const { url, state, codeVerifier } = authorization;
     // the tab's value rides in the cookie and comes back with the token (REQ-052-07)
-    res.cookie(OIDC_STATE_COOKIE, stateCookieValue({ state, codeVerifier, nonce: browserNonce(nonce) }), {
+    res.cookie(OIDC_STATE_COOKIE, stateCookieValue({ state, codeVerifier, nonce: tab }), {
       httpOnly: true,
       sameSite: 'lax',
       secure: this.configService.get<string>('OIDC_REDIRECT_URI', '').startsWith('https'),

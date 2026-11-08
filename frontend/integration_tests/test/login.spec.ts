@@ -252,6 +252,29 @@ test.describe("signing in after SSO", () => {
     );
   });
 
+  // a tile of the provider or a bookmark of the API's address lands on /login?sso (found in review)
+  test("starts SSO from the tab when a sign-in began outside Vision", async ({
+    page,
+  }) => {
+    await page.route("**/users/oidc/enabled", (route) =>
+      route.fulfill({ body: "true" }),
+    );
+    await page.route("**/users/oidc/login*", (route) =>
+      route.fulfill({ status: 204 }),
+    );
+
+    const [request] = await Promise.all([
+      page.waitForRequest("**/users/oidc/login*"),
+      page.goto("/login?sso"),
+    ]);
+
+    const sent = new URL(request.url()).searchParams.get("nonce");
+    expect(sent).toMatch(/^[A-Za-z0-9_-]{16,128}$/);
+    expect(await page.evaluate(() => sessionStorage.getItem("oidcNonce"))).toBe(
+      sent,
+    );
+  });
+
   test("signs in when the token comes back to the tab that started it", async ({
     page,
   }) => {

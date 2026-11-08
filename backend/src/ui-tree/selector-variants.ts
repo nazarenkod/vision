@@ -102,6 +102,22 @@ export function pathFromIdAbove(tree: UiTree, node: UiNode): string | null {
   return `${XPATH_PREFIX}${step}${path.join('')}`;
 }
 
+// The parts of the rows of a list that share one id (a RecyclerView) all get the same path, which
+// starts from every row at once. Evaluating it again for each part, and looking for the part in what
+// it found, made such a list quadratic: 8000 rows held the API for 19 s (VIS-SEC-043, 2026-11-08).
+const foundCache = new WeakMap<UiTree, Map<string, { nodes: UiNode[]; has: Set<UiNode> }>>();
+
+function foundBy(tree: UiTree, selector: string) {
+  let bySelector = foundCache.get(tree);
+  if (!bySelector) foundCache.set(tree, (bySelector = new Map()));
+  let found = bySelector.get(selector);
+  if (!found) {
+    const nodes = findBySelector(tree, selector) ?? [];
+    bySelector.set(selector, (found = { nodes, has: new Set(nodes) }));
+  }
+  return found;
+}
+
 /**
  * Selectors for an element with no name: down from its nearest stable
  * ancestor (REQ-027-11) and up from its nearest stable descendant
@@ -112,15 +128,15 @@ export function selectorVariants(tree: UiTree, node: UiNode): SelectorVariant[] 
   const variants: SelectorVariant[] = [];
   const add = (anchor: UiNode, expression: string, direction: SelectorVariant['direction'], levels: number) => {
     const selector = `${XPATH_PREFIX}${expression}`;
-    const found = findBySelector(tree, selector) ?? [];
-    if (!found.includes(node)) return;
+    const found = foundBy(tree, selector);
+    if (!found.has.has(node)) return;
     variants.push({
       selector,
       direction,
       anchor: anchorName(anchor),
       anchorKind: stableKind(anchor),
       levels,
-      count: found.length,
+      count: found.nodes.length,
     });
   };
 

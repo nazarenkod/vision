@@ -128,6 +128,39 @@ function wideList(rows: number, rowClasses: string[]): string {
   );
 }
 
+/**
+ * Rows of a list that share one id, as a RecyclerView gives them, each with parts of no name: every
+ * part's path starts from all the rows at once (VIS-SEC-043, again). Some parts are hidden, some rows
+ * lack a part, and some parts are found from a text below them.
+ */
+function sharedIdList(rows: number): string {
+  const part = (className: string, x: number, y: number, shown = true, inside = '') =>
+    `<${className} class="${className}" resource-id="" text="" content-desc="" displayed="${shown}" ` +
+    `bounds="[${x},${y}][${x + 90},${y + 18}]">${inside}</${className}>`;
+  const items = Array.from({ length: rows }, (_, i) => {
+    const y = i * 20;
+    const label =
+      i % 5 === 0
+        ? `<android.widget.TextView class="android.widget.TextView" resource-id="" text="Amount" content-desc="" ` +
+          `displayed="true" bounds="[400,${y}][480,${y + 18}]"/>`
+        : '';
+    const parts =
+      part('android.view.View', 0, y) +
+      (i % 3 === 0 ? '' : part('android.view.View', 100, y, i % 4 !== 0)) +
+      part('android.widget.ImageView', 200, y) +
+      (label ? part('android.view.ViewGroup', 300, y, true, label) : '');
+    return (
+      `<android.widget.LinearLayout class="android.widget.LinearLayout" resource-id="com.bank.app:id/row" text="" ` +
+      `content-desc="" displayed="true" bounds="[0,${y}][1080,${y + 18}]">${parts}</android.widget.LinearLayout>`
+    );
+  }).join('');
+  return (
+    `<?xml version='1.0' encoding='UTF-8' standalone='yes' ?><hierarchy rotation="0" width="1080" height="2400">` +
+    `<android.widget.FrameLayout class="android.widget.FrameLayout" resource-id="com.bank.app:id/root" ` +
+    `text="" content-desc="" displayed="true" bounds="[0,0][1080,2400]">${items}</android.widget.FrameLayout></hierarchy>`
+  );
+}
+
 const trees: Record<string, () => UiTree> = {
   'android-offers': () => android(fixture('android-offers.xml')),
   'android-payment': () => android(fixture('android-payment.xml')),
@@ -140,6 +173,7 @@ const trees: Record<string, () => UiTree> = {
   'synthetic ios 2': () => ios(syntheticScreen(12, 'ios', 400)),
   'wide list': () =>
     android(wideList(300, ['android.view.View', 'android.view.View', 'android.widget.ImageView', 'android.view.View'])),
+  'rows sharing one id': () => android(sharedIdList(60)),
 };
 
 // short and diffable: one line per element

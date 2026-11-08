@@ -1,4 +1,5 @@
-import { compileLinear, isLinearRegex } from './linear-regex';
+import { RE2JS } from 're2js';
+import { cacheWeight, compileLinear, isLinearRegex, programEstimate, translate } from './linear-regex';
 import { PLACE_PATTERNS, SELECTOR_PATTERNS, TEXTS } from './pattern-corpus';
 
 const NO_BACKTRACKING = ['(a+)+$'];
@@ -220,6 +221,71 @@ describe('patterns on an engine with linear time (051)', () => {
     // what JavaScript does not take either
     expect(compileLinear('(unclosed')).toBe('syntax');
     expect(compileLinear('\\p{L', 'u')).toBe('syntax');
+  });
+
+  // VIS-SEC-058: repeats multiply the program RE2 builds, and its time and memory with it. One such
+  // pattern in 300 characters held 46 MiB and over a second of the API on 200 characters.
+  const unrolling = [
+    '(?:' + 'x*'.repeat(137) + '){1000}[qz]$',
+    '(?:x*x*){1000}[qz]$',
+    '(?:\\d{1,9}){500}',
+    '(?:a|b|c|d|e){1000}',
+    '(?:[a-z]{1,50}\\s?){1,30}',
+    '((((a{10}){10}){10}){10})',
+  ];
+
+  it('refuses a pattern whose repeats unroll too large, at once and with a reason', () => {
+    for (const source of unrolling) {
+      const started = performance.now();
+      expect([source, compileLinear(source)]).toEqual([source, 'unsupported']);
+      expect([source, performance.now() - started < 50]).toEqual([source, true]);
+    }
+  });
+
+  it('takes the repeats people write, up to a thousand of a character or two', () => {
+    for (const source of ['.{0,1000}', '(?:ab){1000}', '\\d{1,1000}', '^\\d{1,3}(?:\\s\\d{3}){0,5}$', '[а-я]{3,40}']) {
+      expect([source, isLinearRegex(compileLinear(source))]).toEqual([source, true]);
+    }
+  });
+
+  it('never counts a program smaller than RE2 builds it', () => {
+    const sources = [
+      ...SELECTOR_PATTERNS.map(([source]) => source),
+      ...PLACE_PATTERNS,
+      '.{0,1000}',
+      '(?:ab){1000}',
+      '(a){3,7}',
+      '(?P<x>a|bc)+?',
+      'a{2,}b*?c??',
+      '[\\]A-Z\\u{1F600}]{4}',
+      '\\p{L}{2,9}',
+      '(?i:ab){20}',
+    ];
+    for (const source of sources) {
+      const translated = translate(source, true);
+      const built = RE2JS.compile(translated).programSize();
+      expect([source, programEstimate(translated, Infinity) >= built]).toEqual([source, true]);
+    }
+  });
+
+  it('keeps no more compiled patterns than its budget of instructions', () => {
+    // 300 different patterns of about 1800 instructions each: 540 000 if all were kept
+    for (let i = 0; i < 300; i++) {
+      expect(isLinearRegex(compileLinear(`(?:${String.fromCharCode(0x400 + i)}b){900}`))).toBe(true);
+    }
+    expect(cacheWeight()).toBeLessThanOrEqual(200_000);
+  });
+
+  it('checks the largest pattern it takes on 2000 characters in under 50 ms', () => {
+    const text = 'x'.repeat(1999) + '!';
+    for (const source of ['(?:x?x){1000}q', '.{0,1000}q', '(?:x*x){600}q']) {
+      const pattern = compileLinear(source);
+      if (!isLinearRegex(pattern)) throw new Error(`${source}: ${pattern}`);
+      pattern.test(text);
+      const started = performance.now();
+      pattern.test(text);
+      expect([source, performance.now() - started < 50]).toEqual([source, true]);
+    }
   });
 
   it('checks a catastrophic pattern on 2000 characters in under 50 ms', () => {

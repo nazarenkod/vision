@@ -185,4 +185,31 @@ describe('pickableElements on a long list of rows with no name (VIS-SEC-043)', (
       variants: [expect.objectContaining({ count: 1, levels: 1, direction: 'down' })],
     });
   });
+
+  // Rows of a RecyclerView share one id, so every part of every row has a path from all the rows at
+  // once: 8000 rows took 19 s, and minutes for a tree of 10 MiB (VIS-SEC-043, audit 2026-11-08)
+  it('offers the parts of 8000 rows that share one id in well under a second', () => {
+    const shared = (count: number) =>
+      `<?xml version='1.0' encoding='UTF-8' standalone='yes' ?><hierarchy rotation="0" width="1080" height="2400">` +
+      `<android.widget.FrameLayout class="android.widget.FrameLayout" resource-id="" text="" content-desc="" ` +
+      `displayed="true" bounds="[0,0][1080,2400]">` +
+      Array.from({ length: count }, (_, i) => {
+        const y = (i % 200) * 10;
+        return (
+          `<android.widget.LinearLayout class="android.widget.LinearLayout" resource-id="com.bank.app:id/row" ` +
+          `text="" content-desc="" displayed="true" bounds="[0,${y}][1080,${y + 10}]">` +
+          `<android.view.View class="android.view.View" resource-id="" text="" content-desc="" displayed="true" ` +
+          `bounds="[10,${y}][500,${y + 9}]"/></android.widget.LinearLayout>`
+        );
+      }).join('') +
+      '</android.widget.FrameLayout></hierarchy>';
+    const tree = parse(shared(8000));
+    const started = Date.now();
+    const elements = pickableElements(tree);
+    expect(Date.now() - started).toBeLessThan(1000);
+
+    const parts = elements.filter((e) => e.selector === "xpath://*[@resource-id='com.bank.app:id/row']/android.view.View[1]");
+    expect(parts).toHaveLength(8000);
+    expect(parts[0].variants).toEqual([expect.objectContaining({ count: 8000, levels: 1, direction: 'down' })]);
+  });
 });

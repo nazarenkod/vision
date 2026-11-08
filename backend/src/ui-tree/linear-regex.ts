@@ -327,8 +327,132 @@ export function translate(source: string, unicode: boolean): string {
   return out;
 }
 
-const compiled = new Map<string, LinearRegex | PatternProblem>();
-const CACHE_SIZE = 500;
+/*
+ * RE2's time is linear in the text but also in the size of the compiled program, and repeats
+ * multiply that size: `(?:x*x*…){1000}` fits in 300 characters, unrolls into 274 000 instructions,
+ * holds 46 MiB and takes over a second on 200 characters (VIS-SEC-058). The patterns people write
+ * stay under 300 instructions and `.{0,1000}` takes 2002; at 4000 a test of 2000 characters
+ * still fits in the 50 ms of REQ-051-11.
+ */
+export const MAX_PROGRAM = 4000;
+
+/**
+ * An upper bound on the instructions RE2 compiles a translated pattern into, worked out from the
+ * text alone, so that a pattern too large is refused before it is built. Each atom is one, a group
+ * that captures adds its brackets, a repeat {n,m} copies its atom m times. Stops counting once over
+ * `limit`.
+ */
+export function programEstimate(pattern: string, limit = MAX_PROGRAM): number {
+  let at = 0;
+  const skipBraces = () => {
+    const end = pattern.indexOf('}', at);
+    at = end < 0 ? pattern.length : end + 1;
+  };
+  const escape = () => {
+    at++;
+    const next = pattern[at];
+    at++;
+    if (/[xpP]/.test(next) && pattern[at] === '{') skipBraces();
+  };
+  const atom = (): number => {
+    const char = pattern[at];
+    if (char === '\\') {
+      escape();
+      return 1;
+    }
+    if (char === '[') {
+      at++;
+      if (pattern[at] === '^') at++;
+      while (at < pattern.length && pattern[at] !== ']') {
+        if (pattern[at] === '\\') escape();
+        else at++;
+      }
+      at++;
+      return 1;
+    }
+    if (char === '(') {
+      at++;
+      // a group that captures saves where it starts and ends; (?: and (?i: compile into nothing
+      let brackets = 2;
+      if (pattern[at] === '?') {
+        brackets = pattern[at + 1] === 'P' ? 2 : 0;
+        while (at < pattern.length && pattern[at] !== ':' && pattern[at] !== '>' && pattern[at] !== ')') at++;
+        at++;
+      }
+      const inside = alternatives();
+      at++;
+      return inside + brackets;
+    }
+    at++;
+    return 1;
+  };
+  const repeated = (size: number): number => {
+    for (;;) {
+      const char = pattern[at];
+      if (char === '*' || char === '+' || char === '?') {
+        at++;
+        size += 1;
+      } else if (char === '{') {
+        const quantifier = /^\{(\d+)(,(\d*))?\}/.exec(pattern.slice(at));
+        if (!quantifier) return size;
+        at += quantifier[0].length;
+        const least = Number(quantifier[1]);
+        const most = quantifier[2] === undefined ? least : quantifier[3] === '' ? least + 1 : Number(quantifier[3]);
+        size = size * Math.max(least, most, 1) + Math.max(most - least, 0) + 1;
+      } else {
+        return size;
+      }
+      // a lazy repeat compiles as the greedy one does
+      if (pattern[at] === '?' && pattern[at - 1] !== '?') at++;
+    }
+  };
+  const sequence = (): number => {
+    let size = 0;
+    while (at < pattern.length && pattern[at] !== '|' && pattern[at] !== ')') {
+      size += repeated(atom());
+      if (size > limit) return size;
+    }
+    return size;
+  };
+  function alternatives(): number {
+    let size = sequence();
+    while (pattern[at] === '|' && size <= limit) {
+      at++;
+      size += sequence() + 1;
+    }
+    return size;
+  }
+  // the match, the failure and the whole pattern as group 0
+  let size = 3;
+  // a stray ) is a syntax error RE2 reports itself; counting just carries on past it
+  while (at < pattern.length && size <= limit) {
+    size += alternatives();
+    if (pattern[at] === ')') at++;
+  }
+  return size;
+}
+
+/*
+ * Compiled patterns are kept, as every element of every screen is tested against the same rules;
+ * the cache is bounded by the instructions it holds, so that patterns sent one after another cannot
+ * fill the memory of the API (VIS-SEC-058).
+ */
+const compiled = new Map<string, { result: LinearRegex | PatternProblem; weight: number }>();
+const CACHE_INSTRUCTIONS = 200_000;
+let cachedInstructions = 0;
+
+/** Instructions of the patterns the cache holds now; for tests. */
+export const cacheWeight = () => cachedInstructions;
+
+function remember(key: string, result: LinearRegex | PatternProblem, weight: number) {
+  compiled.set(key, { result, weight });
+  cachedInstructions += weight;
+  while (cachedInstructions > CACHE_INSTRUCTIONS) {
+    const [oldest, entry] = compiled.entries().next().value as [string, { weight: number }];
+    compiled.delete(oldest);
+    cachedInstructions -= entry.weight;
+  }
+}
 
 /**
  * A pattern with JavaScript's meaning on an engine with linear time; the problem instead when it
@@ -337,15 +461,21 @@ const CACHE_SIZE = 500;
 export function compileLinear(source: string, flags = ''): LinearRegex | PatternProblem {
   const key = `${flags}/${source}`;
   const known = compiled.get(key);
-  if (known) return known;
+  if (known) return known.result;
   let result: LinearRegex | PatternProblem;
+  let weight = 1;
   const unicode = flags.includes('u');
   try {
     // JavaScript itself must take it first: what it refuses, a rule never held
     new RegExp(source, flags.replace(/[^iu]/g, ''));
     const translated = translate(source, unicode);
+    // too large to run in time, refused before RE2 spends time and memory building it
+    if (programEstimate(translated) > MAX_PROGRAM) throw new Problem('unsupported');
     try {
       const pattern = RE2JS.compile(translated, flags.includes('i') ? RE2JS.CASE_INSENSITIVE : 0);
+      // the estimate is a bound, and this is the program as built: neither lets a large one through
+      if (pattern.programSize() > MAX_PROGRAM) throw new Problem('unsupported');
+      weight = pattern.programSize();
       result = { source, test: (text: string) => pattern.matcher(unicode ? text : halvesApart(text)).find() };
     } catch {
       // JavaScript takes it and RE2 cannot: said so, never a rule that silently stops working
@@ -354,8 +484,7 @@ export function compileLinear(source: string, flags = ''): LinearRegex | Pattern
   } catch (error) {
     result = error instanceof Problem ? error.problem : 'syntax';
   }
-  if (compiled.size >= CACHE_SIZE) compiled.delete(compiled.keys().next().value as string);
-  compiled.set(key, result);
+  remember(key, result, weight);
   return result;
 }
 

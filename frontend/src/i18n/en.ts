@@ -1227,7 +1227,7 @@ export const en = {
   "panel.matchCount": "{baseline} on baseline · {current} on current",
   "panel.selectorProblem.prefix": "Start with id:, class:, text: or xpath:",
   "panel.selectorProblem.pattern":
-    "Vision does not run back-references (\\1), look-around ((?=…), (?<=…)) or repeats over 1000 in a pattern",
+    "Vision does not run back-references (\\1), look-around ((?=…), (?<=…)) or repeats over 1000 in a pattern, nor repeats that multiply into more",
   "panel.selectorProblem.syntax": "This XPath does not parse",
   "panel.selectorProblem.anchor":
     "Start from one stable element: //*[@resource-id='…'] or //*[@text='…']",
@@ -1240,6 +1240,7 @@ export const en = {
   "panel.selectorProblem.or": "One element at a time: no “or” and no “|”",
   "panel.selectorProblem.mixed":
     "Go either down or up from the stable element, not both",
+  "panel.selectorProblem.too-long": "A selector holds up to 300 characters",
   "select.selected": "{count} elements selected",
   "select.ruleIgnore": "Ignored",
   "select.ruleTolerate": "Allowed ±{percent}%",

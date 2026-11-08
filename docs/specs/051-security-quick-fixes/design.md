@@ -37,6 +37,14 @@
     JavaScript приймає, а RE2 не виконує так само (повтор понад 1000, `(?s:…)`, невідома
     властивість Unicode) — проблема `'pattern'` (REQ-051-10). Правило ніколи мовчки не вимикається:
     стара причина видна в рядку правила.
+  - **Розмір програми (аудит 2026-11-08, VIS-SEC-058).** Час RE2 лінійний і в тексті, і в розмірі
+    скомпільованої програми, а повтори його множать: `(?:x*…){1000}` у 300 символах давав 274 000
+    інструкцій, 46 МіБ і понад секунду на 200 символах. `programEstimate` до компіляції рахує верхню
+    межу інструкцій з тексту виразу, після компіляції це перевіряє `programSize()`; понад
+    `MAX_PROGRAM` (4000) — `'unsupported'`, тобто `'pattern'` для людини. Звичайні вирази — до 300
+    інструкцій, `.{0,1000}` — 2002. Кеш скомпільованих виразів обмежений сумою інструкцій (200 000),
+    а не кількістю. `GET /test-runs/:id/selector-matches` не рахує селектор, довший за 300 символів
+    (як у правилі), — проблема `'too-long'`.
   - **Сумісність.** Дефіс поруч із класом у квадратних дужках (`[\s-x]`) — звичайний символ, як
     за правилами сумісності JavaScript; довгі назви властивостей і короткі коди письменностей
     (`Script=Cyrl`) перекладаються; `Cased_Letter` — це `Lu`, `Ll` і `Lt`.
@@ -96,8 +104,8 @@
 | REQ-051-07 | `backend/src/a11y/jira.client.spec.ts › does not follow a redirect with the token` |
 | REQ-051-08 | `backend/src/projects/projects.controller.spec.ts › checks the project before asking Jira for its types` |
 | REQ-051-09 | `backend/src/test-runs/dto/ignore-area-limit.spec.ts › turns away more than 20 ignore areas on every route`; `backend/src/test-runs/test-runs.service.spec.ts › adds no ignore area to any run when one would pass the limit` |
-| REQ-051-10 | `backend/src/ui-tree/linear-regex.spec.ts › refuses back-references and look-around with a reason` |
-| REQ-051-11 | `backend/src/ui-tree/linear-regex.spec.ts › checks a catastrophic pattern on 2000 characters in under 50 ms` |
+| REQ-051-10 | `backend/src/ui-tree/linear-regex.spec.ts › refuses back-references and look-around with a reason`; `backend/src/ui-tree/linear-regex.spec.ts › refuses a pattern whose repeats unroll too large, at once and with a reason`; `backend/src/test-runs/test-runs.service.spec.ts › turns away a selector longer than a rule holds and a pattern too large to run` |
+| REQ-051-11 | `backend/src/ui-tree/linear-regex.spec.ts › checks a catastrophic pattern on 2000 characters in under 50 ms`; `backend/src/ui-tree/linear-regex.spec.ts › checks the largest pattern it takes on 2000 characters in under 50 ms`; `backend/src/ui-tree/linear-regex.spec.ts › never counts a program smaller than RE2 builds it`; `backend/src/ui-tree/linear-regex.spec.ts › keeps no more compiled patterns than its budget of instructions` |
 | REQ-051-12 | `backend/src/ui-tree/ui-tree.service.spec.ts › shows why a stored rule with a pattern Vision no longer runs finds nothing` |
-| REQ-051-13 | `backend/src/ui-tree/linear-regex.spec.ts › finds what RegExp found for every pattern and text`; `backend/src/ui-tree/structure.characterization.spec.ts › offers the same elements…`; `backend/src/a11y/jira-hosts.spec.ts › takes an https address on an allowed host as before`; `backend/src/shared/server-secrets.spec.ts › takes the secrets the instructions make` |
+| REQ-051-13 | `backend/src/ui-tree/linear-regex.spec.ts › finds what RegExp found for every pattern and text`; `backend/src/ui-tree/linear-regex.spec.ts › takes the repeats people write, up to a thousand of a character or two`; `backend/src/ui-tree/structure.characterization.spec.ts › offers the same elements…`; `backend/src/a11y/jira-hosts.spec.ts › takes an https address on an allowed host as before`; `backend/src/shared/server-secrets.spec.ts › takes the secrets the instructions make` |
 | REQ-051-14 | `frontend/src/components/TestDetailsDialog/ignoreAreaLimit.test.ts › keeps the areas and names the limit when there are too many` |

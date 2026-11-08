@@ -2,6 +2,9 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { IsArray, IsIn, IsNotEmpty, IsNumber, IsOptional, IsString, Max, MaxLength, Min } from 'class-validator';
 import { TextPart } from '../../ui-tree/variable-text';
 
+/** The longest selector a rule holds; selector-matches counts none longer either (VIS-SEC-058). */
+export const MAX_SELECTOR_LENGTH = 300;
+
 export class AddElementRuleDto {
   @ApiProperty({ enum: ['screen', 'project'], description: 'This screen only, or every screen of the project' })
   @IsIn(['screen', 'project'])
@@ -10,7 +13,7 @@ export class AddElementRuleDto {
   @ApiProperty({ example: 'id:balance', description: 'id:…, class:… or text:… (text:/regex/ allowed)' })
   @IsString()
   @IsNotEmpty()
-  @MaxLength(300)
+  @MaxLength(MAX_SELECTOR_LENGTH)
   selector: string;
 
   @ApiProperty({
@@ -69,6 +72,6 @@ export class ReplaceAreaWithElementDto {
   @ApiProperty({ example: 'id:banner', description: 'the element the area stands for' })
   @IsString()
   @IsNotEmpty()
-  @MaxLength(300)
+  @MaxLength(MAX_SELECTOR_LENGTH)
   selector: string;
 }

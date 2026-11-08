@@ -697,6 +697,34 @@ describe('TestRunsService', () => {
       expect(service.findOne).not.toHaveBeenCalled();
     });
 
+    // anyone who sees the project, a guest or an API key, asks this: a pattern that would hold the
+    // API is answered at once, without loading the trees (VIS-SEC-058)
+    it('turns away a selector longer than a rule holds and a pattern too large to run', async () => {
+      service = await initService({});
+      service.findOne = jest.fn();
+      service['uiTreeService'].load = jest.fn();
+      const started = Date.now();
+      expect(await service.selectorMatches('run', 'id:' + 'a'.repeat(298))).toEqual({
+        current: 0,
+        baseline: 0,
+        problem: 'too-long',
+      });
+      expect(await service.selectorMatches('run', 'text:/(?:' + 'x*'.repeat(137) + '){1000}[qz]$/')).toEqual({
+        current: 0,
+        baseline: 0,
+        problem: 'pattern',
+      });
+      // a repeated ?selector= arrives as a list
+      expect(await service.selectorMatches('run', ['id:a', 'id:b'] as never)).toEqual({
+        current: 0,
+        baseline: 0,
+        problem: 'prefix',
+      });
+      expect(Date.now() - started).toBeLessThan(200);
+      expect(service.findOne).not.toHaveBeenCalled();
+      expect(service['uiTreeService'].load).not.toHaveBeenCalled();
+    });
+
     it('refuses to save an xpath that is not a path from a stable element', async () => {
       service = await initService({});
       service.findOne = jest.fn();

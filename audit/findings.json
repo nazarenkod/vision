@@ -18,14 +18,14 @@
  },
  "counts": {
   "Critical": 0,
-  "High": 2,
+  "High": 0,
   "Medium": 10,
   "Low": 30,
   "Info": 8,
-  "Closed": 13,
+  "Closed": 15,
   "Excluded": 6
  },
- "counts_open_total": 50,
+ "counts_open_total": 48,
  "findings": [
   {
    "id": "VIS-SEC-043",
@@ -50,13 +50,14 @@
    "effort": "M",
    "confidence": "High",
    "source_agent_id": "NEW-C-1",
-   "status": "reopened",
-   "status_uk": "відкрито знову",
+   "status": "fixed",
+   "status_uk": "виправлено",
    "severity_2026_11_05": null,
    "severity_before_fix": "High",
    "fix": "Виправлено (2026-11-07): позиції серед братів того самого класу рахуються один раз на дерево (xpath-selector.ts sameClassSiblings), крок /Клас[n] бере дітей з цієї карти. Характеризаційні знімки (structure.characterization.spec.ts) не змінились; 20 000 безіменних рядків — менше 1 с у тесті (було 42,9 с). Стенд: 10 000 вузлів — structure за 0,16 с (було 6,8 с), 30 000 — 0,42 с, паралельний запит не чекає.",
    "severity_2026_11_07": "Closed",
-   "recheck_2026_11_08": "Виправлення 2026-11-07 прибрало квадратичний фільтр сиблінгів, але selector-variants.ts:113-118 досі перевіряє кожен варіант повним findBySelector, а anchorsOf (xpath-selector.ts:186-198) повертає всі вузли з тим самим resource-id. Список, де рядки мають один resource-id (звично для RecyclerView), знову квадратичний: 2000 рядків — 0,95 с, 4000 — 4,1 с, 8000 (2,2 МБ XML) — 18,8 с головного потоку (raw/repro-010-structure-same-id.txt). Дерево до 10 МиБ — хвилини, як і до виправлення."
+   "recheck_2026_11_08": "Виправлення 2026-11-07 прибрало квадратичний фільтр сиблінгів, але selector-variants.ts:113-118 досі перевіряє кожен варіант повним findBySelector, а anchorsOf (xpath-selector.ts:186-198) повертає всі вузли з тим самим resource-id. Список, де рядки мають один resource-id (звично для RecyclerView), знову квадратичний: 2000 рядків — 0,95 с, 4000 — 4,1 с, 8000 (2,2 МБ XML) — 18,8 с головного потоку (raw/repro-010-structure-same-id.txt). Дерево до 10 МиБ — хвилини, як і до виправлення.",
+   "fix_2026_11_08": "2026-11-08 після аудиту: selectorVariants бере результат селектора з кешу дерева (foundBy) і перевіряє збіг через Set. 8000 рядків з одним resource-id — 71 мс (було 18,8 с), дерево 10 МиБ (72 тис. вузлів) — 242 мс. Знімки поведінки structure.characterization без змін (додано форму «rows sharing one id»). Тести: pickable-elements.spec.ts, security-fixes.e2e-spec.ts (падають на коді до виправлення)."
   },
   {
    "id": "VIS-SEC-058",
@@ -80,9 +81,10 @@
    "effort": "M",
    "confidence": "High",
    "severity_2026_11_07": null,
-   "status": "new",
-   "status_uk": "нова",
-   "severity_note": "CVSS 6.5; severity піднято до High для узгодженості з VIS-SEC-043 (той самий клас: DoS усіх команд від будь-якого учасника проєкту) і через OOM-падіння процесу."
+   "status": "fixed",
+   "status_uk": "виправлено",
+   "severity_note": "CVSS 6.5; severity піднято до High для узгодженості з VIS-SEC-043 (той самий клас: DoS усіх команд від будь-якого учасника проєкту) і через OOM-падіння процесу.",
+   "fix_2026_11_08": "2026-11-08 після аудиту: programEstimate до компіляції і programSize() після, межа MAX_PROGRAM = 4000 інструкцій; кеш обмежено 200 000 інструкцій; selector-matches не рахує селектор довший за 300 (problem too-long). Вираз із 296 символів: відмова за 2 мс, +0 МіБ (було 219 мс і +46 МіБ); guest через API — відповідь < 500 мс (було 7,4 с). Тести: linear-regex.spec.ts, test-runs.service.spec.ts, security-fixes.e2e-spec.ts (падають на коді до виправлення)."
   },
   {
    "id": "VIS-SEC-004",

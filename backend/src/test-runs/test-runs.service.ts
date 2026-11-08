@@ -10,7 +10,12 @@ import {
 } from '@nestjs/common';
 import { screenshotProblem } from '../shared/screenshot-limits';
 import { randomUUID } from 'crypto';
-import { AddElementRuleDto, RemoveElementRuleDto, ReplaceAreaWithElementDto } from './dto/element-rule.dto';
+import {
+  AddElementRuleDto,
+  MAX_SELECTOR_LENGTH,
+  RemoveElementRuleDto,
+  ReplaceAreaWithElementDto,
+} from './dto/element-rule.dto';
 import {
   checkKey,
   ElementRule,
@@ -551,8 +556,12 @@ export class TestRunsService {
   async selectorMatches(
     id: string,
     selector: string
-  ): Promise<{ current: number; baseline: number; problem: ReturnType<typeof selectorProblem> }> {
-    const problem = selectorProblem(selector ?? '');
+  ): Promise<{ current: number; baseline: number; problem: ReturnType<typeof selectorProblem> | 'too-long' }> {
+    // anyone who sees the project asks this as they type: no longer than a rule may be (VIS-SEC-058)
+    // a query may repeat ?selector=, which arrives as a list
+    const text = typeof selector === 'string' ? selector : '';
+    if (text.length > MAX_SELECTOR_LENGTH) return { current: 0, baseline: 0, problem: 'too-long' };
+    const problem = selectorProblem(text);
     if (problem) return { current: 0, baseline: 0, problem };
     const testRun = await this.findOne(id);
     if (!testRun) throw new NotFoundException('Test run not found');
@@ -560,7 +569,7 @@ export class TestRunsService {
       this.uiTreeService.load(testRun.uiTreeName),
       this.uiTreeService.load(testRun.baselineUiTreeName),
     ]);
-    const count = (side: typeof tree) => (side ? findBySelector(side, selector).length : 0);
+    const count = (side: typeof tree) => (side ? findBySelector(side, text).length : 0);
     return { current: count(tree), baseline: count(baselineTree), problem: null };
   }
 

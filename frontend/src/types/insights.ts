@@ -411,7 +411,9 @@ export type SelectorProblem =
   | "or"
   | "mixed"
   // a text pattern with a back-reference or look-around: Vision does not run those (051)
-  | "pattern";
+  | "pattern"
+  // longer than a rule may hold: the count is not worked out (VIS-SEC-058)
+  | "too-long";
 
 export interface SelectorMatches {
   current: number;

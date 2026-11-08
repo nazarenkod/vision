@@ -1294,7 +1294,7 @@ export const uk: Messages = {
   "panel.matchCount": "{baseline} на еталоні · {current} на поточному",
   "panel.selectorProblem.prefix": "Почніть з id:, class:, text: або xpath:",
   "panel.selectorProblem.pattern":
-    "Vision не виконує у виразі зворотні посилання (\\1), перевірки вперед чи назад ((?=…), (?<=…)) і повтори понад 1000",
+    "Vision не виконує у виразі зворотні посилання (\\1), перевірки вперед чи назад ((?=…), (?<=…)), повтори понад 1000 і вкладені повтори, що разом дають більше",
   "panel.selectorProblem.syntax": "Цей XPath не розбирається",
   "panel.selectorProblem.anchor":
     "Почніть з одного стабільного елемента: //*[@resource-id='…'] або //*[@text='…']",
@@ -1307,6 +1307,7 @@ export const uk: Messages = {
   "panel.selectorProblem.or": "Один елемент за раз: без «or» і без «|»",
   "panel.selectorProblem.mixed":
     "Ідіть від стабільного елемента або вниз, або вгору, не в обидва боки",
+  "panel.selectorProblem.too-long": "Селектор вміщує до 300 символів",
   "select.selected": "Обрано елементів: {count}",
   "select.ruleIgnore": "Ігнорується",
   "select.ruleTolerate": "Допуск ±{percent}%",

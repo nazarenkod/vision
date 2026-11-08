@@ -259,6 +259,75 @@ describe('Fixes of the 2026-11-07 audit (e2e)', () => {
     });
   });
 
+  describe('VIS-SEC-043 (2026-11-08): rows of a list that share one id', () => {
+    it('offers the parts of 8000 rows that share one id in well under the 19 s it took', async () => {
+      const editor = await user('editor');
+      const team = await project({}, [editor]);
+      const rows = Array.from({ length: 8000 }, (_, i) => {
+        const y = (i % 200) * 10;
+        return (
+          `<android.widget.LinearLayout class="android.widget.LinearLayout" resource-id="com.bank.app:id/row" ` +
+          `text="" content-desc="" displayed="true" bounds="[0,${y}][1080,${y + 10}]">` +
+          `<android.view.View class="android.view.View" resource-id="" text="" content-desc="" displayed="true" ` +
+          `bounds="[10,${y}][500,${y + 9}]"/></android.widget.LinearLayout>`
+        );
+      }).join('');
+      const run = await upload(
+        editor.apiKey,
+        team.id,
+        (await build(editor.apiKey, team.id)).body.id,
+        plainPng(1080, 2400),
+        { uiTree: asField(androidTree(rows)), uiTreeFormat: 'appium-android' }
+      ).expect(201);
+
+      const started = Date.now();
+      const structure = await requestWithAuth(app, 'get', `/test-runs/${run.body.id}/structure`, editor.token).expect(
+        200
+      );
+      expect(Date.now() - started).toBeLessThan(2000);
+      const parts = structure.body.elements.filter(
+        (element: { selector: string }) =>
+          element.selector === "xpath://*[@resource-id='com.bank.app:id/row']/android.view.View[1]"
+      );
+      expect(parts).toHaveLength(8000);
+    });
+  });
+
+  describe('VIS-SEC-058: a pattern that unrolls too large', () => {
+    it("answers a guest's selector at once and keeps answering everyone else", async () => {
+      const editor = await user('editor');
+      const guest = await user('guest');
+      const team = await project({}, [editor, guest]);
+      const texts = Array.from({ length: 50 }, (_, i) => textView(`Баланс 1 234,56 ₴ ${i}`, i * 40)).join('');
+      const run = await upload(
+        editor.apiKey,
+        team.id,
+        (await build(editor.apiKey, team.id)).body.id,
+        plainPng(1080, 2400),
+        { uiTree: asField(androidTree(texts)), uiTreeFormat: 'appium-android' }
+      ).expect(201);
+      const matches = (selector: string) =>
+        requestWithAuth(
+          app,
+          'get',
+          `/test-runs/${run.body.id}/selector-matches?selector=${encodeURIComponent(selector)}`,
+          guest.token
+        ).expect(200);
+
+      // 296 characters: it held the API for 7.5 s and kept 46 MiB (audit 2026-11-08)
+      const started = Date.now();
+      const heavy = await matches('text:/(?:' + 'x*'.repeat(137) + '){1000}[qz]$/');
+      expect(Date.now() - started).toBeLessThan(500);
+      expect(heavy.body).toEqual({ current: 0, baseline: 0, problem: 'pattern' });
+
+      const long = await matches('text:/' + 'x'.repeat(1000) + '/');
+      expect(long.body).toEqual({ current: 0, baseline: 0, problem: 'too-long' });
+
+      // what people write still counts
+      expect((await matches('text:/^Баланс \\d/')).body).toEqual({ current: 50, baseline: 0, problem: null });
+    });
+  });
+
   describe('VIS-SEC-005: at most 20 ignore areas on a screen', () => {
     const areas = (count: number) => Array.from({ length: count }, (_, i) => ({ x: i, y: i, width: 5, height: 5 }));
 

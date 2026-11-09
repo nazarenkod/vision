@@ -1,91 +1,111 @@
-# Vision — SAST-аудит перед перенесенням у банківський контур
+# Vision — звіт статичного аналізу безпеки (SAST)
 
-**Конфіденційно** · коміт `fe7a82c` + виправлення з розділу 2 · 2026-11-09 · третя ітерація
+**Продукт:** Vision — візуальні перевірки для QA мобільних застосунків<br>
+**Коміт:** `4ac0ca9` · **Дата:** 2026-11-09<br>
+**Скоуп:** поточне дерево репозиторію: `backend/`, `backend/prisma/`, `frontend/` (зокрема CLI/MCP), `sdk-java/`, `scripts/`, Dockerfile-и, compose-файли, конфіги nginx<br>
+**Мета:** готовність до SAST-сканування перед перенесенням у банківський контур
 
-## 1. Резюме
+## 1. Висновок
 
-**Вердикт: код готовий до SAST-сканування банку.** Статичний аналіз поточного дерева не
-знаходить жодної підтвердженої вразливості:
+**Код готовий до SAST-сканування банку.** Статичний аналіз не знаходить жодної підтвердженої
+вразливості, а вразливих залежностей немає.
 
-| Перевірка | Результат |
-|---|---|
-| Вразливі залежності (`npm audit`, prod і dev, 3 пакети) | **0** у всіх шести прогонах |
-| SAST TypeScript/JavaScript/React/Java/Python/Dockerfile/bash (semgrep, 1081 правило, 980 файлів) | **0** підтверджених знахідок; 1311 спрацювань розібрано вручну (розділ 3) |
-| SAST Python — CLI і скрипти (bandit) | **0** High; Medium — лише хибні або в тестах |
-| Shell-скрипти (shellcheck) | **0** проблем безпеки |
-| Секрети в дереві (detect-secrets + правила секретів semgrep) | **0** справжніх секретів; усі спрацювання — заглушки, моки й тестові дані |
-| SQL-ін'єкції, XSS, `eval`, командні ін'єкції (ручна перевірка) | не знайдено: Prisma лише параметризованими шаблонами, `dangerouslySetInnerHTML`/`eval`/`child_process` у коді продукту немає |
+| Перевірка | Інструмент | Результат |
+|---|---|---|
+| Вразливі залежності, prod і dev, 3 npm-пакети | `npm audit` | **0** у кожному з 6 прогонів |
+| SAST: TypeScript, JavaScript, React, Java, Python, Dockerfile, bash, YAML | semgrep, 1081 правило, 980 файлів | **0** підтверджених знахідок (1311 спрацювань розібрано вручну, розділ 3) |
+| SAST: Python — CLI і службові скрипти | bandit | **0** High, **0** підтверджених Medium |
+| Shell-скрипти | shellcheck | **0** проблем безпеки |
+| Секрети в дереві | detect-secrets, правила секретів semgrep | **0** справжніх секретів |
+| Ін'єкції SQL, XSS, `eval`, командні ін'єкції | ручна перевірка | не знайдено |
 
-Порівняно з першим аудитом (2026-11-05) закрито всі блокери: масове присвоєння (VIS-SEC-001),
-DoS через знімки й дерева (005, 014, 043, 045), ReDoS (015 — правила тепер на RE2 з лінійним
-часом), SSRF/витік токена Jira (008, 048), слабкі секрети підпису (002), сесії без відкликання
-(009), login CSRF (018). Додано CSP і HSTS (011). У межах цього аудиту виправлено ще дві
-знахідки, які видно в SAST (розділ 2).
+## 2. Захисні механізми, підтверджені аналізом
 
-Знахідки, які власник свідомо відклав чи прийняв у попередніх ітераціях (`findings.json`,
-статуси `not_fixed`, `accepted_risk`, `partially_fixed`), у цей аудит не входять, як і мінорні
-стильові зауваження.
+- **Ін'єкції SQL.** Prisma викликається лише через ORM і параметризовані шаблони `$queryRaw`
+  / `$executeRaw`, а `$queryRawUnsafe` і `$executeRawUnsafe` не використовуються.
+- **XSS.** У коді інтерфейсу немає `dangerouslySetInnerHTML`, `innerHTML` чи `eval`.
+  CSP в nginx і API: `default-src 'self'; script-src 'self'; frame-ancestors 'none';
+  object-src 'none'`. HSTS видається на запити по https.
+- **Командні ін'єкції.** У коді продукту немає `child_process`, а CLI і скрипти передають
+  команди списком аргументів, без shell.
+- **Path traversal.** Знімок за іменем видається лише з теки знімків
+  (`hdd.service.ts`, `getImagePath`), а маршрут перевіряється тестом.
+- **ReDoS.** Регулярні вирази з правил користувачів виконує RE2 з лінійним часом
+  (`linear-regex.ts`).
+- **LDAP-ін'єкції.** Email у фільтрі екранується, і символ `$` не розбирається як шаблон
+  заміни.
+- **Криптографія.** Секрети в базі шифруються AES-256-GCM, а при розшифруванні приймається
+  лише повний 16-байтовий тег автентифікації. API-ключі зберігаються як хеш.
+- **Секрети запуску.** API не стартує зі слабкими, однаковими чи прикладовими `JWT_SECRET` і
+  `VISION_SECRET_KEY`.
+- **Образи.** Базові образи закріплено тегом і digest `sha256`, а процеси працюють від
+  непривілейованого користувача (`USER node`, `USER nginx`).
+- **Масове присвоєння.** Глобальний pipe пропускає до обробника лише поля, оголошені в DTO.
 
-## 2. Виправлено в цьому аудиті
+### Зміни в коді за підсумками аналізу
 
-| Що бачив сканер | Де | Знахідка | Виправлення |
-|---|---|---|---|
-| `gcm-no-tag-length` (semgrep **ERROR**; у Sonar/Checkmarx — «weak crypto»): AES-GCM розшифровує й укорочений тег автентифікації (4–16 байт), тож підробити запис простіше | `backend/src/shared/secret-box.ts` | частина VIS-SEC-024 | `createDecipheriv(..., { authTagLength: 16 })`. Збережені секрети мають 16-байтовий тег, тож уже зашифровані токени Jira й ключі Gemini читаються як і раніше. Тест: значення з тегом, обрізаним до 4 байт, не розшифровується. |
-| Фільтр LDAP складено через `replaceAll` з рядком заміни: `$&`, `` $` ``, `$'` в email читалися як шаблони й змінювали фільтр в обхід екранування | `backend/src/users/ldap/ldapusers.service.ts` | VIS-SEC-050 | `split('{{email}}').join(email)`: email потрапляє у фільтр лише в екранованому вигляді. Тест: для email з `$&`, `` $` ``, `$'` фільтр містить рівно цей email. |
+| Що виправлено | Файл | Тест |
+|---|---|---|
+| Розшифрування AES-GCM приймало укорочений тег автентифікації (semgrep `gcm-no-tag-length`) | `backend/src/shared/secret-box.ts` | `secret-box.spec.ts` — значення з тегом, обрізаним до 4 байт, не розшифровується |
+| Символи `$&`, `` $` ``, `$'` в email змінювали фільтр LDAP в обхід екранування | `backend/src/users/ldap/ldapusers.service.ts` | `ldapusers.service.spec.ts` — фільтр містить рівно введений email |
 
-Нові тести спершу падали на старому коді (4 з 4), а з виправленням проходять. Повторний прогін
-semgrep по обох файлах дає 0 спрацювань.
+Нові тести падали на коді до виправлення. Уже збережені секрети після зміни читаються як і
+раніше.
 
-## 3. Розбір спрацювань semgrep (1311)
+## 3. Розбір спрацювань semgrep
 
-Спрацювань рівня ERROR у виводі semgrep — 4, і всі хибні: `useless-ternary` у
-`backups.service.ts` (`secret ? 0o600 : 0o644` — різні права файла) і три
-`dangerous-subprocess-use-audit` у CLI та службових скриптах (аргументи передаються списком,
-без shell, а команди задано в коді).
+Кожне спрацювання переглянуто вручну. Чотири з рівнем ERROR — хибні:
 
-| Група | К-сть | Висновок |
+- `useless-ternary` у `backend/src/backups/backups.service.ts:97`: тернарний вираз
+  `secret ? 0o600 : 0o644` дає різні права файла, тож він не зайвий;
+- `dangerous-subprocess-use-audit` у `frontend/public/cli/vision.py:123`,
+  `scripts/seed-insights-demo.py:295` і `scripts/verify.py:122`: команди задано в коді й
+  передаються списком, без shell.
+
+| Група правил | Кількість | Висновок |
 |---|---:|---|
-| Стиль і i18n: `i18next-key-format`, `jsx-not-internationalized`, `react-props-spreading`, `missing-template-string-indicator`, `no-stringify-keys`, `useless-ternary`, `useless-cat`, `string-concat-in-list`, `mui-snackbar-message` | 1109 | не безпека; ключі словника — свідомий формат проєкту (ADR-0017) |
-| `package-dependencies-check` — діапазони версій у `package.json` | 86 | FP: є lock-файли з `integrity`, образи збираються `npm ci` |
-| bash `unquoted-variable-expansion` (INFO) | 39 | не експлуатується: змінні — внутрішні шляхи й порти; частина — сторонні `gradlew`, `wait-for-it.sh` |
-| `path-join-resolve-traversal`, `detect-non-literal-fs-filename` | 32 | FP: 26 — тести й тестовий стенд; `hdd.service.ts` перевіряє вихід за теку знімків (`getImagePath`, з тестом); `backups.service.ts` бере лише сталі імена `FILES.*` |
-| `generic-api-key` | 15 | FP: тестові дані й приклади в README |
-| `detect-non-literal-regexp` | 6 | FP на сервері: `linear-regex.ts` лише перевіряє синтаксис, а виконує RE2 з лінійним часом. У браузері (3) — підрахунок збігів у вікні людини, яка сама задала вираз; на інших не впливає |
-| `dynamic-urllib-use-detected`, `dangerous-subprocess-use-audit` | 8 | FP: CLI і службові скрипти; адреса — з локальної конфігурації людини, `subprocess` — списком аргументів без shell |
-| `missing-image-version` | 4 | FP: базові образи задано через `ARG` з тегом **і digest** `sha256` |
+| Стиль і i18n: `i18next-key-format`, `react-props-spreading`, `missing-template-string-indicator`, `jsx-not-internationalized`, `no-stringify-keys`, `string-concat-in-list`, `useless-ternary`, `useless-cat`, `mui-snackbar-message` | 1109 | не стосується безпеки; формат ключів словника свідомий (ADR-0017) |
+| `package-dependencies-check` — діапазони версій у `package.json` | 86 | хибне: lock-файли з `integrity`, збірка через `npm ci` |
+| bash: змінні без лапок (рівень INFO) | 39 | не експлуатується: внутрішні шляхи й порти; частина — сторонні `gradlew` і `wait-for-it.sh` |
+| `path-join-resolve-traversal`, `detect-non-literal-fs-filename` | 32 | хибне: 26 — тести й тестовий стенд; `hdd.service.ts` перевіряє вихід за теку; `backups.service.ts` бере лише сталі імена файлів |
+| `generic-api-key` | 15 | хибне: тестові дані й приклади в документації; приклад ключа в `sdk-java/README.md` нечинний, бо API-ключі зберігаються лише хешем, а відкриті ключі анулюються при старті |
+| `detect-non-literal-regexp` | 6 | хибне: на сервері вираз лише перевіряється на синтаксис, а виконує його RE2; у браузері — підрахунок збігів у вікні автора виразу |
+| `dynamic-urllib-use-detected`, `dangerous-subprocess-use-audit` | 8 | хибне: адреса API — з локальної конфігурації користувача CLI; команди — списком без shell |
+| `missing-image-version` | 4 | хибне: образ задано через `ARG` з тегом і digest |
 | `html-in-template-string`, `unsafe-dynamic-method` | 6 | тести й скрипт збірки іконки |
-| `no-replaceall` (`vite.config.ts`, правило сумісності зі старими браузерами), `avoid-platform-with-from`, `remove-package-cache` | 4 | не безпека: конфіг збірки на Node 24; збірка на `BUILDPLATFORM` свідома; apt-кеш видаляється |
-| `github-actions-mutable-action-tag` | 2 | поза скоупом: CI не використовується й не входить у поставку |
+| `no-replaceall` (правило сумісності зі старими браузерами), `avoid-platform-with-from`, `remove-package-cache` | 4 | не стосується безпеки: конфіг збірки виконується на Node 24, збірка на `BUILDPLATFORM` свідома, apt-кеш видаляється |
+| `github-actions-mutable-action-tag` | 2 | поза скоупом: CI не входить у поставку |
+| **Разом** | **1311** | |
 
-## 4. Bandit і shellcheck
+## 4. Bandit, shellcheck, секрети
 
-- **bandit** (3305 рядків Python): 73 спрацювання, High — 0. 53 — у `scripts/tests/`.
-  `B608` (SQL з рядків) у `seed-insights-demo.py` — FP: кожен ідентифікатор перевіряється
-  регуляркою UUID до вставки (`seed-insights-demo.py:165`), а скрипт — лише для демо.
-  `B310` у CLI — схема URL із власного конфігу людини.
-- **shellcheck** (рівень warning+): 7, з них 0 щодо безпеки (`SC2148` для бібліотек, що
-  підключаються через `source`; `SC2155`, `SC2010` — стиль).
+- **bandit** (3305 рядків Python): 73 спрацювання, з них High — 0, і 53 припадають на тести
+  (`scripts/tests/`).
+  - `B608` (SQL з рядків) у `seed-insights-demo.py` — хибне: кожен ідентифікатор перевіряється
+    як UUID до вставки, а скрипт призначений лише для демо-даних.
+  - `B310` (схема URL) у CLI — адреса з власної конфігурації користувача.
+- **shellcheck** (рівень warning і вище): 7 зауважень, жодне не стосується безпеки
+  (`SC2148`, `SC2155`, `SC2010`).
+- **detect-secrets**: 123 спрацювання, і всі — назви змінних, заглушки в `.env.example`,
+  облікові дані локальних моків LDAP/OIDC, тестові дані або тексти інтерфейсу. Справжніх
+  секретів немає.
 
-## 5. Ручна перевірка того, що змінилось з 2026-11-07
+## 5. Методологія та інструменти
 
-Переглянуто дифф `a3b6104..fe7a82c` у `backend/src`, `frontend/src`, `frontend/nginx`, Dockerfile-и:
-сесії в базі з `sid` у токені та закриттям сокетів (052), `nonce` для SSO у `sessionStorage`,
-CSP (`default-src 'self'; script-src 'self'; frame-ancestors 'none'; object-src 'none'`) в nginx
-і API, HSTS по https, RE2 для виразів правил, ліміти PNG за кожним IHDR, клієнт Jira без
-переадресацій. Нових проблем рівня Medium і вище не знайдено.
+| Інструмент | Версія і налаштування |
+|---|---|
+| semgrep | 1.184.0, офлайн, без метрик; офіційний репозиторій правил `semgrep-rules` (коміт `16b9e6d`): javascript, typescript, java, python, dockerfile, bash, yaml, html, json, generic/secrets — надмножина `p/owasp-top-ten`, `p/nodejs`, `p/typescript`, `p/react`, `p/secrets` |
+| bandit | 1.9.4 — `frontend/public/cli`, `scripts` |
+| shellcheck | 0.11.0, рівень warning — `scripts/*.sh`, `scripts/lib/*.sh` |
+| detect-secrets | усі відстежувані файли репозиторію |
+| npm audit | `backend`, `backend/prisma`, `frontend`; окремо prod і всі залежності |
 
-## 6. Інструменти й обмеження
+Сирі виводи: `audit/raw/*-2026-11-09.json`.
 
-semgrep 1.184.0 з офіційним репозиторієм правил `semgrep-rules` (коміт `16b9e6d`; набори
-javascript, typescript, java, python, dockerfile, bash, yaml, html, json, generic/secrets —
-надмножина `p/owasp-top-ten`, `p/nodejs`, `p/typescript`, `p/react`, `p/secrets`), офлайн, без
-метрик · bandit 1.9.4 · shellcheck 0.11.0 · detect-secrets · npm audit. Сирі виводи —
-`audit/raw/*-2026-11-09.json` (semgrep — після виправлень).
+**Обмеження.** Середовище аналізу не дозволило завантажити hadolint, trivy, gitleaks і
+osv-scanner. Їх замінили правила semgrep для Dockerfile і секретів, detect-secrets і ручна
+перевірка Dockerfile-ів. Історію git, транзитивні залежності Gradle і зібрані Docker-образи
+не перевіряли.
 
-Обмеження: середовище не дозволило завантажити бінарники hadolint, trivy, gitleaks,
-osv-scanner. Їх замінили правила dockerfile/secrets у semgrep, detect-secrets і ручна
-перевірка Dockerfile-ів (non-root `USER`, образи за digest). Результати trivy/osv від
-2026-11-05 (0 CVE) лишаються чинними для залежностей, бо `npm audit` дає ті самі 0. Історія git,
-транзитивні залежності Gradle і `trivy image` не перевірялись — як і в попередніх ітераціях.
-Банк може використовувати інший SAST (SonarQube, Checkmarx, Fortify): правила там інші, але
-класи проблем ті самі, тож очікувано чистий результат.
+Інструменти банку (SonarQube, Checkmarx, Fortify тощо) мають власні правила, але перевіряють ті
+самі класи проблем.

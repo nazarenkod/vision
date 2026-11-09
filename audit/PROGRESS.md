@@ -125,3 +125,5 @@
 - Виправлено з тестами (рішення власника): `gcm-no-tag-length` → `authTagLength: 16` (частина VIS-SEC-024),
   фільтр LDAP через split/join (VIS-SEC-050). Теги actions (VIS-SEC-030) — поза скоупом: CI не використовується.
 - Не вдалось: hadolint, trivy, gitleaks, osv-scanner (завантаження бінарників заборонене середовищем).
+- Фінальний прогін на 4ac0ca9: npm audit 0 (×6), semgrep 1311 → 0 підтверджених, bandit High 0, shellcheck 0
+  щодо безпеки, секретів немає. Звіт: `audit/report-sast-2026-11-09.{md,html,pdf}` (4 стор., перевірено посторінково).

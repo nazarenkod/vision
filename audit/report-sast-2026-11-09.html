@@ -1,0 +1,241 @@
+<!doctype html><html lang='uk'><head><meta charset='utf-8'><title>Vision — SAST</title><style>
+@page { size: A4; font-family: "DejaVu Sans", sans-serif; margin: 18mm 16mm 18mm 16mm;
+  @top-right { content: "Конфіденційно"; font-size: 8pt; color: #888; }
+  @bottom-center { content: counter(page) " / " counter(pages); font-size: 8pt; color: #888; } }
+body { font-family: 'DejaVu Sans', sans-serif; font-size: 9.5pt; line-height: 1.45; color: #1d1d1f; }
+h1 { font-size: 18pt; border-bottom: 3px solid #1f6f43; padding-bottom: 6px; }
+h2 { font-size: 13pt; color: #1f6f43; margin-top: 18px; page-break-after: avoid; }
+h3 { font-size: 11pt; page-break-after: avoid; }
+table { border-collapse: collapse; width: 100%; margin: 8px 0; page-break-inside: auto; }
+tr { page-break-inside: avoid; }
+th, td { border: 1px solid #d0d4d9; padding: 4px 6px; vertical-align: top; text-align: left; }
+th { background: #eef4f0; white-space: nowrap; }
+code { font-family: 'DejaVu Sans Mono', monospace; font-size: 8.3pt; background: #f3f4f6; padding: 0 2px; word-break: break-word; }
+strong { color: #14532d; }
+</style></head><body><h1>Vision — звіт статичного аналізу безпеки (SAST)</h1>
+<p><strong>Продукт:</strong> Vision — візуальні перевірки для QA мобільних застосунків<br>
+<strong>Коміт:</strong> <code>4ac0ca9</code> · <strong>Дата:</strong> 2026-11-09<br>
+<strong>Скоуп:</strong> поточне дерево репозиторію: <code>backend/</code>, <code>backend/prisma/</code>, <code>frontend/</code> (зокрема CLI/MCP), <code>sdk-java/</code>, <code>scripts/</code>, Dockerfile-и, compose-файли, конфіги nginx<br>
+<strong>Мета:</strong> готовність до SAST-сканування перед перенесенням у банківський контур</p>
+<h2>1. Висновок</h2>
+<p><strong>Код готовий до SAST-сканування банку.</strong> Статичний аналіз не знаходить жодної підтвердженої
+вразливості, а вразливих залежностей немає.</p>
+<table>
+<thead>
+<tr>
+<th>Перевірка</th>
+<th>Інструмент</th>
+<th>Результат</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Вразливі залежності, prod і dev, 3 npm-пакети</td>
+<td><code>npm audit</code></td>
+<td><strong>0</strong> у кожному з 6 прогонів</td>
+</tr>
+<tr>
+<td>SAST: TypeScript, JavaScript, React, Java, Python, Dockerfile, bash, YAML</td>
+<td>semgrep, 1081 правило, 980 файлів</td>
+<td><strong>0</strong> підтверджених знахідок (1311 спрацювань розібрано вручну, розділ 3)</td>
+</tr>
+<tr>
+<td>SAST: Python — CLI і службові скрипти</td>
+<td>bandit</td>
+<td><strong>0</strong> High, <strong>0</strong> підтверджених Medium</td>
+</tr>
+<tr>
+<td>Shell-скрипти</td>
+<td>shellcheck</td>
+<td><strong>0</strong> проблем безпеки</td>
+</tr>
+<tr>
+<td>Секрети в дереві</td>
+<td>detect-secrets, правила секретів semgrep</td>
+<td><strong>0</strong> справжніх секретів</td>
+</tr>
+<tr>
+<td>Ін'єкції SQL, XSS, <code>eval</code>, командні ін'єкції</td>
+<td>ручна перевірка</td>
+<td>не знайдено</td>
+</tr>
+</tbody>
+</table>
+<h2>2. Захисні механізми, підтверджені аналізом</h2>
+<ul>
+<li><strong>Ін'єкції SQL.</strong> Prisma викликається лише через ORM і параметризовані шаблони <code>$queryRaw</code>
+  / <code>$executeRaw</code>, а <code>$queryRawUnsafe</code> і <code>$executeRawUnsafe</code> не використовуються.</li>
+<li><strong>XSS.</strong> У коді інтерфейсу немає <code>dangerouslySetInnerHTML</code>, <code>innerHTML</code> чи <code>eval</code>.
+  CSP в nginx і API: <code>default-src 'self'; script-src 'self'; frame-ancestors 'none';
+  object-src 'none'</code>. HSTS видається на запити по https.</li>
+<li><strong>Командні ін'єкції.</strong> У коді продукту немає <code>child_process</code>, а CLI і скрипти передають
+  команди списком аргументів, без shell.</li>
+<li><strong>Path traversal.</strong> Знімок за іменем видається лише з теки знімків
+  (<code>hdd.service.ts</code>, <code>getImagePath</code>), а маршрут перевіряється тестом.</li>
+<li><strong>ReDoS.</strong> Регулярні вирази з правил користувачів виконує RE2 з лінійним часом
+  (<code>linear-regex.ts</code>).</li>
+<li><strong>LDAP-ін'єкції.</strong> Email у фільтрі екранується, і символ <code>$</code> не розбирається як шаблон
+  заміни.</li>
+<li><strong>Криптографія.</strong> Секрети в базі шифруються AES-256-GCM, а при розшифруванні приймається
+  лише повний 16-байтовий тег автентифікації. API-ключі зберігаються як хеш.</li>
+<li><strong>Секрети запуску.</strong> API не стартує зі слабкими, однаковими чи прикладовими <code>JWT_SECRET</code> і
+  <code>VISION_SECRET_KEY</code>.</li>
+<li><strong>Образи.</strong> Базові образи закріплено тегом і digest <code>sha256</code>, а процеси працюють від
+  непривілейованого користувача (<code>USER node</code>, <code>USER nginx</code>).</li>
+<li><strong>Масове присвоєння.</strong> Глобальний pipe пропускає до обробника лише поля, оголошені в DTO.</li>
+</ul>
+<h3>Зміни в коді за підсумками аналізу</h3>
+<table>
+<thead>
+<tr>
+<th>Що виправлено</th>
+<th>Файл</th>
+<th>Тест</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Розшифрування AES-GCM приймало укорочений тег автентифікації (semgrep <code>gcm-no-tag-length</code>)</td>
+<td><code>backend/src/shared/secret-box.ts</code></td>
+<td><code>secret-box.spec.ts</code> — значення з тегом, обрізаним до 4 байт, не розшифровується</td>
+</tr>
+<tr>
+<td>Символи <code>$&amp;</code>, <code>$`</code>, <code>$'</code> в email змінювали фільтр LDAP в обхід екранування</td>
+<td><code>backend/src/users/ldap/ldapusers.service.ts</code></td>
+<td><code>ldapusers.service.spec.ts</code> — фільтр містить рівно введений email</td>
+</tr>
+</tbody>
+</table>
+<p>Нові тести падали на коді до виправлення. Уже збережені секрети після зміни читаються як і
+раніше.</p>
+<h2>3. Розбір спрацювань semgrep</h2>
+<p>Кожне спрацювання переглянуто вручну. Чотири з рівнем ERROR — хибні:</p>
+<ul>
+<li><code>useless-ternary</code> у <code>backend/src/backups/backups.service.ts:97</code>: тернарний вираз
+  <code>secret ? 0o600 : 0o644</code> дає різні права файла, тож він не зайвий;</li>
+<li><code>dangerous-subprocess-use-audit</code> у <code>frontend/public/cli/vision.py:123</code>,
+  <code>scripts/seed-insights-demo.py:295</code> і <code>scripts/verify.py:122</code>: команди задано в коді й
+  передаються списком, без shell.</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th>Група правил</th>
+<th style="text-align: right;">Кількість</th>
+<th>Висновок</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Стиль і i18n: <code>i18next-key-format</code>, <code>react-props-spreading</code>, <code>missing-template-string-indicator</code>, <code>jsx-not-internationalized</code>, <code>no-stringify-keys</code>, <code>string-concat-in-list</code>, <code>useless-ternary</code>, <code>useless-cat</code>, <code>mui-snackbar-message</code></td>
+<td style="text-align: right;">1109</td>
+<td>не стосується безпеки; формат ключів словника свідомий (ADR-0017)</td>
+</tr>
+<tr>
+<td><code>package-dependencies-check</code> — діапазони версій у <code>package.json</code></td>
+<td style="text-align: right;">86</td>
+<td>хибне: lock-файли з <code>integrity</code>, збірка через <code>npm ci</code></td>
+</tr>
+<tr>
+<td>bash: змінні без лапок (рівень INFO)</td>
+<td style="text-align: right;">39</td>
+<td>не експлуатується: внутрішні шляхи й порти; частина — сторонні <code>gradlew</code> і <code>wait-for-it.sh</code></td>
+</tr>
+<tr>
+<td><code>path-join-resolve-traversal</code>, <code>detect-non-literal-fs-filename</code></td>
+<td style="text-align: right;">32</td>
+<td>хибне: 26 — тести й тестовий стенд; <code>hdd.service.ts</code> перевіряє вихід за теку; <code>backups.service.ts</code> бере лише сталі імена файлів</td>
+</tr>
+<tr>
+<td><code>generic-api-key</code></td>
+<td style="text-align: right;">15</td>
+<td>хибне: тестові дані й приклади в документації; приклад ключа в <code>sdk-java/README.md</code> нечинний, бо API-ключі зберігаються лише хешем, а відкриті ключі анулюються при старті</td>
+</tr>
+<tr>
+<td><code>detect-non-literal-regexp</code></td>
+<td style="text-align: right;">6</td>
+<td>хибне: на сервері вираз лише перевіряється на синтаксис, а виконує його RE2; у браузері — підрахунок збігів у вікні автора виразу</td>
+</tr>
+<tr>
+<td><code>dynamic-urllib-use-detected</code>, <code>dangerous-subprocess-use-audit</code></td>
+<td style="text-align: right;">8</td>
+<td>хибне: адреса API — з локальної конфігурації користувача CLI; команди — списком без shell</td>
+</tr>
+<tr>
+<td><code>missing-image-version</code></td>
+<td style="text-align: right;">4</td>
+<td>хибне: образ задано через <code>ARG</code> з тегом і digest</td>
+</tr>
+<tr>
+<td><code>html-in-template-string</code>, <code>unsafe-dynamic-method</code></td>
+<td style="text-align: right;">6</td>
+<td>тести й скрипт збірки іконки</td>
+</tr>
+<tr>
+<td><code>no-replaceall</code> (правило сумісності зі старими браузерами), <code>avoid-platform-with-from</code>, <code>remove-package-cache</code></td>
+<td style="text-align: right;">4</td>
+<td>не стосується безпеки: конфіг збірки виконується на Node 24, збірка на <code>BUILDPLATFORM</code> свідома, apt-кеш видаляється</td>
+</tr>
+<tr>
+<td><code>github-actions-mutable-action-tag</code></td>
+<td style="text-align: right;">2</td>
+<td>поза скоупом: CI не входить у поставку</td>
+</tr>
+<tr>
+<td><strong>Разом</strong></td>
+<td style="text-align: right;"><strong>1311</strong></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h2>4. Bandit, shellcheck, секрети</h2>
+<ul>
+<li><strong>bandit</strong> (3305 рядків Python): 73 спрацювання, з них High — 0, і 53 припадають на тести
+  (<code>scripts/tests/</code>).</li>
+<li><code>B608</code> (SQL з рядків) у <code>seed-insights-demo.py</code> — хибне: кожен ідентифікатор перевіряється
+    як UUID до вставки, а скрипт призначений лише для демо-даних.</li>
+<li><code>B310</code> (схема URL) у CLI — адреса з власної конфігурації користувача.</li>
+<li><strong>shellcheck</strong> (рівень warning і вище): 7 зауважень, жодне не стосується безпеки
+  (<code>SC2148</code>, <code>SC2155</code>, <code>SC2010</code>).</li>
+<li><strong>detect-secrets</strong>: 123 спрацювання, і всі — назви змінних, заглушки в <code>.env.example</code>,
+  облікові дані локальних моків LDAP/OIDC, тестові дані або тексти інтерфейсу. Справжніх
+  секретів немає.</li>
+</ul>
+<h2>5. Методологія та інструменти</h2>
+<table>
+<thead>
+<tr>
+<th>Інструмент</th>
+<th>Версія і налаштування</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>semgrep</td>
+<td>1.184.0, офлайн, без метрик; офіційний репозиторій правил <code>semgrep-rules</code> (коміт <code>16b9e6d</code>): javascript, typescript, java, python, dockerfile, bash, yaml, html, json, generic/secrets — надмножина <code>p/owasp-top-ten</code>, <code>p/nodejs</code>, <code>p/typescript</code>, <code>p/react</code>, <code>p/secrets</code></td>
+</tr>
+<tr>
+<td>bandit</td>
+<td>1.9.4 — <code>frontend/public/cli</code>, <code>scripts</code></td>
+</tr>
+<tr>
+<td>shellcheck</td>
+<td>0.11.0, рівень warning — <code>scripts/*.sh</code>, <code>scripts/lib/*.sh</code></td>
+</tr>
+<tr>
+<td>detect-secrets</td>
+<td>усі відстежувані файли репозиторію</td>
+</tr>
+<tr>
+<td>npm audit</td>
+<td><code>backend</code>, <code>backend/prisma</code>, <code>frontend</code>; окремо prod і всі залежності</td>
+</tr>
+</tbody>
+</table>
+<p>Сирі виводи: <code>audit/raw/*-2026-11-09.json</code>.</p>
+<p><strong>Обмеження.</strong> Середовище аналізу не дозволило завантажити hadolint, trivy, gitleaks і
+osv-scanner. Їх замінили правила semgrep для Dockerfile і секретів, detect-secrets і ручна
+перевірка Dockerfile-ів. Історію git, транзитивні залежності Gradle і зібрані Docker-образи
+не перевіряли.</p>
+<p>Інструменти банку (SonarQube, Checkmarx, Fortify тощо) мають власні правила, але перевіряють ті
+самі класи проблем.</p></body></html>

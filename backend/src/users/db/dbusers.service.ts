@@ -32,7 +32,7 @@ export class DbUsersService implements Users {
     return new UserLoginResponseDto(userData, null);
   }
 
-  async update(id: string, userDto: UpdateUserDto): Promise<UserLoginResponseDto> {
+  async update(id: string, userDto: UpdateUserDto, sessionId?: string): Promise<UserLoginResponseDto> {
     const user = await this.prismaService.user.update({
       where: { id },
       data: {
@@ -41,7 +41,7 @@ export class DbUsersService implements Users {
         lastName: userDto.lastName,
       },
     });
-    const token = await this.authService.signToken(user);
+    const token = await this.authService.renewToken(user, sessionId);
     return new UserLoginResponseDto(user, token);
   }
 

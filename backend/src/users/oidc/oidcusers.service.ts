@@ -333,7 +333,7 @@ export class OidcUsersService implements Users {
     return Promise.reject(new HttpException('User creation is disabled. Use SSO to login.', HttpStatus.BAD_REQUEST));
   }
 
-  async update(id: string, userDto: UpdateUserDto): Promise<UserLoginResponseDto> {
+  async update(id: string, userDto: UpdateUserDto, sessionId?: string): Promise<UserLoginResponseDto> {
     // The email is the account key for OIDC users, so it is owned by the
     // identity provider and must not be changed here.
     const user = await this.prismaService.user.update({
@@ -343,7 +343,7 @@ export class OidcUsersService implements Users {
         lastName: userDto.lastName,
       },
     });
-    const token = await this.authService.signToken(user);
+    const token = await this.authService.renewToken(user, sessionId);
     return new UserLoginResponseDto(user, token);
   }
 

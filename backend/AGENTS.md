@@ -101,8 +101,9 @@ npm run test:e2e / test:acceptance         # потрібні запущені P
 - **Список у тілі запиту з `@ArrayMaxSize`** перевіряє `ListLengthPipe` ще до `ValidationPipe`:
   довгий список не перевіряється поелементно. Областей ігнорування — не більше 20 (`MAX_IGNORE_AREAS`).
 - **Токен входу — лише через `AuthService.signToken`** (`src/auth/auth.service.ts`): він створює рядок
-  `Session`, чий `id` лежить у токені як `sid`. `JwtStrategy` і сокет подій перевіряють сесію через
-  `userForToken`. Новий спосіб завершити вхід — `authService.endSession(s)` і `eventsGateway.endSessions`,
+  `Session`, чий `id` лежить у токені як `sid`. Новий токен того самого входу (збереження профілю) —
+  `renewToken(user, sid)`: новий вхід там лишив би старий токен живим після виходу (VIS-SEC-059).
+  `JwtStrategy` і сокет подій перевіряють сесію через `userForToken`. Новий спосіб завершити вхід — `authService.endSession(s)` і `eventsGateway.endSessions`,
   зміна ролі чи доступу — `eventsGateway.recheckAccess` (052).
 - **`VISION_JIRA_HOSTS`:** ім'я хоста — лише `https` на 443; інший порт чи `http` — запис
   `схема://хост:порт`. Клієнт Jira не йде за переадресацією (051).

@@ -73,6 +73,7 @@ describe('UsersService with DbUserService implementation', () => {
             encryptPassword: jest.fn(() => 'encryptedPassword'),
             compare: jest.fn(() => true),
             signToken: jest.fn(() => 'token'),
+            renewToken: jest.fn(() => 'token'),
           },
         },
       ],
@@ -216,6 +217,17 @@ describe('UsersService with DbUserService implementation', () => {
     // Assert
     expect(prismaUserUpdateMock).toHaveBeenCalled();
     expect(result).toEqual(expect.any(UserLoginResponseDto));
+  });
+
+  // the new token keeps the sign-in the request came with, so signing out ends both (VIS-SEC-059)
+  it('saves the profile without a new sign-in', async () => {
+    jest.spyOn(prismaService.user, 'update').mockResolvedValueOnce(user);
+
+    await service.update(user.id, { email: user.email, firstName: 'John', lastName: 'Doe' }, 'this-sign-in');
+
+    const auth = (service as unknown as { authService: Record<string, jest.Mock> }).authService;
+    expect(auth.renewToken).toHaveBeenCalledWith(user, 'this-sign-in');
+    expect(auth.signToken).not.toHaveBeenCalled();
   });
 
   it('should change password', async () => {

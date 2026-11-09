@@ -72,8 +72,8 @@ export class UsersService {
     return new UserDto(user);
   }
 
-  async update(id: string, userDto: UpdateUserDto): Promise<UserLoginResponseDto> {
-    return this.usersService.update(id, userDto);
+  async update(id: string, userDto: UpdateUserDto, sessionId?: string): Promise<UserLoginResponseDto> {
+    return this.usersService.update(id, userDto, sessionId);
   }
 
   /**

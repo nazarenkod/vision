@@ -49,6 +49,24 @@ export class AuthService {
     return token;
   }
 
+  /**
+   * A fresh token for the same sign-in, as the profile is saved: the session is the one the
+   * request came with, so signing out ends the token before too (VIS-SEC-059). Without a live
+   * session of this person (a token from before 052) it is a new sign-in, as before.
+   */
+  async renewToken(user: User, sid: string | undefined): Promise<string> {
+    if (!sid) return this.signToken(user);
+    const now = new Date();
+    const token = this.jwtService.sign({ email: user.email, sid } satisfies JwtPayload);
+    const { exp } = (this.jwtService.decode(token) ?? {}) as { exp?: number };
+    // the row lives as long as the newest token of the sign-in
+    const { count } = await this.prismaService.session.updateMany({
+      where: { id: sid, userId: user.id, endedAt: null },
+      data: { expiresAt: sessionExpiry(exp, now) },
+    });
+    return count ? token : this.signToken(user);
+  }
+
   // Same secret and expiry check as JwtStrategy, for callers outside an HTTP
   // request (the events socket). Rejects when the token is not valid.
   verifyToken(token: string): Promise<JwtPayload & { exp?: number; iat?: number }> {

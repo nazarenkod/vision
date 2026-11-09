@@ -6,7 +6,8 @@ import { UserLoginRequestDto } from './dto/user-login-request.dto';
 
 export interface Users {
   create(createUserDto: CreateUserDto): Promise<UserLoginResponseDto>;
-  update(id: string, userDto: UpdateUserDto): Promise<UserLoginResponseDto>;
+  // sessionId: the sign-in the request came with, which the new token keeps (VIS-SEC-059)
+  update(id: string, userDto: UpdateUserDto, sessionId?: string): Promise<UserLoginResponseDto>;
   changePassword(user: User, newPassword: string): Promise<boolean>;
   login(userLoginRequestDto: UserLoginRequestDto): Promise<UserLoginResponseDto>;
 }

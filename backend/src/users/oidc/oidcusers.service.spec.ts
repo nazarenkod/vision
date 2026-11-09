@@ -75,6 +75,7 @@ const authService = {
   unknownApiKey: jest.fn(() => 'generatedApiKey'),
   encryptPassword: jest.fn(() => 'encryptedPassword'),
   signToken: jest.fn(() => 'vision-jwt'),
+  renewToken: jest.fn(() => 'vision-jwt'),
 } as unknown as AuthService;
 
 const prismaService = {

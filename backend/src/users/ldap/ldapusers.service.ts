@@ -127,7 +127,7 @@ export class LdapUsersService implements Users {
    * is, as with SSO; the directory's people get their names from the directory, by the email the
    * account already has.
    */
-  async update(id: string, userDto: UpdateUserDto): Promise<UserLoginResponseDto> {
+  async update(id: string, userDto: UpdateUserDto, sessionId?: string): Promise<UserLoginResponseDto> {
     const current = await this.prismaService.user.findUnique({ where: { id }, select: { email: true } });
     if (!current) throw new HttpException('User not found', HttpStatus.NOT_FOUND);
     if (userDto.email !== undefined && userDto.email.trim().toLowerCase() !== current.email.toLowerCase()) {
@@ -146,7 +146,7 @@ export class LdapUsersService implements Users {
           }
         : { firstName: userDto.firstName, lastName: userDto.lastName },
     });
-    const token = await this.authService.signToken(user);
+    const token = await this.authService.renewToken(user, sessionId);
     return new UserLoginResponseDto(user, token);
   }
 

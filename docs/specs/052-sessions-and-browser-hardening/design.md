@@ -60,6 +60,7 @@
 | Сесії | `backend/prisma/schema.prisma`, `backend/prisma/migrations/<…>_add_sessions/` | таблиця `Session`, `User.tokensValidAfter` |
 | Перевірка сесії | `backend/src/auth/sessions.ts` | `sessionProblem`, `newSession`, `endSessions` (чисті функції + Prisma) |
 | Видача токена | `backend/src/auth/auth.service.ts` | `signToken` створює сесію, кладе `sid` |
+| Новий токен того самого входу | `backend/src/auth/auth.service.ts` | `renewToken`: збереження профілю (`PUT /users`) підписує токен із `sid` запиту й подовжує рядок сесії, а не відкриває новий вхід, інакше вихід лишав би старий токен живим (VIS-SEC-059) |
 | Перевірка в API | `backend/src/auth/jwt.strategy.ts` | відмова для завершеної сесії |
 | Вихід, паролі, видалення, роль | `backend/src/users/users.controller.ts`, `users.service.ts` | `POST /users/logout`, відкликання, виклики сокета |
 | Сокет | `backend/src/shared/events/events.gateway.ts` | перевірка сесії при рукостисканні, `endSessions`, `recheckAccess` |
@@ -94,7 +95,7 @@
 
 | Вимога | Перевірка |
 |---|---|
-| REQ-052-01 | `backend/test/sessions.e2e-spec.ts › signing out ends this browser only` |
+| REQ-052-01 | `backend/test/sessions.e2e-spec.ts › signing out ends this browser only`; `backend/test/sessions.e2e-spec.ts › saving the profile keeps the same sign-in, and signing out ends every token of it`; `backend/src/auth/auth.service.spec.ts › keeps the sign-in of the request and moves its expiry to the new token` |
 | REQ-052-02 | `backend/test/sessions.e2e-spec.ts › a new password ends the other sign-ins and keeps this one` |
 | REQ-052-03 | `backend/test/sessions.e2e-spec.ts › a password set by an admin ends every sign-in` |
 | REQ-052-04 | `backend/test/sessions.e2e-spec.ts › closes the event sockets of an ended sign-in and a deleted account` |

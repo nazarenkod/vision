@@ -19,13 +19,13 @@
  "counts": {
   "Critical": 0,
   "High": 0,
-  "Medium": 10,
+  "Medium": 9,
   "Low": 30,
   "Info": 8,
-  "Closed": 15,
+  "Closed": 16,
   "Excluded": 6
  },
- "counts_open_total": 48,
+ "counts_open_total": 47,
  "findings": [
   {
    "id": "VIS-SEC-043",
@@ -333,9 +333,10 @@
    "effort": "S",
    "confidence": "High",
    "severity_2026_11_07": null,
-   "status": "new",
-   "status_uk": "нова",
-   "note": "Незалежно знайдено двома агентами (A, B)."
+   "status": "fixed",
+   "status_uk": "виправлено",
+   "note": "Незалежно знайдено двома агентами (A, B).",
+   "fix_2026_11_09": "PUT /users видає токен того самого входу (AuthService.renewToken: sid запиту, подовжений рядок сесії), а не відкриває новий. Вихід після збереження профілю завершує і старий, і новий токен та закриває сокет. Токен без sid (до 052) чи без живої сесії — новий вхід, як раніше. Тести: sessions.e2e-spec.ts (падає на коді до виправлення), auth.service.spec.ts, users.service.spec.ts."
   },
   {
    "id": "VIS-SEC-060",

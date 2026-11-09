@@ -89,6 +89,7 @@ describe('LdapUsersService match from ldap', () => {
             unknownApiKey: jest.fn(() => 'generatedApiKey'),
             encryptPassword: jest.fn(() => 'encryptedPassword'),
             signToken: jest.fn(() => 'token'),
+            renewToken: jest.fn(() => 'token'),
           },
         },
       ],

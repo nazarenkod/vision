@@ -235,8 +235,17 @@ export class UsersController {
   @ApiOkResponse({ type: UserLoginResponseDto })
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
-  update(@CurrentUser() user: User, @Body() updateUserDto: UpdateUserDto): Promise<UserLoginResponseDto> {
-    return this.usersService.update(user.id, updateUserDto);
+  update(
+    @CurrentUser() user: User,
+    @Body() updateUserDto: UpdateUserDto,
+    @Req() request: Request
+  ): Promise<UserLoginResponseDto> {
+    // the same sign-in with a fresh token: signing out still ends it all (VIS-SEC-059)
+    return this.usersService.update(
+      user.id,
+      updateUserDto,
+      this.authService.sessionIdOf(request.headers.authorization)
+    );
   }
 
   @NoProjectData()

@@ -264,5 +264,32 @@ describe('Sign-ins and their sessions (e2e)', () => {
       // a sign-in with a session of its own is not an old token
       await me(fresh).expect(200);
     });
+
+    // Saving the profile hands the browser a new token. It opened a new sign-in and left the one
+    // before it running, so signing out ended only the new one: a token copied earlier still opened
+    // the API (VIS-SEC-059, audit 2026-11-08)
+    it('saving the profile keeps the same sign-in, and signing out ends every token of it', async () => {
+      const editor = await person('editor');
+      const before = await signIn(editor.email);
+      const phone = await signIn(editor.email);
+      const socket = await connect(before);
+
+      const saved = await requestWithAuth(app, 'put', '/users', before)
+        .send({ email: editor.email, firstName: 'New', lastName: 'Name' })
+        .expect(200);
+      const after = saved.body.token as string;
+      expect(auth.sessionIdOf(`Bearer ${after}`)).toBe(auth.sessionIdOf(`Bearer ${before}`));
+      await me(after).expect(200);
+      await me(before).expect(200);
+      expect(socket.connected).toBe(true);
+
+      await requestWithAuth(app, 'post', '/users/logout', after).expect(204);
+
+      await me(after).expect(401);
+      await me(before).expect(401);
+      await closed(socket);
+      // another browser of the person is another sign-in
+      await me(phone).expect(200);
+    });
   });
 });

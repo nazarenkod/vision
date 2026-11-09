@@ -1,0 +1,1100 @@
+{
+    "@electric-sql/pglite-socket@0.1.3": {
+        "licenses": "Apache-2.0",
+        "repository": "https://github.com/electric-sql/pglite",
+        "publisher": "Electric DB Limited",
+        "path": "/home/user/vision/backend/prisma/node_modules/@electric-sql/pglite-socket",
+        "licenseFile": "/home/user/vision/backend/prisma/node_modules/@electric-sql/pglite-socket/LICENSE"
+    },
+    "@electric-sql/pglite-tools@0.3.3": {
+        "licenses": "Apache-2.0",
+        "repository": "https://github.com/electric-sql/pglite",
+        "publisher": "Electric DB Limited",
+        "path": "/home/user/vision/backend/prisma/node_modules/@electric-sql/pglite-tools",
+        "licenseFile": "/home/user/vision/backend/prisma/node_modules/@electric-sql/pglite-tools/LICENSE"
+    },
+    "@electric-sql/pglite@0.4.3": {
+        "licenses": "Apache-2.0",
+        "repository": "https://github.com/electric-sql/pglite",
+        "publisher": "Electric DB Limited",
+        "path": "/home/user/vision/backend/prisma/node_modules/@electric-sql/pglite",
+        "licenseFile": "/home/user/vision/backend/prisma/node_modules/@electric-sql/pglite/LICENSE"
+    },
+    "@prisma/adapter-pg@7.10.1": {
+        "licenses": "Apache-2.0",
+        "repository": "https://github.com/prisma/orm",
+        "publisher": "Tom Houlé",
+        "email": "houle@prisma.io",
+        "path": "/home/user/vision/backend/prisma/node_modules/@prisma/adapter-pg",
+        "licenseFile": "/home/user/vision/backend/prisma/node_modules/@prisma/adapter-pg/LICENSE"
+    },
+    "@prisma/client-runtime-utils@7.10.1": {
+        "licenses": "Apache-2.0",
+        "repository": "https://github.com/prisma/orm",
+        "path": "/home/user/vision/backend/prisma/node_modules/@prisma/client-runtime-utils",
+        "licenseFile": "/home/user/vision/backend/prisma/node_modules/@prisma/client-runtime-utils/LICENSE"
+    },
+    "@prisma/client@7.10.1": {
+        "licenses": "Apache-2.0",
+        "repository": "https://github.com/prisma/orm",
+        "publisher": "Tim Suchanek",
+        "email": "suchanek@prisma.io",
+        "path": "/home/user/vision/backend/prisma/node_modules/@prisma/client",
+        "licenseFile": "/home/user/vision/backend/prisma/node_modules/@prisma/client/LICENSE"
+    },
+    "@prisma/config@7.10.1": {
+        "licenses": "Apache-2.0",
+        "repository": "https://github.com/prisma/orm",
+        "publisher": "Alberto Schiabel",
+        "email": "schiabel@prisma.io",
+        "path": "/home/user/vision/backend/prisma/node_modules/@prisma/config",
+        "licenseFile": "/home/user/vision/backend/prisma/node_modules/@prisma/config/LICENSE"
+    },
+    "@prisma/debug@7.10.1": {
+        "licenses": "Apache-2.0",
+        "repository": "https://github.com/prisma/orm",
+        "publisher": "Tim Suchanek",
+        "email": "suchanek@prisma.io",
+        "path": "/home/user/vision/backend/prisma/node_modules/@prisma/debug",
+        "licenseFile": "/home/user/vision/backend/prisma/node_modules/@prisma/debug/LICENSE"
+    },
+    "@prisma/debug@7.2.0": {
+        "licenses": "Apache-2.0",
+        "repository": "https://github.com/prisma/prisma",
+        "publisher": "Tim Suchanek",
+        "email": "suchanek@prisma.io",
+        "path": "/home/user/vision/backend/prisma/node_modules/@prisma/get-platform/node_modules/@prisma/debug",
+        "licenseFile": "/home/user/vision/backend/prisma/node_modules/@prisma/get-platform/node_modules/@prisma/debug/LICENSE"
+    },
+    "@prisma/dev@0.24.17": {
+        "licenses": "ISC",
+        "publisher": "Igal Klebanov",
+        "email": "igalklebanov@gmail.com",
+        "path": "/home/user/vision/backend/prisma/node_modules/@prisma/dev"
+    },
+    "@prisma/driver-adapter-utils@7.10.1": {
+        "licenses": "Apache-2.0",
+        "repository": "https://github.com/prisma/orm",
+        "publisher": "Alberto Schiabel",
+        "email": "schiabel@prisma.io",
+        "path": "/home/user/vision/backend/prisma/node_modules/@prisma/driver-adapter-utils",
+        "licenseFile": "/home/user/vision/backend/prisma/node_modules/@prisma/driver-adapter-utils/LICENSE"
+    },
+    "@prisma/engines-version@8.1.0-1.d1b3f377ca835d73fd50954a5e22128b9ebdd6b8": {
+        "licenses": "Apache-2.0",
+        "repository": "https://github.com/prisma/engines-wrapper",
+        "publisher": "Tim Suchanek",
+        "email": "suchanek@prisma.io",
+        "path": "/home/user/vision/backend/prisma/node_modules/@prisma/engines-version",
+        "licenseFile": "/home/user/vision/backend/prisma/node_modules/@prisma/engines-version/LICENSE"
+    },
+    "@prisma/engines@7.10.1": {
+        "licenses": "Apache-2.0",
+        "repository": "https://github.com/prisma/orm",
+        "publisher": "Tim Suchanek",
+        "email": "suchanek@prisma.io",
+        "path": "/home/user/vision/backend/prisma/node_modules/@prisma/engines",
+        "licenseFile": "/home/user/vision/backend/prisma/node_modules/@prisma/engines/LICENSE"
+    },
+    "@prisma/fetch-engine@7.10.1": {
+        "licenses": "Apache-2.0",
+        "repository": "https://github.com/prisma/orm",
+        "publisher": "Tim Suchanek",
+        "email": "suchanek@prisma.io",
+        "path": "/home/user/vision/backend/prisma/node_modules/@prisma/fetch-engine",
+        "licenseFile": "/home/user/vision/backend/prisma/node_modules/@prisma/fetch-engine/LICENSE"
+    },
+    "@prisma/get-platform@7.10.1": {
+        "licenses": "Apache-2.0",
+        "repository": "https://github.com/prisma/orm",
+        "publisher": "Tim Suchanek",
+        "email": "suchanek@prisma.io",
+        "path": "/home/user/vision/backend/prisma/node_modules/@prisma/engines/node_modules/@prisma/get-platform",
+        "licenseFile": "/home/user/vision/backend/prisma/node_modules/@prisma/engines/node_modules/@prisma/get-platform/LICENSE"
+    },
+    "@prisma/get-platform@7.2.0": {
+        "licenses": "Apache-2.0",
+        "repository": "https://github.com/prisma/prisma",
+        "publisher": "Tim Suchanek",
+        "email": "suchanek@prisma.io",
+        "path": "/home/user/vision/backend/prisma/node_modules/@prisma/get-platform",
+        "licenseFile": "/home/user/vision/backend/prisma/node_modules/@prisma/get-platform/LICENSE"
+    },
+    "@prisma/query-plan-executor@7.2.0": {
+        "licenses": "Apache-2.0",
+        "repository": "https://github.com/prisma/prisma",
+        "path": "/home/user/vision/backend/prisma/node_modules/@prisma/query-plan-executor",
+        "licenseFile": "/home/user/vision/backend/prisma/node_modules/@prisma/query-plan-executor/LICENSE"
+    },
+    "@prisma/streams-local@0.1.11": {
+        "licenses": "Apache-2.0",
+        "repository": "https://github.com/prisma/streams",
+        "path": "/home/user/vision/backend/prisma/node_modules/@prisma/streams-local",
+        "licenseFile": "/home/user/vision/backend/prisma/node_modules/@prisma/streams-local/LICENSE"
+    },
+    "@prisma/studio-core@0.33.0": {
+        "licenses": "Apache-2.0",
+        "repository": "https://github.com/prisma/studio",
+        "path": "/home/user/vision/backend/prisma/node_modules/@prisma/studio-core",
+        "licenseFile": "/home/user/vision/backend/prisma/node_modules/@prisma/studio-core/LICENSE",
+        "noticeFile": "/home/user/vision/backend/prisma/node_modules/@prisma/studio-core/NOTICE"
+    },
+    "@radix-ui/primitive@1.1.3": {
+        "licenses": "MIT",
+        "repository": "https://github.com/radix-ui/primitives",
+        "path": "/home/user/vision/backend/prisma/node_modules/@radix-ui/primitive",
+        "licenseFile": "/home/user/vision/backend/prisma/node_modules/@radix-ui/primitive/LICENSE"
+    },
+    "@radix-ui/react-compose-refs@1.1.2": {
+        "licenses": "MIT",
+        "repository": "https://github.com/radix-ui/primitives",
+        "path": "/home/user/vision/backend/prisma/node_modules/@radix-ui/react-compose-refs",
+        "licenseFile": "/home/user/vision/backend/prisma/node_modules/@radix-ui/react-compose-refs/README.md"
+    },
+    "@radix-ui/react-primitive@2.1.3": {
+        "licenses": "MIT",
+        "repository": "https://github.com/radix-ui/primitives",
+        "path": "/home/user/vision/backend/prisma/node_modules/@radix-ui/react-primitive",
+        "licenseFile": "/home/user/vision/backend/prisma/node_modules/@radix-ui/react-primitive/LICENSE"
+    },
+    "@radix-ui/react-slot@1.2.3": {
+        "licenses": "MIT",
+        "repository": "https://github.com/radix-ui/primitives",
+        "path": "/home/user/vision/backend/prisma/node_modules/@radix-ui/react-slot",
+        "licenseFile": "/home/user/vision/backend/prisma/node_modules/@radix-ui/react-slot/LICENSE"
+    },
+    "@radix-ui/react-toggle@1.1.10": {
+        "licenses": "MIT",
+        "repository": "https://github.com/radix-ui/primitives",
+        "path": "/home/user/vision/backend/prisma/node_modules/@radix-ui/react-toggle",
+        "licenseFile": "/home/user/vision/backend/prisma/node_modules/@radix-ui/react-toggle/LICENSE"
+    },
+    "@radix-ui/react-use-controllable-state@1.2.2": {
+        "licenses": "MIT",
+        "repository": "https://github.com/radix-ui/primitives",
+        "path": "/home/user/vision/backend/prisma/node_modules/@radix-ui/react-use-controllable-state",
+        "licenseFile": "/home/user/vision/backend/prisma/node_modules/@radix-ui/react-use-controllable-state/LICENSE"
+    },
+    "@radix-ui/react-use-effect-event@0.0.2": {
+        "licenses": "MIT",
+        "repository": "https://github.com/radix-ui/primitives",
+        "path": "/home/user/vision/backend/prisma/node_modules/@radix-ui/react-use-effect-event",
+        "licenseFile": "/home/user/vision/backend/prisma/node_modules/@radix-ui/react-use-effect-event/LICENSE"
+    },
+    "@radix-ui/react-use-layout-effect@1.1.1": {
+        "licenses": "MIT",
+        "repository": "https://github.com/radix-ui/primitives",
+        "path": "/home/user/vision/backend/prisma/node_modules/@radix-ui/react-use-layout-effect",
+        "licenseFile": "/home/user/vision/backend/prisma/node_modules/@radix-ui/react-use-layout-effect/README.md"
+    },
+    "@standard-schema/spec@1.1.0": {
+        "licenses": "MIT",
+        "repository": "https://github.com/standard-schema/standard-schema",
+        "publisher": "Colin McDonnell",
+        "path": "/home/user/vision/backend/prisma/node_modules/@standard-schema/spec",
+        "licenseFile": "/home/user/vision/backend/prisma/node_modules/@standard-schema/spec/LICENSE"
+    },
+    "@types/d3-array@3.0.3": {
+        "licenses": "MIT",
+        "repository": "https://github.com/DefinitelyTyped/DefinitelyTyped",
+        "path": "/home/user/vision/backend/prisma/node_modules/@types/d3-array",
+        "licenseFile": "/home/user/vision/backend/prisma/node_modules/@types/d3-array/LICENSE"
+    },
+    "@types/d3-color@3.1.0": {
+        "licenses": "MIT",
+        "repository": "https://github.com/DefinitelyTyped/DefinitelyTyped",
+        "path": "/home/user/vision/backend/prisma/node_modules/@types/d3-color",
+        "licenseFile": "/home/user/vision/backend/prisma/node_modules/@types/d3-color/LICENSE"
+    },
+    "@types/d3-delaunay@6.0.1": {
+        "licenses": "MIT",
+        "repository": "https://github.com/DefinitelyTyped/DefinitelyTyped",
+        "path": "/home/user/vision/backend/prisma/node_modules/@types/d3-delaunay",
+        "licenseFile": "/home/user/vision/backend/prisma/node_modules/@types/d3-delaunay/LICENSE"
+    },
+    "@types/d3-format@3.0.1": {
+        "licenses": "MIT",
+        "repository": "https://github.com/DefinitelyTyped/DefinitelyTyped",
+        "path": "/home/user/vision/backend/prisma/node_modules/@types/d3-format",
+        "licenseFile": "/home/user/vision/backend/prisma/node_modules/@types/d3-format/LICENSE"
+    },
+    "@types/d3-geo@3.1.0": {
+        "licenses": "MIT",
+        "repository": "https://github.com/DefinitelyTyped/DefinitelyTyped",
+        "path": "/home/user/vision/backend/prisma/node_modules/@types/d3-geo",
+        "licenseFile": "/home/user/vision/backend/prisma/node_modules/@types/d3-geo/LICENSE"
+    },
+    "@types/d3-interpolate@3.0.1": {
+        "licenses": "MIT",
+        "repository": "https://github.com/DefinitelyTyped/DefinitelyTyped",
+        "path": "/home/user/vision/backend/prisma/node_modules/@types/d3-interpolate",
+        "licenseFile": "/home/user/vision/backend/prisma/node_modules/@types/d3-interpolate/LICENSE"
+    },
+    "@types/d3-path@3.1.1": {
+        "licenses": "MIT",
+        "repository": "https://github.com/DefinitelyTyped/DefinitelyTyped",
+        "path": "/home/user/vision/backend/prisma/node_modules/@types/d3-path",
+        "licenseFile": "/home/user/vision/backend/prisma/node_modules/@types/d3-path/LICENSE"
+    },
+    "@types/d3-scale@4.0.2": {
+        "licenses": "MIT",
+        "repository": "https://github.com/DefinitelyTyped/DefinitelyTyped",
+        "path": "/home/user/vision/backend/prisma/node_modules/@types/d3-scale",
+        "licenseFile": "/home/user/vision/backend/prisma/node_modules/@types/d3-scale/LICENSE"
+    },
+    "@types/d3-shape@3.1.7": {
+        "licenses": "MIT",
+        "repository": "https://github.com/DefinitelyTyped/DefinitelyTyped",
+        "path": "/home/user/vision/backend/prisma/node_modules/@types/d3-shape",
+        "licenseFile": "/home/user/vision/backend/prisma/node_modules/@types/d3-shape/LICENSE"
+    },
+    "@types/d3-time-format@2.1.0": {
+        "licenses": "MIT",
+        "repository": "https://github.com/DefinitelyTyped/DefinitelyTyped",
+        "path": "/home/user/vision/backend/prisma/node_modules/@types/d3-time-format",
+        "licenseFile": "/home/user/vision/backend/prisma/node_modules/@types/d3-time-format/LICENSE"
+    },
+    "@types/d3-time@3.0.0": {
+        "licenses": "MIT",
+        "repository": "https://github.com/DefinitelyTyped/DefinitelyTyped",
+        "path": "/home/user/vision/backend/prisma/node_modules/@types/d3-time",
+        "licenseFile": "/home/user/vision/backend/prisma/node_modules/@types/d3-time/LICENSE"
+    },
+    "@types/geojson@7946.0.16": {
+        "licenses": "MIT",
+        "repository": "https://github.com/DefinitelyTyped/DefinitelyTyped",
+        "path": "/home/user/vision/backend/prisma/node_modules/@types/geojson",
+        "licenseFile": "/home/user/vision/backend/prisma/node_modules/@types/geojson/LICENSE"
+    },
+    "@types/lodash@4.17.27": {
+        "licenses": "MIT",
+        "repository": "https://github.com/DefinitelyTyped/DefinitelyTyped",
+        "path": "/home/user/vision/backend/prisma/node_modules/@types/lodash",
+        "licenseFile": "/home/user/vision/backend/prisma/node_modules/@types/lodash/LICENSE"
+    },
+    "@types/node@24.19.2": {
+        "licenses": "MIT",
+        "repository": "https://github.com/DefinitelyTyped/DefinitelyTyped",
+        "path": "/home/user/vision/backend/prisma/node_modules/@types/node",
+        "licenseFile": "/home/user/vision/backend/prisma/node_modules/@types/node/LICENSE"
+    },
+    "@types/pg@8.23.1": {
+        "licenses": "MIT",
+        "repository": "https://github.com/DefinitelyTyped/DefinitelyTyped",
+        "path": "/home/user/vision/backend/prisma/node_modules/@types/pg",
+        "licenseFile": "/home/user/vision/backend/prisma/node_modules/@types/pg/LICENSE"
+    },
+    "@types/react@19.3.0": {
+        "licenses": "MIT",
+        "repository": "https://github.com/DefinitelyTyped/DefinitelyTyped",
+        "path": "/home/user/vision/backend/prisma/node_modules/@types/react",
+        "licenseFile": "/home/user/vision/backend/prisma/node_modules/@types/react/LICENSE"
+    },
+    "@visx/curve@4.0.1-alpha.0": {
+        "licenses": "MIT",
+        "repository": "https://github.com/airbnb/visx",
+        "publisher": "@hshoff",
+        "path": "/home/user/vision/backend/prisma/node_modules/@visx/curve",
+        "licenseFile": "/home/user/vision/backend/prisma/node_modules/@visx/curve/LICENSE"
+    },
+    "@visx/event@4.0.1-alpha.0": {
+        "licenses": "MIT",
+        "repository": "https://github.com/airbnb/visx",
+        "publisher": "@hshoff",
+        "path": "/home/user/vision/backend/prisma/node_modules/@visx/event",
+        "licenseFile": "/home/user/vision/backend/prisma/node_modules/@visx/event/LICENSE"
+    },
+    "@visx/grid@4.0.1-alpha.0": {
+        "licenses": "MIT",
+        "repository": "https://github.com/airbnb/visx",
+        "publisher": "@hshoff",
+        "path": "/home/user/vision/backend/prisma/node_modules/@visx/grid",
+        "licenseFile": "/home/user/vision/backend/prisma/node_modules/@visx/grid/LICENSE"
+    },
+    "@visx/group@4.0.1-alpha.0": {
+        "licenses": "MIT",
+        "repository": "https://github.com/airbnb/visx",
+        "publisher": "@hshoff",
+        "path": "/home/user/vision/backend/prisma/node_modules/@visx/group",
+        "licenseFile": "/home/user/vision/backend/prisma/node_modules/@visx/group/LICENSE"
+    },
+    "@visx/point@4.0.1-alpha.0": {
+        "licenses": "MIT",
+        "repository": "https://github.com/airbnb/visx",
+        "publisher": "@hshoff",
+        "path": "/home/user/vision/backend/prisma/node_modules/@visx/point",
+        "licenseFile": "/home/user/vision/backend/prisma/node_modules/@visx/point/LICENSE"
+    },
+    "@visx/responsive@4.0.1-alpha.0": {
+        "licenses": "MIT",
+        "repository": "https://github.com/airbnb/visx",
+        "publisher": "@hshoff",
+        "path": "/home/user/vision/backend/prisma/node_modules/@visx/responsive",
+        "licenseFile": "/home/user/vision/backend/prisma/node_modules/@visx/responsive/LICENSE"
+    },
+    "@visx/scale@4.0.1-alpha.0": {
+        "licenses": "MIT",
+        "repository": "https://github.com/airbnb/visx",
+        "path": "/home/user/vision/backend/prisma/node_modules/@visx/scale",
+        "licenseFile": "/home/user/vision/backend/prisma/node_modules/@visx/scale/LICENSE"
+    },
+    "@visx/shape@4.0.1-alpha.0": {
+        "licenses": "MIT",
+        "repository": "https://github.com/airbnb/visx",
+        "publisher": "@hshoff",
+        "path": "/home/user/vision/backend/prisma/node_modules/@visx/shape",
+        "licenseFile": "/home/user/vision/backend/prisma/node_modules/@visx/shape/LICENSE"
+    },
+    "@visx/vendor@4.0.0-alpha.0": {
+        "licenses": "ISC*",
+        "repository": "https://github.com/airbnb/visx",
+        "publisher": "@williaster",
+        "path": "/home/user/vision/backend/prisma/node_modules/@visx/vendor",
+        "licenseFile": "/home/user/vision/backend/prisma/node_modules/@visx/vendor/LICENSE"
+    },
+    "ajv@8.20.0": {
+        "licenses": "MIT",
+        "repository": "https://github.com/ajv-validator/ajv",
+        "publisher": "Evgeny Poberezkin",
+        "path": "/home/user/vision/backend/prisma/node_modules/ajv",
+        "licenseFile": "/home/user/vision/backend/prisma/node_modules/ajv/LICENSE"
+    },
+    "aws-ssl-profiles@1.1.2": {
+        "licenses": "MIT",
+        "repository": "https://github.com/mysqljs/aws-ssl-profiles",
+        "publisher": "https://github.com/wellwelwel",
+        "path": "/home/user/vision/backend/prisma/node_modules/aws-ssl-profiles",
+        "licenseFile": "/home/user/vision/backend/prisma/node_modules/aws-ssl-profiles/LICENSE"
+    },
+    "bcryptjs@2.4.3": {
+        "licenses": "MIT",
+        "repository": "https://github.com/dcodeIO/bcrypt.js",
+        "publisher": "Daniel Wirtz",
+        "email": "dcode@dcode.io",
+        "path": "/home/user/vision/backend/prisma/node_modules/bcryptjs",
+        "licenseFile": "/home/user/vision/backend/prisma/node_modules/bcryptjs/LICENSE"
+    },
+    "better-result@2.10.0": {
+        "licenses": "MIT",
+        "repository": "https://github.com/dmmulroy/better-result",
+        "publisher": "Dillon Mulroy",
+        "email": "dillon.mulroy@gmail.com",
+        "path": "/home/user/vision/backend/prisma/node_modules/better-result",
+        "licenseFile": "/home/user/vision/backend/prisma/node_modules/better-result/LICENSE"
+    },
+    "c12@3.3.4": {
+        "licenses": "MIT",
+        "repository": "https://github.com/unjs/c12",
+        "path": "/home/user/vision/backend/prisma/node_modules/c12",
+        "licenseFile": "/home/user/vision/backend/prisma/node_modules/c12/LICENSE"
+    },
+    "chokidar@5.0.0": {
+        "licenses": "MIT",
+        "repository": "https://github.com/paulmillr/chokidar",
+        "publisher": "Paul Miller",
+        "path": "/home/user/vision/backend/prisma/node_modules/chokidar",
+        "licenseFile": "/home/user/vision/backend/prisma/node_modules/chokidar/LICENSE"
+    },
+    "classnames@2.5.1": {
+        "licenses": "MIT",
+        "repository": "https://github.com/JedWatson/classnames",
+        "publisher": "Jed Watson",
+        "path": "/home/user/vision/backend/prisma/node_modules/classnames",
+        "licenseFile": "/home/user/vision/backend/prisma/node_modules/classnames/LICENSE"
+    },
+    "confbox@0.2.4": {
+        "licenses": "MIT",
+        "repository": "https://github.com/unjs/confbox",
+        "path": "/home/user/vision/backend/prisma/node_modules/confbox",
+        "licenseFile": "/home/user/vision/backend/prisma/node_modules/confbox/LICENSE"
+    },
+    "confbox@0.3.2": {
+        "licenses": "MIT",
+        "repository": "https://github.com/unjs/confbox",
+        "path": "/home/user/vision/backend/prisma/node_modules/pkg-types/node_modules/confbox",
+        "licenseFile": "/home/user/vision/backend/prisma/node_modules/pkg-types/node_modules/confbox/LICENSE"
+    },
+    "cross-spawn@7.0.6": {
+        "licenses": "MIT",
+        "repository": "https://github.com/moxystudio/node-cross-spawn",
+        "publisher": "André Cruz",
+        "email": "andre@moxy.studio",
+        "path": "/home/user/vision/backend/prisma/node_modules/cross-spawn",
+        "licenseFile": "/home/user/vision/backend/prisma/node_modules/cross-spawn/LICENSE"
+    },
+    "csstype@3.2.3": {
+        "licenses": "MIT",
+        "repository": "https://github.com/frenic/csstype",
+        "publisher": "Fredrik Nicol",
+        "email": "fredrik.nicol@gmail.com",
+        "path": "/home/user/vision/backend/prisma/node_modules/csstype",
+        "licenseFile": "/home/user/vision/backend/prisma/node_modules/csstype/LICENSE"
+    },
+    "d3-array@3.2.1": {
+        "licenses": "ISC",
+        "repository": "https://github.com/d3/d3-array",
+        "publisher": "Mike Bostock",
+        "path": "/home/user/vision/backend/prisma/node_modules/@visx/vendor/node_modules/d3-array",
+        "licenseFile": "/home/user/vision/backend/prisma/node_modules/@visx/vendor/node_modules/d3-array/LICENSE"
+    },
+    "d3-array@3.2.4": {
+        "licenses": "ISC",
+        "repository": "https://github.com/d3/d3-array",
+        "publisher": "Mike Bostock",
+        "path": "/home/user/vision/backend/prisma/node_modules/d3-array",
+        "licenseFile": "/home/user/vision/backend/prisma/node_modules/d3-array/LICENSE"
+    },
+    "d3-color@3.1.0": {
+        "licenses": "ISC",
+        "repository": "https://github.com/d3/d3-color",
+        "publisher": "Mike Bostock",
+        "path": "/home/user/vision/backend/prisma/node_modules/d3-color",
+        "licenseFile": "/home/user/vision/backend/prisma/node_modules/d3-color/LICENSE"
+    },
+    "d3-delaunay@6.0.2": {
+        "licenses": "ISC",
+        "repository": "https://github.com/d3/d3-delaunay",
+        "publisher": "Mike Bostock",
+        "path": "/home/user/vision/backend/prisma/node_modules/d3-delaunay",
+        "licenseFile": "/home/user/vision/backend/prisma/node_modules/d3-delaunay/LICENSE"
+    },
+    "d3-format@3.1.0": {
+        "licenses": "ISC",
+        "repository": "https://github.com/d3/d3-format",
+        "publisher": "Mike Bostock",
+        "path": "/home/user/vision/backend/prisma/node_modules/d3-format",
+        "licenseFile": "/home/user/vision/backend/prisma/node_modules/d3-format/LICENSE"
+    },
+    "d3-geo@3.1.0": {
+        "licenses": "ISC",
+        "repository": "https://github.com/d3/d3-geo",
+        "publisher": "Mike Bostock",
+        "path": "/home/user/vision/backend/prisma/node_modules/d3-geo",
+        "licenseFile": "/home/user/vision/backend/prisma/node_modules/d3-geo/LICENSE"
+    },
+    "d3-interpolate@3.0.1": {
+        "licenses": "ISC",
+        "repository": "https://github.com/d3/d3-interpolate",
+        "publisher": "Mike Bostock",
+        "path": "/home/user/vision/backend/prisma/node_modules/d3-interpolate",
+        "licenseFile": "/home/user/vision/backend/prisma/node_modules/d3-interpolate/LICENSE"
+    },
+    "d3-path@3.1.0": {
+        "licenses": "ISC",
+        "repository": "https://github.com/d3/d3-path",
+        "publisher": "Mike Bostock",
+        "path": "/home/user/vision/backend/prisma/node_modules/d3-path",
+        "licenseFile": "/home/user/vision/backend/prisma/node_modules/d3-path/LICENSE"
+    },
+    "d3-scale@4.0.2": {
+        "licenses": "ISC",
+        "repository": "https://github.com/d3/d3-scale",
+        "publisher": "Mike Bostock",
+        "path": "/home/user/vision/backend/prisma/node_modules/d3-scale",
+        "licenseFile": "/home/user/vision/backend/prisma/node_modules/d3-scale/LICENSE"
+    },
+    "d3-shape@3.2.0": {
+        "licenses": "ISC",
+        "repository": "https://github.com/d3/d3-shape",
+        "publisher": "Mike Bostock",
+        "path": "/home/user/vision/backend/prisma/node_modules/d3-shape",
+        "licenseFile": "/home/user/vision/backend/prisma/node_modules/d3-shape/LICENSE"
+    },
+    "d3-time-format@4.1.0": {
+        "licenses": "ISC",
+        "repository": "https://github.com/d3/d3-time-format",
+        "publisher": "Mike Bostock",
+        "path": "/home/user/vision/backend/prisma/node_modules/d3-time-format",
+        "licenseFile": "/home/user/vision/backend/prisma/node_modules/d3-time-format/LICENSE"
+    },
+    "d3-time@3.1.0": {
+        "licenses": "ISC",
+        "repository": "https://github.com/d3/d3-time",
+        "publisher": "Mike Bostock",
+        "path": "/home/user/vision/backend/prisma/node_modules/d3-time",
+        "licenseFile": "/home/user/vision/backend/prisma/node_modules/d3-time/LICENSE"
+    },
+    "deepmerge-ts@8.0.2": {
+        "licenses": "BSD-3-Clause",
+        "repository": "https://github.com/RebeccaStevens/deepmerge-ts",
+        "publisher": "Rebecca Stevens",
+        "email": "rebecca.stevens@outlook.co.nz",
+        "path": "/home/user/vision/backend/prisma/node_modules/deepmerge-ts",
+        "licenseFile": "/home/user/vision/backend/prisma/node_modules/deepmerge-ts/LICENSE"
+    },
+    "defu@6.1.7": {
+        "licenses": "MIT",
+        "repository": "https://github.com/unjs/defu",
+        "path": "/home/user/vision/backend/prisma/node_modules/defu",
+        "licenseFile": "/home/user/vision/backend/prisma/node_modules/defu/LICENSE"
+    },
+    "delaunator@5.1.0": {
+        "licenses": "ISC",
+        "repository": "https://github.com/mapbox/delaunator",
+        "publisher": "Vladimir Agafonkin",
+        "path": "/home/user/vision/backend/prisma/node_modules/delaunator",
+        "licenseFile": "/home/user/vision/backend/prisma/node_modules/delaunator/LICENSE"
+    },
+    "destr@2.0.5": {
+        "licenses": "MIT",
+        "repository": "https://github.com/unjs/destr",
+        "path": "/home/user/vision/backend/prisma/node_modules/destr",
+        "licenseFile": "/home/user/vision/backend/prisma/node_modules/destr/LICENSE"
+    },
+    "dotenv@17.4.2": {
+        "licenses": "BSD-2-Clause",
+        "repository": "https://github.com/motdotla/dotenv",
+        "path": "/home/user/vision/backend/prisma/node_modules/dotenv",
+        "licenseFile": "/home/user/vision/backend/prisma/node_modules/dotenv/LICENSE"
+    },
+    "effect@3.20.0": {
+        "licenses": "MIT",
+        "repository": "https://github.com/Effect-TS/effect",
+        "path": "/home/user/vision/backend/prisma/node_modules/effect",
+        "licenseFile": "/home/user/vision/backend/prisma/node_modules/effect/LICENSE"
+    },
+    "elkjs@0.11.1": {
+        "licenses": "EPL-2.0",
+        "repository": "https://github.com/kieler/elkjs",
+        "publisher": "Ulf Rüegg",
+        "email": "uruurumail@gmail.com",
+        "path": "/home/user/vision/backend/prisma/node_modules/elkjs",
+        "licenseFile": "/home/user/vision/backend/prisma/node_modules/elkjs/LICENSE.md"
+    },
+    "empathic@2.0.0": {
+        "licenses": "MIT",
+        "repository": "https://github.com/lukeed/empathic",
+        "publisher": "Luke Edwards",
+        "email": "luke.edwards05@gmail.com",
+        "path": "/home/user/vision/backend/prisma/node_modules/empathic",
+        "licenseFile": "/home/user/vision/backend/prisma/node_modules/empathic/license"
+    },
+    "env-paths@3.0.0": {
+        "licenses": "MIT",
+        "repository": "https://github.com/sindresorhus/env-paths",
+        "publisher": "Sindre Sorhus",
+        "email": "sindresorhus@gmail.com",
+        "path": "/home/user/vision/backend/prisma/node_modules/env-paths",
+        "licenseFile": "/home/user/vision/backend/prisma/node_modules/env-paths/license"
+    },
+    "exsolve@1.2.0": {
+        "licenses": "MIT",
+        "repository": "https://github.com/unjs/exsolve",
+        "path": "/home/user/vision/backend/prisma/node_modules/exsolve",
+        "licenseFile": "/home/user/vision/backend/prisma/node_modules/exsolve/LICENSE"
+    },
+    "fast-check@3.23.2": {
+        "licenses": "MIT",
+        "repository": "https://github.com/dubzzz/fast-check",
+        "publisher": "Nicolas DUBIEN",
+        "email": "github@dubien.org",
+        "path": "/home/user/vision/backend/prisma/node_modules/fast-check",
+        "licenseFile": "/home/user/vision/backend/prisma/node_modules/fast-check/LICENSE"
+    },
+    "fast-decode-uri-component@1.0.1": {
+        "licenses": "MIT",
+        "repository": "https://github.com/delvedor/fast-decode-uri-component",
+        "publisher": "Tomas Della Vedova - @delvedor",
+        "path": "/home/user/vision/backend/prisma/node_modules/fast-decode-uri-component",
+        "licenseFile": "/home/user/vision/backend/prisma/node_modules/fast-decode-uri-component/LICENSE"
+    },
+    "fast-deep-equal@3.1.3": {
+        "licenses": "MIT",
+        "repository": "https://github.com/epoberezkin/fast-deep-equal",
+        "publisher": "Evgeny Poberezkin",
+        "path": "/home/user/vision/backend/prisma/node_modules/fast-deep-equal",
+        "licenseFile": "/home/user/vision/backend/prisma/node_modules/fast-deep-equal/LICENSE"
+    },
+    "fast-querystring@1.1.2": {
+        "licenses": "MIT",
+        "repository": "https://github.com/anonrig/fast-querystring",
+        "publisher": "Yagiz Nizipli",
+        "email": "yagiz@nizipli.com",
+        "path": "/home/user/vision/backend/prisma/node_modules/fast-querystring",
+        "licenseFile": "/home/user/vision/backend/prisma/node_modules/fast-querystring/LICENSE"
+    },
+    "fast-uri@3.1.9": {
+        "licenses": "BSD-3-Clause",
+        "repository": "https://github.com/fastify/fast-uri",
+        "publisher": "Vincent Le Goff",
+        "email": "vince.legoff@gmail.com",
+        "path": "/home/user/vision/backend/prisma/node_modules/fast-uri",
+        "licenseFile": "/home/user/vision/backend/prisma/node_modules/fast-uri/LICENSE"
+    },
+    "find-my-way@9.7.0": {
+        "licenses": "MIT",
+        "repository": "https://github.com/delvedor/find-my-way",
+        "publisher": "Tomas Della Vedova - @delvedor",
+        "path": "/home/user/vision/backend/prisma/node_modules/find-my-way",
+        "licenseFile": "/home/user/vision/backend/prisma/node_modules/find-my-way/LICENSE"
+    },
+    "foreground-child@3.3.1": {
+        "licenses": "ISC",
+        "repository": "https://github.com/tapjs/foreground-child",
+        "publisher": "Isaac Z. Schlueter",
+        "email": "i@izs.me",
+        "path": "/home/user/vision/backend/prisma/node_modules/foreground-child",
+        "licenseFile": "/home/user/vision/backend/prisma/node_modules/foreground-child/LICENSE"
+    },
+    "generate-function@2.3.1": {
+        "licenses": "MIT",
+        "repository": "https://github.com/mafintosh/generate-function",
+        "publisher": "Mathias Buus",
+        "path": "/home/user/vision/backend/prisma/node_modules/generate-function",
+        "licenseFile": "/home/user/vision/backend/prisma/node_modules/generate-function/LICENSE"
+    },
+    "get-port-please@3.2.0": {
+        "licenses": "MIT",
+        "repository": "https://github.com/unjs/get-port-please",
+        "path": "/home/user/vision/backend/prisma/node_modules/get-port-please",
+        "licenseFile": "/home/user/vision/backend/prisma/node_modules/get-port-please/LICENSE"
+    },
+    "giget@3.3.1": {
+        "licenses": "MIT",
+        "repository": "https://github.com/unjs/giget",
+        "path": "/home/user/vision/backend/prisma/node_modules/giget",
+        "licenseFile": "/home/user/vision/backend/prisma/node_modules/giget/LICENSE"
+    },
+    "graceful-fs@4.2.11": {
+        "licenses": "ISC",
+        "repository": "https://github.com/isaacs/node-graceful-fs",
+        "path": "/home/user/vision/backend/prisma/node_modules/graceful-fs",
+        "licenseFile": "/home/user/vision/backend/prisma/node_modules/graceful-fs/LICENSE"
+    },
+    "grammex@3.1.13": {
+        "licenses": "MIT",
+        "repository": "https://github.com/fabiospampinato/grammex",
+        "path": "/home/user/vision/backend/prisma/node_modules/grammex",
+        "licenseFile": "/home/user/vision/backend/prisma/node_modules/grammex/license"
+    },
+    "graphmatch@1.1.1": {
+        "licenses": "MIT",
+        "repository": "https://github.com/fabiospampinato/graphmatch",
+        "path": "/home/user/vision/backend/prisma/node_modules/graphmatch",
+        "licenseFile": "/home/user/vision/backend/prisma/node_modules/graphmatch/license"
+    },
+    "iconv-lite@0.7.3": {
+        "licenses": "MIT",
+        "repository": "https://github.com/pillarjs/iconv-lite",
+        "publisher": "Alexander Shtuchkin",
+        "email": "ashtuchkin@gmail.com",
+        "path": "/home/user/vision/backend/prisma/node_modules/iconv-lite",
+        "licenseFile": "/home/user/vision/backend/prisma/node_modules/iconv-lite/LICENSE"
+    },
+    "internmap@2.0.3": {
+        "licenses": "ISC",
+        "repository": "https://github.com/mbostock/internmap",
+        "publisher": "Mike Bostock",
+        "path": "/home/user/vision/backend/prisma/node_modules/internmap",
+        "licenseFile": "/home/user/vision/backend/prisma/node_modules/internmap/LICENSE"
+    },
+    "is-property@1.0.2": {
+        "licenses": "MIT",
+        "repository": "https://github.com/mikolalysenko/is-property",
+        "publisher": "Mikola Lysenko",
+        "path": "/home/user/vision/backend/prisma/node_modules/is-property",
+        "licenseFile": "/home/user/vision/backend/prisma/node_modules/is-property/LICENSE"
+    },
+    "isexe@2.0.0": {
+        "licenses": "ISC",
+        "repository": "https://github.com/isaacs/isexe",
+        "publisher": "Isaac Z. Schlueter",
+        "email": "i@izs.me",
+        "path": "/home/user/vision/backend/prisma/node_modules/isexe",
+        "licenseFile": "/home/user/vision/backend/prisma/node_modules/isexe/LICENSE"
+    },
+    "jiti@2.7.0": {
+        "licenses": "MIT",
+        "repository": "https://github.com/unjs/jiti",
+        "path": "/home/user/vision/backend/prisma/node_modules/jiti",
+        "licenseFile": "/home/user/vision/backend/prisma/node_modules/jiti/LICENSE"
+    },
+    "json-schema-traverse@1.0.0": {
+        "licenses": "MIT",
+        "repository": "https://github.com/epoberezkin/json-schema-traverse",
+        "publisher": "Evgeny Poberezkin",
+        "path": "/home/user/vision/backend/prisma/node_modules/json-schema-traverse",
+        "licenseFile": "/home/user/vision/backend/prisma/node_modules/json-schema-traverse/LICENSE"
+    },
+    "lodash@4.18.1": {
+        "licenses": "MIT",
+        "repository": "https://github.com/lodash/lodash",
+        "publisher": "John-David Dalton",
+        "email": "john.david.dalton@gmail.com",
+        "path": "/home/user/vision/backend/prisma/node_modules/lodash",
+        "licenseFile": "/home/user/vision/backend/prisma/node_modules/lodash/LICENSE"
+    },
+    "long@5.3.2": {
+        "licenses": "Apache-2.0",
+        "repository": "https://github.com/dcodeIO/long.js",
+        "publisher": "Daniel Wirtz",
+        "email": "dcode@dcode.io",
+        "path": "/home/user/vision/backend/prisma/node_modules/long",
+        "licenseFile": "/home/user/vision/backend/prisma/node_modules/long/LICENSE"
+    },
+    "lru.min@1.1.5": {
+        "licenses": "MIT",
+        "repository": "https://github.com/wellwelwel/lru.min",
+        "publisher": "https://github.com/wellwelwel",
+        "path": "/home/user/vision/backend/prisma/node_modules/lru.min",
+        "licenseFile": "/home/user/vision/backend/prisma/node_modules/lru.min/LICENSE"
+    },
+    "mysql2@3.24.4": {
+        "licenses": "MIT",
+        "repository": "https://github.com/sidorares/node-mysql2",
+        "publisher": "Andrey Sidorov",
+        "email": "andrey.sidorov@gmail.com",
+        "path": "/home/user/vision/backend/prisma/node_modules/mysql2",
+        "licenseFile": "/home/user/vision/backend/prisma/node_modules/mysql2/License"
+    },
+    "named-placeholders@1.1.6": {
+        "licenses": "MIT",
+        "repository": "https://github.com/mysqljs/named-placeholders",
+        "publisher": "Andrey Sidorov",
+        "email": "sidorares@yandex.com",
+        "path": "/home/user/vision/backend/prisma/node_modules/named-placeholders",
+        "licenseFile": "/home/user/vision/backend/prisma/node_modules/named-placeholders/LICENSE"
+    },
+    "ohash@2.0.12": {
+        "licenses": "MIT",
+        "repository": "https://github.com/unjs/ohash",
+        "path": "/home/user/vision/backend/prisma/node_modules/ohash",
+        "licenseFile": "/home/user/vision/backend/prisma/node_modules/ohash/LICENSE"
+    },
+    "path-key@3.1.1": {
+        "licenses": "MIT",
+        "repository": "https://github.com/sindresorhus/path-key",
+        "publisher": "Sindre Sorhus",
+        "email": "sindresorhus@gmail.com",
+        "path": "/home/user/vision/backend/prisma/node_modules/path-key",
+        "licenseFile": "/home/user/vision/backend/prisma/node_modules/path-key/license"
+    },
+    "pathe@2.0.3": {
+        "licenses": "MIT",
+        "repository": "https://github.com/unjs/pathe",
+        "path": "/home/user/vision/backend/prisma/node_modules/pathe",
+        "licenseFile": "/home/user/vision/backend/prisma/node_modules/pathe/LICENSE"
+    },
+    "perfect-debounce@2.1.0": {
+        "licenses": "MIT",
+        "repository": "https://github.com/unjs/perfect-debounce",
+        "path": "/home/user/vision/backend/prisma/node_modules/perfect-debounce",
+        "licenseFile": "/home/user/vision/backend/prisma/node_modules/perfect-debounce/LICENSE"
+    },
+    "pg-cloudflare@1.4.1": {
+        "licenses": "MIT",
+        "repository": "https://github.com/brianc/node-postgres",
+        "path": "/home/user/vision/backend/prisma/node_modules/pg-cloudflare",
+        "licenseFile": "/home/user/vision/backend/prisma/node_modules/pg-cloudflare/LICENSE"
+    },
+    "pg-connection-string@2.14.1": {
+        "licenses": "MIT",
+        "repository": "https://github.com/brianc/node-postgres",
+        "publisher": "Blaine Bublitz",
+        "email": "blaine@iceddev.com",
+        "path": "/home/user/vision/backend/prisma/node_modules/pg-connection-string",
+        "licenseFile": "/home/user/vision/backend/prisma/node_modules/pg-connection-string/LICENSE"
+    },
+    "pg-int8@1.0.1": {
+        "licenses": "ISC",
+        "repository": "https://github.com/charmander/pg-int8",
+        "path": "/home/user/vision/backend/prisma/node_modules/pg-int8",
+        "licenseFile": "/home/user/vision/backend/prisma/node_modules/pg-int8/LICENSE"
+    },
+    "pg-pool@3.14.0": {
+        "licenses": "MIT",
+        "repository": "https://github.com/brianc/node-postgres",
+        "publisher": "Brian M. Carlson",
+        "path": "/home/user/vision/backend/prisma/node_modules/pg-pool",
+        "licenseFile": "/home/user/vision/backend/prisma/node_modules/pg-pool/LICENSE"
+    },
+    "pg-protocol@1.16.1": {
+        "licenses": "MIT",
+        "repository": "https://github.com/brianc/node-postgres",
+        "path": "/home/user/vision/backend/prisma/node_modules/pg-protocol",
+        "licenseFile": "/home/user/vision/backend/prisma/node_modules/pg-protocol/LICENSE"
+    },
+    "pg-types@2.2.0": {
+        "licenses": "MIT",
+        "repository": "https://github.com/brianc/node-pg-types",
+        "publisher": "Brian M. Carlson",
+        "path": "/home/user/vision/backend/prisma/node_modules/pg-types",
+        "licenseFile": "/home/user/vision/backend/prisma/node_modules/pg-types/README.md"
+    },
+    "pg@8.23.1": {
+        "licenses": "MIT",
+        "repository": "https://github.com/brianc/node-postgres",
+        "publisher": "Brian Carlson",
+        "email": "brian.m.carlson@gmail.com",
+        "path": "/home/user/vision/backend/prisma/node_modules/pg",
+        "licenseFile": "/home/user/vision/backend/prisma/node_modules/pg/LICENSE"
+    },
+    "pgpass@1.0.5": {
+        "licenses": "MIT",
+        "repository": "https://github.com/hoegaarden/pgpass",
+        "publisher": "Hannes Hörl",
+        "email": "hannes.hoerl+pgpass@snowreporter.com",
+        "path": "/home/user/vision/backend/prisma/node_modules/pgpass",
+        "licenseFile": "/home/user/vision/backend/prisma/node_modules/pgpass/README.md"
+    },
+    "pkg-types@2.4.0": {
+        "licenses": "MIT",
+        "repository": "https://github.com/unjs/pkg-types",
+        "path": "/home/user/vision/backend/prisma/node_modules/pkg-types",
+        "licenseFile": "/home/user/vision/backend/prisma/node_modules/pkg-types/LICENSE"
+    },
+    "postgres-array@2.0.0": {
+        "licenses": "MIT",
+        "repository": "https://github.com/bendrucker/postgres-array",
+        "publisher": "Ben Drucker",
+        "email": "bvdrucker@gmail.com",
+        "path": "/home/user/vision/backend/prisma/node_modules/pg-types/node_modules/postgres-array",
+        "licenseFile": "/home/user/vision/backend/prisma/node_modules/pg-types/node_modules/postgres-array/license"
+    },
+    "postgres-array@3.0.4": {
+        "licenses": "MIT",
+        "repository": "https://github.com/bendrucker/postgres-array",
+        "publisher": "Ben Drucker",
+        "email": "bvdrucker@gmail.com",
+        "path": "/home/user/vision/backend/prisma/node_modules/postgres-array",
+        "licenseFile": "/home/user/vision/backend/prisma/node_modules/postgres-array/license"
+    },
+    "postgres-bytea@1.0.1": {
+        "licenses": "MIT",
+        "repository": "https://github.com/bendrucker/postgres-bytea",
+        "publisher": "Ben Drucker",
+        "email": "bvdrucker@gmail.com",
+        "path": "/home/user/vision/backend/prisma/node_modules/postgres-bytea",
+        "licenseFile": "/home/user/vision/backend/prisma/node_modules/postgres-bytea/license"
+    },
+    "postgres-date@1.0.7": {
+        "licenses": "MIT",
+        "repository": "https://github.com/bendrucker/postgres-date",
+        "publisher": "Ben Drucker",
+        "email": "bvdrucker@gmail.com",
+        "path": "/home/user/vision/backend/prisma/node_modules/postgres-date",
+        "licenseFile": "/home/user/vision/backend/prisma/node_modules/postgres-date/license"
+    },
+    "postgres-interval@1.2.0": {
+        "licenses": "MIT",
+        "repository": "https://github.com/bendrucker/postgres-interval",
+        "publisher": "Ben Drucker",
+        "email": "bvdrucker@gmail.com",
+        "path": "/home/user/vision/backend/prisma/node_modules/postgres-interval",
+        "licenseFile": "/home/user/vision/backend/prisma/node_modules/postgres-interval/license"
+    },
+    "postgres@3.4.7": {
+        "licenses": "Unlicense",
+        "repository": "https://github.com/porsager/postgres",
+        "publisher": "Rasmus Porsager",
+        "email": "rasmus@porsager.com",
+        "path": "/home/user/vision/backend/prisma/node_modules/postgres",
+        "licenseFile": "/home/user/vision/backend/prisma/node_modules/postgres/README.md"
+    },
+    "prisma@7.10.1": {
+        "licenses": "Apache-2.0",
+        "repository": "https://github.com/prisma/orm",
+        "publisher": "Tim Suchanek",
+        "email": "suchanek@prisma.io",
+        "path": "/home/user/vision/backend/prisma/node_modules/prisma",
+        "licenseFile": "/home/user/vision/backend/prisma/node_modules/prisma/LICENSE"
+    },
+    "proper-lockfile@4.1.2": {
+        "licenses": "MIT",
+        "repository": "https://github.com/moxystudio/node-proper-lockfile",
+        "publisher": "André Cruz",
+        "email": "andre@moxy.studio",
+        "path": "/home/user/vision/backend/prisma/node_modules/proper-lockfile",
+        "licenseFile": "/home/user/vision/backend/prisma/node_modules/proper-lockfile/LICENSE"
+    },
+    "pure-rand@6.1.0": {
+        "licenses": "MIT",
+        "repository": "https://github.com/dubzzz/pure-rand",
+        "publisher": "Nicolas DUBIEN",
+        "email": "github@dubien.org",
+        "path": "/home/user/vision/backend/prisma/node_modules/pure-rand",
+        "licenseFile": "/home/user/vision/backend/prisma/node_modules/pure-rand/LICENSE"
+    },
+    "rc9@3.1.0": {
+        "licenses": "MIT",
+        "repository": "https://github.com/unjs/rc9",
+        "path": "/home/user/vision/backend/prisma/node_modules/rc9",
+        "licenseFile": "/home/user/vision/backend/prisma/node_modules/rc9/LICENSE"
+    },
+    "react-dom@19.3.1": {
+        "licenses": "MIT",
+        "repository": "https://github.com/react/react",
+        "path": "/home/user/vision/backend/prisma/node_modules/react-dom",
+        "licenseFile": "/home/user/vision/backend/prisma/node_modules/react-dom/LICENSE"
+    },
+    "react@19.3.1": {
+        "licenses": "MIT",
+        "repository": "https://github.com/react/react",
+        "path": "/home/user/vision/backend/prisma/node_modules/react",
+        "licenseFile": "/home/user/vision/backend/prisma/node_modules/react/LICENSE"
+    },
+    "readdirp@5.1.1": {
+        "licenses": "MIT",
+        "repository": "https://github.com/paulmillr/readdirp",
+        "publisher": "Thorsten Lorenz",
+        "email": "thlorenz@gmx.de",
+        "path": "/home/user/vision/backend/prisma/node_modules/readdirp",
+        "licenseFile": "/home/user/vision/backend/prisma/node_modules/readdirp/LICENSE"
+    },
+    "remeda@2.33.4": {
+        "licenses": "MIT",
+        "repository": "https://github.com/remeda/remeda",
+        "publisher": "Łukasz Sentkiewicz",
+        "path": "/home/user/vision/backend/prisma/node_modules/remeda",
+        "licenseFile": "/home/user/vision/backend/prisma/node_modules/remeda/README.md"
+    },
+    "require-from-string@2.0.2": {
+        "licenses": "MIT",
+        "repository": "https://github.com/floatdrop/require-from-string",
+        "publisher": "Vsevolod Strukchinsky",
+        "email": "floatdrop@gmail.com",
+        "path": "/home/user/vision/backend/prisma/node_modules/require-from-string",
+        "licenseFile": "/home/user/vision/backend/prisma/node_modules/require-from-string/license"
+    },
+    "ret@0.5.1": {
+        "licenses": "MIT",
+        "repository": "https://github.com/fent/ret.js",
+        "publisher": "fent",
+        "email": "fentbox@gmail.com",
+        "path": "/home/user/vision/backend/prisma/node_modules/ret",
+        "licenseFile": "/home/user/vision/backend/prisma/node_modules/ret/LICENSE"
+    },
+    "retry@0.12.0": {
+        "licenses": "MIT",
+        "repository": "https://github.com/tim-kos/node-retry",
+        "publisher": "Tim Koschützki",
+        "email": "tim@debuggable.com",
+        "path": "/home/user/vision/backend/prisma/node_modules/retry",
+        "licenseFile": "/home/user/vision/backend/prisma/node_modules/retry/License"
+    },
+    "robust-predicates@3.0.3": {
+        "licenses": "Unlicense",
+        "repository": "https://github.com/mourner/robust-predicates",
+        "publisher": "Vladimir Agafonkin",
+        "path": "/home/user/vision/backend/prisma/node_modules/robust-predicates",
+        "licenseFile": "/home/user/vision/backend/prisma/node_modules/robust-predicates/LICENSE"
+    },
+    "safe-regex2@5.1.2": {
+        "licenses": "MIT",
+        "repository": "https://github.com/fastify/safe-regex2",
+        "publisher": "James Halliday",
+        "email": "mail@substack.net",
+        "path": "/home/user/vision/backend/prisma/node_modules/safe-regex2",
+        "licenseFile": "/home/user/vision/backend/prisma/node_modules/safe-regex2/LICENSE"
+    },
+    "safer-buffer@2.1.2": {
+        "licenses": "MIT",
+        "repository": "https://github.com/ChALkeR/safer-buffer",
+        "publisher": "Nikita Skovoroda",
+        "email": "chalkerx@gmail.com",
+        "path": "/home/user/vision/backend/prisma/node_modules/safer-buffer",
+        "licenseFile": "/home/user/vision/backend/prisma/node_modules/safer-buffer/LICENSE"
+    },
+    "scheduler@0.28.0": {
+        "licenses": "MIT",
+        "repository": "https://github.com/react/react",
+        "path": "/home/user/vision/backend/prisma/node_modules/scheduler",
+        "licenseFile": "/home/user/vision/backend/prisma/node_modules/scheduler/LICENSE"
+    },
+    "shebang-command@2.0.0": {
+        "licenses": "MIT",
+        "repository": "https://github.com/kevva/shebang-command",
+        "publisher": "Kevin Mårtensson",
+        "email": "kevinmartensson@gmail.com",
+        "path": "/home/user/vision/backend/prisma/node_modules/shebang-command",
+        "licenseFile": "/home/user/vision/backend/prisma/node_modules/shebang-command/license"
+    },
+    "shebang-regex@3.0.0": {
+        "licenses": "MIT",
+        "repository": "https://github.com/sindresorhus/shebang-regex",
+        "publisher": "Sindre Sorhus",
+        "email": "sindresorhus@gmail.com",
+        "path": "/home/user/vision/backend/prisma/node_modules/shebang-regex",
+        "licenseFile": "/home/user/vision/backend/prisma/node_modules/shebang-regex/license"
+    },
+    "signal-exit@3.0.7": {
+        "licenses": "ISC",
+        "repository": "https://github.com/tapjs/signal-exit",
+        "publisher": "Ben Coe",
+        "email": "ben@npmjs.com",
+        "path": "/home/user/vision/backend/prisma/node_modules/signal-exit",
+        "licenseFile": "/home/user/vision/backend/prisma/node_modules/signal-exit/LICENSE.txt"
+    },
+    "signal-exit@4.1.0": {
+        "licenses": "ISC",
+        "repository": "https://github.com/tapjs/signal-exit",
+        "publisher": "Ben Coe",
+        "email": "ben@npmjs.com",
+        "path": "/home/user/vision/backend/prisma/node_modules/foreground-child/node_modules/signal-exit",
+        "licenseFile": "/home/user/vision/backend/prisma/node_modules/foreground-child/node_modules/signal-exit/LICENSE.txt"
+    },
+    "split2@4.2.0": {
+        "licenses": "ISC",
+        "repository": "https://github.com/mcollina/split2",
+        "publisher": "Matteo Collina",
+        "email": "hello@matteocollina.com",
+        "path": "/home/user/vision/backend/prisma/node_modules/split2",
+        "licenseFile": "/home/user/vision/backend/prisma/node_modules/split2/LICENSE"
+    },
+    "sql-escaper@1.5.2": {
+        "licenses": "MIT",
+        "repository": "https://github.com/mysqljs/sql-escaper",
+        "publisher": "https://github.com/mysqljs",
+        "path": "/home/user/vision/backend/prisma/node_modules/sql-escaper",
+        "licenseFile": "/home/user/vision/backend/prisma/node_modules/sql-escaper/LICENSE"
+    },
+    "std-env@3.10.0": {
+        "licenses": "MIT",
+        "repository": "https://github.com/unjs/std-env",
+        "path": "/home/user/vision/backend/prisma/node_modules/std-env",
+        "licenseFile": "/home/user/vision/backend/prisma/node_modules/std-env/LICENCE"
+    },
+    "typescript@6.0.3": {
+        "licenses": "Apache-2.0",
+        "repository": "https://github.com/microsoft/TypeScript",
+        "publisher": "Microsoft Corp.",
+        "path": "/home/user/vision/backend/prisma/node_modules/typescript",
+        "licenseFile": "/home/user/vision/backend/prisma/node_modules/typescript/LICENSE.txt"
+    },
+    "undici-types@7.24.6": {
+        "licenses": "MIT",
+        "repository": "https://github.com/nodejs/undici",
+        "path": "/home/user/vision/backend/prisma/node_modules/undici-types",
+        "licenseFile": "/home/user/vision/backend/prisma/node_modules/undici-types/LICENSE"
+    },
+    "valibot@1.4.2": {
+        "licenses": "MIT",
+        "repository": "https://github.com/open-circle/valibot",
+        "publisher": "Fabian Hiller",
+        "path": "/home/user/vision/backend/prisma/node_modules/valibot",
+        "licenseFile": "/home/user/vision/backend/prisma/node_modules/valibot/LICENSE.md"
+    },
+    "which@2.0.2": {
+        "licenses": "ISC",
+        "repository": "https://github.com/isaacs/node-which",
+        "publisher": "Isaac Z. Schlueter",
+        "email": "i@izs.me",
+        "path": "/home/user/vision/backend/prisma/node_modules/which",
+        "licenseFile": "/home/user/vision/backend/prisma/node_modules/which/LICENSE"
+    },
+    "xtend@4.0.2": {
+        "licenses": "MIT",
+        "repository": "https://github.com/Raynos/xtend",
+        "publisher": "Raynos",
+        "email": "raynos2@gmail.com",
+        "path": "/home/user/vision/backend/prisma/node_modules/xtend",
+        "licenseFile": "/home/user/vision/backend/prisma/node_modules/xtend/LICENSE"
+    },
+    "zeptomatch@2.1.0": {
+        "licenses": "MIT",
+        "repository": "https://github.com/fabiospampinato/zeptomatch",
+        "path": "/home/user/vision/backend/prisma/node_modules/zeptomatch",
+        "licenseFile": "/home/user/vision/backend/prisma/node_modules/zeptomatch/license"
+    }
+}
+

@@ -1,8 +1,8 @@
 <!doctype html><html lang='uk'><head><meta charset='utf-8'><title>Vision — SAST</title><style>
-@page { size: A4; font-family: "DejaVu Sans", sans-serif; margin: 18mm 16mm 18mm 16mm;
+@page { size: A4; font-family: "DejaVu Sans", sans-serif; margin: 14mm 15mm 14mm 15mm;
   @top-right { content: "Конфіденційно"; font-size: 8pt; color: #888; }
   @bottom-center { content: counter(page) " / " counter(pages); font-size: 8pt; color: #888; } }
-body { font-family: 'DejaVu Sans', sans-serif; font-size: 9.5pt; line-height: 1.45; color: #1d1d1f; }
+body { font-family: 'DejaVu Sans', sans-serif; font-size: 9pt; line-height: 1.35; color: #1d1d1f; }
 h1 { font-size: 18pt; border-bottom: 3px solid #1f6f43; padding-bottom: 6px; }
 h2 { font-size: 13pt; color: #1f6f43; margin-top: 18px; page-break-after: avoid; }
 h3 { font-size: 11pt; page-break-after: avoid; }
@@ -49,12 +49,19 @@ strong { color: #14532d; }
 <td>npm audit</td>
 <td style="text-align: right;">0</td>
 </tr>
+<tr>
+<td>Ліцензії prod-залежностей</td>
+<td>license-checker</td>
+<td style="text-align: right;">0 copyleft у поставці</td>
+</tr>
 </tbody>
 </table>
 <p><strong>Статус: пройдено.</strong></p>
 <p>semgrep: 1311 спрацювань — ERROR 4, WARNING 1179, INFO 128; підтверджених 0.
 З них 1020 — <code>i18next-key-format</code> (формат ключів словника, не безпека),
 65 — тестовий код, який не входить у поставку й не розглядається.</p>
+<p>Ліцензії: MIT, Apache-2.0, ISC, BSD, BlueOak-1.0.0, PSF-2.0, 0BSD, Unlicense, шрифти OFL-1.1;
+<code>jszip</code> — MIT (подвійна MIT OR GPL-3.0); <code>elkjs</code> (EPL-2.0, Prisma Studio) видаляється при збірці образів.</p>
 <h2>Виправлено</h2>
 <table>
 <thead>

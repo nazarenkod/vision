@@ -11,12 +11,16 @@
 | Shell | shellcheck 0.11.0 | 0 |
 | Секрети | detect-secrets, semgrep secrets | 0 |
 | Залежності (prod + dev) | npm audit | 0 |
+| Ліцензії prod-залежностей | license-checker | 0 copyleft у поставці |
 
 **Статус: пройдено.**
 
 semgrep: 1311 спрацювань — ERROR 4, WARNING 1179, INFO 128; підтверджених 0.
 З них 1020 — `i18next-key-format` (формат ключів словника, не безпека),
 65 — тестовий код, який не входить у поставку й не розглядається.
+
+Ліцензії: MIT, Apache-2.0, ISC, BSD, BlueOak-1.0.0, PSF-2.0, 0BSD, Unlicense, шрифти OFL-1.1;
+`jszip` — MIT (подвійна MIT OR GPL-3.0); `elkjs` (EPL-2.0, Prisma Studio) видаляється при збірці образів.
 
 ## Виправлено
 

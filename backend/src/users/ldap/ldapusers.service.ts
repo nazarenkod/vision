@@ -80,7 +80,8 @@ export class LdapUsersService implements Users {
       ];
 
       const { searchEntries } = await this.ldapClient.search(this.ldapConfig.searchDN, {
-        filter: this.ldapConfig.usersSearchFilter.replaceAll('{{email}}', email),
+        // split and join, not replace: a replacement string reads $& and $' in the email as patterns
+        filter: this.ldapConfig.usersSearchFilter.split('{{email}}').join(email),
         sizeLimit: 1,
         attributes: attributes,
       });

@@ -808,12 +808,13 @@
    "effort": "S",
    "confidence": "High",
    "severity_2026_11_05": "Low",
-   "status": "not_fixed",
+   "status": "partially_fixed",
    "status_uk": "Не виправлено",
    "recheck": {
     "evidence": "backend/src/shared/secret-box.ts:13-15 (KDF = SHA-256 рядка), :21-23 (GCM без AAD); backend/src/projects/project-secrets.ts:96-98 — значення з префіксом enc:v1: від клієнта зберігається як є. Semgrep (gcm-no-tag-length): secret-box.ts:34 — createDecipheriv без authTagLength, setAuthTag приймає й укорочений тег (4–16 байт); для знаючого запис у БД це спрощує підробку. Додати { authTagLength: 16 } і перевірку tag.length.",
     "gap": "Без змін."
-   }
+   },
+   "fixed_note": "2026-11-09: authTagLength 16 при розшифруванні (semgrep gcm-no-tag-length); AAD і KDF — як і раніше"
   },
   {
    "id": "VIS-SEC-025",
@@ -1334,9 +1335,10 @@
    "effort": "S",
    "confidence": "High",
    "source_agent_id": "NEW-A-4",
-   "status": "new",
+   "status": "fixed",
    "status_uk": "Нова",
-   "severity_2026_11_05": null
+   "severity_2026_11_05": null,
+   "fixed_note": "2026-11-09: фільтр через split/join, тест з $&, $`, $' (ldapusers.service.spec.ts)"
   },
   {
    "id": "VIS-SEC-051",

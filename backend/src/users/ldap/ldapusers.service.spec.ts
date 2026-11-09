@@ -126,6 +126,18 @@ describe('LdapUsersService match from ldap', () => {
     expect(bind).not.toHaveBeenCalled();
   });
 
+  // a replacement string would read $& and $' in the email as the rest of the filter
+  it.each(['$&)(mail=*', "a$'b@example.com", 'a$`b@example.com'])(
+    'searches the directory for exactly the email %p',
+    async (email) => {
+      const search = new LdapClient({ url: '' }).search as jest.Mock;
+      search.mockClear();
+      await service.isInDirectory(email);
+      const escaped = email.replace(/\(/g, '\\28').replace(/\)/g, '\\29').replace(/\*/g, '\\2a');
+      expect(search.mock.calls[0][1].filter).toBe(`(&(mail=${escaped}))`);
+    }
+  );
+
   it("does not let anyone take a colleague's email for their account", async () => {
     jest.spyOn(prismaService.user, 'findUnique').mockResolvedValue({ email: 'mallory@example.com' } as never);
     const update = jest.spyOn(prismaService.user, 'update');

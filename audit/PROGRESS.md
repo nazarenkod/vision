@@ -116,3 +116,12 @@
   сюїта під CSP, 0 порушень), check-docs, тести скриптів. Не пройшов через середовище: test_build_sdk_jar
   (Gradle офлайн; SDK не змінювався). nginx-образ тут не запускався: заголовки nginx перевірено тестом
   `test_api_hardening.py` над конфігом і `env.sh`, збірку образу — з файлів, які копіює Dockerfile.
+
+## SAST-аудит (2026-11-09, коміт fe7a82c)
+Фокус — проходження SAST банку; відкладені власником знахідки й мінорне не враховано.
+Звіт: `audit/report-sast-2026-11-09.md`, сирі виводи — `audit/raw/*-2026-11-09.json`.
+- npm audit 0 (×6), semgrep 1313 спрацювань → 0 нових підтверджених, bandit High 0, shellcheck 0 щодо
+  безпеки, секретів у дереві немає.
+- Видимі для SAST банку (відкладені раніше): `gcm-no-tag-length` (VIS-SEC-024, ERROR), `no-replaceall`
+  LDAP (VIS-SEC-050), теги actions (VIS-SEC-030).
+- Не вдалось: hadolint, trivy, gitleaks, osv-scanner (завантаження бінарників заборонене середовищем).

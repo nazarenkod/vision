@@ -1143,8 +1143,6 @@ export const uk: Messages = {
   "auth.orLocal": "або локальним акаунтом",
   "auth.subtitleSso": "Корпоративним акаунтом або локальним.",
   "auth.emailPlaceholder": "name@company.com",
-  "auth.brandLine":
-    "Годинник, суми й банери не заважають.\nПершими ви бачите справжні зміни та проблеми доступності.",
   "auth.lightTheme": "Світла тема",
   "auth.darkTheme": "Темна тема",
   "auth.sso": "Увійти через SSO",
@@ -1155,7 +1153,7 @@ export const uk: Messages = {
     "Немає облікового запису? Попросіть адміністратора створити його.",
 
   // brand
-  "brand.tagline": "Рев'ю змін, а не шуму",
+  "brand.tagline": "Не лише бачить екрани.\nРозуміє їх.",
 
   // tour
   "tour.take": "Пройти екскурсію",

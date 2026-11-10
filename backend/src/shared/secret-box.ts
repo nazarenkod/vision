@@ -6,6 +6,7 @@ import { createCipheriv, createDecipheriv, createHash, randomBytes } from 'crypt
  * of the database then gives no access to Jira or Gemini.
  */
 const PREFIX = 'enc:v1:';
+const TAG_LENGTH = 16;
 
 export const SECRET_KEY_VARIABLE = 'VISION_SECRET_KEY';
 
@@ -30,8 +31,12 @@ export function encryptSecret(plain: string, key: Buffer): string {
 export function decryptSecret(stored: string | null | undefined, key: Buffer): string | null {
   if (!stored || !isEncrypted(stored)) return null;
   try {
-    const [iv, tag, data] = stored.slice(PREFIX.length).split(':').map((part) => Buffer.from(part, 'base64url'));
-    const decipher = createDecipheriv('aes-256-gcm', key, iv);
+    const [iv, tag, data] = stored
+      .slice(PREFIX.length)
+      .split(':')
+      .map((part) => Buffer.from(part, 'base64url'));
+    // without the length GCM also takes a shortened tag, which is far easier to forge
+    const decipher = createDecipheriv('aes-256-gcm', key, iv, { authTagLength: TAG_LENGTH });
     decipher.setAuthTag(tag);
     return Buffer.concat([decipher.update(data), decipher.final()]).toString('utf8');
   } catch {

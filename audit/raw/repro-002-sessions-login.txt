@@ -1,9 +1,0 @@
-Стенд (7b13af1), синтетичні акаунти.
-1) Старий JWT після зміни пароля:
-   PUT /users/password (bob, Bearer OLD) -> 200; GET /users/me з OLD -> 200 (токен не відкликано).
-2) Ліміт входу: 5 хибних спроб для alice -> 400×5, 6-та -> 429; правильний пароль з X-Forwarded-For: 10.9.9.9 -> 429.
-   Висновок: ліміт за акаунтом (XFF не обходить), але будь-хто анонімно блокує вхід будь-якого відомого email на 15 хв.
-3) Енумерація: текст відповіді однаковий ("Invalid email or password."), але час відповіді:
-   nobody@bank.test 0.0037 s / bob@bank.test 0.0893 s / nobody2@bank.test 0.0074 s / bob@bank.test 0.0900 s
-   (bcrypt виконується лише для наявного акаунта) -> наявність акаунта видно за таймінгом.
-4) Заголовки API (/health): X-Content-Type-Options, X-Frame-Options: DENY, Referrer-Policy: no-referrer; без CSP і HSTS.

@@ -19,6 +19,13 @@ describe('secret box', () => {
     expect(decryptSecret('plain token', key)).toBeNull();
   });
 
+  // GCM takes a shortened tag unless told its length, and a 4-byte tag is guessed in 2^32 tries
+  it('reads nothing when the authentication tag is cut short', () => {
+    const [iv, tag, data] = encryptSecret('token', key).slice('enc:v1:'.length).split(':');
+    const short = Buffer.from(tag, 'base64url').subarray(0, 4).toString('base64url');
+    expect(decryptSecret(`enc:v1:${iv}:${short}:${data}`, key)).toBeNull();
+  });
+
   it('refuses to start without VISION_SECRET_KEY', () => {
     expect(() => serverSecretKey({})).toThrow(/VISION_SECRET_KEY is not set/);
     expect(() => serverSecretKey({ VISION_SECRET_KEY: '  ' })).toThrow(/VISION_SECRET_KEY/);

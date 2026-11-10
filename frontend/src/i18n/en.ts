@@ -1082,8 +1082,6 @@ export const en = {
     "This sign-in was not started in this browser. Sign in again.",
   "auth.subtitleSso": "With your company account or a local one.",
   "auth.emailPlaceholder": "name@company.com",
-  "auth.brandLine":
-    "Clocks, amounts and banners stay quiet.\nReal changes and accessibility issues come first.",
   "auth.lightTheme": "Light theme",
   "auth.darkTheme": "Dark theme",
   "auth.sso": "Sign in with SSO",

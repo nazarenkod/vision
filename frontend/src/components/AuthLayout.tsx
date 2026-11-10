@@ -10,7 +10,6 @@ import { useThemeMode } from "../contexts";
 // The brand half stays dark green in both themes: a mix of the brand colour
 // with black, so it follows the palette without a colour of its own.
 const PANEL = `color-mix(in srgb, ${tokens.brand} 42%, black)`;
-const ON_PANEL = "rgba(255, 255, 255, 0.72)";
 const PANEL_GRID = 32;
 
 /**
@@ -416,20 +415,11 @@ const BrandPanel: React.FunctionComponent = () => {
             lineHeight: 1.3,
             fontWeight: 700,
             color: "common.white",
-          }}
-        >
-          {t("brand.tagline")}
-        </Typography>
-        <Typography
-          sx={{
-            fontSize: type.body,
-            color: ON_PANEL,
-            maxWidth: 420,
-            // The line break in the text starts the second sentence on its own line.
+            // the tagline is two sentences, each on its own line
             whiteSpace: "pre-line",
           }}
         >
-          {t("auth.brandLine")}
+          {t("brand.tagline")}
         </Typography>
       </Box>
     </Box>

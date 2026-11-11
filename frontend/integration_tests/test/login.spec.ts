@@ -165,6 +165,37 @@ test("shows the brand and the form side by side with one logo", async ({
   );
 });
 
+test("draws the screens bigger on a big display without growing past it", async ({
+  loginPage,
+  page,
+}) => {
+  await expect(loginPage.loginForm).toBeVisible();
+  const brand = page.getByTestId("authBrand");
+  const drawingHeight = () =>
+    page
+      .getByTestId("authMovedButton")
+      .evaluate(
+        (button) =>
+          button.closest("[aria-hidden='true']")!.getBoundingClientRect()
+            .height,
+      );
+
+  await page.setViewportSize({ width: 1000, height: 700 });
+  const small = await drawingHeight();
+
+  for (const [width, height] of [
+    [1280, 800],
+    [1512, 860],
+    [1920, 1080],
+  ]) {
+    await page.setViewportSize({ width, height });
+    expect(await drawingHeight()).toBeGreaterThan(small);
+    // the brand half stays one screen tall: the drawing never pushes it down
+    expect(Math.round((await brand.boundingBox())!.height)).toBe(height);
+  }
+  expect(await drawingHeight()).toBeGreaterThan(small * 1.6);
+});
+
 test("brings back the grid and the stray pixel without leaving a square", async ({
   loginPage,
   page,

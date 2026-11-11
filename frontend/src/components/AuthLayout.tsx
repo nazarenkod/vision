@@ -314,6 +314,22 @@ const ScanLine: React.FunctionComponent = () => (
   />
 );
 
+/*
+ * The drawing is laid out at 1× and zoomed as a whole, so the rows, the button
+ * and the distances the loop moves things by keep their proportions. The steps
+ * follow the panel: it shares the width with the form from 960px, and its
+ * height is the viewport's, so a bigger drawing needs both room across and
+ * room down, or it would push the panel past the screen.
+ */
+const DRAWING_ZOOM = {
+  zoom: 1.3,
+  "@media (min-width: 960px)": { zoom: 1.1 },
+  "@media (min-width: 1200px) and (min-height: 720px)": { zoom: 1.35 },
+  "@media (min-width: 1400px) and (min-height: 820px)": { zoom: 1.5 },
+  "@media (min-width: 1400px) and (min-height: 900px)": { zoom: 1.6 },
+  "@media (min-width: 1700px) and (min-height: 960px)": { zoom: 1.9 },
+};
+
 // the two screens drift a little, out of step, so the drawing feels alive
 const floating = (delay: number) => ({
   "@keyframes v-auth-float": {
@@ -373,6 +389,7 @@ const BrandPanel: React.FunctionComponent = () => {
           gap: 3,
           alignItems: "flex-end",
           justifyContent: "center",
+          ...DRAWING_ZOOM,
         }}
       >
         <Box

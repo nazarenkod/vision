@@ -511,6 +511,51 @@ test("has no Devices tab and no capture warnings", async ({
   }
 });
 
+test("says why a page tree without positions is checked less", async ({
+  openProjectPage,
+  page,
+}) => {
+  const run = { ...TEST_UNRESOLVED, hasUiTree: true } as TestRun;
+  await mockGetTestRuns(page, build.id, [run]);
+  await mockTestRun(page, run);
+  await page.route(`${API_URL}/test-runs/${run.id}/a11y`, (route) =>
+    route.fulfill({ body: "null" }),
+  );
+  await page.route(`${API_URL}/test-runs/${run.id}/structure`, (route) =>
+    route.fulfill({
+      body: JSON.stringify({
+        hasUiTree: true,
+        hasBaselineUiTree: true,
+        treeFormat: "web",
+        positioned: false,
+        changes: [],
+        regions: [],
+        hints: [],
+        invisible: [],
+        rules: [],
+        ignoredAreas: [],
+        toleratedAreas: [],
+        systemBars: [],
+        moves: [],
+        elements: [],
+        settings: null,
+      }),
+    }),
+  );
+
+  await openProjectPage(project.id, build.id, run.id);
+  await unfoldPanel(page);
+  // a plain page source: what needs positions is skipped, and the panel says why (REQ-050-09)
+  const note = page.getByTestId("treeWithoutPositions");
+  await expect(note).toContainText("without element positions");
+  await expect(note).toContainText("Vision SDK");
+  await page.getByRole("tab", { name: "Changes" }).click();
+  await expect(note).toBeVisible();
+  await expect(
+    page.getByTestId("selectElementsWrap").getByRole("button"),
+  ).toBeDisabled();
+});
+
 test("says accessibility needs the UI tree when it cannot be read", async ({
   openProjectPage,
   page,

@@ -133,6 +133,13 @@ export const uk: Messages = {
   "section.danger": "Небезпечна зона",
   "section.devices": "Пристрої",
   "section.devicesIntro": "Екрани з пристроїв поза переліком відхиляються.",
+  "section.devicesIntroWeb": "Екрани з браузерів поза переліком відхиляються.",
+  "section.devicesIntroBoth":
+    "Екрани з пристроїв чи браузерів поза їхнім переліком відхиляються. Екран, у якому вказано браузер, звіряється з браузерами, решта — з пристроями.",
+  "section.mobileIntroWeb":
+    "Для екранів, надісланих з UI-деревом: у вебі це Selenide і Playwright.",
+  "section.mobileIntroBoth":
+    "Для екранів, надісланих з UI-деревом: з Appium (Android, iOS) і з вебу (Selenide, Playwright).",
   "section.comparisonIntro":
     "Як поточний екран порівнюється з еталоном. Параметри обраного способу — під картками.",
   "section.mobileIntro":
@@ -164,6 +171,17 @@ export const uk: Messages = {
   "devices.receivedNone": "Екранів ще немає.",
   "devices.notInList": "не в переліку",
   "devices.allowed": "дозволено",
+  "browsers.title": "Браузери",
+  "browsers.browser": "Браузер",
+  "browsers.version": "Версія",
+  "browsers.viewport": "Розмір вікна",
+  "browsers.versionHint": "Порожньо — будь-яка, або 131.* для будь-якої 131.x",
+  "browsers.viewportHint": "Порожньо — будь-який, або як 1280x720",
+  "browsers.none": "Переліку немає: приймаються екрани з будь-якого браузера.",
+  "browsers.missing": "Потрібна назва браузера",
+  "browsers.wildcard": "* лише в кінці версії, як у 131.*",
+  "browsers.badViewport": "Ширина x висота, як у 1280x720",
+  "browsers.received": "Браузери, з яких приходили екрани",
 
   "general.name": "Назва проєкту",
   "general.mainBranch": "Основна гілка",
@@ -172,8 +190,14 @@ export const uk: Messages = {
   "general.branchLifetime": "Скільки днів зберігати гілку",
   "general.branchLifetimeHelp":
     "Еталони гілки, крім основної, видаляються, якщо стільки днів не змінювалися.",
+  "general.platform": "Платформа",
+  "general.platformHelp":
+    "Які налаштування показує проєкт. Налаштування іншої платформи зберігають свої значення.",
+  "general.platform.mobile": "Мобільний",
+  "general.platform.web": "Веб",
+  "general.platform.both": "Мобільний і веб",
   "general.newProjectHint":
-    "Мобільні екрани, доступність і Jira налаштовуються в налаштуваннях проєкту — вони відкриються одразу після створення.",
+    "Структура екрана, доступність і Jira налаштовуються в налаштуваннях проєкту — вони відкриються одразу після створення.",
 
   "review.autoApprove": "Автоматично приймати у feature-гілках",
   "review.autoApproveHelp":
@@ -255,6 +279,7 @@ export const uk: Messages = {
   "a11y.norm.contrast": "Мінімальний контраст",
   "a11y.norm.android": "Android",
   "a11y.norm.ios": "iOS",
+  "a11y.norm.web": "Веб",
   "a11y.norm.text": "Текст",
   "a11y.norm.large": "Великий текст",
   "a11y.norm.default": "Типово {value}",
@@ -276,6 +301,7 @@ export const uk: Messages = {
     "{element}: {width} × {height} {unit}, мінімум — {min} × {min} {unit}.",
   "a11y.msg.lowContrast": "{element}: {ratio} : 1, потрібно {required} : 1.",
   "a11y.msg.missingLabel": "{element}: {reader} не має що озвучити.",
+  "a11y.reader.screenReader": "програма читання з екрана",
   "a11y.msg.inputWithoutLabel": "{element}: не зрозуміло, що вводити.",
   "a11y.msg.duplicateLabel": {
     one: "{count} елемент озвучується як «{label}»; користувач не відрізнить їх.",
@@ -691,6 +717,9 @@ export const uk: Messages = {
     "Для аналізу доступності потрібне UI-дерево, а дерево цього екрана не вдалося прочитати.",
   "panel.highlightOnScreenshot": "Підсвічувати на поточному",
   "panel.checkedFrom": "Перевірено за UI-деревом {platform}.",
+  "panel.platformWeb": "вебсторінки",
+  "panel.unpositioned":
+    "Дерево цієї сторінки прийшло без положення елементів: звичайний page source, а не Vision SDK. Тому зсуви, вибір елементів на екрані, контраст і область дотику не перевіряються. Надсилайте дерево через Vision SDK, щоб їх отримати.",
   "panel.newCount": "нових: {count}",
   "panel.compared":
     "Порівняно з еталоном: {new}, наявних: {existing}, виправлених: {fixed}{reported}.",
@@ -1312,6 +1341,8 @@ export const uk: Messages = {
   "select.remove": "Прибрати правило",
   "select.confirmRemove": "Прибрати на всіх екранах",
   "select.noTree": "Для вибору елементів потрібне UI-дерево",
+  "select.noPositions":
+    "Для вибору елементів потрібне їхнє положення: надсилайте дерево через Vision SDK",
   "select.added": {
     one: "Правило додано; екран порівнюється заново",
     few: "Додано {count} правила; екран порівнюється заново",

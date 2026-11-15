@@ -19,6 +19,7 @@ import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.Base64;
+import java.util.regex.Pattern;
 import java.util.zip.GZIPOutputStream;
 
 enum METHOD {
@@ -143,6 +144,7 @@ public class Vision {
             throw new TestRunException(TRACKER_NOT_STARTED);
         }
 
+        String uiTree = encodeUiTree(name, options.getUiTree());
         TestRunRequest newTestRun = TestRunRequest.builder()
                 .projectId(projectId)
                 .buildId(buildId)
@@ -156,13 +158,23 @@ public class Vision {
                 .customTags(options.getCustomTags())
                 .diffTollerancePercent(options.getDiffTollerancePercent())
                 .ignoreAreas(options.getIgnoreAreas())
-                .uiTree(encodeUiTree(name, options.getUiTree()))
+                .uiTree(uiTree)
+                .uiTreeFormat(uiTree != null && isWebTree(options.getUiTree()) ? "web" : null)
                 .featureName(options.getFeatureName())
+                .browserVersion(options.getBrowserVersion())
                 .build();
 
         HttpRequest.BodyPublisher body = HttpRequest.BodyPublishers.ofString(gson.toJson(newTestRun));
         HttpResponse<String> response = getResponse(METHOD.POST, paths.getTestRunPath(), body);
         return handleResponse(response, TestRunResponse.class);
+    }
+
+    private static final Pattern WEB_TREE = Pattern.compile("^\\s*<(!DOCTYPE\\s+html|html)[\\s>]",
+            Pattern.CASE_INSENSITIVE);
+
+    // web trees are HTML (WebUiTree), Appium page sources are XML: the server parses them differently
+    static boolean isWebTree(String uiTree) {
+        return uiTree != null && WEB_TREE.matcher(uiTree).lookingAt();
     }
 
     // page sources are large and repetitive: gzip keeps them well under the request size limit

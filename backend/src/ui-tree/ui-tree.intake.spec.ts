@@ -1,5 +1,6 @@
 import { gzipSync } from 'zlib';
-import { readUiTreeXml, UI_TREE_MAX_BYTES } from './ui-tree.intake';
+import { randomBytes } from 'crypto';
+import { readUiTreeXml, UI_TREE_FIELD_MAX_BYTES, UI_TREE_MAX_BYTES } from './ui-tree.intake';
 
 const tree = (body: string) => `<?xml version='1.0' encoding='UTF-8' standalone='yes' ?><hierarchy>${body}</hierarchy>`;
 // a tree padded to an exact size in bytes
@@ -54,5 +55,36 @@ describe('readUiTreeXml', () => {
   it('keeps the standard references Appium writes texts with', () => {
     const xml = tree('<node text="Tom &amp; Jerry &#x1F686;"/>');
     expect(readUiTreeXml(gzipped(xml))).toEqual({ xml });
+  });
+
+  it('lets in the bare doctype of a web page and nothing more', () => {
+    const page = '<!DOCTYPE html><html><body><button>Pay</button></body></html>';
+    expect(readUiTreeXml(plain(page))).toEqual({ xml: page });
+    expect(readUiTreeXml(plain(`<!-- saved -->\n<!doctype HTML>\n<html></html>`))).toHaveProperty('xml');
+    // a second doctype, an internal subset or an entity still never reach a parser
+    for (const sneaky of [
+      '<!DOCTYPE html><!DOCTYPE x [<!ENTITY a "b">]><html></html>',
+      '<!DOCTYPE html [<!ENTITY a "b">]><html></html>',
+      '<!DOCTYPE html><html><!ENTITY a "b"></html>',
+    ]) {
+      expect(readUiTreeXml(plain(sneaky))).toMatchObject({ left: 'declares-entities' });
+    }
+  });
+
+  it('holds a web page to the same limit as an Appium tree', () => {
+    const page = (bytes: number) => {
+      const head = '<!DOCTYPE html><html><body><p>';
+      const tail = '</p></body></html>';
+      return head + 'x'.repeat(bytes - head.length - tail.length) + tail;
+    };
+    expect(readUiTreeXml(gzipped(page(UI_TREE_MAX_BYTES)))).toHaveProperty('xml');
+    expect(readUiTreeXml(gzipped(page(UI_TREE_MAX_BYTES + 1)))).toMatchObject({ left: 'too-large' });
+    expect(readUiTreeXml(plain(page(UI_TREE_MAX_BYTES + 1)))).toMatchObject({ left: 'too-large' });
+  });
+
+  it('lets a form field carry any tree under the limit, even one gzip cannot shrink', () => {
+    // random bytes do not compress: the base64 of such a tree is the longest a client sends
+    const field = gzipped(randomBytes(UI_TREE_MAX_BYTES / 2).toString('hex'));
+    expect(field.length).toBeLessThanOrEqual(UI_TREE_FIELD_MAX_BYTES);
   });
 });

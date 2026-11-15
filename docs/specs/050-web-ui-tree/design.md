@@ -20,7 +20,8 @@
      `data-vision-hidden="1"` і без вмісту;
    - вміст відкритого shadow DOM — у `<template shadowrootmode="open">` усередині хоста
      (стандартний декларативний shadow DOM), вміст `iframe` того самого походження — його
-     `<html>` дочірнім елементом `<iframe>` (REQ-050-14). Закритий shadow DOM і чужий `iframe`
+     `<html>` у `<template data-vision-frame>` одразу після `<iframe>`: HTML читає вміст
+     `<iframe>` як текст, тож сервер сам ставить шаблон усередину фрейма (REQ-050-14). Закритий shadow DOM і чужий `iframe`
      скрипт не бачить — вони лишаються одним елементом;
    - доступна назва, яку рахує браузер (`aria-labelledby`, `<label for>`, обгортка `<label>`), —
      у `data-vision-name`, бо сервер не бачить зв'язків поза деревом (REQ-050-13).
@@ -147,7 +148,7 @@ sequenceDiagram
 | REQ-050-30 | `frontend/src/_helpers/projectSettings.helper.test.ts › names Appium and the web as tree sources for a mobile and web project` |
 | REQ-050-40 | `backend/src/ui-tree/comparison-inputs.spec.ts › keeps the project platform` |
 | REQ-050-41 | `backend/src/ui-tree/comparison-inputs.spec.ts › reads a project saved before platforms as mobile` |
-| REQ-050-42 | `frontend/integration_tests/projectSettings.spec.ts › picks the platform in General and when creating a project` |
+| REQ-050-42 | `frontend/integration_tests/test/projectSettings.spec.ts › picks the platform in General and when creating a project` |
 | REQ-050-43 | `frontend/src/_helpers/projectSettings.helper.test.ts › hides system bars, Android and iOS norms and VoiceOver in a web project` |
 | REQ-050-44 | `frontend/src/_helpers/projectSettings.helper.test.ts › hides the web norm in a mobile project` |
 | REQ-050-45 | `frontend/src/_helpers/allowedBrowsers.helper.test.ts › reads browser, version and window size entries` |

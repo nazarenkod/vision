@@ -71,7 +71,10 @@ const DeviceFields: React.FunctionComponent<{
  * and the devices snapshots already came from, so CI's can be added as the
  * tests send them.
  */
-export const AllowedDevicesSettings: React.FunctionComponent = () => {
+export const AllowedDevicesSettings: React.FunctionComponent<{
+  // a project of both platforms shows the browsers below, under their own title
+  title?: string;
+}> = ({ title }) => {
   const { projectEditState: project } = useProjectState();
   const projectDispatch = useProjectDispatch();
   const { t } = useT();
@@ -125,6 +128,7 @@ export const AllowedDevicesSettings: React.FunctionComponent = () => {
       sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}
       data-testid="allowedDevices"
     >
+      {title && <Typography variant="subtitle1">{title}</Typography>}
       {devices.length === 0 && (
         <Typography variant="body2" color="textSecondary">
           {t("devices.none")}

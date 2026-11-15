@@ -313,7 +313,7 @@ decisions to problems»).
 
 SDK Vision — `ua.vision:vision-sdk`, версия `1.0.0`. Нужен для отправки XML-дерева экрана
 (доступность, изменения и правила по элементам) и названия фичи в багах из сравнения. Работает на
-Java 11+. Jar собирается из исходников: `./scripts/build-sdk-jar.sh` (JDK 11–17, Gradle 7) кладёт
+Java 11+. Jar собирается из исходников: `./scripts/build-sdk-jar.sh` (JDK 11, Gradle 7) кладёт
 `dist/sdk-java/vision-sdk-1.0.0.jar` и его pom; в репозитории готового jar нет.
 
 Классы `Vision`, `VisionConfig`, `VisionOptions`, `VisionResult` в пакете `ua.vision.sdk`.
@@ -392,6 +392,42 @@ Maven предупредит о `system` scope, это нормально.
 `1.0.0` покрыта тестами SDK (`gradle test`) и контрольным сценарием (`./scripts/control-scenario.sh`:
 настоящий SDK против настоящего сервера). Maven-проектом в банке её ещё не прогоняли.
 Публикация в Nexus настроена (`gradle publish -PrepoUrl=...`, см. `sdk-java/README.md`).
+
+### 7.1. Веб: Selenide
+
+Тот же jar. Дерево страницы собирает `ua.vision.sdk.web.WebUiTree` — одним вызовом перед
+скриншотом, в том же браузере (спецификация 050):
+
+```java
+String tree = WebUiTree.collect((JavascriptExecutor) WebDriverRunner.getWebDriver());
+vision.track(name, screenshotBase64, VisionOptions.builder()
+    .browser("chrome").browserVersion(version).viewport("1280x720")
+    .uiTree(tree).featureName("Checkout").build());
+```
+
+Selenium SDK не тянет (`compileOnly`): он уже есть в проекте с Selenide. Если скрипт не
+выполнился (страница закрыта, скрипт запрещён), `collect` возвращает `null` и пишет
+предупреждение — скриншот уходит без дерева, тест не падает. Обычный `getPageSource()` тоже
+принимается, но без координат: только невидимые изменения и проверки доступности без контраста
+и области нажатия.
+
+### 7.2. Веб: Playwright
+
+SDK для Playwright — `@vision/sdk-playwright` (порт `agent-playwright` VRT). Собирается из
+исходников, в npm не публикуется:
+
+```bash
+cd sdk-playwright && npm ci && npm run build && npm pack   # → vision-sdk-playwright-1.0.0.tgz
+```
+
+В тестовом проекте: `npm install --save-dev /путь/к/vision-sdk-playwright-1.0.0.tgz`, затем
+`@visual-regression-tracker/agent-playwright` → `@vision/sdk-playwright`,
+`PlaywrightVisualRegressionTracker` → `VisionPlaywright`, переменные `VRT_*` → `VISION_*`
+(`vrt.json` → `vision.json`). Запросы к серверу те же, эталоны остаются; дерево страницы,
+версия браузера и `featureName` уходят вместе со скриншотом. Подробно — `sdk-playwright/README.md`.
+
+В проекте Vision в настройках выбрать платформу «Веб» (или «Мобильный и веб»), если нужно —
+список разрешённых браузеров в разделе «Устройства».
 
 ## 8. Подключение автотестов
 

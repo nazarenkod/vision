@@ -1,3 +1,5 @@
+import type { AllowedBrowser, ProjectPlatform } from "./project";
+
 export interface Rect {
   x: number;
   y: number;
@@ -51,8 +53,10 @@ export interface A11yViolation {
   problemCode: string;
 }
 
+export type UiTreeFormat = "appium-android" | "appium-ios" | "web";
+
 export interface A11yReport {
-  format: "appium-android" | "appium-ios";
+  format: UiTreeFormat;
   pixelsPerDp: number;
   pixelsPerDpEstimated: boolean;
   baselineChecked: boolean;
@@ -148,6 +152,9 @@ export interface UiTreeSettings {
   screenTitle?: string[];
   // what the team agreed an accessible screen is (026)
   a11yNorms?: Partial<A11yNorms>;
+  // which settings the page shows; missing is mobile (050)
+  platform?: ProjectPlatform;
+  allowedBrowsers?: AllowedBrowser[];
 }
 
 /** Every accessibility rule, in the order the settings page lists them. */
@@ -162,9 +169,10 @@ export const A11Y_RULES: A11yRule[] = [
 ];
 
 export interface A11yNorms {
-  // minimum tap area: dp on Android, pt on iOS
+  // minimum tap area: dp on Android, pt on iOS, CSS px on the web
   touchTargetAndroid: number;
   touchTargetIos: number;
+  touchTargetWeb: number;
   // minimum contrast ratio for body text and for large text
   contrast: number;
   contrastLarge: number;
@@ -174,6 +182,8 @@ export interface A11yNorms {
 export const DEFAULT_A11Y_NORMS: A11yNorms = {
   touchTargetAndroid: 48,
   touchTargetIos: 44,
+  // WCAG 2.2, 2.5.8
+  touchTargetWeb: 24,
   contrast: 4.5,
   contrastLarge: 3,
   disabledRules: [],
@@ -188,6 +198,7 @@ export const A11Y_NORM_LIMITS: Record<
 > = {
   touchTargetAndroid: { min: 24, max: 96, integer: true },
   touchTargetIos: { min: 24, max: 96, integer: true },
+  touchTargetWeb: { min: 24, max: 96, integer: true },
   contrast: { min: 1.5, max: 7, integer: false },
   contrastLarge: { min: 1.5, max: 7, integer: false },
 };
@@ -238,6 +249,10 @@ export interface StructureInfo {
   variableProblems?: VariableTextProblem[];
   hasUiTree: boolean;
   hasBaselineUiTree: boolean;
+  // the current tree's format, and whether it came with element positions:
+  // a plain web page source has none (050); absent from older servers
+  treeFormat?: UiTreeFormat | null;
+  positioned?: boolean;
   changes: StructuralChange[];
   regions: Array<{
     region: Rect;

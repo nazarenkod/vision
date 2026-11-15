@@ -139,6 +139,14 @@ export const en = {
   "section.danger": "Danger zone",
   "section.devices": "Devices",
   "section.devicesIntro": "Screens from devices not in the list are rejected.",
+  "section.devicesIntroWeb":
+    "Screens from browsers not in the list are rejected.",
+  "section.devicesIntroBoth":
+    "Screens from devices or browsers not in their list are rejected. A screen that names its browser is checked against the browsers, any other against the devices.",
+  "section.mobileIntroWeb":
+    "Applies to screens sent with a UI tree: on the web that is Selenide and Playwright.",
+  "section.mobileIntroBoth":
+    "Applies to screens sent with a UI tree: from Appium (Android, iOS) and from the web (Selenide, Playwright).",
   "section.comparisonIntro":
     "How the current screen is compared with its baseline. The method's own settings are under the cards.",
   "section.mobileIntro":
@@ -170,6 +178,17 @@ export const en = {
   "devices.receivedNone": "No screens yet.",
   "devices.notInList": "not in the list",
   "devices.allowed": "allowed",
+  "browsers.title": "Browsers",
+  "browsers.browser": "Browser",
+  "browsers.version": "Version",
+  "browsers.viewport": "Window size",
+  "browsers.versionHint": "Empty for any, or 131.* for any 131.x",
+  "browsers.viewportHint": "Empty for any, or as 1280x720",
+  "browsers.none": "No list: screens from any browser come in.",
+  "browsers.missing": "Needs a browser",
+  "browsers.wildcard": "* only at the end of the version, as in 131.*",
+  "browsers.badViewport": "Width x height, as in 1280x720",
+  "browsers.received": "Browsers screens came from",
 
   "general.name": "Project name",
   "general.mainBranch": "Main branch",
@@ -178,8 +197,14 @@ export const en = {
   "general.branchLifetime": "Days to keep a branch",
   "general.branchLifetimeHelp":
     "Baselines of a branch other than the main one are deleted after this many days without changes.",
+  "general.platform": "Platform",
+  "general.platformHelp":
+    "Which settings this project shows. Settings of the other platform keep their values.",
+  "general.platform.mobile": "Mobile",
+  "general.platform.web": "Web",
+  "general.platform.both": "Mobile and web",
   "general.newProjectHint":
-    "Mobile screens, accessibility and Jira are set up in the project's settings, which open right after it is created.",
+    "Screen structure, accessibility and Jira are set up in the project's settings, which open right after it is created.",
 
   "review.autoApprove": "Auto-approve in feature branches",
   "review.autoApproveHelp":
@@ -263,6 +288,7 @@ export const en = {
   "a11y.norm.contrast": "Minimum contrast",
   "a11y.norm.android": "Android",
   "a11y.norm.ios": "iOS",
+  "a11y.norm.web": "Web",
   "a11y.norm.text": "Text",
   "a11y.norm.large": "Large text",
   "a11y.norm.default": "Default {value}",
@@ -284,6 +310,7 @@ export const en = {
     "{element} is {width} × {height} {unit}, minimum is {min} × {min} {unit}.",
   "a11y.msg.lowContrast": "{element}: {ratio} : 1, needs {required} : 1.",
   "a11y.msg.missingLabel": "{element} has nothing for {reader} to read out.",
+  "a11y.reader.screenReader": "screen reader",
   "a11y.msg.inputWithoutLabel": "{element} gives no clue what to enter.",
   "a11y.msg.duplicateLabel": {
     one: '{count} control is announced as "{label}"; users cannot tell them apart.',
@@ -655,6 +682,9 @@ export const en = {
     "Accessibility is checked from the UI tree, and this screen's tree could not be read.",
   "panel.highlightOnScreenshot": "Highlight on current",
   "panel.checkedFrom": "Checked from the {platform} UI tree.",
+  "panel.platformWeb": "web page",
+  "panel.unpositioned":
+    "This page's tree came without element positions: a plain page source, not the Vision SDK. So moves, picking elements on the screen, contrast and tap area are not checked. Send the tree with the Vision SDK to get them.",
   "panel.newCount": "{count} new",
   "panel.compared":
     "Compared with the baseline: {new}, {existing} existing, {fixed} fixed{reported}.",
@@ -1245,6 +1275,8 @@ export const en = {
   "select.remove": "Remove rule",
   "select.confirmRemove": "Remove on every screen",
   "select.noTree": "Selecting elements needs the UI tree",
+  "select.noPositions":
+    "Selecting elements needs their positions: send the tree with the Vision SDK",
   "select.added": {
     one: "Rule added; compared again",
     other: "{count} rules added; compared again",

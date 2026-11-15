@@ -6,7 +6,11 @@ import { TestVariationsService } from '../test-variations/test-variations.servic
 import { BuildsService } from '../builds/builds.service';
 import { HttpException, HttpStatus } from '@nestjs/common';
 
-const initService = async ({ projectFindUniqueMock = jest.fn(), projectUpdateMock = jest.fn() }) => {
+const initService = async ({
+  projectFindUniqueMock = jest.fn(),
+  projectUpdateMock = jest.fn(),
+  testRunFindManyMock = jest.fn(),
+}) => {
   const module: TestingModule = await Test.createTestingModule({
     providers: [
       ProjectsService,
@@ -17,6 +21,7 @@ const initService = async ({ projectFindUniqueMock = jest.fn(), projectUpdateMoc
             findUnique: projectFindUniqueMock,
             update: projectUpdateMock,
           },
+          testRun: { findMany: testRunFindManyMock },
         },
       },
       { provide: TestVariationsService, useValue: {} },
@@ -166,6 +171,40 @@ describe('ProjectsService', () => {
       expect(returned).not.toHaveProperty('jiraEmail');
       expect(returned).not.toHaveProperty('jiraTokenSet');
       expect(JSON.stringify(returned)).not.toMatch(/secret|bot@example/);
+    });
+  });
+
+  describe('findBrowsers', () => {
+    it('lists the browsers snapshots came from', async () => {
+      const testRunFindManyMock = jest.fn().mockResolvedValue([
+        { browser: 'chromium', browserVersion: '131.0.6778.33', viewport: '1280x720' },
+        { browser: 'firefox', browserVersion: null, viewport: '1280×720' },
+        { browser: ' ', browserVersion: null, viewport: null },
+      ]);
+      service = await initService({ testRunFindManyMock });
+
+      await expect(service.findBrowsers('p1')).resolves.toEqual([
+        { browser: 'chromium', version: '131.0.6778.33', viewport: '1280x720' },
+        { browser: 'firefox', version: '', viewport: '1280x720' },
+      ]);
+      expect(testRunFindManyMock.mock.calls[0][0]).toMatchObject({
+        where: { projectId: 'p1', browser: { not: null } },
+        distinct: ['browser', 'browserVersion', 'viewport'],
+      });
+    });
+
+    it('refuses to save an allowed browser with an unsupported wildcard', async () => {
+      const projectUpdateMock = jest.fn().mockResolvedValue({});
+      service = await initService({ projectUpdateMock });
+
+      await expect(
+        service.update({
+          id: 'p1',
+          name: 'Web',
+          uiTreeSettings: JSON.stringify({ allowedBrowsers: [{ browser: 'Chrome', version: '13*', viewport: '' }] }),
+        } as never)
+      ).rejects.toThrow('only supported at the end of the version');
+      expect(projectUpdateMock).not.toHaveBeenCalled();
     });
   });
 });

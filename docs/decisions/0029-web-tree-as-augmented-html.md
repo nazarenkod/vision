@@ -24,8 +24,8 @@ Vision має приймати дерево вебсторінки (050). Зви
 
 1. Власний JSON вузлів (тег, атрибути, rect) — новий парсер і окремий формат від `page source`.
 2. HTML у тому вигляді, як його дає браузер, з атрибутами `data-vision-*` для координат,
-   масштабу й прокрутки; shadow DOM — у `<template shadowrootmode>`, `iframe` — його `<html>`
-   усередині.
+   масштабу й прокрутки; shadow DOM — у `<template shadowrootmode>`, документ `iframe` — у
+   `<template data-vision-frame>` одразу після фрейма (вміст `<iframe>` HTML читає як текст).
 
 ## Рішення
 

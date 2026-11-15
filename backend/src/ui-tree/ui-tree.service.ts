@@ -75,6 +75,10 @@ export function parseUiTreeOptions(value: string | null | undefined): UiTreeOpti
 export interface StructureInfo {
   hasUiTree: boolean;
   hasBaselineUiTree: boolean;
+  // what the current tree is; a web page source without positions tells why shifts,
+  // picking, contrast and tap area are missing (REQ-050-09)
+  treeFormat: UiTreeFormat | null;
+  positioned: boolean;
   changes: StructuralChange[];
   regions: RegionElement[];
   hints: NoiseHint[];
@@ -492,6 +496,8 @@ export class UiTreeService {
     return {
       hasUiTree: !!tree,
       hasBaselineUiTree: !!baselineTree,
+      treeFormat: tree?.format ?? null,
+      positioned: tree ? tree.positioned !== false : true,
       changes,
       regions: tree
         ? elementsUnderRegions(tree, regions)

@@ -19,6 +19,7 @@ import { UpdateProjectDto } from './dto/update-project.dto';
 import { settingsConflict } from './settings-conflict';
 import { hideConfigSecrets, keepConfigSecrets } from './project-secrets';
 import { AllowedDevice, invalidAllowedDevice } from './allowed-devices';
+import { AllowedBrowser, invalidAllowedBrowser } from './allowed-browsers';
 import { wipeSharedJiraCredentials } from './shared-jira-credentials';
 import { sealSecret } from '../shared/secret-box';
 import { allowedJiraHosts, JIRA_HOSTS_VARIABLE, jiraHostProblem } from '../a11y/jira-hosts';
@@ -59,6 +60,11 @@ function normalizeUiTreeSettings(value: string | null): string | null {
   const devices = (parsed as { allowedDevices?: unknown } | null)?.allowedDevices;
   for (const entry of Array.isArray(devices) ? devices : []) {
     const problem = invalidAllowedDevice(entry && typeof entry === 'object' ? entry : {});
+    if (problem) throw new HttpException(problem, HttpStatus.BAD_REQUEST);
+  }
+  const browsers = (parsed as { allowedBrowsers?: unknown } | null)?.allowedBrowsers;
+  for (const entry of Array.isArray(browsers) ? browsers : []) {
+    const problem = invalidAllowedBrowser(entry && typeof entry === 'object' ? entry : {});
     if (problem) throw new HttpException(problem, HttpStatus.BAD_REQUEST);
   }
   return value;
@@ -165,6 +171,23 @@ export class ProjectsService implements OnModuleInit {
     return rows
       .filter((row) => row.device?.trim() && row.os?.trim())
       .map((row) => ({ device: row.device, os: row.os }));
+  }
+
+  /** Browsers web snapshots came from (REQ-050-53): the runs keep the version, variations do not. */
+  async findBrowsers(projectId: string): Promise<AllowedBrowser[]> {
+    const rows = await this.prismaService.testRun.findMany({
+      where: { projectId, browser: { not: null } },
+      select: { browser: true, browserVersion: true, viewport: true },
+      distinct: ['browser', 'browserVersion', 'viewport'],
+      orderBy: [{ browser: 'asc' }, { browserVersion: 'asc' }, { viewport: 'asc' }],
+    });
+    return rows
+      .filter((row) => row.browser?.trim())
+      .map((row) => ({
+        browser: row.browser.trim(),
+        version: row.browserVersion?.trim() ?? '',
+        viewport: (row.viewport ?? '').trim().replace(/×/g, 'x'),
+      }));
   }
 
   async update(projectDto: UpdateProjectDto): Promise<Project> {

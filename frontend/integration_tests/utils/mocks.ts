@@ -30,6 +30,15 @@ export const mockGetDevices = async (
     route.fulfill({ body: JSON.stringify(devices) }),
   );
 
+export const mockGetBrowsers = async (
+  page: Page,
+  projectId: string,
+  browsers: Array<{ browser: string; version: string; viewport: string }>,
+) =>
+  page.route(`${API_URL}/projects/${projectId}/browsers`, (route) =>
+    route.fulfill({ body: JSON.stringify(browsers) }),
+  );
+
 /**
  * The Jira types the settings offer (049): a function gets the address the page
  * asked for and answers lists or a problem.

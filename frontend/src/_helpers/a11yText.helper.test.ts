@@ -66,4 +66,21 @@ describe("a11yText", () => {
     };
     expect(a11yMessage(ukrainian, violation)).toBe("Something new.");
   });
+  it("reads a web page's tap area in px and its screen reader", () => {
+    const touch = {
+      rule: "touch-target" as const,
+      message: 'a "Close" is 20 × 20 px, minimum is 24 × 24 px.',
+    };
+    expect(a11yMessage(ukrainian, touch)).toBe(
+      'a "Close": 20 × 20 px, мінімум — 24 × 24 px.',
+    );
+    const label = {
+      rule: "missing-label" as const,
+      message: "button (id/close) has nothing for screen reader to read out.",
+    };
+    expect(a11yMessage(english, label)).toBe(label.message);
+    expect(a11yMessage(ukrainian, label)).toBe(
+      "button (id/close): програма читання з екрана не має що озвучити.",
+    );
+  });
 });

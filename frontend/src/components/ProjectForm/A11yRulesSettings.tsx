@@ -26,6 +26,11 @@ import {
   parseUiTreeSettings,
 } from "../../types/insights";
 import { MessageKey, useT } from "../../i18n";
+import {
+  PlatformField,
+  platformOf,
+  platformShows,
+} from "../../_helpers/projectSettings.helper";
 
 export const RULE_LABEL: Record<A11yRule, MessageKey> = {
   "touch-target": "a11y.rule.touchTarget",
@@ -57,6 +62,8 @@ const RULE_NORMS: Partial<
     fields: [
       ["touchTargetAndroid", "a11y.norm.android", "dp"],
       ["touchTargetIos", "a11y.norm.ios", "pt"],
+      // CSS pixels, WCAG 2.2 2.5.8 (REQ-050-12)
+      ["touchTargetWeb", "a11y.norm.web", "px"],
     ],
   },
   "low-contrast": {
@@ -66,6 +73,14 @@ const RULE_NORMS: Partial<
       ["contrastLarge", "a11y.norm.large", ": 1"],
     ],
   },
+};
+
+// the norms and rules one platform has (REQ-050-43, 44)
+const FIELD_OF: Partial<Record<A11yNormField | A11yRule, PlatformField>> = {
+  touchTargetAndroid: "touchTargetAndroid",
+  touchTargetIos: "touchTargetIos",
+  touchTargetWeb: "touchTargetWeb",
+  "not-accessible": "notAccessible",
 };
 
 /** One norm: saved as soon as it is a number within limits, else says why not. */
@@ -152,6 +167,12 @@ export const A11yRulesSettings: React.FunctionComponent<{
   const { t } = useT();
   const settings = parseUiTreeSettings(project.uiTreeSettings);
   const norms = a11yNormsOf(settings);
+  const platform = platformOf(project.uiTreeSettings);
+  const shown = (item: A11yNormField | A11yRule) => {
+    const field = FIELD_OF[item];
+    return !field || platformShows(platform, field);
+  };
+  const rules = A11Y_RULES.filter(shown);
 
   // only the norms change: the defaults parsing fills in are not written, or
   // a project saved without them would look changed under Screen structure
@@ -184,7 +205,7 @@ export const A11yRulesSettings: React.FunctionComponent<{
           {t("section.a11yIntro")}
         </Typography>
       )}
-      {A11Y_RULES.map((rule, index) => {
+      {rules.map((rule, index) => {
         const on = !norms.disabledRules.includes(rule);
         const note = RULE_NOTE[rule];
         const ruleNorms = RULE_NORMS[rule];
@@ -242,16 +263,18 @@ export const A11yRulesSettings: React.FunctionComponent<{
                   {t(ruleNorms.caption)}
                 </Typography>
                 <Box sx={{ display: "flex", gap: 2, flexWrap: "wrap" }}>
-                  {ruleNorms.fields.map(([field, label, unit]) => (
-                    <NormField
-                      key={field}
-                      field={field}
-                      label={label}
-                      unit={unit}
-                      value={norms[field]}
-                      onChange={(value) => save({ ...norms, [field]: value })}
-                    />
-                  ))}
+                  {ruleNorms.fields
+                    .filter(([field]) => shown(field))
+                    .map(([field, label, unit]) => (
+                      <NormField
+                        key={field}
+                        field={field}
+                        label={label}
+                        unit={unit}
+                        value={norms[field]}
+                        onChange={(value) => save({ ...norms, [field]: value })}
+                      />
+                    ))}
                 </Box>
               </Box>
             )}

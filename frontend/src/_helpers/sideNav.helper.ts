@@ -6,7 +6,13 @@ import type { User } from "../types";
 // the page on screen, and what the project switcher says.
 
 export type SideNavKey =
-  "projects" | "users" | "backups" | "builds" | "baselines" | "insights";
+  | "projects"
+  | "users"
+  | "backups"
+  | "builds"
+  | "baselines"
+  | "search"
+  | "insights";
 
 export interface SideNavItem {
   key: SideNavKey;
@@ -28,6 +34,11 @@ const PROJECT_ITEMS: Array<{
     key: "baselines",
     label: "nav.baselines",
     to: (id) => `${routes.VARIATION_LIST_PAGE}/${id}`,
+  },
+  {
+    key: "search",
+    label: "nav.search",
+    to: (id) => `${routes.SEARCH_PAGE}/${id}`,
   },
   {
     key: "insights",
@@ -93,6 +104,7 @@ const NAMED_PAGES = new Set([
   "backups",
   "variations",
   "insights",
+  "search",
   "profile",
   "login",
   "register",
@@ -109,6 +121,7 @@ export function activeSideNavItem(pathname: string): SideNavKey | null {
   if (first === "backups") return "backups";
   if (first === "variations") return "baselines";
   if (first === "insights") return "insights";
+  if (first === "search") return "search";
   if (NAMED_PAGES.has(first)) return null;
   return "builds";
 }

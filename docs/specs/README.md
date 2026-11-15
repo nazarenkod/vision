@@ -119,7 +119,7 @@ docs/specs/NNN-коротка-назва/
 | [050](050-web-ui-tree/spec.md) | Веб як джерело UI-дерева | Draft |
 | [051](051-security-quick-fixes/spec.md) | Швидкі виправлення безпеки за аудитом 2026-11-07 | Implemented |
 | [052](052-sessions-and-browser-hardening/spec.md) | Сесії й захист браузера | Implemented |
-| [053](053-screen-search/spec.md) | Пошук екранів за UI-деревом | Approved |
+| [053](053-screen-search/spec.md) | Пошук екранів за UI-деревом | Implemented |
 | [054](054-rules-from-noise-history/spec.md) | Правила з історії шуму | Approved |
 | [055](055-bulk-decisions-by-query/spec.md) | Масові рішення за запитом до змін | Approved |
 

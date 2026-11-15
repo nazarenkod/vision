@@ -21,10 +21,9 @@
   - Готово, коли: `gradle test` зелений.
 - [x] **T8** [P] (REQ-050-21…25) `sdk-playwright/`: порт `agent-playwright`, збір дерева.
   - Готово, коли: тести `sdk-playwright` зелені в Chromium.
-- [ ] **T9** Документація: статус spec → `Implemented`, NOTICE, AGENTS.md пакетів, DEPLOY.md (SDK
+- [x] **T9** Документація: статус spec → `Implemented`, NOTICE, AGENTS.md пакетів, DEPLOY.md (SDK
   для Playwright), «Перевірка вимог».
-- [ ] **T10** `/verify`.
+- [x] **T10** `/verify`.
 
-Стан: NOTICE, AGENTS.md, DEPLOY.md §7.1–7.2 і «Перевірка вимог» оновлені; статус `Implemented`
-і позначки «Замінено» в 026, 029, 049 — після злиття. Еталон скриншота
+Лишилось: еталон скриншота
 `projectSettings.spec.ts › renders in Ukrainian` (нове поле «Платформа») — перегенерувати в Docker.

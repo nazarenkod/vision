@@ -259,6 +259,28 @@ describe('parseUiTreeSettings', () => {
     expect(parseUiTreeSettings('nope').compensateMoves).toBe(false);
   });
 
+  it('keeps the project platform', () => {
+    for (const platform of ['mobile', 'web', 'both']) {
+      expect(parseUiTreeSettings(JSON.stringify({ platform })).platform).toBe(platform);
+    }
+    // values the page could not have saved read as the default, and the rest of the settings stay
+    expect(parseUiTreeSettings('{"platform": "desktop", "compensateMoves": true}')).toMatchObject({
+      platform: 'mobile',
+      compensateMoves: true,
+    });
+    expect(
+      parseUiTreeSettings(
+        JSON.stringify({ platform: 'web', allowedBrowsers: [{ browser: 'Chrome', version: '131.*' }] })
+      ).allowedBrowsers
+    ).toEqual([{ browser: 'Chrome', version: '131.*', viewport: '' }]);
+  });
+
+  it('reads a project saved before platforms as mobile', () => {
+    expect(parseUiTreeSettings(null).platform).toBe('mobile');
+    expect(parseUiTreeSettings('{"excludeSystemBars": false}').platform).toBe('mobile');
+    expect(parseUiTreeSettings('{"excludeSystemBars": false}').allowedBrowsers).toEqual([]);
+  });
+
   it('looks for the screen title in Appbar#Title when the project saved none', () => {
     expect(parseUiTreeSettings(null).screenTitle).toEqual(['id:Appbar#Title']);
     expect(parseUiTreeSettings('{"screenTitle": []}').screenTitle).toEqual(['id:Appbar#Title']);

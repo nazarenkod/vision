@@ -52,7 +52,8 @@ export function findNoiseHints(input: {
     width: imageWidth,
     height: Math.round((ios ? STATUS_BAR.ios : STATUS_BAR.android) * pixelsPerDp),
   };
-  if (imageHeight > imageWidth && regions.every((region) => inside(region, band))) {
+  // a browser's screenshot has no status bar to blame (REQ-050-07)
+  if (tree?.format !== 'web' && imageHeight > imageWidth && regions.every((region) => inside(region, band))) {
     hints.push({
       kind: 'status-bar',
       message: 'Only the status bar changed (clock, battery or signal).',

@@ -20,6 +20,7 @@ export const a11yTitle = (
 
 type Parse = (
   match: RegExpExecArray,
+  text: Text,
 ) => [MessageKey, Record<string, string | number>];
 
 /*
@@ -50,8 +51,16 @@ const MESSAGES: Record<A11yViolation["rule"], [RegExp, Parse]> = {
     ],
   ],
   "missing-label": [
-    /^(.+) has nothing for (\w+) to read out\.$/,
-    (m) => ["a11y.msg.missingLabel", { element: m[1], reader: m[2] }],
+    // TalkBack and VoiceOver are names; a web page has "screen reader" (050)
+    /^(.+) has nothing for (\w+|screen reader) to read out\.$/,
+    (m, text) => [
+      "a11y.msg.missingLabel",
+      {
+        element: m[1],
+        reader:
+          m[2] === "screen reader" ? text("a11y.reader.screenReader") : m[2],
+      },
+    ],
   ],
   "input-without-label": [
     /^(.+) gives no clue what to enter\.$/,
@@ -79,6 +88,6 @@ export function a11yMessage(
   const known = MESSAGES[violation.rule];
   const match = known?.[0].exec(violation.message);
   if (!known || !match) return violation.message;
-  const [key, params] = known[1](match);
+  const [key, params] = known[1](match, text);
   return text(key, params);
 }

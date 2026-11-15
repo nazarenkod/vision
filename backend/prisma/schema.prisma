@@ -112,6 +112,9 @@ model TestRun {
   // the feature the screen belongs to, sent by the test (025, ADR-0019); names
   // bugs filed from the review and is not part of the check's identity
   featureName           String?
+  // the browser's version of a web screen (050): held to the project's allowed
+  // browsers, not part of the check's identity, so a new version keeps the baseline
+  browserVersion        String?
   // [{kind, message}] — taken while loading, looks like another screen, …
   captureWarnings       String?
   // changes the pixels do not show: labels, states, invisible controls

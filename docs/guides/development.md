@@ -5,7 +5,7 @@
 
 ## Що потрібно
 
-- Node 24.9+ (бекенд і фронтенд; `.nvmrc`, `nvm use`), Python 3 (CLI), JDK 11–17 і Gradle 7.x (SDK).
+- Node 24.9+ (бекенд і фронтенд; `.nvmrc`, `nvm use`), Python 3 (CLI), JDK 11 і Gradle 7.x (SDK; на JDK 17 старий Lombok-плагін падає).
 - Docker — лише для Postgres і Playwright-еталонів. Якщо `docker` не бачить демона, вкажи сокет
   Docker Desktop: `DOCKER_HOST=unix://$HOME/.docker/run/docker.sock`.
 

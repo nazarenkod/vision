@@ -16,16 +16,19 @@ export interface A11yNorms {
   // minimum tap area, dp on Android and pt on iOS
   touchTargetAndroid: number;
   touchTargetIos: number;
+  // minimum tap area on the web, in CSS pixels (050)
+  touchTargetWeb: number;
   // minimum contrast ratio, for body text and for large text
   contrast: number;
   contrastLarge: number;
   disabledRules: A11yRule[];
 }
 
-// 48 dp (Material, ATF), 44 pt (HIG), WCAG AA 4.5 : 1 and 3 : 1
+// 48 dp (Material, ATF), 44 pt (HIG), 24 CSS px (WCAG 2.2, 2.5.8), WCAG AA 4.5 : 1 and 3 : 1
 export const DEFAULT_A11Y_NORMS: A11yNorms = {
   touchTargetAndroid: 48,
   touchTargetIos: 44,
+  touchTargetWeb: 24,
   contrast: 4.5,
   contrastLarge: 3,
   disabledRules: [],
@@ -56,6 +59,7 @@ export function parseA11yNorms(raw: unknown): A11yNorms {
   return {
     touchTargetAndroid: within(value.touchTargetAndroid, touchTarget, d.touchTargetAndroid, true),
     touchTargetIos: within(value.touchTargetIos, touchTarget, d.touchTargetIos, true),
+    touchTargetWeb: within(value.touchTargetWeb, touchTarget, d.touchTargetWeb, true),
     contrast: within(value.contrast, contrast, d.contrast),
     contrastLarge: within(value.contrastLarge, contrast, d.contrastLarge),
     disabledRules: Array.isArray(value.disabledRules)
@@ -65,9 +69,10 @@ export function parseA11yNorms(raw: unknown): A11yNorms {
 }
 
 export const touchTargetOf = (norms: A11yNorms, format: UiTreeFormat): number =>
-  format === 'appium-ios' ? norms.touchTargetIos : norms.touchTargetAndroid;
+  format === 'appium-ios' ? norms.touchTargetIos : format === 'web' ? norms.touchTargetWeb : norms.touchTargetAndroid;
 
-export const unitOf = (format: UiTreeFormat): string => (format === 'appium-ios' ? 'pt' : 'dp');
+export const unitOf = (format: UiTreeFormat): string =>
+  format === 'appium-ios' ? 'pt' : format === 'web' ? 'px' : 'dp';
 
 const num = (value: unknown): number | null => (typeof value === 'number' && Number.isFinite(value) ? value : null);
 

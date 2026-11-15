@@ -1,0 +1,52 @@
+<!DOCTYPE html><html lang="en"><head>
+  <meta charset="utf-8">
+  <title>Shop</title>
+  <style>
+    body { margin: 0; font-family: sans-serif; }
+    header { display: flex; justify-content: space-between; align-items: center; height: 56px; padding: 0 16px; background: #1d3557; color: #fff; }
+    .banner { height: 80px; background: #ffd166; padding: 16px; box-sizing: border-box; }
+    ul { list-style: none; margin: 0; padding: 16px; }
+    li { height: 48px; border-bottom: 1px solid #ddd; display: flex; align-items: center; }
+    .icon { width: 20px; height: 20px; border: 0; background: #e63946; }
+    .faint { color: #ccc; background: #fff; }
+    .gone { display: none; }
+    .tall { height: 1400px; }
+    iframe { border: 2px solid #000; width: 300px; height: 80px; display: block; margin: 8px 16px; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1 id="title">Shop</h1>
+    <span id="clock">12:00</span>
+    <button class="icon" id="menu"></button>
+  </header>
+  <div class="banner" id="promo" hidden="">Sale today</div>
+  <ul id="list">
+    <li><a href="#tea">Tea</a></li>
+    <li><a href="#coffee">Coffee</a></li>
+    <li><button id="buy">Buy</button><button>Buy</button></li>
+  </ul>
+  <form>
+    <label for="email">Email</label> <input id="email" type="email">
+    <input id="nameless" type="text">
+    <input id="search" type="search" placeholder="Search">
+    <label><input type="checkbox" id="agree" checked=""> I agree</label>
+    <span id="pay-label">Pay now</span><button aria-labelledby="pay-label" id="pay">→</button>
+    <img src="data:image/gif;base64,R0lGODlhAQABAAAAACw=" alt="Logo" width="40" height="40">
+    <p class="faint" id="faint">Barely visible text</p>
+    <button aria-disabled="true">Later</button>
+    <div class="gone"><button id="hidden-btn">Hidden</button></div>
+    <div role="button" tabindex="0" id="fake">Fake button</div>
+  </form>
+  <iframe id="frame" srcdoc="&lt;!DOCTYPE html&gt;&lt;html&gt;&lt;body style='margin:0'&gt;&lt;button id='inside'&gt;Inside&lt;/button&gt;&lt;/body&gt;&lt;/html&gt;"></iframe>
+  <shop-card id="card"></shop-card>
+  <div class="tall"></div>
+  <script>
+    if (location.search.includes('banner')) document.getElementById('promo').hidden = false;
+    customElements.define('shop-card', class extends HTMLElement {
+      constructor() { super(); this.attachShadow({ mode: 'open' }).innerHTML = '<p>Card</p><button id="shadow-btn">Add</button>'; }
+    });
+  </script>
+
+
+</body></html>

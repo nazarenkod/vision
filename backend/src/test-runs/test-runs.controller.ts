@@ -36,6 +36,7 @@ import { MixedGuard } from '../auth/guards/mixed.guard';
 import { TestRunDto } from './dto/testRun.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { screenshotLimits } from '../shared/screenshot-limits';
+import { UI_TREE_FIELD_MAX_BYTES } from '../ui-tree/ui-tree.intake';
 import { CreateTestRequestBase64Dto } from './dto/create-test-request-base64.dto';
 import { CreateTestRequestMultipartDto } from './dto/create-test-request-multipart.dto';
 import { FileToBodyInterceptor } from '../shared/fite-to-body.interceptor';
@@ -58,6 +59,11 @@ import {
   issueIds,
 } from '../a11y/a11y-issue.dto';
 import { ProjectFrom, ProjectFromForAutotests, inBody, inParam, inQuery } from '../projects/project-access';
+
+// one screenshot, and text fields big enough for a page's UI tree (050)
+export const MULTIPART_LIMITS = {
+  limits: { fileSize: screenshotLimits().maxBytes, files: 1, fieldSize: UI_TREE_FIELD_MAX_BYTES },
+};
 
 @ApiTags('test-runs')
 @Controller('test-runs')
@@ -380,11 +386,7 @@ export class TestRunsController {
   @Roles(Role.admin, Role.editor)
   // the form is read by these, after the global interceptors: access is checked once it is (042)
   // the file size is capped while it is read, before it is held in memory (VIS-SEC-014)
-  @UseInterceptors(
-    FileInterceptor('image', { limits: { fileSize: screenshotLimits().maxBytes, files: 1 } }),
-    FileToBodyInterceptor,
-    ProjectAccessInterceptor
-  )
+  @UseInterceptors(FileInterceptor('image', MULTIPART_LIMITS), FileToBodyInterceptor, ProjectAccessInterceptor)
   @UsePipes(new ValidationPipe({ transform: true, forbidUnknownValues: true }))
   postTestRunMultipart(
     @Body() createTestRequestDto: CreateTestRequestMultipartDto,

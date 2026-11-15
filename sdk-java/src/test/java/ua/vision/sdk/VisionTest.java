@@ -220,6 +220,69 @@ public class VisionTest {
         }
     }
 
+    private JsonObject sentBodyFor(VisionOptions options) throws IOException, InterruptedException {
+        mockWebServer.enqueue(new MockResponse().setBody(gson.toJson(TestRunResponse.builder()
+                .status(TestRunStatus.OK)
+                .build())));
+        vision.buildId = BUILD_ID;
+        vision.projectId = PROJECT_ID;
+        vision.submitTestRun(NAME, IMAGE_BASE_64, options);
+        return gson.fromJson(mockWebServer.takeRequest().getBody().readUtf8(), JsonObject.class);
+    }
+
+    @Test
+    public void sendsTheBrowserVersionWhenGiven() throws IOException, InterruptedException {
+        JsonObject body = sentBodyFor(VisionOptions.builder().browser("chrome").browserVersion("131.0.6778.85").build());
+
+        assertThat(body.get("browser").getAsString(), is("chrome"));
+        assertThat(body.get("browserVersion").getAsString(), is("131.0.6778.85"));
+    }
+
+    @Test
+    public void leavesOutTheBrowserVersionWhenNotGiven() throws IOException, InterruptedException {
+        JsonObject body = sentBodyFor(VisionOptions.builder().browser("chrome").build());
+
+        assertThat(body.has("browserVersion"), is(false));
+    }
+
+    @DataProvider
+    public Object[][] webTrees() {
+        return new Object[][]{
+                {"<!DOCTYPE html><html><body><button>Pay</button></body></html>"},
+                {"\n  <!doctype html>\n<html lang=\"uk\"><body></body></html>"},
+                {"<html data-vision-capture=\"page\"><body></body></html>"},
+                {"  <HTML><body></body></HTML>"},
+        };
+    }
+
+    @Test(dataProvider = "webTrees")
+    public void marksAWebPageTreeAsWeb(String html) throws IOException, InterruptedException {
+        JsonObject body = sentBodyFor(VisionOptions.builder().uiTree(html).build());
+
+        assertThat(body.get("uiTreeFormat").getAsString(), is("web"));
+        byte[] gzipped = Base64.getDecoder().decode(body.get("uiTree").getAsString());
+        try (GZIPInputStream in = new GZIPInputStream(new ByteArrayInputStream(gzipped))) {
+            assertThat(new String(in.readAllBytes(), StandardCharsets.UTF_8), is(html));
+        }
+    }
+
+    // Appium page sources go exactly as before 050
+    @Test
+    public void sendsNoTreeFormatForAnAppiumPageSource() throws IOException, InterruptedException {
+        JsonObject body = sentBodyFor("<?xml version=\"1.0\"?><hierarchy><android.widget.Button/></hierarchy>");
+
+        assertThat(body.has("uiTree"), is(true));
+        assertThat(body.has("uiTreeFormat"), is(false));
+    }
+
+    @Test
+    public void sendsNoTreeFormatWithoutATree() throws IOException, InterruptedException {
+        JsonObject body = sentBodyFor("<html>" + "x".repeat(Vision.UI_TREE_MAX_BYTES) + "</html>");
+
+        assertThat(body.has("uiTree"), is(false));
+        assertThat(body.has("uiTreeFormat"), is(false));
+    }
+
     // the server would leave it out anyway; the test must not fail because of the tree
     @Test
     public void leavesOutUiTreeOverTheLimit() throws IOException, InterruptedException {

@@ -1,6 +1,7 @@
 import { Rect, UiNode, UiTree } from './ui-tree.types';
 import { A11yNorms, DEFAULT_A11Y_NORMS, parseA11yNorms } from '../a11y/a11y-norms';
 import { AllowedDevice, parseAllowedDevices } from '../projects/allowed-devices';
+import { AllowedBrowser, parseAllowedBrowsers } from '../projects/allowed-browsers';
 import { evaluateXpath, isXpathSelector, parseXpath, XPATH_PREFIX, XpathProblem, xpathProblem } from './xpath-selector';
 import { checkVariableText, TextPart, unrunnablePattern, VariableTextReason } from './variable-text';
 import { compileLinear, isLinearRegex, LinearRegex } from './linear-regex';
@@ -49,7 +50,14 @@ export interface UiTreeSettings {
   a11yNorms: A11yNorms;
   // devices SDK snapshots may come from; empty for any (029)
   allowedDevices: AllowedDevice[];
+  // what the project tests: decides which settings are shown, never how a tree is read (050)
+  platform: ProjectPlatform;
+  // browsers web snapshots may come from; empty for any (REQ-050-45, REQ-050-51)
+  allowedBrowsers: AllowedBrowser[];
 }
+
+export type ProjectPlatform = 'mobile' | 'web' | 'both';
+export const PROJECT_PLATFORMS: ProjectPlatform[] = ['mobile', 'web', 'both'];
 
 /** A check is what the test named: its name plus custom tags. Devices are runs of it. */
 export function checkKey(check: { name: string; customTags?: string | null }): string {
@@ -66,6 +74,9 @@ export const DEFAULT_UI_TREE_SETTINGS: UiTreeSettings = {
   screenTitle: ['id:Appbar#Title'],
   a11yNorms: DEFAULT_A11Y_NORMS,
   allowedDevices: [],
+  // projects saved before platforms tested phones (REQ-050-41)
+  platform: 'mobile',
+  allowedBrowsers: [],
 };
 
 export function parseJsonArray<T>(value: string | null | undefined): T[] {
@@ -96,6 +107,8 @@ export function parseUiTreeSettings(value: string | null | undefined): UiTreeSet
           : DEFAULT_UI_TREE_SETTINGS.screenTitle,
       a11yNorms: parseA11yNorms(parsed.a11yNorms),
       allowedDevices: parseAllowedDevices(parsed.allowedDevices),
+      platform: PROJECT_PLATFORMS.includes(parsed.platform) ? parsed.platform : DEFAULT_UI_TREE_SETTINGS.platform,
+      allowedBrowsers: parseAllowedBrowsers(parsed.allowedBrowsers),
     };
   } catch {
     return { ...DEFAULT_UI_TREE_SETTINGS };
@@ -294,6 +307,8 @@ export const IOS_STATUS_BAR_PT = 54;
 
 /** Status and navigation bars: clock, battery and signal change on every run. */
 export function findSystemBars(tree: UiTree): Rect[] {
+  // a browser's screenshot has no status or navigation bar (REQ-050-07)
+  if (tree.format === 'web') return [];
   if (tree.format === 'appium-ios') {
     return [{ x: 0, y: 0, width: tree.width, height: Math.round(IOS_STATUS_BAR_PT * tree.scale) }];
   }

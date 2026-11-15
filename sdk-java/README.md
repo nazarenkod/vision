@@ -1,7 +1,7 @@
 # Vision Java SDK
 
 `ua.vision:vision-sdk` sends screenshots, and optionally the screen's UI tree, from autotests to
-Vision. Runs on Java 11+; build with JDK 11–17 and Gradle 7.
+Vision. Runs on Java 11+; build with JDK 11 and Gradle 7 (the Lombok plugin fails on JDK 17).
 
 ## Get it
 
@@ -188,6 +188,32 @@ Vision then checks accessibility (labels, touch targets, contrast), tells
 which element changed, and can ignore or tolerate changes by element. The
 format (Android or iOS) is recognised from the XML. A tree over 10 MiB is not
 sent: the SDK logs a warning and the screenshot goes without it.
+
+With a web page's UI tree (Selenide or Selenium; optional, Vision only)
+
+```java
+JavascriptExecutor driver = (JavascriptExecutor) WebDriverRunner.getWebDriver();
+String uiTree = WebUiTree.collect(driver);  // WebUiTree.collect(driver, true) for a full-page screenshot
+String screenshotBase64 = Selenide.screenshot(OutputType.BASE64);
+vision.track(
+        "Checkout",
+        screenshotBase64,
+        VisionOptions.builder()
+            .browser("chrome")
+            .browserVersion("131.0.6778.85") // optional: shown in the review, not part of the baseline
+            .viewport("1280x800")
+            .uiTree(uiTree)
+            .build()
+);
+```
+
+`ua.vision.sdk.web.WebUiTree` runs the collector shared by all Vision SDKs
+(`web-tree/collect-tree.js`) in the browser of the session, so call it right
+before the screenshot. It returns the page's HTML with where each element is
+shown and what a screen reader announces; the SDK sends it as a web tree.
+Selenium is not a dependency of the SDK: your Selenide or WebDriver brings it.
+If the tree cannot be collected (the page is closed, the script is forbidden),
+`collect` returns `null` and logs a warning: the screenshot goes without it.
 
 A Vision project may list the devices its tests run on. A snapshot from any
 other `device` / `os` is refused by the server, and `track` throws a

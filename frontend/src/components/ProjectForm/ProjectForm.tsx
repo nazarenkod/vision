@@ -33,9 +33,16 @@ import { MessageKey, useT } from "../../i18n";
 import { Link as RouterLink } from "react-router-dom";
 import { routes } from "../../constants";
 import { projectsService } from "../../services";
-import { JiraTypesProblem } from "../../types";
+import { JiraTypesProblem, ProjectPlatform } from "../../types";
 import { JiraTypeSelect } from "./JiraTypeSelect";
 import { Explained } from "./OptionExplainer";
+import {
+  PLATFORMS,
+  platformOf,
+  platformShows,
+  sectionIntro,
+  withPlatform,
+} from "../../_helpers/projectSettings.helper";
 
 // what each engine is for, in one sentence (REQ-018-44)
 const ENGINES: Array<[ImageComparison, MessageKey]> = [
@@ -51,7 +58,51 @@ const useEditedProject = () => {
   return { project, projectDispatch };
 };
 
-/** Name, main branch and how long builds are kept. */
+/**
+ * What the project tests (REQ-050-42): only the platform changes in the
+ * settings JSON, so what it hides keeps its values (REQ-050-46).
+ */
+export const PlatformSelect: React.FunctionComponent = () => {
+  const { project, projectDispatch } = useEditedProject();
+  const { t } = useT();
+  return (
+    <TextField
+      select
+      id="platform"
+      margin="dense"
+      fullWidth
+      label={t("general.platform")}
+      helperText={t("general.platformHelp")}
+      value={platformOf(project.uiTreeSettings)}
+      onChange={(event) =>
+        setProjectEditState(projectDispatch, {
+          ...project,
+          uiTreeSettings: withPlatform(
+            project.uiTreeSettings,
+            event.target.value as ProjectPlatform,
+          ),
+        })
+      }
+      SelectProps={{
+        SelectDisplayProps: {
+          "data-testid": "platformSelect",
+        } as React.HTMLAttributes<HTMLDivElement>,
+      }}
+    >
+      {PLATFORMS.map(([platform, label]) => (
+        <MenuItem
+          key={platform}
+          value={platform}
+          data-testid={`platform-${platform}`}
+        >
+          {t(label)}
+        </MenuItem>
+      ))}
+    </TextField>
+  );
+};
+
+/** Name, main branch, platform and how long builds are kept. */
 export const GeneralFields: React.FunctionComponent = () => {
   const { project, projectDispatch } = useEditedProject();
   const { t } = useT();
@@ -93,6 +144,7 @@ export const GeneralFields: React.FunctionComponent = () => {
           })
         }
       />
+      <PlatformSelect />
       <TextValidator
         name="buildCount"
         validators={["minNumber:1"]}
@@ -383,6 +435,7 @@ export const NewProjectFields: React.FunctionComponent = () => {
           })
         }
       />
+      <PlatformSelect />
       <ComparisonFields as="select" withConfig={false} />
       <Typography variant="body2" color="textSecondary" sx={{ mt: 1.5 }}>
         {t("general.newProjectHint")}
@@ -576,11 +629,17 @@ export const MobileSettings: React.FunctionComponent<{
   const projectDispatch = useProjectDispatch();
   const { t } = useT();
   const settings = parseUiTreeSettings(project.uiTreeSettings);
+  const platform = platformOf(project.uiTreeSettings);
   const save = (next: UiTreeSettings) =>
     setProjectEditState(projectDispatch, {
       ...project,
       uiTreeSettings: JSON.stringify(next),
     });
+  // a web page has no status or navigation bars (REQ-050-43)
+  const toggles = TOGGLES.filter(
+    ([key]) =>
+      key !== "excludeSystemBars" || platformShows(platform, "systemBars"),
+  );
 
   return (
     <Box
@@ -597,10 +656,10 @@ export const MobileSettings: React.FunctionComponent<{
       )}
       {!bare && (
         <Typography variant="body2" color="textSecondary">
-          {t("section.mobileIntro")}
+          {sectionIntro("mobile", platform, t)}
         </Typography>
       )}
-      {TOGGLES.map(([key, label, help]) => {
+      {toggles.map(([key, label, help]) => {
         const toggle = (
           <FormControlLabel
             key={key}

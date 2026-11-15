@@ -5,6 +5,7 @@ import { ImageComparison } from "~client/types/imageComparison";
 import {
   API_URL,
   inUkrainian,
+  mockGetBrowsers,
   mockGetDevices,
   mockGetJiraTypes,
   mockGetProjects,
@@ -290,6 +291,120 @@ test("names the UI tree section Screen structure", async ({
   await page.getByTestId("settingsSearch").fill("mobile screens");
   await expect(section).toBeVisible();
   await expect(page.getByTestId("section-general")).toBeHidden();
+});
+
+test("picks the platform in General and when creating a project", async ({
+  page,
+  projectListPage,
+}) => {
+  await mockSaveProject(page);
+  await mockGetDevices(page, project.id, []);
+  await mockGetBrowsers(page, project.id, [
+    { browser: "Chrome", version: "131.0.6778", viewport: "1280x720" },
+  ]);
+  await open(page, {
+    uiTreeSettings: JSON.stringify({
+      ...JSON.parse(project.uiTreeSettings),
+      a11yNorms: { touchTargetAndroid: 40 },
+    }),
+  });
+  const general = page.getByTestId("section-general");
+  const structure = page.getByTestId("section-mobile");
+  const a11y = page.getByTestId("section-a11y");
+  const systemBars = page.getByLabel("Leave out status and navigation bars");
+  const voiceOver = page.getByTestId("a11yRule-not-accessible");
+  // a project saved before platforms is mobile (REQ-050-41)
+  await expect(general.getByTestId("platformSelect")).toHaveText("Mobile");
+  await expect(systemBars).toBeVisible();
+  await expect(page.locator("#norm-touchTargetAndroid")).toHaveValue("40");
+  await expect(page.locator("#norm-touchTargetWeb")).toHaveCount(0);
+  await expect(page.getByTestId("allowedDevices")).toBeVisible();
+  await expect(page.getByTestId("allowedBrowsers")).toHaveCount(0);
+
+  // web: no system bars, no Android and iOS norms, no VoiceOver (REQ-050-43)
+  await general.getByTestId("platformSelect").click();
+  await expect(page.getByRole("option")).toHaveText([
+    "Mobile",
+    "Web",
+    "Mobile and web",
+  ]);
+  await page.getByTestId("platform-web").click();
+  await expect(systemBars).toHaveCount(0);
+  await expect(voiceOver).toHaveCount(0);
+  await expect(page.locator("#norm-touchTargetAndroid")).toHaveCount(0);
+  await expect(page.locator("#norm-touchTargetIos")).toHaveCount(0);
+  await expect(page.locator("#norm-touchTargetWeb")).toHaveValue("24");
+  await expect(a11y).toContainText("Default 24");
+  await expect(structure.getByTestId("section-mobile-intro")).toHaveText(
+    "Applies to screens sent with a UI tree: on the web that is Selenide and Playwright.",
+  );
+  // browsers instead of devices, the received ones added in a click (REQ-050-45, 53)
+  await expect(page.getByTestId("allowedDevices")).toHaveCount(0);
+  const received = page.getByTestId(
+    "receivedBrowser-Chrome / 131.0.6778 / 1280x720",
+  );
+  await expect(received).toContainText("not in the list");
+  await received.getByRole("button", { name: "Add" }).click();
+  await expect(received).toContainText("allowed");
+  await page.getByTestId("newBrowser-browser").fill("Firefox");
+  await page.getByTestId("newBrowser-viewport").fill("1920 × 1080");
+  await page.getByTestId("addBrowser").click();
+  // what the platform hides is not found (REQ-050-48)
+  await page.getByTestId("settingsSearch").fill("navigation");
+  await expect(page.getByText("Nothing matches")).toBeVisible();
+  await page.getByTestId("settingsSearch").fill("");
+
+  await expect(page.getByTestId("saveBar")).toContainText("General, Devices");
+  const [request] = await Promise.all([
+    putRequest(page),
+    page.getByTestId("saveSettings").click(),
+  ]);
+  const saved = JSON.parse(request.postDataJSON().uiTreeSettings);
+  // hidden values stay as they were (REQ-050-46)
+  expect(saved).toMatchObject({
+    platform: "web",
+    excludeSystemBars: true,
+    elementRules: [{ id: "clock", selector: "id:clock", action: "ignore" }],
+    a11yNorms: { touchTargetAndroid: 40 },
+    allowedBrowsers: [
+      { browser: "Chrome", version: "131.0.6778", viewport: "1280x720" },
+      { browser: "Firefox", version: "", viewport: "1920x1080" },
+    ],
+  });
+
+  // both: every field of both platforms (REQ-050-50)
+  await general.getByTestId("platformSelect").click();
+  await page.getByTestId("platform-both").click();
+  await expect(systemBars).toBeVisible();
+  await expect(voiceOver).toBeVisible();
+  await expect(page.locator("#norm-touchTargetAndroid")).toHaveValue("40");
+  await expect(page.locator("#norm-touchTargetWeb")).toBeVisible();
+  await expect(page.getByTestId("allowedDevices")).toBeVisible();
+  await expect(page.getByTestId("allowedBrowsers")).toBeVisible();
+  await expect(structure.getByTestId("section-mobile-intro")).toContainText(
+    "Appium (Android, iOS)",
+  );
+  await page.getByTestId("discardSettings").click();
+
+  // creating a project: Mobile unless picked (REQ-050-42)
+  await page.goto("/projects");
+  await projectListPage.addBtn.click();
+  const dialog = projectListPage.modal.dialog;
+  await expect(dialog.getByTestId("platformSelect")).toHaveText("Mobile");
+  await projectListPage.name.fill("Web shop");
+  await projectListPage.mainBranch.fill("main");
+  await dialog.getByTestId("platformSelect").click();
+  await page.getByTestId("platform-web").click();
+  const [create] = await Promise.all([
+    page.waitForRequest(
+      (request) =>
+        request.url() === `${API_URL}/projects` && request.method() === "POST",
+    ),
+    projectListPage.modal.confirmBtn.click(),
+  ]);
+  expect(JSON.parse(create.postDataJSON().uiTreeSettings)).toEqual({
+    platform: "web",
+  });
 });
 
 test("explains the compare and ignore options with an animation", async ({

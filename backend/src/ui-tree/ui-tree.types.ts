@@ -1,4 +1,7 @@
-export type UiTreeFormat = 'appium-android' | 'appium-ios';
+// web: the page's HTML, from the Vision SDK with element positions or a plain page source (050)
+export type UiTreeFormat = 'appium-android' | 'appium-ios' | 'web';
+
+export const UI_TREE_FORMATS: UiTreeFormat[] = ['appium-android', 'appium-ios', 'web'];
 
 export interface Rect {
   x: number;
@@ -18,7 +21,7 @@ export interface UiNode {
   depth: number;
   // stable identity used to match the same element between baseline and current
   key: string;
-  // class name on Android, element type on iOS (e.g. android.widget.Button, XCUIElementTypeButton)
+  // class name on Android, element type on iOS, tag on the web (android.widget.Button, XCUIElementTypeButton, button)
   className: string;
   resourceId: string;
   text: string;
@@ -35,6 +38,8 @@ export interface UiNode {
   // absent on trees stored before these were read
   checked?: boolean;
   selected?: boolean;
+  // web only: the ARIA role, given or implied by the tag (button, link, textbox…)
+  role?: string;
   bounds: Rect;
 }
 
@@ -50,5 +55,7 @@ export interface UiTree {
   pixelsPerDpEstimated: boolean;
   // Android activity the screen belongs to, when the client sent it
   activity?: string;
+  // false for a web page source without the SDK's positions: every bounds is empty (REQ-050-09)
+  positioned?: boolean;
   nodes: UiNode[];
 }

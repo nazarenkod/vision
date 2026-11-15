@@ -195,3 +195,15 @@ describe('ScreenSearchService', () => {
     expect(ScreenSearchService.length).toBe(2);
   });
 });
+
+describe('ScreenSearchService.suggest', () => {
+  it('suggests from the latest baselines, counting each check once', async () => {
+    const { service } = setup({
+      'card-pixel.gz': tree(cashback(0)),
+      'card-galaxy.gz': tree(cashback(0)),
+      'home.gz': tree(cashback(1)),
+    });
+
+    expect(await service.suggest('p1', 'кеш', {})).toEqual([{ kind: 'text', query: 'Кешбек 5 %', screens: 2 }]);
+  });
+});

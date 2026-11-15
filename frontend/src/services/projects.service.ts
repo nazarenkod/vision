@@ -4,6 +4,7 @@ import {
   Project,
   ProjectMember,
   ScreenSearchResult,
+  ScreenSuggestion,
 } from "../types";
 import { handleResponse, authHeader } from "../_helpers/service.helpers";
 import { API_URL } from "../_config/env.config";
@@ -58,6 +59,21 @@ async function searchScreens(
   if (buildId) query.set("buildId", buildId);
   const response = await fetch(
     `${API_URL}/projects/${projectId}/screen-search?${query}`,
+    { method: "GET", headers: authHeader() },
+  );
+  return handleResponse(response);
+}
+
+/** Texts, ids and components of the project's screens holding what is typed (053, beta). */
+async function suggestScreens(
+  projectId: string,
+  q: string,
+  buildId?: string,
+): Promise<ScreenSuggestion[]> {
+  const query = new URLSearchParams({ q });
+  if (buildId) query.set("buildId", buildId);
+  const response = await fetch(
+    `${API_URL}/projects/${projectId}/screen-search/suggest?${query}`,
     { method: "GET", headers: authHeader() },
   );
   return handleResponse(response);
@@ -178,6 +194,7 @@ export const projectsService = {
   getDevices,
   getJiraTypes,
   searchScreens,
+  suggestScreens,
   remove,
   create,
   update,

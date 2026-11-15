@@ -62,6 +62,22 @@ export class ProjectsController {
     return this.projectsService.findDevices(id);
   }
 
+  /** Texts, ids and components of the project's screens that hold what is typed (053, beta). */
+  @ProjectFrom(inParam('id', 'project'))
+  @Get(':id/screen-search/suggest')
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  @ApiParam({ name: 'id', required: true })
+  @ApiQuery({ name: 'q', required: true })
+  @ApiQuery({ name: 'buildId', required: false })
+  screenSuggest(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Query('q') q: string,
+    @Query('buildId') buildId?: string
+  ) {
+    return this.screenSearchService.suggest(id, q ?? '', { buildId: buildId || undefined });
+  }
+
   /** Screens of the project whose UI tree holds a text or what a selector finds (053). */
   @ProjectFrom(inParam('id', 'project'))
   @Get(':id/screen-search')

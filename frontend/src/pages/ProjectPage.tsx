@@ -6,7 +6,7 @@ import BuildList from "../components/BuildList";
 import TestRunList from "../components/TestRunList";
 import BuildDetails from "../components/BuildDetails";
 import { TestDetailsDialog } from "../components/TestDetailsDialog";
-import { ChangeGroups } from "../components/ChangeGroups";
+import { ChangesTab } from "../components/ElementReview";
 import { A11ySummary } from "../components/A11ySummary";
 import { StatusPill } from "../components/StatusPill";
 import {
@@ -240,7 +240,7 @@ const ProjectPage = () => {
               />
             )}
             {selectedBuild && view === "changes" && (
-              <ChangeGroups buildId={selectedBuild.id} />
+              <ChangesTab buildId={selectedBuild.id} />
             )}
             {selectedBuild && view === "a11y" && (
               <A11ySummary buildId={selectedBuild.id} />

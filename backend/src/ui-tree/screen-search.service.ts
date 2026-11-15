@@ -2,7 +2,7 @@ import { Injectable, Logger, NotFoundException, OnApplicationBootstrap } from '@
 import { PrismaService } from '../prisma/prisma.service';
 import { screenTitle } from '../a11y/a11y-problems';
 import { parseUiTreeSettings } from './comparison-inputs';
-import { MatchPlace, matchTree, parseQuery, QueryProblem } from './screen-search';
+import { MatchPlace, matchTree, parseQuery, QueryProblem, suggest, Suggestion } from './screen-search';
 import { ScreenSearchIndex } from './screen-search.index';
 import { UiTreeService } from './ui-tree.service';
 import { Rect, UiTree } from './ui-tree.types';
@@ -140,6 +140,24 @@ export class ScreenSearchService implements OnApplicationBootstrap {
     if (!scope.buildId) await this.addThumbnails(shown);
     for (const row of shown) row.items.sort((a, b) => `${a.device} ${a.os}`.localeCompare(`${b.device} ${b.os}`));
     return { scanned, withoutTree: candidates.length - scanned, total: sorted.length, page, rows: shown };
+  }
+
+  /** What to search for while the query is typed, from the same screens the search looks at. */
+  async suggest(projectId: string, raw: string, scope: { buildId?: string }): Promise<Suggestion[]> {
+    const project = await this.prisma.project.findUnique({
+      where: { id: projectId },
+      select: { mainBranchName: true },
+    });
+    if (!project) throw new NotFoundException('Project not found');
+    const candidates = scope.buildId
+      ? await this.buildScreens(projectId, scope.buildId)
+      : await this.baselines(projectId, project.mainBranchName);
+    return suggest(
+      candidates.flatMap((candidate) =>
+        candidate.tree ? [{ check: `${candidate.name}\n${candidate.customTags}`, tree: candidate.tree }] : []
+      ),
+      raw ?? ''
+    );
   }
 
   private async baselines(projectId: string, branchName: string): Promise<Candidate[]> {

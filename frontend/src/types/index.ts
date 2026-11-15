@@ -11,3 +11,4 @@ export * from "./insights";
 export * from "./backups";
 export * from "./jira";
 export * from "./screenSearch";
+export * from "./elementReview";

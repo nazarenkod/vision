@@ -3,23 +3,17 @@ import { Link, useParams, useSearchParams } from "react-router-dom";
 import {
   Box,
   Button,
+  ButtonBase,
   InputAdornment,
   TextField,
-  ToggleButton,
   Typography,
 } from "@mui/material";
 import { SearchOutlined } from "@mui/icons-material";
 import { projectsService, buildsService, staticService } from "../services";
-import {
-  ScreenSearchItem,
-  ScreenSearchResult,
-  ScreenSearchRow,
-} from "../types";
+import { ScreenSearchResult } from "../types";
 import { useProjectFromAddress } from "../contexts";
 import { radius, tokens, type } from "../theme";
 import { useT } from "../i18n";
-import { DeviceTags } from "../components/DeviceTags";
-import { SlidingToggleGroup } from "../components/motion/SlidingToggleGroup";
 import { routes } from "../constants";
 import {
   buildProjectPageUrl,
@@ -27,155 +21,77 @@ import {
 } from "../_helpers/route.helpers";
 import {
   boxPercent,
+  deviceLabel,
+  devicesOf,
   encodeBoxes,
   isSearchable,
+  SearchHit,
+  searchHits,
 } from "../_helpers/screenSearch.helper";
+import { ElementCrop } from "../components/ElementCrop";
+import { BetaChip } from "../components/BetaChip";
 
 // a pause in typing, not every key, asks the server
 const TYPING_PAUSE_MS = 300;
+const CARD_CROP_WIDTH = 236;
+const CARD_CROP_HEIGHT = 72;
+const PREVIEW_WIDTH = 300;
 
 const PROBLEM_KEY = {
   pattern: "search.problem.pattern",
   prefix: "search.problem.prefix",
 } as const;
 
-const checkName = (row: ScreenSearchRow) =>
-  row.customTags ? `${row.name} [${row.customTags}]` : row.name;
+// one colour per device, the same on the pill and the dots under a card
+const deviceColours = () => [
+  tokens.status.new.bar,
+  tokens.status.changed.bar,
+  tokens.variable,
+  tokens.status.passed.bar,
+  tokens.textMuted,
+];
 
-const Thumbnail: React.FunctionComponent<{
-  item: ScreenSearchItem;
-  to: string | { pathname: string; search: string };
-}> = ({ item, to }) => {
-  const { t } = useT();
-  const device = [item.device, item.os].filter(Boolean).join(" · ");
-  return (
-    <Box
-      component={Link}
-      to={to}
-      aria-label={t("search.open", { device })}
-      data-testid="searchThumbnail"
-      sx={{
-        display: "flex",
-        flexDirection: "column",
-        gap: 0.75,
-        textDecoration: "none",
-        color: tokens.textSecondary,
-      }}
-    >
-      <Box
-        sx={{
-          position: "relative",
-          width: 120,
-          aspectRatio: `${item.width || 9} / ${item.height || 19}`,
-          borderRadius: radius.control,
-          border: `1px solid ${tokens.border}`,
-          overflow: "hidden",
-          bgcolor: tokens.subtle,
-        }}
-      >
-        <Box
-          component="img"
-          src={staticService.getImage(
-            item.imageThumbnailName ?? item.imageName,
-          )}
-          alt=""
-          loading="lazy"
-          sx={{
-            width: "100%",
-            height: "100%",
-            objectFit: "cover",
-            display: "block",
-          }}
-        />
-        {item.width > 0 &&
-          item.boxes.map((box, index) => (
-            <Box
-              key={index}
-              data-testid="searchBox"
-              sx={{
-                position: "absolute",
-                ...boxPercent(box, item.width, item.height),
-                border: `2px solid ${tokens.brand}`,
-                borderRadius: radius.control,
-                bgcolor: `color-mix(in srgb, ${tokens.brand} 14%, transparent)`,
-              }}
-            />
-          ))}
-      </Box>
-      <DeviceTags parts={item} dense />
-    </Box>
-  );
-};
+const checkName = (hit: SearchHit) =>
+  hit.row.customTags ? `${hit.row.name} [${hit.row.customTags}]` : hit.row.name;
 
-const ResultRow: React.FunctionComponent<{
-  row: ScreenSearchRow;
-  projectId: string;
-  buildId: string | null;
-}> = ({ row, projectId, buildId }) => {
-  const { t } = useT();
-  const placeOf = (item: ScreenSearchItem) =>
-    buildId
-      ? {
-          pathname: buildProjectPageUrl(projectId),
-          ...buildTestRunLocation(buildId, item.id, { tab: "all" }),
-        }
-      : `${routes.VARIATION_DETAILS_PAGE}/${item.id}?${new URLSearchParams({
-          highlight: encodeBoxes(item.boxes),
-          // the outlines belong to this baseline; a newer one gets none
-          on: item.imageName ?? "",
-        })}`;
-  return (
-    <Box
-      component="section"
-      data-testid="searchRow"
-      sx={{
-        display: "flex",
-        flexWrap: "wrap",
-        alignItems: "flex-start",
-        gap: 2.5,
-        p: 2,
-        bgcolor: tokens.surface,
-        border: `1px solid ${tokens.border}`,
-        borderRadius: radius.card,
-      }}
-    >
+const Pill: React.FunctionComponent<{
+  on: boolean;
+  onClick: () => void;
+  colour?: string;
+  testId?: string;
+  children: React.ReactNode;
+}> = ({ on, onClick, colour, testId, children }) => (
+  <ButtonBase
+    aria-pressed={on}
+    onClick={onClick}
+    data-testid={testId}
+    sx={{
+      height: 32,
+      px: 1.5,
+      gap: 0.75,
+      borderRadius: radius.pill,
+      border: `1px solid ${on && !colour ? tokens.brand : tokens.borderStrong}`,
+      bgcolor: on && !colour ? tokens.brandSoft : tokens.surface,
+      color: on ? tokens.text : tokens.textMuted,
+      fontSize: type.small,
+      fontWeight: 500,
+      opacity: colour && !on ? 0.55 : 1,
+    }}
+  >
+    {colour && (
       <Box
-        sx={{
-          flex: "1 1 240px",
-          minWidth: 0,
-          display: "flex",
-          flexDirection: "column",
-          gap: 0.5,
-        }}
-      >
-        <Typography
-          sx={{
-            fontFamily: tokens.mono,
-            fontSize: type.body,
-            fontWeight: 500,
-            overflowWrap: "anywhere",
-          }}
-        >
-          {checkName(row)}
-        </Typography>
-        <Typography sx={{ fontSize: type.small, color: tokens.textSecondary }}>
-          {row.screen !== row.name && `${row.screen} · `}
-          {t("search.matches", { count: row.matches })}
-          {row.where.includes("label") && ` · ${t("search.label.place")}`}
-        </Typography>
-      </Box>
-      <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1.5 }}>
-        {row.items.map((item) => (
-          <Thumbnail key={item.id} item={item} to={placeOf(item)} />
-        ))}
-      </Box>
-    </Box>
-  );
-};
+        aria-hidden
+        sx={{ width: 8, height: 8, borderRadius: radius.pill, bgcolor: colour }}
+      />
+    )}
+    {children}
+  </ButtonBase>
+);
 
 /**
- * Search of the project's screens by their UI trees (053): a text, a label or a selector, in the
- * latest baselines or in one build. The query lives in the address, so a link shows the same.
+ * Search of the project's screens by their UI trees (053, beta): every found element cut out of
+ * its screen, the picked one shown on the whole screen beside them. The query lives in the
+ * address, so a link shows the same.
  */
 const ScreenSearchPage: React.FunctionComponent = () => {
   const { projectId = "" } = useParams<{ projectId: string }>();
@@ -191,9 +107,13 @@ const ScreenSearchPage: React.FunctionComponent = () => {
   const [error, setError] = React.useState<string | null>(null);
   const [buildNumber, setBuildNumber] = React.useState<number | null>(null);
   const [loadingMore, setLoadingMore] = React.useState(false);
-  // the page is opened to type in: `/` lands in the field, as in most tools
+  const [hidden, setHidden] = React.useState<Set<string>>(new Set());
+  const [picked, setPicked] = React.useState<string | null>(null);
   const field = React.useRef<HTMLInputElement>(null);
   React.useEffect(() => field.current?.focus(), []);
+
+  // a query from the `/` search lands here through the address
+  React.useEffect(() => setTyped(query), [query]);
 
   React.useEffect(() => {
     if (!buildId) return;
@@ -222,6 +142,7 @@ const ScreenSearchPage: React.FunctionComponent = () => {
 
   React.useEffect(() => {
     setError(null);
+    setPicked(null);
     if (!projectId || !isSearchable(query)) {
       setResult(null);
       return;
@@ -269,6 +190,42 @@ const ScreenSearchPage: React.FunctionComponent = () => {
       return next;
     });
 
+  const toggleDevice = (device: string) =>
+    setHidden((current) => {
+      const next = new Set(current);
+      if (next.has(device)) next.delete(device);
+      else next.add(device);
+      return next;
+    });
+
+  const rows = React.useMemo(() => result?.rows ?? [], [result]);
+  const devices = React.useMemo(() => devicesOf(rows), [rows]);
+  const colourOf = (device: string) => {
+    const colours = deviceColours();
+    return colours[devices.indexOf(device) % colours.length];
+  };
+  const hits = React.useMemo(() => searchHits(rows, hidden), [rows, hidden]);
+  const shown = hits.find((hit) => hit.id === picked) ?? hits[0] ?? null;
+  const screens = new Set(
+    hits.map((hit) => `${hit.row.name}\n${hit.row.customTags}`),
+  );
+
+  const placeOf = (hit: SearchHit) => {
+    const { item } = hit.devices[0];
+    return inBuild && buildId
+      ? {
+          pathname: buildProjectPageUrl(projectId),
+          ...buildTestRunLocation(buildId, item.id, { tab: "all" }),
+        }
+      : `${routes.VARIATION_DETAILS_PAGE}/${item.id}?${new URLSearchParams({
+          highlight: encodeBoxes(
+            item.boxes.filter((_, index) => item.keys[index] === hit.key),
+          ),
+          // the outlines belong to this baseline; a newer one gets none
+          on: item.imageName ?? "",
+        })}`;
+  };
+
   const problem =
     result?.problem && result.problem !== "empty"
       ? result.problem === "short"
@@ -278,6 +235,7 @@ const ScreenSearchPage: React.FunctionComponent = () => {
               "search.problem.other",
           )
       : null;
+  const selector = /^(id|class|text|xpath|component):/i.test(typed);
 
   return (
     <Box
@@ -287,19 +245,20 @@ const ScreenSearchPage: React.FunctionComponent = () => {
         display: "flex",
         flexDirection: "column",
         gap: 2,
-        maxWidth: 1180,
+        maxWidth: 1280,
       }}
     >
       <Box
         sx={{
           display: "flex",
-          flexWrap: "wrap",
-          alignItems: "center",
+          alignItems: "flex-start",
           gap: 1.5,
+          maxWidth: 760,
         }}
       >
         <TextField
           inputRef={field}
+          fullWidth
           value={typed}
           onChange={(event) => setTyped(event.target.value)}
           placeholder={t("search.placeholder")}
@@ -312,33 +271,87 @@ const ScreenSearchPage: React.FunctionComponent = () => {
           InputProps={{
             startAdornment: (
               <InputAdornment position="start">
-                <SearchOutlined sx={{ color: tokens.textMuted }} />
+                <SearchOutlined sx={{ color: tokens.brand }} />
               </InputAdornment>
             ),
-            sx: {
-              fontFamily: /^(id|class|text|xpath|component):/i.test(typed)
-                ? tokens.mono
-                : undefined,
-            },
+            endAdornment: result && !result.problem && hits.length > 0 && (
+              <InputAdornment position="end">
+                <Typography
+                  data-testid="searchSummary"
+                  sx={{
+                    fontSize: type.small,
+                    color: tokens.textMuted,
+                    fontVariantNumeric: "tabular-nums",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  {t("search.summary", {
+                    matches: hits.length,
+                    screens: t("search.screens", { count: screens.size }),
+                  })}
+                </Typography>
+              </InputAdornment>
+            ),
+            sx: { fontFamily: selector ? tokens.mono : undefined },
           }}
-          sx={{ flex: "1 1 420px", bgcolor: tokens.surface }}
+          sx={{ bgcolor: tokens.surface }}
         />
-        {buildId && (
-          <SlidingToggleGroup
-            size="small"
-            exclusive
-            value={inBuild ? "build" : "baselines"}
-            onChange={(_, value) => value && setScope(value)}
-          >
-            <ToggleButton value="baselines" data-testid="searchInBaselines">
-              {t("search.baselines")}
-            </ToggleButton>
-            <ToggleButton value="build" data-testid="searchInBuild">
-              {t("search.build", { number: buildNumber ?? "…" })}
-            </ToggleButton>
-          </SlidingToggleGroup>
-        )}
+        <Box sx={{ pt: 1.75 }}>
+          <BetaChip />
+        </Box>
       </Box>
+
+      {(buildId || devices.length > 1) && (
+        <Box
+          sx={{
+            display: "flex",
+            flexWrap: "wrap",
+            gap: 1,
+            alignItems: "center",
+          }}
+        >
+          {buildId && (
+            <>
+              <Pill
+                on={!inBuild}
+                onClick={() => setScope("baselines")}
+                testId="searchInBaselines"
+              >
+                {t("search.baselines")}
+              </Pill>
+              <Pill
+                on={inBuild}
+                onClick={() => setScope("build")}
+                testId="searchInBuild"
+              >
+                {t("search.build", { number: buildNumber ?? "…" })}
+              </Pill>
+              {devices.length > 1 && (
+                <Box
+                  sx={{
+                    width: "1px",
+                    height: 20,
+                    bgcolor: tokens.border,
+                    mx: 0.5,
+                  }}
+                />
+              )}
+            </>
+          )}
+          {devices.length > 1 &&
+            devices.map((device) => (
+              <Pill
+                key={device}
+                on={!hidden.has(device)}
+                onClick={() => toggleDevice(device)}
+                colour={colourOf(device)}
+                testId="searchDevice"
+              >
+                {device}
+              </Pill>
+            ))}
+        </Box>
+      )}
 
       {error && (
         <Typography color="error" sx={{ fontSize: type.body }}>
@@ -346,48 +359,178 @@ const ScreenSearchPage: React.FunctionComponent = () => {
         </Typography>
       )}
 
-      {result && !result.problem && (
+      {result && !result.problem && hits.length === 0 && (
+        <Typography
+          data-testid="searchNothing"
+          sx={{ fontSize: type.body, color: tokens.textMuted }}
+        >
+          {t("search.nothing")}
+          {result.withoutTree > 0 &&
+            ` · ${t("search.withoutTree", { count: result.withoutTree })}`}
+        </Typography>
+      )}
+
+      {hits.length > 0 && (
         <Box
-          data-testid="searchSummary"
           sx={{
             display: "flex",
             flexWrap: "wrap",
-            gap: 1.75,
-            fontSize: type.small,
-            color: tokens.textSecondary,
+            gap: 2.5,
+            alignItems: "flex-start",
           }}
         >
-          {result.total > 0 ? (
-            <span>
-              <Box component="strong" sx={{ color: tokens.text }}>
-                {t("search.checks", { count: result.total })}
+          <Box
+            sx={{
+              flex: "999 1 520px",
+              minWidth: 0,
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))",
+              gap: 1.5,
+            }}
+          >
+            {hits.map((hit) => {
+              const first = hit.devices[0];
+              const on = shown?.id === hit.id;
+              return (
+                <ButtonBase
+                  key={hit.id}
+                  data-testid="searchHit"
+                  aria-pressed={on}
+                  onClick={() => setPicked(hit.id)}
+                  sx={{
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "stretch",
+                    gap: 1.25,
+                    p: 1.5,
+                    textAlign: "left",
+                    bgcolor: tokens.surface,
+                    borderRadius: radius.card,
+                    border: `1px solid ${on ? tokens.brand : tokens.border}`,
+                    boxShadow: on ? `0 0 0 1px ${tokens.brand}` : "none",
+                  }}
+                >
+                  <Box
+                    sx={{
+                      display: "grid",
+                      placeItems: "center",
+                      minHeight: CARD_CROP_HEIGHT,
+                    }}
+                  >
+                    <ElementCrop
+                      imageName={first.item.imageName}
+                      box={first.box}
+                      image={first.item}
+                      width={CARD_CROP_WIDTH}
+                      maxHeight={CARD_CROP_HEIGHT}
+                      tone="found"
+                      testId="searchCrop"
+                    />
+                  </Box>
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                    <Typography
+                      sx={{
+                        flex: 1,
+                        minWidth: 0,
+                        fontFamily: tokens.mono,
+                        fontSize: type.caption,
+                        color: tokens.textSecondary,
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        whiteSpace: "nowrap",
+                      }}
+                      title={hit.row.screen}
+                    >
+                      {checkName(hit)}
+                    </Typography>
+                    {hit.row.where.includes("label") && (
+                      <Typography
+                        sx={{ fontSize: type.caption, color: tokens.variable }}
+                      >
+                        {t("search.label.place")}
+                      </Typography>
+                    )}
+                    {hit.devices.map(({ item }) => (
+                      <Box
+                        key={item.id}
+                        title={deviceLabel(item)}
+                        sx={{
+                          width: 8,
+                          height: 8,
+                          borderRadius: radius.pill,
+                          bgcolor: colourOf(deviceLabel(item)),
+                        }}
+                      />
+                    ))}
+                  </Box>
+                </ButtonBase>
+              );
+            })}
+          </Box>
+
+          {shown && (
+            <Box
+              component="aside"
+              data-testid="searchPreview"
+              sx={{
+                flex: "1 1 300px",
+                maxWidth: PREVIEW_WIDTH + 20,
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                gap: 1.25,
+                position: "sticky",
+                top: 16,
+              }}
+            >
+              <Box
+                sx={{
+                  position: "relative",
+                  width: PREVIEW_WIDTH,
+                  maxWidth: "100%",
+                  borderRadius: radius.card,
+                  overflow: "hidden",
+                  border: `1px solid ${tokens.borderStrong}`,
+                  boxShadow: tokens.shadowShot,
+                }}
+              >
+                <Box
+                  component="img"
+                  src={staticService.getImage(shown.devices[0].item.imageName)}
+                  alt={checkName(shown)}
+                  sx={{ display: "block", width: "100%" }}
+                />
+                {shown.devices[0].item.width > 0 && (
+                  <Box
+                    data-testid="searchBox"
+                    sx={{
+                      position: "absolute",
+                      ...boxPercent(
+                        shown.devices[0].box,
+                        shown.devices[0].item.width,
+                        shown.devices[0].item.height,
+                      ),
+                      border: `2px solid ${tokens.brand}`,
+                      borderRadius: radius.control,
+                      bgcolor: `color-mix(in srgb, ${tokens.brand} 12%, transparent)`,
+                    }}
+                  />
+                )}
               </Box>
-              {" · "}
-              {t("search.matches", {
-                count: result.rows.reduce((sum, row) => sum + row.matches, 0),
-              })}
-            </span>
-          ) : (
-            <span>{t("search.nothing")}</span>
-          )}
-          {result.withoutTree > 0 && (
-            <Box component="span" sx={{ color: tokens.textMuted }}>
-              {t("search.withoutTree", { count: result.withoutTree })}
+              <Button
+                component={Link}
+                to={placeOf(shown)}
+                size="small"
+                data-testid="searchOpen"
+              >
+                {inBuild ? t("search.openScreen") : t("search.openBaseline")}
+              </Button>
             </Box>
           )}
         </Box>
       )}
 
-      {result?.rows.map((row) => (
-        <ResultRow
-          key={`${row.name}\n${row.customTags}`}
-          row={row}
-          projectId={projectId}
-          buildId={inBuild ? buildId : null}
-        />
-      ))}
-
-      {result && result.rows.length < result.total && (
+      {result && rows.length < result.total && (
         <Box>
           <Button
             variant="outlined"

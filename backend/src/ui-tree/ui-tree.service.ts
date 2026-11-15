@@ -547,6 +547,37 @@ export class UiTreeService {
   }
 
   /**
+   * What changed on a run by its UI trees, as the Changes tab counts it: changed areas with the
+   * element around each, and the tree's own changes left after the rules. Null without both trees.
+   */
+  async elementChanges(
+    testRun: Pick<
+      TestRun,
+      | 'projectId'
+      | 'testVariationId'
+      | 'uiTreeName'
+      | 'baselineUiTreeName'
+      | 'uiTreeOptions'
+      | 'name'
+      | 'customTags'
+      | 'diffRegions'
+    >
+  ): Promise<{ tree: UiTree; baselineTree: UiTree; regions: RegionElement[]; changes: StructuralChange[] } | null> {
+    const [tree, baselineTree, inputs] = await Promise.all([
+      this.load(testRun.uiTreeName),
+      this.load(testRun.baselineUiTreeName),
+      this.comparisonInputs(testRun),
+    ]);
+    if (!tree || !baselineTree) return null;
+    return {
+      tree,
+      baselineTree,
+      regions: elementsUnderRegions(tree, parseRegions(testRun.diffRegions)),
+      changes: insideCompared(outsideAreas(diffTrees(baselineTree, tree), inputs.ignoreAreas), inputs.compareOnly),
+    };
+  }
+
+  /**
    * Rules for one check, on every device and branch: the ones kept by check
    * name, plus rules an earlier version stored on single device variations.
    */

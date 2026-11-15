@@ -54,6 +54,8 @@ import {
 } from "./SideNav.locators";
 import { motion, radius, tokens, type } from "../theme";
 import { isSearchHotkey } from "../_helpers/screenSearch.helper";
+import { SearchPalette } from "./SearchPalette";
+import { BetaChip } from "./BetaChip";
 
 /** Below this window width the sidebar keeps its icons only (REQ-046-25). */
 export const SIDE_NAV_FOLD_QUERY = "(max-width: 1099.98px)";
@@ -119,20 +121,18 @@ const SideNav: React.FunctionComponent = () => {
 
   const items = sideNavItems(user?.role, selectedProjectId, projectList.length);
 
-  // `/` opens the project's search, remembering the build it was pressed on (REQ-053-01, 40)
+  // `/` opens the search over the page, remembering the build it was pressed on (REQ-053-01, 40)
+  const [paletteOpen, setPaletteOpen] = React.useState(false);
+  const pressedOnBuild = new URLSearchParams(search).get("buildId");
   React.useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
       if (!isSearchHotkey(event) || !selectedProjectId) return;
-      if (pathname.startsWith(`${routes.SEARCH_PAGE}/`)) return;
       event.preventDefault();
-      const buildId = new URLSearchParams(search).get("buildId");
-      navigate(
-        `${routes.SEARCH_PAGE}/${selectedProjectId}${buildId ? `?build=${buildId}` : ""}`,
-      );
+      setPaletteOpen(true);
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [navigate, pathname, search, selectedProjectId]);
+  }, [selectedProjectId]);
   const active = activeSideNavItem(pathname);
 
   // the highlight travels to the new item instead of jumping (REQ-018-22)
@@ -171,6 +171,7 @@ const SideNav: React.FunctionComponent = () => {
             {label}
           </Box>
         )}
+        {!folded && item.key === "search" && <BetaChip />}
       </>
     );
     const ref = (element: HTMLElement | null) => {
@@ -534,6 +535,14 @@ const SideNav: React.FunctionComponent = () => {
         open={manualChecksOpen}
         onClose={() => setManualChecksOpen(false)}
       />
+      {selectedProjectId && (
+        <SearchPalette
+          open={paletteOpen}
+          onClose={() => setPaletteOpen(false)}
+          projectId={selectedProjectId}
+          buildId={pressedOnBuild}
+        />
+      )}
     </Box>
   );
 };

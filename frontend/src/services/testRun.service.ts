@@ -1,4 +1,4 @@
-import { TestRun, TrendPoint } from "../types";
+import { ReviewedElement, TestRun, TrendPoint } from "../types";
 import { handleResponse, authHeader } from "../_helpers/service.helpers";
 import { API_URL } from "../_config/env.config";
 import { UpdateIgnoreAreaDto } from "../types/ignoreArea";
@@ -7,6 +7,14 @@ const ENDPOINT_URL = "/test-runs";
 const DEFAULT_HEADERS = {
   "Content-Type": "application/json",
 };
+
+/** Elements changed on several screens of the build, with those screens (055, beta). */
+function getElements(buildId: string): Promise<ReviewedElement[]> {
+  return fetch(`${API_URL}${ENDPOINT_URL}/elements?buildId=${buildId}`, {
+    method: "GET",
+    headers: authHeader(),
+  }).then(handleResponse);
+}
 
 function getList(buildId: string): Promise<TestRun[]> {
   const requestOptions = {
@@ -161,6 +169,7 @@ function getTrend(id: string): Promise<TrendPoint[]> {
 }
 
 export const testRunService = {
+  getElements,
   getList,
   getDetails,
   getTrend,

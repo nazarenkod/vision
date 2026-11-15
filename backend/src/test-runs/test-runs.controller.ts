@@ -89,6 +89,15 @@ export class TestRunsController {
     return this.changeGroupsService.getGroups(buildId);
   }
 
+  @ProjectFrom(inQuery('buildId', 'build'))
+  @Get('elements')
+  @ApiOkResponse({ description: 'Elements changed on several screens of the build, with those screens (beta)' })
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  getElements(@Query('buildId', new ParseUUIDPipe()) buildId: string) {
+    return this.changeGroupsService.elementReview(buildId);
+  }
+
   @ProjectFrom(inParam('id', 'testRun'))
   @Get(':id')
   @ApiOkResponse({ type: TestRunDto })

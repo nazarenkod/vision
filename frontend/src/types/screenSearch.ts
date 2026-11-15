@@ -33,3 +33,10 @@ export interface ScreenSearchResult {
   page: number;
   rows: ScreenSearchRow[];
 }
+
+/** What to search for, offered while the query is typed (053, beta). */
+export interface ScreenSuggestion {
+  kind: "text" | "label" | "id" | "component";
+  query: string;
+  screens: number;
+}

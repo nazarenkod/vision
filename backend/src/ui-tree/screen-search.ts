@@ -104,3 +104,55 @@ export function matchTree(tree: UiTree, query: ScreenQuery): ScreenMatch[] {
       : tree.nodes.filter((node) => shown(node) && componentOf(node.key)?.toLowerCase() === query.value.toLowerCase());
   return nodes.map((node) => ({ key: node.key, bounds: node.bounds, where: ['selector'] }));
 }
+
+export interface Suggestion {
+  kind: 'text' | 'label' | 'id' | 'component';
+  // what goes into the field when it is picked: the text itself, or a selector
+  query: string;
+  // checks (name + tags) where it is found
+  screens: number;
+}
+
+export const MAX_TEXT_SUGGESTIONS = 5;
+export const MAX_ELEMENT_SUGGESTIONS = 3;
+
+const shortId = (resourceId: string) => resourceId.replace(/^.*:id\//, '');
+
+/**
+ * What to search for, from the project's own screens, while the query is typed (053, beta):
+ * texts and labels that hold it, ids and components whose name holds it, most screens first. A
+ * person picks one instead of remembering the selector syntax.
+ */
+export function suggest(screens: Array<{ check: string; tree: UiTree }>, raw: string): Suggestion[] {
+  const value = normalizeText(raw);
+  if (value.length < MIN_TEXT_LENGTH || SELECTOR_PREFIX.test(value) || value.startsWith(COMPONENT_PREFIX)) return [];
+  const found = new Map<string, { kind: Suggestion['kind']; query: string; checks: Set<string> }>();
+  const add = (kind: Suggestion['kind'], query: string, check: string) => {
+    const id = `${kind}\n${query}`;
+    const entry = found.get(id) ?? { kind, query, checks: new Set<string>() };
+    entry.checks.add(check);
+    found.set(id, entry);
+  };
+  for (const { check, tree } of screens) {
+    for (const node of tree.nodes) {
+      if (!shown(node)) continue;
+      const text = node.text.replace(/\s+/g, ' ').trim();
+      if (text && normalizeText(text).includes(value)) add('text', text, check);
+      const label = node.label.replace(/\s+/g, ' ').trim();
+      if (label && label !== text && normalizeText(label).includes(value)) add('label', label, check);
+      const id = node.resourceId && !node.resourceId.startsWith('android:id/') ? shortId(node.resourceId) : '';
+      if (id && !id.includes('#') && id.toLowerCase().includes(value)) add('id', `id:${id}`, check);
+      const component = componentOf(node.key);
+      if (component && component.toLowerCase().includes(value) && component !== id)
+        add('component', `component:${component}`, check);
+    }
+  }
+  const ranked = [...found.values()]
+    .map((entry) => ({ kind: entry.kind, query: entry.query, screens: entry.checks.size }))
+    .sort((a, b) => b.screens - a.screens || a.query.localeCompare(b.query));
+  const texts = ranked.filter((item) => item.kind === 'text' || item.kind === 'label').slice(0, MAX_TEXT_SUGGESTIONS);
+  const elements = ranked
+    .filter((item) => item.kind === 'id' || item.kind === 'component')
+    .slice(0, MAX_ELEMENT_SUGGESTIONS);
+  return [...texts, ...elements];
+}

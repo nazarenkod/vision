@@ -26,6 +26,12 @@
   `TestVariation.baselineName`. Поля називаються `imageName` / `imageThumbnailName`, тож
   `FileLinksInterceptor` підписує їх без змін (043). Рамки інтерфейс малює у відсотках від розміру
   дерева (`width`, `height` у пікселях знімка).
+- **Бета (2026-11-15): підказки, вирізки, прев'ю.** `/` відкриває `SearchPalette` поверх сторінки;
+  підказки дає `suggest` з `backend/src/ui-tree/screen-search.ts` по тих самих деревах (маршрут
+  `GET /projects/:id/screen-search/suggest`). На сторінці кожен збіг — картка з вирізкою
+  (`frontend/src/components/ElementCrop.tsx`, розкладка — `cropLayout`), справа великий екран
+  обраної картки; пігулки пристроїв фільтрують картки на клієнті (`searchHits`). Позначка «Бета» —
+  `frontend/src/components/BetaChip.tsx`.
 - **Інтерфейс** — мінімум тексту: поле з плейсхолдером замість підказок, підсумок «N перевірок ·
   N збігів · N без UI-дерева», у рядку — назва, ID екрана, кількість і слово «підпис» лише для збігу
   в підписі (REQ-053-07). Адреса `/search/:projectId?q=…&build=…&in=build` (REQ-053-30); поле
@@ -49,6 +55,8 @@
 | Хелпер | `frontend/src/_helpers/screenSearch.helper.ts` | `isSearchable`, `isSearchHotkey`, `boxPercent`, `encodeBoxes`/`decodeBoxes` |
 | Меню | `frontend/src/_helpers/sideNav.helper.ts`, `frontend/src/components/SideNav.tsx` | пункт «Пошук» між «Еталони» і «Аналітика», клавіша `/` |
 | Маршрут UI | `frontend/src/Router.jsx`, `frontend/src/constants/routes.ts` | `SEARCH_PAGE` |
+| Вікно `/` | `frontend/src/components/SearchPalette.tsx` | підказки, стрілки, Enter |
+| Вирізка, «Бета» | `frontend/src/components/ElementCrop.tsx`, `frontend/src/components/BetaChip.tsx` | спільні з 055 |
 | Підсвітка | `frontend/src/pages/TestVariationDetailsPage.tsx` | рамки на найновішому еталоні |
 | Типи й API | `frontend/src/types/screenSearch.ts`, `frontend/src/services/projects.service.ts` | `ScreenSearchResult`, `searchScreens` |
 | Тексти | `frontend/src/i18n/en.ts`, `frontend/src/i18n/uk.ts` | `nav.search`, `search.*` |
@@ -96,11 +104,11 @@ sequenceDiagram
 | REQ-053-02 | `backend/src/ui-tree/screen-search.service.spec.ts › searches the latest baseline of every device on the main branch`; `backend/src/ui-tree/screen-search.index.spec.ts › sees the new tree on the next search after a new baseline` |
 | REQ-053-03 | `backend/src/ui-tree/screen-search.spec.ts › finds visible text and labels ignoring case, repeated spaces and NBSP` |
 | REQ-053-04 | `backend/src/ui-tree/screen-search.spec.ts › asks for two characters before searching`; `frontend/src/_helpers/screenSearch.helper.test.ts › asks for two characters before searching` |
-| REQ-053-05 | `backend/src/ui-tree/screen-search.service.spec.ts › returns one row per check by name with a picture per device` |
-| REQ-053-06 | `backend/src/ui-tree/screen-search.spec.ts › keeps the innermost of nested matches`; `frontend/integration_tests/test/screenSearch.spec.ts › finds screens and outlines the found elements` |
-| REQ-053-07 | `backend/src/ui-tree/screen-search.spec.ts › tells whether the text, the label or both matched`; `frontend/integration_tests/test/screenSearch.spec.ts › finds screens and outlines the found elements` |
-| REQ-053-08 | `frontend/integration_tests/test/screenSearch.spec.ts › opens the baseline with the found elements outlined`; `frontend/integration_tests/test/screenSearch.spec.ts › outlines nothing on a baseline approved after the search` |
-| REQ-053-09 | `backend/src/ui-tree/screen-search.service.spec.ts › counts screens without a UI tree as not scanned` |
+| REQ-053-05 | `backend/src/ui-tree/screen-search.service.spec.ts › returns one row per check by name with a picture per device`; `frontend/src/_helpers/screenSearch.helper.test.ts › shows each found element once with every device it was found on`; `frontend/integration_tests/test/screenSearch.spec.ts › shows every found element cut out, the picked one on its screen` |
+| REQ-053-06 | `backend/src/ui-tree/screen-search.spec.ts › keeps the innermost of nested matches`; `frontend/src/_helpers/screenSearch.helper.test.ts › cuts the element out with a margin, keeping its proportions` |
+| REQ-053-07 | `backend/src/ui-tree/screen-search.spec.ts › tells whether the text, the label or both matched`; `frontend/integration_tests/test/screenSearch.spec.ts › shows every found element cut out, the picked one on its screen` |
+| REQ-053-08 | `frontend/integration_tests/test/screenSearch.spec.ts › opens the baseline with the found element outlined`; `frontend/integration_tests/test/screenSearch.spec.ts › outlines nothing on a baseline approved after the search` |
+| REQ-053-09 | `backend/src/ui-tree/screen-search.service.spec.ts › counts screens without a UI tree as not scanned`; `frontend/integration_tests/test/screenSearch.spec.ts › shows every found element cut out, the picked one on its screen` |
 | REQ-053-10 | `backend/src/ui-tree/screen-search.service.spec.ts › pages a hundred checks at a time with the total` |
 | REQ-053-20 | `backend/src/ui-tree/screen-search.spec.ts › finds what an element rule with the same selector finds` |
 | REQ-053-21 | `backend/src/ui-tree/screen-search.spec.ts › finds elements of a component ignoring case` |
@@ -111,3 +119,8 @@ sequenceDiagram
 | REQ-053-50 | `backend/src/ui-tree/screen-search.service.spec.ts › searches without calling the AI service` |
 | REQ-053-51 | `frontend/src/i18n/translate.test.ts › has every text in both languages…` |
 | REQ-053-52 | `backend/src/ui-tree/screen-search.service.spec.ts › never returns checks of another project` |
+| REQ-053-60 | `backend/src/ui-tree/screen-search.spec.ts › suggests texts, labels, ids and components that hold the query, most screens first`; `backend/src/ui-tree/screen-search.service.spec.ts › suggests from the latest baselines, counting each check once` |
+| REQ-053-61 | `frontend/integration_tests/test/screenSearch.spec.ts › suggests texts and elements while typing and opens the picked one`; `frontend/src/_helpers/screenSearch.helper.test.ts › moves through the suggestions and back to the field` |
+| REQ-053-62 | `frontend/integration_tests/test/screenSearch.spec.ts › shows every found element cut out, the picked one on its screen`; `frontend/integration_tests/test/screenSearch.spec.ts › opens the baseline with the found element outlined` |
+| REQ-053-63 | `frontend/integration_tests/test/screenSearch.spec.ts › filters the found elements by device`; `frontend/src/_helpers/screenSearch.helper.test.ts › leaves out the devices switched off` |
+| REQ-053-64 | `frontend/integration_tests/test/screenSearch.spec.ts › shows every found element cut out, the picked one on its screen` |

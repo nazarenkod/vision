@@ -1,7 +1,7 @@
 import { readFileSync } from 'fs';
 import * as path from 'path';
 import { findBySelector } from './comparison-inputs';
-import { matchTree, normalizeText, parseQuery, ScreenQuery } from './screen-search';
+import { matchTree, normalizeText, parseQuery, ScreenQuery, suggest } from './screen-search';
 import { parseUiTree } from './ui-tree.parser';
 import { UiNode, UiTree } from './ui-tree.types';
 
@@ -122,5 +122,50 @@ describe('screen search', () => {
 
   it('normalizes the way a person types', () => {
     expect(normalizeText('  Оновлено\u202fо   14:07 ')).toBe('оновлено о 14:07');
+  });
+});
+
+describe('screen search suggestions', () => {
+  const screens = [
+    {
+      check: 'Cards',
+      tree: tree([
+        node(0, null, {
+          key: 'id:com.bank:id/cashback_tab',
+          resourceId: 'com.bank:id/cashback_tab',
+          text: 'Кешбек 5 %',
+        }),
+        node(1, null, { key: 'id:Кешбек#CashbackCard', resourceId: 'Кешбек#CashbackCard', text: 'Кешбек за місяць' }),
+        node(2, null, { key: 'id:switch', resourceId: 'switch', label: 'Кешбек-сповіщення' }),
+      ]),
+    },
+    {
+      check: 'Home',
+      tree: tree([
+        node(0, null, {
+          key: 'id:com.bank:id/cashback_tab',
+          resourceId: 'com.bank:id/cashback_tab',
+          text: 'Кешбек  5 %',
+        }),
+        node(1, null, { key: 'id:hidden', text: 'Кешбек сховано', visible: false }),
+      ]),
+    },
+  ];
+
+  it('suggests texts, labels, ids and components that hold the query, most screens first', () => {
+    expect(suggest(screens, 'кеш')).toEqual([
+      { kind: 'text', query: 'Кешбек 5 %', screens: 2 },
+      { kind: 'text', query: 'Кешбек за місяць', screens: 1 },
+      { kind: 'label', query: 'Кешбек-сповіщення', screens: 1 },
+    ]);
+    expect(suggest(screens, 'cash')).toEqual([
+      { kind: 'id', query: 'id:cashback_tab', screens: 2 },
+      { kind: 'component', query: 'component:CashbackCard', screens: 1 },
+    ]);
+  });
+
+  it('suggests nothing for one letter or a selector already typed', () => {
+    expect(suggest(screens, 'к')).toEqual([]);
+    expect(suggest(screens, 'id:cash')).toEqual([]);
   });
 });

@@ -170,3 +170,63 @@ describe('ChangeGroupsService', () => {
     expect(group.noise).toMatchObject({ kind: 'status-bar' });
   });
 });
+
+describe('ChangeGroupsService.elementReview', () => {
+  it('asks for screens waiting for a decision with both trees and reviews what they changed', async () => {
+    const tree = (title: string) =>
+      ({
+        format: 'appium-android',
+        scale: 1,
+        width: 1080,
+        height: 2400,
+        pixelsPerDp: 2.625,
+        pixelsPerDpEstimated: false,
+        nodes: [
+          {
+            index: 0,
+            parent: null,
+            depth: 0,
+            key: 'id:toolbar',
+            className: 'android.view.View',
+            resourceId: 'toolbar',
+            text: title,
+            label: '',
+            hint: '',
+            clickable: false,
+            focusable: false,
+            enabled: true,
+            visible: true,
+            accessible: true,
+            bounds: { x: 0, y: 0, width: 1080, height: 150 },
+          },
+        ],
+      }) as UiTree;
+    const findMany = jest.fn().mockResolvedValue([
+      { id: 'r1', name: 'Payments', imageName: 'r1.png', baselineName: 'b1.png', merge: false },
+      { id: 'r2', name: 'Cards', imageName: 'r2.png', baselineName: 'b2.png', merge: false },
+    ]);
+    const regions = [
+      { region: { x: 0, y: 0, width: 10, height: 10 }, key: 'id:toolbar', element: 'View', resourceId: null },
+    ];
+    const uiTreeService = {
+      elementChanges: jest.fn(async () => ({ tree: tree('A'), baselineTree: tree('A'), regions, changes: [] })),
+    };
+    const service = new ChangeGroupsService(
+      { testRun: { findMany } } as never,
+      {} as never,
+      uiTreeService as never,
+      {} as never
+    );
+
+    const result = await service.elementReview('b1');
+
+    expect(findMany.mock.calls[0][0].where).toEqual({
+      buildId: 'b1',
+      status: 'unresolved',
+      baselineName: { not: null },
+      uiTreeName: { not: null },
+      baselineUiTreeName: { not: null },
+    });
+    expect(result.map((element) => [element.key, element.screens, element.only])).toEqual([['id:toolbar', 2, 2]]);
+  });
+});

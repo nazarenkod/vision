@@ -34,7 +34,10 @@ import {
   deleteConfirmed,
   loadedSettings,
   matchSettings,
+  platformOf,
+  platformShows,
   SectionId,
+  sectionIntro,
   SETTINGS_SECTIONS,
 } from "../_helpers/projectSettings.helper";
 import {
@@ -46,18 +49,10 @@ import {
 } from "../components/ProjectForm";
 import { A11yRulesSettings } from "../components/ProjectForm/A11yRulesSettings";
 import { AllowedDevicesSettings } from "../components/ProjectForm/AllowedDevicesSettings";
+import { AllowedBrowsersSettings } from "../components/ProjectForm/AllowedBrowsersSettings";
 import { EmptyState } from "../components/EmptyState";
 import { ProjectAccessSettings } from "../components/ProjectForm/ProjectAccessSettings";
-import { MessageKey, useT } from "../i18n";
-
-const DESCRIPTION: Partial<Record<SectionId, MessageKey>> = {
-  comparison: "section.comparisonIntro",
-  mobile: "section.mobileIntro",
-  devices: "section.devicesIntro",
-  a11y: "section.a11yIntro",
-  jira: "section.jiraIntro",
-  access: "section.accessIntro",
-};
+import { useT } from "../i18n";
 
 const asDto = (project: Project): ProjectDto => ({ ...project });
 
@@ -111,7 +106,9 @@ const ProjectSettingsPage: React.FunctionComponent = () => {
 
   // ---- search (REQ-018-43)
   const [query, setQuery] = React.useState("");
-  const match = matchSettings(query, t);
+  // what the platform hides is not found either (REQ-050-48)
+  const platform = platformOf(edited.uiTreeSettings);
+  const match = matchSettings(query, t, platform);
   const sectionsRef = React.useRef<HTMLDivElement>(null);
   React.useEffect(() => {
     const root = sectionsRef.current;
@@ -269,6 +266,7 @@ const ProjectSettingsPage: React.FunctionComponent = () => {
 
   const section = (id: SectionId, content: React.ReactNode) => {
     const meta = SETTINGS_SECTIONS.find((s) => s.id === id);
+    const intro = sectionIntro(id, platform, t);
     const index = SETTINGS_SECTIONS.findIndex((s) => s.id === id);
     return (
       <Box
@@ -303,13 +301,14 @@ const ProjectSettingsPage: React.FunctionComponent = () => {
           <Typography id={`section-${id}-title`} variant="h6" component="h2">
             {meta && t(meta.title)}
           </Typography>
-          {DESCRIPTION[id] && (
+          {intro && (
             <Typography
               variant="body2"
               color="textSecondary"
               sx={{ maxWidth: "70ch" }}
+              data-testid={`section-${id}-intro`}
             >
-              {t(DESCRIPTION[id] as MessageKey)}
+              {intro}
             </Typography>
           )}
         </Box>
@@ -483,7 +482,26 @@ const ProjectSettingsPage: React.FunctionComponent = () => {
             {section("review", <ReviewFields />)}
             {section("comparison", <ComparisonFields />)}
             {section("mobile", <MobileSettings bare />)}
-            {section("devices", <AllowedDevicesSettings />)}
+            {section(
+              "devices",
+              // a web project lists browsers, a mobile one devices, both both (REQ-050-45, 50)
+              <>
+                {platformShows(platform, "devices") && (
+                  <AllowedDevicesSettings
+                    title={
+                      platform === "both" ? t("section.devices") : undefined
+                    }
+                  />
+                )}
+                {platformShows(platform, "browsers") && (
+                  <AllowedBrowsersSettings
+                    title={
+                      platform === "both" ? t("browsers.title") : undefined
+                    }
+                  />
+                )}
+              </>,
+            )}
             {section("a11y", <A11yRulesSettings bare />)}
             {section("jira", <JiraSettings bare />)}
             {isAdmin &&

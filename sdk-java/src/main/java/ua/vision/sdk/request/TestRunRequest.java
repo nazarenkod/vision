@@ -23,5 +23,8 @@ public class TestRunRequest {
     private final List<IgnoreAreas> ignoreAreas;
     // gzipped and base64-encoded page source
     private final String uiTree;
+    // "web" for a web page's tree; left out for Appium page sources, as before 050
+    private final String uiTreeFormat;
     private final String featureName;
+    private final String browserVersion;
 }

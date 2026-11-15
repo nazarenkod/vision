@@ -378,6 +378,7 @@ describe('TestRunsService', () => {
         },
         name: testVariation.name,
         browser: testVariation.browser,
+        browserVersion: null,
         device: testVariation.device,
         os: testVariation.os,
         viewport: testVariation.viewport,

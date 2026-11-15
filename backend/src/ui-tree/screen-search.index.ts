@@ -6,7 +6,7 @@ export interface IndexedBaseline {
   treeName: string;
 }
 
-// Projects kept in memory at once; a big Android project holds ~6000 trees (ADR-0029).
+// Projects kept in memory at once; a big Android project holds ~6000 trees (ADR-0030).
 export const MAX_INDEXED_PROJECTS = 8;
 // Tree files read at once while an index fills; the disk, not the CPU, is the limit.
 export const INDEX_CONCURRENCY = 4;
@@ -20,7 +20,7 @@ async function eachWithConcurrency<T>(items: T[], limit: number, work: (item: T)
 }
 
 /**
- * The UI trees of the latest baselines of each project, in memory (ADR-0029). A search hands it
+ * The UI trees of the latest baselines of each project, in memory (ADR-0030). A search hands it
  * the baselines as the database has them now; only trees whose file name changed (a new
  * approve) are read again, so an index never answers from an outdated baseline.
  */

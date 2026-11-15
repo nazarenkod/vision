@@ -1,5 +1,6 @@
 import { XMLParser } from 'fast-xml-parser';
 import { Rect, UiNode, UiTree, UiTreeFormat } from './ui-tree.types';
+import { looksLikeHtml, parseWebTree } from './web-tree.parser';
 
 // Android lays out in dp, 160 dpi being 1 px per dp. Without the real density a
 // phone is assumed to be ~411 dp wide on its short side, which holds for most
@@ -28,6 +29,8 @@ const parser = new XMLParser({
 
 export function detectFormat(xml: string): UiTreeFormat | null {
   const head = xml.slice(0, 4096);
+  // a page source starts with its doctype or <html>; an Appium tree with <?xml or <hierarchy>
+  if (looksLikeHtml(head)) return 'web';
   if (/<hierarchy[\s>]/.test(head) || /class="android\./.test(head)) return 'appium-android';
   if (/XCUIElementType|<AppiumAUT[\s>]/.test(head)) return 'appium-ios';
   return null;
@@ -151,10 +154,13 @@ function readIos(attrs: Record<string, string>, tag: string): Omit<RawNode, 'par
  * nodes with bounds in screenshot pixels. Throws on unreadable XML.
  */
 export function parseUiTree(xml: string, options: ParseOptions): UiTree {
-  const format = options.format ?? detectFormat(xml);
+  // a page's HTML is the web whatever the client named it, so it never reaches the XML parser
+  const format = looksLikeHtml(xml.slice(0, 4096)) ? 'web' : (options.format ?? detectFormat(xml));
   if (!format) {
-    throw new Error('Unknown UI tree format: expected an Appium page source for Android or iOS');
+    throw new Error('Unknown UI tree format: expected an Appium page source for Android or iOS, or a web page');
   }
+  // by what the tree is, not by the project's platform (REQ-050-47)
+  if (format === 'web') return parseWebTree(xml, options);
   const document = parser.parse(xml) as XmlElement[];
   const roots = document.filter((element) => !!tagOf(element) && !tagOf(element).startsWith('?'));
   if (!roots.length) {

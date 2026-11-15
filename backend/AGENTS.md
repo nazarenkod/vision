@@ -6,8 +6,8 @@
 
 | Модуль | Відповідає за | Специфікація |
 |---|---|---|
-| `src/ui-tree/` | прийом дерева з лімітами (`ui-tree.intake.ts`: ≤ 10 МиБ розпакованого, без `DOCTYPE`), розбір Appium page source, налаштування порівняння, правила елементів, приховані зміни, групи компонентів; селектори `xpath:` для безіменних елементів (`xpath-selector.ts`, `selector-variants.ts`); перевірка нестабільного тексту (`variable-text.ts`) | [002](../docs/specs/002-ui-tree-analysis/spec.md), [020](../docs/specs/020-remove-reference-device/spec.md), [027](../docs/specs/027-nameless-elements/spec.md), [033](../docs/specs/033-variable-text/spec.md), [040](../docs/specs/040-uitree-limits-and-sdk-names/spec.md) |
-| `src/ui-tree/screen-search*.ts` | пошук екранів за UI-деревом: текст, підпис, селектор, `component:`; індекс дерев останніх еталонів у пам'яті API ([ADR-0029](../docs/decisions/0029-screen-search-index-in-memory.md)) | [053](../docs/specs/053-screen-search/spec.md) |
+| `src/ui-tree/` | прийом дерева з лімітами (`ui-tree.intake.ts`: ≤ 10 МиБ розпакованого, без `DOCTYPE`, крім голого `<!DOCTYPE html>`), розбір Appium page source і вебсторінки (`web-tree.parser.ts`: HTML з `data-vision-*` від SDK або звичайний `page source` без координат, `positioned: false`, ADR-0029), налаштування порівняння, правила елементів, приховані зміни, групи компонентів; селектори `xpath:` для безіменних елементів (`xpath-selector.ts`, `selector-variants.ts`); перевірка нестабільного тексту (`variable-text.ts`) | [002](../docs/specs/002-ui-tree-analysis/spec.md), [050](../docs/specs/050-web-ui-tree/spec.md), [020](../docs/specs/020-remove-reference-device/spec.md), [027](../docs/specs/027-nameless-elements/spec.md), [033](../docs/specs/033-variable-text/spec.md), [040](../docs/specs/040-uitree-limits-and-sdk-names/spec.md) |
+| `src/ui-tree/screen-search*.ts` | пошук екранів за UI-деревом: текст, підпис, селектор, `component:`; індекс дерев останніх еталонів у пам'яті API ([ADR-0030](../docs/decisions/0030-screen-search-index-in-memory.md)) | [053](../docs/specs/053-screen-search/spec.md) |
 | `src/a11y/a11y.rules.ts` | правила доступності | [003](../docs/specs/003-accessibility-checks/spec.md) |
 | `src/a11y/a11y-norms.ts` | норми проєкту (зона тапу, контраст, вимкнені правила); `applyNorms` — звіт за поточними нормами всюди, де його показують чи рахують | [026](../docs/specs/026-a11y-rules-settings/spec.md) |
 | `src/a11y/a11y-problems.ts`, `a11y-issues*.ts` | проблеми, їхні ID і факти, групування, маркери, рішення, пошук у Jira | [004](../docs/specs/004-a11y-problems/spec.md), [021](../docs/specs/021-fixed-a11y-grouping/spec.md) |
@@ -17,6 +17,7 @@
 | `src/test-runs/element-review.ts` | рев'ю за елементом: елементи, змінені на кількох екранах збірки, «лише він», рамки для вирізок; `GET /test-runs/elements` | [055](../docs/specs/055-bulk-decisions-by-query/spec.md) |
 | `src/test-runs/decision-undo*.ts` | журнал Approve і Reject та Undo з нього ([ADR-0014](../docs/decisions/0014-undo-through-decision-journal.md)); тест відновлення ганяє справжній успадкований approve | [018](../docs/specs/018-ui-redesign/spec.md) |
 | `src/projects/allowed-devices.ts` | дозволені пристрої проєкту: збіг пристрою й OS (`26.*`), текст відмови 422 для SDK; CLI (`User-Agent: vision-cli/…`) не перевіряється | [029](../docs/specs/029-allowed-devices/spec.md) |
+| `src/projects/allowed-browsers.ts` | дозволені браузери (браузер, версія `131.*`, розмір вікна; порожнє — будь-яке); `snapshotRejection`: знімок з `browser` — за браузерами, без — за пристроями | [050](../docs/specs/050-web-ui-tree/spec.md) |
 | `src/projects/settings-conflict.ts`, `project-secrets.ts` | збереження налаштувань поверх чужих змін (409), ключ Gemini лише на запис | [018](../docs/specs/018-ui-redesign/spec.md) |
 | `src/analytics/` | Insights | [008](../docs/specs/008-insights/spec.md) |
 | `src/ai/` | AI на вимогу, кеш, ліміт; чернетка бага на особистому ключі Gemini (`personalGeminiKey`) | [010](../docs/specs/010-ai-assist/spec.md), [025](../docs/specs/025-bug-from-comparison/spec.md) |
@@ -107,6 +108,9 @@ npm run test:e2e / test:acceptance         # потрібні запущені P
 - **PNG декодуємо лише через `readPng`** (`src/shared/screenshot-limits.ts`): він перевіряє ліміт
   пікселів за кожним IHDR файла і не дає interlaced PNG розпакуватися більше, ніж обіцяє заголовок
   (VIS-SEC-045). Канва порівняння різних розмірів — не більше двох лімітів.
+- **Дерево вебу** приходить і в multipart-полі: `MULTIPART_LIMITS` у `test-runs.controller.ts` піднімає
+  ліміт поля до `UI_TREE_FIELD_MAX_BYTES`; без цього multer відкидає весь знімок з деревом понад 1 МиБ.
+  Фікстури `src/ui-tree/__fixtures__/web/` збирає `web-tree/make-fixtures.cjs` справжнім скриптом у Chromium.
 - `parseUiTreeSettings` відкидає записи, яких не розуміє. Додаючи поле в налаштування проєкту,
   онови й парсер, і його тест (`comparison-inputs.spec.ts`).
 - Нове поле в публічному звіті (`src/reports/report-links.ts`) бачать люди без акаунта: лише

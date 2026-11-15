@@ -9,7 +9,7 @@ import { Rect, UiTree } from './ui-tree.types';
 
 // Checks per answer; the rest come with "show more" (REQ-053-10).
 export const SEARCH_PAGE_SIZE = 100;
-// Projects warmed up after a start, most recently active first (ADR-0029).
+// Projects warmed up after a start, most recently active first (ADR-0030).
 const WARM_PROJECTS = 4;
 
 export interface ScreenSearchItem {

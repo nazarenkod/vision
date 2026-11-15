@@ -69,6 +69,21 @@ describe('findNoiseHints', () => {
     ]);
   });
 
+  it('blames no status bar for a change at the top of a web page', () => {
+    const page = parseUiTree('<!DOCTYPE html><html><body><p>Top</p></body></html>', {
+      imageWidth: 390,
+      imageHeight: 844,
+    });
+    const hints = findNoiseHints({
+      regions: [{ x: 300, y: 4, width: 60, height: 20 }],
+      diffPercent: 0.2,
+      imageWidth: 390,
+      imageHeight: 844,
+      tree: page,
+    });
+    expect(hints.map((hint) => hint.kind)).not.toContain('status-bar');
+  });
+
   it('calls the whole iOS status bar band noise, as tall as the band the comparison leaves out', () => {
     // a change at 52 pt is still the status bar on iPhones with an island; a 50 pt band missed it
     const tree = { format: 'appium-ios', pixelsPerDp: 3, nodes: [] } as never;

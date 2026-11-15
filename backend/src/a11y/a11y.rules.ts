@@ -3,6 +3,7 @@ import { UiNode, UiTree } from '../ui-tree/ui-tree.types';
 import { A11yReport, A11yRule, A11ySeverity, A11yViolation, RgbaImage } from './a11y.types';
 import { estimateContrast } from './contrast';
 import { A11yNorms, DEFAULT_A11Y_NORMS, summarize, touchTargetOf, unitOf } from './a11y-norms';
+import { WEB_EDITABLE_ROLES } from '../ui-tree/web-tree.parser';
 
 // A single line taller than this (dp) is treated as large text.
 const LARGE_TEXT_HEIGHT_DP = 28;
@@ -29,10 +30,24 @@ function buildContext(tree: UiTree, norms: A11yNorms, image?: RgbaImage): Contex
   return { tree, children, image, norms };
 }
 
-const isShown = (node: UiNode) => node.visible && node.bounds.width > 0 && node.bounds.height > 0;
+// a web page source without the SDK has no positions: what it does not hide counts as shown (REQ-050-09)
+const positioned = (ctx: Context) => ctx.tree.positioned !== false;
+
+const isShown = (node: UiNode, ctx: Context) =>
+  node.visible && (!positioned(ctx) || (node.bounds.width > 0 && node.bounds.height > 0));
+
+const isEditable = (node: UiNode, ctx: Context) =>
+  ctx.tree.format === 'web' ? WEB_EDITABLE_ROLES.has(node.role ?? '') : EDITABLE.test(node.className);
+
+// on the web any element with text of its own is text on the page
+const isTextual = (node: UiNode, ctx: Context) => ctx.tree.format === 'web' || TEXTUAL.test(node.className);
+
+const READERS = { 'appium-android': 'TalkBack', 'appium-ios': 'VoiceOver', web: 'a screen reader' } as const;
 
 function isControl(node: UiNode, ctx: Context): boolean {
-  if (!isShown(node) || !node.enabled || !node.clickable) return false;
+  if (!isShown(node, ctx) || !node.enabled || !node.clickable) return false;
+  // aria-hidden takes an element out of what a screen reader reads; iOS keeps its own rule for that
+  if (ctx.tree.format === 'web' && !node.accessible) return false;
   const screen = ctx.tree.width * ctx.tree.height;
   return screen <= 0 || (node.bounds.width * node.bounds.height) / screen <= MAX_CONTROL_SCREEN_SHARE;
 }
@@ -87,8 +102,8 @@ const round1 = (value: number) => Math.round(value * 10) / 10;
 
 function checkMissingLabel(node: UiNode, ctx: Context): A11yViolation[] {
   // inputs are covered by checkInputLabel, which also accepts a hint
-  if (!isControl(node, ctx) || EDITABLE.test(node.className) || speakableText(node, ctx)) return [];
-  const reader = ctx.tree.format === 'appium-ios' ? 'VoiceOver' : 'TalkBack';
+  if (!isControl(node, ctx) || isEditable(node, ctx) || speakableText(node, ctx)) return [];
+  const reader = READERS[ctx.tree.format];
   return [
     violation(
       'missing-label',
@@ -102,7 +117,7 @@ function checkMissingLabel(node: UiNode, ctx: Context): A11yViolation[] {
 }
 
 function checkTouchTarget(node: UiNode, ctx: Context): A11yViolation[] {
-  if (!isControl(node, ctx)) return [];
+  if (!positioned(ctx) || !isControl(node, ctx)) return [];
   const min = touchTargetOf(ctx.norms, ctx.tree.format);
   const width = node.bounds.width / ctx.tree.pixelsPerDp;
   const height = node.bounds.height / ctx.tree.pixelsPerDp;
@@ -151,7 +166,7 @@ function checkDuplicateLabels(ctx: Context): A11yViolation[] {
 }
 
 function checkContrast(node: UiNode, ctx: Context): A11yViolation[] {
-  if (!ctx.image || !isShown(node) || !node.text.trim() || !TEXTUAL.test(node.className)) return [];
+  if (!positioned(ctx) || !ctx.image || !isShown(node, ctx) || !node.text.trim() || !isTextual(node, ctx)) return [];
   const estimate = estimateContrast(ctx.image, node.bounds);
   if (!estimate) return [];
   const heightDp = node.bounds.height / ctx.tree.pixelsPerDp;
@@ -172,7 +187,7 @@ function checkContrast(node: UiNode, ctx: Context): A11yViolation[] {
 }
 
 function checkInputLabel(node: UiNode, ctx: Context): A11yViolation[] {
-  if (!isShown(node) || !EDITABLE.test(node.className)) return [];
+  if (!isShown(node, ctx) || !isEditable(node, ctx)) return [];
   if (node.label.trim() || node.hint.trim() || node.text.trim()) return [];
   return [
     violation(
@@ -201,7 +216,8 @@ function checkRedundantRole(node: UiNode, ctx: Context): A11yViolation[] {
 }
 
 function checkIosAccessible(node: UiNode, ctx: Context): A11yViolation[] {
-  if (ctx.tree.format !== 'appium-ios' || node.accessible || !isShown(node) || !IOS_BUTTON.test(node.className)) {
+  // isAccessibilityElement is iOS's own; the web has none (REQ-050-11)
+  if (ctx.tree.format !== 'appium-ios' || node.accessible || !isShown(node, ctx) || !IOS_BUTTON.test(node.className)) {
     return [];
   }
   return [

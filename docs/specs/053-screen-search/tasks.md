@@ -9,6 +9,6 @@
 - [x] **T6** Playwright: `frontend/integration_tests/test/screenSearch.spec.ts`.
 - [x] **T7** Документація: трасування, статус `Implemented`, огляд продукту.
 - [ ] **T8** manual: на копії проду заміряти перший і повторний пошук і пам'ять API (SC-053-01);
-  після цього — рішення власника щодо [ADR-0029](../../decisions/0029-screen-search-index-in-memory.md).
+  після цього — рішення власника щодо [ADR-0030](../../decisions/0030-screen-search-index-in-memory.md).
 - [ ] **T9** Еталони скриншотів із бічним меню (новий пункт «Пошук») — оновити в Docker
   ([ADR-0011](../../decisions/0011-screenshot-baselines-in-docker.md)).

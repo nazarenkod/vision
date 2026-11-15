@@ -40,6 +40,21 @@ export interface AllowedDevice {
   os: string;
 }
 
+/**
+ * A browser web snapshots may come from (050): as the test sends `browser`,
+ * `browserVersion` and `viewport`. An empty version or window size is any.
+ */
+export interface AllowedBrowser {
+  browser: string;
+  // exact, or ending in ".*" for any version under it; empty: any
+  version: string;
+  // window size as "1280x720"; empty: any
+  viewport: string;
+}
+
+/** What the project tests: which settings its page shows (050). */
+export type ProjectPlatform = "mobile" | "web" | "both";
+
 export type ProjectDto = Omit<
   Project,
   "updatedAt" | "createdAt" | "builds" | "geminiApiKeySet"

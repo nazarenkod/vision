@@ -23,6 +23,8 @@ class BuildSdkJar(unittest.TestCase):
         cls.tmp = pathlib.Path(tempfile.mkdtemp())
         shutil.copytree(ROOT / "scripts", cls.tmp / "scripts")
         shutil.copytree(ROOT / "sdk-java", cls.tmp / "sdk-java", ignore=shutil.ignore_patterns("build", ".gradle"))
+        # the web tree collector the SDK bundles lives beside it (050)
+        shutil.copytree(ROOT / "web-tree", cls.tmp / "web-tree")
         old = cls.tmp / "dist" / "sdk-java"
         old.mkdir(parents=True)
         (old / "sdk-java-4.3.1-vision.4.jar").write_bytes(b"old")

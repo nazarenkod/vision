@@ -1,4 +1,5 @@
 import {
+  AllowedBrowser,
   AllowedDevice,
   JiraTypesResponse,
   Project,
@@ -26,6 +27,15 @@ async function getAll(): Promise<Project[]> {
 /** Device and OS pairs the project's snapshots came from (REQ-029-11). */
 async function getDevices(projectId: string): Promise<AllowedDevice[]> {
   const response = await fetch(`${API_URL}/projects/${projectId}/devices`, {
+    method: "GET",
+    headers: authHeader(),
+  });
+  return handleResponse(response);
+}
+
+/** Browser, version and window size web snapshots came from (REQ-050-53). */
+async function getBrowsers(projectId: string): Promise<AllowedBrowser[]> {
+  const response = await fetch(`${API_URL}/projects/${projectId}/browsers`, {
     method: "GET",
     headers: authHeader(),
   });
@@ -192,6 +202,7 @@ export const projectsService = {
   updateSettings,
   getAll,
   getDevices,
+  getBrowsers,
   getJiraTypes,
   searchScreens,
   suggestScreens,

@@ -98,6 +98,15 @@ export class ProjectsController {
   }
 
   @ProjectFrom(inParam('id', 'project'))
+  @Get(':id/browsers')
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  @ApiParam({ name: 'id', required: true })
+  browsers(@Param('id', new ParseUUIDPipe()) id: string) {
+    return this.projectsService.findBrowsers(id);
+  }
+
+  @ProjectFrom(inParam('id', 'project'))
   @Get(':id/jira/types')
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard, RoleGuard)

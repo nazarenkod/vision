@@ -73,10 +73,9 @@ describe('parseUiTree', () => {
     });
   });
 
-  it('rejects input that is not an Appium page source', () => {
-    expect(() => parseUiTree('<html><body/></html>', { imageWidth: 1, imageHeight: 1 })).toThrow(
-      'Unknown UI tree format'
-    );
+  it('rejects input that is neither an Appium page source nor a web page', () => {
+    // a web page is a tree of its own now (050)
+    expect(() => parseUiTree('<svg><g/></svg>', { imageWidth: 1, imageHeight: 1 })).toThrow('Unknown UI tree format');
   });
 
   it('parses Android bounds strings', () => {

@@ -34,10 +34,13 @@ const quoted = (value: string): string | null =>
 /** The anchor step for a stable node, with the attribute Appium's page source gives it. */
 function anchorStep(tree: UiTree, node: UiNode): string | null {
   const ios = tree.format === 'appium-ios';
+  const web = tree.format === 'web';
   let attribute: string;
   let value: string;
   if (hasAppId(node)) {
-    [attribute, value] = [ios ? 'name' : 'resource-id', node.resourceId];
+    [attribute, value] = [ios ? 'name' : web ? 'id' : 'resource-id', node.resourceId];
+  } else if (web) {
+    [attribute, value] = node.text ? ['text', node.text] : ['aria-label', node.label];
   } else if (ios) {
     [attribute, value] = ['label', node.label];
   } else {

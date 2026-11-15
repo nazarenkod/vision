@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Builds the Vision Java SDK and puts the jar and its pom into dist/sdk-java/.
-# Needs JDK 11-17 and Gradle 7.x on PATH. The jar runs on Java 11 and later.
+# Needs JDK 11 (the Lombok plugin fails on 17) and Gradle 7.x on PATH. The jar runs on Java 11 and later.
 #
 #   ./scripts/build-sdk-jar.sh            the version in sdk-java/build.gradle
 #   ./scripts/build-sdk-jar.sh 1.0.1      another one

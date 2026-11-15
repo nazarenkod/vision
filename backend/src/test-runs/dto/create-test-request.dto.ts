@@ -16,6 +16,7 @@ import {
 } from 'class-validator';
 import { BaselineDataDto } from '../../shared/dto/baseline-data.dto';
 import { IgnoreAreaDto, MAX_IGNORE_AREAS } from './ignore-area.dto';
+import { UI_TREE_FORMATS, UiTreeFormat } from '../../ui-tree/ui-tree.types';
 
 export class CreateTestRequestDto extends BaselineDataDto {
   @ApiProperty()
@@ -49,15 +50,24 @@ export class CreateTestRequestDto extends BaselineDataDto {
   @IsString()
   comment?: string;
 
-  @ApiPropertyOptional({ description: 'Appium page source of the screen: base64 of the XML, optionally gzipped' })
+  @ApiPropertyOptional({
+    description:
+      'UI tree of the screen: Appium page source (XML) or the web page (HTML, 050); base64, optionally gzipped',
+  })
   @IsOptional()
   @IsString()
   uiTree?: string;
 
-  @ApiPropertyOptional({ enum: ['appium-android', 'appium-ios'], description: 'Detected from the XML when omitted' })
+  @ApiPropertyOptional({ enum: UI_TREE_FORMATS, description: 'Detected from the tree when omitted' })
   @IsOptional()
-  @IsIn(['appium-android', 'appium-ios'])
-  uiTreeFormat?: 'appium-android' | 'appium-ios';
+  @IsIn(UI_TREE_FORMATS)
+  uiTreeFormat?: UiTreeFormat;
+
+  @ApiPropertyOptional({ description: 'Version of the browser a web screen was taken in; not part of the check (050)' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(64)
+  browserVersion?: string;
 
   @ApiPropertyOptional({ description: 'Android screen density in dpi, for dp-based checks' })
   @IsOptional()

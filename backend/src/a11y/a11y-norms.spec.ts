@@ -2,7 +2,7 @@ import { readFileSync } from 'fs';
 import path from 'path';
 import { parseUiTree } from '../ui-tree/ui-tree.parser';
 import { buildReport, findViolations } from './a11y.rules';
-import { applyNorms, DEFAULT_A11Y_NORMS, parseA11yNorms } from './a11y-norms';
+import { applyNorms, DEFAULT_A11Y_NORMS, parseA11yNorms, touchTargetOf, unitOf } from './a11y-norms';
 import { A11yViolation } from './a11y.types';
 import { facetsOf, problemKeyOf } from './a11y-problems';
 
@@ -32,6 +32,16 @@ describe('parseA11yNorms', () => {
     expect(parseA11yNorms({ touchTargetAndroid: 40 })).toEqual({ ...DEFAULT_A11Y_NORMS, touchTargetAndroid: 40 });
     expect(parseA11yNorms({ touchTargetIos: 40 })).toMatchObject({ touchTargetAndroid: 48, touchTargetIos: 40 });
     expect(parseA11yNorms(undefined)).toEqual(DEFAULT_A11Y_NORMS);
+  });
+
+  it('reads the web tap area in CSS pixels, 24 by default', () => {
+    expect(DEFAULT_A11Y_NORMS.touchTargetWeb).toBe(24);
+    expect(parseA11yNorms({ touchTargetWeb: 44 })).toMatchObject({ touchTargetWeb: 44, touchTargetAndroid: 48 });
+    for (const wrong of [23, 97, 30.5, '30']) {
+      expect(parseA11yNorms({ touchTargetWeb: wrong }).touchTargetWeb).toBe(24);
+    }
+    expect(touchTargetOf(parseA11yNorms({ touchTargetWeb: 32 }), 'web')).toBe(32);
+    expect(unitOf('web')).toBe('px');
   });
 
   it('falls back to the default for a norm out of range', () => {

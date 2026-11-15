@@ -759,7 +759,11 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
   };
 
   // without a tree there are no elements: the button stays off (REQ-024-33)
-  const canSelect = withUiTree && structure?.hasUiTree !== false;
+  // nor without positions: a plain web page source (REQ-050-09)
+  const canSelect =
+    withUiTree &&
+    structure?.hasUiTree !== false &&
+    structure?.positioned !== false;
   // a narrow window keeps the toolbar in one row: the tools as icons, named on hover
   const narrow = useMediaQuery(COMPACT_TOOLS_QUERY, { noSsr: true });
   // every device of the check is the toolbar's first group; at full size it
@@ -1327,7 +1331,9 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
               ? compactTools
                 ? t("select.button")
                 : ""
-              : t("select.noTree")
+              : structure?.positioned === false
+                ? t("select.noPositions")
+                : t("select.noTree")
           }
         >
           {/* a disabled button takes no pointer, so the tooltip listens on its wrapper */}

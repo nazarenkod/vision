@@ -3,11 +3,17 @@ import {
   deleteConfirmed,
   loadedSettings,
   matchSettings,
+  PlatformField,
+  platformOf,
+  platformShows,
+  sectionIntro,
+  withPlatform,
 } from "./projectSettings.helper";
 import { TEST_PROJECT } from "../_test/test.data.helper";
 import { Project } from "../types";
 import { DICTIONARIES } from "../i18n/dictionaries";
 import { translate } from "../i18n/translate";
+import { english } from "../i18n";
 import type { Text } from "../i18n";
 
 const ukrainian: Text = (key, params) =>
@@ -180,5 +186,121 @@ describe("project settings", () => {
     expect(loaded.uiTreeSettings).toBe(project.uiTreeSettings);
     expect(loaded).not.toHaveProperty("builds");
     expect(loaded).not.toHaveProperty("jiraToken");
+  });
+});
+
+const MOBILE_FIELDS: PlatformField[] = [
+  "systemBars",
+  "touchTargetAndroid",
+  "touchTargetIos",
+  "notAccessible",
+  "devices",
+];
+const WEB_FIELDS: PlatformField[] = ["touchTargetWeb", "browsers"];
+
+describe("project platform", () => {
+  it("reads a project saved before platforms as mobile", () => {
+    expect(platformOf(project.uiTreeSettings)).toBe("mobile");
+    expect(platformOf(null)).toBe("mobile");
+    expect(platformOf("not json")).toBe("mobile");
+    expect(platformOf(JSON.stringify({ platform: "tv" }))).toBe("mobile");
+    expect(platformOf(JSON.stringify({ platform: "web" }))).toBe("web");
+  });
+
+  it("hides system bars, Android and iOS norms and VoiceOver in a web project", () => {
+    for (const field of MOBILE_FIELDS) {
+      expect(platformShows("web", field)).toBe(false);
+    }
+    for (const field of WEB_FIELDS) {
+      expect(platformShows("web", field)).toBe(true);
+    }
+  });
+
+  it("hides the web norm in a mobile project", () => {
+    for (const field of WEB_FIELDS) {
+      expect(platformShows("mobile", field)).toBe(false);
+    }
+    for (const field of MOBILE_FIELDS) {
+      expect(platformShows("mobile", field)).toBe(true);
+    }
+  });
+
+  it("shows fields of both platforms for a mobile and web project", () => {
+    for (const field of [...MOBILE_FIELDS, ...WEB_FIELDS]) {
+      expect(platformShows("both", field)).toBe(true);
+    }
+    expect(matchSettings("navigation", english, "both").sections).toEqual([
+      "mobile",
+    ]);
+    expect(matchSettings("window size", english, "both").sections).toEqual([
+      "devices",
+    ]);
+    expect(matchSettings("OS version", english, "both").sections).toEqual([
+      "devices",
+    ]);
+  });
+
+  it("keeps hidden values when the platform changes", () => {
+    const mobile = JSON.stringify({
+      excludeSystemBars: false,
+      a11yNorms: { touchTargetAndroid: 40, disabledRules: ["not-accessible"] },
+      allowedDevices: [{ device: "Pixel 7", os: "Android 15" }],
+    });
+    const web = withPlatform(mobile, "web");
+    expect(platformOf(web)).toBe("web");
+    const back = withPlatform(web, "mobile");
+    expect(JSON.parse(back)).toEqual({
+      ...JSON.parse(mobile),
+      platform: "mobile",
+    });
+    // the platform is a General setting, nothing else looks changed
+    const saved = { ...project, uiTreeSettings: mobile } as Project;
+    expect(changedSections(saved, { ...saved, uiTreeSettings: web })).toEqual([
+      "General",
+    ]);
+  });
+
+  it("does not find fields the platform hides", () => {
+    const nothing = { sections: [], labels: [] };
+    expect(matchSettings("navigation", english, "web")).toEqual(nothing);
+    expect(matchSettings("VoiceOver", english, "web")).toEqual(nothing);
+    expect(matchSettings("android", english, "web")).toEqual(nothing);
+    expect(matchSettings("OS version", english, "web")).toEqual(nothing);
+    expect(matchSettings("VoiceOver", ukrainian, "web")).toEqual(nothing);
+    expect(matchSettings("window size", english, "mobile")).toEqual(nothing);
+    expect(matchSettings("browser", english, "mobile")).toEqual(nothing);
+    // shown, they are found
+    expect(matchSettings("VoiceOver", english, "mobile").sections).toEqual([
+      "a11y",
+    ]);
+    expect(matchSettings("window size", english, "web")).toEqual({
+      sections: ["devices"],
+      labels: ["Window size"],
+    });
+    expect(matchSettings("розмір вікна", ukrainian, "web").sections).toEqual([
+      "devices",
+    ]);
+  });
+
+  it("names Selenide and Playwright as tree sources for a web project", () => {
+    for (const text of [english, ukrainian]) {
+      const intro = sectionIntro("mobile", "web", text) ?? "";
+      expect(intro).toContain("Selenide");
+      expect(intro).toContain("Playwright");
+      expect(intro).not.toContain("Appium");
+    }
+    expect(sectionIntro("mobile", "mobile")).toContain(
+      "Appium on Android and iOS",
+    );
+    expect(sectionIntro("mobile", "mobile")).not.toMatch(/web/i);
+  });
+
+  it("names Appium and the web as tree sources for a mobile and web project", () => {
+    expect(sectionIntro("mobile", "both")).toBe(
+      "Applies to screens sent with a UI tree: from Appium (Android, iOS) and from the web (Selenide, Playwright).",
+    );
+    expect(sectionIntro("mobile", "both", ukrainian)).toBe(
+      "Для екранів, надісланих з UI-деревом: з Appium (Android, iOS) і з вебу (Selenide, Playwright).",
+    );
   });
 });

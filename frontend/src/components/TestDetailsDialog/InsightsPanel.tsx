@@ -756,7 +756,12 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
         )}
         <Typography variant="body2" color="textSecondary">
           {t("panel.checkedFrom", {
-            platform: report.format === "appium-ios" ? "iOS" : "Android",
+            platform:
+              report.format === "web"
+                ? t("panel.platformWeb")
+                : report.format === "appium-ios"
+                  ? "iOS"
+                  : "Android",
           })}{" "}
           {report.baselineChecked
             ? tx(
@@ -1784,6 +1789,21 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
           gap: 1.5,
         }}
       >
+        {/* a plain page source: what needs positions is not checked (REQ-050-09) */}
+        {withUiTree && structure?.positioned === false && (
+          <Typography
+            variant="body2"
+            color="textSecondary"
+            data-testid="treeWithoutPositions"
+            sx={{
+              p: 1.25,
+              borderRadius: radius.control,
+              bgcolor: tokens.subtle,
+            }}
+          >
+            {t("panel.unpositioned")}
+          </Typography>
+        )}
         {tab === "a11y" ? a11yTab() : changesTab()}
       </Box>
 

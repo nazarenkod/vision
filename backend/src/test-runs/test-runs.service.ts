@@ -40,7 +40,7 @@ import { StructureInfo, UiTreeService } from '../ui-tree/ui-tree.service';
 import { UiTree } from '../ui-tree/ui-tree.types';
 import { A11yIssuesService } from '../a11y/a11y-issues.service';
 import { ReviewedA11yReport } from '../a11y/a11y-issues';
-import { deviceRejection } from '../projects/allowed-devices';
+import { snapshotRejection } from '../projects/allowed-browsers';
 import { checkTrend, TREND_LENGTH, TrendPoint } from './check-trend';
 
 @Injectable()
@@ -100,8 +100,8 @@ export class TestRunsService {
 
     // before anything is written: a rejected snapshot leaves no variation, run or baseline behind
     const rejection = checkDevice
-      ? deviceRejection(
-          parseUiTreeSettings(project?.uiTreeSettings).allowedDevices,
+      ? snapshotRejection(
+          parseUiTreeSettings(project?.uiTreeSettings),
           createTestRequestDto,
           project?.name ?? createTestRequestDto.projectId
         )
@@ -450,6 +450,7 @@ export class TestRunsService {
         baselineUiTreeName: testVariation.baselineUiTreeName,
         uiTreeName,
         featureName: createTestRequestDto.featureName?.trim() || null,
+        browserVersion: createTestRequestDto.browserVersion?.trim() || null,
         uiTreeOptions:
           createTestRequestDto.excludeSystemBars !== undefined
             ? JSON.stringify({ excludeSystemBars: createTestRequestDto.excludeSystemBars })

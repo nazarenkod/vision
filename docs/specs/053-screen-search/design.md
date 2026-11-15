@@ -3,7 +3,7 @@
 ## Підхід
 
 Пошук — чисті функції над UI-деревами плюс індекс у пам'яті API, що тримає дерева останніх
-еталонів проєкту ([ADR-0029](../../decisions/0029-screen-search-index-in-memory.md)).
+еталонів проєкту ([ADR-0030](../../decisions/0030-screen-search-index-in-memory.md)).
 
 - **Що шукаємо.** Еталони варіацій головної гілки проєкту (`Project.mainBranchName`) з
   `TestVariation.baselineName` (REQ-053-02). Варіації інших гілок — ті самі перевірки в роботі,

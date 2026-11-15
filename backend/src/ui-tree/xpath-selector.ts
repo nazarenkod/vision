@@ -9,7 +9,7 @@ import { UiNode, UiTree } from './ui-tree.types';
  */
 export const XPATH_PREFIX = 'xpath:';
 
-export type XpathAttribute = 'resource-id' | 'text' | 'content-desc' | 'name' | 'label';
+export type XpathAttribute = 'resource-id' | 'text' | 'content-desc' | 'name' | 'label' | 'id' | 'aria-label';
 
 export type XpathProblem = 'syntax' | 'anchor' | 'attribute' | 'axis' | 'function' | 'or' | 'mixed';
 
@@ -28,7 +28,7 @@ export interface ParsedXpath {
 export type XpathParse =
   { ok: true; xpath: ParsedXpath; problem?: undefined } | { ok: false; problem: XpathProblem; xpath?: undefined };
 
-const ATTRIBUTES: XpathAttribute[] = ['resource-id', 'text', 'content-desc', 'name', 'label'];
+const ATTRIBUTES: XpathAttribute[] = ['resource-id', 'text', 'content-desc', 'name', 'label', 'id', 'aria-label'];
 const NAME = /^(\*|[A-Za-z_][\w.$-]*)/;
 
 const fail = (problem: XpathProblem): XpathParse => ({ ok: false, problem });
@@ -113,6 +113,13 @@ export function attributeOf(node: UiNode, attribute: XpathAttribute, format: UiT
     // the parser drops name when it only repeats the label, so the label stands in for it
     if (attribute === 'name') return node.resourceId || node.label || null;
     if (attribute === 'label') return node.label || null;
+    return null;
+  }
+  if (format === 'web') {
+    // a page's own attributes, and text as on Android: XPath's text() is a function, which rules refuse
+    if (attribute === 'id') return node.resourceId || null;
+    if (attribute === 'aria-label') return node.label || null;
+    if (attribute === 'text') return node.text || null;
     return null;
   }
   if (attribute === 'resource-id') return node.resourceId || null;

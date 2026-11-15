@@ -6,7 +6,9 @@ This product is a derivative work of Visual Regression Tracker
 contributors, licensed under the Apache License, Version 2.0 (see LICENSE).
 
 The files of backend/, frontend/ and sdk-java/ that came from Visual Regression Tracker have
-been modified; the changes and everything added since are part of Vision.
+been modified; the changes and everything added since are part of Vision. sdk-playwright/ is
+ported from Visual Regression Tracker's agent-playwright 6.0.0 and sdk-js 5.9.0 (Apache License,
+Version 2.0); its ported files say so in their header.
 
 backend/vendor/deepmerge, backend/prisma/vendor/deepmerge and frontend/vendor/deepmerge are
 deepmerge 4.3.1 (MIT, copyright James Halliday, Josh Duff and contributors) with one change,

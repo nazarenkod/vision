@@ -44,3 +44,4 @@ Architecture Decision Record фіксує важливе рішення: кон�
 | [ADR-0026](0026-sdk-own-package-and-versions.md) | SDK — власний пакет, координати й нумерація, без старих назв | Accepted | 2026-11-05 |
 | [ADR-0027](0027-vision-own-product.md) | Vision — власний продукт; без синхронізації з вихідним проєктом | Accepted | 2026-11-05 |
 | [ADR-0028](0028-sidebar-instead-of-top-bar.md) | Навігація — бічне меню з підписами замість верхньої смуги й рейки іконок | Accepted | 2026-11-05 |
+| [ADR-0029](0029-screen-search-index-in-memory.md) | Пошук екранів — індекс у пам'яті API, а не таблиця елементів у базі | Proposed | 2026-11-15 |

@@ -8,6 +8,7 @@ import { routes } from "./constants";
 import ProfilePage from "./pages/ProfilePage";
 import TestVariationListPage from "./pages/TestVariationListPage";
 import InsightsPage from "./pages/InsightsPage";
+import ScreenSearchPage from "./pages/ScreenSearchPage";
 import UserListPage from "./pages/UserListPage";
 import BackupsPage from "./pages/BackupsPage";
 import TestVariationDetailsPage from "./pages/TestVariationDetailsPage";
@@ -65,6 +66,10 @@ function Router() {
       <Route
         path={`${routes.VARIATION_LIST_PAGE}/:projectId`}
         element={<PrivateRoute component={TestVariationListPage} />}
+      />
+      <Route
+        path={`${routes.SEARCH_PAGE}/:projectId`}
+        element={<PrivateRoute component={ScreenSearchPage} />}
       />
       <Route
         path={`${routes.INSIGHTS_PAGE}/:projectId`}

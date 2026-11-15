@@ -1,5 +1,6 @@
 import React from "react";
 import {
+  ButtonBase,
   Alert,
   Autocomplete,
   Box,
@@ -29,6 +30,9 @@ import {
   ViewSidebarOutlined,
 } from "@mui/icons-material";
 import { useSnackbar } from "notistack";
+import { useNavigate } from "react-router-dom";
+import { useBuildElements } from "../useBuildElements";
+import { buildTestRunLocation } from "../../_helpers/route.helpers";
 import { v4 as uuid } from "uuid";
 import { useProjectState, useUserState } from "../../contexts";
 import { insightsService, testRunService } from "../../services";
@@ -186,6 +190,18 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
   const { enqueueSnackbar } = useSnackbar();
   const showRuleSnack = useRuleSnackbar();
   const { t, tx } = useT();
+  // elements of this screen that changed on others too, for one review of them all (055, beta)
+  const elsewhere = useBuildElements(testRun.buildId);
+  const navigate = useNavigate();
+  const reviewElement = (key: string) => {
+    const { search } = buildTestRunLocation(testRun.buildId, undefined, {
+      tab: "changes",
+    });
+    const params = new URLSearchParams(search);
+    params.set("by", "elements");
+    params.set("element", key);
+    navigate({ search: params.toString() });
+  };
   const { user } = useUserState();
   const { projectList, selectedProjectId } = useProjectState();
   const project = projectList.find((p) => p.id === selectedProjectId);
@@ -1393,6 +1409,32 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
                         >
                           {whatChanged(row)}
                         </Box>
+                        {row.nodeKey &&
+                          (elsewhere.get(row.nodeKey) ?? 0) > 1 && (
+                            <ButtonBase
+                              data-testid="reviewElsewhere"
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                if (row.nodeKey) reviewElement(row.nodeKey);
+                              }}
+                              sx={{
+                                mt: 0.5,
+                                height: 24,
+                                px: 1,
+                                gap: 0.5,
+                                borderRadius: radius.pill,
+                                bgcolor: tokens.brandSoft,
+                                color: tokens.brandDark,
+                                fontSize: type.caption,
+                                fontWeight: 600,
+                              }}
+                            >
+                              {t("elements.moreScreens", {
+                                count: (elsewhere.get(row.nodeKey) ?? 1) - 1,
+                              })}{" "}
+                              →
+                            </ButtonBase>
+                          )}
                       </Box>
                     </Box>
                     {actionsCell(

@@ -19,6 +19,7 @@ describe("sideNav helper", () => {
       ["backups", "nav.backups", "/backups"],
       ["builds", "nav.builds", "/p1"],
       ["baselines", "nav.baselines", "/variations/p1"],
+      ["search", "nav.search", "/search/p1"],
       ["insights", "nav.insights", "/insights/p1"],
     ]);
     expect(admin.every((item) => !item.disabled)).toBe(true);
@@ -28,6 +29,7 @@ describe("sideNav helper", () => {
         "projects",
         "builds",
         "baselines",
+        "search",
         "insights",
       ]);
     }
@@ -46,6 +48,7 @@ describe("sideNav helper", () => {
     expect(project.map((item) => item.key)).toEqual([
       "builds",
       "baselines",
+      "search",
       "insights",
     ]);
     expect(project.every((item) => item.disabled && item.to === null)).toBe(
@@ -66,7 +69,7 @@ describe("sideNav helper", () => {
     const items = sideNavItems("guest", "p1", 0);
     expect(
       items.filter((item) => item.group === "project").map((i) => i.disabled),
-    ).toEqual([true, true, true]);
+    ).toEqual([true, true, true, true]);
     expect(items.find((item) => item.key === "projects")?.disabled).toBe(false);
   });
 
@@ -77,6 +80,7 @@ describe("sideNav helper", () => {
     expect(activeSideNavItem("/variations/p1")).toBe("baselines");
     expect(activeSideNavItem("/variations/details/v1")).toBe("baselines");
     expect(activeSideNavItem("/insights/p1")).toBe("insights");
+    expect(activeSideNavItem("/search/p1")).toBe("search");
     expect(activeSideNavItem("/users")).toBe("users");
     expect(activeSideNavItem("/backups")).toBe("backups");
     expect(activeSideNavItem("/profile")).toBeNull();

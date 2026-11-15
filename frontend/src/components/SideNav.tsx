@@ -17,6 +17,7 @@ import {
   GridViewOutlined,
   HelpOutline,
   InsightsOutlined,
+  SearchOutlined,
   PeopleOutline,
   PhoneAndroid,
   UnfoldMore,
@@ -52,6 +53,9 @@ import {
   VERSION_TEST_ID,
 } from "./SideNav.locators";
 import { motion, radius, tokens, type } from "../theme";
+import { isSearchHotkey } from "../_helpers/screenSearch.helper";
+import { SearchPalette } from "./SearchPalette";
+import { BetaChip } from "./BetaChip";
 
 /** Below this window width the sidebar keeps its icons only (REQ-046-25). */
 export const SIDE_NAV_FOLD_QUERY = "(max-width: 1099.98px)";
@@ -64,6 +68,7 @@ const ICONS: Record<SideNavKey, React.ReactNode> = {
   backups: <BackupOutlined />,
   builds: <ViewAgendaOutlined />,
   baselines: <GridViewOutlined />,
+  search: <SearchOutlined />,
   insights: <InsightsOutlined />,
 };
 
@@ -100,7 +105,7 @@ const initials = (first?: string, last?: string, email?: string) =>
  */
 const SideNav: React.FunctionComponent = () => {
   const folded = useMediaQuery(SIDE_NAV_FOLD_QUERY, { noSsr: true });
-  const { pathname } = useLocation();
+  const { pathname, search } = useLocation();
   const navigate = useNavigate();
   const { user } = useUserState();
   const { projectList, selectedProjectId } = useProjectState();
@@ -115,6 +120,19 @@ const SideNav: React.FunctionComponent = () => {
   const version = window._env_?.VISION_VERSION;
 
   const items = sideNavItems(user?.role, selectedProjectId, projectList.length);
+
+  // `/` opens the search over the page, remembering the build it was pressed on (REQ-053-01, 40)
+  const [paletteOpen, setPaletteOpen] = React.useState(false);
+  const pressedOnBuild = new URLSearchParams(search).get("buildId");
+  React.useEffect(() => {
+    const onKey = (event: KeyboardEvent) => {
+      if (!isSearchHotkey(event) || !selectedProjectId) return;
+      event.preventDefault();
+      setPaletteOpen(true);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [selectedProjectId]);
   const active = activeSideNavItem(pathname);
 
   // the highlight travels to the new item instead of jumping (REQ-018-22)
@@ -153,6 +171,7 @@ const SideNav: React.FunctionComponent = () => {
             {label}
           </Box>
         )}
+        {!folded && item.key === "search" && <BetaChip />}
       </>
     );
     const ref = (element: HTMLElement | null) => {
@@ -516,6 +535,14 @@ const SideNav: React.FunctionComponent = () => {
         open={manualChecksOpen}
         onClose={() => setManualChecksOpen(false)}
       />
+      {selectedProjectId && (
+        <SearchPalette
+          open={paletteOpen}
+          onClose={() => setPaletteOpen(false)}
+          projectId={selectedProjectId}
+          buildId={pressedOnBuild}
+        />
+      )}
     </Box>
   );
 };

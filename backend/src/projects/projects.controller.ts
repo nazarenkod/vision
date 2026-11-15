@@ -26,6 +26,7 @@ import { NoProjectData, ProjectFrom, inBody, inParam } from './project-access';
 import { ProjectAccessService, ProjectMember } from './project-access.service';
 import { CurrentUser } from '../shared/current-user.decorator';
 import { EventsGateway } from '../shared/events/events.gateway';
+import { ScreenSearchService } from '../ui-tree/screen-search.service';
 
 @Controller('projects')
 @ApiTags('projects')
@@ -36,7 +37,8 @@ export class ProjectsController {
     private projectsService: ProjectsService,
     private a11yIssuesService: A11yIssuesService,
     private projectAccess: ProjectAccessService,
-    private eventsGateway: EventsGateway
+    private eventsGateway: EventsGateway,
+    private screenSearchService: ScreenSearchService
   ) {}
 
   @NoProjectData()
@@ -58,6 +60,41 @@ export class ProjectsController {
   @ApiParam({ name: 'id', required: true })
   devices(@Param('id', new ParseUUIDPipe()) id: string) {
     return this.projectsService.findDevices(id);
+  }
+
+  /** Texts, ids and components of the project's screens that hold what is typed (053, beta). */
+  @ProjectFrom(inParam('id', 'project'))
+  @Get(':id/screen-search/suggest')
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  @ApiParam({ name: 'id', required: true })
+  @ApiQuery({ name: 'q', required: true })
+  @ApiQuery({ name: 'buildId', required: false })
+  screenSuggest(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Query('q') q: string,
+    @Query('buildId') buildId?: string
+  ) {
+    return this.screenSearchService.suggest(id, q ?? '', { buildId: buildId || undefined });
+  }
+
+  /** Screens of the project whose UI tree holds a text or what a selector finds (053). */
+  @ProjectFrom(inParam('id', 'project'))
+  @Get(':id/screen-search')
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  @ApiParam({ name: 'id', required: true })
+  @ApiQuery({ name: 'q', required: true, description: 'Text, or a selector: id:, class:, text:, xpath:, component:' })
+  @ApiQuery({ name: 'buildId', required: false, description: 'Search the screens of this build instead of baselines' })
+  @ApiQuery({ name: 'page', required: false })
+  screenSearch(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Query('q') q: string,
+    @Query('buildId') buildId?: string,
+    @Query('page') page?: string
+  ) {
+    const number = Math.max(0, Number.parseInt(page ?? '0', 10) || 0);
+    return this.screenSearchService.search(id, q ?? '', { buildId: buildId || undefined }, number);
   }
 
   @ProjectFrom(inParam('id', 'project'))

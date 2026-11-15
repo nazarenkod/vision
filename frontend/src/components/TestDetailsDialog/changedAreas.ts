@@ -74,6 +74,8 @@ export interface ChangeRow {
   resourceId: string | null;
   // what the UI tree says changed in it, when it says anything
   change: StructuralChange | null;
+  // the element's own key, which names it on other screens too (055); null for loose spots
+  nodeKey: string | null;
   places: Rect[];
   bounds: Rect | null;
 }
@@ -107,6 +109,9 @@ export function changeRows(
       element: group.element,
       resourceId: group.resourceId,
       change: null,
+      nodeKey:
+        regions.find((area) => area.element === group.element && area.key)
+          ?.key ?? null,
       places: group.regions,
       bounds: group.bounds,
     }));
@@ -124,6 +129,7 @@ export function changeRows(
       element: change.element,
       resourceId: change.resourceId || null,
       change,
+      nodeKey: change.key,
       places: [],
       bounds: change.bounds ?? null,
     });
@@ -136,6 +142,7 @@ export function changeRows(
       element: null,
       resourceId: null,
       change: null,
+      nodeKey: null,
       places,
       bounds: union(places),
     });

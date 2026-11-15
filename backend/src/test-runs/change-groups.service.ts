@@ -13,6 +13,7 @@ import { findNoiseHints, NoiseHint } from '../ui-tree/noise-hints';
 import { ComponentChange } from '../ui-tree/screen-checks';
 import { parseJsonArray, parseUiTreeSettings, variableTextAreas } from '../ui-tree/comparison-inputs';
 import { TestRunDto } from './dto/testRun.dto';
+import { elementReview, ReviewedElement, ReviewedRun } from './element-review';
 import { magnitudesSimilar, mapWithConcurrency, SIGNATURE_CONCURRENCY, TestRunsService } from './test-runs.service';
 
 export type ChangeGroupKind = 'component' | 'structural' | 'visual' | 'new';
@@ -62,6 +63,42 @@ export class ChangeGroupsService {
     private uiTreeService: UiTreeService,
     private testRunsService: TestRunsService
   ) {}
+
+  /**
+   * Elements changed on several screens of the build, each with the screens it changed on (055,
+   * beta). Only screens waiting for a decision with a baseline and both UI trees take part.
+   */
+  async elementReview(buildId: string): Promise<ReviewedElement[]> {
+    const runs = await this.prismaService.testRun.findMany({
+      where: {
+        buildId,
+        status: TestStatus.unresolved,
+        baselineName: { not: null },
+        uiTreeName: { not: null },
+        baselineUiTreeName: { not: null },
+      },
+      orderBy: [{ name: 'asc' }, { createdAt: 'asc' }],
+    });
+    const reviewed = await mapWithConcurrency(runs, SIGNATURE_CONCURRENCY, async (run): Promise<ReviewedRun | null> => {
+      const found = await this.uiTreeService.elementChanges(run);
+      return found
+        ? {
+            id: run.id,
+            name: run.name,
+            customTags: run.customTags ?? '',
+            device: run.device ?? '',
+            os: run.os ?? '',
+            browser: run.browser ?? '',
+            viewport: run.viewport ?? '',
+            imageName: run.imageName,
+            baselineName: run.baselineName,
+            merge: run.merge,
+            ...found,
+          }
+        : null;
+    });
+    return elementReview(reviewed.filter((run): run is ReviewedRun => !!run));
+  }
 
   async getGroups(buildId: string): Promise<ChangeGroup[]> {
     const runs = await this.prismaService.testRun.findMany({

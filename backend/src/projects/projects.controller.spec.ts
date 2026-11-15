@@ -7,6 +7,7 @@ import { ProjectsService } from './projects.service';
 import { A11yIssuesService } from '../a11y/a11y-issues.service';
 import { BuildsService } from '../builds/builds.service';
 import { TestVariationsService } from '../test-variations/test-variations.service';
+import { ScreenSearchService } from '../ui-tree/screen-search.service';
 
 describe('Projects Controller', () => {
   let controller: ProjectsController;
@@ -20,6 +21,7 @@ describe('Projects Controller', () => {
         { provide: A11yIssuesService, useValue: {} },
         { provide: ProjectAccessService, useValue: {} },
         { provide: EventsGateway, useValue: {} },
+        { provide: ScreenSearchService, useValue: {} },
       ],
     }).compile();
 
@@ -45,6 +47,7 @@ describe('Projects Controller', () => {
         { provide: A11yIssuesService, useValue: {} },
         { provide: ProjectAccessService, useValue: {} },
         { provide: EventsGateway, useValue: {} },
+        { provide: ScreenSearchService, useValue: {} },
         { provide: BuildsService, useValue: {} },
         { provide: TestVariationsService, useValue: {} },
       ],
@@ -75,7 +78,13 @@ describe('Projects Controller', () => {
     };
     const access = { grantedTo: jest.fn().mockResolvedValue(new Set(granted)), grant: jest.fn() };
     return {
-      controller: new ProjectsController(projectsService as never, {} as never, access as never, {} as never),
+      controller: new ProjectsController(
+        projectsService as never,
+        {} as never,
+        access as never,
+        {} as never,
+        {} as never
+      ),
       access,
     };
   };
@@ -108,7 +117,13 @@ describe('Projects Controller', () => {
       findOne: jest.fn().mockRejectedValue(new Error('Project not found')),
       jiraTypes: jest.fn().mockResolvedValue({ issueTypes: [], linkTypes: [] }),
     };
-    const controller = new ProjectsController(projectsService as never, {} as never, {} as never, {} as never);
+    const controller = new ProjectsController(
+      projectsService as never,
+      {} as never,
+      {} as never,
+      {} as never,
+      {} as never
+    );
     const admin = { id: 'admin', role: 'admin' } as never;
 
     await expect(

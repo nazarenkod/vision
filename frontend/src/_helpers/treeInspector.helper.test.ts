@@ -1,4 +1,10 @@
 import {
+  foldedPath,
+  nodeKind,
+  oneLine,
+  splitId,
+  splitMatch,
+  stepMarked,
   baselineValues,
   comparisonLocation,
   initialOpen,
@@ -31,6 +37,8 @@ const node = (
   text: "",
   attributes: [],
   bounds: { x: 0, y: 0, width: 1080, height: 2400 },
+  clickable: false,
+  wrapper: false,
   ...extra,
 });
 
@@ -265,5 +273,135 @@ describe("tree inspector (062)", () => {
       node: 4,
     });
     expect(readPanelPlace("?buildId=b1&testId=r1")).toBeNull();
+  });
+});
+
+// iOS as it comes: the tab bar's texts under a run of wrappers (063)
+//  0 Application ─ 1 Other ─ 2 Other ─ 3 Other ─┬ 4 StaticText "Кредити"
+//                                               └ 5 Button #Сканувати#PbButton
+const deep: InspectorNode[] = [
+  node(0, null, "Application", { text: "Bank" }),
+  node(1, 0, "Other", { wrapper: true }),
+  node(2, 1, "Other", { wrapper: true }),
+  node(3, 2, "Other", { wrapper: true }),
+  node(4, 3, "StaticText", {
+    text: "Кредити\nВкладка 2 з 5",
+    bounds: { x: 80, y: 770, width: 78, height: 62 },
+  }),
+  node(5, 3, "Button", {
+    id: "Сканувати#PbButton",
+    clickable: true,
+    bounds: { x: 16, y: 700, width: 120, height: 44 },
+  }),
+];
+const all = new Set(deep.map((n) => n.index));
+
+describe("readable tree (063)", () => {
+  it("hides wrappers and lifts their children, counting what was hidden", () => {
+    const rows = visibleRows(deep, all, null, false);
+    expect(shown(rows)).toEqual([0, 4, 5]);
+    expect(rows[1]).toMatchObject({ depth: 1, parent: 0, skipped: 3 });
+  });
+
+  it("shows every node once wrappers are asked for", () => {
+    const rows = visibleRows(deep, all, null, true);
+    expect(shown(rows)).toEqual([0, 1, 2, 3, 4, 5]);
+    expect(rows[4]).toMatchObject({ depth: 4, skipped: 0 });
+  });
+
+  it("gives each row the levels above it for the level lines", () => {
+    const rows = visibleRows(deep, all, null, false);
+    expect(rows[2]).toMatchObject({ levels: [0], parent: 0 });
+    // a folded node says how many it holds
+    const folded = visibleRows(deep, new Set(), null, false);
+    expect(folded).toEqual([
+      expect.objectContaining({ index: 0, open: false, childCount: 2 }),
+    ]);
+  });
+
+  it("folds a run of wrappers in the path and cuts a long one", () => {
+    expect(foldedPath(deep, 4)).toEqual([
+      { kind: "node", index: 0 },
+      { kind: "wrappers", index: 1, count: 3 },
+      { kind: "node", index: 4 },
+    ]);
+    const long = [
+      node(0, null, "Application", {}),
+      node(1, 0, "Window", { text: "w" }),
+      node(2, 1, "Cell", { text: "a" }),
+      node(3, 2, "Cell", { text: "b" }),
+      node(4, 3, "Cell", { text: "c" }),
+      node(5, 4, "StaticText", { text: "d" }),
+    ];
+    expect(foldedPath(long, 5)).toEqual([
+      { kind: "node", index: 0 },
+      { kind: "more", count: 2 },
+      { kind: "node", index: 3 },
+      { kind: "node", index: 4 },
+      { kind: "node", index: 5 },
+    ]);
+  });
+
+  it("marks where a search finds a value", () => {
+    expect(splitMatch("Кредити", "КРЕД")).toEqual({
+      before: "",
+      match: "Кред",
+      after: "ити",
+    });
+    expect(splitMatch("Pay", "x").match).toBe("");
+  });
+
+  it("shows a line break as ↵ on one line", () => {
+    expect(oneLine("Кредити\nВкладка 2 з 5")).toBe("Кредити ↵ Вкладка 2 з 5");
+  });
+
+  it("splits a Compose tag into the id and its component", () => {
+    expect(splitId("Сканувати кю ар код#PbButton")).toEqual({
+      name: "Сканувати кю ар код",
+      component: "PbButton",
+    });
+    expect(splitId("btn_pay")).toEqual({ name: "btn_pay", component: "" });
+  });
+
+  it("names the kind of a node on Android, iOS and the web", () => {
+    const kind = (name: string, extra: Partial<InspectorNode> = {}) =>
+      nodeKind(node(0, null, name, extra));
+    expect(kind("Button")).toBe("button");
+    expect(kind("ImageButton")).toBe("button");
+    expect(kind("StaticText")).toBe("text");
+    expect(kind("TextView")).toBe("text");
+    expect(kind("EditText")).toBe("input");
+    expect(kind("SecureTextField")).toBe("input");
+    expect(kind("ImageView")).toBe("image");
+    expect(kind("Switch")).toBe("toggle");
+    expect(kind("RecyclerView")).toBe("list");
+    expect(kind("Cell")).toBe("cell");
+    expect(kind("Window")).toBe("window");
+    expect(kind("a")).toBe("link");
+    expect(kind("div")).toBe("container");
+    // a container someone can tap is a button
+    expect(kind("Other", { clickable: true })).toBe("button");
+  });
+
+  it("steps to the next and the previous marked node", () => {
+    const marked = [2, 5, 9];
+    expect(stepMarked(marked, 5, 1)).toBe(9);
+    expect(stepMarked(marked, 9, 1)).toBe(2);
+    expect(stepMarked(marked, 2, -1)).toBe(9);
+    // from a node that is not marked: the nearest one that way
+    expect(stepMarked(marked, 6, 1)).toBe(9);
+    expect(stepMarked(marked, 6, -1)).toBe(5);
+    expect(stepMarked(marked, undefined, 1)).toBe(2);
+    expect(stepMarked([], 1, 1)).toBeUndefined();
+  });
+
+  it("never chooses a wrapper on the screenshot", () => {
+    const covering = deep.map((n) =>
+      n.wrapper
+        ? { ...n, bounds: { x: 0, y: 600, width: 390, height: 300 } }
+        : n,
+    );
+    expect(nodeAt({ x: 300, y: 650 }, covering)?.index).toBe(0);
+    expect(nodeAt({ x: 100, y: 800 }, covering)?.index).toBe(4);
   });
 });

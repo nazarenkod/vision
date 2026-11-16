@@ -10,9 +10,28 @@ import {
   Switch,
   TextField,
   ToggleButton,
+  Tooltip,
   Typography,
 } from "@mui/material";
-import { ChevronRight, Search } from "@mui/icons-material";
+import {
+  ChevronRight,
+  ContentCopyOutlined,
+  CropFreeOutlined,
+  ImageOutlined,
+  InputOutlined,
+  KeyboardArrowDown,
+  KeyboardArrowUp,
+  LinkOutlined,
+  Search,
+  SmartButtonOutlined,
+  TextFieldsOutlined,
+  ToggleOnOutlined,
+  UnfoldLessOutlined,
+  UnfoldMoreOutlined,
+  ViewListOutlined,
+  ViewStreamOutlined,
+  WebAssetOutlined,
+} from "@mui/icons-material";
 import {
   A11yReport,
   InspectorNode,
@@ -29,24 +48,36 @@ import { SlidingToggleGroup } from "../motion/SlidingToggleGroup";
 import { describeChange } from "../ChangeGroups";
 import {
   baselineValues,
+  foldedPath,
   initialOpen,
   isMarked,
+  isShown,
   keepWithAncestors,
   keyAction,
   marksByKey,
   matchesQuery,
+  NodeKind,
+  nodeKind,
   NodeMark,
+  oneLine,
   openTo,
   sameNode,
+  splitId,
+  splitMatch,
+  stepMarked,
   visibleRows,
 } from "../../_helpers/treeInspector.helper";
 import { InspectorTrees, treeOf } from "./useInspectorTrees";
 
 // rows have one height, so only those in view are drawn: a tree can hold thousands
-const ROW = 28;
+const ROW = 30;
 // rows drawn above and below the view, so a quick scroll shows no gap
 const SPARE_ROWS = 12;
-const PANEL_TREE_HEIGHT = 360;
+// one level of the tree: the line sits under the chevron of the level above
+const LEVEL = 16;
+// the tree's height in the panel: dragged between these, kept in this browser (REQ-063-16)
+const TREE_HEIGHT = { initial: 360, min: 160, max: 800, step: 24 };
+const TREE_HEIGHT_KEY = "vision.treeHeight";
 // how long a copy button says Copied (REQ-062-24)
 const COPIED_MS = 2000;
 
@@ -59,6 +90,99 @@ const CHANGE_TONE: Record<StructuralChange["kind"], PillTone> = {
   resized: "neutral",
   moved: "neutral",
 };
+
+// one icon per kind of element, so a button reads apart from a text at a glance (REQ-063-07)
+const KIND_ICON: Record<NodeKind, typeof CropFreeOutlined> = {
+  button: SmartButtonOutlined,
+  link: LinkOutlined,
+  text: TextFieldsOutlined,
+  input: InputOutlined,
+  image: ImageOutlined,
+  toggle: ToggleOnOutlined,
+  list: ViewListOutlined,
+  cell: ViewStreamOutlined,
+  window: WebAssetOutlined,
+  container: CropFreeOutlined,
+};
+const KIND_COLOR: Record<NodeKind, string> = {
+  button: tokens.brand,
+  link: tokens.brand,
+  toggle: tokens.brand,
+  input: tokens.text,
+  text: tokens.textSecondary,
+  image: tokens.status.new.fg,
+  list: tokens.textMuted,
+  cell: tokens.textMuted,
+  window: tokens.textMuted,
+  container: tokens.textMuted,
+};
+
+const readHeight = () => {
+  try {
+    const kept = Number(window.localStorage.getItem(TREE_HEIGHT_KEY));
+    return kept >= TREE_HEIGHT.min && kept <= TREE_HEIGHT.max
+      ? kept
+      : TREE_HEIGHT.initial;
+  } catch {
+    return TREE_HEIGHT.initial;
+  }
+};
+const keepHeight = (height: number) => {
+  try {
+    window.localStorage.setItem(TREE_HEIGHT_KEY, String(height));
+  } catch {
+    // a private window keeps no height: the default stays
+  }
+};
+const clampHeight = (height: number) =>
+  Math.round(Math.min(TREE_HEIGHT.max, Math.max(TREE_HEIGHT.min, height)));
+
+/** A value with the part a search found marked. */
+const Marked: React.FunctionComponent<{ value: string; query: string }> = ({
+  value,
+  query,
+}) => {
+  const { before, match, after } = splitMatch(value, query);
+  if (!match) return <>{value}</>;
+  return (
+    <>
+      {before}
+      <Box
+        component="mark"
+        sx={{
+          bgcolor: tokens.status.changed.bg,
+          color: tokens.status.changed.fg,
+          borderRadius: radius.control,
+          px: "1px",
+        }}
+      >
+        {match}
+      </Box>
+      {after}
+    </>
+  );
+};
+
+export const KindIcon: React.FunctionComponent<{
+  node: InspectorNode;
+  size?: number;
+}> = ({ node, size = 16 }) => {
+  const kind = nodeKind(node);
+  const Icon = KIND_ICON[kind];
+  return (
+    <Icon
+      aria-hidden
+      data-kind={kind}
+      sx={{ fontSize: size, flexShrink: 0, color: KIND_COLOR[kind] }}
+    />
+  );
+};
+
+const smallButton = {
+  p: 0.5,
+  borderRadius: radius.control,
+  color: tokens.textSecondary,
+} as const;
 
 interface Props {
   // the check has a tree of its own; without one the tab explains how to send it (REQ-062-07)
@@ -84,7 +208,7 @@ interface Props {
   fill?: boolean;
 }
 
-/** The check's UI tree beside the screenshot, as in Appium Inspector (062). */
+/** The check's UI tree beside the screenshot, as in Appium Inspector (062, 063). */
 export const ElementsTab: React.FunctionComponent<Props> = ({
   hasTree,
   testRunId,
@@ -122,7 +246,12 @@ export const ElementsTab: React.FunctionComponent<Props> = ({
     marks.get(node.key);
 
   const [query, setQuery] = React.useState("");
-  const [onlyMarked, setOnlyMarked] = React.useState(false);
+  const [filter, setFilter] = React.useState<
+    "changed" | "a11y" | "clickable" | null
+  >(null);
+  // wrappers only lay the others out: hidden unless asked for (REQ-063-01)
+  const [wrappers, setWrappers] = React.useState(false);
+  const [match, setMatch] = React.useState(0);
   // what is unfolded, per tree: set when a tree first comes (REQ-062-05)
   const [open, setOpen] = React.useState<Record<TreeSide, Set<number>>>({
     current: new Set(),
@@ -138,18 +267,67 @@ export const ElementsTab: React.FunctionComponent<Props> = ({
     }));
   }, [tree, side, marks]);
 
+  // a wrapper chosen by a link is shown with the others (REQ-063-19)
+  React.useEffect(() => {
+    if (chosen !== undefined && nodes[chosen]?.wrapper) setWrappers(true);
+  }, [chosen, nodes]);
+
+  const passesFilter = React.useCallback(
+    (node: InspectorNode) => {
+      const mark = marks.get(node.key);
+      if (filter === "changed") return !!mark?.change;
+      if (filter === "a11y") return !!mark?.a11y;
+      if (filter === "clickable") return node.clickable;
+      return true;
+    },
+    [filter, marks],
+  );
   const keep = React.useMemo(() => {
-    if (!query.trim() && !onlyMarked) return null;
+    if (!query.trim() && !filter) return null;
     return keepWithAncestors(
       nodes,
       (node) =>
+        isShown(node, wrappers) &&
         matchesQuery(node, query) &&
-        (!onlyMarked || isMarked(marks.get(node.key))),
+        passesFilter(node),
     );
-  }, [nodes, query, onlyMarked, marks]);
+  }, [nodes, query, filter, wrappers, passesFilter]);
   const rows = React.useMemo(
-    () => visibleRows(nodes, open[side], keep),
-    [nodes, open, side, keep],
+    () => visibleRows(nodes, open[side], keep, wrappers),
+    [nodes, open, side, keep, wrappers],
+  );
+
+  // what the search finds, in tree order, to step through (REQ-063-11)
+  const hits = React.useMemo(
+    () =>
+      query.trim()
+        ? nodes
+            .filter(
+              (node) =>
+                isShown(node, wrappers) &&
+                matchesQuery(node, query) &&
+                passesFilter(node),
+            )
+            .map((node) => node.index)
+        : [],
+    [nodes, query, wrappers, passesFilter],
+  );
+  const marked = React.useMemo(
+    () =>
+      nodes
+        .filter(
+          (node) => isShown(node, wrappers) && isMarked(marks.get(node.key)),
+        )
+        .map((node) => node.index),
+    [nodes, wrappers, marks],
+  );
+  const counts = React.useMemo(
+    () => ({
+      changed: nodes.filter((node) => marks.get(node.key)?.change).length,
+      a11y: nodes.filter((node) => marks.get(node.key)?.a11y).length,
+      clickable: nodes.filter((node) => node.clickable).length,
+    }),
+    [nodes, marks],
   );
 
   const toggle = (index: number, unfold: boolean) =>
@@ -159,11 +337,35 @@ export const ElementsTab: React.FunctionComponent<Props> = ({
       else next.delete(index);
       return { ...all, [side]: next };
     });
+  const unfoldBranch = (index: number) =>
+    setOpen((all) => {
+      const next = new Set(all[side]);
+      const stack = [index];
+      while (stack.length) {
+        const at = stack.pop() as number;
+        next.add(at);
+        nodes.forEach((node) => node.parent === at && stack.push(node.index));
+      }
+      return { ...all, [side]: next };
+    });
+
+  const stepHit = (direction: 1 | -1) => {
+    if (!hits.length) return;
+    const next = (match + direction + hits.length) % hits.length;
+    setMatch(next);
+    onChoose(hits[next]);
+  };
+  const stepChange = (direction: 1 | -1) => {
+    const next = stepMarked(marked, chosen, direction);
+    if (next !== undefined) onChoose(next);
+  };
 
   // a node chosen on the screenshot: its way down is unfolded and its row brought into view (REQ-062-12)
   const listRef = React.useRef<HTMLDivElement>(null);
+  const searchRef = React.useRef<HTMLInputElement>(null);
   const [scrollTop, setScrollTop] = React.useState(0);
-  const [viewHeight, setViewHeight] = React.useState(PANEL_TREE_HEIGHT);
+  const [height, setHeight] = React.useState(readHeight);
+  const [viewHeight, setViewHeight] = React.useState(height);
   React.useEffect(() => {
     if (chosen === undefined || !nodes[chosen]) return;
     setOpen((all) => {
@@ -182,14 +384,14 @@ export const ElementsTab: React.FunctionComponent<Props> = ({
   React.useLayoutEffect(() => {
     const list = listRef.current;
     if (!list) return;
-    setViewHeight(list.clientHeight || PANEL_TREE_HEIGHT);
+    setViewHeight(list.clientHeight || height);
     if (typeof ResizeObserver === "undefined") return;
     const observer = new ResizeObserver(() =>
-      setViewHeight(list.clientHeight || PANEL_TREE_HEIGHT),
+      setViewHeight(list.clientHeight || height),
     );
     observer.observe(list);
     return () => observer.disconnect();
-  }, [tree]);
+  }, [tree, height]);
 
   const first = Math.max(0, Math.floor(scrollTop / ROW) - SPARE_ROWS);
   const last = Math.min(
@@ -197,26 +399,135 @@ export const ElementsTab: React.FunctionComponent<Props> = ({
     Math.ceil((scrollTop + viewHeight) / ROW) + SPARE_ROWS,
   );
 
+  const node = chosen === undefined ? undefined : nodes[chosen];
+  // the level the chosen node lies on: its line is lit (REQ-063-06)
+  const chosenRow = rows.find((row) => row.index === chosen);
+  const litLevel = chosenRow?.parent ?? null;
+
+  const [copiedRow, setCopiedRow] = React.useState<number | null>(null);
+  React.useEffect(() => {
+    if (copiedRow === null) return;
+    const timer = setTimeout(() => setCopiedRow(null), COPIED_MS);
+    return () => clearTimeout(timer);
+  }, [copiedRow]);
+  const copySelector = (item: InspectorNode) => {
+    if (!item.selector) return;
+    navigator.clipboard?.writeText(item.selector).catch(() => undefined);
+    setCopiedRow(item.index);
+  };
+
   const onKeyDown = (event: React.KeyboardEvent) => {
-    const action = keyAction(event.key, rows, chosen, nodes);
+    // the comparison's own keys (A, X, E…) stay out of the tree's way
+    if (event.metaKey || event.ctrlKey || event.altKey) return;
+    const key = event.key;
+    if (key === "/") {
+      event.preventDefault();
+      searchRef.current?.focus();
+      return;
+    }
+    if (key === "n" || key === "N") {
+      event.preventDefault();
+      event.stopPropagation();
+      stepChange(event.shiftKey ? -1 : 1);
+      return;
+    }
+    if ((key === "c" || key === "C") && node) {
+      event.preventDefault();
+      event.stopPropagation();
+      copySelector(node);
+      return;
+    }
+    if (key === "*" && chosen !== undefined) {
+      event.preventDefault();
+      unfoldBranch(chosen);
+      return;
+    }
+    const action = keyAction(key, rows, chosen, nodes);
     if (!action) return;
     event.preventDefault();
+    event.stopPropagation();
     if ("select" in action) onChoose(action.select);
     if ("open" in action) toggle(action.open, true);
     if ("fold" in action) toggle(action.fold, false);
   };
 
-  const node = chosen === undefined ? undefined : nodes[chosen];
+  // the splitter between the tree and the card (REQ-063-16)
+  const resizeFrom = React.useRef<{ y: number; height: number } | null>(null);
+  const setTreeHeight = (next: number) => {
+    const clamped = clampHeight(next);
+    setHeight(clamped);
+    keepHeight(clamped);
+  };
+
+  const chip = (
+    key: "changed" | "a11y" | "clickable",
+    label: string,
+    dot: string,
+  ) => {
+    const on = filter === key;
+    return (
+      <Box
+        component="button"
+        type="button"
+        key={key}
+        aria-pressed={on}
+        data-testid={`treeChip-${key}`}
+        onClick={() => setFilter(on ? null : key)}
+        sx={{
+          height: 28,
+          px: 1.25,
+          display: "inline-flex",
+          alignItems: "center",
+          gap: 0.75,
+          borderRadius: radius.pill,
+          border: `1px solid ${on ? tokens.brand : tokens.borderStrong}`,
+          bgcolor: on ? tokens.brandSoft : "transparent",
+          color: on ? tokens.text : tokens.textSecondary,
+          fontSize: type.caption,
+          fontWeight: 500,
+          fontFamily: "inherit",
+          cursor: "pointer",
+          transition: `background-color ${motion.fast}ms, border-color ${motion.fast}ms`,
+        }}
+      >
+        <Box
+          component="span"
+          sx={{ width: 7, height: 7, borderRadius: radius.pill, bgcolor: dot }}
+        />
+        {label}
+        <Box
+          component="span"
+          sx={{ color: tokens.textMuted, fontVariantNumeric: "tabular-nums" }}
+        >
+          {counts[key]}
+        </Box>
+      </Box>
+    );
+  };
 
   const header = (
     <Box sx={{ display: "flex", flexDirection: "column", gap: 1.25 }}>
-      <Box
-        sx={{ display: "flex", gap: 1, alignItems: "center", flexWrap: "wrap" }}
-      >
+      <Box sx={{ display: "flex", gap: 1, alignItems: "center" }}>
         <TextField
           size="small"
           value={query}
-          onChange={(event) => setQuery(event.target.value)}
+          inputRef={searchRef}
+          onChange={(event) => {
+            setQuery(event.target.value);
+            setMatch(0);
+          }}
+          onKeyDown={(event) => {
+            if (event.key === "Enter") {
+              event.preventDefault();
+              stepHit(event.shiftKey ? -1 : 1);
+            }
+            // Esc clears the search; the comparison stays open (REQ-063-18)
+            if (event.key === "Escape" && query) {
+              event.preventDefault();
+              event.stopPropagation();
+              setQuery("");
+            }
+          }}
           placeholder={t("tree.search")}
           inputProps={{
             "aria-label": t("tree.search"),
@@ -228,8 +539,44 @@ export const ElementsTab: React.FunctionComponent<Props> = ({
                 <Search fontSize="small" sx={{ color: tokens.textMuted }} />
               </InputAdornment>
             ),
+            endAdornment: query.trim() ? (
+              <InputAdornment position="end" sx={{ gap: 0.25 }}>
+                <Typography
+                  variant="caption"
+                  color="textSecondary"
+                  data-testid="treeHits"
+                  sx={{ fontVariantNumeric: "tabular-nums", mr: 0.5 }}
+                >
+                  {hits.length
+                    ? t("tree.hitOf", {
+                        at: Math.min(match, hits.length - 1) + 1,
+                        count: hits.length,
+                      })
+                    : "0"}
+                </Typography>
+                <IconButton
+                  size="small"
+                  aria-label={t("tree.prevHit")}
+                  onClick={() => stepHit(-1)}
+                  disabled={!hits.length}
+                  sx={smallButton}
+                >
+                  <KeyboardArrowUp fontSize="small" />
+                </IconButton>
+                <IconButton
+                  size="small"
+                  aria-label={t("tree.nextHit")}
+                  data-testid="treeNextHit"
+                  onClick={() => stepHit(1)}
+                  disabled={!hits.length}
+                  sx={smallButton}
+                >
+                  <KeyboardArrowDown fontSize="small" />
+                </IconButton>
+              </InputAdornment>
+            ) : undefined,
           }}
-          sx={{ flex: "1 1 180px", minWidth: 0 }}
+          sx={{ flex: 1, minWidth: 0 }}
         />
         <SlidingToggleGroup
           size="small"
@@ -250,36 +597,447 @@ export const ElementsTab: React.FunctionComponent<Props> = ({
         sx={{
           display: "flex",
           alignItems: "center",
-          justifyContent: "space-between",
-          gap: 1,
+          gap: 0.75,
           flexWrap: "wrap",
         }}
       >
-        <FormControlLabel
-          control={
-            <Switch
-              size="small"
-              checked={onlyMarked}
-              onChange={(_, on) => setOnlyMarked(on)}
-              inputProps={{ "aria-label": t("tree.onlyMarked") }}
-              data-testid="treeOnlyMarked"
-            />
-          }
-          label={
-            <Typography variant="body2" color="textSecondary">
-              {t("tree.onlyMarked")}
-            </Typography>
-          }
-          sx={{ mr: 0 }}
-        />
-        {tree && (
+        {chip("changed", t("tree.chipChanged"), tokens.status.changed.bar)}
+        {chip("a11y", t("tree.chipA11y"), tokens.a11y)}
+        {chip("clickable", t("tree.chipClickable"), tokens.brand)}
+        <Box sx={{ flex: 1 }} />
+        <Tooltip title={t("tree.wrappersHelp")} disableInteractive>
+          <FormControlLabel
+            control={
+              <Switch
+                size="small"
+                checked={wrappers}
+                onChange={(_, on) => setWrappers(on)}
+                inputProps={{ "aria-label": t("tree.wrappers") }}
+                data-testid="treeWrappers"
+              />
+            }
+            label={
+              <Typography variant="caption" color="textSecondary">
+                {t("tree.wrappers")}
+              </Typography>
+            }
+            sx={{ mr: 0 }}
+          />
+        </Tooltip>
+      </Box>
+    </Box>
+  );
+
+  const pathBar = (
+    <Box
+      sx={{
+        display: "flex",
+        alignItems: "center",
+        gap: 0.5,
+        minHeight: 36,
+        pl: 1,
+        pr: 0.5,
+        borderBottom: `1px solid ${tokens.border}`,
+        bgcolor: tokens.subtle,
+      }}
+    >
+      <Box
+        component="nav"
+        aria-label={t("tree.path")}
+        data-testid="treePath"
+        sx={{
+          flex: 1,
+          minWidth: 0,
+          display: "flex",
+          alignItems: "center",
+          gap: 0.25,
+          overflow: "hidden",
+          whiteSpace: "nowrap",
+          fontSize: type.caption,
+        }}
+      >
+        {node ? (
+          foldedPath(nodes, node.index).map((step, i) => {
+            const sep = i > 0 && (
+              <Box
+                component="span"
+                aria-hidden
+                sx={{ color: tokens.textMuted }}
+              >
+                ›
+              </Box>
+            );
+            if (step.kind === "more")
+              return (
+                <React.Fragment key={`more-${i}`}>
+                  {sep}
+                  <Box
+                    component="span"
+                    sx={{ color: tokens.textMuted, px: 0.5 }}
+                  >
+                    …
+                  </Box>
+                </React.Fragment>
+              );
+            const at = nodes[step.index];
+            const isLast = step.kind === "node" && step.index === node.index;
+            const label =
+              step.kind === "wrappers"
+                ? `⋯ ${step.count}`
+                : at.id
+                  ? `${at.name} #${splitId(at.id).name}`
+                  : at.name;
+            return (
+              <React.Fragment key={`${step.kind}-${step.index}`}>
+                {sep}
+                <Box
+                  component="button"
+                  type="button"
+                  title={
+                    step.kind === "wrappers"
+                      ? t("tree.wrappersHidden", { count: step.count })
+                      : at.className
+                  }
+                  onClick={() => {
+                    if (step.kind === "wrappers") setWrappers(true);
+                    onChoose(step.index);
+                  }}
+                  sx={{
+                    // the folded wrappers and the chosen node keep their width; names give way
+                    flexShrink: isLast || step.kind === "wrappers" ? 0 : 1,
+                    minWidth: 0,
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    border: 0,
+                    px: 0.75,
+                    py: 0.25,
+                    borderRadius: radius.control,
+                    font: "inherit",
+                    fontWeight: isLast ? 600 : 400,
+                    color: isLast
+                      ? tokens.text
+                      : step.kind === "wrappers"
+                        ? tokens.textMuted
+                        : tokens.textSecondary,
+                    bgcolor: isLast ? tokens.border : "transparent",
+                    cursor: "pointer",
+                  }}
+                >
+                  {label}
+                </Box>
+              </React.Fragment>
+            );
+          })
+        ) : (
           <Typography variant="caption" color="textSecondary">
             {t("tree.count", { count: nodes.length })}
           </Typography>
         )}
       </Box>
+      <Box
+        sx={{
+          width: "1px",
+          height: 18,
+          bgcolor: tokens.borderStrong,
+          mx: 0.25,
+        }}
+      />
+      <Tooltip title={t("tree.prevChange")} disableInteractive>
+        <span>
+          <IconButton
+            size="small"
+            aria-label={t("tree.prevChange")}
+            onClick={() => stepChange(-1)}
+            disabled={!marked.length}
+            sx={{ ...smallButton, color: tokens.status.changed.fg }}
+          >
+            <KeyboardArrowUp fontSize="small" />
+          </IconButton>
+        </span>
+      </Tooltip>
+      <Typography
+        variant="caption"
+        color="textSecondary"
+        data-testid="treeChangeAt"
+        sx={{
+          fontVariantNumeric: "tabular-nums",
+          minWidth: 32,
+          textAlign: "center",
+        }}
+      >
+        {`${chosen !== undefined && marked.includes(chosen) ? marked.indexOf(chosen) + 1 : "–"}/${marked.length}`}
+      </Typography>
+      <Tooltip title={t("tree.nextChange")} disableInteractive>
+        <span>
+          <IconButton
+            size="small"
+            aria-label={t("tree.nextChange")}
+            data-testid="treeNextChange"
+            onClick={() => stepChange(1)}
+            disabled={!marked.length}
+            sx={{ ...smallButton, color: tokens.status.changed.fg }}
+          >
+            <KeyboardArrowDown fontSize="small" />
+          </IconButton>
+        </span>
+      </Tooltip>
+      <Tooltip title={t("tree.expandAll")} disableInteractive>
+        <IconButton
+          size="small"
+          aria-label={t("tree.expandAll")}
+          data-testid="treeExpandAll"
+          onClick={() =>
+            setOpen((all) => ({
+              ...all,
+              [side]: new Set(nodes.map((item) => item.index)),
+            }))
+          }
+          sx={smallButton}
+        >
+          <UnfoldMoreOutlined fontSize="small" />
+        </IconButton>
+      </Tooltip>
+      <Tooltip title={t("tree.collapseAll")} disableInteractive>
+        <IconButton
+          size="small"
+          aria-label={t("tree.collapseAll")}
+          data-testid="treeCollapseAll"
+          onClick={() => setOpen((all) => ({ ...all, [side]: new Set() }))}
+          sx={smallButton}
+        >
+          <UnfoldLessOutlined fontSize="small" />
+        </IconButton>
+      </Tooltip>
     </Box>
   );
+
+  const row = (item: (typeof rows)[number], top: number) => {
+    const at = nodes[item.index];
+    const mark = markOf(at);
+    const isChosen = item.index === chosen;
+    const isPointed = item.index === pointed;
+    const { name: idName, component } = splitId(at.id);
+    const text = oneLine(at.text);
+    return (
+      <Box
+        key={item.index}
+        role="treeitem"
+        aria-level={item.depth + 1}
+        aria-selected={isChosen}
+        aria-expanded={item.hasChildren ? item.open : undefined}
+        data-testid="treeRow"
+        data-index={item.index}
+        onClick={() => onChoose(item.index)}
+        onMouseEnter={() => onPoint(item.index)}
+        sx={{
+          position: "absolute",
+          top,
+          left: 0,
+          right: 0,
+          height: ROW,
+          display: "flex",
+          alignItems: "center",
+          pl: 0.75,
+          pr: 1,
+          cursor: "pointer",
+          fontSize: type.small,
+          whiteSpace: "nowrap",
+          overflow: "hidden",
+          bgcolor: isChosen
+            ? tokens.brandSoft
+            : isPointed
+              ? tokens.subtle
+              : "transparent",
+          boxShadow: isChosen ? `inset 0 0 0 1px ${tokens.brand}` : "none",
+          transition: `background-color ${motion.fast}ms`,
+          opacity: at.bounds ? 1 : 0.6,
+          "&:hover .rowCopy": { visibility: "visible" },
+        }}
+      >
+        {item.levels.map((level) => (
+          <Box
+            key={level}
+            aria-hidden
+            sx={{
+              flexShrink: 0,
+              alignSelf: "stretch",
+              width: LEVEL - 7,
+              ml: "7px",
+              borderLeft: `1px solid ${level === litLevel ? tokens.brand : tokens.border}`,
+            }}
+          />
+        ))}
+        {item.hasChildren ? (
+          <IconButton
+            size="small"
+            tabIndex={-1}
+            aria-label={t(item.open ? "tree.fold" : "tree.expand", {
+              name: at.name,
+            })}
+            onClick={(event) => {
+              event.stopPropagation();
+              toggle(item.index, !item.open);
+            }}
+            sx={{ p: 0.25, color: tokens.textMuted, flexShrink: 0 }}
+          >
+            <ChevronRight
+              sx={{
+                fontSize: 16,
+                transform: item.open ? "rotate(90deg)" : "none",
+                transition: `transform ${motion.fast}ms`,
+              }}
+            />
+          </IconButton>
+        ) : (
+          <Box sx={{ width: 22, flexShrink: 0 }} />
+        )}
+        <Box sx={{ mx: 0.5, display: "flex" }}>
+          <KindIcon node={at} />
+        </Box>
+        <Box
+          component="span"
+          sx={{
+            flexShrink: 0,
+            fontWeight: isChosen ? 600 : 500,
+            color: at.wrapper ? tokens.textMuted : tokens.text,
+            mr: 0.75,
+          }}
+        >
+          <Marked value={at.name} query={query} />
+        </Box>
+        {idName && (
+          <Box
+            component="span"
+            title={at.id}
+            sx={{
+              flex: "0 1 auto",
+              minWidth: 24,
+              maxWidth: 160,
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              font: `400 ${type.caption}px ${tokens.mono}`,
+              color: tokens.textSecondary,
+              mr: 0.75,
+            }}
+          >
+            #<Marked value={idName} query={query} />
+          </Box>
+        )}
+        {component && (
+          <Box
+            component="span"
+            data-testid="treeComponent"
+            sx={{
+              flexShrink: 0,
+              font: `500 ${type.caption}px ${tokens.mono}`,
+              color: tokens.variable,
+              bgcolor: tokens.variableSoft,
+              px: 0.75,
+              borderRadius: radius.pill,
+              mr: 0.75,
+            }}
+          >
+            {component}
+          </Box>
+        )}
+        <Box
+          component="span"
+          sx={{
+            flex: "1 1 auto",
+            minWidth: 0,
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            color: tokens.textMuted,
+          }}
+        >
+          {text && (
+            <>
+              “<Marked value={text} query={query} />”
+            </>
+          )}
+        </Box>
+        {item.skipped > 0 && (
+          <Box
+            component="span"
+            data-testid="treeSkipped"
+            title={t("tree.wrappersHidden", { count: item.skipped })}
+            sx={{
+              flexShrink: 0,
+              ml: 0.75,
+              font: `500 ${type.caption}px ${tokens.mono}`,
+              color: tokens.textMuted,
+              border: `1px dashed ${tokens.borderStrong}`,
+              px: 0.5,
+              borderRadius: radius.pill,
+              lineHeight: "16px",
+            }}
+          >
+            +{item.skipped}
+          </Box>
+        )}
+        {at.selector && (
+          <Tooltip
+            title={
+              copiedRow === item.index
+                ? t("tree.copied")
+                : t("tree.copySelector")
+            }
+            disableInteractive
+          >
+            <IconButton
+              size="small"
+              className="rowCopy"
+              data-testid="rowCopy"
+              aria-label={t("tree.copySelector")}
+              onClick={(event) => {
+                event.stopPropagation();
+                copySelector(at);
+              }}
+              sx={{
+                ...smallButton,
+                ml: 0.5,
+                flexShrink: 0,
+                visibility:
+                  isChosen || copiedRow === item.index ? "visible" : "hidden",
+              }}
+            >
+              <ContentCopyOutlined sx={{ fontSize: 14 }} />
+            </IconButton>
+          </Tooltip>
+        )}
+        {item.hasChildren && !item.open && (
+          <Box
+            component="span"
+            title={t("tree.inside")}
+            sx={{
+              flexShrink: 0,
+              ml: 0.75,
+              fontSize: type.caption,
+              color: tokens.textMuted,
+              fontVariantNumeric: "tabular-nums",
+            }}
+          >
+            {item.childCount}
+          </Box>
+        )}
+        <Box sx={{ display: "flex", gap: 0.5, flexShrink: 0, ml: 0.75 }}>
+          {mark?.change && (
+            <StatusPill
+              tone={CHANGE_TONE[mark.change]}
+              label={t(`tree.change.${mark.change}`)}
+            />
+          )}
+          {!!mark?.a11y && (
+            <StatusPill
+              tone="changed"
+              label={t("tree.a11y")}
+              title={t("tree.a11yTitle")}
+            />
+          )}
+        </Box>
+      </Box>
+    );
+  };
 
   const body = () => {
     if (side === "current" && !hasTree)
@@ -354,168 +1112,117 @@ export const ElementsTab: React.FunctionComponent<Props> = ({
           </Alert>
         )}
         <Box
-          ref={listRef}
-          role="tree"
-          aria-label={t("tree.label")}
-          tabIndex={0}
-          data-testid="tree"
-          onKeyDown={onKeyDown}
-          onScroll={(event) => setScrollTop(event.currentTarget.scrollTop)}
-          onMouseLeave={() => onPoint(undefined)}
           sx={{
-            position: "relative",
             border: `1px solid ${tokens.border}`,
             borderRadius: radius.control,
-            overflow: "auto",
-            ...(fill
-              ? { flex: 1, minHeight: 200 }
-              : { height: PANEL_TREE_HEIGHT, flexShrink: 0 }),
-            outline: "none",
-            "&:focus-visible": { boxShadow: `0 0 0 2px ${tokens.brand}` },
+            overflow: "hidden",
+            display: "flex",
+            flexDirection: "column",
+            ...(fill ? { flex: 1, minHeight: 240 } : { flexShrink: 0 }),
           }}
         >
-          {rows.length === 0 ? (
-            <Typography
-              variant="body2"
-              color="textSecondary"
-              sx={{ p: 2, textAlign: "center" }}
-            >
-              {t("tree.nothingFound")}
-            </Typography>
-          ) : (
-            <Box sx={{ height: rows.length * ROW, position: "relative" }}>
-              {rows.slice(first, last).map((row, i) => {
-                const item = nodes[row.index];
-                const mark = markOf(item);
-                const isChosen = row.index === chosen;
-                const isPointed = row.index === pointed;
-                return (
-                  <Box
-                    key={row.index}
-                    role="treeitem"
-                    aria-level={row.depth + 1}
-                    aria-selected={isChosen}
-                    aria-expanded={row.hasChildren ? row.open : undefined}
-                    data-testid="treeRow"
-                    data-index={row.index}
-                    onClick={() => onChoose(row.index)}
-                    onMouseEnter={() => onPoint(row.index)}
-                    sx={{
-                      position: "absolute",
-                      top: (first + i) * ROW,
-                      left: 0,
-                      right: 0,
-                      height: ROW,
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 0.75,
-                      pl: `${4 + row.depth * 14}px`,
-                      pr: 1,
-                      cursor: "pointer",
-                      fontSize: type.small,
-                      whiteSpace: "nowrap",
-                      bgcolor: isChosen
-                        ? tokens.brandSoft
-                        : isPointed
-                          ? tokens.subtle
-                          : "transparent",
-                      transition: `background-color ${motion.fast}ms`,
-                      opacity: item.bounds ? 1 : 0.6,
-                    }}
-                  >
-                    {row.hasChildren ? (
-                      <IconButton
-                        size="small"
-                        tabIndex={-1}
-                        aria-label={t(row.open ? "tree.fold" : "tree.expand", {
-                          name: item.name,
-                        })}
-                        onClick={(event) => {
-                          event.stopPropagation();
-                          toggle(row.index, !row.open);
-                        }}
-                        sx={{ p: 0.25, color: tokens.textMuted }}
-                      >
-                        <ChevronRight
-                          fontSize="small"
-                          sx={{
-                            transform: row.open ? "rotate(90deg)" : "none",
-                            transition: `transform ${motion.fast}ms`,
-                          }}
-                        />
-                      </IconButton>
-                    ) : (
-                      <Box sx={{ width: 24, flexShrink: 0 }} />
-                    )}
-                    <Box
-                      component="span"
-                      sx={{
-                        fontWeight: isChosen ? 600 : 500,
-                        color: tokens.text,
-                      }}
-                    >
-                      {item.name}
-                    </Box>
-                    {item.id && (
-                      <Box
-                        component="span"
-                        sx={{
-                          font: `400 ${type.caption}px ${tokens.mono}`,
-                          color: tokens.textSecondary,
-                        }}
-                      >
-                        #{item.id}
-                      </Box>
-                    )}
-                    {item.text && (
-                      <Box
-                        component="span"
-                        sx={{
-                          color: tokens.textMuted,
-                          overflow: "hidden",
-                          textOverflow: "ellipsis",
-                          minWidth: 0,
-                          flex: 1,
-                        }}
-                      >
-                        “{item.text}”
-                      </Box>
-                    )}
-                    <Box
-                      sx={{
-                        ml: "auto",
-                        display: "flex",
-                        gap: 0.5,
-                        flexShrink: 0,
-                      }}
-                    >
-                      {mark?.change && (
-                        <StatusPill
-                          tone={CHANGE_TONE[mark.change]}
-                          label={t(`tree.change.${mark.change}`)}
-                        />
-                      )}
-                      {!!mark?.a11y && (
-                        <StatusPill
-                          tone="changed"
-                          label={t("tree.a11y")}
-                          title={t("tree.a11yTitle")}
-                        />
-                      )}
-                    </Box>
-                  </Box>
-                );
-              })}
-            </Box>
-          )}
+          {pathBar}
+          <Box
+            ref={listRef}
+            role="tree"
+            aria-label={t("tree.label")}
+            tabIndex={0}
+            data-testid="tree"
+            onKeyDown={onKeyDown}
+            onScroll={(event) => setScrollTop(event.currentTarget.scrollTop)}
+            onMouseLeave={() => onPoint(undefined)}
+            sx={{
+              position: "relative",
+              // the rows never scroll sideways: text and ids give way, marks stay (REQ-063-09)
+              overflowY: "auto",
+              overflowX: "hidden",
+              py: 0.5,
+              ...(fill ? { flex: 1, minHeight: 0 } : { height }),
+              outline: "none",
+              "&:focus-visible": {
+                boxShadow: `inset 0 0 0 2px ${tokens.brand}`,
+              },
+            }}
+          >
+            {rows.length === 0 ? (
+              <Typography
+                variant="body2"
+                color="textSecondary"
+                sx={{ p: 2, textAlign: "center" }}
+              >
+                {t("tree.nothingFound")}
+              </Typography>
+            ) : (
+              <Box sx={{ height: rows.length * ROW, position: "relative" }}>
+                {rows
+                  .slice(first, last)
+                  .map((item, i) => row(item, (first + i) * ROW))}
+              </Box>
+            )}
+          </Box>
         </Box>
+        {!fill && (
+          <Box
+            role="separator"
+            aria-orientation="horizontal"
+            aria-label={t("tree.resize")}
+            aria-valuenow={height}
+            aria-valuemin={TREE_HEIGHT.min}
+            aria-valuemax={TREE_HEIGHT.max}
+            tabIndex={0}
+            data-testid="treeResize"
+            onPointerDown={(event) => {
+              resizeFrom.current = { y: event.clientY, height };
+              event.currentTarget.setPointerCapture?.(event.pointerId);
+            }}
+            onPointerMove={(event) => {
+              const from = resizeFrom.current;
+              if (from) setTreeHeight(from.height + event.clientY - from.y);
+            }}
+            onPointerUp={() => {
+              resizeFrom.current = null;
+            }}
+            onKeyDown={(event) => {
+              if (event.key === "ArrowDown") {
+                event.preventDefault();
+                setTreeHeight(height + TREE_HEIGHT.step);
+              }
+              if (event.key === "ArrowUp") {
+                event.preventDefault();
+                setTreeHeight(height - TREE_HEIGHT.step);
+              }
+            }}
+            sx={{
+              height: 12,
+              mt: -0.75,
+              mb: -0.75,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              cursor: "row-resize",
+              touchAction: "none",
+              outline: "none",
+              "& > span": {
+                width: 36,
+                height: 4,
+                borderRadius: radius.pill,
+                bgcolor: tokens.borderStrong,
+                transition: `background-color ${motion.fast}ms`,
+              },
+              "&:hover > span, &:focus-visible > span": {
+                bgcolor: tokens.brand,
+              },
+            }}
+          >
+            <span />
+          </Box>
+        )}
         {node ? (
           <NodeCard
             key={`${side}:${node.index}`}
             testRunId={testRunId}
             side={side}
             node={node}
-            nodes={nodes}
             baseline={
               side === "current" ? sameNode(node, baselineNodes) : undefined
             }
@@ -526,7 +1233,6 @@ export const ElementsTab: React.FunctionComponent<Props> = ({
             problems={(report?.violations ?? []).filter(
               (violation) => violation.nodeKey === node.key,
             )}
-            onChoose={onChoose}
             onActions={canActOn?.(node.index) ? onActions : undefined}
           />
         ) : (
@@ -569,14 +1275,12 @@ interface CardProps {
   testRunId: string;
   side: TreeSide;
   node: InspectorNode;
-  nodes: InspectorNode[];
   // the same element on the baseline tree, for what it held there (REQ-062-18)
   baseline?: InspectorNode;
   // on the baseline tree: the same element now
   current?: InspectorNode;
   changes: StructuralChange[];
   problems: A11yReport["violations"];
-  onChoose: (index: number) => void;
   onActions?: (index: number, anchor: { x: number; y: number }) => void;
 }
 
@@ -584,22 +1288,19 @@ const NodeCard: React.FunctionComponent<CardProps> = ({
   testRunId,
   side,
   node,
-  nodes,
   baseline,
   changes,
   problems,
-  onChoose,
   onActions,
 }) => {
   const { t } = useT();
-  const path: InspectorNode[] = [];
-  for (
-    let at: InspectorNode | undefined = node;
-    at;
-    at = at.parent === null ? undefined : nodes[at.parent]
-  )
-    path.unshift(at);
   const was = baselineValues(node, baseline);
+  // empty attributes say nothing; shown on request (REQ-063-17)
+  const [onlyFilled, setOnlyFilled] = React.useState(true);
+  const attributes = node.attributes.filter(
+    ([name, value]) => !onlyFilled || !!value || was.has(name),
+  );
+  const { name: idName, component } = splitId(node.id);
 
   const [locators, setLocators] = React.useState<
     NodeLocators | null | "failed"
@@ -622,58 +1323,74 @@ const NodeCard: React.FunctionComponent<CardProps> = ({
       data-testid="nodeCard"
       sx={{ display: "flex", flexDirection: "column", gap: 1.5, pt: 0.5 }}
     >
-      <Box
-        component="nav"
-        aria-label={t("tree.path")}
-        sx={{
-          display: "flex",
-          flexWrap: "wrap",
-          alignItems: "center",
-          gap: 0.25,
-        }}
-      >
-        {path.map((step, i) => (
-          <React.Fragment key={step.index}>
-            {i > 0 && (
-              <Box
-                component="span"
-                aria-hidden
-                sx={{ color: tokens.textMuted, fontSize: type.caption }}
-              >
-                ›
-              </Box>
-            )}
-            <Button
-              size="small"
-              onClick={() => onChoose(step.index)}
-              sx={{
-                minWidth: 0,
-                px: 0.5,
-                py: 0,
-                fontSize: type.caption,
-                fontWeight: step === node ? 600 : 400,
-                color: step === node ? tokens.text : tokens.textMuted,
-                textTransform: "none",
-              }}
-            >
-              {step.id ? `${step.name}#${step.id}` : step.name}
-            </Button>
-          </React.Fragment>
-        ))}
-      </Box>
-      <Box>
-        <Typography variant="subtitle1" component="h3" sx={{ fontWeight: 600 }}>
-          {node.id ? `${node.name} #${node.id}` : node.name}
-        </Typography>
-        <Typography
+      <Box sx={{ display: "flex", alignItems: "flex-start", gap: 1.25 }}>
+        <Box
           sx={{
-            font: `400 ${type.caption}px ${tokens.mono}`,
-            color: tokens.textMuted,
-            overflowWrap: "anywhere",
+            width: 32,
+            height: 32,
+            flexShrink: 0,
+            borderRadius: radius.control,
+            bgcolor: tokens.subtle,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
           }}
         >
-          {node.className}
-        </Typography>
+          <KindIcon node={node} size={20} />
+        </Box>
+        <Box sx={{ flex: 1, minWidth: 0 }}>
+          <Typography
+            variant="subtitle1"
+            component="h3"
+            sx={{
+              fontWeight: 600,
+              display: "flex",
+              alignItems: "center",
+              gap: 1,
+              flexWrap: "wrap",
+              overflowWrap: "anywhere",
+            }}
+          >
+            {idName ? `${node.name} #${idName}` : node.name}
+            {component && (
+              <Box
+                component="span"
+                sx={{
+                  font: `500 ${type.caption}px ${tokens.mono}`,
+                  color: tokens.variable,
+                  bgcolor: tokens.variableSoft,
+                  px: 0.75,
+                  borderRadius: radius.pill,
+                }}
+              >
+                {component}
+              </Box>
+            )}
+          </Typography>
+          <Typography
+            sx={{
+              font: `400 ${type.caption}px ${tokens.mono}`,
+              color: tokens.textMuted,
+              overflowWrap: "anywhere",
+            }}
+          >
+            {node.className}
+          </Typography>
+        </Box>
+        {onActions && (
+          <Button
+            variant="outlined"
+            size="small"
+            data-testid="nodeActions"
+            onClick={(event) => {
+              const rect = event.currentTarget.getBoundingClientRect();
+              onActions(node.index, { x: rect.left, y: rect.bottom });
+            }}
+            sx={{ flexShrink: 0 }}
+          >
+            {t("tree.actions")}
+          </Button>
+        )}
       </Box>
       {node.hidden && (
         <Typography
@@ -700,9 +1417,35 @@ const NodeCard: React.FunctionComponent<CardProps> = ({
         </Alert>
       ))}
       <Box>
-        <Typography variant="subtitle2" component="h4" sx={{ mb: 0.75 }}>
-          {t("tree.attributes")}
-        </Typography>
+        <Box
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            mb: 0.75,
+          }}
+        >
+          <Typography variant="subtitle2" component="h4">
+            {t("tree.attributes")}
+          </Typography>
+          <FormControlLabel
+            control={
+              <Switch
+                size="small"
+                checked={onlyFilled}
+                onChange={(_, on) => setOnlyFilled(on)}
+                inputProps={{ "aria-label": t("tree.onlyFilled") }}
+                data-testid="treeOnlyFilled"
+              />
+            }
+            label={
+              <Typography variant="caption" color="textSecondary">
+                {t("tree.onlyFilled")}
+              </Typography>
+            }
+            sx={{ mr: 0 }}
+          />
+        </Box>
         <Box
           component="dl"
           data-testid="nodeAttributes"
@@ -715,14 +1458,19 @@ const NodeCard: React.FunctionComponent<CardProps> = ({
             font: `400 ${type.caption}px ${tokens.mono}`,
           }}
         >
-          {node.attributes.map(([name, value]) => (
+          {attributes.map(([name, value]) => (
             <React.Fragment key={name}>
               <Box component="dt" sx={{ color: tokens.textMuted }}>
                 {name}
               </Box>
               <Box
                 component="dd"
-                sx={{ m: 0, overflowWrap: "anywhere", color: tokens.text }}
+                sx={{
+                  m: 0,
+                  overflowWrap: "anywhere",
+                  whiteSpace: "pre-wrap",
+                  color: tokens.text,
+                }}
               >
                 {was.has(name) ? (
                   <>
@@ -771,21 +1519,6 @@ const NodeCard: React.FunctionComponent<CardProps> = ({
             />
           </>
         )
-      )}
-      {onActions && (
-        <Box>
-          <Button
-            variant="outlined"
-            size="small"
-            data-testid="nodeActions"
-            onClick={(event) => {
-              const rect = event.currentTarget.getBoundingClientRect();
-              onActions(node.index, { x: rect.left, y: rect.bottom });
-            }}
-          >
-            {t("tree.actions")}
-          </Button>
-        </Box>
       )}
     </Box>
   );

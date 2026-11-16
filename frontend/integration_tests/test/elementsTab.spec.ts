@@ -48,6 +48,8 @@ const node = (
   text: "",
   attributes: [["class", `android.widget.${name}`]],
   bounds: { x: 0, y: 0, ...IMAGE },
+  clickable: false,
+  wrapper: false,
   ...extra,
 });
 
@@ -259,5 +261,68 @@ test.describe("Elements tab (062)", () => {
     void authUser;
     await page.goto(`/inspect/${run.id}?tree=current&node=99`);
     await expect(page.getByTestId("treeNotFound")).toBeVisible();
+  });
+});
+
+test.describe("A readable tree (063)", () => {
+  test.beforeEach(async ({ page }) => mockApi(page));
+
+  test("a deep tree keeps its marks whole and never scrolls sideways", async ({
+    page,
+    openProjectPage,
+  }) => {
+    // the tab bar of an iOS screen under ten wrappers, with long labels
+    const wrappers = Array.from({ length: 10 }, (_, i) =>
+      node(i + 1, i, "Other", { wrapper: true }),
+    );
+    const deep: InspectorTree = {
+      format: "appium-ios",
+      positioned: true,
+      ...IMAGE,
+      nodes: [
+        node(0, null, "Application", { text: "Bank" }),
+        ...wrappers,
+        node(11, 10, "StaticText", {
+          key: "id:amount",
+          text: "Кредити\nВкладка 2 з 5 — дуже довгий підпис, що не влазить",
+          bounds: { x: 820, y: 80, width: 200, height: 60 },
+        }),
+        node(12, 10, "Button", {
+          key: "id:btn_pay",
+          id: "Сканувати кю ар код дуже довгий ідентифікатор#PbButton",
+          text: "Сканувати кю ар код",
+          clickable: true,
+          bounds: { x: 800, y: 300, width: 400, height: 80 },
+        }),
+      ],
+    };
+    await page.route(
+      (url) => url.pathname === `/test-runs/${run.id}/ui-tree`,
+      (route) => route.fulfill({ body: JSON.stringify(deep) }),
+    );
+    await openProjectPage(project.id, build.id, run.id);
+    await unfoldPanel(page);
+    await page.getByTestId("elementsTabButton").click();
+    const tree = page.getByTestId("tree");
+    await expect(tree).toBeVisible();
+
+    // the texts sit on the second level, ten wrappers folded into +10
+    const amount = page.locator('[data-testid="treeRow"][data-index="11"]');
+    await expect(amount).toHaveAttribute("aria-level", "2");
+    await expect(amount.getByTestId("treeSkipped")).toHaveText("+10");
+    await expect(amount).toContainText("Кредити ↵ Вкладка 2 з 5");
+
+    const sideways = await tree.evaluate(
+      (el) => el.scrollWidth - el.clientWidth,
+    );
+    expect(sideways).toBeLessThanOrEqual(0);
+    const box = await tree.boundingBox();
+    const pill = await amount.getByText("text", { exact: true }).boundingBox();
+    if (!box || !pill) throw new Error("not on screen");
+    expect(pill.x + pill.width).toBeLessThanOrEqual(box.x + box.width);
+
+    await amount.click();
+    await expect(page.getByTestId("treePath")).toContainText("⋯ 10");
+    await page.screenshot({ path: "test-results/readable-tree.png" });
   });
 });

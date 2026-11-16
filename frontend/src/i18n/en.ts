@@ -688,8 +688,7 @@ export const en = {
   "panel.unpositioned":
     "This page's tree came without element positions: a plain page source, not the Vision SDK. So moves, picking elements on the screenshot, contrast and tap area are not checked. Send the tree with the Vision SDK to get them.",
   "panel.newCount": "{count} new",
-  "panel.compared":
-    "{new}, {existing} existing, {fixed} fixed{reported}.",
+  "panel.compared": "{new}, {existing} existing, {fixed} fixed{reported}.",
   "panel.withBug": ", {count} with a bug",
   "panel.noBaselineTree":
     "The baseline has no UI tree, so every issue counts as new.",
@@ -1651,7 +1650,6 @@ export const en = {
   "tree.sides": "Which tree",
   "tree.current": "Current",
   "tree.baseline": "Baseline",
-  "tree.onlyMarked": "Only changed and with problems",
   "tree.count": {
     one: "{count} element",
     other: "{count} elements",
@@ -1683,6 +1681,28 @@ export const en = {
   "tree.locatorsFailed": "Could not build the locators.",
   "tree.actions": "Element actions…",
   "tree.notFound": "The element from the link is not in this tree.",
+  // the readable tree (063)
+  "tree.hitOf": "{at} of {count}",
+  "tree.prevHit": "Previous match",
+  "tree.nextHit": "Next match",
+  "tree.chipChanged": "Changed",
+  "tree.chipA11y": "Accessibility",
+  "tree.chipClickable": "Clickable",
+  "tree.wrappers": "Wrappers",
+  "tree.wrappersHelp":
+    "Wrappers have no id, text or action and only lay the others out. Hidden, they take no levels.",
+  "tree.wrappersHidden": {
+    one: "{count} wrapper hidden here",
+    other: "{count} wrappers hidden here",
+  },
+  "tree.prevChange": "Previous change (Shift+N)",
+  "tree.nextChange": "Next change (N)",
+  "tree.expandAll": "Unfold all",
+  "tree.collapseAll": "Fold all",
+  "tree.copySelector": "Copy selector (C)",
+  "tree.inside": "Elements inside",
+  "tree.resize": "Tree height",
+  "tree.onlyFilled": "Only filled",
   "tree.pick": "Choose an element in the tree or click it on the screenshot.",
   "tree.change.text": "text",
   "tree.change.label": "label",

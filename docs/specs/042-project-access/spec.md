@@ -6,7 +6,7 @@
 | Власник | Дмитро Назаренко |
 | Оновлено | 2026-11-05 |
 | Дизайн | [design.md](design.md) |
-| Пов'язане | [аудит](../../security/audit-2026-11-04.md) S-11, [план](../../security/bank-readiness-plan.md) 2.1; [032](../032-authenticated-events/spec.md) (події по кімнатах проєктів), [035](../035-admin-accounts/spec.md) (акаунти від адміна) |
+| Пов'язане | [аудит](../../../audit/security-audit-2026-11.md) S-11; [032](../032-authenticated-events/spec.md) (події по кімнатах проєктів), [035](../035-admin-accounts/spec.md) (акаунти від адміна) |
 
 ## Контекст і проблема
 

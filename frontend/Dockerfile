@@ -7,7 +7,7 @@ ARG NGINX_IMAGE=nginxinc/nginx-unprivileged:1.30.6-alpine@sha256:f5116ed4606f3eb
 ### Build: static files, so built once on the native platform for every target platform
 FROM --platform=$BUILDPLATFORM ${NODE_IMAGE} AS builder
 WORKDIR /app
-# A mirror of the npm registry (e.g. the bank's); empty: the public one
+# A mirror of the npm registry (e.g. a company Nexus); empty: the public one
 ARG NPM_REGISTRY=
 
 # Dependencies first: a change in the code then keeps the cached npm ci

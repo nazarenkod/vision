@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Exports the code at a commit as a new repository with one commit and no history
-# (docs/security/bank-readiness-plan.md, 3.6), for moving Vision into the bank's own git.
+# for starting a new repository from the current state of Vision.
 #
 # Only reads this repository: the export is `git archive` of a commit, so only tracked files go,
 # never .env files, demo-data or local settings. Nothing is pushed anywhere; where the new

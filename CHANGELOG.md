@@ -3,7 +3,7 @@
 Що змінилось у кожній поставці з погляду користувача й адміністратора, і що треба зробити руками
 при оновленні. Подробиці кожного пункту — у специфікації за номером ([docs/specs](docs/specs/README.md)).
 
-## Vision 1.0 — поставка в банк (2026-11)
+## Vision 1.0 (2026-11)
 
 Версії складових: API `backend` 1.1.0, інтерфейс `frontend` 1.6.0, Java SDK `ua.vision:vision-sdk`
 1.0.0, Playwright SDK `@vision/sdk-playwright` 1.0.0.
@@ -38,7 +38,7 @@
 - AI лише на вимогу, з денним лімітом ([010](docs/specs/010-ai-assist/spec.md)).
 - Інтерфейс англійською й українською ([023](docs/specs/023-ukrainian-ui/spec.md)).
 
-### Безпека (підготовка до банківського контуру)
+### Безпека
 
 - Доступ до проєктів: кожен бачить лише свої, адмін — усе ([042](docs/specs/042-project-access/spec.md)).
 - Знімки лише з входом або за підписаним посиланням ([043](docs/specs/043-protected-images/spec.md)).
@@ -48,12 +48,13 @@
   за прапорцем ([045](docs/specs/045-sign-in-and-api-hardening/spec.md)).
 - Сеанси анулюються на сервері, CSP ([051](docs/specs/051-security-quick-fixes/spec.md),
   [052](docs/specs/052-sessions-and-browser-hardening/spec.md)).
-- Образи без root, за digest, з перевіркою TLS; Node 24, Postgres 16; `npm audit` — 0.
+- Образи без root, за digest, з перевіркою TLS; Node 24, Postgres 16; `npm audit` — 0
+  ([звіт аудиту](audit/security-audit-2026-11.md)).
 - `REACT_APP_OIDC_AUTO_REDIRECT` з `.env.demo` тепер доходить до інтерфейсу.
 
 ### Що зробити при оновленні з попередньої версії
 
-Перехід зі старішого Vision (SDK 4.3.1-vision.N) — за [інструкцією переходу](docs/guides/bank-cutover.md):
+Перехід зі старішого Vision (SDK 4.3.1-vision.N) — за [інструкцією переходу](docs/guides/upgrade-to-1.0.md):
 
 - конвертувати налаштування (`scripts/vision-convert-env.py`): з'являться `VISION_SECRET_KEY`,
   `VISION_JIRA_HOSTS`, новий `JWT_SECRET`;

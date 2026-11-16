@@ -1,6 +1,6 @@
 # Експлуатація
 
-Інструкція для адміністратора, що супроводжує Vision у банку: щоденні дії, моніторинг, оновлення,
+Інструкція для адміністратора, що супроводжує Vision: щоденні дії, моніторинг, оновлення,
 бекапи, секрети, користувачі, інциденти. Перше розгортання — у [DEPLOY.md](../../DEPLOY.md), усі
 змінні — у [довіднику налаштувань](configuration.md).
 
@@ -24,7 +24,7 @@
 
 | Що | Як | Тривога |
 |---|---|---|
-| Доступність | HTTP-перевірка `GET <DEMO_API_URL>/health` і `GET <DEMO_UI_URL>/` з системи моніторингу банку | не `200` двічі поспіль |
+| Доступність | HTTP-перевірка `GET <DEMO_API_URL>/health` і `GET <DEMO_UI_URL>/` із системи моніторингу | не `200` двічі поспіль |
 | Контейнери | `docker inspect -f '{{.State.Status}} {{.RestartCount}}' vision-api-1` | не `running` або зростає `RestartCount` |
 | Диск | вільне місце на томі з `demo-data/` і `/var/lib/docker` | менше 15 % |
 | Бекапи | `demo-data/backup-status/status.json`, сторінка **Backups**; адміністратори бачать попередження, якщо успішному бекапу понад 26 год | попередження або помилка в `demo-data/backups/cron.log` |
@@ -32,7 +32,7 @@
 
 Логи контейнерів пише Docker. Типовий драйвер `json-file` їх не обертає: задайте в
 `/etc/docker/daemon.json` `"log-opts": {"max-size": "50m", "max-file": "5"}` або передавайте їх у
-систему збору логів банку (драйвер `syslog`, `fluentd`, `gelf`). У логах API немає паролів, токенів і
+систему збору логів (драйвер `syslog`, `fluentd`, `gelf`). У логах API немає паролів, токенів і
 рядків `User`; помилки повертаються клієнту без stack trace.
 
 ## Зміна налаштувань
@@ -47,7 +47,7 @@
 
 1. Прочитати [CHANGELOG](../../CHANGELOG.md): чи немає ручних кроків.
 2. Бекап: `./scripts/vision-backup.sh` (або **Backups → Back up now**).
-3. `git pull` (або новий експорт коду в git банку).
+3. `git pull`.
 4. `./scripts/vision.sh up -d --build` — нові образи, міграції застосуються самі. Міграції лише
    додавальні ([ADR-0003](../decisions/0003-additive-schema-only.md)), тож стара версія працює на
    новій схемі.
@@ -69,9 +69,9 @@
 ./scripts/vision-backup.sh --install-cron
 ```
 
-Куди: `BACKUP_REMOTE` — будь-який remote rclone. **Для банку — внутрішнє S3-сумісне сховище**
+Куди: `BACKUP_REMOTE` — будь-який remote rclone. **Рекомендовано — внутрішнє S3-сумісне сховище**
 (MinIO, Ceph, NetApp StorageGRID): налаштувати remote `rclone config` у `RCLONE_CONFIG_DIR` і вказати
-`BACKUP_REMOTE=s3bank:vision-backups`. Google Drive зі сторінки **Backups** — лише якщо ІБ дозволила.
+`BACKUP_REMOTE=s3:vision-backups`. Або Google Drive зі сторінки **Backups**.
 Без remote бекапи лишаються локально в `demo-data/backups` — цього недостатньо: диск той самий.
 
 Перевіряти відновлення регулярно, раз на квартал: [backup-trial](../guides/backup-trial.md).
@@ -93,9 +93,9 @@
 | Секрет | Де | Ротація |
 |---|---|---|
 | `JWT_SECRET` | `.env.demo` | замінити й `up -d`: усі входи завершуються, люди входять заново; API-ключі діють |
-| `VISION_SECRET_KEY` | `.env.demo` | **не ротується без втрат**: зашифровані токени Jira і ключі Gemini перестають читатися (люди вводять їх знову), підписані посилання на знімки змінюються. Тримати копію в сховищі секретів банку |
+| `VISION_SECRET_KEY` | `.env.demo` | **не ротується без втрат**: зашифровані токени Jira і ключі Gemini перестають читатися (люди вводять їх знову), підписані посилання на знімки змінюються. Тримати копію у сховищі секретів |
 | `POSTGRES_PASSWORD` | `.env.demo` і сам Postgres | `ALTER USER postgres PASSWORD '…'` через `./scripts/vision.sh exec postgres psql -U postgres`, потім нове значення в `.env.demo` і `up -d` |
-| `LDAP_BIND_PASSWORD`, `OIDC_CLIENT_SECRET` | `.env.demo` | за політикою банку; `up -d` |
+| `LDAP_BIND_PASSWORD`, `OIDC_CLIENT_SECRET` | `.env.demo` | за політикою компанії; `up -d` |
 | API-ключі людей | у базі лише SHA-256 | кожен створює новий у **Profile → API key**; старий перестає діяти одразу |
 | Токени Jira | у базі зашифровані | кожен у профілі |
 

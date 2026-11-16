@@ -6,7 +6,7 @@
 | Власник | Дмитро Назаренко |
 | Оновлено | 2026-11-05 |
 | Дизайн | [design.md](design.md) |
-| Пов'язане | [план](../../security/bank-readiness-plan.md) 1.5 (затверджено власником 2026-11-05), [ADR-0027](../../decisions/0027-vision-own-product.md), [040](../040-uitree-limits-and-sdk-names/spec.md) (назви SDK) |
+| Пов'язане | [ADR-0027](../../decisions/0027-vision-own-product.md), [040](../040-uitree-limits-and-sdk-names/spec.md) (назви SDK) |
 
 ## Контекст і проблема
 

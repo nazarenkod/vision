@@ -4,11 +4,8 @@
 разом з його UI-деревом; Vision порівнює його з еталоном на рівні елементів, а не лише пікселів,
 перевіряє доступність, заводить баги в Jira без дублів і показує, які екрани нестабільні.
 
-Android і iOS — через Appium, веб — через Selenide і Playwright. Розгортається у своєму контурі
-через Docker Compose, нікуди не надсилає дані без явного налаштування.
-
-> **Банку, що приймає Vision:** почніть з [пакета передачі](docs/handover/README.md): вимоги,
-> налаштування, експлуатація, безпека, ліцензії й чек-лист приймання.
+Android і iOS — через Appium, веб — через Selenide і Playwright. Розгортається на вашому сервері
+через Docker Compose і нікуди не надсилає дані без явного налаштування.
 
 ## Що вміє
 
@@ -102,16 +99,15 @@ Selenide і Playwright — [DEPLOY.md §7–8](DEPLOY.md), [sdk-java](sdk-java/R
 | `sdk-playwright/` | Playwright SDK `@vision/sdk-playwright` | [AGENTS.md](sdk-playwright/AGENTS.md) |
 | `web-tree/` | збір дерева вебсторінки, спільний для обох SDK | [050](docs/specs/050-web-ui-tree/spec.md) |
 | `scripts/` | `vision.sh`, копія даних, бекапи, перехід, перевірки | [AGENTS.md](scripts/AGENTS.md) |
-| `docs/` | продукт, архітектура, специфікації, рішення, гайди, безпека, пакет передачі | [docs/README.md](docs/README.md) |
-| `audit/` | SAST-звіт і сирі дані сканерів | [звіт](audit/report-sast-2026-11-09.md) |
+| `docs/` | продукт, архітектура, специфікації, рішення, гайди, адміністрування, безпека | [docs/README.md](docs/README.md) |
+| `audit/` | звіт аудиту безпеки й ліцензій | [звіт](audit/security-audit-2026-11.md) |
 
 ## Документація
 
 | Хто ви | Читайте |
 |---|---|
-| Банк, що приймає продукт | [пакет передачі](docs/handover/README.md) |
-| Адміністратор | [вимоги](docs/handover/requirements.md), [налаштування](docs/handover/configuration.md), [DEPLOY.md](DEPLOY.md), [експлуатація](docs/handover/operations.md) |
-| Інформаційна безпека | [безпека](docs/handover/security.md), [SECURITY.md](SECURITY.md), [аудит](docs/security/audit-2026-11-04.md), [ліцензії](docs/handover/third-party-licenses.md) |
+| Адміністратор | [вимоги](docs/admin/requirements.md), [налаштування](docs/admin/configuration.md), [DEPLOY.md](DEPLOY.md), [експлуатація](docs/admin/operations.md) |
+| Інформаційна безпека | [огляд безпеки](docs/security/overview.md), [SECURITY.md](SECURITY.md), [звіт аудиту](audit/security-audit-2026-11.md), [ліцензії](docs/security/third-party-licenses.md) |
 | QA, власник продукту | [огляд](docs/product/overview.md), [словник](docs/product/glossary.md), [CHANGELOG](CHANGELOG.md) |
 | Розробник | [docs/](docs/README.md), [локальний запуск](docs/guides/development.md), [тести](docs/guides/testing.md), [як ми працюємо](docs/guides/agentic-workflow.md) |
 
@@ -136,4 +132,4 @@ python3 -I scripts/verify.py
 ## Ліцензія
 
 Apache-2.0 ([LICENSE](LICENSE)). Vision — похідна робота від Visual Regression Tracker; атрибуція —
-у [NOTICE](NOTICE). Сторонні компоненти — у [переліку ліцензій](docs/handover/third-party-licenses.md).
+у [NOTICE](NOTICE). Сторонні компоненти — у [переліку ліцензій](docs/security/third-party-licenses.md).

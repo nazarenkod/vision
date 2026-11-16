@@ -4,7 +4,7 @@ ARG NODE_IMAGE=node:24.22.2-bookworm-slim@sha256:01d566e8d94d8c619591d78652babfc
 
 FROM ${NODE_IMAGE} AS builder
 WORKDIR /app
-# A mirror of the npm registry (e.g. the bank's); empty: the public one
+# A mirror of the npm registry (e.g. a company Nexus); empty: the public one
 ARG NPM_REGISTRY=
 # no telemetry from Prisma's CLI or from swagger-ui's install
 ENV CHECKPOINT_DISABLE=1 SCARF_ANALYTICS=false

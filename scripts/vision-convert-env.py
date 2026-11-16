@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Converts the settings of an older Vision for this version, before its first start.
 
-    python3 -I scripts/vision-convert-env.py [--env-file .env.demo] [--jira-hosts jira.bank.example] [--yes]
+    python3 -I scripts/vision-convert-env.py [--env-file .env.demo] [--jira-hosts jira.example.com] [--yes]
 
 What changes, and why:
   - VRT_* settings get their VISION_* names (041); a VISION_* already set wins.
@@ -124,7 +124,7 @@ def shown(key, value):
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     parser.add_argument("--env-file", default=str(ROOT / ".env.demo"))
-    parser.add_argument("--jira-hosts", help="host names of the bank's Jira, comma-separated")
+    parser.add_argument("--jira-hosts", help="host names of your Jira, comma-separated")
     parser.add_argument("--yes", action="store_true", help="write without asking")
     args = parser.parse_args(argv)
 
@@ -155,7 +155,7 @@ def main(argv=None):
     path.chmod(0o600)
     print(f"==> Written. The old file is {kept}.")
     if not hosts and not any(key == "VISION_JIRA_HOSTS" and after for key, _, after, _ in changes):
-        print("    VISION_JIRA_HOSTS is empty: Vision calls no Jira until it lists the bank's Jira host.")
+        print("    VISION_JIRA_HOSTS is empty: Vision calls no Jira until it lists your Jira host.")
     return 0
 
 

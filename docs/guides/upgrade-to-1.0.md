@@ -1,9 +1,9 @@
-# Перехід на версію для банку
+# Перехід на версію 1.0
 
 Покрокова інструкція для сервера, де Vision працює поруч із робочим VRT. Переходимо з версії до
 [042](../specs/042-project-access/spec.md)–[045](../specs/045-sign-in-and-api-hardening/spec.md)
 (SDK 4.3.1-vision.N) на версію з доступом до проєктів, захищеними знімками й зашифрованими секретами
-(SDK 1.0.0). Чому так — [план](../security/bank-readiness-plan.md), подробиці кожного кроку —
+(SDK 1.0.0). Чому так — [аудит](../../audit/security-audit-2026-11.md), подробиці кожного кроку —
 [DEPLOY.md](../../DEPLOY.md) §4, §7, §11.
 
 ## Що з робочим VRT
@@ -39,10 +39,10 @@
    ```
 
 3. Перевести налаштування: скрипт покаже зміни без секретів, спитає `yes`, старий файл лишить поруч
-   (`.env.demo.before-vision-…`). Замість `jira.bank.example` — хост Jira банку, кілька — через кому:
+   (`.env.demo.before-vision-…`). Замість `jira.example.com` — хост вашої Jira, кілька — через кому:
 
    ```bash
-   python3 -I scripts/vision-convert-env.py --jira-hosts jira.bank.example
+   python3 -I scripts/vision-convert-env.py --jira-hosts jira.example.com
    ```
 
    З'являться `VISION_SECRET_KEY` (**зберегти назавжди**: без нього збережені токени Jira не

@@ -2,7 +2,7 @@
 
 Як отримати OAuth-клієнт Google і підключити Drive на сторінці Backups
 ([017](../specs/017-backup-settings-ui/spec.md)). Перевірено на сервері 2026-10-27 з робочим
-акаунтом Google Workspace банку. Займає 5–10 хвилин у браузері; на сервері нічого не потрібно.
+акаунтом Google Workspace організації. Займає 5–10 хвилин у браузері; на сервері нічого не потрібно.
 
 ## Чому саме так
 
@@ -11,8 +11,8 @@
 | Шлях | Що сталося |
 |---|---|
 | rclone на сервері й `rclone config` з браузером | rclone.org із сервера не відкривається, а на Mac не вдалося встановити Command Line Tools для brew. rclone тепер запускається з Docker-образу, але вхід у Google так і лишався проблемою |
-| Сервісний акаунт Google + спільний диск | Workspace банку не дає ділитися файлами на спільних дисках з акаунтами поза доменом: «Аккаунт …iam.gserviceaccount.com не относится к домену ПриватБанк». А на «Моєму диску» сервісного акаунта немає місця |
-| **OAuth-клієнт «TVs and Limited Input devices» + вхід кодом** | працює: Vision показує код, людина вводить його на google.com/device робочим акаунтом. Перенаправлення OAuth Google дозволяє лише на https або localhost, а Vision у мережі банку — на http, тому саме вхід кодом |
+| Сервісний акаунт Google + спільний диск | Workspace організації не дає ділитися файлами на спільних дисках з акаунтами поза доменом: «Аккаунт …iam.gserviceaccount.com не относится к домену ПриватБанк». А на «Моєму диску» сервісного акаунта немає місця |
+| **OAuth-клієнт «TVs and Limited Input devices» + вхід кодом** | працює: Vision показує код, людина вводить його на google.com/device робочим акаунтом. Перенаправлення OAuth Google дозволяє лише на https або localhost, а Vision у внутрішній мережі — на http, тому саме вхід кодом |
 
 Що з цього випливає:
 
@@ -26,11 +26,11 @@
 
 ## Перед початком
 
-- Увійти в <https://console.cloud.google.com> **робочим акаунтом** банку.
-- Вгорі ліворуч, у виборі проєкту, перевірити, що проєкт належить **організації банку** (над
+- Увійти в <https://console.cloud.google.com> **робочим акаунтом** організації.
+- Вгорі ліворуч, у виборі проєкту, перевірити, що проєкт належить **вашій організації** (над
   списком — назва організації, а не «No organization»). Підходить наявний проєкт в організації;
-  новий: **New project** → **Location** — організація банку. Немає прав створювати проєкти —
-  потрібен адміністратор Google Cloud банку.
+  новий: **New project** → **Location** — ваша організація. Немає прав створювати проєкти —
+  потрібен адміністратор Google Cloud організації.
 
 ## Крок 1. Google Drive API
 
@@ -44,7 +44,7 @@
   Internal**, Contact information — свій email, погодитись → **Create**.
 - Якщо екран уже налаштований: вкладка **Audience** → **User type = Internal**.
 
-**Internal** обов'язково. Якщо його немає, проєкт поза організацією банку: у типу External у
+**Internal** обов'язково. Якщо його немає, проєкт поза організацією: у типу External у
 режимі Testing доступ пропадає кожні 7 днів, і нічні бекапи почнуть падати.
 
 Вкладку **Data access** (scopes) заповнювати не треба: Vision сам просить лише `drive.file` і
@@ -84,7 +84,7 @@ Backups.
 | «Access was denied in Google» | на google.com/device натиснули Cancel або увійшли не робочим акаунтом; **Start again** |
 | «This app is blocked», «Admin policy» | адміністратор Workspace блокує сторонні застосунки; попросити дозволити застосунок за Client ID |
 | «The code expired» | код діє близько 30 хвилин; **Start again** |
-| `org_internal`, «not available to users outside the organization» | увійшли не акаунтом організації банку |
+| `org_internal`, «not available to users outside the organization» | увійшли не акаунтом організації |
 | «Signed in, but the backup folder could not be made» | Drive API не ввімкнено (крок 1) або Drive акаунта заповнений |
 | «Google refused the saved sign-in … Reconnect» | доступ відкликали в Google або видалили клієнт; **Disconnect** і підключити знову |
 

@@ -1220,7 +1220,7 @@ export const uk: Messages = {
   "backups.waitingCode": "Чекаємо підтвердження; код дійсний до {time}.",
   "backups.cancel": "Скасувати",
   "backups.clientHelp":
-    "OAuth-клієнт типу «TVs and Limited Input devices» з проєкту Google Cloud банку (DEPLOY.md, розділ про резервні копії). Секрет лишається на сервері й більше не показується.",
+    "OAuth-клієнт типу «TVs and Limited Input devices» з проєкту Google Cloud вашої організації (DEPLOY.md, розділ про резервні копії). Секрет лишається на сервері й більше не показується.",
   "backups.clientId": "Client ID",
   "backups.clientSecret": "Client secret",
   "backups.startAgain": "Почати знову",

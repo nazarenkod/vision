@@ -1,6 +1,6 @@
 # Вимоги до середовища
 
-Що потрібно банку, щоб розгорнути Vision: сервер, мережа, доступи. Читати перед замовленням
+Що потрібно, щоб розгорнути Vision: сервер, мережа, доступи. Читати перед замовленням
 сервера й погодженням мережевих доступів. Покрокове розгортання — у [DEPLOY.md](../../DEPLOY.md),
 налаштування — у [довіднику](configuration.md).
 
@@ -15,8 +15,8 @@ flowchart LR
   API --> PG[("postgres 16\nлише всередині docker-мережі")]
   API --> FS[("demo-data/imageUploads\nзнімки, UI-дерева, звіти")]
   MIG["migration\nодноразово при старті"] --> PG
-  API -->|HTTPS, токен людини| Jira[("Jira банку")]
-  API -.->|LDAPS / OIDC| IdP[("AD / SSO банку")]
+  API -->|HTTPS, токен людини| Jira[("Jira")]
+  API -.->|LDAPS / OIDC| IdP[("AD / SSO")]
   API -.->|за бажанням| LLM[("Ollama / Gemini")]
 ```
 
@@ -27,7 +27,7 @@ flowchart LR
 | `migration` | збирається з `backend/prisma/`, завершується після міграцій | `node` | — |
 | `postgres` | `postgres:16-alpine` за digest | `postgres` | 5432, на хост не публікується |
 
-Усі образи, крім Postgres, збираються з цього коду на сервері банку (`./scripts/vision.sh build`);
+Усі образи, крім Postgres, збираються з цього коду на вашому сервері (`./scripts/vision.sh build`);
 готових образів ззовні не потрібно, базові закріплені за digest.
 
 ## Сервер
@@ -56,7 +56,7 @@ flowchart LR
 | Робочі місця QA, CI, мобільні ферми | `api` | 14200 (або 443 на проксі) | API, WebSocket `/socket.io`, знімки |
 | Адміністратор | сервер | 22 | SSH для обслуговування |
 
-Vision сам слухає HTTP. **Для банку — TLS на зворотному проксі** (nginx, F5, HAProxy) перед обома
+Vision сам слухає HTTP. **Для робочої установки — TLS на зворотному проксі** (nginx, F5, HAProxy) перед обома
 портами; проксі має передавати `X-Forwarded-Proto: https` і пропускати WebSocket (`Upgrade`). Тоді
 відповіді отримують HSTS. Адреси за проксі — у `DEMO_UI_URL` і `DEMO_API_URL`.
 
@@ -68,14 +68,14 @@ Vision сам слухає HTTP. **Для банку — TLS на зворотн
 | Дзеркало `binaries.prisma.sh` | збирання образу міграцій | так (`VISION_PRISMA_ENGINES_MIRROR`) |
 | Реєстр Docker (Docker Hub або дзеркало) | базові образи при першому збиранні | так |
 | Maven Central і Gradle Plugin Portal (або дзеркало) | збирання jar SDK | там, де збирають SDK |
-| Jira банку (`VISION_JIRA_HOSTS`) | заведення багів, пошук дублів | якщо потрібна Jira |
+| Jira (`VISION_JIRA_HOSTS`) | заведення багів, пошук дублів | якщо потрібна Jira |
 | LDAP/AD (`LDAPS 636`) або провайдер OIDC | вхід | якщо корпоративний вхід |
 | Сховище бекапів (S3-сумісне) | щоночі | рекомендовано |
-| Ollama в контурі | лише на вимогу людини | ні |
+| Ollama у вашій мережі | лише на вимогу людини | ні |
 | Gemini (`generativelanguage.googleapis.com`) | лише на вимогу людини | ні; лише з погодженням ІБ |
 
 Телеметрію вимкнено під час збирання (`CHECKPOINT_DISABLE=1`, `SCARF_ANALYTICS=false`); у роботі
-Vision нікуди, крім перелічених адрес, не звертається ([аудит](../security/audit-2026-11-04.md#вихідні-зєднання)).
+Vision нікуди, крім перелічених адрес, не звертається ([аудит](../../audit/security-audit-2026-11.md#вихідні-зєднання)).
 
 Проксі, що переписує TLS: його CA — у `VISION_EXTRA_CA_FILE` (PEM). Перевірку TLS не вимикаємо.
 

@@ -1138,7 +1138,7 @@ export const en = {
     "Waiting for the confirmation; the code works until {time}.",
   "backups.cancel": "Cancel",
   "backups.clientHelp":
-    "An OAuth client of the type “TVs and Limited Input devices” from the bank's Google Cloud project (DEPLOY.md, backups). The secret stays on the server and is never shown again.",
+    "An OAuth client of the type “TVs and Limited Input devices” from your organization's Google Cloud project (DEPLOY.md, backups). The secret stays on the server and is never shown again.",
   "backups.clientId": "Client ID",
   "backups.clientSecret": "Client secret",
   "backups.startAgain": "Start again",

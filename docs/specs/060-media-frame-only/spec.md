@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| Статус | Draft |
+| Статус | Approved |
 | Власник | Дмитро Назаренко |
 | Оновлено | 2026-11-16 |
 | Дизайн | design.md з'явиться після `Approved`; [макет](https://claude.ai/artifact/4VbDGoAxKrE8JfRJ2cv7iK) (погоджено 2026-11-16) |

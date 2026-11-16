@@ -1,0 +1,356 @@
+import {
+  ConnectedSocket,
+  MessageBody,
+  OnGatewayDisconnect,
+  OnGatewayInit,
+  SubscribeMessage,
+  WebSocketGateway,
+  WebSocketServer,
+} from '@nestjs/websockets';
+import { Logger, OnModuleDestroy } from '@nestjs/common';
+import { Server, Socket } from 'socket.io';
+import { Role, TestRun } from '@prisma/client';
+import { BuildDto } from '../../builds/dto/build.dto';
+import { getBuildsStats } from '../../builds/build-stats';
+import { debounce } from 'lodash';
+import { PrismaService } from '../../prisma/prisma.service';
+import { AuthService } from '../../auth/auth.service';
+import { msUntilExpiry, tokenFromHandshake } from './events-auth';
+import { groupByProject, projectRoom } from './events-rooms';
+import { Presence, readPresence, shortName, viewersOf } from './events-presence';
+import { serverFileLinkKey, signFile, withFileSignatures } from '../../static/file-links';
+import { allowOwnInterface } from '../../security';
+
+// The message a rejected client gets in connect_error; the UI signs out on it.
+export // how soon a new socket's sign-in is looked at again (052)
+const SESSION_RECHECK_MS = 1000;
+const UNAUTHORIZED = 'unauthorized';
+
+// Only signed-in users get events, and only of the project they subscribed to
+// (spec 032, ADR-0023), never to anyone listening.
+// the same origin as the REST API: only Vision's own interface (045)
+@WebSocketGateway({ cors: { origin: allowOwnInterface } })
+export class EventsGateway implements OnGatewayInit, OnGatewayDisconnect, OnModuleDestroy {
+  private readonly logger = new Logger(EventsGateway.name);
+  private readonly fileKey = serverFileLinkKey();
+
+  @WebSocketServer()
+  server: Server;
+
+  constructor(
+    private prismaService: PrismaService,
+    private authService: AuthService
+  ) {}
+
+  private debounceTimeout = 1500;
+  private maxWait = 3000;
+  private testRunsCreatedQueued: Array<TestRun> = [];
+  private testRunsDeletedQueued: Array<TestRun> = [];
+  private testRunsUpdatedQueued: Array<TestRun> = [];
+  private buildsUpdatedQueued: Array<string> = [];
+
+  afterInit(server: Server): void {
+    server.use((socket, next) => {
+      this.authenticate(socket).then(
+        () => {
+          next();
+          // a sign-out between the check above and the socket joining the server's list missed
+          // this socket; one more look once it is in the list closes that gap (052)
+          const recheck = setTimeout(() => this.closeIfEnded(socket), SESSION_RECHECK_MS);
+          socket.on('disconnect', () => clearTimeout(recheck));
+        },
+        () => next(new Error(UNAUTHORIZED))
+      );
+    });
+  }
+
+  // A burst still waiting for its debounce would fire into a closed server.
+  onModuleDestroy(): void {
+    this.testRunCreatedDebounced.cancel();
+    this.testRunUpdatedDebounced.cancel();
+    this.testRunDeletedDebounced.cancel();
+    this.buildUpdatedDebounced.cancel();
+  }
+
+  private async closeIfEnded(socket: Socket): Promise<void> {
+    try {
+      const token = tokenFromHandshake(socket.handshake.auth);
+      const payload = token ? await this.authService.verifyToken(token) : null;
+      const found = payload ? await this.authService.userForToken(payload) : { problem: 'no-user' };
+      if ('problem' in found) socket.disconnect(true);
+    } catch {
+      socket.disconnect(true);
+    }
+  }
+
+  private async authenticate(socket: Socket): Promise<void> {
+    const token = tokenFromHandshake(socket.handshake.auth);
+    if (!token) throw new Error(UNAUTHORIZED);
+    const payload = await this.authService.verifyToken(token);
+    // the same check as the API: a signed-out sign-in or a gone account opens no socket (052)
+    const found = await this.authService.userForToken(payload);
+    if ('problem' in found) throw new Error(UNAUTHORIZED);
+    socket.data.userId = found.user.id;
+    // all a colleague sees of this person in a build (REQ-056-05)
+    socket.data.name = shortName(found.user);
+    socket.data.sessionId = payload.sid;
+
+    const expiresIn = msUntilExpiry(payload.exp, Date.now());
+    if (expiresIn !== undefined) {
+      const timer = setTimeout(() => socket.disconnect(true), expiresIn);
+      socket.on('disconnect', () => clearTimeout(timer));
+    }
+  }
+
+  @SubscribeMessage('subscribe')
+  async subscribe(
+    @ConnectedSocket() socket: Socket,
+    @MessageBody() body: { projectId?: string | null } | undefined
+  ): Promise<{ ok: boolean }> {
+    const projectId = body?.projectId || null;
+    // a person leaving a project leaves its builds too (REQ-056-02)
+    const before = socket.data.presence as Presence | null | undefined;
+    const beforeProject = socket.data.projectId as string | null | undefined;
+    socket.data.presence = null;
+    if (before && beforeProject) void this.broadcastPresence(beforeProject, before.buildId);
+    // Remembered before the lookups so that a later subscribe wins even if its
+    // lookups finish first.
+    socket.data.projectId = projectId;
+    for (const room of socket.rooms) {
+      if (room !== socket.id) socket.leave(room);
+    }
+    if (!projectId) return { ok: true };
+
+    if (!(await this.mayFollow(socket.data.userId, projectId))) return { ok: false };
+    if (socket.data.projectId === projectId) socket.join(projectRoom(projectId));
+    return { ok: true };
+  }
+
+  /**
+   * The build and screen this socket has open (056). Only within the project it follows
+   * and only for a build of that project (REQ-056-06); everyone following the project hears who
+   * is in the build now.
+   */
+  @SubscribeMessage('presence')
+  async presence(@ConnectedSocket() socket: Socket, @MessageBody() body: unknown): Promise<{ ok: boolean }> {
+    const projectId = socket.data.projectId as string | null | undefined;
+    if (!projectId || !socket.rooms.has(projectRoom(projectId))) return { ok: false };
+    const next = readPresence(body, Date.now());
+    if (next) {
+      const build = await this.prismaService.build
+        .findFirst({ where: { id: next.buildId, projectId }, select: { id: true } })
+        .catch(() => null);
+      if (!build) return { ok: false };
+    }
+    const before = socket.data.presence as Presence | null | undefined;
+    socket.data.presence = next;
+    if (before && before.buildId !== next?.buildId) await this.broadcastPresence(projectId, before.buildId);
+    if (next) await this.broadcastPresence(projectId, next.buildId);
+    return { ok: true };
+  }
+
+  // a closed tab or a lost connection takes the person out of the build (REQ-056-02)
+  handleDisconnect(socket: Socket): void {
+    const presence = socket.data?.presence as Presence | null | undefined;
+    const projectId = socket.data?.projectId as string | null | undefined;
+    if (presence && projectId) void this.broadcastPresence(projectId, presence.buildId);
+  }
+
+  private async broadcastPresence(projectId: string, buildId: string): Promise<void> {
+    try {
+      const sockets = await this.server.in(projectRoom(projectId)).fetchSockets();
+      const viewers = viewersOf(
+        sockets.map((socket) => socket.data),
+        buildId
+      );
+      this.server.to(projectRoom(projectId)).emit('presence', { buildId, viewers });
+    } catch (error) {
+      this.logger.warn(`Could not tell who is in build ${buildId}: ${error}`);
+    }
+  }
+
+  // only a project the person may reach (042): an admin any, anyone else one they were given
+  private mayFollow(userId: string, projectId: string): Promise<boolean> {
+    return Promise.all([
+      this.prismaService.project.findUnique({ where: { id: projectId }, select: { id: true } }),
+      this.prismaService.user.findUnique({ where: { id: userId }, select: { id: true, role: true } }),
+      this.prismaService.projectAccess.findUnique({
+        where: { userId_projectId: { userId, projectId } },
+        select: { projectId: true },
+      }),
+    ]).then(
+      ([project, user, access]) => !!project && !!user && (user.role === Role.admin || !!access),
+      () => false
+    );
+  }
+
+  /**
+   * Sign-ins that ended (052): signing out ends one, a new password every one but the person's
+   * own, a deleted account all. Through fetchSockets, so the sockets of every API process close.
+   */
+  async endSessions(userId: string, which: { only?: string | null; keep?: string } = {}): Promise<void> {
+    try {
+      const sockets = await this.server.fetchSockets();
+      for (const socket of sockets) {
+        if (socket.data.userId !== userId) continue;
+        // a socket of a token from before sessions has no session: only=null names those
+        if (which.only !== undefined && (socket.data.sessionId ?? null) !== which.only) continue;
+        if (which.keep && socket.data.sessionId === which.keep) continue;
+        socket.disconnect(true);
+      }
+    } catch (error) {
+      this.logger.warn(`Could not close the sockets of ${userId}: ${error}`);
+    }
+  }
+
+  /** A new role (052): each project the person's sockets follow is checked again, as on subscribe. */
+  async recheckAccess(userId: string): Promise<void> {
+    try {
+      const sockets = (await this.server.fetchSockets()).filter((socket) => socket.data.userId === userId);
+      for (const socket of sockets) {
+        const projectId = socket.data.projectId as string | null;
+        if (projectId && !(await this.mayFollow(userId, projectId))) socket.leave(projectRoom(projectId));
+      }
+    } catch (error) {
+      this.logger.warn(`Could not check the sockets of ${userId} again: ${error}`);
+    }
+  }
+
+  /** Access was taken away: that person's sockets stop getting the project's events now. */
+  leaveProject(userId: string, projectId: string): void {
+    this.server
+      .in(projectRoom(projectId))
+      .fetchSockets()
+      .then((sockets) =>
+        sockets
+          .filter((socket) => socket.data.userId === userId)
+          .forEach((socket) => socket.leave(projectRoom(projectId)))
+      )
+      .catch((error) => this.logger.warn(`Could not stop events of ${projectId} for ${userId}: ${error}`));
+  }
+
+  buildCreated(build: BuildDto): void {
+    this.server.to(projectRoom(build.projectId)).emit(
+      'build_created',
+      withFileSignatures(build, (name) => signFile(name, this.fileKey))
+    );
+  }
+
+  buildUpdated(id: string): void {
+    this.buildsUpdatedQueued.push(id);
+    this.buildUpdatedDebounced();
+  }
+
+  testRunCreated(testRun: TestRun): void {
+    this.testRunsCreatedQueued.push(testRun);
+    this.testRunCreatedDebounced();
+    this.buildUpdated(testRun.buildId);
+  }
+
+  testRunUpdated(testRun: TestRun): void {
+    this.testRunsUpdatedQueued.push(testRun);
+    this.testRunUpdatedDebounced();
+    this.buildUpdated(testRun.buildId);
+  }
+
+  testRunDeleted(testRun: TestRun): void {
+    this.testRunsCreatedQueued = this.testRunsCreatedQueued.filter((tr) => tr.id !== testRun.id);
+    this.testRunsUpdatedQueued = this.testRunsUpdatedQueued.filter((tr) => tr.id !== testRun.id);
+    this.testRunsDeletedQueued.push(testRun);
+    this.testRunDeletedDebounced();
+    this.buildUpdated(testRun.buildId);
+  }
+
+  buildDeleted(buildDto: BuildDto) {
+    this.server.to(projectRoom(buildDto.projectId)).emit('build_deleted', buildDto);
+  }
+
+  private emitToProjects<T>(event: string, items: T[], projectOf: (item: T) => string | null | undefined): void {
+    for (const [projectId, group] of groupByProject(items, projectOf)) {
+      // members of the room see these rows in the interface, with their images (043)
+      this.server.to(projectRoom(projectId)).emit(
+        event,
+        withFileSignatures(group, (name) => signFile(name, this.fileKey))
+      );
+    }
+  }
+
+  // Older test runs have no projectId of their own; they go to their build's project.
+  private emitTestRuns(event: string, testRuns: Array<TestRun>): void {
+    const buildIds = [...new Set(testRuns.filter((tr) => !tr.projectId).map((tr) => tr.buildId))];
+    if (buildIds.length === 0) {
+      this.emitToProjects(event, testRuns, (tr) => tr.projectId);
+      return;
+    }
+    this.prismaService.build
+      .findMany({ where: { id: { in: buildIds } }, select: { id: true, projectId: true } })
+      .then((builds) => {
+        const projectOfBuild = new Map(builds.map((b) => [b.id, b.projectId]));
+        this.emitToProjects(event, testRuns, (tr) => tr.projectId ?? projectOfBuild.get(tr.buildId));
+      })
+      .catch((error) => this.logger.error(`${event} not sent: ${error}`));
+  }
+
+  private testRunUpdatedDebounced = debounce(
+    () => {
+      this.emitTestRuns('testRun_updated', this.testRunsUpdatedQueued);
+      this.testRunsUpdatedQueued = [];
+    },
+    this.debounceTimeout,
+    {
+      leading: true,
+      maxWait: this.maxWait,
+    }
+  );
+
+  private testRunCreatedDebounced = debounce(
+    () => {
+      this.emitTestRuns('testRun_created', this.testRunsCreatedQueued);
+      this.testRunsCreatedQueued = [];
+    },
+    this.debounceTimeout,
+    {
+      leading: true,
+      maxWait: this.maxWait,
+    }
+  );
+
+  private testRunDeletedDebounced = debounce(
+    () => {
+      this.emitTestRuns('testRun_deleted', this.testRunsDeletedQueued);
+      this.testRunsDeletedQueued = [];
+    },
+    this.debounceTimeout,
+    {
+      leading: true,
+      maxWait: this.maxWait,
+    }
+  );
+
+  private buildUpdatedDebounced = debounce(
+    () => {
+      // Deduplicate: during ingestion the queue holds one entry per test run.
+      // Stats are aggregated in the database — a build can hold thousands of
+      // test runs and this fires on every debounced event burst.
+      const buildIds = [...new Set(this.buildsUpdatedQueued)];
+      this.buildsUpdatedQueued = [];
+      Promise.all([
+        this.prismaService.build.findMany({ where: { id: { in: buildIds } } }),
+        getBuildsStats(this.prismaService, buildIds),
+      ])
+        .then(([builds, stats]) => {
+          this.emitToProjects(
+            'build_updated',
+            builds.map((build) => new BuildDto(build, stats.get(build.id))),
+            (build) => build.projectId
+          );
+        })
+        .catch((error) => this.logger.error(`build_updated not sent: ${error}`));
+    },
+    this.debounceTimeout,
+    {
+      leading: true,
+      maxWait: this.maxWait,
+    }
+  );
+}

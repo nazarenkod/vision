@@ -1,0 +1,132 @@
+# Vision demo
+
+Vision is visual regression testing for mobile apps, derived from Visual Regression Tracker (see [NOTICE](NOTICE)), with these additions:
+
+- **Light and dark themes, one motion system.** The theme follows the system until you pick one (the account menu at the bottom of the sidebar, Shift+D, or Profile → Language and theme). Screens move consistently and briefly; screenshots in the review never move once shown. Project settings are a page of their own with contents, search and an explicit Save that warns when someone else saved first. Approve and Reject can be undone for 8 seconds from their notification. Users shows when each person last signed in.
+- **One visual system, a labelled sidebar, full-height review.** Every page uses one type scale, three corner radii, one chip and link style. Navigation is a labelled sidebar (Projects, the chosen project's Builds, Baselines and Insights, Help with the version, and an account menu with Profile, language and theme) instead of a top bar. In the review both screens fill the height of the window, the tools sit in one grouped row and the queue reads “2 of 4 · 1 decided · 2 left”.
+- **Mobile accessibility.** The Appium page source sent with each screenshot is checked for missing labels, touch targets below 48 dp / 44 pt (or the project's own norm), low text contrast (measured on the screenshot), inputs without a label, duplicate labels and controls hidden from VoiceOver. Issues are compared with the baseline, so only issues a branch introduces count as new.
+- **Jira bugs for accessibility issues.** File a bug from the review screen by naming the task to link it to; screen, device, element, rule and an outlined screenshot are filled in. Issues can be linked to existing bugs or marked as false positives, and both decisions hold for later builds. When a filed issue disappears, the review says the bug can be closed.
+- **Build overview and report.** A build opens on **Overview**: who decided how many, five numbers, results per device and per feature, its Jira bugs, and what changed since the previous build of the branch. Clicking a device, feature or bug opens the review on just those screenshots, named in its header with “N of M”; a finished queue offers the next one. **Report** shows the whole report in the interface's language: print it as a PDF or copy a public link (open as long as the build is kept, revocable) that people without an account can open and that updates as decisions land. Vision never sends it anywhere itself.
+- **Change groups.** A build's changes are grouped so one decision covers many screenshots: by identical element change across screens (from the UI tree), or by matching change signature across devices and browsers. Noise (status bar clock, times and amounts, anti-aliasing) is recognised and can be ignored in one click.
+- **Precise comparison of mobile screens (from the UI tree).**
+  - *Element rules*: ignore an element, compare only it, or allow N% change inside it, by `id:`, `class:` or `text:` (regex allowed). Press **Select elements** (E) above the screenshots and click an element on either one: Ignore, Compare only or Allow 5% appear next to it, for this screen or every screen (compare only is for one screen). ↑ steps out to the element around it, Esc finishes; Shift-click or **Add more elements** selects up to three, which get one action from a numbered panel under the screenshots, a rule each, with one Undo; every rule can be undone from its notice. Compare only aligns the element with itself in the baseline, wherever it moved, and dims the rest; an element gone, resized or not found keeps the screenshot in review. Rules are drawn on both screenshots (hatched, dashed, outlined). The Changes tab opens with what came out and why, then “What's compared” with a map of the screen and rows by what they do; with Compare only, areas and rules outside the chosen elements fold into “No effect”. A baseline without a UI tree still compares only the chosen element, at its place, and keeps the screenshot in review. VRT's pixel areas are still there, behind **Areas**, with “Use element” on an area that covers exactly one element.
+  - *System bars* are left out of the comparison (project setting).
+  - *Moved elements* are compared at their new place (project setting): a banner pushing a list down no longer flags the whole list, while a change inside a moved element still shows.
+  - *Hidden changes*: a new label, a disabled or unclickable control, an invisible button on top. The pixels match, but the screenshot goes to review and is never auto-approved.
+  - *Component groups*: the same component (toolbar, bottom menu) changed the same way on several screens is one card.
+- **Checks keyed by name, a baseline per device.** A check is what the test names (plus custom tags). Each device, OS, browser or viewport it runs on keeps its own baseline, so pixel comparison is as exact as before. The review shows the check's devices side by side and approves them at once; rules and accessibility decisions belong to the check, not to one device. A device without its own baseline yet is still "new", but its accessibility issues are compared with the check's baseline on another device (the newest one, on its branch first). Existing data is grouped by name as it is, without a migration.
+- **Manual checks: CLI and MCP.** `vision.py` (served by the UI at `/cli/vision.py`, help menu → Manual checks shows the commands with your key) takes the screen of a connected Android device (adb), an Appium session (Android or iOS), the iOS simulator (screenshot only) or files, sends it as a check and prints the result: status, changed elements, hidden changes, accessibility issues, review link. `vision.py mcp` serves the same to AI assistants over MCP.
+- **Insights (left rail, per project).** For the last 30–365 days:
+  - baselines nothing was compared with (renamed or removed screens, gone devices), with bulk delete;
+  - unstable screens, ranked by flips: differed, then matched the same baseline again, so the screen moved, not the app;
+  - screens with the most accessibility issues and the most frequent issues across the app;
+  - tiny changes that keep being approved (worth a tolerance or element rule);
+  - screenshots with hidden changes, run after run;
+  - checks a device is missing;
+  - reviews waiting and the median time to a decision.
+
+  When the project's build limit removed older history, the page says so and judges only what is left.
+- **Cheap AI (optional).** One call per change group, never per screenshot: text only when the UI tree explains the change, two small crops otherwise, rules first for noise, every answer cached and paid calls capped per day. Also proposes labels for unlabeled icons in the screen's language.
+
+## Run it next to the production VRT
+
+The demo has its own ports, Postgres and image folder and works on a **copy** of production data. Nothing is written back. Step-by-step guide with checks and troubleshooting: [DEPLOY.md](DEPLOY.md).
+
+```bash
+cp .env.demo.example .env.demo
+```
+
+In `.env.demo`, set `JWT_SECRET` and `VISION_SECRET_KEY` to two different values from `openssl rand -base64 32` (the API does not start with the examples or shorter ones), the demo URLs, and where production lives: `PROD_PG_CONTAINER` (or `PROD_DATABASE_URL`) and `PROD_IMAGES_DIR`. Then:
+
+```bash
+./scripts/demo-clone-from-prod.sh
+```
+
+```bash
+./scripts/vision.sh up -d --build
+```
+
+Always use `./scripts/vision.sh` instead of plain `docker compose`: it pins the project name and refuses to act on containers that are not Vision's (see DEPLOY.md, section 0).
+
+The UI is on `DEMO_UI_PORT` (18080 by default), the API on `DEMO_API_PORT` (14200). Production users and API keys work in the copy. The nightly branch cleanup is off in the demo.
+
+Production must run VRT 5.x or later (the script checks this).
+
+## AI settings
+
+| Setting | Value |
+|---|---|
+| `AI_PROVIDER` | `gemini`, `ollama` or `none` (default) |
+| `GEMINI_API_KEY` | key for Gemini |
+| `AI_MODEL` | default `gemini-flash-lite-latest` for Gemini, `gemma3:4b` for Ollama |
+| `OLLAMA_BASE_URL` | e.g. `http://host.docker.internal:11434` |
+| `AI_DAILY_CALL_LIMIT` | paid calls per day, default 500 |
+
+On a Mac Studio (Apple Silicon), Ollama runs on the GPU natively:
+
+```bash
+brew install ollama
+```
+
+```bash
+ollama pull gemma3:4b
+```
+
+With `AI_PROVIDER=none` the AI parts of the UI are hidden; accessibility, Jira and change groups work without AI.
+
+## Jira
+
+In project settings: the Jira URL, and the issue and link type picked from the lists your own Jira returns (Automatic by default). Each person adds their own token in their profile: a personal access token for Server or Data Center; for Jira Cloud, the account email and an API token. The token is never returned by the API.
+
+## Send UI trees from tests
+
+Java/Kotlin with Appium and Selenide: add `.uiTree(WebDriverRunner.getWebDriver().getPageSource())` to `VisionOptions` (see `sdk-java/README.md`). It is the SDK's only change and is optional.
+
+Without a device, upload PNG + XML pairs exported from Appium Inspector:
+
+```bash
+./scripts/upload-uitree-samples.py samples/ --project "Mobile app" --api http://localhost:14200 --api-key KEY --device "Pixel 7" --density 420
+```
+
+To fill every Insights block in a separate project "Insights demo" (stale baselines, unstable screens, accessibility), with made-up history going back 120 days:
+
+```bash
+./scripts/seed-insights-demo.py --email admin@example.com
+```
+
+## Five-minute demo
+
+1. **Projects** shows the same layout as the other internal tools.
+2. Open a build. **Overview** says what waits and where; **Report** → **Copy public link** gives a live report to paste anywhere. **Changes** shows, for example, “Button "Pay" → "Send"” on 2 screens as one card. Approve all with one click. The status-bar-only card offers “Ignore status bar”.
+3. Open a screenshot. Accessibility issues are numbered on the screen. Click one to zoom to it.
+4. **Create Jira bug**: type the parent task and the bug is filed with screen, element and an outlined screenshot. The issue now shows “Bug MOB-…” and no longer counts as new. Each problem has an id (a11y-3f9c2a1b) that goes into the bug's summary and labels. The same issue on elements with the same component id (every `…#PbButton` with the same tap area) is one card and one bug, and once filed it is covered on every screen with that component. Before filing, Vision claims the problem in its database and searches Jira for its id, so two people filing at once, or a bug filed by hand, never make a duplicate. What counts as one problem is the same for every project: the same component with the same values for tap area and contrast, the same component for the other rules, one screen for a repeated label. Unlinking takes Vision's labels off the bug and marks it, so it is never linked back by itself. Jira tokens are personal: Profile → Jira.
+5. Mark another issue as a **False positive**. It stops counting in this and every later build.
+6. Upload a build where the issue is fixed. The review says the bug can be closed.
+7. A component group: “Component id/bottom_nav, changed the same way on 4 screens”. Screens that changed elsewhere too are listed apart.
+8. On a screen where a banner pushed the list down, only the banner is flagged; “Compared at their new place” lists the moved elements. Press E, click the banner, press I: the screen joins the component group.
+9. A screenshot with a disabled Pay button and identical pixels is in review with “1 hidden”.
+10. A check run on two devices: the review shows both at the top, “Approve all 2” takes both.
+11. Help menu → **Manual checks**: copy the three commands, then `python3 vision.py check "Payment"` with an emulator open prints the result and the review link.
+12. With AI on: each group gets a one-line explanation and a verdict, and unlabeled icons get a proposed label.
+
+## Manual checks (CLI, MCP)
+
+```bash
+curl -fsSLO http://VISION_UI/cli/vision.py
+```
+
+```bash
+python3 vision.py config --api http://VISION_API --key YOUR_API_KEY --project "Mobile app"
+```
+
+```bash
+python3 vision.py check "Payment"
+```
+
+Sources: the only adb device (default), `--serial`, `--appium http://127.0.0.1:4723` (Android or iOS), `--simulator` (iOS, screenshot only), `--png f.png --xml f.xml`. `start` / `finish` put several checks into one build. Checks go to the branch `manual` and are compared with the main branch; `config --device … --os …` names the device as the autotests do, so their baselines are used pixel by pixel. Sending needs the editor role. Python 3.8+, no packages.
+
+MCP: `claude mcp add vision -- python3 /path/to/vision.py mcp` (any MCP client can run `python3 vision.py mcp` over stdio). Tools: `vision_check`, `vision_devices`, `vision_session`.
+
+## Changes against the original project
+
+All schema changes are additive (nullable columns, new tables `A11yIssueState`, `A11yProblem`, `A11yDecision`, `AiResult` and `CrossDeviceCheck`, personal Jira fields on `User`, indexes), so the fork can later run on a live database too. Specs, decisions and the data model are in [docs/](docs/README.md). The Java SDK differs from the original project's by one optional field, `TestRunOptions.uiTree`; servers without UI tree support ignore it. Code is in `backend/`, `frontend/` and `sdk-java/`, imported with `git subtree` from the original project's repositories.

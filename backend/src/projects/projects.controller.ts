@@ -1,0 +1,203 @@
+import {
+  Controller,
+  Get,
+  UseGuards,
+  Body,
+  Post,
+  Param,
+  ParseUUIDPipe,
+  Delete,
+  Put,
+  Logger,
+  Query,
+} from '@nestjs/common';
+import { User } from '@prisma/client';
+import { ApiTags, ApiBearerAuth, ApiOkResponse, ApiParam, ApiQuery } from '@nestjs/swagger';
+import { JwtAuthGuard } from '../auth/guards/auth.guard';
+import { ProjectsService, toPublicProject } from './projects.service';
+import { CreateProjectDto } from './dto/create-project.dto';
+import { Role } from '@prisma/client';
+import { ProjectDto } from './dto/project.dto';
+import { UpdateProjectDto } from './dto/update-project.dto';
+import { RoleGuard } from '../auth/guards/role.guard';
+import { Roles } from '../shared/roles.decorator';
+import { A11yIssuesService } from '../a11y/a11y-issues.service';
+import { NoProjectData, ProjectFrom, inBody, inParam } from './project-access';
+import { ProjectAccessService, ProjectMember } from './project-access.service';
+import { CurrentUser } from '../shared/current-user.decorator';
+import { EventsGateway } from '../shared/events/events.gateway';
+import { ScreenSearchService } from '../ui-tree/screen-search.service';
+
+@Controller('projects')
+@ApiTags('projects')
+export class ProjectsController {
+  private readonly logger = new Logger(ProjectsController.name);
+
+  constructor(
+    private projectsService: ProjectsService,
+    private a11yIssuesService: A11yIssuesService,
+    private projectAccess: ProjectAccessService,
+    private eventsGateway: EventsGateway,
+    private screenSearchService: ScreenSearchService
+  ) {}
+
+  @NoProjectData()
+  @Get()
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  @ApiOkResponse({ type: ProjectDto, isArray: true })
+  // an admin sees every project, anyone else the ones they were given (REQ-042-01, 04)
+  async getAll(@CurrentUser() user: User) {
+    const projects = await this.projectsService.findAll();
+    const granted = user.role === Role.admin ? null : await this.projectAccess.grantedTo(user.id);
+    return projects.filter((project) => !granted || granted.has(project.id)).map(toPublicProject);
+  }
+
+  @ProjectFrom(inParam('id', 'project'))
+  @Get(':id/devices')
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  @ApiParam({ name: 'id', required: true })
+  devices(@Param('id', new ParseUUIDPipe()) id: string) {
+    return this.projectsService.findDevices(id);
+  }
+
+  /** Texts, ids and components of the project's screens that hold what is typed (053, beta). */
+  @ProjectFrom(inParam('id', 'project'))
+  @Get(':id/screen-search/suggest')
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  @ApiParam({ name: 'id', required: true })
+  @ApiQuery({ name: 'q', required: true })
+  @ApiQuery({ name: 'buildId', required: false })
+  screenSuggest(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Query('q') q: string,
+    @Query('buildId') buildId?: string
+  ) {
+    return this.screenSearchService.suggest(id, q ?? '', { buildId: buildId || undefined });
+  }
+
+  /** Screens of the project whose UI tree holds a text or what a selector finds (053). */
+  @ProjectFrom(inParam('id', 'project'))
+  @Get(':id/screen-search')
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  @ApiParam({ name: 'id', required: true })
+  @ApiQuery({ name: 'q', required: true, description: 'Text, or a selector: id:, class:, text:, xpath:, component:' })
+  @ApiQuery({ name: 'buildId', required: false, description: 'Search the screens of this build instead of baselines' })
+  @ApiQuery({ name: 'page', required: false })
+  screenSearch(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Query('q') q: string,
+    @Query('buildId') buildId?: string,
+    @Query('page') page?: string
+  ) {
+    const number = Math.max(0, Number.parseInt(page ?? '0', 10) || 0);
+    return this.screenSearchService.search(id, q ?? '', { buildId: buildId || undefined }, number);
+  }
+
+  @ProjectFrom(inParam('id', 'project'))
+  @Get(':id/browsers')
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  @ApiParam({ name: 'id', required: true })
+  browsers(@Param('id', new ParseUUIDPipe()) id: string) {
+    return this.projectsService.findBrowsers(id);
+  }
+
+  @ProjectFrom(inParam('id', 'project'))
+  @Get(':id/jira/types')
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RoleGuard)
+  @Roles(Role.admin, Role.editor)
+  @ApiParam({ name: 'id', required: true })
+  @ApiQuery({ name: 'url', required: false })
+  // the address from the page, maybe not saved yet (REQ-049-09); the person's own token (REQ-049-03)
+  async jiraTypes(@Param('id', new ParseUUIDPipe()) id: string, @Query('url') url: string, @CurrentUser() user: User) {
+    // the access check lets an admin through for any id: an unknown project gets no Jira call (051)
+    await this.projectsService.findOne(id);
+    return this.projectsService.jiraTypes(url, user.id);
+  }
+
+  @NoProjectData()
+  @Post()
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RoleGuard)
+  @Roles(Role.admin, Role.editor)
+  @ApiOkResponse({ type: ProjectDto })
+  async create(@CurrentUser() user: User, @Body() createProjectDto: CreateProjectDto) {
+    const project = await this.projectsService.create(createProjectDto);
+    // an editor keeps what they made; an admin reaches every project anyway (REQ-042-07)
+    if (user.role !== Role.admin) await this.projectAccess.grant(project.id, user.id, user);
+    return toPublicProject(project);
+  }
+
+  @ProjectFrom(inBody('id', 'project'))
+  @Put()
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RoleGuard)
+  @Roles(Role.admin, Role.editor)
+  @ApiOkResponse({ type: ProjectDto })
+  async update(@Body() projectDto: UpdateProjectDto) {
+    const project = await this.projectsService.update(projectDto);
+    if (projectDto.uiTreeSettings) {
+      // accessibility norms may have changed: recount the latest builds without holding up the save
+      this.a11yIssuesService.recountLatestBuilds(project.id).catch((error) => {
+        this.logger.warn(`Accessibility recount for ${project.id} failed: ${error}`);
+      });
+    }
+    return toPublicProject(project);
+  }
+
+  @ProjectFrom(inParam('id', 'project'))
+  @Delete(':id')
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RoleGuard)
+  @Roles(Role.admin, Role.editor)
+  @ApiOkResponse({ type: ProjectDto })
+  @ApiParam({ name: 'id', required: true })
+  async remove(@Param('id', new ParseUUIDPipe()) id: string) {
+    return toPublicProject(await this.projectsService.remove(id));
+  }
+
+  /** Who may see and work in the project; admins are not listed, they reach every project (REQ-042-05). */
+  @ProjectFrom(inParam('id', 'project'))
+  @Get(':id/access')
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RoleGuard)
+  @Roles(Role.admin)
+  access(@Param('id', new ParseUUIDPipe()) id: string): Promise<ProjectMember[]> {
+    return this.projectAccess.members(id);
+  }
+
+  @ProjectFrom(inParam('id', 'project'))
+  @Put(':id/access/:userId')
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RoleGuard)
+  @Roles(Role.admin)
+  async grant(
+    @CurrentUser() admin: User,
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Param('userId', new ParseUUIDPipe()) userId: string
+  ): Promise<ProjectMember[]> {
+    await this.projectsService.findOne(id);
+    await this.projectAccess.grant(id, userId, admin);
+    return this.projectAccess.members(id);
+  }
+
+  @ProjectFrom(inParam('id', 'project'))
+  @Delete(':id/access/:userId')
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RoleGuard)
+  @Roles(Role.admin)
+  async revoke(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Param('userId', new ParseUUIDPipe()) userId: string
+  ): Promise<ProjectMember[]> {
+    await this.projectAccess.revoke(id, userId);
+    // the next request is refused, and live events stop now (REQ-042-03)
+    this.eventsGateway.leaveProject(userId, id);
+    return this.projectAccess.members(id);
+  }
+}

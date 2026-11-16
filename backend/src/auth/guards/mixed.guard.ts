@@ -1,0 +1,26 @@
+import { ExecutionContext, Injectable, CanActivate } from '@nestjs/common';
+import { ApiGuard } from './api.guard';
+import { JwtAuthGuard } from './auth.guard';
+
+@Injectable()
+export class MixedGuard implements CanActivate {
+  constructor(
+    private readonly apiGuard: ApiGuard,
+    private readonly authGuard: JwtAuthGuard
+  ) {}
+
+  async canActivate(context: ExecutionContext): Promise<boolean> {
+    let jwtAuth = false;
+    try {
+      jwtAuth = (await this.authGuard.canActivate(context)) as boolean;
+    } catch {}
+    // signed in: that person acts, whatever key the request also carries
+    if (jwtAuth) return true;
+
+    let apiAuth = false;
+    try {
+      apiAuth = await this.apiGuard.canActivate(context);
+    } catch {}
+    return jwtAuth || apiAuth;
+  }
+}

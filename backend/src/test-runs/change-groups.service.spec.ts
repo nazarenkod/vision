@@ -1,0 +1,232 @@
+import { readFileSync } from 'fs';
+import path from 'path';
+import { TestRun } from '@prisma/client';
+import { generateTestRun, TEST_PROJECT } from '../_data_';
+import { parseUiTree } from '../ui-tree/ui-tree.parser';
+import { UiTree } from '../ui-tree/ui-tree.types';
+import { ChangeGroupsService } from './change-groups.service';
+
+const xml = readFileSync(path.join(__dirname, '../ui-tree/__fixtures__/android-payment.xml'), 'utf8');
+const tree = (source: string) => parseUiTree(source, { imageWidth: 1080, imageHeight: 2400, densityDpi: 420 });
+
+function setup(runs: TestRun[], trees: Record<string, UiTree>, signatures: Record<string, number[] | null>) {
+  const prismaService = {
+    testRun: { findMany: jest.fn().mockResolvedValue(runs) },
+    project: { findUnique: jest.fn().mockResolvedValue(TEST_PROJECT) },
+  };
+  const uiTreeService = { load: jest.fn(async (name: string) => trees[name] ?? null) };
+  const testRunsService = { getChangeSignature: jest.fn(async (run: TestRun) => signatures[run.id] ?? null) };
+  const staticService = { getImageBuffer: jest.fn().mockResolvedValue(null) };
+  return new ChangeGroupsService(
+    prismaService as never,
+    staticService as never,
+    uiTreeService as never,
+    testRunsService as never
+  );
+}
+
+const run = (id: string, overrides: Partial<TestRun> = {}) =>
+  generateTestRun({ id, status: 'unresolved', baselineName: `${id}.baseline.png`, diffPercent: 2, ...overrides });
+
+describe('ChangeGroupsService', () => {
+  it('groups the same element change across screens when UI trees are available', async () => {
+    const base = tree(xml);
+    const payRenamed = tree(xml.replace('text="Pay"', 'text="Send"'));
+    const otherChange = tree(xml.replace('text="Commission 0 UAH"', 'text="Fee 0 UAH"'));
+    const runs = [
+      run('a', { name: 'Payment', uiTreeName: 'ta', baselineUiTreeName: 'base' }),
+      run('b', { name: 'Transfer', uiTreeName: 'tb', baselineUiTreeName: 'base', device: 'Galaxy' }),
+      run('c', { name: 'Payment', uiTreeName: 'tc', baselineUiTreeName: 'base' }),
+    ];
+    const service = setup(runs, { base, ta: payRenamed, tb: payRenamed, tc: otherChange }, {});
+
+    const groups = await service.getGroups('build');
+
+    expect(groups.map((g) => [g.kind, g.title, g.testRuns.map((r) => r.id)])).toEqual([
+      ['structural', 'Button "Send" (id/btn_pay)', ['a', 'b']],
+      ['structural', 'TextView "Fee 0 UAH" (id/tv_fee)', ['c']],
+    ]);
+    expect(groups[0].screens).toEqual(['Payment', 'Transfer']);
+    expect(groups[0].changes[0]).toMatchObject({ kind: 'text', before: 'Pay', after: 'Send' });
+  });
+
+  it('leaves variable-text changes out of the fingerprint', async () => {
+    const base = tree(xml);
+    // the same button change on both screens, each with its own fee shown
+    const withFee = (fee: string) =>
+      tree(xml.replace('text="Pay"', 'text="Send"').replace('text="Commission 0 UAH"', `text="Commission ${fee} UAH"`));
+    const runs = [
+      run('a', { name: 'Payment', uiTreeName: 'ta', baselineUiTreeName: 'base' }),
+      run('b', { name: 'Payment', uiTreeName: 'tb', baselineUiTreeName: 'base', device: 'Galaxy' }),
+    ];
+    const settings = {
+      elementRules: [
+        {
+          id: 'fee',
+          selector: 'id:tv_fee',
+          action: 'variable',
+          parts: [{ text: 'Commission ' }, { pattern: '\\d+' }, { text: ' UAH' }],
+        },
+      ],
+    };
+    const service = setup(runs, { base, ta: withFee('12'), tb: withFee('30') }, {});
+    service['prismaService'].project.findUnique = jest
+      .fn()
+      .mockResolvedValue({ ...TEST_PROJECT, uiTreeSettings: JSON.stringify(settings) });
+
+    const groups = await service.getGroups('build');
+
+    expect(groups.map((g) => [g.kind, g.testRuns.map((r) => r.id)])).toEqual([['structural', ['a', 'b']]]);
+  });
+
+  it('leaves a run out of a structural group when part of its change is invisible to the tree', async () => {
+    const base = tree(xml);
+    const payRenamed = tree(xml.replace('text="Pay"', 'text="Send"'));
+    const payArea = JSON.stringify([{ x: 40, y: 2200, width: 1000, height: 128 }]);
+    const payAndFee = JSON.stringify([
+      { x: 40, y: 2200, width: 1000, height: 128 },
+      { x: 48, y: 1008, width: 304, height: 32 },
+    ]);
+    const runs = [
+      run('a', { name: 'Payment', uiTreeName: 't', baselineUiTreeName: 'base', diffRegions: payAndFee }),
+      run('b', { name: 'Transfer', uiTreeName: 't', baselineUiTreeName: 'base', diffRegions: payArea }),
+    ];
+    const service = setup(runs, { base, t: payRenamed }, {});
+
+    const groups = await service.getGroups('build');
+
+    expect(groups.map((g) => [g.kind, g.testRuns.map((r) => r.id)])).toEqual([
+      ['structural', ['b']],
+      ['visual', ['a']],
+    ]);
+  });
+
+  it('groups one component changed the same way on several screens', async () => {
+    const nav = (covers: boolean) =>
+      JSON.stringify([
+        {
+          componentId: 'com.bank.app:id/bottom_nav',
+          key: 'k',
+          before: 'aaa',
+          after: 'bbb',
+          bounds: {},
+          coversAllChanges: covers,
+        },
+      ]);
+    const runs = [
+      run('a', { name: 'Home', componentChanges: nav(true) }),
+      run('b', { name: 'Payments', componentChanges: nav(true) }),
+      run('c', { name: 'Profile', componentChanges: nav(false) }),
+      run('d', { name: 'Cards' }),
+    ];
+    const service = setup(runs, {}, {});
+
+    const groups = await service.getGroups('build');
+
+    const component = groups.find((g) => g.kind === 'component');
+    expect(component.title).toBe('Component id/bottom_nav');
+    expect(component.testRuns.map((r) => r.id)).toEqual(['a', 'b']);
+    expect(component.screens).toEqual(['Home', 'Payments', 'Profile']);
+    expect(component.alsoChangedElsewhere.map((r) => r.id)).toEqual(['c']);
+    // the run with other changes is still reviewed on its own
+    expect(groups.some((g) => g.kind === 'visual' && g.testRuns.some((r) => r.id === 'c'))).toBe(true);
+  });
+
+  it('groups runs of one screen with matching change signatures, and lists new screenshots last', async () => {
+    const same = Array.from({ length: 64 }, (_, i) => (i === 3 ? 1 : 0));
+    const different = Array.from({ length: 64 }, (_, i) => (i === 40 ? 1 : 0));
+    const runs = [
+      run('a', { name: 'Home', browser: 'chrome' }),
+      run('b', { name: 'Home', browser: 'firefox', diffPercent: 2.5 }),
+      run('c', { name: 'Home', browser: 'safari' }),
+      run('d', { name: 'Home', browser: 'edge', diffPercent: 30 }),
+      run('e', { name: 'Login', status: 'new', baselineName: null }),
+    ];
+    const service = setup(runs, {}, { a: same, b: same, c: different, d: same });
+
+    const groups = await service.getGroups('build');
+
+    expect(groups.map((g) => [g.kind, g.testRuns.map((r) => r.id)])).toEqual([
+      ['visual', ['a', 'b']],
+      ['visual', ['c']],
+      ['visual', ['d']],
+      ['new', ['e']],
+    ]);
+    expect(groups[0].id).toHaveLength(16);
+  });
+
+  it('marks a group whose members only changed in the status bar', async () => {
+    const regions = JSON.stringify([{ x: 900, y: 10, width: 100, height: 30 }]);
+    const runs = [
+      run('a', { name: 'Home', diffRegions: regions, uiTreeName: 't', baselineUiTreeName: 't' }),
+      run('b', { name: 'Home', diffRegions: regions, uiTreeName: 't', baselineUiTreeName: 't' }),
+    ];
+    const signature = Array.from({ length: 64 }, (_, i) => (i === 0 ? 1 : 0));
+    const service = setup(runs, { t: tree(xml) }, { a: signature, b: signature });
+
+    const [group] = await service.getGroups('build');
+
+    expect(group.testRuns).toHaveLength(2);
+    expect(group.noise).toMatchObject({ kind: 'status-bar' });
+  });
+});
+
+describe('ChangeGroupsService.elementReview', () => {
+  it('asks for screens waiting for a decision with both trees and reviews what they changed', async () => {
+    const tree = (title: string) =>
+      ({
+        format: 'appium-android',
+        scale: 1,
+        width: 1080,
+        height: 2400,
+        pixelsPerDp: 2.625,
+        pixelsPerDpEstimated: false,
+        nodes: [
+          {
+            index: 0,
+            parent: null,
+            depth: 0,
+            key: 'id:toolbar',
+            className: 'android.view.View',
+            resourceId: 'toolbar',
+            text: title,
+            label: '',
+            hint: '',
+            clickable: false,
+            focusable: false,
+            enabled: true,
+            visible: true,
+            accessible: true,
+            bounds: { x: 0, y: 0, width: 1080, height: 150 },
+          },
+        ],
+      }) as UiTree;
+    const findMany = jest.fn().mockResolvedValue([
+      { id: 'r1', name: 'Payments', imageName: 'r1.png', baselineName: 'b1.png', merge: false },
+      { id: 'r2', name: 'Cards', imageName: 'r2.png', baselineName: 'b2.png', merge: false },
+    ]);
+    const regions = [
+      { region: { x: 0, y: 0, width: 10, height: 10 }, key: 'id:toolbar', element: 'View', resourceId: null },
+    ];
+    const uiTreeService = {
+      elementChanges: jest.fn(async () => ({ tree: tree('A'), baselineTree: tree('A'), regions, changes: [] })),
+    };
+    const service = new ChangeGroupsService(
+      { testRun: { findMany } } as never,
+      {} as never,
+      uiTreeService as never,
+      {} as never
+    );
+
+    const result = await service.elementReview('b1');
+
+    expect(findMany.mock.calls[0][0].where).toEqual({
+      buildId: 'b1',
+      status: 'unresolved',
+      baselineName: { not: null },
+      uiTreeName: { not: null },
+      baselineUiTreeName: { not: null },
+    });
+    expect(result.map((element) => [element.key, element.screens, element.only])).toEqual([['id:toolbar', 2, 2]]);
+  });
+});

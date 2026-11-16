@@ -1,0 +1,329 @@
+import { A11yRule, A11yViolation } from './a11y.types';
+import { JiraField, JiraIssueType, JiraParentIssue, JiraUser } from './jira.client';
+
+/** The functional block, or service, is what a check's name says before its first dot. */
+export function functionalBlock(testName: string): string {
+  const index = testName.indexOf('.');
+  return (index > 0 ? testName.slice(0, index) : testName).trim();
+}
+
+/** The rest of the name after the first dot, which usually names the screen or step. */
+function nameAfterBlock(testName: string): string {
+  const index = testName.indexOf('.');
+  return index > 0 ? testName.slice(index + 1).trim() : '';
+}
+
+const EXPECTED: Record<A11yRule, string> = {
+  'missing-label':
+    'Елемент має доступну назву (contentDescription / accessibilityLabel), яку озвучує TalkBack / VoiceOver.',
+  'touch-target': 'Область натискання не менше 48 × 48 dp (Android) або 44 × 44 pt (iOS).',
+  'duplicate-label': 'Різні елементи мають різні назви, щоб їх можна було розрізнити на слух.',
+  'low-contrast': 'Контраст тексту з фоном не менше 4.5 : 1 (3 : 1 для великого тексту).',
+  'input-without-label': 'Поле введення має підпис або підказку, яку озвучує скрінрідер.',
+  'redundant-role': 'Назва не містить ролі елемента («кнопка», «зображення»): роль озвучується автоматично.',
+  'not-accessible': 'Інтерактивний елемент доступний для скрінрідера.',
+};
+
+/**
+ * What should be, by the norm the issue was found by: the team's own tap area
+ * or contrast when the project set one (026), else the platform's.
+ */
+function expected(violation: A11yViolation): string {
+  const details = violation.details ?? {};
+  if (violation.rule === 'touch-target' && typeof details.min === 'number') {
+    const unit = details.unit === 'pt' ? 'pt' : 'dp';
+    return `Область натискання не менше ${details.min} × ${details.min} ${unit}.`;
+  }
+  if (violation.rule === 'low-contrast' && typeof details.required === 'number') {
+    return `Контраст тексту з фоном не менше ${details.required} : 1.`;
+  }
+  return EXPECTED[violation.rule] ?? 'Елемент відповідає вимогам доступності.';
+}
+
+const escapeWiki = (value: string) => value.replace(/\|/g, '/').replace(/[{}]/g, '');
+
+/** Summary and description of the bug, following the team's bug template. */
+export function bugText(input: {
+  // one problem: the same rule on one or more elements of a component
+  violations: A11yViolation[];
+  testName: string;
+  title: string | null;
+  device: string;
+  url: string;
+  // the problem's id, and its component when the problem is a component's (same on every screen)
+  problem: { code: string; component: string | null; everyScreen: boolean };
+}): { summary: string; description: string; block: string; screen: string } {
+  const { violations, testName, title, device, url, problem } = input;
+  const [first] = violations;
+  const block = functionalBlock(testName);
+  const screen = title || nameAfterBlock(testName) || testName;
+  const names = violations.map((violation) => violation.label || violation.resourceId || violation.className);
+  const elements = names.length > 2 ? `${names.slice(0, 2).join(', ')} +${names.length - 2}` : names.join(', ');
+  const where = screen === block ? block : `${block}. ${screen}`;
+  // the id goes last and whole, so a text search for it always finds the bug
+  const tail = ` [${problem.code}]`;
+  const summary = `[A11y] ${where}: ${first.title} (${elements})`.slice(0, 250 - tail.length) + tail;
+  const rows: Array<[string, string]> = [
+    ['ID проблеми (Vision)', problem.code],
+    ...(problem.component ? ([['Компонент', problem.component]] as Array<[string, string]>) : []),
+    ['Сервіс / функціональний блок', block],
+    ['Екран', screen],
+    ['Перевірка', testName],
+    ['Пристрій', device || '—'],
+    ['Правило', `${first.title} (${first.rule})`],
+    ...(violations.length === 1
+      ? ([
+          ['Елемент', `${first.className}${first.resourceId ? ` (${first.resourceId})` : ''}`],
+          ['Озвучується як', first.label ? `"${first.label}"` : 'нічого'],
+        ] as Array<[string, string]>)
+      : []),
+  ];
+  const actual =
+    violations.length === 1
+      ? [first.message]
+      : [
+          `Та сама проблема на ${violations.length} елементах одного компонента:`,
+          ...violations.map((v) => `# ${v.message}`),
+        ];
+  const details =
+    violations.length === 1 ? Object.entries(first.details ?? {}).map(([key, value]) => `* ${key}: ${value}`) : [];
+  const description = [
+    'h3. Фактичний результат',
+    ...actual,
+    '',
+    'h3. Очікуваний результат',
+    expected(first),
+    '',
+    ...rows.map(([key, value]) => `||${key}|${escapeWiki(value)}|`),
+    ...(details.length ? ['', '*Деталі*', ...details] : []),
+    '',
+    ...(problem.everyScreen
+      ? [`Проблема компонента ${problem.component}: та сама на кожному екрані, де він є. Один баг на всі екрани.`, '']
+      : []),
+    `Знайти всі баги цієї проблеми: labels = ${problem.code} або текст "${problem.code}".`,
+    violations.length === 1
+      ? 'На скріншоті у вкладенні проблемний елемент обведено.'
+      : 'На скріншоті у вкладенні проблемні елементи обведено.',
+    `[Відкрити у Vision|${url}]`,
+  ].join('\n');
+  return { summary, description, block, screen };
+}
+
+/**
+ * The issue type to offer first: the project's configured one, else a bug
+ * sub-task, else a bug, else the first sub-task.
+ */
+export function defaultIssueType(types: JiraIssueType[], configured?: string | null): JiraIssueType | null {
+  const byName = (pattern: RegExp, subtask?: boolean) =>
+    types.find((type) => pattern.test(type.name) && (subtask === undefined || type.subtask === subtask));
+  const bug = /bug|баг|помилк|ошибк|дефект|defect/i;
+  return (
+    (configured && types.find((type) => type.name.toLowerCase() === configured.toLowerCase())) ||
+    byName(bug, true) ||
+    byName(bug) ||
+    types.find((type) => type.subtask) ||
+    types[0] ||
+    null
+  );
+}
+
+const SEVERITY_FIELD = /серйозн|серьезн|severity/i;
+const CUSTOMER_FIELD = /замовник|заказчик|customer/i;
+// filled from the issue itself or by Jira
+const HANDLED = new Set(['project', 'issuetype', 'summary', 'description', 'parent', 'reporter', 'assignee', 'labels']);
+
+const userRef = (user: JiraUser) => (user.accountId ? { accountId: user.accountId } : { name: user.name ?? user.key });
+
+const display = (value: unknown): string => {
+  if (value === null || value === undefined) return '';
+  if (Array.isArray(value)) return value.map(display).filter(Boolean).join(', ');
+  if (typeof value === 'object') {
+    const object = value as Record<string, unknown>;
+    return String(object.displayName ?? object.value ?? object.name ?? object.key ?? object.id ?? '');
+  }
+  return String(value);
+};
+
+/** A task's field value in the form Jira takes when creating an issue. */
+export function copyValue(field: JiraField, value: unknown): unknown {
+  if (value === null || value === undefined || (Array.isArray(value) && !value.length)) return undefined;
+  const ref = (item: unknown) => {
+    const object = item as Record<string, unknown>;
+    if (field.schema.items === 'user' || field.schema.type === 'user') return userRef(object as JiraUser);
+    if (object && typeof object === 'object') {
+      if (object.id !== undefined) {
+        const child = object.child as Record<string, unknown> | undefined;
+        return child?.id ? { id: String(object.id), child: { id: String(child.id) } } : { id: String(object.id) };
+      }
+      return undefined;
+    }
+    return item;
+  };
+  if (field.schema.type === 'array') {
+    const items = (value as unknown[]).map(ref).filter((item) => item !== undefined);
+    return items.length ? items : undefined;
+  }
+  if (['string', 'number', 'date', 'datetime', 'any'].includes(field.schema.type)) return value;
+  return ref(value);
+}
+
+/** A field of the bug the person filing it can set: who, which option, what text. */
+export interface BugInput {
+  id: string;
+  name: string;
+  required: boolean;
+  type: 'user' | 'option' | 'options' | 'text' | 'number';
+  options?: Array<{ id: string; label: string }>;
+  // severity and customer are found by name; the dialog treats them apart
+  role?: 'severity' | 'customer';
+  // current value in the form the create call takes, and how to show it
+  value?: unknown;
+  display?: string;
+}
+
+function inputType(field: JiraField): BugInput['type'] | null {
+  const { type, items } = field.schema;
+  if (type === 'user') return 'user';
+  if (type === 'array' && field.allowedValues?.length && items !== 'user') return 'options';
+  if (field.allowedValues?.length) return 'option';
+  if (type === 'string') return 'text';
+  if (type === 'number') return 'number';
+  return null;
+}
+
+export interface BugFields {
+  fields: Record<string, unknown>;
+  // severity, customer and required fields nobody filled: the dialog lets them be set
+  inputs: BugInput[];
+  // what Vision filled in, to show before creating
+  filled: Array<{ field: string; value: string; source: 'task' | 'vision' }>;
+  // required fields Vision could not fill
+  missing: string[];
+  // assignee to set after creating, when the create screen has no assignee field
+  assignAfter: JiraUser | null;
+}
+
+/**
+ * Fields of the new bug for the chosen issue type: a sub-task goes under the
+ * task, the task's assignee takes it, severity is S4, the customer and any
+ * other required field the task has a value for are copied from the task.
+ * Only fields on the create screen are sent, so Jira never refuses one.
+ */
+export function buildBugFields(input: {
+  meta: JiraField[];
+  parent: JiraParentIssue;
+  issueType: JiraIssueType;
+  summary: string;
+  description: string;
+  labels: string[];
+  // set for the person when given (S4 for accessibility); without it they must choose one
+  severity?: string;
+  // values the person chose in the dialog, by field id, in create form
+  overrides?: Record<string, unknown>;
+}): BugFields {
+  const { meta, parent, issueType } = input;
+  const onScreen = new Map(meta.map((field) => [field.id, field]));
+  const fields: Record<string, unknown> = {
+    project: { key: parent.projectKey },
+    issuetype: { id: issueType.id },
+    summary: input.summary,
+  };
+  const filled: BugFields['filled'] = [];
+  if (onScreen.has('description') || !meta.length) fields.description = input.description;
+  if (issueType.subtask) {
+    fields.parent = { key: parent.key };
+    filled.push({ field: 'Parent', value: parent.key, source: 'task' });
+  }
+
+  let assignAfter: JiraUser | null = null;
+  if (parent.assignee) {
+    if (onScreen.has('assignee')) fields.assignee = userRef(parent.assignee);
+    else assignAfter = parent.assignee;
+    filled.push({ field: 'Assignee', value: display(parent.assignee), source: 'task' });
+  }
+  if (onScreen.has('labels') && input.labels.length) {
+    fields.labels = input.labels;
+    filled.push({ field: 'Labels', value: input.labels.join(', '), source: 'vision' });
+  }
+
+  for (const field of meta) {
+    if (HANDLED.has(field.id) || fields[field.id] !== undefined) continue;
+    if (SEVERITY_FIELD.test(field.name) && input.severity !== undefined) {
+      const wanted = input.severity.toLowerCase();
+      const option =
+        field.allowedValues?.find((item) => display(item).trim().toLowerCase() === wanted) ??
+        field.allowedValues?.find((item) => display(item).trim().toLowerCase().startsWith(wanted));
+      const value = option
+        ? field.schema.type === 'array'
+          ? [{ id: option.id }]
+          : { id: option.id }
+        : field.allowedValues?.length
+          ? undefined
+          : input.severity;
+      if (value !== undefined) {
+        fields[field.id] = value;
+        filled.push({ field: field.name, value: option ? display(option) : input.severity, source: 'vision' });
+        continue;
+      }
+    }
+    if (field.required || CUSTOMER_FIELD.test(field.name)) {
+      const copied = copyValue(field, parent.fields[field.id]);
+      if (copied !== undefined) {
+        fields[field.id] = copied;
+        filled.push({ field: field.name, value: display(parent.fields[field.id]), source: 'task' });
+      }
+    }
+  }
+
+  // what the person chose wins over what Vision worked out
+  const chosen = new Set<string>();
+  for (const [id, value] of Object.entries(input.overrides ?? {})) {
+    const empty = value === null || value === undefined || value === '' || (Array.isArray(value) && !value.length);
+    if (!onScreen.has(id) || HANDLED.has(id) || empty) continue;
+    fields[id] = value;
+    chosen.add(id);
+  }
+
+  const missing = meta
+    .filter((field) => field.required && !HANDLED.has(field.id) && fields[field.id] === undefined)
+    // Jira fills a required field that has a default value by itself
+    .filter((field) => !field.hasDefaultValue);
+
+  const shownAsInput = (field: JiraField) =>
+    SEVERITY_FIELD.test(field.name) || CUSTOMER_FIELD.test(field.name) || missing.includes(field);
+  const inputs: BugInput[] = meta
+    .filter((field) => !HANDLED.has(field.id) && shownAsInput(field))
+    .map((field) => ({ field, type: inputType(field) }))
+    .filter((entry): entry is { field: JiraField; type: BugInput['type'] } => entry.type !== null)
+    .map(({ field, type }) => {
+      const automatic = filled.find((item) => item.field === field.name);
+      const role = SEVERITY_FIELD.test(field.name)
+        ? 'severity'
+        : CUSTOMER_FIELD.test(field.name)
+          ? 'customer'
+          : undefined;
+      return {
+        id: field.id,
+        name: field.name,
+        // no severity given means the person picks one, even where Jira would take none
+        required: (field.required && !field.hasDefaultValue) || (role === 'severity' && input.severity === undefined),
+        type,
+        ...(role ? { role } : {}),
+        ...(field.allowedValues?.length
+          ? { options: field.allowedValues.map((item) => ({ id: String(item.id), label: display(item) })) }
+          : {}),
+        ...(fields[field.id] !== undefined ? { value: fields[field.id] } : {}),
+        ...(automatic && !chosen.has(field.id) ? { display: automatic.value } : {}),
+      };
+    });
+  const inputIds = new Set(inputs.map((item) => item.id));
+
+  return {
+    fields,
+    inputs,
+    // fields shown as inputs are not listed twice
+    filled: filled.filter((item) => !meta.some((field) => inputIds.has(field.id) && field.name === item.field)),
+    missing: missing.map((field) => field.name),
+    assignAfter,
+  };
+}

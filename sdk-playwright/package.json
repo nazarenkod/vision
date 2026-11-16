@@ -1,0 +1,35 @@
+{
+  "name": "@vision/sdk-playwright",
+  "version": "1.0.0",
+  "description": "Vision visual checks for Playwright: screenshots with the page's UI tree",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist",
+    "LICENSE",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json && node scripts/copy-collector.cjs",
+    "pretest": "npm run build",
+    "test": "playwright test --trace off",
+    "prepack": "npm run build"
+  },
+  "license": "Apache-2.0",
+  "engines": {
+    "node": ">=18"
+  },
+  "peerDependencies": {
+    "@playwright/test": ">=1.40.0"
+  },
+  "peerDependenciesMeta": {
+    "@playwright/test": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@playwright/test": "1.63.0",
+    "@types/node": "^22.19.0",
+    "typescript": "~5.9.3"
+  }
+}

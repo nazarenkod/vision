@@ -1,0 +1,5 @@
+{
+  "_comment": "Where this repository lives, for .claude/hooks/guard.py and AGENTS.md rule 2. In another git host change these two values only.",
+  "pushRemote": "vision",
+  "repository": "github.com/nazarenkod/vision"
+}

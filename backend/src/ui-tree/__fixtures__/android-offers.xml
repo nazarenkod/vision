@@ -1,0 +1,47 @@
+<?xml version='1.0' encoding='UTF-8' standalone='yes' ?>
+<hierarchy index="0" class="hierarchy" rotation="0" width="1080" height="2400">
+<android.widget.FrameLayout class="android.widget.FrameLayout" text="" content-desc="" resource-id="" hint="" clickable="false" enabled="true" focusable="false" long-clickable="false" bounds="[0,0][1080,2400]" displayed="true">
+<android.view.View class="android.view.View" text="" content-desc="" resource-id="android:id/statusBarBackground" hint="" clickable="false" enabled="true" focusable="false" long-clickable="false" bounds="[0,0][1080,63]" displayed="true" />
+<android.view.ViewGroup class="android.view.ViewGroup" text="" content-desc="" resource-id="com.bank.app:id/header" hint="" clickable="false" enabled="true" focusable="false" long-clickable="false" bounds="[0,63][1080,200]" displayed="true">
+<android.widget.TextView class="android.widget.TextView" text="Привіт" content-desc="" resource-id="" hint="" clickable="false" enabled="true" focusable="false" long-clickable="false" bounds="[42,100][300,170]" displayed="true" />
+<android.widget.ImageView class="android.widget.ImageView" text="" content-desc="" resource-id="" hint="Search" clickable="false" enabled="true" focusable="false" long-clickable="false" bounds="[900,100][960,160]" displayed="true" />
+</android.view.ViewGroup>
+<androidx.recyclerview.widget.RecyclerView class="androidx.recyclerview.widget.RecyclerView" text="" content-desc="" resource-id="com.bank.app:id/offers_list" hint="" clickable="false" enabled="true" focusable="false" long-clickable="false" bounds="[0,840][1080,1540]" displayed="true">
+<android.view.ViewGroup class="android.view.ViewGroup" text="" content-desc="-211 днів Побутова техніка кешбек до 3%" resource-id="" hint="" clickable="true" enabled="true" focusable="false" long-clickable="false" bounds="[42,900][1010,1520]" displayed="true">
+<android.widget.FrameLayout class="android.widget.FrameLayout" text="" content-desc="" resource-id="" hint="" clickable="false" enabled="true" focusable="false" long-clickable="false" bounds="[42,900][1010,1250]" displayed="true">
+<android.widget.ImageView class="android.widget.ImageView" text="" content-desc="" resource-id="" hint="" clickable="false" enabled="true" focusable="false" long-clickable="false" bounds="[42,900][1010,1250]" displayed="true" />
+</android.widget.FrameLayout>
+<android.widget.ImageView class="android.widget.ImageView" text="" content-desc="" resource-id="" hint="" clickable="true" enabled="true" focusable="false" long-clickable="false" bounds="[925,925][1005,1000]" displayed="true" />
+<android.view.ViewGroup class="android.view.ViewGroup" text="" content-desc="" resource-id="" hint="" clickable="false" enabled="true" focusable="false" long-clickable="false" bounds="[70,1195][230,1240]" displayed="true">
+<android.widget.ImageView class="android.widget.ImageView" text="" content-desc="" resource-id="" hint="" clickable="false" enabled="true" focusable="false" long-clickable="false" bounds="[75,1200][105,1235]" displayed="true" />
+</android.view.ViewGroup>
+<android.view.ViewGroup class="android.view.ViewGroup" text="" content-desc="" resource-id="" hint="" clickable="false" enabled="true" focusable="false" long-clickable="false" bounds="[810,1270][995,1310]" displayed="true">
+<android.widget.TextView class="android.widget.TextView" text="кешбек до 3%" content-desc="" resource-id="com.bank.app:id/cashback_label" hint="" clickable="false" enabled="true" focusable="false" long-clickable="false" bounds="[815,1275][990,1305]" displayed="true" />
+</android.view.ViewGroup>
+<android.widget.LinearLayout class="android.widget.LinearLayout" text="" content-desc="" resource-id="" hint="" clickable="false" enabled="true" focusable="false" long-clickable="false" bounds="[60,1450][220,1500]" displayed="true">
+<android.widget.ImageView class="android.widget.ImageView" text="" content-desc="" resource-id="" hint="" clickable="true" enabled="true" focusable="false" long-clickable="false" bounds="[80,1455][120,1495]" displayed="true" />
+<android.widget.ImageView class="android.widget.ImageView" text="" content-desc="" resource-id="" hint="" clickable="true" enabled="true" focusable="false" long-clickable="false" bounds="[140,1455][180,1495]" displayed="true" />
+</android.widget.LinearLayout>
+</android.view.ViewGroup>
+<android.view.ViewGroup class="android.view.ViewGroup" text="" content-desc="-211 днів Кешбек на все кешбек до 5%" resource-id="" hint="" clickable="true" enabled="true" focusable="false" long-clickable="false" bounds="[1052,900][2020,1520]" displayed="true">
+<android.widget.FrameLayout class="android.widget.FrameLayout" text="" content-desc="" resource-id="" hint="" clickable="false" enabled="true" focusable="false" long-clickable="false" bounds="[1052,900][2020,1250]" displayed="true">
+<android.widget.ImageView class="android.widget.ImageView" text="" content-desc="" resource-id="" hint="" clickable="false" enabled="true" focusable="false" long-clickable="false" bounds="[1052,900][2020,1250]" displayed="true" />
+</android.widget.FrameLayout>
+<android.widget.ImageView class="android.widget.ImageView" text="" content-desc="" resource-id="" hint="" clickable="true" enabled="true" focusable="false" long-clickable="false" bounds="[1935,925][2015,1000]" displayed="true" />
+<android.view.ViewGroup class="android.view.ViewGroup" text="" content-desc="" resource-id="" hint="" clickable="false" enabled="true" focusable="false" long-clickable="false" bounds="[1080,1195][1240,1240]" displayed="true">
+<android.widget.ImageView class="android.widget.ImageView" text="" content-desc="" resource-id="" hint="" clickable="false" enabled="true" focusable="false" long-clickable="false" bounds="[1085,1200][1115,1235]" displayed="true" />
+</android.view.ViewGroup>
+<android.view.ViewGroup class="android.view.ViewGroup" text="" content-desc="" resource-id="" hint="" clickable="false" enabled="true" focusable="false" long-clickable="false" bounds="[1820,1270][2005,1310]" displayed="true">
+<android.widget.TextView class="android.widget.TextView" text="кешбек до 5%" content-desc="" resource-id="com.bank.app:id/cashback_label" hint="" clickable="false" enabled="true" focusable="false" long-clickable="false" bounds="[1825,1275][2000,1305]" displayed="true" />
+</android.view.ViewGroup>
+<android.widget.LinearLayout class="android.widget.LinearLayout" text="" content-desc="" resource-id="" hint="" clickable="false" enabled="true" focusable="false" long-clickable="false" bounds="[1070,1450][1230,1500]" displayed="true">
+<android.widget.ImageView class="android.widget.ImageView" text="" content-desc="" resource-id="" hint="" clickable="true" enabled="true" focusable="false" long-clickable="false" bounds="[1090,1455][1130,1495]" displayed="true" />
+<android.widget.ImageView class="android.widget.ImageView" text="" content-desc="" resource-id="" hint="" clickable="true" enabled="true" focusable="false" long-clickable="false" bounds="[1150,1455][1190,1495]" displayed="true" />
+</android.widget.LinearLayout>
+</android.view.ViewGroup>
+</androidx.recyclerview.widget.RecyclerView>
+<android.widget.LinearLayout class="android.widget.LinearLayout" text="" content-desc="" resource-id="" hint="" clickable="false" enabled="true" focusable="false" long-clickable="false" bounds="[0,2200][1080,2337]" displayed="true">
+<android.widget.ImageView class="android.widget.ImageView" text="" content-desc="" resource-id="" hint="" clickable="false" enabled="true" focusable="false" long-clickable="false" bounds="[100,2220][180,2300]" displayed="true" />
+</android.widget.LinearLayout>
+</android.widget.FrameLayout>
+</hierarchy>

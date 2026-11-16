@@ -1,0 +1,462 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`screenshot limits with real PNGs, as they are (characterization for VIS-SEC-045) treats 1 × 1 as before 1`] = `
+{
+  "decoded": {
+    "colorType": 6,
+    "data": "dedc9f5cf8f77000",
+    "depth": 8,
+    "height": 1,
+    "width": 1,
+  },
+  "problem": null,
+  "problemUnderStrictLimits": null,
+  "safeToDecode": true,
+  "size": {
+    "height": 1,
+    "width": 1,
+  },
+}
+`;
+
+exports[`screenshot limits with real PNGs, as they are (characterization for VIS-SEC-045) treats backend/test/image.png as before 1`] = `
+{
+  "decoded": {
+    "colorType": 6,
+    "data": "36c915d998904fa8",
+    "depth": 8,
+    "height": 360,
+    "width": 360,
+  },
+  "problem": null,
+  "problemUnderStrictLimits": {
+    "message": "The screenshot is 360 × 360 pixels, more than the 1000 pixels Vision takes",
+    "status": 413,
+  },
+  "safeToDecode": true,
+  "size": {
+    "height": 360,
+    "width": 360,
+  },
+}
+`;
+
+exports[`screenshot limits with real PNGs, as they are (characterization for VIS-SEC-045) treats backend/test/image_edited.png as before 1`] = `
+{
+  "decoded": {
+    "colorType": 6,
+    "data": "f9bfb5ea45eb997a",
+    "depth": 8,
+    "height": 360,
+    "width": 360,
+  },
+  "problem": null,
+  "problemUnderStrictLimits": {
+    "message": "The screenshot is 360 × 360 pixels, more than the 1000 pixels Vision takes",
+    "status": 413,
+  },
+  "safeToDecode": true,
+  "size": {
+    "height": 360,
+    "width": 360,
+  },
+}
+`;
+
+exports[`screenshot limits with real PNGs, as they are (characterization for VIS-SEC-045) treats backend/test/image_edited_2.png as before 1`] = `
+{
+  "decoded": {
+    "colorType": 6,
+    "data": "0ac00c9bd83470a2",
+    "depth": 8,
+    "height": 360,
+    "width": 360,
+  },
+  "problem": null,
+  "problemUnderStrictLimits": {
+    "message": "The screenshot is 360 × 360 pixels, more than the 1000 pixels Vision takes",
+    "status": 413,
+  },
+  "safeToDecode": true,
+  "size": {
+    "height": 360,
+    "width": 360,
+  },
+}
+`;
+
+exports[`screenshot limits with real PNGs, as they are (characterization for VIS-SEC-045) treats chunks before and after the image as before 1`] = `
+{
+  "decoded": {
+    "colorType": 6,
+    "data": "302f5b32eb500020",
+    "depth": 8,
+    "height": 10,
+    "width": 20,
+  },
+  "problem": null,
+  "problemUnderStrictLimits": null,
+  "safeToDecode": true,
+  "size": {
+    "height": 10,
+    "width": 20,
+  },
+}
+`;
+
+exports[`screenshot limits with real PNGs, as they are (characterization for VIS-SEC-045) treats everything at once as before 1`] = `
+{
+  "decoded": {
+    "colorType": 6,
+    "data": "0744f0e2780725fa",
+    "depth": 16,
+    "height": 31,
+    "width": 50,
+  },
+  "problem": null,
+  "problemUnderStrictLimits": {
+    "message": "The screenshot is 50 × 31 pixels, more than the 1000 pixels Vision takes",
+    "status": 413,
+  },
+  "safeToDecode": true,
+  "size": {
+    "height": 31,
+    "width": 50,
+  },
+}
+`;
+
+exports[`screenshot limits with real PNGs, as they are (characterization for VIS-SEC-045) treats grey + alpha 8 as before 1`] = `
+{
+  "decoded": {
+    "colorType": 4,
+    "data": "a748c9c602fb20de",
+    "depth": 8,
+    "height": 23,
+    "width": 37,
+  },
+  "problem": null,
+  "problemUnderStrictLimits": null,
+  "safeToDecode": true,
+  "size": {
+    "height": 23,
+    "width": 37,
+  },
+}
+`;
+
+exports[`screenshot limits with real PNGs, as they are (characterization for VIS-SEC-045) treats grey 8 as before 1`] = `
+{
+  "decoded": {
+    "colorType": 0,
+    "data": "63ac1ce0802d96c0",
+    "depth": 8,
+    "height": 23,
+    "width": 37,
+  },
+  "problem": null,
+  "problemUnderStrictLimits": null,
+  "safeToDecode": true,
+  "size": {
+    "height": 23,
+    "width": 37,
+  },
+}
+`;
+
+exports[`screenshot limits with real PNGs, as they are (characterization for VIS-SEC-045) treats grey 16 as before 1`] = `
+{
+  "decoded": {
+    "colorType": 0,
+    "data": "08f0e40077379d10",
+    "depth": 16,
+    "height": 23,
+    "width": 37,
+  },
+  "problem": null,
+  "problemUnderStrictLimits": null,
+  "safeToDecode": true,
+  "size": {
+    "height": 23,
+    "width": 37,
+  },
+}
+`;
+
+exports[`screenshot limits with real PNGs, as they are (characterization for VIS-SEC-045) treats interlaced 1 × 1 as before 1`] = `
+{
+  "decoded": {
+    "colorType": 6,
+    "data": "dedc9f5cf8f77000",
+    "depth": 8,
+    "height": 1,
+    "width": 1,
+  },
+  "problem": null,
+  "problemUnderStrictLimits": null,
+  "safeToDecode": true,
+  "size": {
+    "height": 1,
+    "width": 1,
+  },
+}
+`;
+
+exports[`screenshot limits with real PNGs, as they are (characterization for VIS-SEC-045) treats interlaced 5 × 3, some passes empty as before 1`] = `
+{
+  "decoded": {
+    "colorType": 6,
+    "data": "3e512b7ea88b9f04",
+    "depth": 8,
+    "height": 3,
+    "width": 5,
+  },
+  "problem": null,
+  "problemUnderStrictLimits": null,
+  "safeToDecode": true,
+  "size": {
+    "height": 3,
+    "width": 5,
+  },
+}
+`;
+
+exports[`screenshot limits with real PNGs, as they are (characterization for VIS-SEC-045) treats interlaced palette as before 1`] = `
+{
+  "decoded": {
+    "colorType": 3,
+    "data": "9edbde2ba962665d",
+    "depth": 8,
+    "height": 23,
+    "width": 37,
+  },
+  "problem": null,
+  "problemUnderStrictLimits": null,
+  "safeToDecode": true,
+  "size": {
+    "height": 23,
+    "width": 37,
+  },
+}
+`;
+
+exports[`screenshot limits with real PNGs, as they are (characterization for VIS-SEC-045) treats interlaced rgb 16 as before 1`] = `
+{
+  "decoded": {
+    "colorType": 2,
+    "data": "8b20a7fa45840e86",
+    "depth": 16,
+    "height": 23,
+    "width": 37,
+  },
+  "problem": null,
+  "problemUnderStrictLimits": null,
+  "safeToDecode": true,
+  "size": {
+    "height": 23,
+    "width": 37,
+  },
+}
+`;
+
+exports[`screenshot limits with real PNGs, as they are (characterization for VIS-SEC-045) treats interlaced rgba 8 as before 1`] = `
+{
+  "decoded": {
+    "colorType": 6,
+    "data": "256e3f7ef25bebbe",
+    "depth": 8,
+    "height": 23,
+    "width": 37,
+  },
+  "problem": null,
+  "problemUnderStrictLimits": null,
+  "safeToDecode": true,
+  "size": {
+    "height": 23,
+    "width": 37,
+  },
+}
+`;
+
+exports[`screenshot limits with real PNGs, as they are (characterization for VIS-SEC-045) treats many IDAT chunks as before 1`] = `
+{
+  "decoded": {
+    "colorType": 6,
+    "data": "8c5638273c93adfb",
+    "depth": 8,
+    "height": 40,
+    "width": 64,
+  },
+  "problem": null,
+  "problemUnderStrictLimits": {
+    "message": "The screenshot is 64 × 40 pixels, more than the 1000 pixels Vision takes",
+    "status": 413,
+  },
+  "safeToDecode": true,
+  "size": {
+    "height": 40,
+    "width": 64,
+  },
+}
+`;
+
+exports[`screenshot limits with real PNGs, as they are (characterization for VIS-SEC-045) treats one long row as before 1`] = `
+{
+  "decoded": {
+    "colorType": 6,
+    "data": "62565d1638e2d127",
+    "depth": 8,
+    "height": 1,
+    "width": 4000,
+  },
+  "problem": null,
+  "problemUnderStrictLimits": {
+    "message": "The screenshot is 4000 × 1 pixels, more than the 1000 pixels Vision takes",
+    "status": 413,
+  },
+  "safeToDecode": true,
+  "size": {
+    "height": 1,
+    "width": 4000,
+  },
+}
+`;
+
+exports[`screenshot limits with real PNGs, as they are (characterization for VIS-SEC-045) treats one tall column as before 1`] = `
+{
+  "decoded": {
+    "colorType": 6,
+    "data": "7a5ab6b075a259ff",
+    "depth": 8,
+    "height": 4000,
+    "width": 1,
+  },
+  "problem": null,
+  "problemUnderStrictLimits": {
+    "message": "The screenshot is 1 × 4000 pixels, more than the 1000 pixels Vision takes",
+    "status": 413,
+  },
+  "safeToDecode": true,
+  "size": {
+    "height": 4000,
+    "width": 1,
+  },
+}
+`;
+
+exports[`screenshot limits with real PNGs, as they are (characterization for VIS-SEC-045) treats palette 8 as before 1`] = `
+{
+  "decoded": {
+    "colorType": 3,
+    "data": "9edbde2ba962665d",
+    "depth": 8,
+    "height": 23,
+    "width": 37,
+  },
+  "problem": null,
+  "problemUnderStrictLimits": null,
+  "safeToDecode": true,
+  "size": {
+    "height": 23,
+    "width": 37,
+  },
+}
+`;
+
+exports[`screenshot limits with real PNGs, as they are (characterization for VIS-SEC-045) treats pngjs, as the comparison writes them as before 1`] = `
+{
+  "decoded": {
+    "colorType": 6,
+    "data": "2ddde7f605a86966",
+    "depth": 8,
+    "height": 80,
+    "width": 120,
+  },
+  "problem": null,
+  "problemUnderStrictLimits": {
+    "message": "The screenshot is 120 × 80 pixels, more than the 1000 pixels Vision takes",
+    "status": 413,
+  },
+  "safeToDecode": true,
+  "size": {
+    "height": 80,
+    "width": 120,
+  },
+}
+`;
+
+exports[`screenshot limits with real PNGs, as they are (characterization for VIS-SEC-045) treats rgb 8 as before 1`] = `
+{
+  "decoded": {
+    "colorType": 2,
+    "data": "e7eeea433f43409b",
+    "depth": 8,
+    "height": 23,
+    "width": 37,
+  },
+  "problem": null,
+  "problemUnderStrictLimits": null,
+  "safeToDecode": true,
+  "size": {
+    "height": 23,
+    "width": 37,
+  },
+}
+`;
+
+exports[`screenshot limits with real PNGs, as they are (characterization for VIS-SEC-045) treats rgb 16 as before 1`] = `
+{
+  "decoded": {
+    "colorType": 2,
+    "data": "8b20a7fa45840e86",
+    "depth": 16,
+    "height": 23,
+    "width": 37,
+  },
+  "problem": null,
+  "problemUnderStrictLimits": null,
+  "safeToDecode": true,
+  "size": {
+    "height": 23,
+    "width": 37,
+  },
+}
+`;
+
+exports[`screenshot limits with real PNGs, as they are (characterization for VIS-SEC-045) treats rgba 8 as before 1`] = `
+{
+  "decoded": {
+    "colorType": 6,
+    "data": "256e3f7ef25bebbe",
+    "depth": 8,
+    "height": 23,
+    "width": 37,
+  },
+  "problem": null,
+  "problemUnderStrictLimits": null,
+  "safeToDecode": true,
+  "size": {
+    "height": 23,
+    "width": 37,
+  },
+}
+`;
+
+exports[`screenshot limits with real PNGs, as they are (characterization for VIS-SEC-045) treats rgba 16 as before 1`] = `
+{
+  "decoded": {
+    "colorType": 6,
+    "data": "01f9c8e865fc0037",
+    "depth": 16,
+    "height": 23,
+    "width": 37,
+  },
+  "problem": null,
+  "problemUnderStrictLimits": null,
+  "safeToDecode": true,
+  "size": {
+    "height": 23,
+    "width": 37,
+  },
+}
+`;

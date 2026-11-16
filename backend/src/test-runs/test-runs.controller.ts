@@ -1,0 +1,411 @@
+import {
+  Controller,
+  UseGuards,
+  Param,
+  ParseUUIDPipe,
+  Body,
+  Get,
+  Query,
+  Post,
+  ParseBoolPipe,
+  UseInterceptors,
+  UsePipes,
+  ValidationPipe,
+  Logger,
+  Patch,
+  Headers,
+} from '@nestjs/common';
+import {
+  ApiTags,
+  ApiParam,
+  ApiBearerAuth,
+  ApiQuery,
+  ApiSecurity,
+  ApiOkResponse,
+  ApiConsumes,
+  ApiBody,
+  ApiOperation,
+} from '@nestjs/swagger';
+import { JwtAuthGuard } from '../auth/guards/auth.guard';
+import { Role, TestRun, TestStatus, User } from '@prisma/client';
+import { TestRunsService } from './test-runs.service';
+import { TestRunResultDto } from './dto/testRunResult.dto';
+import { ApiGuard } from '../auth/guards/api.guard';
+import { fromVisionCli } from '../projects/allowed-devices';
+import { MixedGuard } from '../auth/guards/mixed.guard';
+import { TestRunDto } from './dto/testRun.dto';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { screenshotLimits } from '../shared/screenshot-limits';
+import { UI_TREE_FIELD_MAX_BYTES } from '../ui-tree/ui-tree.intake';
+import { CreateTestRequestBase64Dto } from './dto/create-test-request-base64.dto';
+import { CreateTestRequestMultipartDto } from './dto/create-test-request-multipart.dto';
+import { FileToBodyInterceptor } from '../shared/fite-to-body.interceptor';
+import { ProjectAccessInterceptor } from '../projects/project-access.interceptor';
+import { UpdateIgnoreAreasDto } from './dto/update-ignore-area.dto';
+import { UpdateTestRunDto } from './dto/update-test.dto';
+import { CurrentUser } from '../shared/current-user.decorator';
+import { RoleGuard } from '../auth/guards/role.guard';
+import { Roles } from '../shared/roles.decorator';
+import { A11yIssuesService } from '../a11y/a11y-issues.service';
+import { ChangeGroupsService } from './change-groups.service';
+import { DecisionUndoService } from './decision-undo.service';
+import { AddElementRuleDto, RemoveElementRuleDto, ReplaceAreaWithElementDto } from './dto/element-rule.dto';
+import {
+  A11yIssueRefDto,
+  FileA11yBugDto,
+  PrepareA11yBugDto,
+  IgnoreA11yIssueDto,
+  LinkA11yIssueDto,
+  issueIds,
+} from '../a11y/a11y-issue.dto';
+import { ProjectFrom, ProjectFromForAutotests, inBody, inParam, inQuery } from '../projects/project-access';
+
+// one screenshot, and text fields big enough for a page's UI tree (050)
+export const MULTIPART_LIMITS = {
+  limits: { fileSize: screenshotLimits().maxBytes, files: 1, fieldSize: UI_TREE_FIELD_MAX_BYTES },
+};
+
+@ApiTags('test-runs')
+@Controller('test-runs')
+export class TestRunsController {
+  private readonly logger: Logger = new Logger(TestRunsController.name);
+
+  constructor(
+    private testRunsService: TestRunsService,
+    private a11yIssuesService: A11yIssuesService,
+    private changeGroupsService: ChangeGroupsService,
+    private decisionUndoService: DecisionUndoService
+  ) {}
+
+  @ProjectFrom(inQuery('buildId', 'build'))
+  @Get()
+  @ApiOkResponse({ type: TestRunDto, isArray: true })
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  get(@Query('buildId', new ParseUUIDPipe()) buildId: string): Promise<TestRunDto[]> {
+    return this.testRunsService.findMany(buildId);
+  }
+
+  @ProjectFrom(inQuery('buildId', 'build'))
+  @Get('groups')
+  @ApiOkResponse({ description: 'Screenshots of the build that need a decision, grouped by the change they carry' })
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  getGroups(@Query('buildId', new ParseUUIDPipe()) buildId: string) {
+    return this.changeGroupsService.getGroups(buildId);
+  }
+
+  @ProjectFrom(inQuery('buildId', 'build'))
+  @Get('elements')
+  @ApiOkResponse({ description: 'Elements changed on several screens of the build, with those screens (beta)' })
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  getElements(@Query('buildId', new ParseUUIDPipe()) buildId: string) {
+    return this.changeGroupsService.elementReview(buildId);
+  }
+
+  @ProjectFrom(inParam('id', 'testRun'))
+  @Get(':id')
+  @ApiOkResponse({ type: TestRunDto })
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  getDetails(@Param('id', new ParseUUIDPipe()) id: string): Promise<TestRunDto> {
+    return this.testRunsService.findOne(id);
+  }
+
+  @ProjectFrom(inParam('id', 'testRun'))
+  @Get(':id/a11y')
+  @ApiOkResponse({ description: 'Accessibility report built from the UI tree; null when none was sent' })
+  @ApiBearerAuth()
+  @UseGuards(MixedGuard)
+  getAccessibility(@CurrentUser() user: User, @Param('id', new ParseUUIDPipe()) id: string) {
+    return this.testRunsService.getAccessibilityReport(id, user?.id);
+  }
+
+  @ProjectFrom(inParam('id', 'testRun'))
+  @Post(':id/a11y/ignore')
+  @ApiOkResponse({ description: 'Marks the issue as a false positive on this screen' })
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RoleGuard)
+  @Roles(Role.admin, Role.editor)
+  ignoreA11yIssue(
+    @CurrentUser() user: User,
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Body() body: IgnoreA11yIssueDto
+  ) {
+    return this.a11yIssuesService.ignore(id, issueIds(body), body.comment, user?.id);
+  }
+
+  @ProjectFrom(inParam('id', 'testRun'))
+  @Post(':id/a11y/reset')
+  @ApiOkResponse({ description: 'Forgets the decision on the issue' })
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RoleGuard)
+  @Roles(Role.admin, Role.editor)
+  resetA11yIssue(
+    @CurrentUser() user: User,
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Body() body: A11yIssueRefDto
+  ) {
+    return this.a11yIssuesService.reset(id, issueIds(body), user?.id);
+  }
+
+  @ProjectFrom(inParam('id', 'testRun'))
+  @Post(':id/a11y/link')
+  @ApiOkResponse({ description: 'Records an existing Jira issue for the problem' })
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RoleGuard)
+  @Roles(Role.admin, Role.editor)
+  linkA11yIssue(
+    @CurrentUser() user: User,
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Body() body: LinkA11yIssueDto
+  ) {
+    return this.a11yIssuesService.link(id, issueIds(body), body.jiraKey, user?.id);
+  }
+
+  @ProjectFrom(inParam('id', 'testRun'))
+  @Post(':id/a11y/jira/prepare')
+  @ApiOkResponse({
+    description: "Issue and link types of the task's Jira project, and the fields a bug under the task would get",
+  })
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RoleGuard)
+  @Roles(Role.admin, Role.editor)
+  prepareA11yBug(
+    @CurrentUser() user: User,
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Body() body: PrepareA11yBugDto
+  ) {
+    return this.a11yIssuesService.prepareBug(
+      id,
+      issueIds(body),
+      body.parentKey,
+      body.issueTypeId,
+      body.fieldValues,
+      user?.id
+    );
+  }
+
+  @ProjectFrom(inParam('id', 'testRun'))
+  @Get(':id/a11y/jira/users')
+  @ApiOkResponse({ description: "People in the project's Jira matching a name, for user fields of a bug" })
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RoleGuard)
+  @Roles(Role.admin, Role.editor)
+  findJiraUsers(@CurrentUser() user: User, @Param('id', new ParseUUIDPipe()) id: string, @Query('query') query = '') {
+    return this.a11yIssuesService.findJiraUsers(id, query.slice(0, 100), user?.id);
+  }
+
+  @ProjectFrom(inParam('id', 'testRun'))
+  @Post(':id/a11y/jira')
+  @ApiOkResponse({ description: 'Files a Jira bug for the issue under the given task' })
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RoleGuard)
+  @Roles(Role.admin, Role.editor)
+  fileA11yBug(@CurrentUser() user: User, @Param('id', new ParseUUIDPipe()) id: string, @Body() body: FileA11yBugDto) {
+    return this.a11yIssuesService.fileBug(
+      id,
+      issueIds(body),
+      {
+        parentKey: body.parentKey,
+        issueTypeId: body.issueTypeId,
+        linkType: body.linkType,
+        fieldValues: body.fieldValues,
+      },
+      user?.id
+    );
+  }
+
+  @ProjectFrom(inParam('id', 'testRun'))
+  @Post(':id/element-rules')
+  @ApiOkResponse({ description: 'Adds an element rule to the screen or the project and compares again' })
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RoleGuard)
+  @Roles(Role.admin, Role.editor)
+  addElementRule(@Param('id', new ParseUUIDPipe()) id: string, @Body() body: AddElementRuleDto) {
+    return this.testRunsService.addElementRule(id, body);
+  }
+
+  @ProjectFrom(inParam('id', 'testRun'))
+  @Post(':id/element-rules/remove')
+  @ApiOkResponse({ description: 'Removes an element rule and compares again' })
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RoleGuard)
+  @Roles(Role.admin, Role.editor)
+  removeElementRule(@Param('id', new ParseUUIDPipe()) id: string, @Body() body: RemoveElementRuleDto) {
+    return this.testRunsService.removeElementRule(id, body);
+  }
+
+  @ProjectFrom(inParam('id', 'testRun'))
+  @Post(':id/ignore-areas/replace-with-element')
+  @ApiOkResponse({ description: 'Replaces a saved ignore area with an ignore rule for the element it covers' })
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RoleGuard)
+  @Roles(Role.admin, Role.editor)
+  replaceAreaWithElement(@Param('id', new ParseUUIDPipe()) id: string, @Body() body: ReplaceAreaWithElementDto) {
+    return this.testRunsService.replaceAreaWithElement(id, body);
+  }
+
+  @ProjectFrom(inParam('id', 'testRun'))
+  @Get(':id/selector-matches')
+  @ApiOkResponse({ description: 'How many elements a selector finds on the baseline and the screenshot' })
+  @ApiQuery({ name: 'selector', required: true })
+  @ApiBearerAuth()
+  @UseGuards(MixedGuard)
+  selectorMatches(@Param('id', new ParseUUIDPipe()) id: string, @Query('selector') selector: string) {
+    return this.testRunsService.selectorMatches(id, selector);
+  }
+
+  @ProjectFrom(inParam('id', 'testRun'))
+  @Get(':id/structure')
+  @ApiOkResponse({ description: 'Element-level changes, elements under changed areas and noise hints' })
+  @ApiBearerAuth()
+  @UseGuards(MixedGuard)
+  getStructure(@Param('id', new ParseUUIDPipe()) id: string) {
+    return this.testRunsService.getStructure(id);
+  }
+
+  @ProjectFrom(inParam('id', 'testRun'))
+  @Get(':id/trend')
+  @ApiOkResponse({ description: 'The last 20 runs of the check up to this one, oldest first (REQ-046-08)' })
+  @ApiBearerAuth()
+  @UseGuards(MixedGuard)
+  getTrend(@Param('id', new ParseUUIDPipe()) id: string) {
+    return this.testRunsService.getTrend(id);
+  }
+
+  @ProjectFrom(inBody(undefined, 'testRuns'))
+  @Post('approve')
+  @ApiQuery({ name: 'merge', required: false })
+  @ApiOkResponse({ type: undefined })
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RoleGuard)
+  @Roles(Role.admin, Role.editor)
+  async approveTestRun(
+    @CurrentUser() user: User,
+    @Body() ids: string[],
+    @Query('merge', new ParseBoolPipe()) merge: boolean
+  ): Promise<{ decisionId: string }> {
+    this.logger.debug(`Going to approve TestRuns: ${ids}`);
+    // the same inherited approve, with a journal entry for Undo
+    return this.decisionUndoService.approve(ids, merge, user.id);
+  }
+
+  @ProjectFrom(inBody(undefined, 'testRuns'))
+  @Post('reject')
+  @ApiOkResponse({ type: undefined })
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RoleGuard)
+  @Roles(Role.admin, Role.editor)
+  async reject(@CurrentUser() user: User, @Body() ids: string[]): Promise<{ decisionId: string }> {
+    this.logger.debug(`Going to reject TestRuns: ${ids}`);
+    return this.decisionUndoService.reject(ids, user.id);
+  }
+
+  @ProjectFrom(inParam('decisionId', 'decision'))
+  @Post('undo/:decisionId')
+  @ApiOperation({
+    summary: 'Undo an approve or reject made in the last few seconds',
+    description:
+      'Puts the statuses and baselines back as they were before the decision. Refused (409) when anything ' +
+      'changed the screenshots or their baselines since, or when the decision is too old; all or nothing.',
+  })
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RoleGuard)
+  @Roles(Role.admin, Role.editor)
+  undo(@CurrentUser() user: User, @Param('decisionId') decisionId: string): Promise<{ undone: number }> {
+    return this.decisionUndoService.undo(decisionId, user.id);
+  }
+
+  @ProjectFrom(inBody(undefined, 'testRuns'))
+  @Post('delete')
+  @ApiOkResponse({ type: undefined })
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RoleGuard)
+  @Roles(Role.admin, Role.editor)
+  async delete(@Body() ids: string[]): Promise<void> {
+    this.logger.debug(`Going to delete TestRuns: ${ids}`);
+    for (const id of ids) {
+      await this.testRunsService.delete(id);
+    }
+  }
+
+  @ProjectFrom(inBody('ids', 'testRuns'))
+  @Post('ignoreAreas/update')
+  @ApiOkResponse({ type: undefined })
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RoleGuard)
+  @Roles(Role.admin, Role.editor)
+  async updateIgnoreAreas(@Body() data: UpdateIgnoreAreasDto): Promise<void> {
+    this.logger.debug(`Going to update IgnoreAreas for TestRuns: ${data.ids}`);
+    for (const id of data.ids) {
+      await this.testRunsService.updateIgnoreAreas(id, data.ignoreAreas);
+    }
+  }
+
+  @ProjectFrom(inBody('ids', 'testRuns'))
+  @Post('ignoreAreas/add')
+  @ApiOkResponse({ type: undefined })
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RoleGuard)
+  @Roles(Role.admin, Role.editor)
+  async addIgnoreAreas(@Body() data: UpdateIgnoreAreasDto): Promise<void> {
+    this.logger.debug(`Going to add IgnoreAreas for TestRuns: ${data.ids}`);
+    await this.testRunsService.addIgnoreAreasToAll(data.ids, data.ignoreAreas);
+  }
+
+  @ProjectFrom(inParam('testRunId', 'testRun'))
+  @Patch('update/:testRunId')
+  @ApiParam({ name: 'testRunId', required: true })
+  @ApiOkResponse({ type: TestRunDto })
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RoleGuard)
+  @Roles(Role.admin, Role.editor)
+  update(@Param('testRunId', new ParseUUIDPipe()) id: string, @Body() body: UpdateTestRunDto): Promise<TestRun> {
+    this.logger.debug(`Going to update TestRuns: ${id}`);
+    return this.testRunsService.update(id, body);
+  }
+
+  @ProjectFromForAutotests(inBody('buildId', 'build'), inBody('projectId', 'project'))
+  @Post()
+  @ApiSecurity('api_key')
+  @ApiOkResponse({ type: TestRunResultDto })
+  @UseGuards(ApiGuard, RoleGuard)
+  @Roles(Role.admin, Role.editor)
+  postTestRun(
+    @Body() createTestRequestDto: CreateTestRequestBase64Dto,
+    @Headers('user-agent') userAgent?: string
+  ): Promise<TestRunResultDto> {
+    const imageBuffer = Buffer.from(createTestRequestDto.imageBase64, 'base64');
+    return this.testRunsService.postTestRun({
+      createTestRequestDto,
+      imageBuffer,
+      checkDevice: !fromVisionCli(userAgent),
+    });
+  }
+
+  @ProjectFromForAutotests(inBody('buildId', 'build'), inBody('projectId', 'project'))
+  @Post('/multipart')
+  @ApiSecurity('api_key')
+  @ApiBody({ type: CreateTestRequestMultipartDto })
+  @ApiOkResponse({ type: TestRunResultDto })
+  @ApiConsumes('multipart/form-data')
+  @UseGuards(ApiGuard, RoleGuard)
+  @Roles(Role.admin, Role.editor)
+  // the form is read by these, after the global interceptors: access is checked once it is (042)
+  // the file size is capped while it is read, before it is held in memory (VIS-SEC-014)
+  @UseInterceptors(FileInterceptor('image', MULTIPART_LIMITS), FileToBodyInterceptor, ProjectAccessInterceptor)
+  @UsePipes(new ValidationPipe({ transform: true, forbidUnknownValues: true }))
+  postTestRunMultipart(
+    @Body() createTestRequestDto: CreateTestRequestMultipartDto,
+    @Headers('user-agent') userAgent?: string
+  ): Promise<TestRunResultDto> {
+    const imageBuffer = createTestRequestDto.image.buffer;
+    return this.testRunsService.postTestRun({
+      createTestRequestDto,
+      imageBuffer,
+      checkDevice: !fromVisionCli(userAgent),
+    });
+  }
+}

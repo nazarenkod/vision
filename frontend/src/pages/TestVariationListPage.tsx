@@ -1,0 +1,262 @@
+import React from "react";
+import TestVariationList, {
+  groupByCheck,
+} from "../components/TestVariationList";
+import { useParams } from "react-router-dom";
+import { TestVariation } from "../types";
+import { testVariationService } from "../services";
+import {
+  Box,
+  Button,
+  Collapse,
+  Grid,
+  Pagination,
+  TextField,
+  MenuItem,
+  Typography,
+} from "@mui/material";
+import { MergeType } from "@mui/icons-material";
+import { motion, tokens, type } from "../theme";
+import Filters from "../components/Filters";
+import { TestVariationMergeForm } from "../components/TestVariationMergeForm";
+import { useSnackbar } from "notistack";
+import { setHelpSteps, useHelpDispatch } from "../contexts/help.context";
+import {
+  LOCATOR_TEST_VARIATION_MERGE_TOGGLE,
+  TEST_VARIATION_LIST_PAGE,
+} from "../constants";
+import { useT } from "../i18n";
+import { useProjectFromAddress } from "../contexts";
+
+const PAGE_SIZE_OPTIONS = [12, 24, 48, 96];
+
+const TestVariationListPage: React.FunctionComponent = () => {
+  const { enqueueSnackbar } = useSnackbar();
+  const { t } = useT();
+  const helpDispatch = useHelpDispatch();
+  const { projectId = "" } = useParams<{ projectId: string }>();
+  // the sidebar's switcher chooses the project; this page follows its address
+  useProjectFromAddress(projectId);
+  const [testVariations, setTestVariations] = React.useState<TestVariation[]>(
+    [],
+  );
+
+  // filter
+  const [query, setQuery] = React.useState("");
+  const [os, setOs] = React.useState("");
+  const [device, setDevice] = React.useState("");
+  const [browser, setBrowser] = React.useState("");
+  const [viewport, setViewport] = React.useState("");
+  const [customTags, setCustomTags] = React.useState("");
+  const [branchName, setBranchName] = React.useState("");
+  const [filteredItems, setFilteredItems] = React.useState<TestVariation[]>([]);
+  const [page, setPage] = React.useState(1);
+  const [pageSize, setPageSize] = React.useState(PAGE_SIZE_OPTIONS[0]);
+  // merging is rare: it waits behind a button (REQ-018-62)
+  const [mergeOpen, setMergeOpen] = React.useState(false);
+
+  React.useEffect(() => {
+    setHelpSteps(helpDispatch, TEST_VARIATION_LIST_PAGE);
+  });
+
+  React.useEffect(() => {
+    setPage(1);
+  }, [query, os, device, browser, viewport, customTags, branchName]);
+
+  React.useEffect(() => {
+    if (projectId) {
+      testVariationService
+        .getList(projectId)
+        .then((testVariations) => {
+          setTestVariations(testVariations);
+        })
+        .catch((err) =>
+          enqueueSnackbar(err, {
+            variant: "error",
+          }),
+        );
+    }
+  }, [projectId, enqueueSnackbar]);
+
+  React.useEffect(() => {
+    setFilteredItems(
+      testVariations.filter(
+        (t) =>
+          t.name.includes(query) && // by query
+          (branchName ? t.branchName === branchName : true) && // by branchName
+          (os ? t.os === os : true) && // by OS
+          (device ? t.device === device : true) && // by device
+          (viewport ? t.viewport === viewport : true) && // by viewport
+          (customTags ? t.customTags === customTags : true) && // by customTags
+          (browser ? t.browser === browser : true), // by browser
+      ),
+    );
+  }, [
+    query,
+    branchName,
+    os,
+    device,
+    browser,
+    viewport,
+    customTags,
+    testVariations,
+  ]);
+
+  const handleDelete = (id: string) => {
+    testVariationService
+      .remove(id)
+      .then((item) => {
+        setTestVariations(testVariations.filter((i) => i.id !== item.id));
+        enqueueSnackbar(`${item.name} deleted`, {
+          variant: "success",
+        });
+      })
+      .catch((err) =>
+        enqueueSnackbar(err, {
+          variant: "error",
+        }),
+      );
+  };
+
+  // one card per check, its devices inside
+  const groups = React.useMemo(
+    () => groupByCheck(filteredItems),
+    [filteredItems],
+  );
+  const pageCount = Math.max(1, Math.ceil(groups.length / pageSize));
+  const currentPage = Math.min(page, pageCount);
+  const paginatedGroups = groups.slice(
+    (currentPage - 1) * pageSize,
+    currentPage * pageSize,
+  );
+
+  return (
+    <React.Fragment>
+      <Box sx={{ px: 4, py: 3 }}>
+        <Box
+          className="v-enter"
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            gap: 2,
+            mb: 2.5,
+            flexWrap: "wrap",
+          }}
+        >
+          <Typography variant="h4" component="h1">
+            {t("baselines.title")}
+          </Typography>
+          {/* a baseline is a check: its name and tags (REQ-046-17) */}
+          <Typography
+            data-testid="baselinesCount"
+            sx={{ fontSize: type.body, color: tokens.textMuted }}
+          >
+            {t("baselines.checks", { count: groups.length })}
+          </Typography>
+          <Box sx={{ flex: 1 }} />
+          <Button
+            variant="outlined"
+            startIcon={<MergeType />}
+            onClick={() => setMergeOpen((open) => !open)}
+            aria-expanded={mergeOpen}
+            data-testid="mergeBranchesToggle"
+            id={LOCATOR_TEST_VARIATION_MERGE_TOGGLE}
+          >
+            {t("baselines.merge")}
+          </Button>
+        </Box>
+        <Grid container direction="column" spacing={2}>
+          <Grid item>
+            <Collapse in={mergeOpen} timeout={motion.slow} unmountOnExit>
+              <TestVariationMergeForm
+                projectId={projectId}
+                items={Array.from(
+                  new Set(testVariations.map((t) => t.branchName)),
+                )}
+              />
+            </Collapse>
+          </Grid>
+          <Grid item>
+            <Filters
+              items={testVariations}
+              queryState={[query, setQuery]}
+              osState={[os, setOs]}
+              deviceState={[device, setDevice]}
+              browserState={[browser, setBrowser]}
+              viewportState={[viewport, setViewport]}
+              customTagsState={[customTags, setCustomTags]}
+              branchNameState={[branchName, setBranchName]}
+            />
+          </Grid>
+          <Grid item>
+            <TestVariationList
+              groups={paginatedGroups}
+              onDeleteClick={handleDelete}
+            />
+          </Grid>
+          {groups.length > Math.min(...PAGE_SIZE_OPTIONS) && (
+            <Grid item>
+              <Grid
+                container
+                justifyContent="center"
+                alignItems="center"
+                spacing={2}
+                sx={{ pb: 4 }}
+              >
+                {pageCount > 1 && (
+                  <Grid item>
+                    <Pagination
+                      count={pageCount}
+                      page={currentPage}
+                      onChange={(_event, value) => setPage(value)}
+                    />
+                  </Grid>
+                )}
+                <Grid item>
+                  <TextField
+                    select
+                    size="small"
+                    label={t("baselines.perPage")}
+                    sx={{ minWidth: 120 }}
+                    SelectProps={{
+                      sx: {
+                        "& .MuiSelect-select": {
+                          textAlign: "center",
+                          pl: "32px",
+                        },
+                      },
+                    }}
+                    InputProps={{ notched: false }}
+                    InputLabelProps={{
+                      shrink: true,
+                      sx: {
+                        left: "50%",
+                        transformOrigin: "top center",
+                        transform: "translate(-50%, -9px) scale(0.75)",
+                        px: 0.5,
+                        bgcolor: "background.paper",
+                      },
+                    }}
+                    value={pageSize}
+                    onChange={(event) => {
+                      setPageSize(Number(event.target.value));
+                      setPage(1);
+                    }}
+                  >
+                    {PAGE_SIZE_OPTIONS.map((option) => (
+                      <MenuItem key={option} value={option}>
+                        {option}
+                      </MenuItem>
+                    ))}
+                  </TextField>
+                </Grid>
+              </Grid>
+            </Grid>
+          )}
+        </Grid>
+      </Box>
+    </React.Fragment>
+  );
+};
+
+export default TestVariationListPage;

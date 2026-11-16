@@ -1,0 +1,706 @@
+/* eslint-disable jsx-a11y/no-static-element-interactions */
+import React, { FunctionComponent, useCallback } from "react";
+import {
+  Stage,
+  Layer,
+  Image,
+  Rect,
+  Label,
+  Circle,
+  Tag,
+  Text,
+  Shape,
+} from "react-konva";
+import Rectangle, { MIN_RECT_SIDE_PIXEL } from "../Rectangle";
+import { IgnoreArea } from "../../types/ignoreArea";
+import { Grid, CircularProgress, type Theme } from "@mui/material";
+import { NoImagePlaceholder } from "./NoImageAvailable";
+import Konva from "konva";
+import { makeStyles } from "@mui/styles";
+import { clampScale } from "../../_helpers/scale.helper";
+import { clampToImage } from "../../_helpers/ignoreArea.helper";
+import { tokens } from "../../theme";
+
+// label text drawn on a coloured tag inside the canvas: always white on those
+const TAG_TEXT = "white";
+
+const useStyles = makeStyles((theme: Theme) => ({
+  canvasContainer: {
+    overflow: "auto",
+    // the area the dialog fits the screenshot into (REQ-046-01); the image
+    // sits in its middle until it is zoomed past it, then scrolls
+    position: "relative",
+    width: "100%",
+    height: "100%",
+    display: "flex",
+    // the lit table the screenshot lies on
+    background: tokens.lightbox,
+  },
+  stage: {
+    // auto margins centre the image and fall to zero once it overflows,
+    // so the scroll still starts at its top left edge
+    margin: "auto",
+    flexShrink: 0,
+    boxShadow: tokens.shadowShot,
+  },
+  imageDetailsContainer: {
+    position: "absolute",
+    backgroundColor: tokens.surface,
+    zIndex: 1,
+    padding: theme.spacing(1),
+    height: "48px",
+  },
+  progressContainer: {
+    minHeight: "300px",
+  },
+}));
+
+export type ImageStateLoad = "loaded" | "loading" | "failed";
+
+const SCALE_BY = 1.04;
+// how long the zoom keeps coasting; higher glides longer, lower is snappier
+const ZOOM_TIME_CONSTANT_MS = 140;
+const ZOOM_SETTLED = 0.001;
+const FRAME_MS = 1000 / 60;
+
+type StageOffsetPosition = {
+  x: number;
+  y: number;
+};
+
+type StageStateArray = [
+  StageOffsetPosition,
+  React.Dispatch<React.SetStateAction<StageOffsetPosition>>,
+];
+
+interface IDrawArea {
+  // nullable too: this already falls back to the placeholder when it is missing
+  imageName: string | null | undefined;
+  imageState: [undefined | HTMLImageElement, ImageStateLoad];
+  /** Drawn under the image, to compare the two in place rather than side by side. */
+  underlayImage?: HTMLImageElement;
+  overlayOpacity?: number;
+  blendDifference?: boolean;
+  tempIgnoreAreas: IgnoreArea[];
+  ignoreAreas: IgnoreArea[];
+  setIgnoreAreas: (ignoreAreas: IgnoreArea[]) => void;
+  selectedRectId: string | undefined;
+  setSelectedRectId: (id: string) => void;
+  deleteIgnoreArea?: (id: string) => void;
+  onStageClick: (event: Konva.KonvaEventObject<MouseEvent>) => void;
+  stageOffsetState: StageStateArray;
+  stageInitPosState: StageStateArray;
+  stagePosState: StageStateArray;
+  stageScrollPosState: StageStateArray;
+  stageScaleState: [number, React.Dispatch<React.SetStateAction<number>>];
+  drawModeState: [boolean, React.Dispatch<React.SetStateAction<boolean>>];
+  /** Boxes drawn over the image in image pixels (accessibility issues), not editable. */
+  overlayRects?: OverlayRect[];
+  highlightedOverlayId?: string;
+  dimOutside?: DimOutside;
+  /** Picking an element: the pointer reports where it is instead of panning or drawing. */
+  pickMode?: boolean;
+  onPickHover?: (point: { x: number; y: number } | null) => void;
+  onPick?: (
+    point: { x: number; y: number },
+    // Shift adds to the selection; the window position anchors what opens next to the element
+    click: { shiftKey: boolean; clientX: number; clientY: number },
+  ) => void;
+}
+
+export interface OverlayRect {
+  id: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  color: string;
+  label?: string;
+  dashed?: boolean;
+  // ignored by a rule: hatched, so what is not compared reads at a glance (REQ-024-20)
+  hatched?: boolean;
+  // the label only while the rect is highlighted: rule marks stay quiet otherwise
+  labelOnHighlight?: boolean;
+  // a number in the corner: the element's place in the selection panel (REQ-028-11)
+  badge?: string;
+}
+
+/** Everything outside these is dimmed: what a compare-only check leaves out (REQ-015-30). */
+export interface DimOutside {
+  rects: Array<{ x: number; y: number; width: number; height: number }>;
+  color: string;
+}
+
+// spacing of the hatching, in screen pixels
+const HATCH_STEP = 8;
+
+// the canvas behind Konva's wrapper, for what the wrapper does not offer (even-odd fill)
+const nativeContext = (context: Konva.Context) =>
+  (context as unknown as { _context: CanvasRenderingContext2D })._context;
+
+export const DrawArea: FunctionComponent<IDrawArea> = ({
+  imageName,
+  imageState,
+  underlayImage,
+  overlayOpacity,
+  blendDifference,
+  ignoreAreas,
+  tempIgnoreAreas,
+  setIgnoreAreas,
+  selectedRectId,
+  setSelectedRectId,
+  deleteIgnoreArea,
+  onStageClick,
+  stageScaleState,
+  stageOffsetState,
+  stageInitPosState,
+  stagePosState,
+  stageScrollPosState,
+  drawModeState,
+  overlayRects,
+  highlightedOverlayId,
+  dimOutside,
+  pickMode,
+  onPickHover,
+  onPick,
+}) => {
+  const classes = useStyles();
+  const [stageInitPos, setStageInitPos] = stageInitPosState;
+  const [stageOffset, setStageOffset] = stageOffsetState;
+  const [stagePos, setStagePos] = stagePosState;
+  const [stageScollPos, setStageScrollPos] = stageScrollPosState;
+  const [stageScale, setStageScale] = stageScaleState;
+  const [isDrag, setIsDrag] = React.useState(false);
+
+  const [isDrawMode, setIsDrawMode] = drawModeState;
+  const [isDrawing, setIsDrawing] = React.useState(isDrawMode);
+  const [image, imageStatus] = imageState;
+  const stageWidth = Math.max(image?.width ?? 0, underlayImage?.width ?? 0);
+  const stageHeight = Math.max(image?.height ?? 0, underlayImage?.height ?? 0);
+  const stageRef = React.useRef<Konva.Stage>(null);
+  const scrollContainerRef = React.useRef<HTMLDivElement>(null);
+  const scaleRef = React.useRef(stageScale);
+  const targetScaleRef = React.useRef(stageScale);
+  const frameRef = React.useRef<number>();
+  const lastFrameRef = React.useRef<number>();
+  const anchorRef = React.useRef<{
+    pointerX: number;
+    pointerY: number;
+    imageX: number;
+    imageY: number;
+  }>();
+
+  const isDeleteKey = (event: KeyboardEvent) => {
+    return event.key === "Delete" || event.key === "Backspace";
+  };
+
+  const handleStageKeyDown = useCallback(
+    (event: KeyboardEvent) => {
+      if (!deleteIgnoreArea || isModifierKeyPressed(event)) {
+        return;
+      }
+
+      if (selectedRectId && isDeleteKey(event)) {
+        deleteIgnoreArea(selectedRectId);
+      }
+    },
+    [deleteIgnoreArea, selectedRectId],
+  );
+
+  React.useEffect(() => {
+    if (stageRef.current) {
+      const container = stageRef.current.container();
+      container.addEventListener("keydown", handleStageKeyDown);
+    }
+  }, [handleStageKeyDown]);
+
+  const isModifierKeyPressed = (event: KeyboardEvent) => {
+    return event.altKey || event.ctrlKey || event.shiftKey;
+  };
+
+  React.useEffect(() => {
+    scrollContainerRef.current?.scrollTo(stageScollPos.x, stageScollPos.y);
+  }, [stageScollPos]);
+
+  React.useEffect(() => {
+    scaleRef.current = stageScale;
+
+    // zoom buttons and fit-to-screen set the scale outright; adopt it as the
+    // target unless an animation is the one driving the change
+    if (!frameRef.current) {
+      targetScaleRef.current = stageScale;
+    }
+  }, [stageScale]);
+
+  React.useEffect(() => {
+    const container = scrollContainerRef.current;
+
+    if (!container) {
+      return;
+    }
+
+    const step = (now: number) => {
+      const target = targetScaleRef.current;
+      const anchor = anchorRef.current;
+      const remaining = target - scaleRef.current;
+
+      if (!anchor || Math.abs(remaining) < ZOOM_SETTLED) {
+        frameRef.current = undefined;
+        lastFrameRef.current = undefined;
+        return;
+      }
+
+      // easing out over elapsed time rather than per frame, so the gesture
+      // takes as long on a 120Hz display as it does on a 60Hz one
+      const elapsed = now - (lastFrameRef.current ?? now - FRAME_MS);
+      lastFrameRef.current = now;
+
+      const scale =
+        scaleRef.current +
+        remaining * (1 - Math.exp(-elapsed / ZOOM_TIME_CONSTANT_MS));
+      scaleRef.current = scale;
+
+      setStageScale(scale);
+      setStageScrollPos({
+        x: anchor.imageX * scale - anchor.pointerX + stagePos.x,
+        y: anchor.imageY * scale - anchor.pointerY + stagePos.y,
+      });
+
+      frameRef.current = requestAnimationFrame(step);
+    };
+
+    // The canvas shrinks as you zoom out, so a listener on it stops receiving
+    // the wheel once it slips out from under the cursor and the browser zooms
+    // the page instead. The container keeps its size, so it owns the gesture.
+    // React 17 registers onWheel passively, hence the manual listener.
+    const zoom = (event: WheelEvent) => {
+      event.preventDefault();
+
+      const bounds = container.getBoundingClientRect();
+      const pointerX = event.clientX - bounds.left;
+      const pointerY = event.clientY - bounds.top;
+      // a centred image starts this far into the area
+      const stage = container.firstElementChild as HTMLElement | null;
+      const offsetX = stage?.offsetLeft ?? 0;
+      const offsetY = stage?.offsetTop ?? 0;
+
+      targetScaleRef.current = clampScale(
+        event.deltaY < 0
+          ? targetScaleRef.current * SCALE_BY
+          : targetScaleRef.current / SCALE_BY,
+      );
+      // the image point under the cursor has to stay under the cursor for the
+      // whole animation, so it is resolved once against the scale on screen
+      anchorRef.current = {
+        pointerX,
+        pointerY,
+        imageX:
+          (container.scrollLeft + pointerX - offsetX - stagePos.x) /
+          scaleRef.current,
+        imageY:
+          (container.scrollTop + pointerY - offsetY - stagePos.y) /
+          scaleRef.current,
+      };
+
+      if (!frameRef.current) {
+        frameRef.current = requestAnimationFrame(step);
+      }
+    };
+
+    container.addEventListener("wheel", zoom, { passive: false });
+    return () => {
+      container.removeEventListener("wheel", zoom);
+
+      if (frameRef.current) {
+        cancelAnimationFrame(frameRef.current);
+        frameRef.current = undefined;
+      }
+    };
+  }, [image, setStageScale, setStageScrollPos, stagePos]);
+
+  const handleContentMousedown = (
+    event: Konva.KonvaEventObject<MouseEvent>,
+  ) => {
+    if (stageRef.current) {
+      const container = stageRef.current.container();
+      container.tabIndex = 1;
+    }
+
+    if (!isDrawMode) {
+      return;
+    }
+
+    // the smallest area started at a border would already cross it, so it
+    // starts far enough inside
+    const newArea: IgnoreArea = {
+      id: Date.now().toString(),
+      x: Math.min(event.evt.offsetX, stageWidth - MIN_RECT_SIDE_PIXEL),
+      y: Math.min(event.evt.offsetY, stageHeight - MIN_RECT_SIDE_PIXEL),
+      width: MIN_RECT_SIDE_PIXEL,
+      height: MIN_RECT_SIDE_PIXEL,
+    };
+
+    setIgnoreAreas([...ignoreAreas, newArea]);
+    setSelectedRectId(newArea.id);
+    setIsDrawing(true);
+  };
+
+  const handleContentMouseup = () => {
+    if (isDrawing) {
+      setIsDrawing(!isDrawing);
+      setIsDrawMode(false);
+    }
+  };
+
+  const handleContentMouseMove = (
+    event: Konva.KonvaEventObject<MouseEvent>,
+  ) => {
+    if (!isDrawMode) return;
+
+    if (isDrawing) {
+      // update the current rectangle's width and height based on the mouse position + stage scale
+      const newShapesList = ignoreAreas.map((i) => {
+        if (i.id === selectedRectId) {
+          // new width and height
+          return clampToImage(
+            {
+              ...i,
+              width: Math.max(
+                Math.round(event.evt.offsetX - i.x),
+                MIN_RECT_SIDE_PIXEL,
+              ),
+              height: Math.max(
+                Math.round(event.evt.offsetY - i.y),
+                MIN_RECT_SIDE_PIXEL,
+              ),
+            },
+            stageWidth,
+            stageHeight,
+          );
+        }
+
+        return i;
+      });
+
+      setIgnoreAreas(newShapesList);
+    }
+  };
+
+  const imageLoaded = () => {
+    return (
+      <div
+        className={classes.canvasContainer}
+        data-testid="drawArea"
+        ref={scrollContainerRef}
+        onScroll={(event: React.SyntheticEvent<HTMLElement>) => {
+          // while zooming the scroll position is already being driven from the
+          // animation; echoing it back would render the pane twice a frame
+          if (frameRef.current) {
+            return;
+          }
+
+          setStageScrollPos({
+            x: (event.target as HTMLElement).scrollLeft,
+            y: (event.target as HTMLElement).scrollTop,
+          });
+        }}
+      >
+        <div
+          className={classes.stage}
+          style={{
+            height: image && image.height * stageScale,
+            width: image && image.width * stageScale,
+            transform: `translate3d(${stagePos.x}px, ${stagePos.y}px, 0px)`,
+          }}
+          onMouseMove={(event) => {
+            if (!isDrawMode && isDrag && !selectedRectId) {
+              event.preventDefault();
+              setStagePos({
+                x: event.clientX - stageInitPos.x,
+                y: event.clientY - stageInitPos.y,
+              });
+              setStageOffset(stagePos);
+            }
+          }}
+          onMouseUp={() => {
+            setIsDrag(false);
+            setStageInitPos(stagePos);
+          }}
+          onMouseLeave={() => {
+            setIsDrag(false);
+            setStageInitPos(stagePos);
+          }}
+          onMouseDown={(event) => {
+            if (pickMode) return;
+            setIsDrag(true);
+            setStageInitPos({
+              x: event.clientX - stageOffset.x,
+              y: event.clientY - stageOffset.y,
+            });
+          }}
+          onKeyDown={(event) => handleStageKeyDown(event)}
+        >
+          <Stage
+            ref={stageRef}
+            width={stageWidth}
+            height={stageHeight}
+            // Konva 8 dropped the content* events; the stage's own pointer
+            // events fire after the shape under the pointer has had its turn,
+            // as they did
+            onMouseDown={(event) => {
+              if (pickMode) {
+                onPick?.(
+                  { x: event.evt.offsetX, y: event.evt.offsetY },
+                  {
+                    shiftKey: event.evt.shiftKey,
+                    clientX: event.evt.clientX,
+                    clientY: event.evt.clientY,
+                  },
+                );
+                return;
+              }
+              onStageClick(event);
+              handleContentMousedown(event);
+            }}
+            onMouseUp={handleContentMouseup}
+            onMouseMove={(event) => {
+              if (pickMode) {
+                onPickHover?.({ x: event.evt.offsetX, y: event.evt.offsetY });
+                return;
+              }
+              handleContentMouseMove(event);
+            }}
+            onMouseLeave={() => pickMode && onPickHover?.(null)}
+            style={{
+              transform: `scale(${stageScale})`,
+              transformOrigin: "top left",
+            }}
+          >
+            <Layer>
+              {underlayImage && <Image image={underlayImage} />}
+              <Image
+                image={image}
+                // named so the overlay's own state is reachable from a test
+                name={underlayImage ? "overlaid" : undefined}
+                // a half-faded difference washes out instead of blacking out
+                // what matches, so the blend ignores the fade
+                opacity={
+                  underlayImage
+                    ? blendDifference
+                      ? 1
+                      : overlayOpacity
+                    : undefined
+                }
+                globalCompositeOperation={
+                  blendDifference ? "difference" : undefined
+                }
+                onMouseOver={() => {
+                  document.body.style.cursor = pickMode
+                    ? "pointer"
+                    : isDrawMode
+                      ? "crosshair"
+                      : "grab";
+                }}
+                onMouseDown={() => {
+                  if (!pickMode) document.body.style.cursor = "grabbing";
+                }}
+                onMouseUp={() => {
+                  if (!pickMode) document.body.style.cursor = "grab";
+                }}
+                onMouseLeave={() => {
+                  document.body.style.cursor = "default";
+                }}
+              />
+              {ignoreAreas.map((rect, i) => (
+                <Rectangle
+                  key={rect.id}
+                  shapeProps={{
+                    x: rect.x,
+                    y: rect.y,
+                    width: rect.width,
+                    height: rect.height,
+                  }}
+                  isSelected={rect.id === selectedRectId}
+                  onSelect={() => setSelectedRectId(rect.id)}
+                  onChange={(newAttrs: Konva.RectConfig) => {
+                    const rects = ignoreAreas.slice();
+
+                    // what is stored is kept to the image whatever the
+                    // gesture that produced it
+                    rects[i] = clampToImage(
+                      {
+                        ...rects[i],
+                        x: Math.round(newAttrs.x || 0),
+                        y: Math.round(newAttrs.y || 0),
+                        width: Math.round(
+                          newAttrs.width || MIN_RECT_SIDE_PIXEL,
+                        ),
+                        height: Math.round(
+                          newAttrs.height || MIN_RECT_SIDE_PIXEL,
+                        ),
+                      },
+                      stageWidth,
+                      stageHeight,
+                    );
+
+                    setIgnoreAreas(rects);
+                  }}
+                />
+              ))}
+              {tempIgnoreAreas.map((rect, i) => (
+                <Rectangle
+                  key={i}
+                  shapeProps={{
+                    x: rect.x,
+                    y: rect.y,
+                    width: rect.width,
+                    height: rect.height,
+                    // only shown: drawn over the areas being edited, they
+                    // must let the pointer through to them
+                    listening: false,
+                  }}
+                />
+              ))}
+            </Layer>
+            {(!!overlayRects?.length || !!dimOutside) && (
+              // never takes the pointer: panning and drawing ignore areas work through it
+              <Layer listening={false}>
+                {dimOutside && (
+                  <Shape
+                    sceneFunc={(context) => {
+                      const ctx = nativeContext(context);
+                      ctx.beginPath();
+                      ctx.rect(0, 0, stageWidth, stageHeight);
+                      dimOutside.rects.forEach((r) =>
+                        ctx.rect(r.x, r.y, r.width, r.height),
+                      );
+                      ctx.fillStyle = dimOutside.color;
+                      ctx.fill("evenodd");
+                    }}
+                  />
+                )}
+                {(overlayRects ?? []).map((rect) => {
+                  // a rule lights up every rect it found: rule:<id> highlights rule:<id>:<n>
+                  const highlighted =
+                    !!highlightedOverlayId &&
+                    (rect.id === highlightedOverlayId ||
+                      rect.id.startsWith(`${highlightedOverlayId}:`));
+                  // the stage is scaled by CSS, so line widths are divided by the scale to stay crisp
+                  const px = (value: number) => value / stageScale;
+                  return (
+                    <React.Fragment key={rect.id}>
+                      {rect.hatched && (
+                        <Shape
+                          sceneFunc={(context) => {
+                            const ctx = nativeContext(context);
+                            const step = px(HATCH_STEP);
+                            ctx.save();
+                            ctx.beginPath();
+                            ctx.rect(rect.x, rect.y, rect.width, rect.height);
+                            ctx.clip();
+                            ctx.beginPath();
+                            for (
+                              let d = -rect.height;
+                              d < rect.width;
+                              d += step
+                            ) {
+                              ctx.moveTo(rect.x + d, rect.y + rect.height);
+                              ctx.lineTo(rect.x + d + rect.height, rect.y);
+                            }
+                            ctx.strokeStyle = rect.color;
+                            ctx.globalAlpha = highlighted ? 0.7 : 0.45;
+                            ctx.lineWidth = px(2);
+                            ctx.stroke();
+                            ctx.restore();
+                          }}
+                        />
+                      )}
+                      <Rect
+                        x={rect.x}
+                        y={rect.y}
+                        width={rect.width}
+                        height={rect.height}
+                        stroke={rect.color}
+                        strokeWidth={px(highlighted ? 4 : 2)}
+                        dash={rect.dashed ? [px(6), px(4)] : undefined}
+                        fill={highlighted ? `${rect.color}22` : undefined}
+                        cornerRadius={px(3)}
+                      />
+                      {rect.badge && (
+                        <>
+                          <Circle
+                            x={rect.x}
+                            y={rect.y}
+                            radius={px(10)}
+                            fill={rect.color}
+                          />
+                          <Text
+                            x={rect.x - px(10)}
+                            y={rect.y - px(10)}
+                            width={px(20)}
+                            height={px(20)}
+                            align="center"
+                            verticalAlign="middle"
+                            text={rect.badge}
+                            fontSize={px(12)}
+                            fontStyle="bold"
+                            fill={TAG_TEXT}
+                          />
+                        </>
+                      )}
+                      {rect.label &&
+                        (!rect.labelOnHighlight || highlighted) && (
+                          <Label x={rect.x} y={rect.y - px(20)}>
+                            <Tag fill={rect.color} cornerRadius={px(4)} />
+                            <Text
+                              text={rect.label}
+                              fontSize={px(12)}
+                              fontStyle="bold"
+                              padding={px(4)}
+                              fill={TAG_TEXT}
+                            />
+                          </Label>
+                        )}
+                    </React.Fragment>
+                  );
+                })}
+              </Layer>
+            )}
+          </Stage>
+        </div>
+      </div>
+    );
+  };
+
+  const imageLoading = () => {
+    return (
+      <Grid
+        container
+        direction="column"
+        alignItems="center"
+        justifyContent="center"
+        className={classes.progressContainer}
+      >
+        <Grid item>
+          <CircularProgress />
+        </Grid>
+      </Grid>
+    );
+  };
+
+  const imageFailed = () => {
+    // TODO: Use SVG with separate text for failing to load and why...
+    return <NoImagePlaceholder />;
+  };
+
+  const imageCanvas = () => (
+    <React.Fragment>
+      {(!imageName || imageStatus === "failed") && imageFailed()}
+      {imageStatus === "loading" && imageLoading()}
+      {imageStatus === "loaded" && imageLoaded()}
+    </React.Fragment>
+  );
+
+  // TODO: Separate SVG with reason...
+  return <>{imageName ? imageCanvas() : <NoImagePlaceholder />}</>;
+};

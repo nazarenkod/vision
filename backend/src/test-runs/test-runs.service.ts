@@ -1,0 +1,995 @@
+import {
+  BadRequestException,
+  forwardRef,
+  Inject,
+  Injectable,
+  Logger,
+  NotFoundException,
+  PayloadTooLargeException,
+  UnprocessableEntityException,
+} from '@nestjs/common';
+import { screenshotProblem } from '../shared/screenshot-limits';
+import { randomUUID } from 'crypto';
+import { AddElementRuleDto, RemoveElementRuleDto, ReplaceAreaWithElementDto } from './dto/element-rule.dto';
+import {
+  checkKey,
+  ElementRule,
+  parseJsonArray,
+  findBySelector,
+  parseUiTreeSettings,
+  selectorProblem,
+} from '../ui-tree/comparison-inputs';
+import { CreateTestRequestDto } from './dto/create-test-request.dto';
+import { IgnoreAreaDto, MAX_IGNORE_AREAS } from './dto/ignore-area.dto';
+import { compareOnlyStatus } from '../ui-tree/compare-only';
+import { partsProblem, variableTextStatus } from '../ui-tree/variable-text';
+import { StaticService } from '../static/static.service';
+import { PrismaService } from '../prisma/prisma.service';
+import { Baseline, Prisma, TestRun, TestStatus, TestVariation } from '@prisma/client';
+import { DiffResult, StampedSignature } from './diffResult';
+import { EventsGateway } from '../shared/events/events.gateway';
+import { TestRunResultDto } from '../test-runs/dto/testRunResult.dto';
+import { TestVariationsService } from '../test-variations/test-variations.service';
+import { TestRunDto } from './dto/testRun.dto';
+import { getTestVariationUniqueData } from '../utils';
+import { CompareService } from '../compare/compare.service';
+import { UpdateTestRunDto } from './dto/update-test.dto';
+import { includeAAFor, PixelmatchConfig } from '../compare/libs/pixelmatch/pixelmatch.types';
+import { SIGNATURE_LENGTH } from '../compare/libs/pixelmatch/signature.core';
+import { StructureInfo, UiTreeService } from '../ui-tree/ui-tree.service';
+import { UiTree } from '../ui-tree/ui-tree.types';
+import { A11yIssuesService } from '../a11y/a11y-issues.service';
+import { ReviewedA11yReport } from '../a11y/a11y-issues';
+import { snapshotRejection } from '../projects/allowed-browsers';
+import { checkTrend, TREND_LENGTH, TrendPoint } from './check-trend';
+
+@Injectable()
+export class TestRunsService {
+  private readonly logger: Logger = new Logger(TestRunsService.name);
+  private readonly signatureCache = new BoundedCache<Promise<number[] | null>>(SIGNATURE_CACHE_SIZE);
+
+  constructor(
+    @Inject(forwardRef(() => TestVariationsService))
+    private testVariationService: TestVariationsService,
+    private prismaService: PrismaService,
+    private staticService: StaticService,
+    private compareService: CompareService,
+    private eventsGateway: EventsGateway,
+    private uiTreeService: UiTreeService,
+    private a11yIssuesService: A11yIssuesService
+  ) {}
+
+  async findMany(buildId: string): Promise<TestRunDto[]> {
+    const list = await this.prismaService.testRun.findMany({
+      where: { buildId },
+    });
+    return list.map((item) => new TestRunDto(item));
+  }
+
+  async findOne(id: string): Promise<
+    TestRun & {
+      testVariation?: TestVariation;
+    }
+  > {
+    return this.prismaService.testRun.findUnique({
+      where: { id },
+      include: {
+        testVariation: true,
+      },
+    });
+  }
+
+  async postTestRun({
+    createTestRequestDto,
+    imageBuffer,
+    checkDevice = false,
+  }: {
+    createTestRequestDto: CreateTestRequestDto;
+    imageBuffer: Buffer;
+    // hold the snapshot to the project's allowed devices (029); off for the Vision CLI
+    checkDevice?: boolean;
+  }): Promise<TestRunResultDto> {
+    // first of all: an image that is not a PNG, or claims too many pixels, is never stored or decoded (VIS-SEC-014)
+    const imageProblem = screenshotProblem(imageBuffer);
+    if (imageProblem) {
+      throw imageProblem.status === 413
+        ? new PayloadTooLargeException(imageProblem.message)
+        : new BadRequestException(imageProblem.message);
+    }
+    const project = await this.prismaService.project.findUnique({ where: { id: createTestRequestDto.projectId } });
+
+    // before anything is written: a rejected snapshot leaves no variation, run or baseline behind
+    const rejection = checkDevice
+      ? snapshotRejection(
+          parseUiTreeSettings(project?.uiTreeSettings),
+          createTestRequestDto,
+          project?.name ?? createTestRequestDto.projectId
+        )
+      : null;
+    if (rejection) throw new UnprocessableEntityException(rejection);
+
+    let testVariation = await this.testVariationService.find(createTestRequestDto);
+    // creates variatioin if does not exist
+    if (!testVariation) {
+      testVariation = await this.testVariationService.create({
+        createTestRequestDto,
+      });
+    }
+
+    // delete previous test run if exists
+    const [previousTestRun] = await this.prismaService.testRun.findMany({
+      where: {
+        buildId: createTestRequestDto.buildId,
+        branchName: createTestRequestDto.branchName,
+        ...getTestVariationUniqueData(createTestRequestDto),
+        NOT: { OR: [{ status: TestStatus.approved }, { status: TestStatus.autoApproved }] },
+      },
+    });
+    if (!!previousTestRun) {
+      await this.delete(previousTestRun.id);
+    }
+
+    // keep the UI tree, if the client sent one
+    const uiTree = createTestRequestDto.uiTree
+      ? await this.uiTreeService.store(
+          createTestRequestDto.uiTree,
+          {
+            format: createTestRequestDto.uiTreeFormat,
+            densityDpi: createTestRequestDto.deviceDensity,
+            activity: createTestRequestDto.uiActivity,
+          },
+          imageBuffer,
+          { name: createTestRequestDto.name, projectId: createTestRequestDto.projectId }
+        )
+      : null;
+
+    // create test run result
+    const testRun = await this.create({ testVariation, createTestRequestDto, imageBuffer, uiTreeName: uiTree?.name });
+
+    // calculate diff
+    let testRunWithResult = await this.calculateDiff(createTestRequestDto.projectId, testRun);
+
+    // accessibility, invisible changes and components, from the UI tree
+    if (uiTree) {
+      testRunWithResult = await this.analyzeUiTree(testRunWithResult, uiTree.tree);
+    }
+
+    // try auto approve
+    if (project.autoApproveFeature) {
+      testRunWithResult = await this.tryAutoApproveByPastBaselines({ testVariation, testRun: testRunWithResult });
+      testRunWithResult = await this.tryAutoApproveByNewBaselines({ testVariation, testRun: testRunWithResult });
+    }
+    return new TestRunResultDto(testRunWithResult, testVariation);
+  }
+
+  /**
+   * Confirm difference for testRun
+   */
+  async approve(id: string, merge = false, autoApprove = false, userId?: string): Promise<TestRun> {
+    this.logger.log(`Approving testRun: ${id} merge: ${merge} autoApprove: ${autoApprove}`);
+    const testRun = await this.findOne(id);
+    let { testVariation } = testRun;
+    if (!testVariation) {
+      throw new Error('No test variation found. Re-create test run');
+    }
+
+    // save new baseline as a byte-for-byte copy — decoding and re-encoding the
+    // PNG here blocked the event loop for every approved run
+    const baselineName = await this.staticService.copyImage('baseline', testRun.imageName);
+    // the run's own files go when the run is deleted, so the baseline gets a copy
+    const baselineUiTreeName = testRun.uiTreeName
+      ? await this.staticService.copyFile('uitree', testRun.uiTreeName, 'json.gz')
+      : null;
+
+    if (testRun.baselineBranchName !== testRun.branchName && !merge && !autoApprove) {
+      // replace main branch with feature branch test variation
+      const featureBranchTestVariation = await this.testVariationService.findUnique({
+        ...testRun,
+      });
+
+      if (!featureBranchTestVariation) {
+        testVariation = await this.testVariationService.create({
+          testRunId: id,
+          createTestRequestDto: {
+            projectId: testRun.projectId,
+            branchName: testRun.branchName,
+            ...getTestVariationUniqueData(testRun),
+          },
+        });
+      } else {
+        testVariation = featureBranchTestVariation;
+      }
+
+      // carry over data from testRun
+      testVariation = await this.testVariationService.update(
+        testVariation.id,
+        {
+          baselineName: testRun.baselineName,
+          baselineUiTreeName: testRun.baselineUiTreeName,
+          // the screen's element rules follow it to the feature branch, as ignore areas do
+          elementRules: testRun.testVariation?.elementRules,
+          ignoreAreas: testRun.ignoreAreas,
+          comment: testRun.comment,
+        },
+        testRun.id
+      );
+    }
+
+    if (!autoApprove || (autoApprove && testRun.baselineBranchName === testRun.branchName)) {
+      // add baseline
+      await this.testVariationService.addBaseline({
+        id: testVariation.id,
+        userId,
+        testRunId: testRun.id,
+        baselineName,
+        uiTreeName: baselineUiTreeName,
+      });
+    } else if (baselineUiTreeName) {
+      this.staticService.deleteFile(baselineUiTreeName);
+    }
+
+    // update status
+    const status = autoApprove ? TestStatus.autoApproved : TestStatus.approved;
+    return this.setStatus(id, status);
+  }
+
+  /**
+   * Position-independent color signature of the change between a test run's
+   * baseline and image. Null when there is no baseline, dimensions differ, or
+   * nothing changed.
+   *
+   * Normally this was written at ingest, beside the diff that had already
+   * decoded both screenshots, and grouping a screen costs nothing but the row
+   * it is read from. The rest of this is the fallback for runs that carry no
+   * stored signature — ingested before the column existed, or compared by
+   * something other than pixelmatch: their bytes go to the worker pool
+   * undecoded, and the result is memoized so reopening the change groups of
+   * an old build does not pay for the same decodes twice.
+   */
+  async getChangeSignature(testRun: TestRun, config: PixelmatchConfig): Promise<number[] | null> {
+    const stored = parseStoredSignature(testRun.changeSignature, config, this.logger);
+    if (stored) {
+      return stored;
+    }
+    if (!testRun.baselineName) {
+      return null;
+    }
+    const ignoreAreas = this.getAllIgnoteAreas(testRun);
+    // Image names are unique per upload, so only the ignore areas and the
+    // project's diff config can change a signature under a stable pair.
+    const key = [
+      testRun.baselineName,
+      testRun.imageName,
+      config.threshold,
+      config.ignoreAntialiasing,
+      JSON.stringify(ignoreAreas),
+    ].join('|');
+    const cached = this.signatureCache.get(key);
+    if (cached) {
+      return cached;
+    }
+
+    const pending = this.computeChangeSignature(testRun, ignoreAreas, config);
+    this.signatureCache.set(key, pending);
+    // A failed read must not be remembered as "no signature" forever.
+    pending.catch(() => this.signatureCache.delete(key));
+    return pending;
+  }
+
+  private async computeChangeSignature(
+    testRun: TestRun,
+    ignoreAreas: IgnoreAreaDto[],
+    config: PixelmatchConfig
+  ): Promise<number[] | null> {
+    const [baseline, image] = await Promise.all([
+      this.staticService.getImageBuffer(testRun.baselineName),
+      this.staticService.getImageBuffer(testRun.imageName),
+    ]);
+    if (!baseline || !image) {
+      return null;
+    }
+    const { signature } = await this.compareService.getChangeSignature({
+      baseline,
+      image,
+      ignoreAreas,
+      threshold: config.threshold,
+      includeAA: includeAAFor(config),
+    });
+    return signature;
+  }
+
+  async setStatus(id: string, status: TestStatus): Promise<TestRun> {
+    const testRun = await this.prismaService.testRun.update({
+      where: { id },
+      data: {
+        status,
+      },
+    });
+
+    this.eventsGateway.testRunUpdated(testRun);
+    return this.findOne(id);
+  }
+
+  // Nullable because it genuinely is: a comparison that produced nothing at all
+  // clears the row back to "new". The body has always handled that; the
+  // signature just did not say so.
+  async saveDiffResult(id: string, diffResult: DiffResult | null): Promise<TestRun> {
+    return this.prismaService.testRun
+      .update({
+        where: { id },
+        data: {
+          diffName: diffResult && diffResult.diffName,
+          pixelMisMatchCount: diffResult && diffResult.pixelMisMatchCount,
+          diffPercent: diffResult && diffResult.diffPercent,
+          status: diffResult ? diffResult.status : TestStatus.new,
+          vlmDescription: diffResult && diffResult?.vlmDescription,
+          // Always written, never merged: a recomputed diff — after the
+          // reviewer edits the ignore areas, say — must not leave the previous
+          // signature behind describing a change that no longer exists.
+          changeSignature: diffResult?.changeSignature ? JSON.stringify(diffResult.changeSignature) : null,
+          // Overwritten together with the diff they were made from, so a
+          // recomputed comparison never leaves a picture of the old change.
+          imageThumbnailName: diffResult?.imageThumbnailName ?? null,
+          diffThumbnailName: diffResult?.diffThumbnailName ?? null,
+          diffRegions: diffResult?.diffRegions ? JSON.stringify(diffResult.diffRegions) : null,
+        },
+      })
+      .then((testRun) => {
+        this.eventsGateway.testRunUpdated(testRun);
+        return testRun;
+      });
+  }
+
+  async calculateDiff(projectId: string, testRun: TestRun): Promise<TestRun> {
+    // The recomputed result replaces all three names on the row, so the old
+    // pictures go with it — leaving the thumbnails behind would strand two more
+    // objects on every ignore-area edit.
+    //
+    // They go *after* the new result is persisted, not before. Deleting first
+    // meant a comparison that failed left the row pointing at files that were
+    // already gone: the reviewer opens the run and finds broken pictures, with
+    // nothing to fall back on. Deleting late can only ever leak bytes, which is
+    // the cheaper of the two failures by a distance.
+    const previous = [testRun.diffName, testRun.imageThumbnailName, testRun.diffThumbnailName];
+
+    // UI tree rules: system bars, ignored and tolerated elements, moved elements
+    const fromTree = await this.uiTreeService.comparisonInputs(testRun);
+    const diffResult = await this.compareService.getDiff({
+      projectId,
+      data: {
+        image: testRun.imageName,
+        baseline: testRun.baselineName,
+        ignoreAreas: [...this.getAllIgnoteAreas(testRun), ...fromTree.ignoreAreas],
+        diffTollerancePercent: testRun.diffTollerancePercent,
+        saveDiffAsFile: true,
+        moves: fromTree.moves,
+        toleranceAreas: fromTree.toleranceAreas,
+        // a check that names its elements measures the difference against them (ADR-0018)
+        ...(fromTree.compareOnly.active ? { measureAreas: fromTree.compareOnly.keep } : {}),
+      },
+    });
+    let saved = await this.saveDiffResult(testRun.id, diffResult);
+
+    // a compared element that is gone, resized or not found cannot pass on its pixels (spec 015)
+    if (saved && compareOnlyStatus(saved.status, fromTree.compareOnly.problems) !== saved.status) {
+      saved = await this.prismaService.testRun.update({
+        where: { id: saved.id },
+        data: { status: TestStatus.unresolved },
+      });
+      this.eventsGateway.testRunUpdated(saved);
+    }
+
+    // a variable text that does not hold cannot pass on its pixels either (spec 033)
+    if (saved && variableTextStatus(saved.status, fromTree.variableProblems) !== saved.status) {
+      saved = await this.prismaService.testRun.update({
+        where: { id: saved.id },
+        data: { status: TestStatus.unresolved },
+      });
+      this.eventsGateway.testRunUpdated(saved);
+    }
+
+    previous.forEach((name) => this.staticService.deleteImage(name));
+
+    // A re-comparison (new rule, ignore area) moves the changed areas, and with
+    // them which components hold the change and which element changes the
+    // pixels do not show. A run that now passes on pixels but still has such a
+    // change stays in review. At ingest this comes later, with the rest of the
+    // UI tree analysis.
+    if (saved?.uiTreeName && saved.a11yReportName) {
+      const recheck = await this.uiTreeService.recheck(saved).catch(() => null);
+      if (recheck) {
+        const hidden = recheck.invisible.length;
+        saved = await this.prismaService.testRun.update({
+          where: { id: saved.id },
+          data: {
+            componentChanges: recheck.components.length ? JSON.stringify(recheck.components) : null,
+            semanticChangeCount: hidden,
+            ...(hidden && saved.status === TestStatus.ok ? { status: TestStatus.unresolved } : {}),
+          },
+        });
+        this.eventsGateway.testRunUpdated(saved);
+      }
+    }
+    return saved;
+  }
+
+  async create({
+    testVariation,
+    createTestRequestDto,
+    imageBuffer,
+    uiTreeName,
+  }: {
+    testVariation: TestVariation;
+    createTestRequestDto: CreateTestRequestDto;
+    imageBuffer: Buffer;
+    uiTreeName?: string;
+  }): Promise<TestRun> {
+    // save image
+    const imageName = await this.staticService.saveImage('screenshot', imageBuffer);
+
+    const testRun = await this.prismaService.testRun.create({
+      data: {
+        imageName,
+        testVariation: {
+          connect: {
+            id: testVariation.id,
+          },
+        },
+        build: {
+          connect: {
+            id: createTestRequestDto.buildId,
+          },
+        },
+        project: {
+          connect: {
+            id: createTestRequestDto.projectId,
+          },
+        },
+        ...getTestVariationUniqueData(testVariation),
+        baselineName: testVariation.baselineName,
+        baselineUiTreeName: testVariation.baselineUiTreeName,
+        uiTreeName,
+        featureName: createTestRequestDto.featureName?.trim() || null,
+        browserVersion: createTestRequestDto.browserVersion?.trim() || null,
+        uiTreeOptions:
+          createTestRequestDto.excludeSystemBars !== undefined
+            ? JSON.stringify({ excludeSystemBars: createTestRequestDto.excludeSystemBars })
+            : null,
+        baselineBranchName: testVariation.branchName,
+        ignoreAreas: testVariation.ignoreAreas,
+        tempIgnoreAreas: JSON.stringify(createTestRequestDto.ignoreAreas),
+        comment: createTestRequestDto.comment || testVariation.comment,
+        diffTollerancePercent: createTestRequestDto.diffTollerancePercent,
+        branchName: createTestRequestDto.branchName,
+        merge: createTestRequestDto.merge,
+        status: TestStatus.new,
+      },
+    });
+
+    this.eventsGateway.testRunCreated(testRun);
+    return testRun;
+  }
+
+  /**
+   * Checks a fresh run against its UI tree and keeps the results on the row.
+   * A run whose pixels match but whose elements changed in ways the screenshot
+   * does not show (a label, a disabled control, an invisible button on top)
+   * goes to review instead of passing.
+   */
+  async analyzeUiTree(testRun: TestRun, tree: UiTree): Promise<TestRun> {
+    try {
+      const analysis = await this.uiTreeService.analyze(testRun, tree);
+      // issues the team filed or dismissed earlier do not count as new
+      const { newCount, totalCount } = await this.a11yIssuesService.countsFor(testRun, analysis.report);
+      const hidden = analysis.invisible.length;
+      const passedOnPixels = testRun.status === TestStatus.ok;
+      const updated = await this.prismaService.testRun.update({
+        where: { id: testRun.id },
+        data: {
+          a11yReportName: analysis.reportName,
+          a11yNewCount: newCount,
+          a11yTotalCount: totalCount,
+          semanticChangeCount: hidden,
+          componentChanges: analysis.components.length ? JSON.stringify(analysis.components) : null,
+          ...(hidden && passedOnPixels ? { status: TestStatus.unresolved } : {}),
+        },
+      });
+      this.eventsGateway.testRunUpdated(updated);
+      return updated;
+    } catch (error) {
+      this.logger.error(`Accessibility check failed for ${testRun.id}: ${error}`);
+      return testRun;
+    }
+  }
+
+  async getAccessibilityReport(id: string, userId?: string): Promise<ReviewedA11yReport | null> {
+    return this.a11yIssuesService.getReviewedReport(id, userId);
+  }
+
+  async getStructure(id: string): Promise<StructureInfo | null> {
+    const testRun = await this.findOne(id);
+    return testRun ? this.uiTreeService.structure(testRun) : null;
+  }
+
+  /** The check's last runs up to this one, for the trend in the comparison header (REQ-046-08). */
+  async getTrend(id: string): Promise<TrendPoint[]> {
+    const select = {
+      id: true,
+      createdAt: true,
+      status: true,
+      diffPercent: true,
+      testVariationId: true,
+      build: { select: { number: true } },
+    } as const;
+    const current = await this.prismaService.testRun.findUnique({ where: { id }, select });
+    if (!current) return [];
+    // a run outside any variation has no history of its own
+    if (!current.testVariationId) return checkTrend([current], id);
+    const rows = await this.prismaService.testRun.findMany({
+      where: { testVariationId: current.testVariationId, createdAt: { lte: current.createdAt } },
+      orderBy: { createdAt: 'desc' },
+      // one spare: runs at the same moment as the current one may come first
+      take: TREND_LENGTH + 1,
+      select,
+    });
+    return checkTrend([...rows, current], id);
+  }
+
+  private assertSelector(selector: string) {
+    const problem = selectorProblem(selector);
+    if (problem === 'prefix') throw new BadRequestException('Selector must start with id:, class:, text: or xpath:');
+    if (problem === 'pattern') {
+      throw new BadRequestException(
+        'This pattern uses a back-reference, look-around or another part Vision does not run ' +
+          '(a repeat over 1000, a Unicode property it does not know): rewrite it without them'
+      );
+    }
+    // the rule form shows the reason in the person's language; this is for the API
+    if (problem) throw new BadRequestException(`This xpath is not a path from a stable element (${problem})`);
+  }
+
+  /** What a selector finds on the run's baseline and screenshot, before it is saved (REQ-027-32). */
+  async selectorMatches(
+    id: string,
+    selector: string
+  ): Promise<{ current: number; baseline: number; problem: ReturnType<typeof selectorProblem> }> {
+    const problem = selectorProblem(selector ?? '');
+    if (problem) return { current: 0, baseline: 0, problem };
+    const testRun = await this.findOne(id);
+    if (!testRun) throw new NotFoundException('Test run not found');
+    const [tree, baselineTree] = await Promise.all([
+      this.uiTreeService.load(testRun.uiTreeName),
+      this.uiTreeService.load(testRun.baselineUiTreeName),
+    ]);
+    const count = (side: typeof tree) => (side ? findBySelector(side, selector).length : 0);
+    return { current: count(tree), baseline: count(baselineTree), problem: null };
+  }
+
+  /**
+   * Adds an element rule to the run's screen or to the whole project, then
+   * compares the run again; other runs of the build it applies to are
+   * compared again in the background.
+   */
+  async addElementRule(id: string, dto: AddElementRuleDto): Promise<ElementRule> {
+    this.assertSelector(dto.selector);
+    // each check names its own elements; "compare only these" for every screen would compare nothing elsewhere
+    if (dto.action === 'compare' && dto.scope === 'project') {
+      throw new BadRequestException('Compare only applies to one screen');
+    }
+    if (dto.action === 'variable') {
+      const problem = partsProblem(dto.parts);
+      if (problem) throw new BadRequestException(problem);
+    }
+    const testRun = await this.findOne(id);
+    if (!testRun) throw new NotFoundException('Test run not found');
+    const rule: ElementRule = {
+      id: randomUUID(),
+      selector: dto.selector.trim(),
+      action: dto.action,
+      ...(dto.action === 'tolerate' ? { maxDiffPercent: dto.maxDiffPercent ?? 5 } : {}),
+      ...(dto.action === 'variable' ? { parts: dto.parts } : {}),
+      ...(dto.note ? { note: dto.note } : {}),
+    };
+    // "check the text" and "change" swap a rule in one write, so the run is never compared without either (REQ-033-14)
+    await this.updateRules(testRun, dto.scope, (rules) => [
+      ...rules.filter((item) => !dto.replacesRuleId || item.id !== dto.replacesRuleId),
+      rule,
+    ]);
+    await this.recompareAfterRuleChange(testRun, dto.scope);
+    return rule;
+  }
+
+  /**
+   * Swaps a pixel area for an ignore rule on the element it stands for, so the
+   * exclusion follows the element when the layout moves (REQ-024-51). The run is
+   * compared once, with both changes in place.
+   */
+  async replaceAreaWithElement(
+    id: string,
+    dto: ReplaceAreaWithElementDto
+  ): Promise<{ rule: ElementRule; area: IgnoreAreaDto }> {
+    this.assertSelector(dto.selector);
+    const testRun = await this.findOne(id);
+    if (!testRun) throw new NotFoundException('Test run not found');
+    // areas drawn in the UI carry an id; the DTO only describes the rectangle
+    const areas = parseJsonArray<IgnoreAreaDto & { id?: string }>(testRun.ignoreAreas);
+    const area = areas.find((item) => item.id !== undefined && String(item.id) === dto.areaId);
+    if (!area) throw new NotFoundException('Ignore area not found');
+    const rule: ElementRule = { id: randomUUID(), selector: dto.selector.trim(), action: 'ignore' };
+    await this.updateRules(testRun, 'screen', (rules) => [...rules, rule]);
+    // updateIgnoreAreas compares the run again, now with the rule in place too
+    await this.updateIgnoreAreas(
+      id,
+      areas.filter((item) => item !== area)
+    );
+    return { rule, area };
+  }
+
+  async removeElementRule(id: string, dto: RemoveElementRuleDto): Promise<void> {
+    const testRun = await this.findOne(id);
+    if (!testRun) throw new NotFoundException('Test run not found');
+    await this.updateRules(testRun, dto.scope, (rules) => rules.filter((rule) => rule.id !== dto.ruleId));
+    await this.recompareAfterRuleChange(testRun, dto.scope);
+  }
+
+  private async updateRules(
+    testRun: TestRun,
+    scope: 'screen' | 'project',
+    change: (rules: ElementRule[]) => ElementRule[]
+  ): Promise<void> {
+    const project = await this.prismaService.project.findUnique({ where: { id: testRun.projectId } });
+    const settings = parseUiTreeSettings(project?.uiTreeSettings);
+    if (scope === 'screen') {
+      // kept by check (name and custom tags), so every device and branch of the check gets it
+      const key = checkKey(testRun);
+      const current = await this.uiTreeService.checkRules(testRun, settings);
+      const next = change(current);
+      if (next.length) settings.checkRules[key] = next;
+      else delete settings.checkRules[key];
+      // an earlier version kept these rules on single device variations; they move to the check
+      await this.prismaService.testVariation.updateMany({
+        where: {
+          projectId: testRun.projectId,
+          name: testRun.name,
+          customTags: testRun.customTags ?? '',
+          elementRules: { not: null },
+        },
+        data: { elementRules: null },
+      });
+    } else {
+      settings.elementRules = change(settings.elementRules);
+    }
+    await this.prismaService.project.update({
+      where: { id: testRun.projectId },
+      data: { uiTreeSettings: JSON.stringify(settings) },
+    });
+  }
+
+  private async recompareAfterRuleChange(testRun: TestRun, scope: 'screen' | 'project'): Promise<void> {
+    await this.calculateDiff(testRun.projectId, testRun);
+    const others = await this.prismaService.testRun.findMany({
+      where: {
+        buildId: testRun.buildId,
+        id: { not: testRun.id },
+        uiTreeName: { not: null },
+        status: TestStatus.unresolved,
+        // every device of the check
+        ...(scope === 'screen' ? { name: testRun.name, customTags: testRun.customTags ?? '' } : {}),
+      },
+      take: MAX_RECOMPARE_AFTER_RULE,
+    });
+    // one after another so a large build does not flood the diff workers
+    void (async () => {
+      for (const other of others) {
+        await this.calculateDiff(other.projectId, other).catch((error) =>
+          this.logger.warn(`Re-comparing ${other.id} after a rule change failed: ${error}`)
+        );
+      }
+    })();
+  }
+
+  async delete(id: string): Promise<TestRun> {
+    this.logger.debug(`Going to remove TestRun ${id}`);
+    const testRun = await this.findOne(id);
+
+    if (!testRun) {
+      this.logger.warn(`TestRun not found ${id}`);
+      return;
+    }
+
+    await Promise.all([
+      this.staticService.deleteImage(testRun.diffName),
+      this.staticService.deleteImage(testRun.imageName),
+      // left behind, these would outlive every build that referenced them and
+      // nothing would ever collect them
+      this.staticService.deleteImage(testRun.imageThumbnailName),
+      this.staticService.deleteImage(testRun.diffThumbnailName),
+      this.uiTreeService.deleteFiles(testRun.uiTreeName, testRun.a11yReportName),
+    ]);
+
+    try {
+      await this.prismaService.testRun.delete({ where: { id } });
+    } catch (e) {
+      if (e instanceof Prisma.PrismaClientKnownRequestError) {
+        // two clean-ups at once may both delete it: the second finds nothing, which is fine
+        if (e.code === 'P2025') {
+          this.logger.warn(`TestRun already deleted ${id}`);
+          return;
+        }
+      }
+    }
+
+    this.logger.log(`TestRun deleted ${id}`);
+    this.eventsGateway.testRunDeleted(testRun);
+    return testRun;
+  }
+
+  async updateIgnoreAreas(id: string, ignoreAreas: IgnoreAreaDto[]): Promise<TestRun> {
+    return this.prismaService.testRun
+      .update({
+        where: { id },
+        data: {
+          ignoreAreas: JSON.stringify(ignoreAreas),
+        },
+      })
+      .then(async (testRun: TestRun) => {
+        const testVariation = await this.testVariationService.update(testRun.testVariationId, {
+          ignoreAreas: testRun.ignoreAreas,
+        });
+        return this.calculateDiff(testVariation.projectId, testRun);
+      });
+  }
+
+  /**
+   * Adds the areas to every run, or to none: a run that would pass the limit with them stops the
+   * request before anything is written (051, REQ-051-09).
+   */
+  async addIgnoreAreasToAll(ids: string[], ignoreAreas: IgnoreAreaDto[]): Promise<void> {
+    const runs = await Promise.all(ids.map((id) => this.findOne(id)));
+    for (const run of runs) {
+      const held = run ? ((JSON.parse(run.ignoreAreas ?? '[]') as IgnoreAreaDto[] | null) ?? []).length : 0;
+      if (held + ignoreAreas.length > MAX_IGNORE_AREAS) {
+        throw new BadRequestException(
+          `A screen takes at most ${MAX_IGNORE_AREAS} ignore areas: one has ${held}, and ${ignoreAreas.length} more would pass it`
+        );
+      }
+    }
+    for (const id of ids) await this.addIgnoreAreas(id, ignoreAreas);
+  }
+
+  async addIgnoreAreas(id: string, ignoreAreas: IgnoreAreaDto[]): Promise<TestRun> {
+    const testRun = await this.findOne(id);
+    const oldIgnoreAreas: IgnoreAreaDto[] = JSON.parse(testRun.ignoreAreas) ?? [];
+    return this.updateIgnoreAreas(id, oldIgnoreAreas.concat(ignoreAreas));
+  }
+
+  async update(id: string, data: UpdateTestRunDto): Promise<TestRun> {
+    return this.prismaService.testRun
+      .update({
+        where: { id },
+        data: {
+          comment: data.comment,
+        },
+      })
+      .then(async (testRun) => {
+        await this.testVariationService.update(testRun.testVariationId, data);
+        this.eventsGateway.testRunUpdated(testRun);
+        return testRun;
+      });
+  }
+
+  private getAllIgnoteAreas(testRun: TestRun): IgnoreAreaDto[] {
+    const ignoreAreas: IgnoreAreaDto[] = JSON.parse(testRun.ignoreAreas) ?? [];
+    const tempIgnoreAreas: IgnoreAreaDto[] = JSON.parse(testRun.tempIgnoreAreas) ?? [];
+    return ignoreAreas.concat(tempIgnoreAreas);
+  }
+
+  /**
+   * Reason: not rebased code from feature branch is compared agains new main branch baseline thus diff is expected
+   * Tries to find past baseline in main branch and autoApprove in case matched
+   * @param testVariation
+   * @param testRun
+   */
+  private async tryAutoApproveByPastBaselines({ testRun, testVariation }: AutoApproveProps): Promise<TestRun> {
+    // matching pictures say nothing about a change the pictures do not show
+    if (
+      testRun.status === TestStatus.ok ||
+      testRun.branchName === testRun.baselineBranchName ||
+      testRun.semanticChangeCount
+    ) {
+      return testRun;
+    }
+
+    this.logger.log(`Try AutoApproveByPastBaselines testRun: ${testRun.id}`);
+    const testVariationHistory = await this.testVariationService.getDetails(testVariation.id);
+    // skip first baseline as it was used by default in general flow
+    for (const baseline of testVariationHistory.baselines.slice(1)) {
+      if (await this.shouldAutoApprove({ projectId: testVariation.projectId, baseline, testRun })) {
+        return this.approve(testRun.id, false, true);
+      }
+    }
+
+    return testRun;
+  }
+
+  /**
+   * Reason: branch got another one merged thus diff is expected
+   * Tries to find latest baseline in test variation
+   * that has already approved test agains the same baseline image
+   * and autoApprove in case matched
+   * @param testVariation
+   * @param testRun
+   */
+  private async tryAutoApproveByNewBaselines({ testVariation, testRun }: AutoApproveProps): Promise<TestRun> {
+    if (testRun.status === TestStatus.ok || testRun.semanticChangeCount) {
+      return testRun;
+    }
+    this.logger.log(`Try AutoApproveByNewBaselines testRun: ${testRun.id}`);
+
+    const alreadyApprovedTestRuns: TestRun[] = await this.prismaService.testRun.findMany({
+      where: {
+        ...getTestVariationUniqueData(testVariation),
+        baselineName: testVariation.baselineName,
+        status: TestStatus.approved,
+        testVariation: {
+          projectId: testVariation.projectId,
+        },
+      },
+    });
+
+    for (const approvedTestRun of alreadyApprovedTestRuns) {
+      const approvedTestVariation = await this.testVariationService.getDetails(approvedTestRun.testVariationId);
+      const baseline = approvedTestVariation.baselines.shift();
+
+      if (await this.shouldAutoApprove({ projectId: testVariation.projectId, baseline, testRun })) {
+        return this.approve(testRun.id, false, true);
+      }
+    }
+
+    return testRun;
+  }
+
+  private async shouldAutoApprove({
+    projectId,
+    baseline,
+    testRun,
+  }: {
+    projectId: string;
+    baseline: Baseline;
+    testRun: TestRun;
+  }): Promise<boolean> {
+    const diffResult = await this.compareService.getDiff({
+      projectId,
+      data: {
+        image: testRun.imageName,
+        baseline: baseline.baselineName,
+        ignoreAreas: this.getAllIgnoteAreas(testRun),
+        diffTollerancePercent: testRun.diffTollerancePercent,
+        saveDiffAsFile: false,
+      },
+    });
+
+    if (diffResult.status === TestStatus.ok) {
+      this.logger.log(`TestRun ${testRun.id} could be auto approved based on Baseline ${baseline.id}`);
+      return true;
+    }
+  }
+}
+
+interface AutoApproveProps {
+  testVariation: TestVariation;
+  testRun: TestRun;
+}
+
+// How many screenshots may be in the worker pool at once while a build's
+// change groups are signed. The pool queue is shared with build ingestion, and
+// every queued job holds two image buffers, so the fan-out stays bounded rather
+// than handing the pool a job per screen.
+export const SIGNATURE_CONCURRENCY = 8;
+
+// Signatures kept across requests, keyed by the image pair and diff settings.
+// Roughly one build's worth of screens, at 64 floats each.
+const SIGNATURE_CACHE_SIZE = 2000;
+// runs of the build compared again after an element rule changes
+const MAX_RECOMPARE_AFTER_RULE = 200;
+
+/**
+ * Insertion-ordered cache with a hard size limit: reviewing build after build
+ * would otherwise grow the signature memo without bound. Reinserting a key
+ * refreshes its position, so what the reviewer keeps coming back to survives.
+ */
+class BoundedCache<T> {
+  private readonly entries = new Map<string, T>();
+
+  constructor(private readonly limit: number) {}
+
+  get(key: string): T | undefined {
+    const value = this.entries.get(key);
+    if (value !== undefined) {
+      this.entries.delete(key);
+      this.entries.set(key, value);
+    }
+    return value;
+  }
+
+  set(key: string, value: T): void {
+    this.entries.delete(key);
+    this.entries.set(key, value);
+    while (this.entries.size > this.limit) {
+      this.entries.delete(this.entries.keys().next().value);
+    }
+  }
+
+  delete(key: string): void {
+    this.entries.delete(key);
+  }
+}
+
+/**
+ * Runs `task` over every item with at most `limit` in flight, keeping the
+ * results in the items' order.
+ */
+export async function mapWithConcurrency<T, R>(items: T[], limit: number, task: (item: T) => Promise<R>): Promise<R[]> {
+  const results = new Array<R>(items.length);
+  let next = 0;
+  const worker = async (): Promise<void> => {
+    while (next < items.length) {
+      const index = next++;
+      results[index] = await task(items[index]);
+    }
+  };
+  await Promise.all(Array.from({ length: Math.min(limit, items.length) }, worker));
+  return results;
+}
+
+/**
+ * The signature stored on a run, if it is still usable. Null — meaning
+ * "recompute" — when there is none, when it cannot be read, or when the
+ * project's comparison settings have moved on since it was written.
+ *
+ * That last case is the point. Comparing a signature taken at one threshold
+ * against another run's taken at another quietly makes grouping worse, and the
+ * reviewer has no way to tell why. The in-memory memo has always keyed on the
+ * same settings; this is the stored equivalent.
+ */
+function parseStoredSignature(
+  stored: string | null | undefined,
+  config: PixelmatchConfig,
+  logger: Logger
+): number[] | null {
+  if (!stored) {
+    return null;
+  }
+  try {
+    const parsed: StampedSignature = JSON.parse(stored);
+    // Shape first: a histogram of the wrong length, or one carrying anything
+    // that is not a number, compares against a current signature to produce a
+    // score that looks fine and means nothing. Recomputing is always safe.
+    const wellFormed =
+      Array.isArray(parsed?.signature) &&
+      parsed.signature.length === SIGNATURE_LENGTH &&
+      parsed.signature.every((value) => typeof value === 'number' && Number.isFinite(value));
+    if (!wellFormed) {
+      return null;
+    }
+    const sameConfig = parsed.threshold === config.threshold && parsed.includeAA === includeAAFor(config);
+    return sameConfig ? parsed.signature : null;
+  } catch (error) {
+    logger.warn(`Ignoring unreadable stored change signature: ${error}`);
+    return null;
+  }
+}
+
+// Same palette but a much larger/smaller change area signals a different or
+// additional change (an extra element changed too), not just text reflowing
+// differently — which stays well under this ratio. Such runs stay out of a group.
+const MATCH_MAGNITUDE_RATIO = 2;
+
+export function magnitudesSimilar(a: number | null, b: number | null): boolean {
+  const min = Math.min(a ?? 0, b ?? 0);
+  const max = Math.max(a ?? 0, b ?? 0);
+  if (min <= 0) {
+    return max <= 0;
+  }
+  return max / min <= MATCH_MAGNITUDE_RATIO;
+}

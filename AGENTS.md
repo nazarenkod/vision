@@ -1,0 +1,81 @@
+# Vision — інструкції для агентів
+
+Vision — візуальні перевірки для QA мобільних застосунків і вебу (Android «AOS» та iOS через
+Appium, веб через Selenide і Playwright): порівняння знімків з урахуванням UI-дерева, перевірки доступності, баги в Jira, групи
+змін, Insights і CLI/MCP. Працює поруч із робочим VRT, з якого копіює дані (правило 1); походження
+коду — у [NOTICE](NOTICE).
+
+Це рівень 0: правила, що діють завжди, і куди йти далі. Деталі — за посиланнями, коли вони
+потрібні задачі.
+
+## Непорушні правила
+
+Порушення правил 1–4 не виправити, тому `.claude/hooks/guard.py` блокує їх для агентів.
+
+1. **Робочий VRT і його база не повинні постраждати за жодних умов.** Vision стоїть на тій самій
+   машині й працює на копії даних. docker compose — лише через `./scripts/vision.sh`; нові
+   скрипти — за запобіжниками `scripts/lib/vision-safety.sh` ([ADR-0002](docs/decisions/0002-production-is-read-only.md)).
+2. **Пуш лише в remote з `.claude/repository.json`** (тут — `vision`): гілку задачі, далі PR.
+   `origin` може бути чужим репозиторієм ([ADR-0027](docs/decisions/0027-vision-own-product.md)).
+   Виняток — клон, де `origin` і є цей репозиторій (хмарні сесії): туди можна пушити окрему гілку
+   (`git push -u origin <гілка>`), але не `main`, без force і без видалень. В іншому git-хості
+   змінюються лише два значення в `.claude/repository.json`.
+3. **Міграції лише додавальні:** нова таблиця, nullable-колонка, індекс; без змін enum, видалень,
+   перейменувань ([ADR-0003](docs/decisions/0003-additive-schema-only.md)).
+4. **Жодних скидань і видалень бази** (`prisma migrate reset`, `DROP DATABASE`, `dropdb`).
+5. **SDK змінюється лише за специфікацією:** зараз це вихідний SDK + `VisionOptions.uiTree` (до 10 МиБ), `featureName`, `browserVersion`, `web.WebUiTree` (050),
+   класи `Vision`, `VisionConfig`, `VisionOptions`, `VisionResult` у пакеті `ua.vision.sdk` (`ua.vision:vision-sdk`), налаштування `VISION_*`;
+   запити до сервера не ламаємо ([ADR-0024](docs/decisions/0024-own-vision-sdk.md), [ADR-0026](docs/decisions/0026-sdk-own-package-and-versions.md)).
+6. **LLM — лише на вимогу,** ніколи при прийомі знімків ([ADR-0007](docs/decisions/0007-deterministic-first-ai-on-demand.md)).
+7. **Секрети не виходять із сервера:** токени Jira лише записуються (`jiraTokenSet`); рядок
+   `User` ніколи не віддається цілком.
+8. **Дії назовні — лише з явного дозволу людини:** пуш, зміни в реальній Jira, повідомлення,
+   видалення даних.
+
+## Як ми працюємо: специфікація → дизайн → задачі
+
+Нова фіча чи зміна поведінки: `/spec` → затвердження людиною → `/design` (дизайн і задачі) →
+реалізація з тестами → `/verify`. Специфікація — у `docs/specs/NNN-…/spec.md`, кожна вимога має
+тест у `design.md`. Цикл повністю — у [agentic-workflow](docs/guides/agentic-workflow.md).
+Виправлення бага без зміни поведінки специфікації не потребує, але тест — так.
+
+## Структура і команди
+
+| Шлях | Що там | Команди й правила |
+|---|---|---|
+| `backend/` | NestJS 12 + Prisma 7 + Postgres (Node 24): API, UI-дерево, доступність, Jira, AI | [backend/AGENTS.md](backend/AGENTS.md) |
+| `frontend/` | React 18 + MUI 5 + Vite, Playwright; CLI `public/cli/vision.py` | [frontend/AGENTS.md](frontend/AGENTS.md) |
+| `sdk-java/` | Java SDK (вихідний + `uiTree`, `featureName`, `browserVersion`, `web.WebUiTree`) | [sdk-java/AGENTS.md](sdk-java/AGENTS.md) |
+| `sdk-playwright/` | SDK для Playwright (`@vision/sdk-playwright`, порт `agent-playwright` VRT) | [sdk-playwright/AGENTS.md](sdk-playwright/AGENTS.md) |
+| `web-tree/` | `collect-tree.js` — один скрипт збору дерева вебсторінки для обох SDK; `make-fixtures.cjs` — фікстури бекенду | [050](docs/specs/050-web-ui-tree/spec.md) |
+| `scripts/` | `vision.sh`, копія даних проду, jar SDK, перевірка документації | [scripts/AGENTS.md](scripts/AGENTS.md) |
+| `docs/` | специфікації, рішення, архітектура, гайди | [docs/README.md](docs/README.md) |
+| `DEPLOY.md`, `DEMO.md` | розгортання поруч із продом (рос.), демо (англ.) | — |
+
+Повна перевірка перед «готово» — `/verify`: усе однією командою `python3 -I scripts/verify.py`.
+Команди кожного пакета — у його `AGENTS.md` і в [testing](docs/guides/testing.md).
+
+## Стиль коду
+
+- TypeScript скрізь, крім SDK (Java) і CLI (Python, лише стандартна бібліотека).
+- Логіку пишемо чистими функціями, а сервіси Nest лише завантажують дані й викликають їх.
+- Коментарі пояснюють *чому*, а не *що*. Назва тесту — поведінка: «links instead of filing when
+  someone filed the problem already».
+- `prettier` і `eslint` — лише по змінених файлах; чужий код не переформатовуємо.
+- Інтерфейс двома мовами: кожен текст — ключ словника з англійським і українським перекладом
+  ([ADR-0017](docs/decisions/0017-interface-in-two-languages.md)). Документація для команди
+  українською, ідентифікатори англійською.
+
+## Коміти
+
+- Тема — що змінилось з погляду користувача, до ~70 символів, англійською; тіло — чому і що
+  важливо знати.
+- Зміна поведінки, її специфікація й тести — в одному коміті.
+- Останній рядок — `Co-Authored-By: …`, якщо його вимагає середовище агента.
+
+## Куди далі
+
+- Що це й для кого: [огляд](docs/product/overview.md), [словник](docs/product/glossary.md)
+- Як влаштовано: [архітектура](docs/architecture/overview.md), [дані](docs/architecture/data-model.md), [API](docs/architecture/api.md)
+- Фіча: [docs/specs/](docs/specs/README.md); чому так: [docs/decisions/](docs/decisions/README.md)
+- Локальний запуск і тести: [development](docs/guides/development.md), [testing](docs/guides/testing.md)

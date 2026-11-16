@@ -1,0 +1,312 @@
+import { readFileSync } from 'fs';
+import path from 'path';
+import { TestRun } from '@prisma/client';
+import { UiTreeService } from './ui-tree.service';
+import { parseUiTree } from './ui-tree.parser';
+import { parseUiTreeSettings } from './comparison-inputs';
+
+const xml = readFileSync(path.join(__dirname, '__fixtures__', 'android-payment.xml'), 'utf8');
+const tree = parseUiTree(xml, { imageWidth: 1080, imageHeight: 2400, densityDpi: 420 });
+const disabled = parseUiTree(
+  xml.replace(
+    'resource-id="com.bank.app:id/btn_pay" clickable="true" enabled="true"',
+    'resource-id="com.bank.app:id/btn_pay" clickable="true" enabled="false"'
+  ),
+  { imageWidth: 1080, imageHeight: 2400, densityDpi: 420 }
+);
+
+const reference = { os: 'Android 15', device: 'Pixel 7 emulator', browser: '', viewport: '' };
+const run = (fields: Partial<TestRun> = {}) =>
+  ({
+    id: 'run',
+    projectId: 'p1',
+    buildId: 'b1',
+    branchName: 'feature',
+    name: 'Payment',
+    customTags: '',
+    os: 'Android 14',
+    device: 'Galaxy S23',
+    browser: '',
+    viewport: '',
+    uiTreeName: 'here.json.gz',
+    ...fields,
+  }) as TestRun;
+
+function service(prisma: Record<string, unknown>, trees: Record<string, unknown>) {
+  const instance = new UiTreeService({} as never, prisma as never);
+  jest.spyOn(instance, 'load').mockImplementation(async (name) => (name ? ((trees[name] as never) ?? null) : null));
+  return instance;
+}
+
+describe('UiTreeService.checkRules', () => {
+  it('joins the rules kept by check with rules older versions kept on device variations', async () => {
+    const settings = parseUiTreeSettings(
+      JSON.stringify({ checkRules: { '["Payment",""]': [{ id: 'a', selector: 'id:banner', action: 'ignore' }] } })
+    );
+    const findMany = jest
+      .fn()
+      .mockResolvedValue([
+        { elementRules: JSON.stringify([{ id: 'b', selector: 'id:clock', action: 'ignore' }]) },
+        { elementRules: JSON.stringify([{ id: 'a', selector: 'id:banner', action: 'ignore' }]) },
+      ]);
+    const rules = await service({ testVariation: { findMany } }, {}).checkRules(run(), settings);
+
+    expect(rules.map((rule) => rule.id)).toEqual(['a', 'b']);
+    expect(findMany.mock.calls[0][0].where).toMatchObject({ projectId: 'p1', name: 'Payment', customTags: '' });
+  });
+});
+
+const login = parseUiTree(
+  `<hierarchy width="1080" height="2400"><android.widget.FrameLayout class="android.widget.FrameLayout" bounds="[0,0][1080,2400]">` +
+    `<android.widget.EditText class="android.widget.EditText" resource-id="com.bank.app:id/et_login" bounds="[0,100][1080,200]"/>` +
+    `<android.widget.EditText class="android.widget.EditText" resource-id="com.bank.app:id/et_password" bounds="[0,300][1080,400]"/>` +
+    `<android.widget.Button class="android.widget.Button" resource-id="com.bank.app:id/btn_sign_in" bounds="[0,500][1080,600]"/>` +
+    `<android.widget.ProgressBar class="android.widget.ProgressBar" resource-id="com.bank.app:id/spinner" bounds="[490,1150][590,1250]"/>` +
+    `</android.widget.FrameLayout></hierarchy>`,
+  { imageWidth: 1080, imageHeight: 2400, densityDpi: 420 }
+);
+
+/** analyze() with its file and image work stubbed: what it decides from the trees and the project. */
+function analyzing(prisma: Record<string, unknown>, trees: Record<string, unknown>) {
+  const saveFile = jest.fn().mockResolvedValue('a11y.json');
+  const instance = new UiTreeService({ saveFile } as never, prisma as never);
+  const load = jest
+    .spyOn(instance, 'load')
+    .mockImplementation(async (name) => (name ? ((trees[name] as never) ?? null) : null));
+  jest.spyOn(instance as never, 'decode').mockResolvedValue(undefined as never);
+  jest.spyOn(instance, 'comparisonInputs').mockResolvedValue({
+    ignoreAreas: [],
+    compareOnly: { active: false, moves: [], keep: [], compared: [], ignoreOutside: [], problems: [] },
+  } as never);
+  return { instance, load };
+}
+
+describe('UiTreeService.analyze', () => {
+  it('warns about neither a spinner nor another screen', async () => {
+    const project = {
+      mainBranchName: 'master',
+      // switches an older version read; they turn nothing on now
+      uiTreeSettings: JSON.stringify({ detectLoading: true, detectScreenMismatch: true }),
+    };
+    const { instance } = analyzing(
+      {
+        project: { findUnique: jest.fn().mockResolvedValue(project) },
+        testVariation: { findMany: jest.fn().mockResolvedValue([]) },
+      },
+      { 'payment.json.gz': tree }
+    );
+
+    const result = await instance.analyze(run({ baselineUiTreeName: 'payment.json.gz' }), login);
+
+    expect(Object.keys(result).sort()).toEqual(['components', 'invisible', 'report', 'reportName']);
+  });
+
+  it('runs the accessibility rules on the worker pool, not on the thread that serves the API', async () => {
+    const run_ = jest.fn().mockResolvedValue({ violations: [] });
+    const saveFile = jest.fn().mockResolvedValue('a11y.json');
+    const instance = new UiTreeService(
+      { saveFile } as never,
+      {
+        project: { findUnique: jest.fn().mockResolvedValue({ mainBranchName: 'master' }) },
+        testVariation: { findMany: jest.fn().mockResolvedValue([]) },
+      } as never,
+      { run: run_ } as never
+    );
+    jest.spyOn(instance, 'load').mockImplementation(async (name) => (name === 'payment.json.gz' ? login : null));
+    jest.spyOn(instance as never, 'decode').mockResolvedValue(undefined as never);
+    jest.spyOn(instance, 'comparisonInputs').mockResolvedValue({
+      ignoreAreas: [],
+      compareOnly: { active: false, moves: [], keep: [], compared: [], ignoreOutside: [], problems: [] },
+    } as never);
+
+    await instance.analyze(run({ baselineUiTreeName: 'payment.json.gz' }), login);
+
+    // the run's screen and its baseline's, both off the event loop
+    expect(run_).toHaveBeenCalledTimes(2);
+    expect(run_.mock.calls.map(([job]) => job.kind)).toEqual(['a11y', 'a11y']);
+  });
+});
+
+describe('UiTreeService, a device without its own baseline', () => {
+  const candidates = [
+    // newest first, as asked for
+    { id: 'a', branchName: 'master', device: 'Galaxy S24', baselineUiTreeName: 'a.json.gz' },
+    { id: 'b', branchName: 'feature', device: 'BrowserStack Pixel 6', baselineUiTreeName: 'b.json.gz' },
+    { id: 'c', branchName: 'feature', device: 'Pixel 7 emulator', baselineUiTreeName: 'c.json.gz' },
+  ];
+
+  it('takes the newest baseline of the check on another device, on the run branch first', async () => {
+    const findMany = jest.fn().mockResolvedValue(candidates);
+    const picked = await service({ testVariation: { findMany } }, {})['otherDeviceBaseline'](
+      run({ testVariationId: 'own' }),
+      { mainBranchName: 'master' }
+    );
+
+    expect(picked.id).toBe('b');
+    expect(findMany.mock.calls[0][0]).toMatchObject({
+      where: {
+        name: 'Payment',
+        customTags: '',
+        branchName: { in: ['feature', 'master'] },
+        id: { not: 'own' },
+      },
+      orderBy: { updatedAt: 'desc' },
+    });
+  });
+
+  it('ignores a reference device chosen before', async () => {
+    const project = { mainBranchName: 'master', uiTreeSettings: JSON.stringify({ referenceDevice: reference }) };
+    const { instance, load } = analyzing(
+      {
+        project: { findUnique: jest.fn().mockResolvedValue(project) },
+        testVariation: { findMany: jest.fn().mockResolvedValue(candidates) },
+      },
+      { 'b.json.gz': tree, 'c.json.gz': tree }
+    );
+
+    await instance.analyze(run({ testVariationId: 'own', baselineUiTreeName: null }), tree);
+
+    const loaded = load.mock.calls.map(([name]) => name);
+    expect(loaded).toContain('b.json.gz');
+    expect(loaded).not.toContain('c.json.gz');
+  });
+});
+
+describe('UiTreeService, compare only', () => {
+  const compareSettings = (selector = 'id:btn_pay') =>
+    JSON.stringify({ checkRules: { '["Payment",""]': [{ id: 'c1', selector, action: 'compare' }] } });
+  function compareService(trees: Record<string, unknown>, settings = compareSettings()) {
+    const prisma = {
+      project: { findUnique: jest.fn().mockResolvedValue({ uiTreeSettings: settings }) },
+      testVariation: { findMany: jest.fn().mockResolvedValue([]) },
+    };
+    const instance = new UiTreeService({ getImageBuffer: async () => null } as never, prisma as never);
+    jest.spyOn(instance, 'load').mockImplementation(async (name) => (name ? ((trees[name] as never) ?? null) : null));
+    return instance;
+  }
+
+  it("applies a check's compare-only rule on every device and branch", async () => {
+    const instance = compareService({ 'here.json.gz': tree, 'base.json.gz': tree });
+    for (const fields of [
+      { device: 'Galaxy S23', branchName: 'feature' },
+      { device: 'Pixel 7', os: 'Android 15', branchName: 'master' },
+    ]) {
+      const inputs = await instance.comparisonInputs(run({ ...fields, baselineUiTreeName: 'base.json.gz' }));
+      expect(inputs.compareOnly.active).toBe(true);
+      expect(inputs.compareOnly.keep).toEqual([{ x: 42, y: 2200, width: 996, height: 126 }]);
+    }
+  });
+
+  it('never passes a compare-only run without a UI tree', async () => {
+    const inputs = await compareService({}).comparisonInputs(run({ uiTreeName: null }));
+    expect(inputs.compareOnly.problems).toEqual([{ kind: 'no-tree' }]);
+    // without a tree nothing can be left out of the comparison either
+    expect(inputs.ignoreAreas).toEqual([]);
+  });
+
+  it('compares the element at its place when only one side has a tree', async () => {
+    const pay = { x: 42, y: 2200, width: 996, height: 126 };
+    const noBaselineTree = await compareService({ 'here.json.gz': tree }).comparisonInputs(run());
+    expect(noBaselineTree.compareOnly.problems).toEqual([{ kind: 'one-tree', missing: 'baseline' }]);
+    expect(noBaselineTree.compareOnly.keep).toEqual([pay]);
+    expect(noBaselineTree.ignoreAreas.length).toBeGreaterThan(0);
+
+    // a build that sent no tree: the baseline's tree names the element
+    const noTreeHere = await compareService({ 'base.json.gz': tree }).comparisonInputs(
+      run({ uiTreeName: null, baselineUiTreeName: 'base.json.gz' })
+    );
+    expect(noTreeHere.compareOnly.problems).toEqual([{ kind: 'one-tree', missing: 'current' }]);
+    expect(noTreeHere.compareOnly.keep).toEqual([pay]);
+    expect(noTreeHere.ignoreAreas).toEqual(noTreeHere.compareOnly.ignoreOutside);
+  });
+
+  it('says how far a compared element moved, in dp', async () => {
+    const moved = parseUiTree(xml.replace('bounds="[42,2200][1038,2326]"', 'bounds="[42,2095][1038,2221]"'), {
+      imageWidth: 1080,
+      imageHeight: 2400,
+      densityDpi: 420,
+    });
+    const structure = await compareService({ 'here.json.gz': moved, 'base.json.gz': tree }).structure(
+      run({ baselineUiTreeName: 'base.json.gz' })
+    );
+    // 105 px at 420 dpi is 40 dp
+    expect(structure.compareOnly.compared).toEqual([
+      expect.objectContaining({ ruleId: 'c1', shiftDp: { dx: 0, dy: -40 } }),
+    ]);
+    expect(structure.size).toEqual({ width: 1080, height: 2400 });
+  });
+
+  it('reports no hidden change outside the compared elements', async () => {
+    // the pay button got disabled; only the fee is compared
+    const instance = compareService({ 'here.json.gz': disabled, 'base.json.gz': tree }, compareSettings('id:tv_fee'));
+    const structure = await instance.structure(run({ baselineUiTreeName: 'base.json.gz' }));
+    expect(structure.changes).toEqual([]);
+    expect(structure.invisible).toEqual([]);
+
+    const payOnly = compareService({ 'here.json.gz': disabled, 'base.json.gz': tree });
+    const compared = await payOnly.structure(run({ baselineUiTreeName: 'base.json.gz' }));
+    expect(compared.changes.length).toBeGreaterThan(0);
+  });
+
+  it('shows why a stored rule with a pattern Vision no longer runs finds nothing', async () => {
+    const rules = [
+      { id: 'old', selector: 'text:/(Pay)\\1?/', action: 'ignore' },
+      { id: 'look', selector: 'id:tv_fee', action: 'variable', parts: [{ pattern: '(?<=\\s)\\d+' }] },
+      { id: 'fine', selector: 'text:/Pay/', action: 'ignore' },
+    ];
+    const settings = JSON.stringify({ checkRules: { '["Payment",""]': rules } });
+    const structure = await compareService({ 'here.json.gz': tree, 'base.json.gz': tree }, settings).structure(
+      run({ baselineUiTreeName: 'base.json.gz' })
+    );
+    const byId = Object.fromEntries(structure.rules.map((rule) => [rule.id, rule]));
+
+    expect(byId.old).toMatchObject({ problem: 'pattern', matches: 0 });
+    expect(byId.look).toMatchObject({ problem: 'pattern' });
+    expect(byId.fine.problem).toBeUndefined();
+    expect(byId.fine.matches).toBeGreaterThan(0);
+  });
+
+  it('offers to ignore the element under a noise hint', async () => {
+    const instance = compareService({ 'here.json.gz': tree }, JSON.stringify({}));
+    jest.spyOn(instance, 'comparisonInputs').mockResolvedValue({
+      ignoreAreas: [],
+      toleranceAreas: [],
+      moves: [],
+      systemBars: [],
+      systemBarsFrom: null,
+      rules: { ignore: [], tolerate: [], matches: {}, found: {}, variable: {} },
+      variableProblems: [],
+      settings: null,
+      compareOnly: { active: false, moves: [], keep: [], compared: [], ignoreOutside: [], problems: [] },
+    });
+    // the fee text changed on its own: a dynamic text hint over it
+    const structure = await instance.structure(
+      run({ diffRegions: JSON.stringify([{ x: 42, y: 1000, width: 458, height: 50 }]), diffPercent: 1 })
+    );
+    const withElement = structure.hints.filter((hint) => 'element' in hint);
+    expect(withElement).toContainEqual(
+      expect.objectContaining({ element: expect.objectContaining({ selector: 'id:tv_fee' }) })
+    );
+  });
+});
+
+describe('UiTreeService.store', () => {
+  it('logs which check and project lost its tree, and why', async () => {
+    const saveFile = jest.fn();
+    const instance = new UiTreeService({ saveFile } as never, {} as never);
+    const warn = jest.spyOn(instance['logger'], 'warn').mockImplementation(() => undefined);
+    const laughs = Buffer.from('<!DOCTYPE x [<!ENTITY a "aaaa">]><hierarchy><node text="&a;"/></hierarchy>').toString(
+      'base64'
+    );
+
+    const stored = await instance.store(laughs, {}, Buffer.alloc(0), { name: 'Payment', projectId: 'p1' });
+
+    expect(stored).toBeNull();
+    expect(saveFile).not.toHaveBeenCalled();
+    expect(warn).toHaveBeenCalledWith(
+      'UI tree of "Payment" in project p1 left out (declares-entities): has a DOCTYPE or ENTITY declaration'
+    );
+    // the log names the check, never what the tree held
+    expect(warn.mock.calls[0][0]).not.toContain('&a;');
+  });
+});

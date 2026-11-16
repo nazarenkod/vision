@@ -1,0 +1,40 @@
+import { BasePage } from "./BasePage";
+import { LOCATOR_TEST_VARIATION_SELECT_BRANCH } from "~client/constants/help";
+
+export class TestVariationListPage extends BasePage {
+  cards = this.page.locator(".MuiCard-root");
+
+  // TestVariationMergeForm
+  mergeForm = this.page.locator("form").filter({
+    has: this.page.locator(`#${LOCATOR_TEST_VARIATION_SELECT_BRANCH}`),
+  });
+  fromBranch = this.mergeForm.getByRole("combobox").first();
+  toBranch = this.mergeForm.getByLabel("To branch");
+  mergeBtn = this.page.locator(`#${LOCATOR_TEST_VARIATION_SELECT_BRANCH}`);
+
+  // by the image title: one variation's name can be part of another's
+  getCard(name: string) {
+    return this.cards.filter({
+      has: this.page.locator(`img[title="${name}"]`),
+    });
+  }
+
+  deleteBtn(name: string) {
+    return this.getCard(name).getByTestId("baselineDelete");
+  }
+
+  // merging waits behind a button
+  mergeToggle = this.page.getByTestId("mergeBranchesToggle");
+
+  async merge(fromBranch: string, toBranch: string) {
+    if ((await this.mergeToggle.getAttribute("aria-expanded")) !== "true") {
+      await this.mergeToggle.click();
+    }
+    await this.fromBranch.click();
+    await this.page
+      .getByRole("option", { name: fromBranch, exact: true })
+      .click();
+    await this.toBranch.fill(toBranch);
+    await this.mergeBtn.click();
+  }
+}

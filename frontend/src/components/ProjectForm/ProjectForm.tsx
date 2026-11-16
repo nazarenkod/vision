@@ -1,0 +1,715 @@
+import {
+  Box,
+  ButtonBase,
+  Divider,
+  Link,
+  TextField,
+  Typography,
+  FormControl,
+  FormControlLabel,
+  InputLabel,
+  MenuItem,
+  Select,
+  Switch,
+  SelectChangeEvent,
+} from "@mui/material";
+import React from "react";
+import { TextValidator } from "react-material-ui-form-validator";
+import {
+  useProjectState,
+  useProjectDispatch,
+  setProjectEditState,
+} from "../../contexts";
+import { ImageComparison } from "../../types/imageComparison";
+import { motion, tokens, radius, type } from "../../theme";
+import { LooksSameConfigForm } from "./LooksSameConfigForm";
+import { OdiffConfigForm } from "./OdiffConfigForm";
+import { PixelmatchConfigForm } from "./PixelmatchConfigForm";
+import { VlmConfigForm } from "./VlmConfigForm";
+import { getDefaultConfig } from "./utils";
+import { UiTreeSettings, parseUiTreeSettings } from "../../types/insights";
+import { A11yRulesSettings } from "./A11yRulesSettings";
+import { MessageKey, useT } from "../../i18n";
+import { Link as RouterLink } from "react-router-dom";
+import { routes } from "../../constants";
+import { projectsService } from "../../services";
+import { JiraTypesProblem, ProjectPlatform } from "../../types";
+import { JiraTypeSelect } from "./JiraTypeSelect";
+import { Explained } from "./OptionExplainer";
+import {
+  PLATFORMS,
+  platformOf,
+  platformShows,
+  sectionIntro,
+  withPlatform,
+} from "../../_helpers/projectSettings.helper";
+
+// what each engine is for, in one sentence (REQ-018-44)
+const ENGINES: Array<[ImageComparison, MessageKey]> = [
+  [ImageComparison.pixelmatch, "comparison.pixelmatchHelp"],
+  [ImageComparison.lookSame, "comparison.lookSameHelp"],
+  [ImageComparison.odiff, "comparison.odiffHelp"],
+  [ImageComparison.vlm, "comparison.vlmHelp"],
+];
+
+const useEditedProject = () => {
+  const { projectEditState: project } = useProjectState();
+  const projectDispatch = useProjectDispatch();
+  return { project, projectDispatch };
+};
+
+/**
+ * What the project tests (REQ-050-42): only the platform changes in the
+ * settings JSON, so what it hides keeps its values (REQ-050-46).
+ */
+export const PlatformSelect: React.FunctionComponent = () => {
+  const { project, projectDispatch } = useEditedProject();
+  const { t } = useT();
+  return (
+    <TextField
+      select
+      id="platform"
+      margin="dense"
+      fullWidth
+      label={t("general.platform")}
+      helperText={t("general.platformHelp")}
+      value={platformOf(project.uiTreeSettings)}
+      onChange={(event) =>
+        setProjectEditState(projectDispatch, {
+          ...project,
+          uiTreeSettings: withPlatform(
+            project.uiTreeSettings,
+            event.target.value as ProjectPlatform,
+          ),
+        })
+      }
+      SelectProps={{
+        SelectDisplayProps: {
+          "data-testid": "platformSelect",
+        } as React.HTMLAttributes<HTMLDivElement>,
+      }}
+    >
+      {PLATFORMS.map(([platform, label]) => (
+        <MenuItem
+          key={platform}
+          value={platform}
+          data-testid={`platform-${platform}`}
+        >
+          {t(label)}
+        </MenuItem>
+      ))}
+    </TextField>
+  );
+};
+
+/** Name, main branch, platform and how long builds are kept. */
+export const GeneralFields: React.FunctionComponent = () => {
+  const { project, projectDispatch } = useEditedProject();
+  const { t } = useT();
+  return (
+    <React.Fragment>
+      <TextValidator
+        name="projectName"
+        validators={["minStringLength:2"]}
+        errorMessages={[t("validation.twoCharacters")]}
+        margin="dense"
+        id="name"
+        label={t("general.name")}
+        type="text"
+        fullWidth
+        required
+        value={project.name}
+        onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
+          setProjectEditState(projectDispatch, {
+            ...project,
+            name: event.target.value,
+          });
+        }}
+      />
+      <TextValidator
+        name="mainBranchName"
+        validators={["minStringLength:2"]}
+        errorMessages={[t("validation.twoCharacters")]}
+        margin="dense"
+        id="branchName"
+        label={t("general.mainBranch")}
+        type="text"
+        fullWidth
+        required
+        value={project.mainBranchName}
+        onChange={(event: React.ChangeEvent<HTMLInputElement>) =>
+          setProjectEditState(projectDispatch, {
+            ...project,
+            mainBranchName: event.target.value,
+          })
+        }
+      />
+      <PlatformSelect />
+      <TextValidator
+        name="buildCount"
+        validators={["minNumber:1"]}
+        errorMessages={[t("validation.greaterThan", { min: 1 })]}
+        InputProps={{
+          inputProps: {
+            min: 1,
+            step: 1,
+          },
+        }}
+        margin="dense"
+        id="buildCount"
+        helperText={t("general.buildCountHelp")}
+        label={t("general.buildCount")}
+        type="number"
+        fullWidth
+        required
+        value={project.maxBuildAllowed}
+        onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
+          const { value } = event.target;
+
+          setProjectEditState(projectDispatch, {
+            ...project,
+            maxBuildAllowed: parseInt(value),
+          });
+        }}
+      />
+      <TextValidator
+        name="maxBranchLifetime"
+        validators={["minNumber:1"]}
+        errorMessages={[t("validation.greaterThan", { min: 1 })]}
+        InputProps={{
+          inputProps: {
+            min: 1,
+            step: 1,
+          },
+        }}
+        margin="dense"
+        id="maxBranchLifetime"
+        helperText={t("general.branchLifetimeHelp")}
+        label={t("general.branchLifetime")}
+        type="number"
+        fullWidth
+        required
+        value={project.maxBranchLifetime}
+        onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
+          const { value } = event.target;
+
+          setProjectEditState(projectDispatch, {
+            ...project,
+            maxBranchLifetime: parseInt(value),
+          });
+        }}
+      />
+    </React.Fragment>
+  );
+};
+
+/** The review settings: auto approve. */
+export const ReviewFields: React.FunctionComponent = () => {
+  const { project, projectDispatch } = useEditedProject();
+  const { t } = useT();
+  return (
+    <React.Fragment>
+      <FormControlLabel
+        label={
+          <Box>
+            <Typography variant="body2">{t("review.autoApprove")}</Typography>
+            <Typography variant="caption" color="textSecondary">
+              {t("review.autoApproveHelp")}
+            </Typography>
+          </Box>
+        }
+        sx={{
+          alignItems: "flex-start",
+          "& .MuiSwitch-root": { mt: -0.5 },
+        }}
+        control={
+          <Switch
+            checked={project.autoApproveFeature}
+            onChange={(event, checked) =>
+              setProjectEditState(projectDispatch, {
+                ...project,
+                autoApproveFeature: checked,
+              })
+            }
+            color="primary"
+            name="autoApproveFeature"
+          />
+        }
+      />
+    </React.Fragment>
+  );
+};
+
+/** The engine as cards, and below them only the chosen engine's settings. */
+export const ComparisonFields: React.FunctionComponent<{
+  as?: "cards" | "select";
+  // creating a project picks the engine only; its settings come later
+  withConfig?: boolean;
+}> = ({ as = "cards", withConfig = true }) => {
+  const { project, projectDispatch } = useEditedProject();
+  const { t } = useT();
+  const pick = (imageComparison: ImageComparison) =>
+    setProjectEditState(projectDispatch, {
+      ...project,
+      imageComparison,
+      imageComparisonConfig:
+        project.imageComparison !== imageComparison
+          ? getDefaultConfig(imageComparison)
+          : project.imageComparisonConfig,
+    });
+
+  const config = React.useMemo(() => {
+    switch (project.imageComparison) {
+      case ImageComparison.pixelmatch:
+        return <PixelmatchConfigForm />;
+
+      case ImageComparison.lookSame:
+        return <LooksSameConfigForm />;
+
+      case ImageComparison.odiff:
+        return <OdiffConfigForm />;
+
+      case ImageComparison.vlm:
+        return <VlmConfigForm />;
+
+      default:
+        return null;
+    }
+  }, [project.imageComparison]);
+
+  if (as === "select") {
+    return (
+      <React.Fragment>
+        <FormControl variant="standard" fullWidth>
+          <InputLabel id="imageComparisonSelect">
+            {t("comparison.library")}
+          </InputLabel>
+          <Select
+            variant="standard"
+            id="imageComparisonSelect"
+            labelId="imageComparisonSelect"
+            value={project.imageComparison}
+            onChange={(event: SelectChangeEvent<HTMLInputElement>) => {
+              const imageComparison = event.target.value as ImageComparison;
+
+              setProjectEditState(projectDispatch, {
+                ...project,
+                imageComparison,
+                imageComparisonConfig:
+                  project.imageComparison !== imageComparison
+                    ? getDefaultConfig(imageComparison)
+                    : project.imageComparisonConfig,
+              });
+            }}
+          >
+            <MenuItem value={ImageComparison.pixelmatch}>
+              {ImageComparison.pixelmatch}
+            </MenuItem>
+            <MenuItem value={ImageComparison.lookSame}>
+              {ImageComparison.lookSame}
+            </MenuItem>
+            <MenuItem value={ImageComparison.odiff}>
+              {ImageComparison.odiff}
+            </MenuItem>
+            <MenuItem value={ImageComparison.vlm}>
+              {ImageComparison.vlm}
+            </MenuItem>
+          </Select>
+        </FormControl>
+        {withConfig && config}
+      </React.Fragment>
+    );
+  }
+
+  return (
+    <React.Fragment>
+      <Box
+        role="radiogroup"
+        aria-label={t("comparison.engines")}
+        data-testid="engineCards"
+        sx={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fill, minmax(170px, 1fr))",
+          gap: 1.25,
+        }}
+      >
+        {ENGINES.map(([engine, description]) => {
+          const on = project.imageComparison === engine;
+          return (
+            <ButtonBase
+              key={engine}
+              role="radio"
+              aria-checked={on}
+              data-testid={`engine-${engine}`}
+              onClick={() => pick(engine)}
+              sx={{
+                position: "relative",
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "flex-start",
+                textAlign: "left",
+                gap: 0.5,
+                p: 1.5,
+                pr: 4,
+                borderRadius: radius.card,
+                border: `1px solid ${on ? tokens.brand : tokens.borderStrong}`,
+                boxShadow: on ? `0 0 0 1px ${tokens.brand}` : "none",
+                bgcolor: on ? tokens.brandSoft : tokens.surface,
+                transition: `border-color ${motion.base}ms, background-color ${motion.base}ms, box-shadow ${motion.base}ms`,
+                "&:hover": { borderColor: tokens.brand },
+              }}
+            >
+              <Box
+                aria-hidden="true"
+                sx={{
+                  position: "absolute",
+                  top: 12,
+                  right: 12,
+                  width: 16,
+                  height: 16,
+                  borderRadius: radius.pill,
+                  border: `${on ? 5 : 1.5}px solid ${on ? tokens.brand : tokens.borderStrong}`,
+                  transition: `border ${motion.base}ms ${motion.easing}`,
+                }}
+              />
+              <Typography sx={{ fontWeight: 600, fontSize: type.small }}>
+                {engine}
+              </Typography>
+              <Typography
+                variant="caption"
+                color="textSecondary"
+                sx={{ lineHeight: 1.4 }}
+              >
+                {t(description)}
+              </Typography>
+            </ButtonBase>
+          );
+        })}
+      </Box>
+      <Box key={project.imageComparison} className="v-enter" sx={{ mt: 1 }}>
+        {config}
+      </Box>
+    </React.Fragment>
+  );
+};
+
+/** Creating a project: three fields; the rest is set on its settings page. */
+export const NewProjectFields: React.FunctionComponent = () => {
+  const { project, projectDispatch } = useEditedProject();
+  const { t } = useT();
+  return (
+    <React.Fragment>
+      <TextValidator
+        name="projectName"
+        validators={["minStringLength:2"]}
+        errorMessages={[t("validation.twoCharacters")]}
+        margin="dense"
+        id="name"
+        label={t("general.name")}
+        type="text"
+        fullWidth
+        required
+        value={project.name}
+        onChange={(event: React.ChangeEvent<HTMLInputElement>) =>
+          setProjectEditState(projectDispatch, {
+            ...project,
+            name: event.target.value,
+          })
+        }
+      />
+      <TextValidator
+        name="mainBranchName"
+        validators={["minStringLength:2"]}
+        errorMessages={[t("validation.twoCharacters")]}
+        margin="dense"
+        id="branchName"
+        label={t("general.mainBranch")}
+        type="text"
+        fullWidth
+        required
+        value={project.mainBranchName}
+        onChange={(event: React.ChangeEvent<HTMLInputElement>) =>
+          setProjectEditState(projectDispatch, {
+            ...project,
+            mainBranchName: event.target.value,
+          })
+        }
+      />
+      <PlatformSelect />
+      <ComparisonFields as="select" withConfig={false} />
+      <Typography variant="body2" color="textSecondary" sx={{ mt: 1.5 }}>
+        {t("general.newProjectHint")}
+      </Typography>
+    </React.Fragment>
+  );
+};
+
+/** Everything in one column: what the old dialog showed. */
+export const ProjectForm: React.FunctionComponent = () => (
+  <React.Fragment>
+    <GeneralFields />
+    <ReviewFields />
+    <ComparisonFields as="select" />
+    <MobileSettings />
+    <A11yRulesSettings />
+    <JiraSettings />
+  </React.Fragment>
+);
+
+interface JiraLists {
+  issueTypes: Array<{ name: string; subtask: boolean }> | null;
+  linkTypes: string[] | null;
+  problem?: JiraTypesProblem;
+  // where Jira redirected to, when the problem is "redirected" (051)
+  location?: string;
+}
+
+const NO_LISTS: JiraLists = { issueTypes: null, linkTypes: null };
+
+/**
+ * The Jira types of the address on the page, with the person's own token.
+ * Loaded apart from the settings: a slow or failing Jira holds up nothing
+ * else (SC-049-03).
+ */
+function useJiraTypes(projectId: string | undefined, savedUrl?: string | null) {
+  const [lists, setLists] = React.useState<JiraLists>(NO_LISTS);
+  const loadedFor = React.useRef<string | null>(null);
+  const reload = React.useCallback(
+    (url: string, force = false) => {
+      if (!projectId || (!force && loadedFor.current === url.trim())) return;
+      loadedFor.current = url.trim();
+      projectsService
+        .getJiraTypes(projectId, url.trim())
+        .then((answer) =>
+          setLists(
+            "problem" in answer
+              ? {
+                  ...NO_LISTS,
+                  problem: answer.problem,
+                  location: answer.location,
+                }
+              : answer,
+          ),
+        )
+        .catch(() => setLists({ ...NO_LISTS, problem: "failed" }));
+    },
+    [projectId],
+  );
+  // the saved address when the page opens; later ones on leaving the field
+  React.useEffect(() => {
+    loadedFor.current = null;
+    reload(savedUrl ?? "");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [projectId]);
+  return { lists, reload };
+}
+
+/** Jira connection used to file accessibility bugs from the review screen. */
+export const JiraSettings: React.FunctionComponent<{ bare?: boolean }> = ({
+  bare = false,
+}) => {
+  const { projectEditState: project } = useProjectState();
+  const projectDispatch = useProjectDispatch();
+  const { t } = useT();
+  const update = (patch: Partial<typeof project>) =>
+    setProjectEditState(projectDispatch, { ...project, ...patch });
+  const { lists, reload } = useJiraTypes(project.id, project.jiraUrl);
+  const linkTypes = React.useMemo(
+    () => lists.linkTypes?.map((name) => ({ name })) ?? null,
+    [lists.linkTypes],
+  );
+
+  return (
+    <Box
+      sx={{
+        mt: bare ? 0 : 3,
+        display: "flex",
+        flexDirection: "column",
+        gap: 1.5,
+      }}
+    >
+      {!bare && <Divider />}
+      {!bare && <Typography variant="subtitle1">{t("jira.title")}</Typography>}
+      {!bare && (
+        <Typography variant="body2" color="textSecondary">
+          {t("jira.intro")}
+        </Typography>
+      )}
+      <TextField
+        id="jiraUrl"
+        label={t("jira.url")}
+        placeholder="https://jira.example.com"
+        size="small"
+        value={project.jiraUrl ?? ""}
+        onChange={(event) => update({ jiraUrl: event.target.value })}
+        // the lists follow a new address before it is saved (REQ-049-09)
+        onBlur={() => reload(project.jiraUrl ?? "")}
+        error={lists.problem === "hostNotAllowed"}
+        helperText={
+          lists.problem === "hostNotAllowed"
+            ? t("jira.hostNotAllowed")
+            : undefined
+        }
+      />
+      {lists.problem === "noToken" && (
+        <Typography
+          variant="body2"
+          color="textSecondary"
+          data-testid="jiraTypesNoToken"
+        >
+          {t("jira.noToken")}{" "}
+          <Link component={RouterLink} to={routes.PROFILE_PAGE}>
+            {t("jira.openProfile")}
+          </Link>
+        </Typography>
+      )}
+      {lists.problem === "redirected" && (
+        <Typography
+          variant="body2"
+          color="textSecondary"
+          data-testid="jiraTypesRedirected"
+        >
+          {t("jira.redirected", { location: lists.location ?? "" })}
+        </Typography>
+      )}
+      {lists.problem === "failed" && (
+        <Typography
+          variant="body2"
+          color="textSecondary"
+          data-testid="jiraTypesFailed"
+        >
+          {t("jira.failed")}{" "}
+          <Link
+            component="button"
+            type="button"
+            onClick={() => reload(project.jiraUrl ?? "", true)}
+            data-testid="jiraTypesRetry"
+          >
+            {t("jira.retry")}
+          </Link>
+        </Typography>
+      )}
+      <Box sx={{ display: "flex", gap: 1.5 }}>
+        <JiraTypeSelect
+          id="jiraIssueType"
+          label={t("jira.issueType")}
+          helperText={t("jira.issueTypeHelp")}
+          types={lists.issueTypes}
+          value={project.jiraIssueType}
+          onChange={(value) => update({ jiraIssueType: value })}
+        />
+        <JiraTypeSelect
+          id="jiraLinkType"
+          label={t("jira.linkType")}
+          helperText={t("jira.linkTypeHelp")}
+          types={linkTypes}
+          value={project.jiraLinkType}
+          onChange={(value) => update({ jiraLinkType: value })}
+        />
+      </Box>
+    </Box>
+  );
+};
+
+const TOGGLES: Array<[keyof UiTreeSettings, MessageKey, MessageKey]> = [
+  ["excludeSystemBars", "mobile.systemBars", "mobile.systemBarsHelp"],
+  ["compensateMoves", "mobile.moves", "mobile.movesHelp"],
+  ["detectSemanticChanges", "mobile.hidden", "mobile.hiddenHelp"],
+];
+
+/**
+ * UI tree comparison settings. The settings page shows them as a section of
+ * its own, under its own heading (`bare`). Element rules are added on the
+ * review screen, where the element can be picked on the screenshot (019).
+ */
+export const MobileSettings: React.FunctionComponent<{
+  bare?: boolean;
+}> = ({ bare = false }) => {
+  const { projectEditState: project } = useProjectState();
+  const projectDispatch = useProjectDispatch();
+  const { t } = useT();
+  const settings = parseUiTreeSettings(project.uiTreeSettings);
+  const platform = platformOf(project.uiTreeSettings);
+  const save = (next: UiTreeSettings) =>
+    setProjectEditState(projectDispatch, {
+      ...project,
+      uiTreeSettings: JSON.stringify(next),
+    });
+  // a web page has no status or navigation bars (REQ-050-43)
+  const toggles = TOGGLES.filter(
+    ([key]) =>
+      key !== "excludeSystemBars" || platformShows(platform, "systemBars"),
+  );
+
+  return (
+    <Box
+      sx={{
+        mt: bare ? 0 : 3,
+        display: "flex",
+        flexDirection: "column",
+        gap: 1,
+      }}
+    >
+      {!bare && <Divider />}
+      {!bare && (
+        <Typography variant="subtitle1">{t("mobile.title")}</Typography>
+      )}
+      {!bare && (
+        <Typography variant="body2" color="textSecondary">
+          {sectionIntro("mobile", platform, t)}
+        </Typography>
+      )}
+      {toggles.map(([key, label, help]) => {
+        const toggle = (
+          <FormControlLabel
+            key={key}
+            control={
+              <Switch
+                checked={!!settings[key]}
+                onChange={(_, checked) => save({ ...settings, [key]: checked })}
+                name={key}
+              />
+            }
+            label={
+              <Box>
+                <Typography variant="body2">{t(label)}</Typography>
+                <Typography variant="caption" color="textSecondary">
+                  {t(help)}
+                </Typography>
+              </Box>
+            }
+            sx={{
+              alignItems: "flex-start",
+              "& .MuiSwitch-root": { mt: -0.5 },
+            }}
+          />
+        );
+        // moves are the option to explain here (REQ-049-20)
+        return key === "compensateMoves" ? (
+          <Explained key={key} option="moves" on={!!settings[key]}>
+            {toggle}
+          </Explained>
+        ) : (
+          toggle
+        );
+      })}
+      {settings.compensateMoves && (
+        <TextField
+          id="maxMoveDp"
+          size="small"
+          type="number"
+          label={t("mobile.maxMove")}
+          value={settings.maxMoveDp ?? ""}
+          onChange={(event) =>
+            save({
+              ...settings,
+              maxMoveDp:
+                event.target.value === "" ? null : Number(event.target.value),
+            })
+          }
+          sx={{ maxWidth: 280 }}
+        />
+      )}
+    </Box>
+  );
+};

@@ -1,0 +1,80 @@
+# Модель даних
+
+Схема: `backend/prisma/schema.prisma`. Усі зміни Vision відносно вихідного проєкту — додавальні
+([ADR-0003](../decisions/0003-additive-schema-only.md)), тож Vision працює на копії бази робочого VRT, а згодом зможе працювати й на живій.
+
+## Таблиці вихідного проєкту з доповненнями Vision
+
+| Таблиця | Що додано | Навіщо |
+|---|---|---|
+| `TestRun` | `uiTreeName`, `baselineUiTreeName`, `uiTreeOptions`, `a11yReportName`, `a11yNewCount`, `a11yTotalCount`, `diffRegions`, `changeSignature`, `imageThumbnailName`, `diffThumbnailName`, `captureWarnings`, `semanticChangeCount`, `componentChanges`, `featureName`, `decidedById` | результати аналізу дерева: файли й лічильники; назва фічі з SDK для назви бага, поза ключем варіації ([ADR-0019](../decisions/0019-sdk-base-plus-ui-tree-and-feature.md)); хто прийняв чи відхилив прогон в інтерфейсі, Undo стирає — для прогресу рев'ю в огляді збірки ([031](../specs/031-build-overview/spec.md)); `captureWarnings` з [020](../specs/020-remove-reference-device/spec.md) не пишеться й не читається |
+| `TestVariation`, `Baseline` | `baselineUiTreeName` / `uiTreeName` | дерево еталона йде разом із картинкою |
+| `Project` | `jiraUrl`, `jiraToken`, `jiraEmail` (спільні; з [035](../specs/035-admin-accounts/spec.md) не читаються й не пишуться, значення стирає застосунок при старті), `jiraIssueType`, `jiraLinkType`, `uiTreeSettings` (JSON); `bulkApproveVariations`, `bulkApproveGroupBy` — від прибраних груп варіацій ([022](../specs/022-remove-variation-groups/spec.md)), лишаються в рядку, але не читаються й не віддаються API | Jira і налаштування мобільного порівняння, заголовок екрана |
+| `ProjectAccess` | `userId`, `projectId` (ключ — пара), `grantedById`, `createdAt` | доступ людини до проєкту ([042](../specs/042-project-access/spec.md)); адміну рядки не потрібні; зникає з людиною чи проєктом |
+| `User` | `apiKey` (`sha256:` ключа), `apiKeyEnding`, `jiraToken`, `jiraEmail`, `geminiApiKey`, `lastSignInAt` | API-ключ лише хешем і його останні 4 символи; токен і ключ Gemini зашифровані `VISION_SECRET_KEY` (`enc:v1:`), відкриті значення старих версій шифрує й анулює `SecretsAtRestService` при старті ([044](../specs/044-secrets-at-rest/spec.md)); особистий токен Jira ([ADR-0010](../decisions/0010-personal-jira-tokens.md)); особистий ключ Gemini для чернеток багів, лише записується ([ADR-0020](../decisions/0020-personal-gemini-keys.md)); останній вхід в інтерфейс паролем чи SSO, для сторінки Users ([018](../specs/018-ui-redesign/spec.md)) |
+
+`uiTreeSettings` — JSON, який читає `parseUiTreeSettings` (`ui-tree/comparison-inputs.ts`):
+системні бари, зсуви, приховані зміни, правила елементів, `screenTitle` (селектори заголовка; з [026](../specs/026-a11y-rules-settings/spec.md)
+не на сторінці налаштувань), `a11yNorms` (зона тапу, контраст і вимкнені правила доступності, 026). Биті записи парсер відкидає, а поля,
+яких він не знає, лишає як є: так `a11yDuplicates` і `a11yClasses`, які до
+[021](../specs/021-fixed-a11y-grouping/spec.md) задавали групування проблем, переживають збереження,
+але ніхто їх не читає. Так само з [020](../specs/020-remove-reference-device/spec.md) — `detectLoading`, `detectScreenMismatch` і
+`referenceDevice`.
+Правило елемента має дію `ignore`, `tolerate`, `compare` або `variable`; `compare` («порівнювати лише»,
+[015](../specs/015-compare-selected-elements/spec.md)) лежить лише в `checkRules` перевірки. `variable`
+(нестабільний текст, [033](../specs/033-variable-text/spec.md)) має `parts`: незмінний текст
+`{ text }` і місця `{ pattern, sample }` з регулярним виразом і значенням, з якого його побудовано.
+
+## Нові таблиці
+
+| Таблиця | Що зберігає |
+|---|---|
+| `A11yProblem` | проблема доступності на проєкт: `code` (ID, не змінюється), `key` (ключ на момент створення, він же «замок»; унікальний з `projectId`), `facets` (факти місць, для яких її вирішили), `status` (`filing` / `reported` / `ignored`), Jira-ключ і посилання, де вирішили ([004](../specs/004-a11y-problems/spec.md)) |
+| `A11yDecision` | журнал рішень: `filed`, `linked`, `found`, `unlinked`, `ignored`, `restored` — хто, коли, по якій проблемі та якому багу |
+| `A11yIssueState` | рішення старого формату (по елементу на екрані). При старті API переносяться в `A11yProblem`; ті, чиє порушення вже не знайдено, діють як раніше на своєму екрані |
+| `CrossDeviceCheck` | що показало довідкове порівняння пристроїв і що вирішив рев'юер ([007](../specs/007-cross-device-reference/spec.md)); з [020](../specs/020-remove-reference-device/spec.md) нових записів немає, наявні лишаються |
+| `AiResult` | кеш відповідей AI за хешем вмісту ([010](../specs/010-ai-assist/spec.md)); `personal` — відповідь на особистому ключі Gemini, денний ліміт інстансу її не рахує ([025](../specs/025-bug-from-comparison/spec.md)) |
+| `VisualBug` | баг, заведений з порівняння: перевірка (`checkName` + `customTags`), прогін і профіль пристрою, з якого заведено, ключ і посилання Jira, назва, позначки (`marks`, JSON у пікселях знімка), хто й коли. Без зовнішніх ключів ([025](../specs/025-bug-from-comparison/spec.md)) |
+| `ReportLink` | публічне посилання на звіт збірки: випадковий `token` (32 байти), збірка й проєкт, розділи (`sections`, JSON) і мова звіту, хто створив, `revokedAt`. Терміну дії немає: посилання працює, доки зберігається збірка. Без зовнішніх ключів: успадкований код видаляє збірки й людей ([031](../specs/031-build-overview/spec.md), [ADR-0022](../decisions/0022-public-report-links.md)) |
+| `ReviewDecision` | журнал Approve і Reject для Undo: хто, що (`kind`), стан кожного прогону до й після (`items`, JSON), коли скасовано (`undoneAt`). Без зовнішніх ключів; записи старші за 7 днів видаляються при наступному записі ([ADR-0014](../decisions/0014-undo-through-decision-journal.md)) |
+
+## Файли (`imageUploads` або S3)
+
+Назовні — лише через `GET /images/:name?sig=` ([043](../specs/043-protected-images/spec.md)).
+
+| Файл | Що |
+|---|---|
+| `*.png` | скриншоти, діфи, мініатюри (успадковане) |
+| `<id>.uitree.json.gz` | розібрані UI-дерева знімків і еталонів: нормалізовані вузли, межі в пікселях скриншота |
+| `<id>.a11y.json` | звіт доступності знімка: порушення зі статусом нове / наявне, виправлені, заголовок екрана й селектори, якими його знайшли |
+
+## Файли бекапу (на хості, [013](../specs/013-backups-and-secrets/spec.md))
+
+| Файл | Що |
+|---|---|
+| `demo-data/backups/vision-<UTC>.tar` | бекап: `db.dump` (без рядків `User` і `Project`), `user.csv`, `project.csv` (без паролів, токенів Jira й ключів Gemini; API-ключі — хешами), `manifest.txt` (схема й кількість рядків); `.uploaded` поруч — уже в Google Drive; `vision-<UTC>.images.txt` — перелік картинок на момент бекапу (за ним чистяться картинки в Drive) |
+| `demo-data/backup-status/status.json` | стан останнього бекапу (і `runningSince`, поки йде); API читає його як `BACKUP_STATUS_FILE` |
+| `demo-data/backup-config/` | пише API зі сторінки Backups ([017](../specs/017-backup-settings-ui/spec.md)): `drive.json` і `rclone.conf` (600, секрети підключення), `settings.json`, `backup-requested` |
+
+## Міграції
+
+`backend/prisma/migrations/`, пишуться руками. Міграції Vision:
+
+| Міграція | Що |
+|---|---|
+| `20260904120000_add_test_run_change_signature`, `…140000_add_test_run_thumbnails` | групи змін, мініатюри |
+| `20261024120000_add_ui_tree_and_ai_results` | дерева, звіти, `AiResult` |
+| `20261024150000_add_jira_and_a11y_issue_states` | Jira у проєкті, `A11yIssueState` |
+| `20261025090000_add_ui_tree_comparison` | налаштування порівняння, попередження, приховані зміни |
+| `20261025120000_add_cross_device_checks` | `CrossDeviceCheck` |
+| `20261026090000_add_a11y_problems` | `A11yProblem` |
+| `20261026100000_add_user_jira` | особистий токен Jira |
+| `20261026110000_add_a11y_problem_facts_and_decisions` | факти проблем, `A11yDecision` |
+| `20261029100000_add_user_last_sign_in` | `User.lastSignInAt` |
+| `20261029110000_add_review_decisions` | `ReviewDecision` |
+| `20261029200000_add_visual_bugs` | `TestRun.featureName`, `VisualBug` |
+| `20261029210000_add_user_gemini_key` | `User.geminiApiKey` |
+| `20261031100000_add_ai_result_personal` | `AiResult.personal` |
+| `20261031120000_add_report_links` | `TestRun.decidedById`, `ReportLink` |
+| `20261105120000_add_user_api_key_ending` | `User.apiKeyEnding` |
+| `20261105130000_add_project_access` | `ProjectAccess`; кожному наявному — кожен наявний проєкт, раз |

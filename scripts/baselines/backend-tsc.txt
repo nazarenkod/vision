@@ -1,0 +1,6 @@
+prisma/test/seed.spec.ts: TS2615
+prisma/test/seed.spec.ts: TS2615
+prisma/test/seed.spec.ts: TS2615
+prisma/test/seed.spec.ts: TS2615
+prisma/test/seed.spec.ts: TS2615
+prisma/test/seed.spec.ts: TS2615

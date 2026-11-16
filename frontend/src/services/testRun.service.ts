@@ -1,0 +1,183 @@
+import { ReviewedElement, TestRun, TrendPoint } from "../types";
+import { handleResponse, authHeader } from "../_helpers/service.helpers";
+import { API_URL } from "../_config/env.config";
+import { UpdateIgnoreAreaDto } from "../types/ignoreArea";
+
+const ENDPOINT_URL = "/test-runs";
+const DEFAULT_HEADERS = {
+  "Content-Type": "application/json",
+};
+
+/** Elements changed on several screens of the build, with those screens (055, beta). */
+function getElements(buildId: string): Promise<ReviewedElement[]> {
+  return fetch(`${API_URL}${ENDPOINT_URL}/elements?buildId=${buildId}`, {
+    method: "GET",
+    headers: authHeader(),
+  }).then(handleResponse);
+}
+
+function getList(buildId: string): Promise<TestRun[]> {
+  const requestOptions = {
+    method: "GET",
+    headers: authHeader(),
+  };
+
+  return fetch(
+    `${API_URL}${ENDPOINT_URL}?buildId=${buildId}`,
+    requestOptions,
+  ).then(handleResponse);
+}
+
+function getDetails(id: string): Promise<TestRun> {
+  const requestOptions = {
+    method: "GET",
+    headers: authHeader(),
+  };
+
+  return fetch(`${API_URL}${ENDPOINT_URL}/${id}`, requestOptions).then(
+    handleResponse,
+  );
+}
+
+function removeBulk(ids: string[] | number[]): Promise<void> {
+  const requestOptions = {
+    method: "POST",
+    headers: {
+      ...DEFAULT_HEADERS,
+      ...authHeader(),
+    },
+    body: JSON.stringify(ids),
+  };
+
+  return fetch(`${API_URL}${ENDPOINT_URL}/delete`, requestOptions).then(
+    handleResponse,
+  );
+}
+
+/** What a decision returns: the journal entry Undo works from (018). */
+export interface Decision {
+  decisionId: string;
+}
+
+function rejectBulk(ids: string[] | number[]): Promise<Decision> {
+  const requestOptions = {
+    method: "POST",
+    headers: {
+      ...DEFAULT_HEADERS,
+      ...authHeader(),
+    },
+    body: JSON.stringify(ids),
+  };
+
+  return fetch(`${API_URL}${ENDPOINT_URL}/reject`, requestOptions).then(
+    handleResponse,
+  );
+}
+
+function approveBulk(
+  ids: string[] | number[],
+  merge: boolean,
+): Promise<Decision> {
+  const requestOptions = {
+    method: "POST",
+    headers: {
+      ...DEFAULT_HEADERS,
+      ...authHeader(),
+    },
+    body: JSON.stringify(ids),
+  };
+
+  return fetch(
+    `${API_URL}${ENDPOINT_URL}/approve?merge=${merge}`,
+    requestOptions,
+  ).then(handleResponse);
+}
+
+function undoDecision(decisionId: string): Promise<{ undone: number }> {
+  const requestOptions = {
+    method: "POST",
+    headers: {
+      ...DEFAULT_HEADERS,
+      ...authHeader(),
+    },
+  };
+
+  return fetch(
+    `${API_URL}${ENDPOINT_URL}/undo/${encodeURIComponent(decisionId)}`,
+    requestOptions,
+  ).then(handleResponse);
+}
+
+function updateIgnoreAreas(data: UpdateIgnoreAreaDto): Promise<void> {
+  const requestOptions = {
+    method: "POST",
+    headers: {
+      ...DEFAULT_HEADERS,
+      ...authHeader(),
+    },
+    body: JSON.stringify(data),
+  };
+
+  return fetch(
+    `${API_URL}${ENDPOINT_URL}/ignoreAreas/update`,
+    requestOptions,
+  ).then(handleResponse);
+}
+
+function addIgnoreAreas(data: UpdateIgnoreAreaDto): Promise<void> {
+  const requestOptions = {
+    method: "POST",
+    headers: {
+      ...DEFAULT_HEADERS,
+      ...authHeader(),
+    },
+    body: JSON.stringify(data),
+  };
+
+  return fetch(
+    `${API_URL}${ENDPOINT_URL}/ignoreAreas/add`,
+    requestOptions,
+  ).then(handleResponse);
+}
+
+function update(
+  id: string,
+  data: {
+    comment: string;
+  },
+): Promise<TestRun> {
+  const requestOptions = {
+    method: "PATCH",
+    headers: {
+      ...DEFAULT_HEADERS,
+      ...authHeader(),
+    },
+    body: JSON.stringify(data),
+  };
+
+  return fetch(`${API_URL}${ENDPOINT_URL}/update/${id}`, requestOptions).then(
+    handleResponse,
+  );
+}
+
+/** The check's last runs up to this one, oldest first (REQ-046-08). */
+function getTrend(id: string): Promise<TrendPoint[]> {
+  return fetch(`${API_URL}${ENDPOINT_URL}/${id}/trend`, {
+    method: "GET",
+    headers: authHeader(),
+  }).then(handleResponse);
+}
+
+export const testRunService = {
+  getElements,
+  getList,
+  getDetails,
+  getTrend,
+  removeBulk,
+  rejectBulk,
+  approveBulk,
+  undoDecision,
+  updateIgnoreAreas,
+  addIgnoreAreas,
+  update,
+};

@@ -1,0 +1,415 @@
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "debian-openssl-3.0.x", "linux-arm64-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  // the URL is in prisma.config.ts since Prisma 7
+}
+
+model Build {
+  id         String    @id @default(uuid())
+  ciBuildId  String?
+  number     Int?
+  branchName String?
+  status     String?
+  projectId  String
+  updatedAt  DateTime  @updatedAt
+  createdAt  DateTime  @default(now())
+  userId     String?
+  isRunning  Boolean?
+  project    Project   @relation(fields: [projectId], references: [id])
+  user       User?     @relation(fields: [userId], references: [id])
+  testRuns   TestRun[]
+
+  @@unique([projectId, ciBuildId])
+}
+
+model Project {
+  id                    String          @id @default(uuid())
+  name                  String          @unique
+  mainBranchName        String          @default("master")
+  buildsCounter         Int             @default(0)
+  maxBuildAllowed       Int             @default(100)
+  maxBranchLifetime     Int             @default(30)
+  updatedAt             DateTime        @updatedAt
+  createdAt             DateTime        @default(now())
+  autoApproveFeature    Boolean         @default(true)
+  imageComparison       ImageComparison @default(pixelmatch)
+  imageComparisonConfig String          @default("{ \"threshold\": 0.1, \"ignoreAntialiasing\": true, \"allowDiffDimensions\": false }")
+  bulkApproveVariations Boolean         @default(false)
+  bulkApproveGroupBy    String          @default("customTags")
+  // Jira connection for filing accessibility bugs; the token is write-only in the API
+  jiraUrl               String?
+  jiraEmail             String?
+  jiraToken             String?
+  jiraIssueType         String?
+  jiraLinkType          String?
+  // UI tree comparison settings and project-wide element rules, as JSON (null = defaults)
+  uiTreeSettings        String?
+  builds                Build[]
+  TestRun               TestRun[]
+  testVariations        TestVariation[]
+  access                ProjectAccess[]
+}
+
+model TestRun {
+  id                    String         @id @default(uuid())
+  imageName             String
+  diffName              String?
+  diffPercent           Float?
+  diffTollerancePercent Float          @default(0)
+  pixelMisMatchCount    Int?
+  status                TestStatus
+  buildId               String
+  testVariationId       String?
+  projectId             String?
+  merge                 Boolean        @default(false)
+  updatedAt             DateTime       @updatedAt
+  createdAt             DateTime       @default(now())
+  name                  String         @default("")
+  browser               String?
+  device                String?
+  os                    String?
+  viewport              String?
+  customTags            String?        @default("")
+  baselineName          String?
+  comment               String?
+  branchName            String         @default("master")
+  baselineBranchName    String?
+  ignoreAreas           String         @default("[]")
+  tempIgnoreAreas       String         @default("[]")
+  vlmDescription        String?
+  // Position-independent colour signature of this run's change, as JSON, so the
+  // variations dialog can group a screen's locales without fetching and
+  // decoding every sibling's screenshots at review time. Written once, next to
+  // the diff that already decoded them. Null on runs that predate this, that
+  // have no diff, or that were compared by something other than pixelmatch —
+  // those fall back to computing it on demand.
+  changeSignature       String?
+  // Small copies of the checkpoint and of the diff, made at ingest from the
+  // pixels the comparison had already decoded. The card grids draw pictures a
+  // hundred-odd pixels wide, and pulling the full-size files for that cost
+  // megabytes per screen. Null on runs ingested before this, which fall back to
+  // the full-size file.
+  imageThumbnailName    String?
+  diffThumbnailName     String?
+  // Appium page source sent with the screenshot (gzipped XML file) and the one
+  // of the baseline it is compared with. Null when the client sent none.
+  uiTreeName            String?
+  baselineUiTreeName    String?
+  // Accessibility report (JSON file) computed from the UI tree; only the counts
+  // live on the row, since the socket gateway broadcasts whole rows.
+  a11yReportName        String?
+  a11yNewCount          Int?
+  a11yTotalCount        Int?
+  // Bounding boxes of the changed areas, as JSON [{x,y,width,height}], in
+  // screenshot pixels. Null on runs without a diff or ingested before this.
+  diffRegions           String?
+  // per-run overrides sent by the client, as JSON ({"excludeSystemBars": false})
+  uiTreeOptions         String?
+  // the feature the screen belongs to, sent by the test (025, ADR-0019); names
+  // bugs filed from the review and is not part of the check's identity
+  featureName           String?
+  // the browser's version of a web screen (050): held to the project's allowed
+  // browsers, not part of the check's identity, so a new version keeps the baseline
+  browserVersion        String?
+  // [{kind, message}] — taken while loading, looks like another screen, …
+  captureWarnings       String?
+  // changes the pixels do not show: labels, states, invisible controls
+  semanticChangeCount   Int?
+  // [{componentId, before, after, bounds}] for grouping one component's change across screens
+  componentChanges      String?
+  // who approved or rejected this run in the interface (031); null until someone
+  // decides, again after an undo, and on runs decided before this column existed
+  decidedById           String?
+  baseline              Baseline?
+  build                 Build          @relation(fields: [buildId], references: [id])
+  project               Project?       @relation(fields: [projectId], references: [id])
+  testVariation         TestVariation? @relation(fields: [testVariationId], references: [id])
+
+  @@index([buildId, branchName, name])
+}
+
+model TestVariation {
+  id                 String     @id @default(uuid())
+  name               String
+  branchName         String     @default("master")
+  browser            String     @default("")
+  device             String     @default("")
+  os                 String     @default("")
+  viewport           String     @default("")
+  customTags         String     @default("")
+  baselineName       String?
+  baselineUiTreeName String?
+  // element rules for this screen only, as JSON
+  elementRules       String?
+  ignoreAreas        String     @default("[]")
+  projectId          String
+  comment            String?
+  updatedAt          DateTime   @updatedAt
+  createdAt          DateTime   @default(now())
+  baselines          Baseline[]
+  testRuns           TestRun[]
+  project            Project    @relation(fields: [projectId], references: [id])
+
+  @@unique([projectId, name, browser, device, os, viewport, customTags, branchName])
+  // devices and branches of one check
+  @@index([projectId, name])
+}
+
+model Baseline {
+  id              String        @id @default(uuid())
+  baselineName    String
+  testVariationId String
+  testRunId       String?       @unique
+  uiTreeName      String?
+  userId          String?
+  updatedAt       DateTime      @updatedAt
+  createdAt       DateTime      @default(now())
+  testRun         TestRun?      @relation(fields: [testRunId], references: [id])
+  testVariation   TestVariation @relation(fields: [testVariationId], references: [id])
+  user            User?         @relation(fields: [userId], references: [id])
+}
+
+model User {
+  id        String     @id @default(uuid())
+  email     String     @unique
+  password  String
+  firstName String?
+  lastName  String?
+  // the SHA-256 of the key, never the key itself (044)
+  apiKey    String     @unique
+  // the key's last characters, to tell it apart in the profile; null: no key shown to anyone yet
+  apiKeyEnding String?
+  isActive  Boolean    @default(true)
+  role      Role       @default(guest)
+  // personal Jira credentials: bugs are filed as this person (email only for Jira Cloud)
+  jiraToken String?
+  jiraEmail String?
+  // personal Gemini API key: bugs from the comparison are drafted on the person's own key (025)
+  geminiApiKey String?
+  // the last time this person signed in to the web interface (password or
+  // SSO); API-key calls from the SDK, CLI and MCP do not count
+  lastSignInAt DateTime?
+  // tokens issued before this open nothing: set by a new password for tokens without a session (052)
+  tokensValidAfter DateTime?
+  updatedAt DateTime   @updatedAt
+  createdAt DateTime   @default(now())
+  baselines Baseline[]
+  builds    Build[]
+  access    ProjectAccess[]
+  sessions  Session[]
+}
+
+// One sign-in to the interface: its id is in the token (sid), so signing out ends it (052)
+model Session {
+  id        String    @id @default(uuid())
+  userId    String
+  createdAt DateTime  @default(now())
+  // when the token of this sign-in expires: an ended or expired row can go
+  expiresAt DateTime
+  // signed out, or ended by a new password; null while the sign-in holds
+  endedAt   DateTime?
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+// Who may see and work in a project (042); an admin needs no row. Rows go with the person and
+// with the project.
+model ProjectAccess {
+  userId      String
+  projectId   String
+  // the admin who gave it; null for what the migration gave everyone
+  grantedById String?
+  createdAt   DateTime @default(now())
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@id([userId, projectId])
+  @@index([projectId])
+}
+
+model A11yIssueState {
+  id          String   @id @default(uuid())
+  projectId   String
+  screenName  String
+  violationId String
+  // reported | ignored
+  status      String
+  jiraKey     String?
+  jiraUrl     String?
+  comment     String?
+  userId      String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([projectId, screenName, violationId])
+}
+
+// An accessibility problem the team decided on, once for the project: the same
+// rule on the same component (and values) is one problem on every screen, by
+// the project's duplicate settings. The unique key is also the lock that keeps
+// two people from filing the same bug at once (status "filing").
+model A11yProblem {
+  id          String   @id @default(uuid())
+  projectId   String
+  // what the problem was under the settings it was created with; also the lock against filing twice
+  key         String
+  // what people see and search Jira for: a11y-3f9c2a1b; given once, never recomputed
+  code        String
+  rule        String?
+  // the facts of the occurrences it was decided for (a11y-problems ProblemFacets[]):
+  // what is one problem is worked out from them under the current settings
+  facets      Json?
+  // filing | reported | ignored
+  status      String
+  jiraKey     String?
+  jiraUrl     String?
+  comment     String?
+  // the check and the screen title it was decided on
+  screenName  String
+  screenTitle String?
+  userId      String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([projectId, key])
+  @@index([projectId, code])
+}
+
+// Every decision on an accessibility problem, for the record: who filed,
+// linked, unlinked, found in Jira, ignored or restored what, and when. A bug
+// unlinked here is never linked again by the Jira lookup.
+model A11yDecision {
+  id          String   @id @default(uuid())
+  projectId   String
+  problemId   String?
+  code        String
+  // filed | linked | found | unlinked | ignored | restored
+  action      String
+  jiraKey     String?
+  screenName  String
+  comment     String?
+  userId      String?
+  createdAt   DateTime @default(now())
+
+  @@index([projectId, jiraKey])
+  @@index([projectId, code])
+}
+
+// What the informational comparison with the reference device showed for a
+// run, and what the reviewer then decided, to judge later whether it is worth
+// trusting. Never affects a run's status.
+model CrossDeviceCheck {
+  id                 String    @id @default(uuid())
+  testRunId          String    @unique
+  // the reference device's run in the same build, or its baseline
+  referenceSource    String
+  referenceTestRunId String?
+  referenceDevice    String
+  comparedCount      Int
+  differenceCount    Int
+  notFoundCount      Int
+  onlyHereCount      Int
+  report             String
+  // approved | rejected, when the reviewer decided
+  decision           String?
+  decidedAt          DateTime?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+}
+
+model AiResult {
+  id        String   @id @default(uuid())
+  kind      String
+  cacheKey  String   @unique
+  payload   String
+  model     String?
+  // answered on a person's own Gemini key (025): outside the instance's daily limit
+  personal  Boolean?
+  createdAt DateTime @default(now())
+}
+
+enum TestStatus {
+  failed
+  new
+  ok
+  unresolved
+  approved
+  autoApproved
+}
+
+enum ImageComparison {
+  pixelmatch
+  lookSame
+  odiff
+  vlm
+}
+
+enum Role {
+  admin
+  editor
+  guest
+}
+
+// What an approve or reject changed, so it can be undone for a short while
+// (018, ADR-0014). No foreign keys: the inherited code deletes runs and variations
+// freely, and a journal row must never stop it.
+model ReviewDecision {
+  id        String    @id @default(uuid())
+  userId    String?
+  // approve | reject
+  kind      String
+  // per run: its state before and after the decision
+  items     Json
+  createdAt DateTime  @default(now())
+  undoneAt  DateTime?
+
+  @@index([createdAt])
+}
+
+// A Jira bug filed from the comparison (025): shown on every run of its check.
+// No foreign keys, like ReviewDecision: the inherited code deletes runs freely.
+model VisualBug {
+  id         String   @id @default(uuid())
+  projectId  String
+  // the check: name + customTags (ADR-0005)
+  checkName  String
+  customTags String   @default("")
+  // the run it was filed from, and that run's device profile
+  testRunId  String
+  device     String   @default("")
+  jiraKey    String
+  jiraUrl    String?
+  summary    String
+  // [{n, x, y, width, height, element?}] in screenshot pixels; a few hundred bytes
+  marks      String   @default("[]")
+  userId     String?
+  createdAt  DateTime @default(now())
+
+  @@index([projectId, checkName, customTags])
+}
+
+// A public link to a build's report (031, ADR-0022). No relations on purpose:
+// the inherited code deletes builds and users, and a foreign key would stop it; a link to a
+// deleted build says so instead.
+model ReportLink {
+  id          String    @id @default(uuid())
+  // 32 random bytes, base64url; the only thing a reader needs
+  token       String    @unique
+  buildId     String
+  projectId   String
+  // JSON array of section ids: sum, chg, bugs, dev, feat, a11y
+  sections    String
+  // en | uk
+  language    String
+  createdById String?
+  createdAt   DateTime  @default(now())
+  // no end date: a link opens for as long as the build is kept; revoking ends it
+  revokedAt   DateTime?
+
+  @@index([buildId])
+}

@@ -1,0 +1,356 @@
+import { handleResponse, authHeader } from "../_helpers/service.helpers";
+import { NewAccount, Role, User } from "../types/user";
+import { API_URL } from "../_config/env.config";
+
+const ENDPOINT_URL = "/users";
+const DEFAULT_HEADERS = {
+  "Content-Type": "application/json",
+};
+
+function setUserInLocalStorage(user: User) {
+  // store user details and jwt token in local storage to keep user logged in between page refreshes
+  localStorage.setItem("user", JSON.stringify(user));
+}
+
+function login(email: string, password: string): Promise<User> {
+  const requestOptions = {
+    method: "POST",
+    headers: {
+      ...DEFAULT_HEADERS,
+    },
+    body: JSON.stringify({
+      email,
+      password,
+    }),
+  };
+
+  return fetch(`${API_URL}${ENDPOINT_URL}/login`, requestOptions)
+    .then(handleResponse)
+    .then((user) => {
+      setUserInLocalStorage(user);
+      return user;
+    });
+}
+
+/** An account an admin creates in Users (035); the admin stays signed in as themselves. */
+function create(account: NewAccount): Promise<User> {
+  const requestOptions = {
+    method: "POST",
+    headers: {
+      ...DEFAULT_HEADERS,
+      ...authHeader(),
+    },
+    body: JSON.stringify(account),
+  };
+
+  return fetch(`${API_URL}${ENDPOINT_URL}`, requestOptions).then(
+    handleResponse,
+  );
+}
+
+// With LDAP or SSO accounts come from the first sign-in, so Users cannot make
+// them. Any failure (an older backend) counts as "cannot".
+function accountsEnabled(): Promise<boolean> {
+  return fetch(`${API_URL}${ENDPOINT_URL}/accounts/enabled`)
+    .then((response) => (response.ok ? response.json() : false))
+    .then((enabled) => enabled === true)
+    .catch(() => false);
+}
+
+function update({
+  firstName,
+  lastName,
+  email,
+}: Pick<User, "firstName" | "lastName" | "email">): Promise<User> {
+  const requestOptions = {
+    method: "PUT",
+    headers: {
+      ...DEFAULT_HEADERS,
+      ...authHeader(),
+    },
+    body: JSON.stringify({
+      firstName,
+      lastName,
+      email,
+    }),
+  };
+
+  return fetch(`${API_URL}${ENDPOINT_URL}`, requestOptions)
+    .then(handleResponse)
+    .then((user) => {
+      setUserInLocalStorage(user);
+      return user;
+    });
+}
+
+/** A personal Gemini API key; an empty string removes it. Write-only. */
+function setGemini(geminiApiKey: string): Promise<User> {
+  const requestOptions = {
+    method: "PUT",
+    headers: {
+      ...DEFAULT_HEADERS,
+      ...authHeader(),
+    },
+    body: JSON.stringify({ geminiApiKey }),
+  };
+
+  return fetch(`${API_URL}${ENDPOINT_URL}/gemini`, requestOptions)
+    .then(handleResponse)
+    .then((updated: User) => {
+      // the answer carries no session token: keep the stored one
+      const stored = JSON.parse(localStorage.getItem("user") ?? "{}");
+      const user = { ...stored, ...updated };
+      setUserInLocalStorage(user);
+      return user;
+    });
+}
+
+/**
+ * A new API key, shown to the person this once: the server keeps only its hash (044). The
+ * stored user learns the new ending; the previous key stops working.
+ */
+function newApiKey(): Promise<string> {
+  return fetch(`${API_URL}${ENDPOINT_URL}/newApiKey`, {
+    method: "GET",
+    headers: authHeader(),
+  })
+    .then((response) =>
+      // the key comes back as plain text, not JSON
+      response.ok ? response.text() : handleResponse(response),
+    )
+    .then((key: string) => {
+      const stored = JSON.parse(localStorage.getItem("user") ?? "{}");
+      setUserInLocalStorage({ ...stored, apiKeyEnding: key.slice(-4) });
+      return key;
+    });
+}
+
+/** Personal Jira token and email; undefined keeps a value, an empty string removes it. */
+function setJira(values: {
+  jiraToken?: string;
+  jiraEmail?: string;
+}): Promise<User> {
+  const requestOptions = {
+    method: "PUT",
+    headers: {
+      ...DEFAULT_HEADERS,
+      ...authHeader(),
+    },
+    body: JSON.stringify(values),
+  };
+
+  return fetch(`${API_URL}${ENDPOINT_URL}/jira`, requestOptions)
+    .then(handleResponse)
+    .then((updated: User) => {
+      // the answer carries no session token: keep the stored one
+      const stored = JSON.parse(localStorage.getItem("user") ?? "{}");
+      const user = { ...stored, ...updated };
+      setUserInLocalStorage(user);
+      return user;
+    });
+}
+
+function changePassword(password: string): Promise<boolean> {
+  const requestOptions = {
+    method: "PUT",
+    headers: {
+      ...DEFAULT_HEADERS,
+      ...authHeader(),
+    },
+    body: JSON.stringify({
+      password,
+    }),
+  };
+
+  return fetch(`${API_URL}${ENDPOINT_URL}/password`, requestOptions).then(
+    handleResponse,
+  );
+}
+
+// An admin sets someone's password, e.g. after a restore, when backups bring none back.
+function setPassword(id: string, password: string): Promise<boolean> {
+  const requestOptions = {
+    method: "PUT",
+    headers: {
+      ...DEFAULT_HEADERS,
+      ...authHeader(),
+    },
+    body: JSON.stringify({
+      password,
+    }),
+  };
+
+  return fetch(
+    `${API_URL}${ENDPOINT_URL}/${encodeURIComponent(id)}/password`,
+    requestOptions,
+  ).then(handleResponse);
+}
+
+// The server ends this sign-in, so the token opens nothing even if someone copied it (052).
+// Sent and not waited for: signing out never hangs on the network, and the token is forgotten here
+// whatever the server answers.
+function logout() {
+  const token = (() => {
+    try {
+      return JSON.parse(localStorage.getItem("user") ?? "{}")?.token as
+        string | undefined;
+    } catch {
+      return undefined;
+    }
+  })();
+  localStorage.removeItem("user");
+  if (token) {
+    fetch(`${API_URL}${ENDPOINT_URL}/logout`, {
+      method: "POST",
+      headers: { Authorization: "Bearer " + token },
+      keepalive: true,
+    }).catch(() => undefined);
+  }
+}
+
+let oidcEnabledPromise: Promise<boolean> | undefined;
+
+// The backend is the single source of truth for whether SSO is enabled.
+// Cached for the page lifetime; any failure (e.g. an older backend without
+// the endpoint) means the local login form is shown.
+function isOidcEnabled(): Promise<boolean> {
+  oidcEnabledPromise ??= fetch(`${API_URL}${ENDPOINT_URL}/oidc/enabled`)
+    .then((response) => (response.ok ? response.json() : false))
+    .then((enabled) => enabled === true)
+    .catch(() => false);
+  return oidcEnabledPromise;
+}
+
+function getOidcLoginUrl(): string {
+  return `${API_URL}${ENDPOINT_URL}/oidc/login`;
+}
+
+// Set on an explicit logout so the login page does not auto-redirect to the
+// IdP, which would sign the user straight back in with its own session.
+const OIDC_LOGGED_OUT_KEY = "oidcLoggedOut";
+
+function markOidcLoggedOut() {
+  sessionStorage.setItem(OIDC_LOGGED_OUT_KEY, "true");
+}
+
+function isOidcLoggedOut(): boolean {
+  return sessionStorage.getItem(OIDC_LOGGED_OUT_KEY) === "true";
+}
+
+// The value that ties a sign-in through SSO to this tab (052): a token comes back with it, and a
+// link with a token someone else made does not have the value this tab keeps.
+const OIDC_NONCE_KEY = "oidcNonce";
+
+function newOidcNonce(): string {
+  const bytes = new Uint8Array(24);
+  crypto.getRandomValues(bytes);
+  return btoa(String.fromCharCode(...bytes))
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_")
+    .replace(/=+$/, "");
+}
+
+function startOidcLogin() {
+  sessionStorage.removeItem(OIDC_LOGGED_OUT_KEY);
+  const nonce = newOidcNonce();
+  sessionStorage.setItem(OIDC_NONCE_KEY, nonce);
+  window.location.href = `${getOidcLoginUrl()}?nonce=${encodeURIComponent(nonce)}`;
+}
+
+/** Whether a token came back to the tab that started its sign-in; the value is used once. */
+function takesOidcToken(nonce: string | null): boolean {
+  const expected = sessionStorage.getItem(OIDC_NONCE_KEY);
+  sessionStorage.removeItem(OIDC_NONCE_KEY);
+  return !!nonce && !!expected && nonce === expected;
+}
+
+function getMe(token: string): Promise<User> {
+  const requestOptions = {
+    method: "GET",
+    headers: {
+      Authorization: "Bearer " + token,
+    },
+  };
+
+  return fetch(`${API_URL}${ENDPOINT_URL}/me`, requestOptions).then(
+    handleResponse,
+  );
+}
+
+function completeOidcLogin(token: string): Promise<User> {
+  return getMe(token).then((user) => {
+    // The /me endpoint returns the user without the token, so merge it in here
+    // to keep the same shape the local login stores.
+    const userWithToken = { ...user, token } as unknown as User;
+    setUserInLocalStorage(userWithToken);
+    return userWithToken;
+  });
+}
+
+async function getAll(): Promise<User[]> {
+  const requestOptions = {
+    method: "GET",
+    headers: authHeader(),
+  };
+
+  const response = await fetch(`${API_URL}${ENDPOINT_URL}/all`, requestOptions);
+
+  return handleResponse(response);
+}
+
+function assignRole(id: string | number, role: Role): Promise<User> {
+  const requestOptions = {
+    method: "PATCH",
+    headers: {
+      ...DEFAULT_HEADERS,
+      ...authHeader(),
+    },
+    body: JSON.stringify({
+      id,
+      role,
+    }),
+  };
+
+  return fetch(`${API_URL}${ENDPOINT_URL}/assignRole`, requestOptions).then(
+    handleResponse,
+  );
+}
+
+function remove(ids: string[] | number[]): Promise<boolean> {
+  const requestOptions = {
+    method: "DELETE",
+    headers: {
+      ...DEFAULT_HEADERS,
+      ...authHeader(),
+    },
+    body: JSON.stringify(ids),
+  };
+
+  return fetch(`${API_URL}${ENDPOINT_URL}`, requestOptions).then(
+    handleResponse,
+  );
+}
+
+export const usersService = {
+  newApiKey,
+  login,
+  logout,
+  create,
+  accountsEnabled,
+  update,
+  setJira,
+  setGemini,
+  changePassword,
+  setPassword,
+  getAll,
+  assignRole,
+  remove,
+  isOidcEnabled,
+  getOidcLoginUrl,
+  markOidcLoggedOut,
+  isOidcLoggedOut,
+  startOidcLogin,
+  takesOidcToken,
+  getMe,
+  completeOidcLogin,
+};

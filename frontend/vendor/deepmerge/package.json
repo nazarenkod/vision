@@ -1,0 +1,7 @@
+{
+  "name": "deepmerge",
+  "license": "MIT",
+  "main": "dist/cjs.js",
+  "version": "4.3.1-vision.1",
+  "description": "deepmerge 4.3.1, Vision copy that skips __proto__, constructor and prototype keys (see README.md)"
+}

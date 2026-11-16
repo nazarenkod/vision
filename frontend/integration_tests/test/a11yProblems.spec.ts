@@ -222,3 +222,17 @@ test("shows the frames on the screenshot only on the Accessibility tab, which co
   await tabs.first().click();
   await expect.poll(() => frameAlpha(page, leftEdge)).toBe(0);
 });
+
+test("opens a screen from the build's Accessibility tab on its problems", async ({
+  openProjectPage,
+  page,
+}) => {
+  await openProjectPage(project.id, build.id, run.id, "a11y");
+  const panel = page.getByRole("complementary");
+
+  // came for the problems: the panel shows them, not the changes (REQ-058-04)
+  await expect(
+    panel.getByRole("tab", { name: /Accessibility/ }),
+  ).toHaveAttribute("aria-selected", "true");
+  await expect(page.getByTestId("a11yProblem")).toHaveCount(2);
+});

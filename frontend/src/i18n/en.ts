@@ -779,8 +779,6 @@ export const en = {
   "groups.ignoreAdded": "Ignore area added; the checks are compared again",
   "groups.empty": "Nothing needs a decision in this build",
   "groups.emptyHint": "Every check matches its baseline or has been reviewed.",
-  "groups.collapse": "Collapse group",
-  "groups.expand": "Expand group",
   "groups.newScreenshots": "New checks",
   "groups.withoutBaseline": "{count} without a baseline",
   "groups.sameOnScreens": {

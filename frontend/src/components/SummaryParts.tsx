@@ -76,16 +76,29 @@ export const Head: React.FunctionComponent<{
   <Box
     sx={{
       ...rowSx(columns, false),
-      minHeight: 32,
+      minHeight: 44,
       borderTop: 0,
       ...tableHead,
     }}
   >
-    {cells.map(([label, count], i) => (
-      <span key={i} style={count ? { textAlign: "center" } : undefined}>
-        {label}
-      </span>
-    ))}
+    {cells.map(([label, count], i) =>
+      // the first label names the card, which has no title of its own: it reads
+      // as one, so it stands apart from the rows; the others label columns
+      i === 0 ? (
+        <Box
+          key={i}
+          component="span"
+          data-testid="cardHeadTitle"
+          sx={{ fontSize: type.title, fontWeight: 600, color: tokens.text }}
+        >
+          {label}
+        </Box>
+      ) : (
+        <span key={i} style={count ? { textAlign: "center" } : undefined}>
+          {label}
+        </span>
+      ),
+    )}
   </Box>
 );
 

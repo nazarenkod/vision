@@ -819,8 +819,6 @@ export const uk: Messages = {
   "groups.empty": "У цій збірці нічого не чекає рішення",
   "groups.emptyHint":
     "Кожна перевірка збігається з еталоном або вже переглянута.",
-  "groups.collapse": "Згорнути групу",
-  "groups.expand": "Розгорнути групу",
   "groups.newScreenshots": "Нові перевірки",
   "groups.withoutBaseline": "без еталона: {count}",
   "groups.sameOnScreens": {

@@ -30,9 +30,12 @@ import {
   ViewSidebarOutlined,
 } from "@mui/icons-material";
 import { useSnackbar } from "notistack";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { useBuildElements } from "../useBuildElements";
-import { buildTestRunLocation } from "../../_helpers/route.helpers";
+import {
+  buildTestRunLocation,
+  getQueryParams,
+} from "../../_helpers/route.helpers";
 import { v4 as uuid } from "uuid";
 import { useProjectState, useUserState } from "../../contexts";
 import { insightsService, testRunService } from "../../services";
@@ -215,8 +218,12 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
   const canEdit = user?.role === "admin" || user?.role === "editor";
   const withUiTree = hasUiTree(testRun);
 
-  // deciding on the changes is the review's main job, so it opens on them (REQ-058-01)
-  const [tab, setTab] = React.useState<PanelTab>("changes");
+  // deciding on the changes is the review's main job, so it opens on them (REQ-058-01);
+  // a screen opened from the build's Accessibility tab opens on its problems (REQ-058-04)
+  const { search } = useLocation();
+  const [tab, setTab] = React.useState<PanelTab>(() =>
+    withUiTree && getQueryParams(search).tab === "a11y" ? "a11y" : "changes",
+  );
   React.useEffect(() => {
     onTabChange?.(tab);
   }, [tab, onTabChange]);

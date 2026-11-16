@@ -13,7 +13,9 @@ import {
   LightModeOutlined,
   Logout,
   MonitorOutlined,
+  PaletteOutlined,
   PersonOutline,
+  Translate,
 } from "@mui/icons-material";
 import {
   logout,
@@ -36,13 +38,16 @@ export const accountItemSx = {
   "& .MuiSvgIcon-root": { fontSize: 20, color: tokens.textMuted },
 };
 
+// rows with a switch carry an icon too, so every label starts on one line
+// with Profile and Log out
 const rowSx = {
   display: "flex",
   alignItems: "center",
-  gap: 1,
+  gap: 1.25,
   minHeight: 40,
   px: 1.25,
   fontSize: type.body,
+  "& > .MuiSvgIcon-root": { fontSize: 20, color: tokens.textMuted },
 };
 
 /** Who is signed in, the profile, language, theme and Log out (REQ-046-23). */
@@ -85,12 +90,14 @@ export const AccountMenu: React.FunctionComponent<{
         {t("account.profile")}
       </MenuItem>
       <Box sx={rowSx}>
+        <Translate />
         <Box component="span" sx={{ flex: 1 }}>
           {t("account.language")}
         </Box>
         <LanguageSwitch />
       </Box>
       <Box sx={rowSx} data-testid="themeMenuItem">
+        <PaletteOutlined />
         <Box component="span" sx={{ flex: 1 }}>
           {t("account.theme")}
           <Box

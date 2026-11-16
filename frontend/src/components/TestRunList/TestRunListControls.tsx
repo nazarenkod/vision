@@ -199,13 +199,7 @@ export const TestRunListControls: React.FunctionComponent<{
         switch rather than an icon, so "on" is unmistakable */}
       {view === "grid" && groupDivider}
       {view === "grid" && (
-        <Tooltip
-          title={
-            compact
-              ? `${t("runs.showDiff")} · ${t("runs.diffHelp")}`
-              : t("runs.diffHelp")
-          }
-        >
+        <Tooltip title={compact ? t("runs.showDiff") : ""}>
           <FormControlLabel
             control={
               <Switch

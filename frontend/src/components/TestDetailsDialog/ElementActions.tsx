@@ -74,7 +74,7 @@ export const ActionButtons: React.FunctionComponent<ActionButtonsProps> = ({
           : t("select.allow", { percent: ALLOW_PERCENT });
   return (
     <>
-      {ACTIONS.map(({ action, key }) => {
+      {ACTIONS.map(({ action }) => {
         // compare only names the elements of one check (REQ-024-16)
         const blocked =
           (action === "compare" && scope === "project") ||
@@ -103,16 +103,6 @@ export const ActionButtons: React.FunctionComponent<ActionButtonsProps> = ({
             <Box sx={swatch(action)} />
             <Box component="span" sx={{ flexGrow: 1, textAlign: "left" }}>
               {label(action)}
-            </Box>
-            <Box
-              component="span"
-              sx={{
-                fontSize: type.caption,
-                fontWeight: 500,
-                color: tokens.textMuted,
-              }}
-            >
-              {key}
             </Box>
           </ButtonBase>
         );

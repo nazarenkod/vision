@@ -120,17 +120,6 @@ const PANEL_ROOM = 190;
 const FIT_MARGIN = 4;
 // how long the screens wait for the side panel to be settled (REQ-046-07)
 const FOLD_WAIT_MS = 1000;
-// the keycap after a footer action, as on Select elements
-const keycap = {
-  font: `500 ${type.caption}px/16px ${tokens.mono}`,
-  minWidth: 18,
-  px: 0.5,
-  textAlign: "center",
-  borderRadius: radius.control,
-  border: `1px solid ${tokens.border}`,
-  color: tokens.textMuted,
-} as const;
-
 const defaultStagePos = {
   x: 0,
   y: 0,
@@ -408,6 +397,7 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
         announce("reject", 1, decision, {
           message: t("reportBug.filedRejected", { key: result.jiraKey }),
           action: open,
+          ids: [testRun.id],
         });
         settleDecision(true);
       })
@@ -1377,24 +1367,6 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
               >
                 {t("select.button")}
               </Box>
-              {/* a child, not endIcon: MUI sizes the first child of an icon slot to 20px */}
-              <Box
-                component="kbd"
-                aria-hidden="true"
-                sx={{
-                  font: `500 ${type.caption}px/16px ${tokens.mono}`,
-                  minWidth: 18,
-                  px: 0.5,
-                  textAlign: "center",
-                  borderRadius: radius.control,
-                  border: `1px solid ${tokens.border}`,
-                  borderBottomWidth: 2,
-                  bgcolor: tokens.subtle,
-                  color: tokens.textMuted,
-                }}
-              >
-                {pickMode ? "Esc" : "E"}
-              </Box>
             </Button>
           </span>
         </Tooltip>
@@ -1885,13 +1857,6 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
                 sx={{ whiteSpace: "nowrap", gap: 0.5 }}
               >
                 {t("reportBug.open")}
-                <Box
-                  component="kbd"
-                  aria-hidden="true"
-                  sx={{ ...keycap, ml: 1 }}
-                >
-                  B
-                </Box>
               </Button>
             </span>
           </Tooltip>

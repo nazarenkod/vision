@@ -275,8 +275,8 @@ test("keeps the Select elements label while selecting", async ({
   await startSelecting(page);
 
   await expect(button).toHaveAttribute("aria-pressed", "true");
-  await expect(button).toHaveText(/^Select elements\s*Esc$/);
-  // only the key hint changes, E to Esc
+  // on by its colour alone, no Esc on it (REQ-061-22)
+  await expect(button).toHaveText("Select elements");
   expect((await button.boundingBox())?.width).toBeCloseTo(before, -1);
 });
 

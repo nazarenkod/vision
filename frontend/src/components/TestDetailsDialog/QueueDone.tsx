@@ -1,50 +1,41 @@
 import React from "react";
 import { Box, Button, Typography } from "@mui/material";
-import { CheckRounded } from "@mui/icons-material";
 import { motion, tokens, type, radius } from "../../theme";
 import { useT } from "../../i18n";
-import { QueueSummary } from "../../_helpers/reviewQueue.helper";
+import { decisionNotice, DecisionKind } from "../../_helpers/undo.helper";
 
-/** A finished queue: what was decided, then the next queue or back (REQ-031-26). */
+/**
+ * A finished queue (061): what the last decision was, Undo, and the next queue
+ * when there is one. Nothing more: the reviewer knows which queue they were
+ * in. A click beside the card closes the review, as Esc does.
+ */
 export const QueueDone: React.FunctionComponent<{
-  label: string;
-  summary: QueueSummary;
-  next?: { label: string; count: number; go: () => void };
+  /** the decision that ended the queue; none when others decided it all */
+  status: DecisionKind | null;
+  onUndo?: () => void;
+  next?: () => void;
   onBack: () => void;
-}> = ({ label, summary, next, onBack }) => {
+}> = ({ status, onUndo, next, onBack }) => {
   const { t } = useT();
   // the first action takes focus, so Enter and Tab work from the keyboard at once
   const first = React.useRef<HTMLButtonElement>(null);
-  React.useEffect(() => first.current?.focus(), []);
+  React.useEffect(() => first.current?.focus(), [next, onUndo]);
   React.useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
       if (event.key === "Enter" && next) {
         event.preventDefault();
-        next.go();
+        next();
       }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [next]);
-  const kbd = (key: string) => (
-    <Box
-      component="kbd"
-      sx={{
-        ml: "auto",
-        fontFamily: tokens.mono,
-        fontSize: type.caption,
-        border: "1px solid currentColor",
-        borderRadius: radius.control,
-        px: 0.5,
-        opacity: 0.7,
-      }}
-    >
-      {key}
-    </Box>
-  );
   return (
     <Box
       data-testid="queueDone"
+      onClick={(event) => {
+        if (event.target === event.currentTarget) onBack();
+      }}
       sx={{
         position: "absolute",
         inset: 0,
@@ -52,69 +43,65 @@ export const QueueDone: React.FunctionComponent<{
         display: "grid",
         placeItems: "center",
         bgcolor: tokens.scrim,
-        backdropFilter: "blur(3px)",
         "@keyframes v-fade": { from: { opacity: 0 }, to: { opacity: 1 } },
         animation: `v-fade ${motion.base}ms ${motion.easing} both`,
       }}
     >
       <Box
         role="dialog"
-        aria-label={t("queue.done", { name: label })}
+        aria-label={t("queue.reviewed")}
         sx={{
-          width: 340,
+          width: 260,
           bgcolor: tokens.surface,
           border: `1px solid ${tokens.border}`,
           borderRadius: radius.card,
           boxShadow: tokens.shadowPop,
-          p: 3,
+          p: 2.5,
           display: "flex",
           flexDirection: "column",
-          alignItems: "center",
-          gap: 1.5,
-          textAlign: "center",
+          gap: 2,
         }}
       >
-        <Box
+        <Typography
+          data-testid="queueStatus"
           sx={{
-            width: 30,
-            height: 30,
-            borderRadius: radius.control,
-            display: "grid",
-            placeItems: "center",
-            bgcolor: tokens.status.passed.bg,
-            color: tokens.status.passed.fg,
+            fontSize: type.title,
+            fontWeight: 600,
+            color:
+              status === "approve"
+                ? tokens.status.passed.fg
+                : status === "reject"
+                  ? tokens.status.failed.fg
+                  : tokens.text,
           }}
         >
-          <CheckRounded sx={{ fontSize: type.title }} />
-        </Box>
-        <Typography sx={{ fontSize: 16, fontWeight: 600 }}>
-          {t("queue.done", { name: label })}
+          {status ? decisionNotice(status, 1, t) : t("queue.allDecided")}
         </Typography>
-        <Typography sx={{ color: tokens.textSecondary }}>
-          {t("overview.personDecisions", { ...summary })}
-        </Typography>
-        {next && (
-          <Button
-            data-testid="queueNext"
-            variant="contained"
-            fullWidth
-            onClick={next.go}
-            ref={first}
-          >
-            {t("queue.next", { name: next.label, count: next.count })}
-            {kbd("Enter")}
-          </Button>
+        {(onUndo || next) && (
+          <Box sx={{ display: "flex", justifyContent: "flex-end", gap: 1 }}>
+            {onUndo && (
+              <Button
+                data-testid="queueUndo"
+                color="inherit"
+                onClick={onUndo}
+                ref={next ? undefined : first}
+                sx={{ color: tokens.textSecondary }}
+              >
+                {t("undo.undo")}
+              </Button>
+            )}
+            {next && (
+              <Button
+                data-testid="queueNext"
+                variant="contained"
+                onClick={next}
+                ref={first}
+              >
+                {t("queue.next")}
+              </Button>
+            )}
+          </Box>
         )}
-        <Button
-          data-testid="queueBack"
-          variant="outlined"
-          fullWidth
-          onClick={onBack}
-          ref={next ? undefined : first}
-        >
-          {t("queue.back")}
-          {kbd("Esc")}
-        </Button>
       </Box>
     </Box>
   );

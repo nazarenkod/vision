@@ -152,6 +152,25 @@ export function nextWaiting(
   return -1;
 }
 
+/**
+ * Whether deciding these runs leaves nothing waiting in the queue (061): the
+ * decision is answered before the runs' new statuses arrive, so the runs just
+ * decided count as decided whatever the list still says.
+ */
+export function closesQueue(
+  ids: string[],
+  runs: TestRun[],
+  decided: string[],
+): boolean {
+  if (!decided.some((id) => ids.includes(id))) return false;
+  const byId = new Map(runs.map((run) => [run.id, run]));
+  return ids.every((id) => {
+    if (decided.includes(id)) return true;
+    const run = byId.get(id);
+    return !run || !isWaiting(run);
+  });
+}
+
 export interface QueueSummary {
   approved: number;
   rejected: number;

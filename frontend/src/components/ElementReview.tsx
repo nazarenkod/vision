@@ -319,21 +319,6 @@ export const ElementReview: React.FunctionComponent<{ buildId: string }> = ({
             disabled={!picked.length || busy}
             onClick={() => decide("approve")}
             data-testid="reviewApprove"
-            endIcon={
-              <Box
-                component="kbd"
-                sx={{
-                  fontFamily: tokens.mono,
-                  fontSize: type.caption,
-                  px: 0.5,
-                  borderRadius: radius.control,
-                  border: `1px solid currentColor`,
-                  opacity: 0.7,
-                }}
-              >
-                ⇧A
-              </Box>
-            }
           >
             {t("elements.approve", { count: picked.length })}
           </Button>

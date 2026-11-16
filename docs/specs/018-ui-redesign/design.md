@@ -208,7 +208,7 @@ Undo на сервері дозволене до 30 s після рішення:
 | REQ-018-30 | `frontend/integration_tests/test/testDetailsDialog.spec.ts › keeps the review layout and its keys` |
 | REQ-018-31 | `frontend/src/components/TestDetailsDialog/DiffMeter.test.tsx › says the changed share against the allowed one in words` |
 | REQ-018-32 | замінено [046](../046-design-review-refresh/spec.md): у заголовку лише позиція «N з M» і тренд перевірки, без смуги кроків |
-| REQ-018-33 | `frontend/integration_tests/test/testDetailsDialog.spec.ts › shows the A and X keys on Approve and Reject` |
+| REQ-018-33 | `frontend/integration_tests/test/testDetailsDialog.spec.ts › shows no keys on the buttons of the review` |
 | REQ-018-34 | manual: у порівнянні → — пара знімків іде вліво, наступна заходить справа; ← — навпаки. Перевірено 2026-10-29 у Chromium: на → панелі посередині руху зсунуті вправо (+3 px), на ← — вліво (−6 px) |
 | REQ-018-35 | `frontend/integration_tests/test/testDetailsDialog.spec.ts › shows a check on Approve instead of a toast` |
 | REQ-018-36 | manual: навести на пункт Changed areas або на проблему доступності — на знімку обводиться її рамка. Перевірено 2026-10-29 для Changed areas: рамка з'являється на знімку й зникає, коли курсор іде; для проблем доступності не перевіряли |

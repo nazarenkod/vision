@@ -1,5 +1,5 @@
 import React from "react";
-import { fireEvent, render, screen, within } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { ElementPopover } from "./ElementPopover";
 import { PickableElement } from "../../types/insights";
 
@@ -42,7 +42,7 @@ const pieces = () =>
   screen.getAllByTestId("variablePiece").map((piece) => piece.textContent);
 
 describe("ElementPopover: variable text (spec 033)", () => {
-  it("offers Variable text as the fourth action with V", () => {
+  it("offers Variable text as the fourth action, its key unnamed", () => {
     popover();
     const actions = screen.getAllByTestId(/^elementAction-/);
     expect(actions.map((action) => action.dataset.testid)).toEqual([
@@ -51,7 +51,8 @@ describe("ElementPopover: variable text (spec 033)", () => {
       "elementAction-tolerate",
       "elementAction-variable",
     ]);
-    expect(within(actions[3]).getByText("V")).toBeInTheDocument();
+    // V still works; the action names no key (REQ-061-20)
+    expect(actions[3]).toHaveTextContent(/^Variable text$/);
   });
 
   it("folds the other actions and shows the pieces after V", () => {

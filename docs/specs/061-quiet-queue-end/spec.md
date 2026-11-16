@@ -2,10 +2,10 @@
 
 | | |
 |---|---|
-| Статус | Draft |
+| Статус | Implemented |
 | Власник | Дмитро Назаренко |
 | Оновлено | 2026-11-16 |
-| Дизайн | design.md (з'являється після `Approved`); [макет](https://claude.ai/artifact/PQgKNKVXzWFgPJniW7dvKH) |
+| Дизайн | [design.md](design.md), [tasks.md](tasks.md); [макет](https://claude.ai/artifact/PQgKNKVXzWFgPJniW7dvKH) |
 | Пов'язане | змінює [031](../031-build-overview/spec.md) REQ-031-26 (підсумок черги); змінює [025](../025-bug-from-comparison/spec.md) REQ-025-04 (без пропозиції бага на останньому знімку черги); змінює [018](../018-ui-redesign/spec.md) REQ-018-70 (без сповіщення на останньому рішенні черги), REQ-018-33 (клавіші на Approve і Reject); змінює показ клавіш у [024](../024-elements-instead-of-areas/spec.md) REQ-024-01, REQ-024-03, REQ-024-12, [033](../033-variable-text/spec.md) REQ-033-01, [036](../036-changes-tab-redesign/spec.md) REQ-036-40; спирається на [018](../018-ui-redesign/spec.md) REQ-018-71, REQ-018-73 (Undo), [025](../025-bug-from-comparison/spec.md) REQ-025-01, REQ-025-02 |
 
 ## Контекст і проблема

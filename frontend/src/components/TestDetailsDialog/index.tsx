@@ -11,12 +11,15 @@ import {
   nextQueue,
   nextWaiting,
   parseQueue,
-  QueueChoice,
   queueIds,
+  closesQueue,
   QueueKey,
   queueParam,
-  queueSummary,
 } from "../../_helpers/reviewQueue.helper";
+import { DecisionKind } from "../../_helpers/undo.helper";
+import { testRunService } from "../../services";
+import { useDialogSnackbar } from "./useDialogSnackbar";
+import { ClaimQueueEnd, QueueEndContext } from "./queueEnd.context";
 import { ChangeGroup } from "../../types/insights";
 import { QueueDone } from "./QueueDone";
 import { BaseModal } from "../BaseModal";
@@ -275,34 +278,58 @@ export const TestDetailsDialog: React.FunctionComponent<{
     });
   }, [frozen, queueKey, allTestRuns]);
 
-  const labelOfKey = React.useCallback(
-    (key: QueueKey, group?: ChangeGroup | null): string => {
-      switch (key.kind) {
-        case "all":
-          return t("queue.all");
-        case "group": {
-          const found =
-            group ?? groups?.find((g) => g.fingerprint === key.fingerprint);
-          if (!found) return t("queue.all");
-          return found.kind === "new"
-            ? t("groups.newScreenshots")
-            : found.title;
-        }
-        case "device":
-          return key.profile.split("|").filter(Boolean).slice(0, 2).join(" ");
-        case "feature":
-        case "check":
-          return key.name;
-        case "run":
-          return allTestRuns.find((run) => run.id === key.id)?.name ?? "";
-      }
+  // The decision that ended the queue (061): its card shows as soon as the
+  // server answers, not when the runs' new statuses arrive by the socket —
+  // without the socket there would be neither a notification nor Undo.
+  const [ending, setEnding] = React.useState<{
+    kind: DecisionKind;
+    decisionId?: string;
+    runId: string;
+  } | null>(null);
+  // taken back from the card: hidden until the queue has a run waiting again
+  const [undone, setUndone] = React.useState(false);
+  const { enqueueSnackbar } = useDialogSnackbar();
+  React.useEffect(() => {
+    setEnding(null);
+    setUndone(false);
+  }, [frozen?.param]);
+  React.useEffect(() => {
+    if (!queueDone) setUndone(false);
+  }, [queueDone]);
+
+  const latestQueue = React.useRef({ frozen, queueKey, allTestRuns });
+  latestQueue.current = { frozen, queueKey, allTestRuns };
+  const claimQueueEnd = React.useCallback<ClaimQueueEnd>(
+    (ids, kind, decision) => {
+      const { frozen, queueKey, allTestRuns } = latestQueue.current;
+      if (!frozen || !queueKey || queueKey.kind === "run") return false;
+      if (!closesQueue(frozen.ids, allTestRuns, ids)) return false;
+      setEnding({ kind, decisionId: decision?.decisionId, runId: ids[0] });
+      setUndone(false);
+      return true;
     },
-    [t, groups, allTestRuns],
+    [],
   );
-  const labelOfChoice = React.useCallback(
-    (choice: QueueChoice) => labelOfKey(choice.key, choice.group),
-    [labelOfKey],
-  );
+
+  const undoEnding = React.useCallback(() => {
+    const decided = ending;
+    if (!decided?.decisionId) return;
+    testRunService
+      .undoDecision(decided.decisionId)
+      .then(() => {
+        setUndone(true);
+        setEnding(null);
+        enqueueSnackbar(t("undo.undone"), { variant: "info" });
+        // the run waits again: the review stays on it, in its queue
+        if (decided.runId !== selectedTestRun?.id) navigateById(decided.runId);
+      })
+      .catch((error) =>
+        // the reason is worth reading: someone decided again (REQ-061-07)
+        enqueueSnackbar(t("undo.failed", { error: String(error) }), {
+          variant: "error",
+        }),
+      );
+  }, [ending, enqueueSnackbar, t, selectedTestRun?.id, navigateById]);
 
   const openQueue = React.useCallback(
     (key: QueueKey) => {
@@ -336,8 +363,14 @@ export const TestDetailsDialog: React.FunctionComponent<{
     return null;
   }
 
+  const queueEnded =
+    !!queueKey &&
+    queueKey.kind !== "run" &&
+    !!frozen &&
+    !undone &&
+    (queueDone || !!ending);
   const next =
-    queueKey && queueDone
+    queueKey && queueEnded
       ? nextQueue(queueKey, allTestRuns, groups ?? [])
       : undefined;
 
@@ -352,34 +385,30 @@ export const TestDetailsDialog: React.FunctionComponent<{
         if (reason === "escapeKeyDown") navigateById();
       }}
     >
-      <TestDetailsModal
-        testRun={selectedTestRun}
-        currentRunIndex={selectedTestRunIndex}
-        totalTestRunCount={testRuns.length}
-        direction={direction}
-        touched={touched}
-        handleClose={() => navigateById()}
-        handlePrevious={() =>
-          stepOrHold(-1, () => navigateByIndex(selectedTestRunIndex - 1))
-        }
-        handleNext={() =>
-          stepOrHold(1, () => navigateByIndex(selectedTestRunIndex + 1))
-        }
-        handleStep={(offset) => stepOrHold(offset, () => stepInQueue(offset))}
-        deviceRuns={deviceRuns}
-        handleSelectRun={navigateById}
-      />
-      {queueDone && queueKey && frozen && (
-        <QueueDone
-          label={labelOfKey(queueKey)}
-          summary={queueSummary(frozen.ids, allTestRuns)}
-          next={
-            next && {
-              label: labelOfChoice(next),
-              count: next.waiting,
-              go: () => openQueue(next.key),
-            }
+      <QueueEndContext.Provider value={claimQueueEnd}>
+        <TestDetailsModal
+          testRun={selectedTestRun}
+          currentRunIndex={selectedTestRunIndex}
+          totalTestRunCount={testRuns.length}
+          direction={direction}
+          touched={touched}
+          handleClose={() => navigateById()}
+          handlePrevious={() =>
+            stepOrHold(-1, () => navigateByIndex(selectedTestRunIndex - 1))
           }
+          handleNext={() =>
+            stepOrHold(1, () => navigateByIndex(selectedTestRunIndex + 1))
+          }
+          handleStep={(offset) => stepOrHold(offset, () => stepInQueue(offset))}
+          deviceRuns={deviceRuns}
+          handleSelectRun={navigateById}
+        />
+      </QueueEndContext.Provider>
+      {queueEnded && (
+        <QueueDone
+          status={ending?.kind ?? null}
+          onUndo={ending?.decisionId ? undoEnding : undefined}
+          next={next && (() => openQueue(next.key))}
           onBack={() => navigateById()}
         />
       )}

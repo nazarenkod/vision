@@ -127,17 +127,6 @@ export const AccountMenu: React.FunctionComponent<{
           <PaletteOutlined />
           <Box component="span" sx={{ flex: 1 }}>
             {t("account.theme")}
-            <Box
-              component="kbd"
-              sx={{
-                ml: 0.75,
-                fontFamily: tokens.mono,
-                fontSize: type.caption,
-                color: tokens.textMuted,
-              }}
-            >
-              ⇧D
-            </Box>
           </Box>
           <SlidingToggleGroup
             exclusive

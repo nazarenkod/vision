@@ -91,12 +91,16 @@ const SEVERITY_COLOR: Record<A11yViolation["severity"], string> = {
   info: tokens.textMuted,
 };
 
+export type PanelTab = "changes" | "a11y";
+
 interface Props {
   testRun: TestRun;
   report: A11yReport | null | undefined;
   onReportChanged: () => void;
   highlightedId?: string;
   onHighlight: (violation: A11yViolation) => void;
+  // the issue boxes on the screenshot follow the tab (REQ-057-02, 03)
+  onTabChange?: (tab: PanelTab) => void;
   aiEnabled: boolean;
   // element-level changes, rules and warnings, loaded by the dialog for the overlay too
   structure: StructureInfo | null | undefined;
@@ -163,6 +167,7 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
   onReportChanged,
   highlightedId,
   onHighlight,
+  onTabChange,
   aiEnabled,
   structure,
   onStructureChanged,
@@ -210,9 +215,11 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
   const canEdit = user?.role === "admin" || user?.role === "editor";
   const withUiTree = hasUiTree(testRun);
 
-  const [tab, setTab] = React.useState<"a11y" | "changes">(
-    withUiTree ? "a11y" : "changes",
-  );
+  // deciding on the changes is the review's main job, so it opens on them (REQ-057-01)
+  const [tab, setTab] = React.useState<PanelTab>("changes");
+  React.useEffect(() => {
+    onTabChange?.(tab);
+  }, [tab, onTabChange]);
   const [ruleDraft, setRuleDraft] = React.useState<RuleDraft | null>(null);
   const [advancedSelector, setAdvancedSelector] = React.useState(false);
   const [selectorMatches, setSelectorMatches] =
@@ -1736,20 +1743,6 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
           sx={{ px: 2, flex: 1, minWidth: 0 }}
         >
           <Tab
-            value="a11y"
-            label={
-              <Box sx={{ display: "flex", gap: 1, alignItems: "center" }}>
-                {t("panel.accessibility")}{" "}
-                {newCount > 0 && (
-                  <StatusPill
-                    tone="changed"
-                    label={t("builds.a11yNewPill", { count: newCount })}
-                  />
-                )}
-              </Box>
-            }
-          />
-          <Tab
             value="changes"
             label={
               <Box sx={{ display: "flex", gap: 1, alignItems: "center" }}>
@@ -1758,6 +1751,20 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
                   <StatusPill
                     tone="failed"
                     label={structure?.invisible.length}
+                  />
+                )}
+              </Box>
+            }
+          />
+          <Tab
+            value="a11y"
+            label={
+              <Box sx={{ display: "flex", gap: 1, alignItems: "center" }}>
+                {t("panel.accessibility")}{" "}
+                {newCount > 0 && (
+                  <StatusPill
+                    tone="changed"
+                    label={t("builds.a11yNewPill", { count: newCount })}
                   />
                 )}
               </Box>

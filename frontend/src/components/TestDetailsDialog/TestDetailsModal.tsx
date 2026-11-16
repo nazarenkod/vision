@@ -50,7 +50,7 @@ import { useDialogSnackbar } from "./useDialogSnackbar";
 import { APPROVED_TICK_MS, ApproveRejectButtons } from "./ApproveRejectButtons";
 import { invertIgnoreArea, readAreas } from "../../_helpers/ignoreArea.helper";
 import { compareOnlyApplied } from "../../_helpers/whatsCompared.helper";
-import { InsightsPanel } from "./InsightsPanel";
+import { InsightsPanel, PanelTab } from "./InsightsPanel";
 import { DeviceStrip } from "./DeviceStrip";
 import { RunFlags, useAiStatus } from "../ChangeGroups";
 import { insightsService } from "../../services";
@@ -228,6 +228,8 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
   const announce = useDecisionSnackbar(enqueueSnackbar);
   const [a11yReport, setA11yReport] = useState<A11yReport | null | undefined>();
   const [a11yOverlay, setA11yOverlay] = useState(true);
+  // issue boxes only while their tab is open, so they do not cover the changes (REQ-057-02)
+  const [panelTab, setPanelTab] = useState<PanelTab>("changes");
   const [highlightedViolation, setHighlightedViolation] = useState<string>();
   // what the pointer is over in the side panel (REQ-018-36)
   const [previewViolation, setPreviewViolation] = useState<string>();
@@ -960,7 +962,7 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
 
   const overlayRects: OverlayRect[] = React.useMemo(
     () =>
-      a11yOverlay && a11yReport
+      a11yOverlay && panelTab === "a11y" && a11yReport
         ? a11yReport.violations.map((violation, index) => {
             const tracked =
               violation.status === "existing" || !!violation.issue;
@@ -973,7 +975,7 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
             };
           })
         : [],
-    [a11yOverlay, a11yReport, canvas],
+    [a11yOverlay, panelTab, a11yReport, canvas],
   );
   // how Current lies against the baseline; the fade only in Fade (REQ-046-02)
   const [view, setView] = useState<CompareView>("side");
@@ -1995,6 +1997,7 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
           onReportChanged={loadA11yReport}
           highlightedId={highlightedViolation}
           onHighlight={highlightViolation}
+          onTabChange={setPanelTab}
           aiEnabled={!!aiStatus?.enabled}
           structure={structure}
           onStructureChanged={loadStructure}

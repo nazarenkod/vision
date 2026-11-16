@@ -569,6 +569,10 @@ test("says accessibility needs the UI tree when it cannot be read", async ({
 
   await openProjectPage(project.id, build.id, run.id);
   await page.getByTestId("panelUnfold").click();
+  await page
+    .getByRole("complementary")
+    .getByRole("tab", { name: /Accessibility/ })
+    .click();
   await expect(
     page.getByText(
       "Accessibility is checked from the UI tree, and this screen's tree could not be read.",

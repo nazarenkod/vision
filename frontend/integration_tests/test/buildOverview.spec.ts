@@ -430,17 +430,22 @@ test("Esc returns to where the review was opened, focus on the same row", async 
   expect(new URL(page.url()).searchParams.get("queue")).toBeNull();
 });
 
-test("keeps the counts out of the build header on every tab", async ({
+test("keeps the counts and the status bar out of the build header on every tab", async ({
   openProjectPage,
   page,
 }) => {
   await openProjectPage(project.id, build.id, undefined, "overview");
   await expect(page.getByTestId("overviewTile-screens")).toBeVisible();
   await expect(page.getByTestId("buildCounts")).toHaveCount(0);
+  await expect(page.getByTestId("buildStatusBar")).toHaveCount(0);
 
   await page.getByRole("tab", { name: /All screens/ }).click();
-  await expect(page.getByTestId("buildStatusBar")).toBeVisible();
+  await expect(page.getByRole("tab", { name: /All screens/ })).toHaveAttribute(
+    "aria-selected",
+    "true",
+  );
   await expect(page.getByTestId("buildCounts")).toHaveCount(0);
+  await expect(page.getByTestId("buildStatusBar")).toHaveCount(0);
 });
 
 test("shows every feature at once, those with changes first", async ({

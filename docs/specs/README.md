@@ -124,6 +124,7 @@ docs/specs/NNN-коротка-назва/
 | [055](055-bulk-decisions-by-query/spec.md) | Рев'ю за елементом (бета) | Implemented |
 | [056](056-review-together/spec.md) | Рев'ю удвох: хто зараз дивиться екран | Implemented |
 | [057](057-changes-tab-first/spec.md) | «Зміни» першими в панелі порівняння, рамки доступності лише на своїй вкладці | Implemented |
+| [058](058-plain-build-header-and-groups/spec.md) | Без смуги статусів у шапці збірки, екрани груп змін рядками | Implemented |
 
 Статусу `Verified` поки немає в жодної: інтеграцію з реальною Jira Cloud і прогони на сервері
 команда ще не підтвердила.

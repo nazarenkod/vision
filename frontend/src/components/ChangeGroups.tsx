@@ -14,7 +14,7 @@ import { useSnackbar } from "notistack";
 import { v4 as uuid } from "uuid";
 import { AccessTimeOutlined, ExpandMore } from "@mui/icons-material";
 import { useTestRunState } from "../contexts";
-import { insightsService, staticService, testRunService } from "../services";
+import { insightsService, testRunService } from "../services";
 import {
   AiStatus,
   ChangeGroup,
@@ -33,7 +33,7 @@ import { DeviceTags } from "./DeviceTags";
 import { useDecisionSnackbar } from "./useDecisionSnackbar";
 import { english, MessageKey, Text, useT } from "../i18n";
 
-const MAX_THUMBS = 6;
+const MAX_SCREENS = 6;
 const MAX_AUTO_SUMMARIES = 10;
 const REFRESH_DELAY_MS = 800;
 
@@ -112,10 +112,14 @@ const Tag: React.FunctionComponent<{
   </Box>
 );
 
-const Thumb: React.FunctionComponent<{ run: TestRun; onOpen: () => void }> = ({
-  run,
-  onOpen,
-}) => {
+// one row a screen: which device, how much changed; it opens the screen.
+// No picture: at a glance a thumbnail showed little, and took the room (REQ-058-02)
+const ScreenRow: React.FunctionComponent<{
+  run: TestRun;
+  // a group across several screens says which one the row is
+  named: boolean;
+  onOpen: () => void;
+}> = ({ run, named, onOpen }) => {
   const { t, formatFixed } = useT();
   return (
     <ButtonBase
@@ -124,65 +128,55 @@ const Thumb: React.FunctionComponent<{ run: TestRun; onOpen: () => void }> = ({
         name: run.name,
         variant: variantLabel(run),
       })}
+      data-testid="groupScreen"
       sx={{
         display: "flex",
-        flexDirection: "column",
-        alignItems: "stretch",
-        gap: 0.75,
-        width: 112,
-        borderRadius: radius.card,
-        "&:hover .thumb, &:focus-visible .thumb": {
-          transform: "translateY(-2px)",
-        },
+        alignItems: "center",
+        justifyContent: "flex-start",
+        flexWrap: "wrap",
+        gap: 1,
+        width: "100%",
+        minHeight: 36,
+        px: 1,
+        py: 0.5,
+        borderRadius: radius.control,
+        textAlign: "left",
+        fontSize: type.caption,
+        fontVariantNumeric: "tabular-nums",
+        transition: `background-color ${motion.base}ms ${motion.easing}`,
+        "&:hover, &:focus-visible": { bgcolor: tokens.subtle },
       }}
     >
-      <Box
-        className="thumb"
-        component="img"
-        src={staticService.getImage(
-          run.diffThumbnailName ?? run.imageThumbnailName ?? run.imageName,
-        )}
-        alt=""
-        loading="lazy"
-        sx={{
-          width: 112,
-          height: 160,
-          // whole screen: a change at the bottom (a menu) must show too
-          objectFit: "contain",
-          borderRadius: radius.card,
-          p: 0.75,
-          boxSizing: "border-box",
-          background: tokens.lightbox,
-          boxShadow: tokens.shadowShot,
-          transition: `transform ${motion.base}ms ${motion.easing}`,
-        }}
-      />
-      {/* the OS too: two versions of Android on one model look alike (REQ-037-07) */}
-      <DeviceTags parts={run} dense />
-      {(run.customTags || run.diffPercent > 0) && (
-        <Box
+      {named && (
+        <Typography
+          noWrap
           sx={{
-            display: "flex",
-            justifyContent: "space-between",
-            gap: 0.5,
-            fontSize: type.caption,
-            fontVariantNumeric: "tabular-nums",
+            font: "inherit",
+            fontWeight: 600,
+            minWidth: 0,
+            maxWidth: "50%",
           }}
         >
-          <Typography
-            noWrap
-            sx={{ font: "inherit", color: tokens.textSecondary }}
-          >
-            {run.customTags}
-          </Typography>
-          {run.diffPercent > 0 && (
-            <span style={{ color: tokens.diff, flexShrink: 0 }}>
-              {formatFixed(run.diffPercent, 1)}%
-            </span>
-          )}
-        </Box>
+          {run.name}
+        </Typography>
+      )}
+      {/* the OS too: two versions of Android on one model look alike (REQ-037-07) */}
+      <DeviceTags parts={run} dense />
+      {run.customTags && (
+        <Typography
+          noWrap
+          sx={{ font: "inherit", color: tokens.textSecondary, minWidth: 0 }}
+        >
+          {run.customTags}
+        </Typography>
       )}
       <RunFlags run={run} />
+      <Box sx={{ flex: 1 }} />
+      {run.diffPercent > 0 && (
+        <span style={{ color: tokens.diff, flexShrink: 0 }}>
+          {formatFixed(run.diffPercent, 1)}%
+        </span>
+      )}
     </ButtonBase>
   );
 };
@@ -594,24 +588,28 @@ export const ChangeGroups: React.FunctionComponent<Props> = ({
                 <Box
                   sx={{
                     display: "flex",
-                    flexWrap: "wrap",
-                    gap: 1.5,
-                    // the screenshots line up at the top whatever the tags under them
-                    alignItems: "flex-start",
+                    flexDirection: "column",
+                    gap: 0.25,
+                    mx: -1,
                   }}
                 >
-                  {group.testRuns.slice(0, MAX_THUMBS).map((run) => (
-                    <Thumb key={run.id} run={run} onOpen={() => open(run)} />
+                  {group.testRuns.slice(0, MAX_SCREENS).map((run) => (
+                    <ScreenRow
+                      key={run.id}
+                      run={run}
+                      named={group.screens.length > 1}
+                      onOpen={() => open(run)}
+                    />
                   ))}
-                  {group.testRuns.length > MAX_THUMBS && (
+                  {group.testRuns.length > MAX_SCREENS && (
                     <Tooltip title={t("groups.openFirst")}>
                       <Typography
                         variant="body2"
                         color="textSecondary"
-                        sx={{ alignSelf: "center" }}
+                        sx={{ px: 1 }}
                       >
                         {t("groups.more", {
-                          count: group.testRuns.length - MAX_THUMBS,
+                          count: group.testRuns.length - MAX_SCREENS,
                         })}
                       </Typography>
                     </Tooltip>

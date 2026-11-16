@@ -1,135 +1,312 @@
-# Vision
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="./docs/assets/logo-dark.png">
+    <img src="./docs/assets/logo-light.png" width="320" alt="Vision">
+  </picture>
+</p>
 
-**Візуальні перевірки для QA мобільних застосунків і вебу.** Автотести надсилають знімок екрана
-разом з його UI-деревом; Vision порівнює його з еталоном на рівні елементів, а не лише пікселів,
-перевіряє доступність, заводить баги в Jira без дублів і показує, які екрани нестабільні.
+<h3 align="center">Doesn't just see screens. Understands them.</h3>
 
-Android і iOS — через Appium, веб — через Selenide і Playwright. Розгортається на вашому сервері
-через Docker Compose і нікуди не надсилає дані без явного налаштування.
+<p align="center">
+  Візуальні перевірки, доступність і UI-дерево для автотестів і ручного тестування<br>
+  мобільних застосунків і вебу. Self-hosted.
+</p>
 
-## Що вміє
+<p align="center">
+  <a href="#швидкий-старт">Швидкий старт</a> ·
+  <a href="#можливості">Можливості</a> ·
+  <a href="#sdk-та-інтеграції">SDK</a> ·
+  <a href="docs/README.md">Документація</a> ·
+  <a href="CHANGELOG.md">Зміни</a>
+</p>
 
-| | |
-|---|---|
-| **Порівняння з урахуванням UI-дерева** | годинник у статус-барі, суми, зсув списку банером не дають хибних змін; правила «ігнорувати», «терпіти», «порівнювати лише» для елементів; нестабільний текст — регулярним виразом |
-| **Групи змін** | одна зміна спільного компонента — одна картка й одне рішення на всі екрани; Undo |
-| **Доступність** | підписи, зона тапу, контраст, поля вводу, VoiceOver; нове / наявне / виправлене відносно еталона |
-| **Jira без дублів** | стабільний ID проблеми: той самий баг не заводиться двічі ні з іншого екрана, ні іншою людиною |
-| **Insights** | застарілі еталони, нестабільні екрани, найчастіші проблеми доступності |
-| **Ручні перевірки** | `vision.py` знімає поточний екран пристрою (adb, Appium, симулятор) з CLI або як MCP-сервер для AI-асистента |
-| **AI на вимогу** | підсумок групи змін, підписи для іконок — лише коли людина попросила; Gemini або локальна Ollama |
-| **Доступ і безпека** | проєкти за доступом, LDAP або SSO поруч із локальними акаунтами, знімки за підписаним посиланням, секрети зашифровані |
-
-Повна карта фіч — в [огляді продукту](docs/product/overview.md).
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="./docs/assets/screenshots/review-dark.png">
+    <img src="./docs/assets/screenshots/review-light.png" alt="Рев'ю екрана: еталон і поточний знімок, зміни підсвічені">
+  </picture>
+</p>
 
 ## Як це працює
 
-```mermaid
-flowchart LR
-  subgraph Clients["Клієнти"]
-    SDK["Java SDK / Playwright SDK\nу автотестах"]
-    CLI["vision.py\nCLI і MCP"]
-    Browser["Браузер QA"]
-  end
-  subgraph Vision["Vision (docker compose)"]
-    UI["ui\nReact + MUI, nginx"]
-    API["api\nNestJS"]
-    DB[("Postgres 16")]
-    FS[("знімки й UI-дерева\nна диску")]
-  end
-  SDK -->|знімок + UI-дерево| API
-  CLI --> API
-  Browser --> UI
-  Browser -->|REST + WebSocket| API
-  API --> DB
-  API --> FS
-  API -->|особистий токен| Jira[("Jira")]
-  API -.->|на вимогу| LLM[("Ollama / Gemini")]
-```
+- Автотест робить знімок екрана й надсилає його у Vision через **SDK** (Java для Appium і Selenide,
+  Playwright), **CLI** або **REST API** — разом з **UI-деревом** екрана: Appium page source або
+  деревом вебсторінки.
+- Vision порівнює знімок з еталоном тієї самої перевірки на тому самому пристрої. За деревом він
+  знає, *який елемент* змінився, відкидає шум (годинник у статус-барі, зсув списку, анімації) і
+  перевіряє доступність.
+- Без змін — перевірка пройдена. Зміни чекають рев'ю: QA приймає або відхиляє їх групами, а знайдену
+  проблему заводить у Jira в один клік, без дублів.
 
-1. Тест робить `track(...)` як звичайно і додає UI-дерево екрана (Appium page source або дерево вебсторінки).
-2. API розбирає дерево, прибирає шум за правилами, порівнює пікселі в пулі воркерів і знаходить, які
-   саме елементи змінились; заодно перевіряє доступність. LLM на цьому шляху не викликається.
-3. QA в інтерфейсі приймає або відхиляє зміни групами й заводить баги в Jira.
+## Можливості
 
-Детальніше — [архітектура](docs/architecture/overview.md), [модель даних](docs/architecture/data-model.md), [API](docs/architecture/api.md).
+- **Порівняння з урахуванням UI-дерева.** Зміни названі за елементами, а не пікселями; правила
+  «ігнорувати», «терпіти», «порівнювати лише» для елемента чи всього проєкту; нестабільний текст
+  (суми, дати) — регулярним виразом; компенсація зсувів; приховані зміни, яких не видно на знімку.
+- **Групи змін.** Одна зміна спільного компонента — одна картка й одне рішення на всі екрани
+  збірки. Рішення можна скасувати (Undo).
+- **Рев'ю.** Side by side, Overlay, Fade, підсвітка змін, зум, історія еталона, клавіатурні
+  скорочення, черга рев'ю й автоперехід до наступного екрана.
+- **Доступність.** Підписи, зона тапу, контраст, поля вводу, дубльовані підписи, VoiceOver і
+  TalkBack; нове / наявне / виправлене відносно еталона; норми — на проєкт.
+- **Jira без дублів.** Стабільний ID проблеми: той самий баг не заводиться вдруге ні з іншого
+  екрана, ні іншою людиною. Підзадача з обов'язковими полями, шаблоном опису й скриншотом з обводкою.
+- **Огляд збірки й звіт.** Що змінилось, що чекає, пристрої, баги, доступність — на одній
+  сторінці; звіт для друку й публічне посилання.
+- **Insights.** Застарілі еталони, нестабільні екрани, найчастіші проблеми доступності.
+- **Пошук екранів** *(бета)* — за текстом, підписом чи селектором в UI-деревах. **Рев'ю за
+  елементом** *(бета)* — зміна одного елемента на всіх екранах збірки, одне рішення.
+- **Ручні перевірки.** `vision.py` знімає поточний екран пристрою (adb, Appium, симулятор) з
+  терміналу або як MCP-сервер для AI-асистента.
+- **AI на вимогу.** Підсумок групи змін, підписи для іконок — лише коли людина попросила; Gemini
+  або локальна Ollama, денний ліміт. Під час прийому знімків LLM не викликається ніколи.
+- **Доступ і безпека.** Ролі й доступ до проєктів, LDAP або SSO (OIDC) поруч із локальними
+  акаунтами, знімки лише за підписаним посиланням, секрети в базі зашифровані.
+- **Self-hosted.** Docker Compose, Postgres, знімки на диску, нічні бекапи. Інтерфейс англійською
+  й українською, світла й темна теми.
+
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="./docs/assets/screenshots/overview-dark.png">
+    <img src="./docs/assets/screenshots/overview-light.png" alt="Огляд збірки: перевірки, баги Jira, доступність">
+  </picture>
+</p>
 
 ## Швидкий старт
 
-Потрібні Docker з Compose v2, git, bash. Для розробки — Node 24.9+ (`.nvmrc`), Python 3.8+, JDK 11.
+Потрібні [Docker](https://docs.docker.com/get-docker/) з Compose v2, git і bash.
 
-```bash
+```sh
+git clone <адреса репозиторію Vision> vision && cd vision
 cp .env.demo.example .env.demo
-# задати JWT_SECRET і VISION_SECRET_KEY: openssl rand -base64 32 (кожному — свій)
+# JWT_SECRET і VISION_SECRET_KEY — два різні випадкові рядки: openssl rand -base64 32
 ./scripts/vision.sh up -d --build
 ```
 
-Інтерфейс — http://localhost:18080, API — http://localhost:14200 (`/health`). Перший вхід —
-`admin@vision.local` з паролем із `DEFAULT_USER_PASSWORD` (типово `123456`, змініть одразу).
+| | |
+|---|---|
+| Інтерфейс | http://localhost:18080 |
+| API | http://localhost:14200 (`/health`; Swagger `/api` — з `VISION_SWAGGER=true`) |
+| Перший вхід | `admin@vision.local` / значення `DEFAULT_USER_PASSWORD` (типово `123456` — змініть одразу) |
+| API-ключ | **Profile → API key** (показується один раз) |
 
-Docker compose запускаємо **лише через `./scripts/vision.sh`**: він закріплює назву проєкту й
-нічого не робить, якщо поруч є чужі контейнери ([ADR-0002](docs/decisions/0002-production-is-read-only.md)).
-Повне розгортання, копія даних з робочого VRT і підключення автотестів — у [DEPLOY.md](DEPLOY.md);
-сценарій показу — у [DEMO.md](DEMO.md).
+Compose запускаємо **лише через `./scripts/vision.sh`**: він закріплює назву проєкту й нічого не
+робить, якщо поруч є чужі контейнери. Повне розгортання, TLS, LDAP/SSO, Jira й бекапи — у
+[DEPLOY.md](DEPLOY.md), усі змінні — у [довіднику налаштувань](docs/admin/configuration.md).
 
-## Підключити автотести
+## SDK та інтеграції
 
-```java
-Vision vision = new Vision();          // адреса, ключ і проєкт — з VISION_* або vision.json
-vision.start();
-vision.track("Login screen", screenshotBase64,
-        VisionOptions.builder()
-                .device("Pixel 7 emulator").os("Android 15")
-                .uiTree(driver.getPageSource())   // Appium page source; SDK стискає сам
-                .build());
-vision.stop();
+| | Для чого | Де |
+|---|---|---|
+| **Java SDK** `ua.vision:vision-sdk` | Appium (Android, iOS), Selenide і Selenium | [`sdk-java/`](sdk-java/README.md) |
+| **Playwright SDK** `@vision/sdk-playwright` | Playwright Test, веб | [`sdk-playwright/`](sdk-playwright/README.md) |
+| **CLI і MCP** `vision.py` | ручні перевірки з пристрою; AI-асистенти | [`frontend/public/cli/vision.py`](frontend/public/cli/vision.py) |
+| **REST API** | будь-яка мова й фреймворк | Swagger `<API>/api`, [опис](docs/architecture/api.md) |
+
+Усі SDK читають однакові налаштування — з коду, змінних `VISION_*` або файла `vision.json` у
+корені проєкту тестів (у такому порядку пріоритету):
+
+| Поле | Змінна | | Що це |
+|---|---|---|---|
+| `apiUrl` | `VISION_APIURL` | обов'язкове | адреса API Vision, напр. `https://vision-api.example.com` |
+| `apiKey` | `VISION_APIKEY` | обов'язкове | особистий API-ключ (**Profile → API key**) |
+| `project` | `VISION_PROJECT` | обов'язкове | назва або ID проєкту |
+| `branchName` | `VISION_BRANCHNAME` | обов'язкове | гілка, з якою порівнювати |
+| `ciBuildId` | `VISION_CIBUILDID` | | ID збірки в CI |
+| `enableSoftAssert` | `VISION_ENABLESOFTASSERT` | | `true`: писати в лог замість падіння тесту |
+| `httpTimeoutInSeconds` | `VISION_HTTPTIMEOUTINSECONDS` | | час очікування відповіді |
+| `sourceBranch` | `VISION_SOURCEBRANCH` | лише Playwright | звідки брати еталони для нової гілки |
+
+### Java SDK
+
+Для Java 11+. Jar збирається з цього репозиторію (JDK 11, Gradle 7):
+
+```sh
+./scripts/build-sdk-jar.sh        # → dist/sdk-java/vision-sdk-1.0.0.jar і .pom
+mvn install:install-file -Dfile=dist/sdk-java/vision-sdk-1.0.0.jar -DpomFile=dist/sdk-java/vision-sdk-1.0.0.pom
 ```
 
-Jar SDK збирає `./scripts/build-sdk-jar.sh` → `dist/sdk-java/vision-sdk-1.0.0.jar`. Maven, Gradle,
-Selenide і Playwright — [DEPLOY.md §7–8](DEPLOY.md), [sdk-java](sdk-java/README.md),
-[sdk-playwright](sdk-playwright/README.md).
+```xml
+<dependency>
+    <groupId>ua.vision</groupId>
+    <artifactId>vision-sdk</artifactId>
+    <version>1.0.0</version>
+</dependency>
+```
 
-## Складові репозиторію
+Або в Gradle — `implementation 'ua.vision:vision-sdk:1.0.0'` з `mavenLocal()`; у корпоративний
+Nexus — `gradle publish -PrepoUrl=…` ([sdk-java](sdk-java/README.md)).
 
-| Папка | Що там | Для розробника |
-|---|---|---|
-| `backend/` | API: NestJS 12, Prisma 7, PostgreSQL 16, Node 24 | [AGENTS.md](backend/AGENTS.md) |
-| `frontend/` | інтерфейс: React 18, MUI 5, Vite; CLI і MCP `public/cli/vision.py` | [AGENTS.md](frontend/AGENTS.md) |
-| `sdk-java/` | Java SDK `ua.vision:vision-sdk` (Appium, Selenide) | [AGENTS.md](sdk-java/AGENTS.md) |
-| `sdk-playwright/` | Playwright SDK `@vision/sdk-playwright` | [AGENTS.md](sdk-playwright/AGENTS.md) |
-| `web-tree/` | збір дерева вебсторінки, спільний для обох SDK | [050](docs/specs/050-web-ui-tree/spec.md) |
-| `scripts/` | `vision.sh`, копія даних, бекапи, перехід, перевірки | [AGENTS.md](scripts/AGENTS.md) |
-| `docs/` | продукт, архітектура, специфікації, рішення, гайди, адміністрування, безпека | [docs/README.md](docs/README.md) |
-| `audit/` | звіт аудиту безпеки й ліцензій | [звіт](audit/security-audit-2026-11.md) |
+**Мобільний екран (Appium)** — до звичного знімка додається page source:
+
+```java
+import ua.vision.sdk.Vision;
+import ua.vision.sdk.VisionOptions;
+
+Vision vision = new Vision();            // налаштування — з VISION_* або vision.json
+vision.start();                          // нова збірка
+
+String screenshot = driver.getScreenshotAs(OutputType.BASE64);
+vision.track("Checkout. Pay", screenshot, VisionOptions.builder()
+        .device("Pixel 8")
+        .os("Android 14")
+        .uiTree(driver.getPageSource())  // Android чи iOS — визначається з XML
+        .featureName("Checkout")         // необов'язково: фіча для назви бага
+        .build());
+
+vision.stop();                           // збірку завершено
+```
+
+**Вебсторінка (Selenide, Selenium)** — дерево збирає `WebUiTree` у браузері сесії, одразу перед
+знімком:
+
+```java
+import ua.vision.sdk.web.WebUiTree;
+
+String tree = WebUiTree.collect((JavascriptExecutor) WebDriverRunner.getWebDriver());
+vision.track("Cart", Selenide.screenshot(OutputType.BASE64), VisionOptions.builder()
+        .browser("chrome")
+        .browserVersion("131.0.6778.85")   // показується в рев'ю, в ідентичність не входить
+        .viewport("1280x800")
+        .uiTree(tree)
+        .build());
+```
+
+`VisionOptions`:
+
+| Опція | Що це |
+|---|---|
+| `device`, `os`, `browser`, `viewport`, `customTags` | ідентичність перевірки: еталон окремий для кожного поєднання |
+| `uiTree` | Appium page source або результат `WebUiTree.collect`; до 10 МиБ, більше — знімок іде без дерева з попередженням у лозі |
+| `featureName` | фіча, до якої належить екран; дає назву багам з рев'ю |
+| `browserVersion` | версія браузера для рев'ю |
+| `diffTollerancePercent` | допустимий відсоток змін |
+| `ignoreAreas` | області, які не порівнюються |
+
+`track` повертає `VisionResult`: статус перевірки (`getTestRunResponse()`) і посилання на поточний
+знімок, diff і еталон (`getImageUrl()`, `getDiffUrl()`, `getBaselineUrl()`). Якщо проєкт обмежує
+пристрої, знімок з іншого пристрою відхиляється з `TestRunException` і причиною.
+
+### Playwright SDK
+
+Для Node 18+ і Playwright 1.40+. Пакет збирається з репозиторію:
+
+```sh
+cd sdk-playwright && npm ci && npm pack    # → vision-sdk-playwright-1.0.0.tgz
+npm install --save-dev ./vision-sdk-playwright-1.0.0.tgz   # у проєкті тестів
+```
+
+```ts
+import { test } from '@playwright/test';
+import { VisionPlaywright } from '@vision/sdk-playwright';
+
+const vision = new VisionPlaywright('chromium');
+
+test.beforeAll(() => vision.start());
+test.afterAll(() => vision.stop());
+
+test('cart', async ({ page }) => {
+  await page.goto('https://shop.example.com/cart');
+  await vision.trackPage(page, 'Cart', {
+    featureName: 'Checkout',
+    screenshotOptions: { fullPage: true },  // дерево збирається для того, що на знімку
+  });
+  await vision.trackElementHandle(page.locator('#total'), 'Cart total');
+});
+```
+
+| Метод | Що робить |
+|---|---|
+| `start()` / `stop()` | відкриває й закриває збірку |
+| `trackPage(page, name, options?, retryCount = 2)` | знімок сторінки з UI-деревом |
+| `trackElementHandle(handle, name, options?, retryCount = 2)` | знімок елемента (`Locator` або `ElementHandle`), без дерева |
+
+Опції: `agent: { os, device, viewport }`, `customTags`, `diffTollerancePercent`, `ignoreAreas`,
+`comment`, `screenshotOptions`, `featureName` і `uiTree` (`true` за замовчуванням, `'viewport'`,
+`'page'` або `false`). Версія браузера визначається сама. Статуси `new` і `unresolved` валять тест,
+якщо не ввімкнено `enableSoftAssert`. Деталі — у [sdk-playwright](sdk-playwright/README.md).
+
+### CLI і MCP для ручних перевірок
+
+`vision.py` — один файл на Python 3.8+ без залежностей. Його віддає сам Vision:
+`<адреса інтерфейсу>/cli/vision.py`.
+
+```sh
+python3 vision.py config --api https://vision-api.example.com --key API_KEY --project "Mobile Shop"
+
+python3 vision.py check "Payment"                           # єдиний пристрій adb
+python3 vision.py check "Payment" --serial emulator-5554    # конкретний пристрій
+python3 vision.py check "Payment" --appium http://127.0.0.1:4723   # сесія Appium, Android чи iOS
+python3 vision.py check "Payment" --simulator               # симулятор iOS, лише знімок
+python3 vision.py check "Payment" --png screen.png --xml screen.xml
+
+python3 vision.py start   # кілька перевірок в одну збірку…
+python3 vision.py finish  # …і закрити її
+```
+
+`check` друкує статус відносно еталона, змінені елементи, приховані зміни, проблеми доступності й
+посилання на рев'ю. Інші команди: `capture` (зберегти екран у файли), `devices` (пристрої adb).
+
+**MCP:** `python3 vision.py mcp` — сервер для AI-асистентів (Claude, Cursor та інших) з
+інструментами `vision_check`, `vision_devices` і `vision_session`. Приклад налаштування клієнта:
+
+```json
+{
+  "mcpServers": {
+    "vision": { "command": "python3", "args": ["/path/to/vision.py", "mcp"] }
+  }
+}
+```
+
+### REST API
+
+`POST /test-runs` (JSON) або `POST /test-runs/multipart` приймає знімок і, необов'язково, `uiTree`
+(gzip + base64), `uiTreeFormat` і `deviceDensity`. Автентифікація — заголовок `apiKey`. Повна схема
+— у Swagger (`<API>/api`), що змінено відносно базового API — в [описі API](docs/architecture/api.md).
+
+## Терміни
+
+- **Project** — застосунок або набір тестів; у нього свої учасники, правила й норми доступності.
+- **Build** — один запуск тестів: усі екрани, надіслані між `start()` і `stop()`.
+- **Screen (перевірка)** — один знімок у збірці; визначається назвою й пристроєм (`device`, `os`,
+  `browser`, `viewport`, `customTags`).
+- **Baseline (еталон)** — прийнятий знімок перевірки, з яким порівнюються нові.
+- **UI-дерево** — ієрархія елементів екрана з межами й атрибутами: Appium page source або дерево
+  вебсторінки.
+- **Група змін** — однакова зміна на кількох екранах, яку вирішують одним рішенням.
+
+Більше — у [словнику](docs/product/glossary.md).
 
 ## Документація
 
-| Хто ви | Читайте |
+| Кому | Що читати |
 |---|---|
-| Адміністратор | [вимоги](docs/admin/requirements.md), [налаштування](docs/admin/configuration.md), [DEPLOY.md](DEPLOY.md), [експлуатація](docs/admin/operations.md) |
-| Інформаційна безпека | [огляд безпеки](docs/security/overview.md), [SECURITY.md](SECURITY.md), [звіт аудиту](audit/security-audit-2026-11.md), [ліцензії](docs/security/third-party-licenses.md) |
-| QA, власник продукту | [огляд](docs/product/overview.md), [словник](docs/product/glossary.md), [CHANGELOG](CHANGELOG.md) |
-| Розробник | [docs/](docs/README.md), [локальний запуск](docs/guides/development.md), [тести](docs/guides/testing.md), [як ми працюємо](docs/guides/agentic-workflow.md) |
+| QA, власнику продукту | [огляд продукту](docs/product/overview.md), [словник](docs/product/glossary.md), [CHANGELOG](CHANGELOG.md) |
+| Адміністратору | [DEPLOY.md](DEPLOY.md), [вимоги](docs/admin/requirements.md), [налаштування](docs/admin/configuration.md), [експлуатація](docs/admin/operations.md) |
+| Службі безпеки | [огляд безпеки](docs/security/overview.md), [звіт аудиту](audit/security-audit-2026-11.md), [ліцензії](docs/security/third-party-licenses.md), [SECURITY.md](SECURITY.md) |
+| Розробнику | [документація](docs/README.md), [архітектура](docs/architecture/overview.md), [локальний запуск](docs/guides/development.md), [тести](docs/guides/testing.md) |
 
 ## Розробка
 
-Нова фіча чи зміна поведінки проходить цикл **специфікація → дизайн → реалізація з тестами →
-перевірка**: специфікація в `docs/specs/NNN-…/spec.md`, кожна вимога має тест у `design.md`
-([agentic-workflow](docs/guides/agentic-workflow.md)). Рішення з наслідками — ADR у
-[docs/decisions](docs/decisions/README.md).
+| Папка | Що там |
+|---|---|
+| `backend/` | API: NestJS 12, Prisma 7, PostgreSQL 16, Node 24 |
+| `frontend/` | інтерфейс: React 18, MUI 5, Vite; CLI і MCP `public/cli/vision.py` |
+| `sdk-java/`, `sdk-playwright/` | SDK |
+| `web-tree/` | збір дерева вебсторінки, спільний для обох SDK |
+| `scripts/` | запуск, бекапи, перевірки |
+| `docs/` | продукт, архітектура, специфікації, рішення, гайди |
 
-Перед «готово» — одна команда, що запускає все: unit-тести, Playwright, типи, lint, міграції,
-тести скриптів і перевірку документації:
+Нова фіча проходить цикл **специфікація → дизайн → реалізація з тестами → перевірка**
+([як ми працюємо](docs/guides/agentic-workflow.md)). Усі перевірки — однією командою:
 
-```bash
+```sh
 python3 -I scripts/verify.py
 ```
 
-Незмінні правила (діють і для людей, і для AI-агентів, хук `.claude/hooks/guard.py` їх забезпечує) —
-у [AGENTS.md](AGENTS.md): міграції лише додавальні, жодних скидань бази, робочий VRT лише читається,
-секрети не виходять із сервера, LLM лише на вимогу.
+Правила, що діють завжди, — у [AGENTS.md](AGENTS.md).
 
 ## Ліцензія
 
-Apache-2.0 ([LICENSE](LICENSE)). Vision — похідна робота від Visual Regression Tracker; атрибуція —
-у [NOTICE](NOTICE). Сторонні компоненти — у [переліку ліцензій](docs/security/third-party-licenses.md).
+[Apache-2.0](LICENSE). Атрибуція — у [NOTICE](NOTICE); сторонні компоненти — у
+[переліку ліцензій](docs/security/third-party-licenses.md).

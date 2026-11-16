@@ -6,7 +6,7 @@ export const buildProjectPageUrl = (projectId: string) =>
 
 /** The tabs of a build (031); Overview when the address names none. */
 export type BuildTab = "overview" | "changes" | "all" | "a11y";
-const BUILD_TABS: BuildTab[] = ["overview", "changes", "all", "a11y"];
+export const BUILD_TABS: BuildTab[] = ["overview", "changes", "all", "a11y"];
 
 export interface BuildPlace {
   // the build's tab, kept in the address so a link opens it (REQ-031-02)

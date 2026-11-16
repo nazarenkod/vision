@@ -1,15 +1,15 @@
 # Vision Java SDK
 
-`ua.vision:vision-sdk` sends screenshots, and optionally the screen's UI tree, from autotests to
-Vision. Runs on Java 11+; build with JDK 11 and Gradle 7 (the Lombok plugin fails on JDK 17).
+`ua.vision:vision-sdk` надсилає знімки екранів з автотестів у Vision разом з UI-деревом екрана.
+Для Appium (Android, iOS), Selenide і Selenium. Java 11+.
 
-## Get it
+## Встановлення
 
-`./scripts/build-sdk-jar.sh` builds the jar and pom into `dist/sdk-java/` (the repository keeps
-no built jar). Install into the local Maven repository:
+Зібрати jar (потрібні JDK 11 і Gradle 7) і встановити в локальний Maven:
 
-```bash
-mvn install:install-file -Dfile=vision-sdk-1.0.0.jar -DpomFile=vision-sdk-1.0.0.pom
+```sh
+./scripts/build-sdk-jar.sh    # з кореня репозиторію → dist/sdk-java/
+mvn install:install-file -Dfile=dist/sdk-java/vision-sdk-1.0.0.jar -DpomFile=dist/sdk-java/vision-sdk-1.0.0.pom
 ```
 
 ```xml
@@ -20,210 +20,77 @@ mvn install:install-file -Dfile=vision-sdk-1.0.0.jar -DpomFile=vision-sdk-1.0.0.
 </dependency>
 ```
 
-Or publish from this folder:
+Gradle: `implementation 'ua.vision:vision-sdk:1.0.0'` з `mavenLocal()`. У Nexus:
+`gradle publish -PrepoUrl=https://nexus.example.com/repository/maven-releases/ -PrepoUser=… -PrepoPassword=…`.
 
-```bash
-gradle publishToMavenLocal
-```
+## Налаштування
 
-```bash
-gradle publish -PrepoUrl=https://nexus.company/repository/maven-releases/ -PrepoUser=USER -PrepoPassword=PASSWORD
-```
+Змінні середовища або файл `vision.json` у корені проєкту тестів:
 
-`-PpublishGroup=...` and `-PpublishVersion=...` change the coordinates.
-
-## Usage
-
-### Configuration
-In order to initialize Vision, following options should be defined:
-
-* `apiUrl` (**Required**) - URL where backend is running. _Example_: "http://localhost:4200"
-* `project` (**Required**) - Project name or ID. _Example_: "003f5fcf-6c5f-4f1f-a99f-82a697711382"
-* `apiKey` (**Required**) - User apiKey. _Example_: "F5Z2H0H2SNMXZVHX0EA4YQM1MGDD"
-* `branch` (Optional) - Current git branch. _Example_: "develop"
-* `enableSoftAssert` (Optional) - Log errors instead of exceptions. Default value is false
-* `ciBuildId` (Optional) - id of the build in CI system
-* `httpTimeoutInSeconds` (Optional) - define http socket timeout in seconds. Default value is 10 seconds
-
- There are a few ways to provide those options
-
-<details>
-
-<summary>Create config with builder</summary>
-
-```java
-VisionConfig config = VisionConfig.builder()
-                .apiUrl("http://localhost:4200")
-                .apiKey("F5Z2H0H2SNMXZVHX0EA4YQM1MGDD")
-                .project("003f5fcf-6c5f-4f1f-a99f-82a697711382")
-                .enableSoftAssert(true)
-                .branchName("develop")
-                .build();
-```
-
-</details>
-
-<details>
-
-<summary>Set environment variables</summary>
-
-```
-export VISION_APIURL=http://localhost:4200
-export VISION_APIKEY=F5Z2H0H2SNMXZVHX0EA4YQM1MGDD
-export VISION_PROJECT=003f5fcf-6c5f-4f1f-a99f-82a697711382
-export VISION_BRANCHNAME=develop
-export VISION_ENABLESOFTASSERT=true
-export VISION_CIBUILDID=40bdba4
-export VISION_HTTPTIMEOUTINSECONDS=15
-
-```
-
-</details>
-
-<details>
-
-<summary>Create vision.json file in the root of the project</summary>
+| Поле | Змінна | Що це |
+|---|---|---|
+| `apiUrl` | `VISION_APIURL` | адреса API Vision |
+| `apiKey` | `VISION_APIKEY` | API-ключ з **Profile → API key** |
+| `project` | `VISION_PROJECT` | назва або ID проєкту |
+| `branchName` | `VISION_BRANCHNAME` | гілка |
+| `ciBuildId` | `VISION_CIBUILDID` | ID збірки в CI, необов'язково |
+| `enableSoftAssert` | `VISION_ENABLESOFTASSERT` | `true` — лог замість падіння тесту |
+| `httpTimeoutInSeconds` | `VISION_HTTPTIMEOUTINSECONDS` | типово 10 |
 
 ```json
 {
-  "apiUrl": "[http://162.243.161.172:4200](http://localhost:4200)",
-  "project": "003f5fcf-6c5f-4f1f-a99f-82a697711382",
-  "apiKey": "F5Z2H0H2SNMXZVHX0EA4YQM1MGDD",
-  "branchName": "develop",
-  "enableSoftAssert": false,
-  "ciBuildId": "40bdba4"
+  "apiUrl": "http://localhost:14200",
+  "apiKey": "YOUR_API_KEY",
+  "project": "Mobile Shop",
+  "branchName": "develop"
 }
-
 ```
 
-</details>
+Пріоритет: `VisionConfig.builder()…build()` у коді → змінні → `vision.json`.
 
-> [!NOTE]
-> Final values, that will be used by Vision, will be resolved as following:
-> 1. If explicitly set while creating `VisionConfig` - use this value
-> 2. Use value from environment variable if it exists
-> 3. Try to get it from the configuration file
-
-<br />
-
-
-### Create an instance of `Vision`
-
-```java
-Vision vision = new Vision(config);
-```
-
-or
+## Мобільний екран
 
 ```java
 Vision vision = new Vision();
-```
-
-> [!TIP]
-> If config is not provided explicitly, it will be created based on the environment variables or configuration file. Please see [Configuration](README.md#configuration) section
-
-<br />
-
-### Start `Vision`
-
-```java
 vision.start();
-```
 
-At that point Vision will try to create a new build for provided project. All of the subsequent tracked screenshots are going to be included in that build.
+vision.track("Checkout", driver.getScreenshotAs(OutputType.BASE64), VisionOptions.builder()
+        .device("Pixel 8")
+        .os("Android 14")
+        .uiTree(driver.getPageSource())
+        .featureName("Checkout")   // необов'язково: назва фічі в багах
+        .build());
 
-<br />
-
-### Take a screenshot as String in Base64 format
-
-```java
-// Selenium example
-String screenshotBase64 = ((TakesScreenshot) driver).getScreenshotAs(OutputType.BASE64);
-```
-
-<br />
-
-### Track image
-
-Default options
-
-```java
-vision.track(
-        "Name for test",
-        screenshotBase64
-);
-```
-
-With specific options 
-
-```java
-vision.track(
-        "Name for test",
-        screenshotBase64,
-        VisionOptions.builder()
-            .browser("Chrome")
-            .os("Windows")
-            .viewport("1200x800")
-            .diffTollerancePercent(3.0f)
-            .build()
-);
-```
-
-With the screen's UI tree (Appium page source; optional, Vision only)
-
-```java
-vision.track(
-        "Payment",
-        screenshotBase64,
-        VisionOptions.builder()
-            .device("Pixel 7")
-            .os("Android 15")
-            .uiTree(driver.getPageSource())
-            .featureName("Checkout") // optional: names bugs filed from the review
-            .build()
-);
-```
-
-Vision then checks accessibility (labels, touch targets, contrast), tells
-which element changed, and can ignore or tolerate changes by element. The
-format (Android or iOS) is recognised from the XML. A tree over 10 MiB is not
-sent: the SDK logs a warning and the screenshot goes without it.
-
-With a web page's UI tree (Selenide or Selenium; optional, Vision only)
-
-```java
-JavascriptExecutor driver = (JavascriptExecutor) WebDriverRunner.getWebDriver();
-String uiTree = WebUiTree.collect(driver);  // WebUiTree.collect(driver, true) for a full-page screenshot
-String screenshotBase64 = Selenide.screenshot(OutputType.BASE64);
-vision.track(
-        "Checkout",
-        screenshotBase64,
-        VisionOptions.builder()
-            .browser("chrome")
-            .browserVersion("131.0.6778.85") // optional: shown in the review, not part of the baseline
-            .viewport("1280x800")
-            .uiTree(uiTree)
-            .build()
-);
-```
-
-`ua.vision.sdk.web.WebUiTree` runs the collector shared by all Vision SDKs
-(`web-tree/collect-tree.js`) in the browser of the session, so call it right
-before the screenshot. It returns the page's HTML with where each element is
-shown and what a screen reader announces; the SDK sends it as a web tree.
-Selenium is not a dependency of the SDK: your Selenide or WebDriver brings it.
-If the tree cannot be collected (the page is closed, the script is forbidden),
-`collect` returns `null` and logs a warning: the screenshot goes without it.
-
-A Vision project may list the devices its tests run on. A snapshot from any
-other `device` / `os` is refused by the server, and `track` throws a
-`TestRunException` with the reason, soft assert or not; no baseline is made.
-
-
-### Stop `Vision`
-
-```java
 vision.stop();
 ```
 
-Should be called once current build should be considered as completed.
+## Вебсторінка
+
+```java
+String tree = WebUiTree.collect((JavascriptExecutor) WebDriverRunner.getWebDriver());
+vision.track("Cart", Selenide.screenshot(OutputType.BASE64), VisionOptions.builder()
+        .browser("chrome")
+        .viewport("1280x800")
+        .uiTree(tree)
+        .build());
+```
+
+`WebUiTree.collect(driver, true)` — для знімка всієї сторінки.
+
+## Опції
+
+| Опція | Що це |
+|---|---|
+| `device`, `os`, `browser`, `viewport`, `customTags` | для кожного поєднання — свій еталон |
+| `uiTree` | page source Appium або `WebUiTree.collect`; понад 10 МиБ не надсилається |
+| `featureName` | фіча для назви бага |
+| `browserVersion` | версія браузера, лише для показу |
+| `diffTollerancePercent` | допустимий відсоток змін |
+| `ignoreAreas` | області, які не порівнюються |
+
+`track` повертає `VisionResult` зі статусом і посиланнями на знімок, diff і еталон. Знімок з
+пристрою, якого немає в дозволених пристроях проєкту, відхиляється з `TestRunException`.
+
+## Ліцензія
+
+Apache-2.0 ([LICENSE](LICENSE)).

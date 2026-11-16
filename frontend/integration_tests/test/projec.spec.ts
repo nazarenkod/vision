@@ -782,7 +782,7 @@ test("renders the difference blend", async ({ openProjectPage, page }) => {
   await expect(page).toHaveScreenshot("project-page-test-run-difference.png");
 });
 
-test("collapses a change group from its header", async ({
+test("shows every change group open, with no fold in its header", async ({
   openProjectPage,
   page,
 }) => {
@@ -812,29 +812,12 @@ test("collapses a change group from its header", async ({
   );
   await openProjectPage(project.id, TEST_BUILD_FAILED.id, undefined, "changes");
 
-  const first = page.getByTestId("changeGroup").first();
-  await expect(page.getByTestId("changeGroup")).toHaveCount(2);
-  const thumb = first.getByRole("button", {
-    name: new RegExp(`Open ${TEST_UNRESOLVED.name}`),
-  });
-  await expect(thumb).toBeVisible();
-
-  await first.getByTestId("toggleGroup").click();
-  await expect(first.getByTestId("toggleGroup")).toHaveAttribute(
-    "aria-expanded",
-    "false",
-  );
-  await expect(thumb).toBeHidden();
-  // the other group stays open
-  await expect(
-    page
-      .getByTestId("changeGroup")
-      .nth(1)
-      .getByRole("button", { name: /^Open / }),
-  ).toBeVisible();
-
-  await first.getByTestId("toggleGroup").click();
-  await expect(thumb).toBeVisible();
+  const groups = page.getByTestId("changeGroup");
+  await expect(groups).toHaveCount(2);
+  // a group is a few rows: always open, nothing to fold (REQ-059-03)
+  await expect(page.getByTestId("toggleGroup")).toHaveCount(0);
+  for (const group of await groups.all())
+    await expect(group.getByRole("button", { name: /^Open / })).toBeVisible();
 });
 
 test("lists a group's screens as rows without pictures, and a row opens its screen", async ({

@@ -665,7 +665,7 @@ test("adds, edits and removes an allowed device", async ({
   await open(page);
   const section = page.getByTestId("allowedDevices");
   await expect(section).toContainText(
-    "No list: screens from any device come in.",
+    "No list: checks from any device come in.",
   );
 
   await page.getByTestId("newDevice-device").fill("Pixel 7");

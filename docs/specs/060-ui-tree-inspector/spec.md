@@ -2,10 +2,10 @@
 
 | | |
 |---|---|
-| Статус | Approved |
+| Статус | Implemented |
 | Власник | Дмитро Назаренко |
 | Оновлено | 2026-11-16 |
-| Дизайн | design.md (з'являється після `Approved`) |
+| Дизайн | [design.md](design.md), [tasks.md](tasks.md) |
 | Пов'язане | доповнює [058](../058-changes-tab-first/spec.md) REQ-058-01 (третя вкладка панелі після «Зміни» й «Доступність», порівняння так само відкривається на «Зміни»); дії над елементом — як у режимі вибору [024](../024-elements-instead-of-areas/spec.md) REQ-024-03 і [028](../028-several-elements/spec.md); дерево вебу без позицій — [050](../050-web-ui-tree/spec.md); межі розміру дерева — [040](../040-uitree-limits-and-sdk-names/spec.md); вигляд — [046](../046-design-review-refresh/spec.md); дві мови — [ADR-0017](../../decisions/0017-interface-in-two-languages.md) |
 
 ## Контекст і проблема

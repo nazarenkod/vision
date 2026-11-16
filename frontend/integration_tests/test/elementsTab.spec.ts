@@ -26,7 +26,11 @@ import {
 
 const project = TEST_PROJECT;
 const build = TEST_BUILD_FAILED;
-const run = { ...TEST_UNRESOLVED, uiTreeName: "tree.json.gz" };
+const run = {
+  ...TEST_UNRESOLVED,
+  buildId: TEST_BUILD_FAILED.id,
+  uiTreeName: "tree.json.gz",
+};
 const IMAGE = { width: 1280, height: 720 };
 
 const node = (
@@ -146,7 +150,8 @@ const mockApi = async (page: Page) => {
             { kind: "id", value: "com.bank:id/amount", matches: 1 },
             {
               kind: "xpath",
-              value: '//android.widget.TextView[@resource-id="com.bank:id/amount"]',
+              value:
+                '//android.widget.TextView[@resource-id="com.bank:id/amount"]',
               matches: 1,
             },
           ],
@@ -236,7 +241,10 @@ test.describe("Elements tab (060)", () => {
     );
     await expect(page.getByTestId("inspectorPage")).toBeVisible();
     await expect(chosenRow(page)).toHaveAttribute("data-index", "2");
-    await page.screenshot({ path: "test-results/inspector.png", fullPage: true });
+    await page.screenshot({
+      path: "test-results/inspector.png",
+      fullPage: true,
+    });
 
     await page.getByTestId("inspectBack").click();
     await expect(page).toHaveURL(/panel=elements&tree=current&node=2/);

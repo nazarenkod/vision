@@ -151,9 +151,11 @@ const InspectorPage: React.FunctionComponent = () => {
       .then(async (run) => {
         if (!live) return;
         setTestRun(run);
-        // the comparison lives on its project's page
-        const build = await buildsService.getDetails(run.buildId);
-        if (live) setProjectId(build.projectId);
+        // the comparison lives on its project's page; without it Back goes back in history
+        const build = await buildsService
+          .getDetails(run.buildId)
+          .catch(() => null);
+        if (live && build) setProjectId(build.projectId);
       })
       // no access answers as no such check: the comparison says the same (042)
       .catch(() => live && setTestRun(null));

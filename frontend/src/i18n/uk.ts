@@ -1813,7 +1813,7 @@ export const uk: Messages = {
   // Elements tab and inspector (060)
   "panel.elements": "Елементи",
   "tree.label": "Дерево елементів",
-  "tree.fullScreen": "Відкрити на весь екран",
+  "tree.fullScreen": "Відкрити на все вікно",
   "tree.search": "Пошук: id, текст або клас",
   "tree.sides": "Яке дерево",
   "tree.current": "Поточне",

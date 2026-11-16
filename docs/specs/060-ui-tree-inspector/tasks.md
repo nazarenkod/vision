@@ -16,4 +16,4 @@
 - [x] **T7** (REQ-060-31…37) `InspectorPage` і маршрут.
 - [x] **T8** Документація: статус spec → `Implemented`, `frontend/AGENTS.md`, `backend/AGENTS.md`,
   `docs/architecture/api.md`.
-- [ ] **T9** `/verify`.
+- [x] **T9** `/verify`.

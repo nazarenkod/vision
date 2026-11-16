@@ -1747,7 +1747,15 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
         <Tabs
           value={tab}
           onChange={(_, value) => setTab(value)}
-          sx={{ px: 2, flex: 1, minWidth: 0 }}
+          // three tabs and a count fit a narrow panel in Ukrainian only this close; past that they scroll, not clip
+          variant="scrollable"
+          scrollButtons={false}
+          sx={{
+            px: 1.5,
+            flex: 1,
+            minWidth: 0,
+            "& .MuiTab-root": { minWidth: 0, px: 1.25 },
+          }}
         >
           <Tab
             value="changes"

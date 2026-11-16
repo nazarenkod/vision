@@ -88,7 +88,7 @@ sequenceDiagram
 
 | Вимога | Перевірка |
 |---|---|
-| REQ-060-01 | manual: відкрити порівняння перевірки з UI-деревом — вкладки «Зміни», «Доступність», «Елементи», обрано «Зміни» |
+| REQ-060-01 | `frontend/integration_tests/test/elementsTab.spec.ts › lists Elements third, opens on Changes and picks from the screenshots` |
 | REQ-060-02 | manual: відкрити вкладку в світлій і темній темі — кольори, шрифти й відступи як у «Зміни»; `npx eslint` без порушень правил кольору й шкали |
 | REQ-060-03 | `frontend/src/components/TestDetailsDialog/ElementsTab.test.tsx › shows each node with its short class, id and text` |
 | REQ-060-04 | `frontend/src/_helpers/treeInspector.helper.test.ts › hides the children of a folded node` |
@@ -107,7 +107,7 @@ sequenceDiagram
 | REQ-060-17 | `frontend/src/_helpers/treeInspector.helper.test.ts › marks nodes by the change and the finding on their key` |
 | REQ-060-18 | `frontend/src/_helpers/treeInspector.helper.test.ts › gives the baseline value of a changed attribute` |
 | REQ-060-19 | `frontend/src/components/TestDetailsDialog/ElementsTab.test.tsx › switches to the baseline tree` |
-| REQ-060-20 | manual: на вкладці клацнути по знімку еталона — дерево перемкнулось на «Еталон», вибрано елемент під курсором |
+| REQ-060-20 | `frontend/integration_tests/test/elementsTab.spec.ts › lists Elements third, opens on Changes and picks from the screenshots` |
 | REQ-060-21 | `frontend/src/_helpers/treeInspector.helper.test.ts › keeps only changed and flagged nodes with their ancestors` |
 | REQ-060-22 | `frontend/src/_helpers/treeInspector.helper.test.ts › keeps matches and their ancestors whatever the case` |
 | REQ-060-23 | `backend/src/ui-tree/inspector-tree.spec.ts › builds an id, accessibility id and xpath for an Android element` |
@@ -119,9 +119,9 @@ sequenceDiagram
 | REQ-060-29 | `backend/src/projects/project-access.routes.spec.ts › answers not found on every route of a project without access` |
 | REQ-060-30 | `backend/src/ui-tree/inspector-tree.spec.ts › counts how many nodes each locator finds` |
 | REQ-060-31 | `frontend/src/_helpers/treeInspector.helper.test.ts › keeps the check, the tree and the node in the inspector address` |
-| REQ-060-32 | manual: «На весь екран» — сторінка зі знімками, деревом і карткою; клік по знімку вибирає вузол, як на вкладці |
+| REQ-060-32 | `frontend/integration_tests/test/elementsTab.spec.ts › opens the inspector on the node and comes back to it` |
 | REQ-060-33 | `frontend/src/_helpers/treeInspector.helper.test.ts › reads the tree and the node back from the inspector address` |
-| REQ-060-34 | `frontend/src/components/TestDetailsDialog/ElementsTab.test.tsx › says the element from the link is not found` |
+| REQ-060-34 | `frontend/integration_tests/test/elementsTab.spec.ts › the inspector says when the linked element is not in the tree` |
 | REQ-060-35 | `frontend/src/_helpers/treeInspector.helper.test.ts › returns to the comparison on the Elements tab with the node` |
 | REQ-060-36 | manual: сторінка інспектора при ширині 800 px — знімок, дерево й картка одне під одним, горизонтальної прокрутки немає |
 | REQ-060-37 | `backend/src/projects/project-access.routes.spec.ts › answers not found on every route of a project without access` |

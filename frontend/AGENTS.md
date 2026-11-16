@@ -9,7 +9,7 @@
 | `src/theme.ts` | палітри світлої й темної тем, `tokens` (CSS-змінні), `motion` (тривалості, крива), шкала `type` (28/20/16/14/13/12 px) і `radius` (`"6px"`/`"12px"`/`"999px"`, рядки: число в `sx` множиться); кольори, тривалості, розміри шрифту й кути беремо звідси, не літералами — ESLint забороняє інші ([046](../docs/specs/046-design-review-refresh/spec.md)) ([ADR-0015](../docs/decisions/0015-theme-tokens-as-css-variables.md)) |
 | `src/contexts/themeMode.context.tsx` | вибір теми (System / Light / Dark), ⇧D, `useTokens()` — справжні кольори для canvas і бібліотек з inline-стилями |
 | `src/components/BrandMark.tsx` | знак «Гніздо» і словесний знак; favicon — `public/favicon.svg`, PNG — `scripts/render-favicon.mjs` |
-| `src/components/motion/` | `useCountUp`, `staggered(i)` (каскад), `GrowFromPointer` (діалоги ростуть з точки кліку), `SlidingToggleGroup` (замість `ToggleButtonGroup`: підсвітка переїжджає) |
+| `src/components/motion/` | `useCountUp`, `staggered(i)` (каскад), `GrowFromPointer` (діалоги ростуть з точки кліку), `SlidingToggleGroup` (замість `ToggleButtonGroup`: підсвітка переїжджає), `useEnterOnChange` (поява нового екрана й вмісту вкладки збірки, вбік за вкладкою) |
 | `src/pages/ProjectSettingsPage.tsx` | налаштування проєкту окремою сторінкою; розділи — у `components/ProjectForm/` |
 | `src/i18n/` | мови інтерфейсу: словники `en.ts`/`uk.ts`, `useT()`, перемикач EN/UK у меню акаунта бічного меню (`components/AccountMenu.tsx`) |
 | `src/constants/brand.ts` | назва продукту (Vision) і слоган — лише тут |

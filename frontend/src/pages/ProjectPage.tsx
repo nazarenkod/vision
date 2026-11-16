@@ -36,7 +36,10 @@ import {
   BuildTab,
   buildTestRunLocation,
   getQueryParams,
+  BUILD_TABS,
 } from "../_helpers/route.helpers";
+import { enterDirection } from "../_helpers/motion.helper";
+import { useEnterOnChange } from "../components/motion/useEnterOnChange";
 import {
   queueIds,
   queueParam,
@@ -101,6 +104,26 @@ const ProjectPage = () => {
   );
 
   const changeView = (next: BuildTab) => actions.openTab(next);
+
+  // a tab's content follows the tab's highlight: from the right going right,
+  // from the left going left; another build's simply settles in (REQ-018-20)
+  const panel = React.useRef<HTMLDivElement>(null);
+  const shownView = React.useRef<{ build?: string; view: BuildTab }>({
+    build: selectedBuild?.id,
+    view,
+  });
+  const panelDirection =
+    shownView.current.build === selectedBuild?.id
+      ? enterDirection(BUILD_TABS, shownView.current.view, view)
+      : 0;
+  useEnterOnChange(
+    panel,
+    selectedBuild ? `${selectedBuild.id}:${view}` : undefined,
+    panelDirection,
+  );
+  useEffect(() => {
+    shownView.current = { build: selectedBuild?.id, view };
+  }, [selectedBuild?.id, view]);
 
   const a11yNew = testRuns.reduce(
     (sum, run) => sum + (run.a11yNewCount ?? 0),
@@ -229,6 +252,7 @@ const ProjectPage = () => {
           <Box
             // the tour points here: the list itself is hidden on the other tabs
             id={LOCATOR_PROJECT_PAGE_TEST_RUN_LIST}
+            ref={panel}
             sx={{
               flex: 1,
               minHeight: 0,

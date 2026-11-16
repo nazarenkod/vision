@@ -213,7 +213,7 @@ test("leaves the project to the sidebar and keeps the period", async ({
   await expect(page.getByRole("row", { name: /Old promo/ })).toBeVisible();
   await expect(page.locator("#page-project-select")).toHaveCount(0);
   await expect(page.getByTestId("insightsPeriod")).toBeVisible();
-  await expect(page.getByTestId("projectSwitcher")).toContainText(
+  await expect(page.getByTestId("projectHeading")).toContainText(
     TEST_PROJECT.name,
   );
 });

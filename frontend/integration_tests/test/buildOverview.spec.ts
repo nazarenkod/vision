@@ -380,6 +380,8 @@ test("opens the queue of a device from the build header", async ({
 
   // a device with nothing waiting opens its screen on its own (REQ-048-06)
   await page.keyboard.press("Escape");
+  // the pointer still rests on iPhone's tag; its tooltip would cover the next one
+  await page.mouse.move(1200, 700);
   await page
     .getByTestId("buildDevice")
     .filter({ hasText: "Galaxy S23" })

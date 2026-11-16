@@ -766,7 +766,8 @@ test("asks before leaving with unsaved changes", async ({
 }) => {
   await open(page);
   await page.locator("#name").fill("Changed");
-  await page.getByRole("link", { name: "Projects" }).first().click();
+  // the logo in the rail leads to Projects (REQ-057-07)
+  await page.getByTestId("railLogo").click();
 
   const ask = page.getByTestId("leaveSettings");
   await expect(ask).toBeVisible();
@@ -777,7 +778,7 @@ test("asks before leaving with unsaved changes", async ({
   // Discard puts everything back and lets one go freely
   await page.getByTestId("discardSettings").click();
   await expect(page.locator("#name")).toHaveValue(project.name);
-  await page.getByRole("link", { name: "Projects" }).first().click();
+  await page.getByTestId("railLogo").click();
   await expect(page).toHaveURL("/projects");
 });
 

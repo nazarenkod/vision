@@ -1,10 +1,5 @@
 import React from "react";
-import {
-  Link,
-  useParams,
-  useNavigate,
-  useSearchParams,
-} from "react-router-dom";
+import { Link, useParams, useNavigate } from "react-router-dom";
 import { TestVariation } from "../types";
 import { testVariationService, staticService } from "../services";
 import {
@@ -29,7 +24,6 @@ import { useT } from "../i18n";
 import TestStatusChip from "../components/TestStatusChip";
 import { Baseline } from "../types/baseline";
 import { useProjectFromAddress } from "../contexts";
-import { boxPercent, decodeBoxes } from "../_helpers/screenSearch.helper";
 
 const TestVariationDetailsPage: React.FunctionComponent = () => {
   const navigate = useNavigate();
@@ -63,22 +57,6 @@ const TestVariationDetailsPage: React.FunctionComponent = () => {
   const baselines = testVariation?.baselines ?? [];
   const picked = baselines[pickedIndex];
   const before = baselines[pickedIndex + 1];
-
-  // elements a screen search found, outlined on the latest baseline (REQ-053-08)
-  const [params] = useSearchParams();
-  const latestName = baselines[0]?.baselineName;
-  const found = React.useMemo(
-    () =>
-      // found on another baseline than the latest: the boxes would point anywhere
-      params.get("on") === latestName
-        ? decodeBoxes(params.get("highlight"))
-        : [],
-    [params, latestName],
-  );
-  const [natural, setNatural] = React.useState<{
-    width: number;
-    height: number;
-  } | null>(null);
 
   const openTestRun = (baseline: Baseline) => {
     const { testRun } = baseline;
@@ -145,13 +123,6 @@ const TestVariationDetailsPage: React.FunctionComponent = () => {
               src={staticService.getImage(baseline.baselineName)}
               alt={`${title}: ${testVariation?.name ?? ""}`}
               className="v-enter"
-              onLoad={(event: React.SyntheticEvent<HTMLImageElement>) => {
-                if (baseline === baselines[0])
-                  setNatural({
-                    width: event.currentTarget.naturalWidth,
-                    height: event.currentTarget.naturalHeight,
-                  });
-              }}
               sx={{
                 maxWidth: "100%",
                 maxHeight: 640,
@@ -160,21 +131,6 @@ const TestVariationDetailsPage: React.FunctionComponent = () => {
                 borderRadius: radius.control,
               }}
             />
-            {baseline === baselines[0] &&
-              natural &&
-              found.map((box, index) => (
-                <Box
-                  key={index}
-                  data-testid="foundElement"
-                  sx={{
-                    position: "absolute",
-                    ...boxPercent(box, natural.width, natural.height),
-                    border: `2px solid ${tokens.brand}`,
-                    borderRadius: radius.control,
-                    pointerEvents: "none",
-                  }}
-                />
-              ))}
           </Box>
         ) : (
           <Typography color="textSecondary">

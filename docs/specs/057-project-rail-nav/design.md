@@ -6,8 +6,8 @@
 
 - **Що показує меню, вирішують чисті функції** в `sideNav.helper.ts`, як і в 046: склад пунктів за
   роллю, неактивні розділи без проєкту, активний пункт, перехід у той самий розділ іншого
-  проєкту. Нові функції там же: `projectTileLabel(name)` (скорочення на плитці) і
-  `railProjects(projects, selectedId)` (порядок і обраний). `SideNav` лише бере стан і малює.
+  проєкту. Нова функція там же: `projectTileLabel(name)` (скорочення на плитці); плитки йдуть у
+  порядку переліку проєктів, як він приходить з сервера. `SideNav` лише бере стан і малює.
 - **`SideNav` стає двома смугами:** `ProjectRail` (рейка 64 px) і `SectionPanel` (панель 200 px).
   Поки вікно вужче за 1100 px (`SIDE_NAV_FOLD_QUERY`, як у 046), панелі немає, а її пункти
   малюються іконками в рейці. Загальна ширина: 264 px замість 232, вузька — 64 px, як і була.
@@ -31,16 +31,16 @@
 
 | Компонент | Шлях | Роль |
 |---|---|---|
-| Хелпер меню | `frontend/src/_helpers/sideNav.helper.ts` | без `projects` і `search` у `SideNavKey`; група `admin` замість `main`; `projectTileLabel`, `railProjects` |
+| Хелпер меню | `frontend/src/_helpers/sideNav.helper.ts` | без `projects` і `search` у `SideNavKey`; група `admin` замість `main`; `projectHeadingState`, `projectTileLabel` |
 | Бічне меню | `frontend/src/components/SideNav.tsx` | збирає рейку й панель, вузький режим, переїзд позначки (як у [018](../018-ui-redesign/spec.md)), без клавіші `/` і `SearchPalette` |
-| Рейка | frontend/src/components/ProjectRail.tsx (новий) | логотип → Projects, плитки з прокруткою, «+» для admin/editor (`/projects?create=1`), аватар |
-| Панель розділів | frontend/src/components/SectionPanel.tsx (новий) | заголовок проєкту / «Choose project» / «No projects yet», розділи, «Адміністрування» |
+| Рейка | `frontend/src/components/ProjectRail.tsx` | логотип → Projects, плитки з прокруткою, «+» для admin/editor (`/projects?create=1`), аватар |
+| Панель розділів | `frontend/src/components/SectionPanel.tsx` | заголовок проєкту / «Choose project» / «No projects yet», розділи, «Адміністрування» |
 | Меню акаунта | `frontend/src/components/AccountMenu.tsx` | «Усі проєкти», тур, ручні перевірки, «Повідомити про проблему», версія |
 | Локатори | `frontend/src/components/SideNav.locators.ts` | `PROJECT_RAIL_TEST_ID`, `projectTile(id)`, без `HELP_MENU_*` |
 | Вибір проєкту | `frontend/src/components/ProjectSelect.tsx` | прибрати варіант `sidebar`/`folded` |
 | Маршрути | `frontend/src/Router.jsx`, `src/constants/routes.ts` | `/search/:projectId` → `Navigate` на Збірки |
 | Словники | `frontend/src/i18n/en.ts`, `uk.ts` | `nav.admin`, `nav.project`, `account.allProjects`, `account.help*`; без ключів пошуку |
-| Видалення (фронтенд) | `pages/ScreenSearchPage.tsx`, `components/SearchPalette.tsx`, `_helpers/screenSearch.helper*.ts`, `types/screenSearch.ts`, `searchScreens`/`suggest` у `services/projects.service.ts`, рамки `?highlight` у `pages/TestVariationDetailsPage.tsx`, `integration_tests/test/screenSearch.spec.ts` | пошук і все, чим користувався лише він |
+| Видалення (фронтенд) | `pages/ScreenSearchPage.tsx`, `components/SearchPalette.tsx`, `_helpers/screenSearch.helper*.ts` (`cropLayout` для 055 переїхав у `frontend/src/_helpers/elementCrop.helper.ts`), `types/screenSearch.ts`, `searchScreens`/`suggest` у `services/projects.service.ts`, рамки `?highlight` у `pages/TestVariationDetailsPage.tsx`, `integration_tests/test/screenSearch.spec.ts` | пошук і все, чим користувався лише він |
 | Документація | `docs/product/overview.md`, `frontend/AGENTS.md` | рядки про пошук в інтерфейсі |
 
 ## Дані
@@ -72,23 +72,23 @@ flowchart LR
 
 | Вимога | Перевірка |
 |---|---|
-| REQ-057-01 | план: frontend/integration_tests/test/sideNav.spec.ts › shows the logo, a tile per project, the plus tile and the account in the rail |
-| REQ-057-02 | план: frontend/src/_helpers/sideNav.helper.test.ts › shortens a project name to at most three characters |
-| REQ-057-03 | план: frontend/integration_tests/test/sideNav.spec.ts › marks the chosen project tile as current |
-| REQ-057-04 | план: frontend/src/_helpers/sideNav.helper.test.ts › keeps the section when switching the project |
-| REQ-057-05 | план: frontend/integration_tests/test/sideNav.spec.ts › opens New project from the plus tile for an editor only |
-| REQ-057-06 | план: frontend/integration_tests/test/sideNav.spec.ts › scrolls only the tiles and keeps the chosen one in view |
-| REQ-057-07 | план: frontend/integration_tests/test/sideNav.spec.ts › opens Projects from the logo |
-| REQ-057-10 | план: frontend/src/_helpers/sideNav.helper.test.ts › lists the project sections under the project's name |
-| REQ-057-11 | план: frontend/src/_helpers/sideNav.helper.test.ts › says Choose project and disables project items until one is picked |
-| REQ-057-12 | план: frontend/src/_helpers/sideNav.helper.test.ts › says No projects yet without any project |
-| REQ-057-13 | план: frontend/src/_helpers/sideNav.helper.test.ts › puts Users and Backups under Administration for an admin only |
-| REQ-057-14 | план: frontend/integration_tests/test/sideNav.spec.ts › has no Projects, Search or Help item and no version |
-| REQ-057-15 | план: frontend/integration_tests/test/sideNav.spec.ts › keeps every sidebar label whole in Ukrainian |
-| REQ-057-20 | план: frontend/integration_tests/test/sideNav.spec.ts › holds all projects, help and the version in the account menu |
-| REQ-057-30 | план: frontend/integration_tests/test/sideNav.spec.ts › keeps only the rail with section icons below 1100 px |
-| REQ-057-40 | план: frontend/integration_tests/test/sideNav.spec.ts › marks the open section without glow or green text |
-| REQ-057-41 | manual: обидві теми, 1280 px — бренд-колір лише на логотипі, кільці обраної плитки й іконці активного пункту; аватар і плитки нейтральні |
-| REQ-057-42 | план: frontend/src/theme.test.ts › keeps text contrast at 4.5:1 or more |
-| REQ-057-50 | план: frontend/integration_tests/test/sideNav.spec.ts › does not open a search on the slash key |
-| REQ-057-51 | план: frontend/integration_tests/test/sideNav.spec.ts › sends an old search link to the project's builds |
+| REQ-057-01 | `frontend/integration_tests/test/sideNav.spec.ts › shows the logo, a tile per project, the plus tile and the account in the rail` |
+| REQ-057-02 | `frontend/src/_helpers/sideNav.helper.test.ts › shortens a project name to at most three characters` |
+| REQ-057-03 | `frontend/integration_tests/test/sideNav.spec.ts › marks the chosen project tile as current` |
+| REQ-057-04 | `frontend/src/_helpers/sideNav.helper.test.ts › keeps the section when switching the project` |
+| REQ-057-05 | `frontend/integration_tests/test/sideNav.spec.ts › opens New project from the plus tile for an editor only` |
+| REQ-057-06 | `frontend/integration_tests/test/sideNav.spec.ts › scrolls only the tiles and keeps the chosen one in view` |
+| REQ-057-07 | `frontend/integration_tests/test/sideNav.spec.ts › opens Projects from the logo` |
+| REQ-057-10 | `frontend/src/_helpers/sideNav.helper.test.ts › lists the project sections under the project's name` |
+| REQ-057-11 | `frontend/src/_helpers/sideNav.helper.test.ts › says Choose project and disables project items until one is picked` |
+| REQ-057-12 | `frontend/src/_helpers/sideNav.helper.test.ts › says No projects yet without any project` |
+| REQ-057-13 | `frontend/src/_helpers/sideNav.helper.test.ts › puts Users and Backups under Administration for an admin only` |
+| REQ-057-14 | `frontend/integration_tests/test/sideNav.spec.ts › has no Projects, Search or Help item and no version` |
+| REQ-057-15 | `frontend/integration_tests/test/sideNav.spec.ts › keeps every sidebar label whole in Ukrainian` |
+| REQ-057-20 | `frontend/integration_tests/test/sideNav.spec.ts › holds all projects, help and the version in the account menu` |
+| REQ-057-30 | `frontend/integration_tests/test/sideNav.spec.ts › keeps only the rail with section icons below 1100 px` |
+| REQ-057-40 | `frontend/integration_tests/test/sideNav.spec.ts › marks the open section without glow or green text` |
+| REQ-057-41 | manual: обидві теми, 1280 px — бренд-колір лише на логотипі, кільці обраної плитки й іконці активного пункту; аватар і плитки нейтральні (перевірено 2026-11-16 знімками меню в обох темах) |
+| REQ-057-42 | `frontend/src/theme.test.ts › text on every surface has at least 4.5:1 in both themes` |
+| REQ-057-50 | `frontend/integration_tests/test/sideNav.spec.ts › does not open a search on the slash key` |
+| REQ-057-51 | `frontend/integration_tests/test/sideNav.spec.ts › sends an old search link to the project's builds` |

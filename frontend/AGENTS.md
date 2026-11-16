@@ -21,8 +21,8 @@
 | `src/_helpers/reviewQueue.helper.ts` | черги рев'ю: ключ у адресі (`queue`), порядок, пропуск вирішених, наступна черга; у порівнянні — `QueueDone` (заголовок без черги, [047](../docs/specs/047-overview-and-review-header/spec.md)) |
 | `src/components/BuildReport/`, `src/pages/ReportPage.tsx` | діалог звіту, `ReportDocument` (один для діалогу, друку й публічної сторінки); `/r/:token` без входу, `/report/:buildId` для друку |
 | `src/pages/InsightsPage.tsx` | Insights |
-| `src/pages/ScreenSearchPage.tsx` | пошук екранів ([053](../docs/specs/053-screen-search/spec.md)); клавіша `/` — у `SideNav`, рамки на еталоні — `?highlight=…&on=…` |
-| `src/components/ElementReview.tsx`, `SearchPalette.tsx`, `ElementCrop.tsx`, `BetaChip.tsx` | бета-фічі: «Зміни» → «Елементи» ([055](../docs/specs/055-bulk-decisions-by-query/spec.md)), вікно `/` з підказками ([053](../docs/specs/053-screen-search/spec.md)), вирізка елемента зі знімка, позначка «Бета» |
+| `src/components/SideNav.tsx`, `ProjectRail.tsx`, `SectionPanel.tsx`, `AccountMenu.tsx` | бічне меню ([057](../docs/specs/057-project-rail-nav/spec.md)): рейка проєктів і панель розділів; що в меню — чисті функції в `_helpers/sideNav.helper.ts`; довідка й версія — у меню акаунта |
+| `src/components/ElementReview.tsx`, `ElementCrop.tsx`, `BetaChip.tsx` | бета-фічі: «Зміни» → «Елементи» ([055](../docs/specs/055-bulk-decisions-by-query/spec.md)), вирізка елемента зі знімка (`_helpers/elementCrop.helper.ts`), позначка «Бета» |
 | `src/services/*.service.ts` | виклики API: `fetch` + `authHeader()` + `handleResponse` (він же запам'ятовує `fileSignatures` знімків, `_helpers/fileSignatures.ts`; адресу знімка дає лише `staticService.getImage`, [043](../docs/specs/043-protected-images/spec.md)) |
 | `src/types/` | типи; `insights.ts` дзеркалить відповіді бекенду для Vision-фіч |
 | `public/cli/vision.py` | CLI і MCP (віддається UI за `/cli/vision.py`) |

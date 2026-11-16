@@ -37,7 +37,7 @@ test("switches the header and the page to Ukrainian and keeps it after a reload"
 
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("Проєкти");
   await expect(page.locator("html")).toHaveAttribute("lang", "uk");
-  await expect(page.getByRole("button", { name: "Довідка" })).toBeVisible();
+  await expect(page.getByText("Адміністрування", { exact: true })).toBeVisible();
   await expect(
     page.getByRole("navigation", { name: "Головне меню" }),
   ).toBeVisible();

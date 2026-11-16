@@ -12,7 +12,7 @@
 осі проганяємо вже по решті виразу. Так `starts-with()` дозволено лише як умову опори
 (REQ-060-08), а `contains()` чи `starts-with()` у кроці й надалі дає `function`. Якщо значення
 `starts-with()` порожнє, повертаємо `anchor`: така опора знаходила б кожен елемент з атрибутом.
-Розібрана опора отримує поле `match: 'equals' | 'start'`.
+Розібрана опора отримує поле `match: 'start'`; для рівності його немає, тож розбір збережених правил дає те саме, що й раніше.
 
 **Обчислення** (`anchorsOf`). Для `start` вузол підходить, коли `attributeOf(...)` починається
 зі значення. Ключ кешу опор включає `match`. Вартість не змінюється: це той самий один прохід
@@ -33,7 +33,7 @@ SC-060-04). Лапки обираємо за тим, що справді вхо�
 
 **Межа довжини** (REQ-060-04). Межа 300 символів стає однією константою
 `MAX_SELECTOR_LENGTH` у `comparison-inputs.ts`. Її використовують DTO правил, `selectorVariants`
-(варіант, довший за межу, відкидається) і `textFields` (довший `stableSelector` для
+(варіант, довший за межу, відкидається) і `pathFromIdAbove` (довший `stableSelector` для
 нестабільного тексту, 033, не пропонується). Елемент, у якого не лишилось варіантів, не
 пропонується вже за наявною логікою `pickableElements` ([027](../027-nameless-elements/spec.md)).
 
@@ -53,9 +53,8 @@ SC-060-04). Лапки обираємо за тим, що справді вхо�
 | Компонент | Шлях | Роль |
 |---|---|---|
 | `parseXpath`, `anchorsOf`, `ParsedXpath.anchor.match` | `backend/src/ui-tree/xpath-selector.ts` | друга форма опори: розбір і обчислення |
-| `textStart`, `anchorStep`, `SelectorVariant.anchorMatch`, фільтр за довжиною | `backend/src/ui-tree/selector-variants.ts` | початок тексту в опорі; варіанти, які сервер прийме |
+| `textStart`, `anchorStep`, `SelectorVariant.anchorMatch`, фільтр за довжиною в `selectorVariants` і `pathFromIdAbove` | `backend/src/ui-tree/selector-variants.ts` | початок тексту в опорі; варіанти, які сервер прийме |
 | `MAX_SELECTOR_LENGTH` | `backend/src/ui-tree/comparison-inputs.ts` | одна межа для DTO й побудови |
-| `textFields` | `backend/src/ui-tree/ui-tree.service.ts` | `stableSelector` не довший за межу |
 | `@MaxLength(MAX_SELECTOR_LENGTH)` | `backend/src/test-runs/dto/element-rule.dto.ts` | та сама межа, без зміни значення |
 | `SelectorVariant.anchorMatch` | `frontend/src/types/insights.ts` | тип відповіді |
 | попередження | `frontend/src/components/TestDetailsDialog/ElementPopover.tsx` | `select.textAnchorStart` з початком тексту |
@@ -82,7 +81,7 @@ flowchart LR
 
 | Ризик | Що робимо |
 |---|---|
-| Наш `starts-with` не збігається з Appium (пробіли, нормалізація) | Порівнюємо сире значення атрибута без `trim`. Очікування тесту записуємо з еталонного `xpath@0.0.34` над сирим XML фікстури, як у тестах 027. |
+| Наш `starts-with` не збігається з Appium (пробіли, нормалізація) | Порівнюємо сире значення атрибута без `trim`. Фікстура `__fixtures__/ios-history.xml` — рядки історії з довгими підписами; очікування тесту записуємо з еталонного `xpath@0.0.34` над сирим XML фікстури, як у тестах 027. |
 | Початок однаковий у багатьох рядках, і правило бере всі | Рішення власника (REQ-060-03): показуємо кількість; варіант від id іде першим. |
 | Початок довгого підпису сам мінливий (дата) | Попередження називає цей початок (REQ-060-07); SC-027-03 міряє, як часто ламається. |
 | Розширення мови XPath | Лише одна функція, лише в опорі. Доповнюємо ADR-0021 розділом «Доповнення 2026-11-16 (060)», без нового ADR. |
@@ -91,12 +90,12 @@ flowchart LR
 
 | Вимога | Перевірка |
 |---|---|
-| REQ-060-01 | план: backend/src/ui-tree/selector-variants.spec.ts › anchors on whole words up to 40 characters of a long label |
-| REQ-060-02 | план: backend/src/ui-tree/selector-variants.spec.ts › keeps the whole text of an anchor of 40 characters or fewer |
-| REQ-060-03 | план: backend/src/ui-tree/selector-variants.spec.ts › counts every row whose label starts the same way |
-| REQ-060-04 | план: backend/src/ui-tree/selector-variants.spec.ts › drops a variant longer than the server takes |
+| REQ-060-01 | `backend/src/ui-tree/selector-variants.spec.ts › anchors on whole words up to 40 characters of a long label` |
+| REQ-060-02 | `backend/src/ui-tree/selector-variants.spec.ts › keeps the whole text of an anchor of 40 characters or fewer` |
+| REQ-060-03 | `backend/src/ui-tree/selector-variants.spec.ts › counts every row whose label starts the same way` |
+| REQ-060-04 | `backend/src/ui-tree/selector-variants.spec.ts › drops a variant longer than the server takes` |
 | REQ-060-05 | `backend/src/ui-tree/xpath-selector.spec.ts › finds what XPath over the page source finds` |
-| REQ-060-06 | план: backend/src/ui-tree/selector-variants.spec.ts › quotes the start of a label that has both quotes further on |
-| REQ-060-07 | план: frontend/src/components/TestDetailsDialog/ElementPopover.test.tsx › names the start of the text the rule hangs on |
-| REQ-060-08 | план: backend/src/ui-tree/xpath-selector.spec.ts › accepts starts-with() only as the anchor's condition |
+| REQ-060-06 | `backend/src/ui-tree/selector-variants.spec.ts › quotes the start of a label that has both quotes further on` |
+| REQ-060-07 | `frontend/src/components/TestDetailsDialog/ElementPopover.test.tsx › names the start of the text the rule hangs on` |
+| REQ-060-08 | `backend/src/ui-tree/xpath-selector.spec.ts › accepts starts-with() only as the anchor's condition` |
 | REQ-060-09 | `backend/src/ui-tree/xpath-selector.spec.ts › accepts an anchor with steps down or steps up` |

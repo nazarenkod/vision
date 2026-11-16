@@ -7,12 +7,14 @@ const fixture = (name: string) => readFileSync(path.join(__dirname, '__fixtures_
 const android = parseUiTree(fixture('android-offers.xml'), { imageWidth: 1080, imageHeight: 2400, densityDpi: 420 });
 // at the tree's own width iOS points are pixels, so bounds read as in the page source
 const ios = parseUiTree(fixture('ios-offers.xml'), { imageWidth: 390, imageHeight: 844 });
+// rows whose labels hold every child's label, as iOS builds them (060)
+const history = parseUiTree(fixture('ios-history.xml'), { imageWidth: 390, imageHeight: 844 });
 
 const find = (tree: typeof android, expression: string) => {
   const parsed = parseXpath(expression);
   if (!parsed.ok) throw new Error(`${expression}: ${parsed.problem}`);
   return evaluateXpath(tree, parsed.xpath).map(({ bounds: b }) =>
-    tree === ios ? `${b.x},${b.y},${b.width},${b.height}` : `[${b.x},${b.y}][${b.x + b.width},${b.y + b.height}]`
+    tree !== android ? `${b.x},${b.y},${b.width},${b.height}` : `[${b.x},${b.y}][${b.x + b.width},${b.y + b.height}]`
   );
 };
 
@@ -65,6 +67,21 @@ describe('xpath selectors', () => {
     expect(find(ios, "//XCUIElementTypeCell[@name='-211 днів Побутова техніка']/XCUIElementTypeOther[1]")).toEqual([
       '16,320,340,120',
     ]);
+
+    expect(find(ios, "//*[starts-with(@name,'-211')]/XCUIElementTypeOther[1]")).toEqual(['16,320,340,120']);
+    expect(find(ios, "//*[starts-with(@label,'кешбек')]/..")).toEqual(['280,450,70,20']);
+    expect(
+      find(history, "//*[starts-with(@label,'На свою картку *7101 −5.03 UAH 11')]/XCUIElementTypeOther[1]")
+    ).toEqual(['16,110,40,40']);
+    expect(
+      find(history, "//*[starts-with(@label,'Зі своєї картки *1050 +1.01 UAH 17')]/XCUIElementTypeOther[1]")
+    ).toEqual(['16,200,40,40', '16,290,40,40']);
+    expect(find(history, `//*[starts-with(@label,'Переказ "Мамі" від 1 вересня, з')]/XCUIElementTypeOther[1]`)).toEqual(
+      ['16,380,40,40']
+    );
+    expect(find(history, "//XCUIElementTypeCell[starts-with(@label,'На')]/XCUIElementTypeOther[1]")).toEqual([
+      '16,110,40,40',
+    ]);
   });
 
   it('accepts an anchor with steps down or steps up', () => {
@@ -89,6 +106,25 @@ describe('xpath selectors', () => {
       },
     });
     expect(xpathProblem("xpath://*[@text='Pay']")).toBeNull();
+  });
+
+  it("accepts starts-with() only as the anchor's condition", () => {
+    const problem = (expression: string) => xpathProblem(`xpath:${expression}`);
+    expect(parseXpath("//XCUIElementTypeCell[ starts-with( @label , 'На свою' ) ]/XCUIElementTypeOther[1]")).toEqual({
+      ok: true,
+      xpath: {
+        anchor: { test: 'XCUIElementTypeCell', attribute: 'label', value: 'На свою', match: 'start' },
+        steps: [{ axis: 'child', test: 'XCUIElementTypeOther', position: 1 }],
+      },
+    });
+    expect(problem(`//*[starts-with(@text,"it's")]/..`)).toBeNull();
+    expect(problem("//*[starts-with(@label,'')]/..")).toBe('anchor');
+    expect(problem("//*[starts-with(@class,'android')]")).toBe('attribute');
+    expect(problem("//*[@label='a']/XCUIElementTypeOther[starts-with(@label,'b')]")).toBe('function');
+    expect(problem("//*[starts-with(@label,'a')]/*[contains(@label,'b')]")).toBe('function');
+    expect(problem("//*[starts-with(@label,'a') or @label='b']")).toBe('or');
+    expect(problem("//*[starts-with(@label,'a') and @name='b']")).toBe('anchor');
+    expect(problem("//*[starts-with(@label,'a')]/../XCUIElementTypeOther[1]")).toBe('mixed');
   });
 
   it('rejects siblings, functions, or, several anchors and mixed directions', () => {

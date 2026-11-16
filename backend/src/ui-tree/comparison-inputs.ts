@@ -188,6 +188,9 @@ export function rulePatternProblem(rule: Pick<ElementRule, 'selector' | 'parts'>
   );
 }
 
+// a rule's selector is kept to this length (REQ-060-04): a pattern typed in is short (051)
+export const MAX_SELECTOR_LENGTH = 300;
+
 /**
  * Why a selector cannot be saved: no known prefix, what its XPath may not do (REQ-027-31), or
  * a pattern Vision does not run (REQ-051-10).

@@ -2,7 +2,7 @@ import { UiNode, UiTree } from './ui-tree.types';
 
 /**
  * The part of XPath a rule may use (REQ-027-30): one stable element found by
- * an attribute, then steps only down to its descendants or only up to its
+ * an attribute, or by the start of one (REQ-060-08), then steps only down to its descendants or only up to its
  * ancestors. Anything wider is refused with a reason (REQ-027-31), because a
  * free expression is hard to read in review and to keep working across builds
  * (ADR-0021). Evaluated on the parsed tree: the raw page source is not kept.
@@ -21,7 +21,8 @@ export interface XpathStep {
 }
 
 export interface ParsedXpath {
-  anchor: { test: string; attribute: XpathAttribute; value: string };
+  // match 'start': the attribute starts with the value, as starts-with() reads it
+  anchor: { test: string; attribute: XpathAttribute; value: string; match?: 'start' };
   steps: XpathStep[];
 }
 
@@ -36,10 +37,15 @@ const fail = (problem: XpathProblem): XpathParse => ({ ok: false, problem });
 // quoted values may hold anything, so the checks for functions and "or" look past them
 const withoutLiterals = (source: string) => source.replace(/'[^']*'|"[^"]*"/g, "''");
 
+// starts-with() is the one function a rule may use, and only as the anchor's condition (REQ-060-08)
+const ANCHOR_START = /^(\/\/(?:\*|[A-Za-z_][\w.$-]*)\[\s*)starts-with\(([^()]*)\)/;
+const EQUALS = /^\[\s*@([\w-]+)\s*=\s*('([^']*)'|"([^"]*)")\s*\]/;
+const STARTS_WITH = /^\[\s*starts-with\(\s*@([\w-]+)\s*,\s*('([^']*)'|"([^"]*)")\s*\)\s*\]/;
+
 /** Parses the expression after `xpath:`. */
 export function parseXpath(expression: string): XpathParse {
   const source = expression.trim();
-  const bare = withoutLiterals(source);
+  const bare = withoutLiterals(source).replace(ANCHOR_START, '$1$2');
   if (/[(]/.test(bare)) return fail('function');
   if (/\|/.test(bare) || /\bor\b/.test(bare)) return fail('or');
   const axis = /([a-z-]+)::/.exec(bare);
@@ -65,13 +71,17 @@ export function parseXpath(expression: string): XpathParse {
   at = 2;
   const anchorTest = readName();
   if (!anchorTest) return fail('syntax');
-  const condition = /^\[\s*@([\w-]+)\s*=\s*('([^']*)'|"([^"]*)")\s*\]/.exec(rest());
+  const start = STARTS_WITH.exec(rest());
+  const condition = start ?? EQUALS.exec(rest());
   // a bare //Class, or conditions joined with "and", is not one stable element
   if (!condition) return fail('anchor');
   const attribute = condition[1] as XpathAttribute;
   if (!ATTRIBUTES.includes(attribute)) return fail('attribute');
   at += condition[0].length;
-  const anchor = { test: anchorTest, attribute, value: condition[3] ?? condition[4] };
+  const value = condition[3] ?? condition[4];
+  // every element with the attribute starts with nothing: that is not one stable element
+  if (start && !value) return fail('anchor');
+  const anchor: ParsedXpath['anchor'] = { test: anchorTest, attribute, value, ...(start ? { match: 'start' } : {}) };
 
   const steps: XpathStep[] = [];
   while (at < source.length) {
@@ -193,11 +203,13 @@ const anchorCache = new WeakMap<UiTree, Map<string, number[]>>();
 function anchorsOf(tree: UiTree, anchor: ParsedXpath['anchor']): number[] {
   let byAnchor = anchorCache.get(tree);
   if (!byAnchor) anchorCache.set(tree, (byAnchor = new Map()));
-  const key = JSON.stringify([anchor.test, anchor.attribute, anchor.value]);
+  const key = JSON.stringify([anchor.test, anchor.attribute, anchor.value, anchor.match ?? 'equals']);
   let found = byAnchor.get(key);
   if (!found) {
+    const holds = (value: string | null) =>
+      value !== null && (anchor.match === 'start' ? value.startsWith(anchor.value) : value === anchor.value);
     found = tree.nodes
-      .filter((node) => fits(node, anchor.test) && attributeOf(node, anchor.attribute, tree.format) === anchor.value)
+      .filter((node) => fits(node, anchor.test) && holds(attributeOf(node, anchor.attribute, tree.format)))
       .map((node) => node.index);
     byAnchor.set(key, found);
   }

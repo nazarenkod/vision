@@ -1,4 +1,4 @@
-import { findBySelector } from './comparison-inputs';
+import { findBySelector, MAX_SELECTOR_LENGTH } from './comparison-inputs';
 import { childrenOf, positionAmongSameClass, XPATH_PREFIX } from './xpath-selector';
 import { Rect, UiNode, UiTree } from './ui-tree.types';
 
@@ -10,6 +10,8 @@ export interface SelectorVariant {
   // the stable element, as people read it: its id without the package, or its text
   anchor: string;
   anchorKind: 'id' | 'text';
+  // found by the start of its text, which anchor then is in full (REQ-060-07)
+  anchorMatch?: 'start';
   // how many levels apart the element and the anchor are: 1 is a child or a parent
   levels: number;
   // how many elements the selector takes on this screenshot
@@ -31,8 +33,40 @@ export function stableKind(node: UiNode): 'id' | 'text' | null {
 const quoted = (value: string): string | null =>
   !value.includes("'") ? `'${value}'` : !value.includes('"') ? `"${value}"` : null;
 
+// a longer text is found by its start (REQ-060-01): an iOS container's label holds every child's label
+export const TEXT_ANCHOR_LENGTH = 40;
+
+// Node has Intl.Segmenter; the project's TypeScript lib predates it
+type Segmenter = { segment(text: string): Iterable<{ segment: string }> };
+const graphemes: Segmenter = new (
+  Intl as unknown as { Segmenter: new (locale: undefined, options: { granularity: 'grapheme' }) => Segmenter }
+).Segmenter(undefined, { granularity: 'grapheme' });
+
+/**
+ * The start a long text is found by: whole words within TEXT_ANCHOR_LENGTH visible characters,
+ * or just that many when the first word is longer; null when the text is short enough to be
+ * found whole (REQ-060-01, REQ-060-02). Cut from the value as the page source has it, since
+ * starts-with() reads that, not a trimmed one.
+ */
+export function textStart(value: string): string | null {
+  const characters = Array.from(graphemes.segment(value), (part) => part.segment);
+  if (characters.length <= TEXT_ANCHOR_LENGTH) return null;
+  const head = characters.slice(0, TEXT_ANCHOR_LENGTH + 1);
+  // a space right after the limit still ends a whole word
+  let cut = head.length;
+  while (cut > 0 && !/^\s$/u.test(head[cut - 1])) cut--;
+  const words = head.slice(0, cut).join('').trimEnd();
+  return words.trim() ? words : characters.slice(0, TEXT_ANCHOR_LENGTH).join('');
+}
+
+interface AnchorStep {
+  step: string;
+  // found by the start of its text: that start
+  start?: string;
+}
+
 /** The anchor step for a stable node, with the attribute Appium's page source gives it. */
-function anchorStep(tree: UiTree, node: UiNode): string | null {
+function anchorStep(tree: UiTree, node: UiNode): AnchorStep | null {
   const ios = tree.format === 'appium-ios';
   const web = tree.format === 'web';
   let attribute: string;
@@ -46,8 +80,14 @@ function anchorStep(tree: UiTree, node: UiNode): string | null {
   } else {
     [attribute, value] = node.text ? ['text', node.text] : ['content-desc', node.label];
   }
-  const literal = value.trim() ? quoted(value) : null;
-  return literal ? `//*[@${attribute}=${literal}]` : null;
+  if (!value.trim()) return null;
+  // an id is matched whole; a long text by its start, quoted by what is written (REQ-060-06)
+  const start = hasAppId(node) ? null : textStart(value);
+  const literal = quoted(start ?? value);
+  if (!literal) return null;
+  return start
+    ? { step: `//*[starts-with(@${attribute},${literal})]`, start }
+    : { step: `//*[@${attribute}=${literal}]` };
 }
 
 const anchorName = (node: UiNode) =>
@@ -58,15 +98,15 @@ const anchorName = (node: UiNode) =>
         .join('');
 
 /** The nearest node of each kind in a sequence that can serve as an anchor: id first, else text. */
-function pickAnchor(tree: UiTree, candidates: Iterable<number>): { node: UiNode; step: string } | null {
-  let text: { node: UiNode; step: string } | null = null;
+function pickAnchor(tree: UiTree, candidates: Iterable<number>): ({ node: UiNode } & AnchorStep) | null {
+  let text: ({ node: UiNode } & AnchorStep) | null = null;
   for (const index of candidates) {
     const node = tree.nodes[index];
     const kind = stableKind(node);
     const step = kind && anchorStep(tree, node);
     if (!step) continue;
-    if (kind === 'id') return { node, step };
-    text ??= { node, step };
+    if (kind === 'id') return { node, ...step };
+    text ??= { node, ...step };
   }
   return text;
 }
@@ -102,7 +142,9 @@ export function pathFromIdAbove(tree: UiTree, node: UiNode): string | null {
   if (!step) return null;
   const path: string[] = [];
   for (let at = node; at.index !== above; at = tree.nodes[at.parent]) path.unshift(stepTo(tree, at));
-  return `${XPATH_PREFIX}${step}${path.join('')}`;
+  const selector = `${XPATH_PREFIX}${step.step}${path.join('')}`;
+  // the server would refuse a longer rule (REQ-060-04)
+  return selector.length <= MAX_SELECTOR_LENGTH ? selector : null;
 }
 
 /**
@@ -113,15 +155,23 @@ export function pathFromIdAbove(tree: UiTree, node: UiNode): string | null {
  */
 export function selectorVariants(tree: UiTree, node: UiNode): SelectorVariant[] {
   const variants: SelectorVariant[] = [];
-  const add = (anchor: UiNode, expression: string, direction: SelectorVariant['direction'], levels: number) => {
-    const selector = `${XPATH_PREFIX}${expression}`;
+  const add = (
+    anchor: { node: UiNode } & AnchorStep,
+    path: string,
+    direction: SelectorVariant['direction'],
+    levels: number
+  ) => {
+    const selector = `${XPATH_PREFIX}${anchor.step}${path}`;
+    // the server would refuse a longer rule, so it is not offered (REQ-060-04)
+    if (selector.length > MAX_SELECTOR_LENGTH) return;
     const found = findBySelector(tree, selector) ?? [];
     if (!found.includes(node)) return;
     variants.push({
       selector,
       direction,
-      anchor: anchorName(anchor),
-      anchorKind: stableKind(anchor),
+      anchor: anchor.start ?? anchorName(anchor.node),
+      anchorKind: stableKind(anchor.node),
+      ...(anchor.start ? { anchorMatch: 'start' as const } : {}),
       levels,
       count: found.length,
     });
@@ -131,14 +181,14 @@ export function selectorVariants(tree: UiTree, node: UiNode): SelectorVariant[] 
   if (above) {
     const path: string[] = [];
     for (let at = node; at.index !== above.node.index; at = tree.nodes[at.parent]) path.unshift(stepTo(tree, at));
-    add(above.node, above.step + path.join(''), 'down', path.length);
+    add(above, path.join(''), 'down', path.length);
   }
 
   const below = pickAnchor(tree, descendants(tree, node));
   if (below) {
     let hops = 0;
     for (let at = below.node; at.index !== node.index; at = tree.nodes[at.parent]) hops++;
-    add(below.node, below.step + '/..'.repeat(hops), 'up', hops);
+    add(below, '/..'.repeat(hops), 'up', hops);
   }
 
   const rank = (variant: SelectorVariant) => (variant.anchorKind === 'id' ? (variant.count === 1 ? 0 : 1) : 2);

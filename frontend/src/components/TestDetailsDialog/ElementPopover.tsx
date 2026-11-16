@@ -281,7 +281,9 @@ export const ElementPopover: React.FunctionComponent<ElementPopoverProps> = ({
               borderBottom: `1px solid ${tokens.border}`,
             }}
           >
-            {t("select.textAnchor")}
+            {variant.anchorMatch === "start"
+              ? t("select.textAnchorStart", { text: variant.anchor })
+              : t("select.textAnchor")}
           </Typography>
         )}
         {!rule && !variable && variants.length > 1 && (

@@ -409,6 +409,8 @@ export interface SelectorVariant {
   // the stable element: its id without the package, or its text
   anchor: string;
   anchorKind: "id" | "text";
+  // found by the start of its text, which anchor then is in full (spec 060)
+  anchorMatch?: "start";
   // how many levels apart the element and the anchor are: 1 is a child or a parent
   levels?: number;
   // how many elements the selector takes on this screenshot

@@ -1246,7 +1246,6 @@ export const en = {
   "select.button": "Select elements",
   "select.hint": "Click an element · Shift-click to add more",
   "select.adding": "Click elements to add or take out",
-  "select.done": "Done",
   "select.parent": "Select the element around it",
   "select.child": "Back to the inner element",
   "select.more": "Match differently",

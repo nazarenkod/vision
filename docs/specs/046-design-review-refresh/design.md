@@ -109,7 +109,7 @@ flowchart LR
 | REQ-046-14 | `frontend/src/theme.test.ts › colours every link with the brand` |
 | REQ-046-15 | `frontend/src/components/DeviceTags.test.tsx › shows tags and the branch as one grey chip shape` |
 | REQ-046-16 | `frontend/integration_tests/test/projectList.spec.ts › names the create button New project` |
-| REQ-046-17 | `frontend/integration_tests/test/language.spec.ts › names the build tab All screens in both languages` |
+| REQ-046-17 | замінено [057](../057-checks-not-screens/spec.md): `frontend/integration_tests/test/language.spec.ts › names the build tab All checks in both languages` |
 | REQ-046-18 | `frontend/integration_tests/test/testVariationDetails.spec.ts › labels the pair Selected and Previous` |
 | REQ-046-20 | `frontend/src/_helpers/sideNav.helper.test.ts › lists the labelled items for the role` |
 | REQ-046-21 | `frontend/integration_tests/test/sideNav.spec.ts › shows no top bar after sign-in` |

@@ -127,7 +127,7 @@ describe("what came out", () => {
       tone: "failed",
       title: "One of the chosen elements is gone",
       reason:
-        'Card "Visa" is not on the current screen, so there is nothing to compare it with.',
+        'Card "Visa" is not on the current screenshot, so there is nothing to compare it with.',
     });
     // a rule that found nothing outranks the rest
     expect(
@@ -163,7 +163,9 @@ describe("what came out", () => {
     ).toEqual(
       expect.objectContaining({
         title: "1 change",
-        reason: expect.stringMatching(/current screen came without a UI tree/),
+        reason: expect.stringMatching(
+          /current screenshot came without a UI tree/,
+        ),
       }),
     );
   });
@@ -393,7 +395,7 @@ describe("what is compared", () => {
     ).toEqual({ current: 2, baseline: 3 });
   });
 
-  it("says the whole screen is compared when neither side has a tree", () => {
+  it("says the whole screenshot is compared when neither side has a tree", () => {
     const compareOnly = plan([{ kind: "no-tree" }], []);
     expect(compareOnlyApplied(compareOnly)).toBe(false);
     const result = overview(
@@ -520,7 +522,7 @@ describe("variable text (spec 033)", () => {
       }),
     ).toMatchObject({
       title: "The element is gone",
-      reason: "id:tv_updated is not on the current screen.",
+      reason: "id:tv_updated is not on the current screenshot.",
     });
   });
 });

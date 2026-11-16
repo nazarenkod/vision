@@ -166,7 +166,7 @@ test("says so when no element changed on more than one screen", async ({
   );
 
   await expect(
-    page.getByText("No element changed on more than one screen"),
+    page.getByText("No element changed in more than one check"),
   ).toBeVisible();
 });
 
@@ -208,7 +208,7 @@ test("offers the other screens of a changed element from the comparison", async 
     TEST_UNRESOLVED.id,
   );
 
-  const chip = page.getByRole("button", { name: /2 more screens/ });
+  const chip = page.getByRole("button", { name: /2 more checks/ });
   await expect(chip).toBeVisible();
   await chip.click();
 

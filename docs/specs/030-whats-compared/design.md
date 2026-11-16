@@ -101,7 +101,7 @@ flowchart LR
 | REQ-030-30 | `backend/src/ui-tree/compare-only.spec.ts › compares the element at its place when only one side has a tree`; `backend/src/ui-tree/ui-tree.service.spec.ts › compares the element at its place when only one side has a tree` |
 | REQ-030-31 | `backend/src/test-runs/test-runs.service.spec.ts › keeps a run compared by one tree in review` |
 | REQ-030-32 | `frontend/src/_helpers/whatsCompared.helper.test.ts › explains which side has no tree and what accepting does` |
-| REQ-030-33 | `backend/src/ui-tree/compare-only.spec.ts › compares the whole screen when neither side has a tree`; `frontend/src/_helpers/whatsCompared.helper.test.ts › says the whole screen is compared when neither side has a tree`; `backend/src/ui-tree/ui-tree.service.spec.ts › never passes a compare-only run without a UI tree` |
+| REQ-030-33 | `backend/src/ui-tree/compare-only.spec.ts › compares the whole screen when neither side has a tree`; `frontend/src/_helpers/whatsCompared.helper.test.ts › says the whole screenshot is compared when neither side has a tree`; `backend/src/ui-tree/ui-tree.service.spec.ts › never passes a compare-only run without a UI tree` |
 | REQ-030-40 | `frontend/src/_helpers/whatsCompared.helper.test.ts › tells which compared elements are gone, new or unchanged` |
 | REQ-030-41 | `frontend/integration_tests/test/elementRules.spec.ts › removes a gone element from what is compared, with Undo` |
 | REQ-030-50 | `frontend/integration_tests/test/elementRules.spec.ts › says the count once and lists the changes straight under it` |

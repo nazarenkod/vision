@@ -206,7 +206,7 @@ test("rejects the checkpoint after filing when the box is ticked", async ({
   await page.getByRole("option", { name: "S4" }).click();
   await page.getByTestId("createBug").click();
 
-  await expect(page.getByText("Filed MOB-77 · screen rejected")).toBeVisible();
+  await expect(page.getByText("Filed MOB-77 · check rejected")).toBeVisible();
   // the customer is not sent: the server copies it from the task
   expect(filed).toMatchObject({
     parentKey: "MOB-1",
@@ -468,6 +468,6 @@ test("shows a Jira field by its Jira name", async ({
   // no count of missing fields in the footer, just what Vision adds
   await expect(dialog.getByText(/required fields? left/)).toHaveCount(0);
   await expect(page.getByTestId("bugAdds")).toHaveText(
-    "Adds the screen, build and a link back · label “vision”",
+    "Adds the check, build and a link back · label “vision”",
   );
 });

@@ -138,7 +138,7 @@ test("shows a problem filed on another screen as covered", async ({
     covered.getByRole("button", { name: "Create Jira bug" }),
   ).toHaveCount(0);
   await expect(
-    covered.getByRole("button", { name: "Unlink on every screen" }),
+    covered.getByRole("button", { name: "Unlink in every check" }),
   ).toBeVisible();
 });
 

@@ -297,10 +297,10 @@ describe("project platform", () => {
 
   it("names Appium and the web as tree sources for a mobile and web project", () => {
     expect(sectionIntro("mobile", "both")).toBe(
-      "Applies to screens sent with a UI tree: from Appium (Android, iOS) and from the web (Selenide, Playwright).",
+      "Applies to checks sent with a UI tree: from Appium (Android, iOS) and from the web (Selenide, Playwright).",
     );
     expect(sectionIntro("mobile", "both", ukrainian)).toBe(
-      "Для екранів, надісланих з UI-деревом: з Appium (Android, iOS) і з вебу (Selenide, Playwright).",
+      "Для перевірок, надісланих з UI-деревом: з Appium (Android, iOS) і з вебу (Selenide, Playwright).",
     );
   });
 });

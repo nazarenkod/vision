@@ -16,6 +16,9 @@ import {
   Rect,
   SelectorMatches,
   StructureInfo,
+  InspectorTree,
+  NodeLocators,
+  TreeSide,
   BugDraft,
   VisualBug,
   VisualBugFiling,
@@ -56,6 +59,15 @@ export const insightsService = {
   getStructure: (testRunId: string) =>
     get<StructureInfo | null>(`/test-runs/${testRunId}/structure`).then(
       (structure) => structure || null,
+    ),
+  // one side of the check's UI tree for the Elements tab (060); null without that tree
+  getUiTree: (testRunId: string, side: TreeSide) =>
+    get<InspectorTree | null>(
+      `/test-runs/${testRunId}/ui-tree?side=${side}`,
+    ).then((tree) => tree || null),
+  getLocators: (testRunId: string, side: TreeSide, index: number) =>
+    get<NodeLocators>(
+      `/test-runs/${testRunId}/ui-tree/locators?side=${side}&index=${index}`,
     ),
   getProjectInsights: (projectId: string, days: number) =>
     get<ProjectInsights>(`/analytics/${projectId}?days=${days}`),

@@ -88,7 +88,7 @@ sequenceDiagram
 
 | Вимога | Перевірка |
 |---|---|
-| REQ-060-01 | `frontend/src/components/TestDetailsDialog/ElementsTab.test.tsx › the panel lists Elements third and opens on Changes` |
+| REQ-060-01 | manual: відкрити порівняння перевірки з UI-деревом — вкладки «Зміни», «Доступність», «Елементи», обрано «Зміни» |
 | REQ-060-02 | manual: відкрити вкладку в світлій і темній темі — кольори, шрифти й відступи як у «Зміни»; `npx eslint` без порушень правил кольору й шкали |
 | REQ-060-03 | `frontend/src/components/TestDetailsDialog/ElementsTab.test.tsx › shows each node with its short class, id and text` |
 | REQ-060-04 | `frontend/src/_helpers/treeInspector.helper.test.ts › hides the children of a folded node` |

@@ -9,6 +9,7 @@ import ProfilePage from "./pages/ProfilePage";
 import TestVariationListPage from "./pages/TestVariationListPage";
 import InsightsPage from "./pages/InsightsPage";
 import ScreenSearchPage from "./pages/ScreenSearchPage";
+import InspectorPage from "./pages/InspectorPage";
 import UserListPage from "./pages/UserListPage";
 import BackupsPage from "./pages/BackupsPage";
 import TestVariationDetailsPage from "./pages/TestVariationDetailsPage";
@@ -70,6 +71,11 @@ function Router() {
       <Route
         path={`${routes.SEARCH_PAGE}/:projectId`}
         element={<PrivateRoute component={ScreenSearchPage} />}
+      />
+      {/* one check's UI tree on the whole window (060) */}
+      <Route
+        path={routes.INSPECT_PAGE}
+        element={<PrivateRoute component={InspectorPage} />}
       />
       <Route
         path={`${routes.INSIGHTS_PAGE}/:projectId`}

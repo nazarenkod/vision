@@ -23,12 +23,9 @@
   хелпер, тип, методи сервісу, рамки `?highlight`, ключі словників, `screenSearch.spec.ts`;
   `/search/:projectId` → Збірки.
   - Готово, коли: два тести пошуку в `sideNav.spec.ts` зелені, `grep -r screenSearch src` порожній.
-- [ ] **T7** [P] Прибрати пошук з бекенду: `screen-search.*`, маршрути в `projects.controller.ts`,
-  реєстрацію в `ui-tree.module.ts`.
-  - Готово, коли: `npm test` і `npx tsc --noEmit` у `backend/` зелені.
-- [ ] **T8** Документація: статус spec → `Implemented`; позначки «Замінено 2026-…» у REQ-046-20,
-  -22, -23, -24, -25, -27 і «Знято 2026-… [057]» у вимогах 053; ADR-0030 → «Відкликано»;
-  `docs/product/overview.md`, `docs/architecture/api.md`, `frontend/AGENTS.md`.
-- [ ] **T9** Скриншот-еталони: `./test-docker.sh --update-snapshots`, переглянути кожен змінений.
-- [ ] **T10** `/verify`: тести, типи, лінт, еталони скриншотів, `scripts/check-docs.py`, сценарії
+- [ ] **T7** Документація: статус spec → `Implemented`; позначки «Замінено 2026-…» у REQ-046-20,
+  -22, -23, -24, -25, -27 і «Знято 2026-… [057]» у вимогах 053; `docs/product/overview.md`,
+  `docs/architecture/api.md` (пошук лише через API), `frontend/AGENTS.md`.
+- [ ] **T8** Скриншот-еталони: `./test-docker.sh --update-snapshots`, переглянути кожен змінений.
+- [ ] **T9** `/verify`: тести, типи, лінт, еталони скриншотів, `scripts/check-docs.py`, сценарії
   приймання (обидві теми, обидві мови, 1280 і 1024 px).

@@ -280,6 +280,20 @@ test("keeps the Select elements label while selecting", async ({
   expect((await button.boundingBox())?.width).toBeCloseTo(before, -1);
 });
 
+test("turns Highlight diff off when selecting starts", async ({
+  openProjectPage,
+  page,
+}) => {
+  await openReview(page, openProjectPage);
+  const highlight = page.getByRole("checkbox", { name: "Highlight diff" });
+  await highlight.check();
+
+  await startSelecting(page);
+
+  // the red diff would cover the elements being picked
+  await expect(highlight).not.toBeChecked();
+});
+
 test.describe("for a guest", () => {
   test.use({ userRole: "guest" });
 

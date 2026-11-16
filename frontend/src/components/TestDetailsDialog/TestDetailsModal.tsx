@@ -780,6 +780,8 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
   const toggleSelecting = () => {
     if (!canSelect) return;
     leaveAreasThen(() => {
+      // the red diff covers the elements and their outlines (REQ-024-13)
+      if (!pickMode) setIsDiffShown(false);
       setPickMode((on) => !on);
       setSelection(undefined);
       setHovered(undefined);

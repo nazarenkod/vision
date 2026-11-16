@@ -105,8 +105,6 @@ test("reduced motion turns every animation off", async ({
     "data-playing",
     "false",
   );
-  // counters show their number at once
-  await expect(page.getByTestId("buildStatusBar")).toBeVisible();
 });
 
 test("highlights travel to the new item instead of jumping", async ({

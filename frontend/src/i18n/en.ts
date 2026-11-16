@@ -410,8 +410,6 @@ export const en = {
   "builds.durationMinutes": "{minutes} min {seconds} s",
   "builds.durationMinutesOnly": "{minutes} min",
   "builds.durationSeconds": "{seconds} s",
-  "builds.statusBar":
-    "{unresolved} unresolved, {failed} failed, {passed} passed",
   "builds.views": "Build views",
   "builds.changes": "Changes",
   "builds.toReview": "{count} to review",

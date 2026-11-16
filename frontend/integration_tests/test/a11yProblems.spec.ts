@@ -83,6 +83,13 @@ test.beforeEach(async ({ page }) => {
   );
 });
 
+// the review opens on Changes (REQ-058-01): the problems are a tab away
+const openA11yTab = (page: Page) =>
+  page
+    .getByRole("complementary")
+    .getByRole("tab", { name: /Accessibility/ })
+    .click();
+
 const posted = (request: Request) => JSON.parse(request.postData() ?? "{}");
 
 // Two buttons of one component with the same tap area are one fix, so one
@@ -92,6 +99,7 @@ test("shows one problem for the same issue on elements of one component", async 
   page,
 }) => {
   await openProjectPage(project.id, build.id, run.id);
+  await openA11yTab(page);
   const problems = page.getByTestId("a11yProblem");
 
   await expect(problems).toHaveCount(2);
@@ -125,6 +133,7 @@ test("shows a problem filed on another screen as covered", async ({
   page,
 }) => {
   await openProjectPage(project.id, build.id, run.id);
+  await openA11yTab(page);
   const covered = page.getByTestId("a11yProblem").nth(1);
 
   await expect(covered).toContainText("Bug MOB-7");
@@ -175,7 +184,7 @@ const frameAlpha = (
       [box, 1280] as const,
     );
 
-test("switches the frames on the screenshot from the Accessibility tab", async ({
+test("shows the frames on the screenshot only on the Accessibility tab, which comes after Changes", async ({
   openProjectPage,
   page,
 }) => {
@@ -192,9 +201,24 @@ test("switches the frames on the screenshot from the Accessibility tab", async (
   const leftEdge = { x: framed.x - 2, y: framed.y + 20, width: 4, height: 60 };
 
   const panel = page.getByRole("complementary");
+  const tabs = panel.getByRole("tab");
+  // Changes first and chosen, and no issue boxes over the changes (REQ-058-01, 02)
+  await expect(tabs.first()).toContainText("Changes");
+  await expect(tabs.nth(1)).toContainText("Accessibility");
+  await expect(tabs.first()).toHaveAttribute("aria-selected", "true");
+  await expect(panel.getByText("Highlight on current")).toHaveCount(0);
+  await expect.poll(() => frameAlpha(page, leftEdge)).toBe(0);
+
+  await openA11yTab(page);
   await expect(panel.getByText("Highlight on current")).toBeVisible();
   await expect.poll(() => frameAlpha(page, leftEdge)).toBeGreaterThan(0);
 
   await panel.getByTestId("a11yMarksSwitch").click();
+  await expect.poll(() => frameAlpha(page, leftEdge)).toBe(0);
+
+  // switched back on, they still leave with the tab (REQ-058-02, 03)
+  await panel.getByTestId("a11yMarksSwitch").click();
+  await expect.poll(() => frameAlpha(page, leftEdge)).toBeGreaterThan(0);
+  await tabs.first().click();
   await expect.poll(() => frameAlpha(page, leftEdge)).toBe(0);
 });

@@ -412,8 +412,6 @@ export const uk: Messages = {
   "builds.durationMinutes": "{minutes} хв {seconds} с",
   "builds.durationMinutesOnly": "{minutes} хв",
   "builds.durationSeconds": "{seconds} с",
-  "builds.statusBar":
-    "чекають рішення: {unresolved}, не пройшли: {failed}, пройшли: {passed}",
   "builds.views": "Подання збірки",
   "builds.changes": "Зміни",
   "builds.toReview": "{count} на перегляд",

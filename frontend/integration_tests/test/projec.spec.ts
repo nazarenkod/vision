@@ -836,3 +836,40 @@ test("collapses a change group from its header", async ({
   await first.getByTestId("toggleGroup").click();
   await expect(thumb).toBeVisible();
 });
+
+test("lists a group's screens as rows without pictures, and a row opens its screen", async ({
+  openProjectPage,
+  page,
+}) => {
+  const run = { ...TEST_UNRESOLVED, diffPercent: 8.5 };
+  await page.route(
+    `${API_URL}/test-runs/groups?buildId=${TEST_BUILD_FAILED.id}`,
+    (route) =>
+      route.fulfill({
+        json: [
+          {
+            id: "g1",
+            kind: "visual",
+            title: "Pay button moved",
+            screens: [run.name],
+            testRuns: [run],
+            changes: [],
+            noise: null,
+            fingerprint: "g1",
+          },
+        ],
+      }),
+  );
+  await openProjectPage(project.id, TEST_BUILD_FAILED.id, undefined, "changes");
+
+  const group = page.getByTestId("changeGroup");
+  const row = group.getByTestId("groupScreen");
+  // a row with the device and how much changed, no thumbnail (REQ-059-02)
+  await expect(row).toHaveCount(1);
+  await expect(row).toContainText("8.5%");
+  await expect(group.locator("img")).toHaveCount(0);
+
+  await row.click();
+  await expect(page.getByRole("dialog")).toBeVisible();
+  expect(new URL(page.url()).searchParams.get("testId")).toBe(run.id);
+});

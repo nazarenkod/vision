@@ -700,7 +700,23 @@ const TestRunList: React.FunctionComponent = () => {
     );
   }
 
-  return <Typography variant="h5">{t("runs.selectBuild")}</Typography>;
+  // the empty panel is the whole page area, so the hint sits in its middle
+  // instead of hugging the top edge
+  return (
+    <Box
+      sx={{
+        height: "100%",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        p: 3,
+      }}
+    >
+      <Typography variant="h6" color="text.secondary" align="center">
+        {t("runs.selectBuild")}
+      </Typography>
+    </Box>
+  );
 };
 
 export default TestRunList;

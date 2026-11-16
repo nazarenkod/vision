@@ -1,42 +1,99 @@
-# Vision demo
+# Демо Vision
 
-Vision is visual regression testing for mobile apps, derived from Visual Regression Tracker (see [NOTICE](NOTICE)), with these additions:
+Vision — візуальні перевірки мобільних застосунків і вебу. Що показати й як запустити демо.
 
-- **Light and dark themes, one motion system.** The theme follows the system until you pick one (the account menu at the bottom of the sidebar, Shift+D, or Profile → Language and theme). Screens move consistently and briefly; screenshots in the review never move once shown. Project settings are a page of their own with contents, search and an explicit Save that warns when someone else saved first. Approve and Reject can be undone for 8 seconds from their notification. Users shows when each person last signed in.
-- **One visual system, a labelled sidebar, full-height review.** Every page uses one type scale, three corner radii, one chip and link style. Navigation is a labelled sidebar (Projects, the chosen project's Builds, Baselines and Insights, Help with the version, and an account menu with Profile, language and theme) instead of a top bar. In the review both screens fill the height of the window, the tools sit in one grouped row and the queue reads “2 of 4 · 1 decided · 2 left”.
-- **Mobile accessibility.** The Appium page source sent with each screenshot is checked for missing labels, touch targets below 48 dp / 44 pt (or the project's own norm), low text contrast (measured on the screenshot), inputs without a label, duplicate labels and controls hidden from VoiceOver. Issues are compared with the baseline, so only issues a branch introduces count as new.
-- **Jira bugs for accessibility issues.** File a bug from the review screen by naming the task to link it to; screen, device, element, rule and an outlined screenshot are filled in. Issues can be linked to existing bugs or marked as false positives, and both decisions hold for later builds. When a filed issue disappears, the review says the bug can be closed.
-- **Build overview and report.** A build opens on **Overview**: who decided how many, five numbers, results per device and per feature, its Jira bugs, and what changed since the previous build of the branch. Clicking a device, feature or bug opens the review on just those screenshots, named in its header with “N of M”; a finished queue offers the next one. **Report** shows the whole report in the interface's language: print it as a PDF or copy a public link (open as long as the build is kept, revocable) that people without an account can open and that updates as decisions land. Vision never sends it anywhere itself.
-- **Change groups.** A build's changes are grouped so one decision covers many screenshots: by identical element change across screens (from the UI tree), or by matching change signature across devices and browsers. Noise (status bar clock, times and amounts, anti-aliasing) is recognised and can be ignored in one click.
-- **Precise comparison of mobile screens (from the UI tree).**
-  - *Element rules*: ignore an element, compare only it, or allow N% change inside it, by `id:`, `class:` or `text:` (regex allowed). Press **Select elements** (E) above the screenshots and click an element on either one: Ignore, Compare only or Allow 5% appear next to it, for this screen or every screen (compare only is for one screen). ↑ steps out to the element around it, Esc finishes; Shift-click or **Add more elements** selects up to three, which get one action from a numbered panel under the screenshots, a rule each, with one Undo; every rule can be undone from its notice. Compare only aligns the element with itself in the baseline, wherever it moved, and dims the rest; an element gone, resized or not found keeps the screenshot in review. Rules are drawn on both screenshots (hatched, dashed, outlined). The Changes tab opens with what came out and why, then “What's compared” with a map of the screen and rows by what they do; with Compare only, areas and rules outside the chosen elements fold into “No effect”. A baseline without a UI tree still compares only the chosen element, at its place, and keeps the screenshot in review. VRT's pixel areas are still there, behind **Areas**, with “Use element” on an area that covers exactly one element.
-  - *System bars* are left out of the comparison (project setting).
-  - *Moved elements* are compared at their new place (project setting): a banner pushing a list down no longer flags the whole list, while a change inside a moved element still shows.
-  - *Hidden changes*: a new label, a disabled or unclickable control, an invisible button on top. The pixels match, but the screenshot goes to review and is never auto-approved.
-  - *Component groups*: the same component (toolbar, bottom menu) changed the same way on several screens is one card.
-- **Checks keyed by name, a baseline per device.** A check is what the test names (plus custom tags). Each device, OS, browser or viewport it runs on keeps its own baseline, so pixel comparison is as exact as before. The review shows the check's devices side by side and approves them at once; rules and accessibility decisions belong to the check, not to one device. A device without its own baseline yet is still "new", but its accessibility issues are compared with the check's baseline on another device (the newest one, on its branch first). Existing data is grouped by name as it is, without a migration.
-- **Manual checks: CLI and MCP.** `vision.py` (served by the UI at `/cli/vision.py`, help menu → Manual checks shows the commands with your key) takes the screen of a connected Android device (adb), an Appium session (Android or iOS), the iOS simulator (screenshot only) or files, sends it as a check and prints the result: status, changed elements, hidden changes, accessibility issues, review link. `vision.py mcp` serves the same to AI assistants over MCP.
-- **Insights (left rail, per project).** For the last 30–365 days:
-  - baselines nothing was compared with (renamed or removed screens, gone devices), with bulk delete;
-  - unstable screens, ranked by flips: differed, then matched the same baseline again, so the screen moved, not the app;
-  - screens with the most accessibility issues and the most frequent issues across the app;
-  - tiny changes that keep being approved (worth a tolerance or element rule);
-  - screenshots with hidden changes, run after run;
-  - checks a device is missing;
-  - reviews waiting and the median time to a decision.
+## Що вміє
 
-  When the project's build limit removed older history, the page says so and judges only what is left.
-- **Cheap AI (optional).** One call per change group, never per screenshot: text only when the UI tree explains the change, two small crops otherwise, rules first for noise, every answer cached and paid calls capped per day. Also proposes labels for unlabeled icons in the screen's language.
+- **Світла й темна теми, одна система руху.** Тема йде за системою, доки ви не оберете свою (меню
+  акаунта внизу бічної панелі, Shift+D або Profile → Language and theme). Екрани рухаються
+  узгоджено й коротко; знімки в рев'ю після появи не рухаються. Налаштування проєкту — окрема
+  сторінка зі змістом, пошуком і явним Save, що попереджає, якщо хтось зберіг раніше. Approve і
+  Reject можна скасувати з їхнього сповіщення. Users показує, коли кожен востаннє входив.
+- **Одна візуальна система, бічна панель, рев'ю на всю висоту.** Усі сторінки мають одну шкалу
+  шрифтів, три радіуси кутів, один стиль чипів і посилань. Навігація — бічна панель із підписами
+  (Projects, Builds, Baselines та Insights обраного проєкту, Help з версією, меню акаунта з Profile,
+  мовою й темою). У рев'ю обидва екрани займають висоту вікна, інструменти — в одному рядку, а
+  черга показує «2 of 4 · 1 decided · 2 left».
+- **Доступність мобільних екранів.** Page source з Appium, надісланий разом зі знімком,
+  перевіряється на відсутні підписи, зону тапу менше 48 dp / 44 pt (або норми проєкту), низький
+  контраст тексту (вимірюється на знімку), поля вводу без підпису, дубльовані підписи й елементи,
+  приховані від VoiceOver. Проблеми порівнюються з еталоном, тож новими рахуються лише ті, що
+  принесла гілка.
+- **Баги Jira для проблем доступності.** Баг заводиться з рев'ю: досить назвати задачу, до якої його
+  прив'язати; екран, пристрій, елемент, правило й знімок з обводкою заповнюються самі. Проблему
+  можна прив'язати до наявного бага або позначити хибною — обидва рішення діють і в наступних
+  збірках. Коли заведена проблема зникає, рев'ю каже, що баг можна закривати.
+- **Огляд збірки і звіт.** Збірка відкривається на **Overview**: хто скільки вирішив, п'ять чисел,
+  результати за пристроями й фічами, баги Jira і що змінилось від попередньої збірки гілки. Клік на
+  пристрій, фічу чи баг відкриває рев'ю лише цих знімків з «N of M» у заголовку; завершена черга
+  пропонує наступну. **Report** показує весь звіт мовою інтерфейсу: його можна надрукувати в PDF або
+  скопіювати публічне посилання (діє, доки збірка існує, можна відкликати), яке відкривається без
+  акаунта й оновлюється разом із рішеннями. Сам Vision звіт нікуди не надсилає.
+- **Групи змін.** Зміни збірки групуються, щоб одне рішення покривало багато знімків: за однаковою
+  зміною елемента на різних екранах (з UI-дерева) або за однаковим підписом зміни на різних
+  пристроях і браузерах. Шум (годинник у статус-барі, час і суми, згладжування) розпізнається й
+  ігнорується одним кліком.
+- **Точне порівняння мобільних екранів (за UI-деревом).**
+  - *Правила елементів*: ігнорувати елемент, порівнювати лише його або дозволити N % змін у ньому,
+    за `id:`, `class:` чи `text:` (можна регулярний вираз). Натисніть **Select elements** (E) над
+    знімками й клацніть елемент на будь-якому з них: поруч з'являться Ignore, Compare only чи Allow 5 %
+    — для цього екрана або для всіх (Compare only — лише для одного). ↑ переходить до елемента
+    навколо, Esc завершує; Shift-клік або **Add more elements** обирає до трьох елементів, які
+    отримують одну дію з нумерованої панелі під знімками, кожен своє правило, з одним Undo; кожне
+    правило можна скасувати з його сповіщення. Compare only зіставляє елемент із ним самим на
+    еталоні, хоч куди він зсунувся, і притіняє решту; елемент, що зник, змінив розмір або не
+    знайдений, лишає знімок на рев'ю. Правила видно на обох знімках (штрихування, пунктир, обведення).
+    Вкладка Changes відкривається тим, що вийшло й чому, далі — «What's compared» з картою екрана й
+    рядками за тим, що вони роблять; з Compare only області й правила поза обраними елементами
+    згортаються в «No effect». Еталон без UI-дерева однаково порівнює лише обраний елемент, на його
+    місці, і лишає знімок на рев'ю. Піксельні області теж є — за **Areas**, з «Use element» на
+    області, що покриває рівно один елемент.
+  - *Системні панелі* не порівнюються (налаштування проєкту).
+  - *Зсунуті елементи* порівнюються на новому місці (налаштування проєкту): банер, що зсунув список
+    донизу, більше не позначає весь список, а зміна всередині зсунутого елемента все одно видна.
+  - *Приховані зміни*: новий підпис, вимкнений чи некликабельний елемент, невидима кнопка зверху.
+    Пікселі збігаються, але знімок іде на рев'ю й ніколи не приймається автоматично.
+  - *Групи компонентів*: той самий компонент (тулбар, нижнє меню), змінений однаково на кількох
+    екранах, — одна картка.
+- **Перевірка за назвою, еталон на кожен пристрій.** Перевірка — це те, як її назвав тест (плюс
+  custom tags). Кожен пристрій, ОС, браузер чи розмір вікна має свій еталон, тож піксельне
+  порівняння точне. Рев'ю показує пристрої перевірки поруч і приймає їх разом; правила й рішення
+  щодо доступності належать перевірці, а не одному пристрою. Пристрій без власного еталона
+  лишається «new», але його проблеми доступності порівнюються з еталоном перевірки на іншому
+  пристрої (найновішим, спершу на своїй гілці).
+- **Ручні перевірки: CLI і MCP.** `vision.py` (його віддає інтерфейс за `/cli/vision.py`, меню
+  Help → Manual checks показує команди з вашим ключем) бере екран підключеного Android (adb), сесії
+  Appium (Android чи iOS), симулятора iOS (лише знімок) або файли, надсилає як перевірку й друкує
+  результат: статус, змінені елементи, приховані зміни, проблеми доступності, посилання на рев'ю.
+  `vision.py mcp` дає те саме AI-асистентам через MCP.
+- **Insights (бічна панель, на проєкт).** За останні 30–365 днів:
+  - еталони, з якими нічого не порівнювали (перейменовані чи прибрані екрани, зниклі пристрої), з
+    масовим видаленням;
+  - нестабільні екрани за кількістю «перемикань»: відрізнявся, потім знову збігся з тим самим
+    еталоном — рухався екран, а не застосунок;
+  - екрани з найбільшою кількістю проблем доступності й найчастіші проблеми застосунку;
+  - дрібні зміни, які раз у раз приймають (варто дати допуск або правило елемента);
+  - знімки з прихованими змінами з прогону в прогін;
+  - перевірки, яким бракує пристрою;
+  - рев'ю, що чекають, і медіанний час до рішення.
 
-## Run it next to the production VRT
+  Якщо ліміт збірок проєкту прибрав старішу історію, сторінка про це каже й оцінює лише те, що лишилось.
+- **Дешевий AI (необов'язково).** Один виклик на групу змін, ніколи на знімок: лише текст, коли
+  UI-дерево пояснює зміну, інакше — дві маленькі вирізки; для шуму спершу правила, кожна відповідь
+  кешується, платні виклики обмежені на день. Ще пропонує підписи для іконок без підпису мовою екрана.
 
-The demo has its own ports, Postgres and image folder and works on a **copy** of production data. Nothing is written back. Step-by-step guide with checks and troubleshooting: [DEPLOY.md](DEPLOY.md).
+## Запуск поруч із робочим VRT
+
+Демо має свої порти, Postgres і папку знімків і працює на **копії** даних робочого VRT. Назад
+нічого не пишеться. Покрокова інструкція з перевірками й розв'язанням проблем — [DEPLOY.md](DEPLOY.md).
 
 ```bash
 cp .env.demo.example .env.demo
 ```
 
-In `.env.demo`, set `JWT_SECRET` and `VISION_SECRET_KEY` to two different values from `openssl rand -base64 32` (the API does not start with the examples or shorter ones), the demo URLs, and where production lives: `PROD_PG_CONTAINER` (or `PROD_DATABASE_URL`) and `PROD_IMAGES_DIR`. Then:
+У `.env.demo` задайте `JWT_SECRET` і `VISION_SECRET_KEY` — два різні значення з
+`openssl rand -base64 32` (з прикладами чи коротшими API не стартує), адреси демо і де живе робочий
+VRT: `PROD_PG_CONTAINER` (або `PROD_DATABASE_URL`) і `PROD_IMAGES_DIR`. Далі:
 
 ```bash
 ./scripts/demo-clone-from-prod.sh
@@ -46,23 +103,25 @@ In `.env.demo`, set `JWT_SECRET` and `VISION_SECRET_KEY` to two different values
 ./scripts/vision.sh up -d --build
 ```
 
-Always use `./scripts/vision.sh` instead of plain `docker compose`: it pins the project name and refuses to act on containers that are not Vision's (see DEPLOY.md, section 0).
+Замість `docker compose` завжди `./scripts/vision.sh`: він закріплює назву проєкту й не чіпає
+контейнери, що не належать Vision (DEPLOY.md, розділ 0).
 
-The UI is on `DEMO_UI_PORT` (18080 by default), the API on `DEMO_API_PORT` (14200). Production users and API keys work in the copy. The nightly branch cleanup is off in the demo.
+Інтерфейс — на `DEMO_UI_PORT` (типово 18080), API — на `DEMO_API_PORT` (14200). Користувачі
+робочого VRT працюють і в копії; API-ключі кожен створює заново. Нічне прибирання гілок у демо вимкнене.
 
-Production must run VRT 5.x or later (the script checks this).
+Робочий VRT має бути версії 5.x або новішої (скрипт перевіряє це сам).
 
-## AI settings
+## Налаштування AI
 
-| Setting | Value |
+| Налаштування | Значення |
 |---|---|
-| `AI_PROVIDER` | `gemini`, `ollama` or `none` (default) |
-| `GEMINI_API_KEY` | key for Gemini |
-| `AI_MODEL` | default `gemini-flash-lite-latest` for Gemini, `gemma3:4b` for Ollama |
-| `OLLAMA_BASE_URL` | e.g. `http://host.docker.internal:11434` |
-| `AI_DAILY_CALL_LIMIT` | paid calls per day, default 500 |
+| `AI_PROVIDER` | `gemini`, `ollama` або `none` (типово) |
+| `GEMINI_API_KEY` | ключ Gemini |
+| `AI_MODEL` | типово `gemini-flash-lite-latest` для Gemini, `gemma3:4b` для Ollama |
+| `OLLAMA_BASE_URL` | напр. `http://host.docker.internal:11434` |
+| `AI_DAILY_CALL_LIMIT` | платних викликів на день, типово 500 |
 
-On a Mac Studio (Apple Silicon), Ollama runs on the GPU natively:
+На Mac Studio (Apple Silicon) Ollama працює на GPU нативно:
 
 ```bash
 brew install ollama
@@ -72,44 +131,64 @@ brew install ollama
 ollama pull gemma3:4b
 ```
 
-With `AI_PROVIDER=none` the AI parts of the UI are hidden; accessibility, Jira and change groups work without AI.
+З `AI_PROVIDER=none` AI-частини інтерфейсу приховані; доступність, Jira й групи змін працюють без AI.
 
 ## Jira
 
-In project settings: the Jira URL, and the issue and link type picked from the lists your own Jira returns (Automatic by default). Each person adds their own token in their profile: a personal access token for Server or Data Center; for Jira Cloud, the account email and an API token. The token is never returned by the API.
+У налаштуваннях проєкту: адреса Jira (хост має бути у `VISION_JIRA_HOSTS`), тип задачі й тип
+зв'язку зі списків, які повертає ваша Jira (типово — Automatic). Кожен додає свій токен у профілі:
+personal access token для Server чи Data Center; для Jira Cloud — email акаунта й API-токен. API
+токен ніколи не повертає.
 
-## Send UI trees from tests
+## UI-дерева з тестів
 
-Java/Kotlin with Appium and Selenide: add `.uiTree(WebDriverRunner.getWebDriver().getPageSource())` to `VisionOptions` (see `sdk-java/README.md`). It is the SDK's only change and is optional.
+Java/Kotlin з Appium і Selenide: додайте `.uiTree(WebDriverRunner.getWebDriver().getPageSource())`
+до `VisionOptions` (див. [sdk-java](sdk-java/README.md)). Це необов'язково.
 
-Without a device, upload PNG + XML pairs exported from Appium Inspector:
+Без пристрою — завантажте пари PNG + XML, експортовані з Appium Inspector:
 
 ```bash
 ./scripts/upload-uitree-samples.py samples/ --project "Mobile app" --api http://localhost:14200 --api-key KEY --device "Pixel 7" --density 420
 ```
 
-To fill every Insights block in a separate project "Insights demo" (stale baselines, unstable screens, accessibility), with made-up history going back 120 days:
+Щоб заповнити всі блоки Insights в окремому проєкті «Insights demo» (застарілі еталони, нестабільні
+екрани, доступність) вигаданою історією на 120 днів назад:
 
 ```bash
 ./scripts/seed-insights-demo.py --email admin@example.com
 ```
 
-## Five-minute demo
+## Демо за п'ять хвилин
 
-1. **Projects** shows the same layout as the other internal tools.
-2. Open a build. **Overview** says what waits and where; **Report** → **Copy public link** gives a live report to paste anywhere. **Changes** shows, for example, “Button "Pay" → "Send"” on 2 screens as one card. Approve all with one click. The status-bar-only card offers “Ignore status bar”.
-3. Open a screenshot. Accessibility issues are numbered on the screen. Click one to zoom to it.
-4. **Create Jira bug**: type the parent task and the bug is filed with screen, element and an outlined screenshot. The issue now shows “Bug MOB-…” and no longer counts as new. Each problem has an id (a11y-3f9c2a1b) that goes into the bug's summary and labels. The same issue on elements with the same component id (every `…#PbButton` with the same tap area) is one card and one bug, and once filed it is covered on every screen with that component. Before filing, Vision claims the problem in its database and searches Jira for its id, so two people filing at once, or a bug filed by hand, never make a duplicate. What counts as one problem is the same for every project: the same component with the same values for tap area and contrast, the same component for the other rules, one screen for a repeated label. Unlinking takes Vision's labels off the bug and marks it, so it is never linked back by itself. Jira tokens are personal: Profile → Jira.
-5. Mark another issue as a **False positive**. It stops counting in this and every later build.
-6. Upload a build where the issue is fixed. The review says the bug can be closed.
-7. A component group: “Component id/bottom_nav, changed the same way on 4 screens”. Screens that changed elsewhere too are listed apart.
-8. On a screen where a banner pushed the list down, only the banner is flagged; “Compared at their new place” lists the moved elements. Press E, click the banner, press I: the screen joins the component group.
-9. A screenshot with a disabled Pay button and identical pixels is in review with “1 hidden”.
-10. A check run on two devices: the review shows both at the top, “Approve all 2” takes both.
-11. Help menu → **Manual checks**: copy the three commands, then `python3 vision.py check "Payment"` with an emulator open prints the result and the review link.
-12. With AI on: each group gets a one-line explanation and a verdict, and unlabeled icons get a proposed label.
+1. **Projects** — та сама розкладка, що й в інших внутрішніх інструментах.
+2. Відкрийте збірку. **Overview** каже, що чекає і де; **Report** → **Copy public link** дає живий
+   звіт, який можна вставити будь-куди. **Changes** показує, наприклад, «Button "Pay" → "Send"» на
+   2 екранах однією карткою. Прийміть усе одним кліком. Картка лише зі статус-баром пропонує
+   «Ignore status bar».
+3. Відкрийте знімок. Проблеми доступності пронумеровані на екрані. Клік — зум до проблеми.
+4. **Create Jira bug**: введіть батьківську задачу, і баг заведеться з екраном, елементом і знімком
+   з обводкою. Проблема тепер показує «Bug MOB-…» і більше не рахується новою. Кожна проблема має
+   ID (a11y-3f9c2a1b), що потрапляє в назву й мітки бага. Та сама проблема на елементах з тим самим
+   id компонента (кожен `…#PbButton` з тією самою зоною тапу) — одна картка й один баг, і після
+   заведення вона покрита на кожному екрані з цим компонентом. Перед заведенням Vision закріплює
+   проблему у своїй базі й шукає її ID у Jira, тож двоє людей одночасно чи баг, заведений вручну,
+   ніколи не дають дубля. Що вважається однією проблемою, однаково для всіх проєктів: той самий
+   компонент з тими самими значеннями зони тапу й контрасту, той самий компонент для інших правил,
+   один екран для дубльованого підпису. Відв'язування знімає мітки Vision з бага й позначає його,
+   тож сам він більше не прив'яжеться. Токени Jira — особисті: Profile → Jira.
+5. Позначте іншу проблему як **False positive**. Вона перестає рахуватися в цій і всіх наступних збірках.
+6. Завантажте збірку, де проблему виправлено. Рев'ю каже, що баг можна закривати.
+7. Група компонента: «Component id/bottom_nav, changed the same way on 4 screens». Екрани, що
+   змінились ще десь, показано окремо.
+8. На екрані, де банер зсунув список донизу, позначено лише банер; «Compared at their new place»
+   перелічує зсунуті елементи. Натисніть E, клацніть банер, натисніть I: екран приєднується до групи компонента.
+9. Знімок з вимкненою кнопкою Pay і тими самими пікселями — на рев'ю з «1 hidden».
+10. Перевірка на двох пристроях: рев'ю показує обидва вгорі, «Approve all 2» приймає обидва.
+11. Меню Help → **Manual checks**: скопіюйте три команди, далі `python3 vision.py check "Payment"`
+    з відкритим емулятором друкує результат і посилання на рев'ю.
+12. З увімкненим AI: кожна група отримує пояснення в один рядок і вердикт, а іконки без підпису — запропонований підпис.
 
-## Manual checks (CLI, MCP)
+## Ручні перевірки (CLI, MCP)
 
 ```bash
 curl -fsSLO http://VISION_UI/cli/vision.py
@@ -123,10 +202,16 @@ python3 vision.py config --api http://VISION_API --key YOUR_API_KEY --project "M
 python3 vision.py check "Payment"
 ```
 
-Sources: the only adb device (default), `--serial`, `--appium http://127.0.0.1:4723` (Android or iOS), `--simulator` (iOS, screenshot only), `--png f.png --xml f.xml`. `start` / `finish` put several checks into one build. Checks go to the branch `manual` and are compared with the main branch; `config --device … --os …` names the device as the autotests do, so their baselines are used pixel by pixel. Sending needs the editor role. Python 3.8+, no packages.
+Джерела: єдиний пристрій adb (типово), `--serial`, `--appium http://127.0.0.1:4723` (Android чи
+iOS), `--simulator` (iOS, лише знімок), `--png f.png --xml f.xml`. `start` / `finish` збирають
+кілька перевірок в одну збірку. Перевірки йдуть у гілку `manual` і порівнюються з головною гілкою;
+`config --device … --os …` називає пристрій так, як автотести, тож використовуються їхні еталони
+піксель у піксель. Для надсилання потрібна роль editor. Python 3.8+, без пакетів.
 
-MCP: `claude mcp add vision -- python3 /path/to/vision.py mcp` (any MCP client can run `python3 vision.py mcp` over stdio). Tools: `vision_check`, `vision_devices`, `vision_session`.
+MCP: `claude mcp add vision -- python3 /path/to/vision.py mcp` (будь-який MCP-клієнт може запустити
+`python3 vision.py mcp` через stdio). Інструменти: `vision_check`, `vision_devices`, `vision_session`.
 
-## Changes against the original project
+## Схема даних
 
-All schema changes are additive (nullable columns, new tables `A11yIssueState`, `A11yProblem`, `A11yDecision`, `AiResult` and `CrossDeviceCheck`, personal Jira fields on `User`, indexes), so the fork can later run on a live database too. Specs, decisions and the data model are in [docs/](docs/README.md). The Java SDK differs from the original project's by one optional field, `TestRunOptions.uiTree`; servers without UI tree support ignore it. Code is in `backend/`, `frontend/` and `sdk-java/`, imported with `git subtree` from the original project's repositories.
+Усі зміни схеми — додавальні (nullable-колонки, нові таблиці, індекси), тож Vision працює і на
+живій базі. Специфікації, рішення й модель даних — у [docs/](docs/README.md).

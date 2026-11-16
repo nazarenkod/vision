@@ -50,7 +50,7 @@ Appium, веб через Selenide і Playwright): порівняння знім
 | `web-tree/` | `collect-tree.js` — один скрипт збору дерева вебсторінки для обох SDK; `make-fixtures.cjs` — фікстури бекенду | [050](docs/specs/050-web-ui-tree/spec.md) |
 | `scripts/` | `vision.sh`, копія даних проду, jar SDK, перевірка документації | [scripts/AGENTS.md](scripts/AGENTS.md) |
 | `docs/` | специфікації, рішення, архітектура, гайди | [docs/README.md](docs/README.md) |
-| `DEPLOY.md`, `DEMO.md` | розгортання поруч із продом (рос.), демо (англ.) | — |
+| `DEPLOY.md`, `DEMO.md` | розгортання поруч із продом, демо | — |
 
 Повна перевірка перед «готово» — `/verify`: усе однією командою `python3 -I scripts/verify.py`.
 Команди кожного пакета — у його `AGENTS.md` і в [testing](docs/guides/testing.md).

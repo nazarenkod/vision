@@ -1,63 +1,64 @@
-# VLM (Vision Language Model) Image Comparison
+# Порівняння знімків через VLM (Vision Language Model)
 
-Hybrid image comparison combining pixelmatch for objective difference detection and Vision Language Models (via Ollama) for human-noticeability analysis.
+Гібридне порівняння: pixelmatch об'єктивно знаходить відмінності, а візуально-мовна модель (через
+Ollama) оцінює, чи помітить їх людина.
 
-## Architecture Flow
+## Як це працює
 
 ```text
-VLM Comparison Request
+Запит на порівняння VLM
          │
          ▼
-Run Pixelmatch Comparison
+Порівняння pixelmatch
          │
-         ├─→ No Differences Found → Return OK Status
+         ├─→ Відмінностей немає → статус OK
          │
-         └─→ Differences Found
+         └─→ Є відмінності
                   │
                   ▼
-            Save Diff Image
+            Зберегти diff
                   │
                   ▼
-    Run VLM with 3 Images:
-    (Baseline, Comparison, Diff)
+    VLM отримує 3 зображення:
+    (еталон, поточний, diff)
                   │
-                  ├─→ Not Noticeable → Override: Return OK Status
+                  ├─→ Непомітно → замість цього статус OK
                   │
-                  └─→ Noticeable → Return Unresolved with VLM Description
+                  └─→ Помітно → unresolved з описом від VLM
 ```
 
-## Quick Start
+## Швидкий старт
 
-### 1. Install & Start Ollama
+### 1. Встановити й запустити Ollama
 
 ```bash
-# Install (macOS)
+# встановлення (macOS)
 brew install ollama
 
-# Start Ollama
+# запуск
 ollama serve
 ```
 
-### 2. Download a Model
+### 2. Завантажити модель
 
 ```bash
-# Recommended for accuracy
+# рекомендовано для точності
 ollama pull gemma3:12b
 
-# Note: Smaller models do not show proper results - use gemma3:12b only
+# менші моделі дають неправильні результати — лише gemma3:12b
 ```
 
-### 3. Configure Backend
+### 3. Налаштувати бекенд
 
-Add to `.env`:
+Додати в `.env`:
 
 ```bash
 OLLAMA_BASE_URL=http://localhost:11434
 ```
 
-### 4. Use VLM in Project
+### 4. Увімкнути VLM у проєкті
 
-Set project's image comparison to `vlm` with config:
+Порівняння знімків проєкту — `vlm` з налаштуваннями:
 
 ```json
 {
@@ -66,7 +67,7 @@ Set project's image comparison to `vlm` with config:
 }
 ```
 
-Optional custom prompt (replaces default system prompt):
+Свій промпт (замінює системний), необов'язково:
 
 ```json
 {
@@ -76,32 +77,35 @@ Optional custom prompt (replaces default system prompt):
 }
 ```
 
-**Note:** The `prompt` field replaces the entire system prompt. If omitted, a default system prompt is used that analyzes the diff image to determine if highlighted differences are noticeable to humans.
+**Увага:** поле `prompt` замінює системний промпт повністю. Без нього використовується типовий:
+він аналізує diff і вирішує, чи помітні підсвічені відмінності людині.
 
-## Recommended Models
+## Рекомендовані моделі
 
-| Model        | Size                    |
-| ------------ | ----------------------- |
-| `gemma3:12b` | ~12GB - **Recommended** |
+| Модель       | Розмір                     |
+| ------------ | -------------------------- |
+| `gemma3:12b` | ~12 ГБ — **рекомендовано** |
 
-**Note:** Models smaller than the default (`gemma3:12b`) have been tested and do not show proper results. They fail to follow structured output formats reliably and may produce incorrect or inconsistent responses. For production use, only use `gemma3:12b` or `llava:13b`.
+**Увага:** моделі, менші за типову (`gemma3:12b`), перевіряли — вони дають неправильні результати:
+ненадійно тримають структурований формат відповіді й відповідають непослідовно. Для роботи — лише
+`gemma3:12b` або `llava:13b`.
 
-## Configuration
+## Налаштування
 
-| Option        | Type   | Default                   | Description                               |
-| ------------- | ------ | ------------------------- | ----------------------------------------- |
-| `model`       | string | `gemma3:12b`              | Ollama vision model name                  |
-| `prompt`      | string | System prompt (see below) | Custom prompt for image comparison        |
-| `temperature` | number | `0.1`                     | Lower = more consistent results (0.0-1.0) |
+| Опція         | Тип    | Типово                       | Що це                                      |
+| ------------- | ------ | ---------------------------- | ------------------------------------------ |
+| `model`       | string | `gemma3:12b`                 | назва візуальної моделі в Ollama           |
+| `prompt`      | string | системний промпт (див. вище) | свій промпт для порівняння                 |
+| `temperature` | number | `0.1`                        | менше — стабільніші результати (0.0–1.0)   |
 
-## API Endpoints
+## Ендпоінти API
 
-Both endpoints require a logged-in user (JWT `Authorization: Bearer <token>`) with the `admin` or `editor` role.
+Обидва — для користувача, що увійшов (JWT `Authorization: Bearer <token>`), з роллю `admin` або `editor`.
 
 ```bash
-# List available models
+# доступні моделі
 GET /ollama/models
 
-# Compare two images (for testing)
+# порівняти два зображення (для перевірки)
 POST /ollama/compare?model=gemma3:12b&prompt=<prompt>&temperature=0.1
 ```

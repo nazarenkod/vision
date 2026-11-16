@@ -1,6 +1,7 @@
 import {
   ConnectedSocket,
   MessageBody,
+  OnGatewayDisconnect,
   OnGatewayInit,
   SubscribeMessage,
   WebSocketGateway,
@@ -16,6 +17,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { AuthService } from '../../auth/auth.service';
 import { msUntilExpiry, tokenFromHandshake } from './events-auth';
 import { groupByProject, projectRoom } from './events-rooms';
+import { Presence, readPresence, shortName, viewersOf } from './events-presence';
 import { serverFileLinkKey, signFile, withFileSignatures } from '../../static/file-links';
 import { allowOwnInterface } from '../../security';
 
@@ -28,7 +30,7 @@ const UNAUTHORIZED = 'unauthorized';
 // (spec 032, ADR-0023), never to anyone listening.
 // the same origin as the REST API: only Vision's own interface (045)
 @WebSocketGateway({ cors: { origin: allowOwnInterface } })
-export class EventsGateway implements OnGatewayInit, OnModuleDestroy {
+export class EventsGateway implements OnGatewayInit, OnGatewayDisconnect, OnModuleDestroy {
   private readonly logger = new Logger(EventsGateway.name);
   private readonly fileKey = serverFileLinkKey();
 
@@ -89,6 +91,8 @@ export class EventsGateway implements OnGatewayInit, OnModuleDestroy {
     const found = await this.authService.userForToken(payload);
     if ('problem' in found) throw new Error(UNAUTHORIZED);
     socket.data.userId = found.user.id;
+    // all a colleague sees of this person in a build (REQ-056-05)
+    socket.data.name = shortName(found.user);
     socket.data.sessionId = payload.sid;
 
     const expiresIn = msUntilExpiry(payload.exp, Date.now());
@@ -104,6 +108,11 @@ export class EventsGateway implements OnGatewayInit, OnModuleDestroy {
     @MessageBody() body: { projectId?: string | null } | undefined
   ): Promise<{ ok: boolean }> {
     const projectId = body?.projectId || null;
+    // a person leaving a project leaves its builds too (REQ-056-02)
+    const before = socket.data.presence as Presence | null | undefined;
+    const beforeProject = socket.data.projectId as string | null | undefined;
+    socket.data.presence = null;
+    if (before && beforeProject) void this.broadcastPresence(beforeProject, before.buildId);
     // Remembered before the lookups so that a later subscribe wins even if its
     // lookups finish first.
     socket.data.projectId = projectId;
@@ -115,6 +124,49 @@ export class EventsGateway implements OnGatewayInit, OnModuleDestroy {
     if (!(await this.mayFollow(socket.data.userId, projectId))) return { ok: false };
     if (socket.data.projectId === projectId) socket.join(projectRoom(projectId));
     return { ok: true };
+  }
+
+  /**
+   * The build and screen this socket has open (056). Only within the project it follows
+   * and only for a build of that project (REQ-056-06); everyone following the project hears who
+   * is in the build now.
+   */
+  @SubscribeMessage('presence')
+  async presence(@ConnectedSocket() socket: Socket, @MessageBody() body: unknown): Promise<{ ok: boolean }> {
+    const projectId = socket.data.projectId as string | null | undefined;
+    if (!projectId || !socket.rooms.has(projectRoom(projectId))) return { ok: false };
+    const next = readPresence(body, Date.now());
+    if (next) {
+      const build = await this.prismaService.build
+        .findFirst({ where: { id: next.buildId, projectId }, select: { id: true } })
+        .catch(() => null);
+      if (!build) return { ok: false };
+    }
+    const before = socket.data.presence as Presence | null | undefined;
+    socket.data.presence = next;
+    if (before && before.buildId !== next?.buildId) await this.broadcastPresence(projectId, before.buildId);
+    if (next) await this.broadcastPresence(projectId, next.buildId);
+    return { ok: true };
+  }
+
+  // a closed tab or a lost connection takes the person out of the build (REQ-056-02)
+  handleDisconnect(socket: Socket): void {
+    const presence = socket.data?.presence as Presence | null | undefined;
+    const projectId = socket.data?.projectId as string | null | undefined;
+    if (presence && projectId) void this.broadcastPresence(projectId, presence.buildId);
+  }
+
+  private async broadcastPresence(projectId: string, buildId: string): Promise<void> {
+    try {
+      const sockets = await this.server.in(projectRoom(projectId)).fetchSockets();
+      const viewers = viewersOf(
+        sockets.map((socket) => socket.data),
+        buildId
+      );
+      this.server.to(projectRoom(projectId)).emit('presence', { buildId, viewers });
+    } catch (error) {
+      this.logger.warn(`Could not tell who is in build ${buildId}: ${error}`);
+    }
   }
 
   // only a project the person may reach (042): an admin any, anyone else one they were given

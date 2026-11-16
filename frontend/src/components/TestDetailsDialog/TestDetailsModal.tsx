@@ -110,6 +110,7 @@ import { fitScale } from "../../_helpers/fit.helper";
 import { panelStartsFolded } from "../../_helpers/review.helper";
 import { canCompareToBaseline } from "../../_helpers/testRunStatus.helper";
 import TestStatusChip from "../TestStatusChip";
+import { PresenceAvatars } from "../PresenceAvatars";
 import { useT } from "../../i18n";
 import { ignoreAreasOverLimit, MAX_IGNORE_AREAS } from "./ignoreAreaLimit";
 
@@ -1619,6 +1620,7 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
         {testRun.name}
       </Typography>
       <TestStatusChip status={testRun.status} />
+      <PresenceAvatars testRunId={testRun.id} withLabel />
       <CheckTrend
         testRunId={testRun.id}
         current={{ status: testRun.status, diffPercent: testRun.diffPercent }}

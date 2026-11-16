@@ -35,6 +35,7 @@ const prisma = {
     findUnique: jest.fn(async ({ where }) => (projects.has(where.id) ? { id: where.id } : null)),
   },
   build: {
+    findFirst: jest.fn(async ({ where }) => (builds.get(where.id) === where.projectId ? { id: where.id } : null)),
     findMany: jest.fn(async ({ where }) =>
       where.id.in.filter((id) => builds.has(id)).map((id) => ({ id, projectId: builds.get(id) }))
     ),
@@ -217,6 +218,44 @@ describe('EventsGateway', () => {
     } finally {
       granted = new Set(everyPair());
     }
+  });
+
+  const present = (socket: ClientSocket, buildId: string, testRunId: string | null) =>
+    socket.emitWithAck('presence', { buildId, testRunId }) as Promise<{ ok: boolean }>;
+
+  it('tells everyone following the project who opened which screen of a build', async () => {
+    const [guest, editor] = await Promise.all([connectAs('guest@example.com'), connectAs('editor@example.com')]);
+    await subscribe(guest, 'project-a');
+    await subscribe(editor, 'project-a');
+
+    const told = nextEvent(editor, 'presence');
+    expect(await present(guest, 'build-a', 'run-1')).toEqual({ ok: true });
+
+    const payload = (await told) as { buildId: string; viewers: Array<Record<string, unknown>> };
+    expect(payload).toEqual({ buildId: 'build-a', viewers: [{ userId: 'user-guest', name: '?', testRunId: 'run-1' }] });
+    // nothing of the user row but the id and a short name (REQ-056-05)
+    expect(Object.keys(payload.viewers[0]).sort()).toEqual(['name', 'testRunId', 'userId']);
+  });
+
+  it('takes a person out of the build when the connection closes', async () => {
+    const [guest, editor] = await Promise.all([connectAs('guest@example.com'), connectAs('editor@example.com')]);
+    await subscribe(guest, 'project-a');
+    await subscribe(editor, 'project-a');
+    await present(guest, 'build-a', 'run-1');
+    await settle();
+
+    const told = nextEvent(editor, 'presence');
+    guest.close();
+
+    expect(await told).toEqual({ buildId: 'build-a', viewers: [] });
+  });
+
+  it('ignores a build of another project and a connection that follows none', async () => {
+    const [guest, idle] = await Promise.all([connectAs('guest@example.com'), connectAs('editor@example.com')]);
+    await subscribe(guest, 'project-a');
+
+    expect(await present(guest, 'build-b', null)).toEqual({ ok: false });
+    expect(await present(idle, 'build-a', null)).toEqual({ ok: false });
   });
 
   it('refuses a subscription to a project that does not exist', async () => {

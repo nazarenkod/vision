@@ -7,6 +7,7 @@ import TestRunList from "../components/TestRunList";
 import BuildDetails from "../components/BuildDetails";
 import { TestDetailsDialog } from "../components/TestDetailsDialog";
 import { ChangesTab } from "../components/ElementReview";
+import { PresenceProvider } from "../contexts/presence.context";
 import { A11ySummary } from "../components/A11ySummary";
 import { StatusPill } from "../components/StatusPill";
 import {
@@ -111,7 +112,10 @@ const ProjectPage = () => {
   );
 
   return (
-    <>
+    <PresenceProvider
+      buildId={selectedBuild?.id}
+      testRunId={getQueryParams(location.search).testId}
+    >
       <Box sx={{ height: "100%", display: "flex" }}>
         <Box
           sx={{
@@ -277,7 +281,7 @@ const ProjectPage = () => {
           onClose={() => setReportOpen(false)}
         />
       )}
-    </>
+    </PresenceProvider>
   );
 };
 

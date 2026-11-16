@@ -47,7 +47,7 @@
 | Хук лічильника | `frontend/src/components/motion/useCountUp.tsx` | доводить число до значення за 600 ms, одразу при reduced motion |
 | Каскад | `frontend/src/components/motion/Stagger.tsx` | `staggered(i)`: клас входу й затримка рядка каскаду |
 | Сегменти | `frontend/src/components/motion/SlidingToggleGroup.tsx` | `ToggleButtonGroup`, підсвітка якого переїжджає; `rememberAs` — для перемикача, що монтується наново (Table/Grid) |
-| Поява екрана й вкладки | `frontend/src/components/motion/useEnterOnChange.tsx` | коли змінюється ключ (адреса в `App.tsx`, збірка й вкладка в `ProjectPage.tsx`), елемент за 240 ms проявляється й осідає на 8 px угору або на 24 px убік, куди рушила вкладка (`enterDirection`, `enterKeyframes` у `motion.helper.ts`); через Web Animations, без перемонтування, тож стан сторінки не губиться; при першій появі не грає — там уже каскад; при reduced motion не грає зовсім |
+| Поява екрана й вкладки | `frontend/src/components/motion/useEnterOnChange.tsx` | коли змінюється ключ (адреса в `App.tsx`, збірка й вкладка в `ProjectPage.tsx`), елемент за 240 ms проявляється й осідає на 8 px угору або на 24 px убік, куди рушила вкладка (`enterDirection`, `enterKeyframes` у `motion.helper.ts`); через Web Animations, без перемонтування, тож стан сторінки не губиться; при першій появі не грає — там уже каскад; після екрана, що простояв менше 180 ms (перенаправлення), теж; при reduced motion не грає зовсім |
 | Заготовки | `frontend/src/components/SkeletonList.tsx` | відблиск замість спінера |
 
 ### Шапка, навігація, меню

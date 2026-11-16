@@ -721,13 +721,13 @@ export const uk: Messages = {
   "panel.treeFailed":
     "Для аналізу доступності потрібне UI-дерево, а дерево цієї перевірки не вдалося прочитати.",
   "panel.highlightOnScreenshot": "Підсвічувати на поточному",
-  "panel.checkedFrom": "Перевірено за UI-деревом {platform}.",
+  "panel.checkedFrom": "UI-дерево {platform}:",
   "panel.platformWeb": "вебсторінки",
   "panel.unpositioned":
     "Дерево цієї сторінки прийшло без положення елементів: звичайний page source, а не Vision SDK. Тому зсуви, вибір елементів на знімку, контраст і область дотику не перевіряються. Надсилайте дерево через Vision SDK, щоб їх отримати.",
   "panel.newCount": "нових: {count}",
   "panel.compared":
-    "Порівняно з еталоном: {new}, наявних: {existing}, виправлених: {fixed}{reported}.",
+    "{new}, наявних: {existing}, виправлених: {fixed}{reported}.",
   "panel.withBug": ", з багом: {count}",
   "panel.noBaselineTree":
     "В еталона немає UI-дерева, тож кожна знахідка вважається новою.",

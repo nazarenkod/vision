@@ -683,13 +683,13 @@ export const en = {
   "panel.treeFailed":
     "Accessibility is checked from the UI tree, and this check's tree could not be read.",
   "panel.highlightOnScreenshot": "Highlight on current",
-  "panel.checkedFrom": "Checked from the {platform} UI tree.",
+  "panel.checkedFrom": "{platform} UI tree:",
   "panel.platformWeb": "web page",
   "panel.unpositioned":
     "This page's tree came without element positions: a plain page source, not the Vision SDK. So moves, picking elements on the screenshot, contrast and tap area are not checked. Send the tree with the Vision SDK to get them.",
   "panel.newCount": "{count} new",
   "panel.compared":
-    "Compared with the baseline: {new}, {existing} existing, {fixed} fixed{reported}.",
+    "{new}, {existing} existing, {fixed} fixed{reported}.",
   "panel.withBug": ", {count} with a bug",
   "panel.noBaselineTree":
     "The baseline has no UI tree, so every issue counts as new.",

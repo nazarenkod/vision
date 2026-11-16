@@ -176,12 +176,14 @@ export const tokens: Tokens = {
   mono: MONO,
 };
 
-// what a table head and a number in a table look like, MUI tables and data grids alike
-const tableHead = {
+// what a table head looks like: MUI tables, data grids and the summary cards
+// alike. A muted colour and a light weight keep it quieter than the semibold
+// names in the rows, which are hardly larger than it.
+export const tableHead = {
   backgroundColor: tokens.subtle,
-  color: tokens.textSecondary,
+  color: tokens.textMuted,
   fontSize: type.caption,
-  fontWeight: 600,
+  fontWeight: 500,
   lineHeight: 1.3,
 } as const;
 

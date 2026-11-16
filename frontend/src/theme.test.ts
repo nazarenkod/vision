@@ -255,9 +255,9 @@ describe("theme", () => {
       });
       const band = {
         backgroundColor: tokens.subtle,
-        color: tokens.textSecondary,
+        color: tokens.textMuted,
         fontSize: 12,
-        fontWeight: 600,
+        fontWeight: 500,
       };
       expect(look(cell.head)).toEqual(band);
       // the grid's header row is the whole width of its frame, not just the columns

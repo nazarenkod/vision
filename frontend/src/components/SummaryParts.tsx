@@ -2,7 +2,7 @@
 // tiles of numbers over cards with tables, so the tabs read as one page.
 import React from "react";
 import { Box, ButtonBase, Typography } from "@mui/material";
-import { motion, tokens, type, radius } from "../theme";
+import { motion, tokens, type, radius, tableHead } from "../theme";
 import { CountUp } from "./motion/useCountUp";
 import { staggered } from "./motion/Stagger";
 
@@ -78,10 +78,7 @@ export const Head: React.FunctionComponent<{
       ...rowSx(columns, false),
       minHeight: 32,
       borderTop: 0,
-      bgcolor: tokens.subtle,
-      fontSize: type.caption,
-      fontWeight: 600,
-      color: tokens.textSecondary,
+      ...tableHead,
     }}
   >
     {cells.map(([label, count], i) => (

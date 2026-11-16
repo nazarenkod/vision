@@ -175,7 +175,7 @@ test("sets the project from the baseline", async ({
 }) => {
   const detailsPage = await openTestVariationDetailsPage(TEST_VARIATION_ONE.id);
   // the sidebar shows the baseline's project, its pages ready to open
-  await expect(detailsPage.sideNav.projectSwitcher).toContainText(
+  await expect(detailsPage.sideNav.projectHeading).toContainText(
     TEST_PROJECT.name,
   );
   await expect(detailsPage.sideNav.item("Baselines")).toHaveAttribute(

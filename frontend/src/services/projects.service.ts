@@ -4,8 +4,6 @@ import {
   JiraTypesResponse,
   Project,
   ProjectMember,
-  ScreenSearchResult,
-  ScreenSuggestion,
 } from "../types";
 import { handleResponse, authHeader } from "../_helpers/service.helpers";
 import { API_URL } from "../_config/env.config";
@@ -53,37 +51,6 @@ async function getJiraTypes(
   const query = new URLSearchParams({ url: jiraUrl });
   const response = await fetch(
     `${API_URL}/projects/${projectId}/jira/types?${query}`,
-    { method: "GET", headers: authHeader() },
-  );
-  return handleResponse(response);
-}
-
-/** Screens whose UI tree holds the text or what the selector finds (053). */
-async function searchScreens(
-  projectId: string,
-  q: string,
-  buildId?: string,
-  page = 0,
-): Promise<ScreenSearchResult> {
-  const query = new URLSearchParams({ q, page: String(page) });
-  if (buildId) query.set("buildId", buildId);
-  const response = await fetch(
-    `${API_URL}/projects/${projectId}/screen-search?${query}`,
-    { method: "GET", headers: authHeader() },
-  );
-  return handleResponse(response);
-}
-
-/** Texts, ids and components of the project's screens holding what is typed (053, beta). */
-async function suggestScreens(
-  projectId: string,
-  q: string,
-  buildId?: string,
-): Promise<ScreenSuggestion[]> {
-  const query = new URLSearchParams({ q });
-  if (buildId) query.set("buildId", buildId);
-  const response = await fetch(
-    `${API_URL}/projects/${projectId}/screen-search/suggest?${query}`,
     { method: "GET", headers: authHeader() },
   );
   return handleResponse(response);
@@ -204,8 +171,6 @@ export const projectsService = {
   getDevices,
   getBrowsers,
   getJiraTypes,
-  searchScreens,
-  suggestScreens,
   remove,
   create,
   update,

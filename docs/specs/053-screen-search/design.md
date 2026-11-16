@@ -51,14 +51,14 @@
 | Сервіс | `backend/src/ui-tree/screen-search.service.ts` | варіації або екрани збірки, рядки за перевіркою, сторінки по 100, мініатюри, прогрів |
 | Маршрут | `backend/src/projects/projects.controller.ts` | `GET /projects/:id/screen-search?q=&buildId=&page=`, `@ProjectFrom(inParam('id', 'project'))` |
 | Модулі | `backend/src/ui-tree/ui-tree.module.ts`, `backend/src/projects/projects.module.ts` | сервіс у `UiTreeModule`, `ProjectsModule` його імпортує |
-| Сторінка | `frontend/src/pages/ScreenSearchPage.tsx` | поле, межі, підсумок, рядки, «Показати ще» |
-| Хелпер | `frontend/src/_helpers/screenSearch.helper.ts` | `isSearchable`, `isSearchHotkey`, `boxPercent`, `encodeBoxes`/`decodeBoxes` |
+| Сторінка | frontend/src/pages/ScreenSearchPage.tsx (видалено в [060](../060-project-rail-nav/spec.md)) | поле, межі, підсумок, рядки, «Показати ще» |
+| Хелпер | frontend/src/_helpers/screenSearch.helper.ts (видалено в [060](../060-project-rail-nav/spec.md)) | `isSearchable`, `isSearchHotkey`, `boxPercent`, `encodeBoxes`/`decodeBoxes` |
 | Меню | `frontend/src/_helpers/sideNav.helper.ts`, `frontend/src/components/SideNav.tsx` | пункт «Пошук» між «Еталони» і «Аналітика», клавіша `/` |
 | Маршрут UI | `frontend/src/Router.jsx`, `frontend/src/constants/routes.ts` | `SEARCH_PAGE` |
-| Вікно `/` | `frontend/src/components/SearchPalette.tsx` | підказки, стрілки, Enter |
+| Вікно `/` | frontend/src/components/SearchPalette.tsx (видалено в [060](../060-project-rail-nav/spec.md)) | підказки, стрілки, Enter |
 | Вирізка, «Бета» | `frontend/src/components/ElementCrop.tsx`, `frontend/src/components/BetaChip.tsx` | спільні з 055 |
 | Підсвітка | `frontend/src/pages/TestVariationDetailsPage.tsx` | рамки на найновішому еталоні |
-| Типи й API | `frontend/src/types/screenSearch.ts`, `frontend/src/services/projects.service.ts` | `ScreenSearchResult`, `searchScreens` |
+| Типи й API | frontend/src/types/screenSearch.ts (видалено в [060](../060-project-rail-nav/spec.md)), `frontend/src/services/projects.service.ts` | `ScreenSearchResult`, `searchScreens` |
 | Тексти | `frontend/src/i18n/en.ts`, `frontend/src/i18n/uk.ts` | `nav.search`, `search.*` |
 
 ## Дані
@@ -100,27 +100,27 @@ sequenceDiagram
 
 | Вимога | Перевірка |
 |---|---|
-| REQ-053-01 | `frontend/integration_tests/test/screenSearch.spec.ts › opens the search from the side menu and with the slash key`; `frontend/src/_helpers/screenSearch.helper.test.ts › opens the search with the slash key outside a field only` |
+| REQ-053-01 | manual: знято 060 |
 | REQ-053-02 | `backend/src/ui-tree/screen-search.service.spec.ts › searches the latest baseline of every device on the main branch`; `backend/src/ui-tree/screen-search.index.spec.ts › sees the new tree on the next search after a new baseline` |
 | REQ-053-03 | `backend/src/ui-tree/screen-search.spec.ts › finds visible text and labels ignoring case, repeated spaces and NBSP` |
-| REQ-053-04 | `backend/src/ui-tree/screen-search.spec.ts › asks for two characters before searching`; `frontend/src/_helpers/screenSearch.helper.test.ts › asks for two characters before searching` |
-| REQ-053-05 | `backend/src/ui-tree/screen-search.service.spec.ts › returns one row per check by name with a picture per device`; `frontend/src/_helpers/screenSearch.helper.test.ts › shows each found element once with every device it was found on`; `frontend/integration_tests/test/screenSearch.spec.ts › shows every found element cut out, the picked one on its screen` |
-| REQ-053-06 | `backend/src/ui-tree/screen-search.spec.ts › keeps the innermost of nested matches`; `frontend/src/_helpers/screenSearch.helper.test.ts › cuts the element out with a margin, keeping its proportions` |
-| REQ-053-07 | `backend/src/ui-tree/screen-search.spec.ts › tells whether the text, the label or both matched`; `frontend/integration_tests/test/screenSearch.spec.ts › shows every found element cut out, the picked one on its screen` |
-| REQ-053-08 | `frontend/integration_tests/test/screenSearch.spec.ts › opens the baseline with the found element outlined`; `frontend/integration_tests/test/screenSearch.spec.ts › outlines nothing on a baseline approved after the search` |
-| REQ-053-09 | `backend/src/ui-tree/screen-search.service.spec.ts › counts screens without a UI tree as not scanned`; `frontend/integration_tests/test/screenSearch.spec.ts › shows every found element cut out, the picked one on its screen` |
+| REQ-053-04 | `backend/src/ui-tree/screen-search.spec.ts › asks for two characters before searching`; інтерфейс знято 060 |
+| REQ-053-05 | `backend/src/ui-tree/screen-search.service.spec.ts › returns one row per check by name with a picture per device`; інтерфейс знято 060 |
+| REQ-053-06 | `backend/src/ui-tree/screen-search.spec.ts › keeps the innermost of nested matches`; інтерфейс знято 060 |
+| REQ-053-07 | `backend/src/ui-tree/screen-search.spec.ts › tells whether the text, the label or both matched`; інтерфейс знято 060 |
+| REQ-053-08 | manual: знято 060 |
+| REQ-053-09 | `backend/src/ui-tree/screen-search.service.spec.ts › counts screens without a UI tree as not scanned`; інтерфейс знято 060 |
 | REQ-053-10 | `backend/src/ui-tree/screen-search.service.spec.ts › pages a hundred checks at a time with the total` |
 | REQ-053-20 | `backend/src/ui-tree/screen-search.spec.ts › finds what an element rule with the same selector finds` |
 | REQ-053-21 | `backend/src/ui-tree/screen-search.spec.ts › finds elements of a component ignoring case` |
-| REQ-053-22 | `backend/src/ui-tree/screen-search.service.spec.ts › explains a selector it cannot read and returns no rows`; `frontend/integration_tests/test/screenSearch.spec.ts › explains a selector it cannot read` |
-| REQ-053-30 | `frontend/integration_tests/test/screenSearch.spec.ts › keeps the query in the address` |
+| REQ-053-22 | `backend/src/ui-tree/screen-search.service.spec.ts › explains a selector it cannot read and returns no rows`; інтерфейс знято 060 |
+| REQ-053-30 | manual: знято 060 |
 | REQ-053-31 | `backend/src/projects/project-access.routes.spec.ts › answers not found on every route of a project without access`; `backend/src/ui-tree/screen-search.service.spec.ts › never returns screens of a build of another project` |
 | REQ-053-40 | `backend/src/ui-tree/screen-search.service.spec.ts › searches the screens of a build instead of baselines` |
 | REQ-053-50 | `backend/src/ui-tree/screen-search.service.spec.ts › searches without calling the AI service` |
-| REQ-053-51 | `frontend/src/i18n/translate.test.ts › has every text in both languages…` |
+| REQ-053-51 | manual: знято 060 |
 | REQ-053-52 | `backend/src/ui-tree/screen-search.service.spec.ts › never returns checks of another project` |
 | REQ-053-60 | `backend/src/ui-tree/screen-search.spec.ts › suggests texts, labels, ids and components that hold the query, most screens first`; `backend/src/ui-tree/screen-search.service.spec.ts › suggests from the latest baselines, counting each check once` |
-| REQ-053-61 | `frontend/integration_tests/test/screenSearch.spec.ts › suggests texts and elements while typing and opens the picked one`; `frontend/src/_helpers/screenSearch.helper.test.ts › moves through the suggestions and back to the field` |
-| REQ-053-62 | `frontend/integration_tests/test/screenSearch.spec.ts › shows every found element cut out, the picked one on its screen`; `frontend/integration_tests/test/screenSearch.spec.ts › opens the baseline with the found element outlined` |
-| REQ-053-63 | `frontend/integration_tests/test/screenSearch.spec.ts › filters the found elements by device`; `frontend/src/_helpers/screenSearch.helper.test.ts › leaves out the devices switched off` |
-| REQ-053-64 | `frontend/integration_tests/test/screenSearch.spec.ts › shows every found element cut out, the picked one on its screen` |
+| REQ-053-61 | manual: знято 060 |
+| REQ-053-62 | manual: знято 060 |
+| REQ-053-63 | manual: знято 060 |
+| REQ-053-64 | manual: знято 060 |

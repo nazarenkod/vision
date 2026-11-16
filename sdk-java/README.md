@@ -5,13 +5,12 @@
 
 ## Встановлення
 
-Готовий jar лежить у репозиторії: [`dist/sdk-java/`](../dist/sdk-java/). Встановити в локальний Maven:
+Зібрати jar (потрібні JDK 11 і Gradle 7) і встановити в локальний Maven:
 
 ```sh
+./scripts/build-sdk-jar.sh    # з кореня репозиторію → dist/sdk-java/
 mvn install:install-file -Dfile=dist/sdk-java/vision-sdk-1.0.0.jar -DpomFile=dist/sdk-java/vision-sdk-1.0.0.pom
 ```
-
-Перезібрати після змін у SDK — `./scripts/build-sdk-jar.sh` з кореня репозиторію (JDK 11, Gradle 7).
 
 ```xml
 <dependency>

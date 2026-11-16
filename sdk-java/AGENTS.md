@@ -27,6 +27,5 @@ gradle test                       # TestNG + MockHttpClient; потрібні JD
 - Selenium (`selenium-api`) — лише `compileOnly`: його дає Selenide чи WebDriver тесту.
 - Збірка: lombok-плагін 5.1.1 бере старий Lombok, що на JDK 17 падає в `compileJava`; Gradle 8
   не читає `build.gradle` (`reports.xml.enabled`). Тож JDK 11 + Gradle 7.x.
-- Готовий jar і pom лежать у git у `dist/sdk-java/`, щоб тести брали їх без збирання. Змінив SDK —
-  перезбери `scripts/build-sdk-jar.sh` і закоміть новий jar разом зі зміною. Як перейти на нову
-  версію — `DEPLOY.md` §7.
+- Готового jar у репозиторії немає: його збирає `scripts/build-sdk-jar.sh` у `dist/sdk-java/`
+  (git його ігнорує). Як перейти на нову версію — `DEPLOY.md` §7.

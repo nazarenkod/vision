@@ -2,7 +2,7 @@ import { UiNode, UiTree } from './ui-tree.types';
 
 /**
  * The part of XPath a rule may use (REQ-027-30): one stable element found by
- * an attribute, or by the start of one (REQ-060-08), then steps only down to its descendants or only up to its
+ * an attribute, or by the start of one (REQ-061-08), then steps only down to its descendants or only up to its
  * ancestors. Anything wider is refused with a reason (REQ-027-31), because a
  * free expression is hard to read in review and to keep working across builds
  * (ADR-0021). Evaluated on the parsed tree: the raw page source is not kept.
@@ -37,7 +37,7 @@ const fail = (problem: XpathProblem): XpathParse => ({ ok: false, problem });
 // quoted values may hold anything, so the checks for functions and "or" look past them
 const withoutLiterals = (source: string) => source.replace(/'[^']*'|"[^"]*"/g, "''");
 
-// starts-with() is the one function a rule may use, and only as the anchor's condition (REQ-060-08)
+// starts-with() is the one function a rule may use, and only as the anchor's condition (REQ-061-08)
 const ANCHOR_START = /^(\/\/(?:\*|[A-Za-z_][\w.$-]*)\[\s*)starts-with\(([^()]*)\)/;
 const EQUALS = /^\[\s*@([\w-]+)\s*=\s*('([^']*)'|"([^"]*)")\s*\]/;
 const STARTS_WITH = /^\[\s*starts-with\(\s*@([\w-]+)\s*,\s*('([^']*)'|"([^"]*)")\s*\)\s*\]/;

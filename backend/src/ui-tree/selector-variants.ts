@@ -10,7 +10,7 @@ export interface SelectorVariant {
   // the stable element, as people read it: its id without the package, or its text
   anchor: string;
   anchorKind: 'id' | 'text';
-  // found by the start of its text, which anchor then is in full (REQ-060-07)
+  // found by the start of its text, which anchor then is in full (REQ-061-07)
   anchorMatch?: 'start';
   // how many levels apart the element and the anchor are: 1 is a child or a parent
   levels: number;
@@ -33,7 +33,7 @@ export function stableKind(node: UiNode): 'id' | 'text' | null {
 const quoted = (value: string): string | null =>
   !value.includes("'") ? `'${value}'` : !value.includes('"') ? `"${value}"` : null;
 
-// a longer text is found by its start (REQ-060-01): an iOS container's label holds every child's label
+// a longer text is found by its start (REQ-061-01): an iOS container's label holds every child's label
 export const TEXT_ANCHOR_LENGTH = 40;
 
 // Node has Intl.Segmenter; the project's TypeScript lib predates it
@@ -45,7 +45,7 @@ const graphemes: Segmenter = new (
 /**
  * The start a long text is found by: whole words within TEXT_ANCHOR_LENGTH visible characters,
  * or just that many when the first word is longer; null when the text is short enough to be
- * found whole (REQ-060-01, REQ-060-02). Cut from the value as the page source has it, since
+ * found whole (REQ-061-01, REQ-061-02). Cut from the value as the page source has it, since
  * starts-with() reads that, not a trimmed one.
  */
 export function textStart(value: string): string | null {
@@ -81,7 +81,7 @@ function anchorStep(tree: UiTree, node: UiNode): AnchorStep | null {
     [attribute, value] = node.text ? ['text', node.text] : ['content-desc', node.label];
   }
   if (!value.trim()) return null;
-  // an id is matched whole; a long text by its start, quoted by what is written (REQ-060-06)
+  // an id is matched whole; a long text by its start, quoted by what is written (REQ-061-06)
   const start = hasAppId(node) ? null : textStart(value);
   const literal = quoted(start ?? value);
   if (!literal) return null;
@@ -143,7 +143,7 @@ export function pathFromIdAbove(tree: UiTree, node: UiNode): string | null {
   const path: string[] = [];
   for (let at = node; at.index !== above; at = tree.nodes[at.parent]) path.unshift(stepTo(tree, at));
   const selector = `${XPATH_PREFIX}${step.step}${path.join('')}`;
-  // the server would refuse a longer rule (REQ-060-04)
+  // the server would refuse a longer rule (REQ-061-04)
   return selector.length <= MAX_SELECTOR_LENGTH ? selector : null;
 }
 
@@ -162,7 +162,7 @@ export function selectorVariants(tree: UiTree, node: UiNode): SelectorVariant[] 
     levels: number
   ) => {
     const selector = `${XPATH_PREFIX}${anchor.step}${path}`;
-    // the server would refuse a longer rule, so it is not offered (REQ-060-04)
+    // the server would refuse a longer rule, so it is not offered (REQ-061-04)
     if (selector.length > MAX_SELECTOR_LENGTH) return;
     const found = findBySelector(tree, selector) ?? [];
     if (!found.includes(node)) return;

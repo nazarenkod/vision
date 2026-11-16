@@ -150,7 +150,7 @@ describe("ElementPopover: variable text (spec 033)", () => {
   });
 });
 
-describe("ElementPopover: an anchor found by the start of its text (spec 060)", () => {
+describe("ElementPopover: an anchor found by the start of its text (spec 061)", () => {
   const icon: PickableElement = {
     index: 3,
     selector:

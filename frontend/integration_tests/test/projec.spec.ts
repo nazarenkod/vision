@@ -431,20 +431,6 @@ test("can download images", async ({ openProjectPage }) => {
   );
 });
 
-test("lines the Project label up with the select under it", async ({
-  openProjectPage,
-  page,
-}) => {
-  await openProjectPage(project.id);
-
-  const label = await page.locator("#projectSelect").boundingBox();
-  const select = await page.locator("#project-select").boundingBox();
-
-  // in the sidebar the caption sits where the item labels start (spec 046)
-  expect(label.x).toBe(select.x + 8);
-  expect(label.y).toBeLessThan(select.y);
-});
-
 test("shows a build as its number, date, branch and status", async ({
   openProjectPage,
 }) => {
@@ -480,30 +466,20 @@ test("keeps the build menu at the card's right edge", async ({
   );
 });
 
-test("lists projects by name only in the project picker", async ({
+test("shows each project as a tile named by it in the rail", async ({
   openProjectPage,
-  page,
 }) => {
-  await openProjectPage(project.id);
-  await page.locator("#project-select").click();
-
-  // the avatar's letter reads before the name
-  await expect(page.getByRole("option")).toHaveText([
-    `P${project.name}`,
-    "New project",
-  ]);
-  await expect(page.getByRole("listbox")).not.toContainText(
-    project.mainBranchName,
-  );
+  const { sideNav } = await openProjectPage(project.id);
+  await expect(sideNav.projectTile(project.name)).toHaveText("PN");
+  await expect(sideNav.rail).not.toContainText(project.mainBranchName);
 });
 
-test("opens the new project dialog from the project picker", async ({
+test("opens the new project dialog from the plus tile", async ({
   openProjectPage,
   page,
 }) => {
-  await openProjectPage(project.id);
-  await page.locator("#project-select").click();
-  await page.getByTestId("projectSelectCreate").click();
+  const { sideNav } = await openProjectPage(project.id);
+  await sideNav.newProjectTile.click();
 
   await expect(page).toHaveURL(/\/projects$/);
   await expect(page.getByRole("dialog")).toContainText("New project");
@@ -512,14 +488,10 @@ test("opens the new project dialog from the project picker", async ({
 test.describe("as a guest", () => {
   test.use({ userRole: "guest" });
 
-  test("offers no new project in the project picker", async ({
-    openProjectPage,
-    page,
-  }) => {
-    await openProjectPage(project.id);
-    await page.locator("#project-select").click();
-
-    await expect(page.getByRole("option")).toHaveText([`P${project.name}`]);
+  test("offers no plus tile in the rail", async ({ openProjectPage }) => {
+    const { sideNav } = await openProjectPage(project.id);
+    await expect(sideNav.projectTile(project.name)).toBeVisible();
+    await expect(sideNav.newProjectTile).toHaveCount(0);
   });
 });
 

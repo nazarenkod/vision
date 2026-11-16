@@ -7,7 +7,7 @@ const fixture = (name: string) => readFileSync(path.join(__dirname, '__fixtures_
 const android = parseUiTree(fixture('android-offers.xml'), { imageWidth: 1080, imageHeight: 2400, densityDpi: 420 });
 // at the tree's own width iOS points are pixels, so bounds read as in the page source
 const ios = parseUiTree(fixture('ios-offers.xml'), { imageWidth: 390, imageHeight: 844 });
-// rows whose labels hold every child's label, as iOS builds them (060)
+// rows whose labels hold every child's label, as iOS builds them (061)
 const history = parseUiTree(fixture('ios-history.xml'), { imageWidth: 390, imageHeight: 844 });
 
 const find = (tree: typeof android, expression: string) => {

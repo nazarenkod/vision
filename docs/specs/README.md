@@ -126,7 +126,7 @@ docs/specs/NNN-коротка-назва/
 | [057](057-checks-not-screens/spec.md) | «Перевірка» замість «екрана» в інтерфейсі | Implemented |
 | [058](058-changes-tab-first/spec.md) | «Зміни» першими в панелі порівняння, рамки доступності лише на своїй вкладці | Implemented |
 | [059](059-plain-build-header-and-groups/spec.md) | Без смуги статусів у шапці збірки, екрани груп змін рядками | Implemented |
-| [060](060-ui-tree-inspector/spec.md) | Дерево елементів поруч зі знімком | Draft |
+| [060](060-ui-tree-inspector/spec.md) | Дерево елементів поруч зі знімком | Approved |
 
 Статусу `Verified` поки немає в жодної: інтеграцію з реальною Jira Cloud і прогони на сервері
 команда ще не підтвердила.

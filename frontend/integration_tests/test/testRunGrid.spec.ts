@@ -274,7 +274,7 @@ test("selects every filtered run from the header, across pages", async ({
   await projectPage.modal.confirmBtn.click();
 
   await expect(projectPage.notification.message).toHaveText(
-    "Approved 12 screens",
+    "Approved 12 checks",
   );
   expect(approved[0]).toHaveLength(MANY_RUNS.length);
 });
@@ -423,7 +423,7 @@ test("approves the runs selected in the grid", async ({
   await projectPage.modal.confirmBtn.click();
 
   await expect(projectPage.notification.message).toHaveText(
-    "Approved 2 screens",
+    "Approved 2 checks",
   );
   expect(approved).toEqual([[TEST_RUN_NEW.id, TEST_UNRESOLVED.id]]);
 });

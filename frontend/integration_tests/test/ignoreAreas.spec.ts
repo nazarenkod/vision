@@ -305,7 +305,7 @@ test("puts the Areas menu away on a press beside it, not while drawing", async (
   await expect(menu).toBeVisible();
 });
 
-// A screen takes at most 20 ignore areas (051): more are not sent, and none drawn is lost
+// A check takes at most 20 ignore areas (051): more are not sent, and none drawn is lost
 const areasOf = (count: number): IgnoreArea[] =>
   Array.from({ length: count }, (_, i) => ({
     id: String(i + 1),
@@ -350,7 +350,7 @@ test("names the limit and keeps the areas when there are more than 20", async ({
 
   await expect(
     page.getByText(
-      "A screen takes at most 20 ignore areas: remove 2 to save them.",
+      "A check takes at most 20 ignore areas: remove 2 to save them.",
     ),
   ).toBeVisible();
   expect(sent).toBe(0);

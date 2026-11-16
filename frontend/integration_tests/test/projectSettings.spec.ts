@@ -336,7 +336,7 @@ test("picks the platform in General and when creating a project", async ({
   await expect(page.locator("#norm-touchTargetWeb")).toHaveValue("24");
   await expect(a11y).toContainText("Default 24");
   await expect(structure.getByTestId("section-mobile-intro")).toHaveText(
-    "Applies to screens sent with a UI tree: on the web that is Selenide and Playwright.",
+    "Applies to checks sent with a UI tree: on the web that is Selenide and Playwright.",
   );
   // browsers instead of devices, the received ones added in a click (REQ-050-45, 53)
   await expect(page.getByTestId("allowedDevices")).toHaveCount(0);
@@ -665,7 +665,7 @@ test("adds, edits and removes an allowed device", async ({
   await open(page);
   const section = page.getByTestId("allowedDevices");
   await expect(section).toContainText(
-    "No list: screens from any device come in.",
+    "No list: checks from any device come in.",
   );
 
   await page.getByTestId("newDevice-device").fill("Pixel 7");

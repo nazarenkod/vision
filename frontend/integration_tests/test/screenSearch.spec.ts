@@ -140,9 +140,9 @@ test("suggests texts and elements while typing and opens the picked one", async 
   await page.getByTestId("searchPaletteInput").fill("кеш");
 
   await expect(page.getByTestId("searchSuggestion")).toHaveText([
-    /Кешбек 5 % на кафе\s*3 screens/,
-    /Кешбек-сповіщення\s*1 screen/,
-    /component:CashbackCard\s*11 screens/,
+    /Кешбек 5 % на кафе\s*3 checks/,
+    /Кешбек-сповіщення\s*1 check/,
+    /component:CashbackCard\s*11 checks/,
   ]);
   await page.getByTestId("searchPaletteInput").press("ArrowDown");
   await page.getByTestId("searchPaletteInput").press("ArrowDown");
@@ -169,7 +169,7 @@ test("shows every found element cut out, the picked one on its screen", async ({
 
   await page.getByTestId("searchInput").fill("кешбек");
 
-  await expect(page.getByTestId("searchSummary")).toHaveText("3 on 2 screens");
+  await expect(page.getByTestId("searchSummary")).toHaveText("3 in 2 checks");
   await expect(page.getByTestId("searchHit")).toHaveCount(3);
   await expect(page.getByTestId("searchCrop")).toHaveCount(3);
   await expect(page.getByRole("main").getByTestId("betaChip")).toBeVisible();

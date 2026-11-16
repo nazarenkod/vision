@@ -1320,7 +1320,6 @@ export const uk: Messages = {
   "select.button": "Обрати елементи",
   "select.hint": "Натисніть на елемент · із Shift — додати ще",
   "select.adding": "Натискайте елементи, щоб додати чи прибрати",
-  "select.done": "Готово",
   "select.parent": "Обрати елемент навколо",
   "select.child": "Назад до внутрішнього елемента",
   "select.more": "Знаходити інакше",

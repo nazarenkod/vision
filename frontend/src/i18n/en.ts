@@ -1260,6 +1260,8 @@ export const en = {
   "select.onScreen": "{count} on this screenshot",
   "select.textAnchor":
     "Found through a text: the rule stops working when the text changes",
+  "select.textAnchorStart":
+    "Found through the start of a text: the rule stops working when “{text}” changes",
   "select.foundBy": "How to find it",
   "select.relation.inside": "inside {anchor}",
   "select.relation.parent": "parent of {anchor}",
@@ -1271,13 +1273,13 @@ export const en = {
     "Vision does not run back-references (\\1), look-around ((?=…), (?<=…)) or repeats over 1000 in a pattern",
   "panel.selectorProblem.syntax": "This XPath does not parse",
   "panel.selectorProblem.anchor":
-    "Start from one stable element: //*[@resource-id='…'] or //*[@text='…']",
+    "Start from one stable element: //*[@resource-id='…'], //*[@text='…'] or //*[starts-with(@label,'…')]",
   "panel.selectorProblem.attribute":
     "Find the stable element by resource-id, text, content-desc, name or label",
   "panel.selectorProblem.axis":
     "Only a path down to descendants or up to ancestors: no siblings or other axes",
   "panel.selectorProblem.function":
-    "Functions such as contains() are not supported",
+    "Only starts-with() in the stable element; contains() and other functions are not supported",
   "panel.selectorProblem.or": "One element at a time: no “or” and no “|”",
   "panel.selectorProblem.mixed":
     "Go either down or up from the stable element, not both",

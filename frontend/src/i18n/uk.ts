@@ -1334,6 +1334,8 @@ export const uk: Messages = {
   "select.onScreen": "{count} на цьому знімку",
   "select.textAnchor":
     "Знайдено через текст: правило перестане діяти, щойно текст зміниться",
+  "select.textAnchorStart":
+    "Знайдено через початок тексту: правило перестане діяти, щойно зміниться «{text}»",
   "select.foundBy": "Як знаходити",
   "select.relation.inside": "нащадок {anchor}",
   "select.relation.parent": "батько {anchor}",
@@ -1345,13 +1347,13 @@ export const uk: Messages = {
     "Vision не виконує у виразі зворотні посилання (\\1), перевірки вперед чи назад ((?=…), (?<=…)) і повтори понад 1000",
   "panel.selectorProblem.syntax": "Цей XPath не розбирається",
   "panel.selectorProblem.anchor":
-    "Почніть з одного стабільного елемента: //*[@resource-id='…'] або //*[@text='…']",
+    "Почніть з одного стабільного елемента: //*[@resource-id='…'], //*[@text='…'] або //*[starts-with(@label,'…')]",
   "panel.selectorProblem.attribute":
     "Шукайте стабільний елемент за resource-id, text, content-desc, name або label",
   "panel.selectorProblem.axis":
     "Лише шлях униз до нащадків або вгору до предків: без сусідів та інших осей",
   "panel.selectorProblem.function":
-    "Функції на кшталт contains() не підтримуються",
+    "Лише starts-with() у стабільному елементі; contains() та інші функції не підтримуються",
   "panel.selectorProblem.or": "Один елемент за раз: без «or» і без «|»",
   "panel.selectorProblem.mixed":
     "Ідіть від стабільного елемента або вниз, або вгору, не в обидва боки",

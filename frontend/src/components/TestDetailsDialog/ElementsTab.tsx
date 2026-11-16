@@ -47,7 +47,7 @@ const ROW = 28;
 // rows drawn above and below the view, so a quick scroll shows no gap
 const SPARE_ROWS = 12;
 const PANEL_TREE_HEIGHT = 360;
-// how long a copy button says Copied (REQ-060-24)
+// how long a copy button says Copied (REQ-061-24)
 const COPIED_MS = 2000;
 
 const CHANGE_TONE: Record<StructuralChange["kind"], PillTone> = {
@@ -61,7 +61,7 @@ const CHANGE_TONE: Record<StructuralChange["kind"], PillTone> = {
 };
 
 interface Props {
-  // the check has a tree of its own; without one the tab explains how to send it (REQ-060-07)
+  // the check has a tree of its own; without one the tab explains how to send it (REQ-061-07)
   hasTree: boolean;
   testRunId: string;
   trees: InspectorTrees;
@@ -74,9 +74,9 @@ interface Props {
   onChoose: (index: number | undefined) => void;
   pointed?: number;
   onPoint: (index: number | undefined) => void;
-  // the node a link named is not in the tree (REQ-060-34)
+  // the node a link named is not in the tree (REQ-061-34)
   notFound?: boolean;
-  // the rule actions of Select elements, for a node they can act on (REQ-060-26, 27)
+  // the rule actions of Select elements, for a node they can act on (REQ-061-26, 27)
   canActOn?: (index: number) => boolean;
   onActions?: (index: number, anchor: { x: number; y: number }) => void;
   onFullScreen?: () => void;
@@ -84,7 +84,7 @@ interface Props {
   fill?: boolean;
 }
 
-/** The check's UI tree beside the screenshot, as in Appium Inspector (060). */
+/** The check's UI tree beside the screenshot, as in Appium Inspector (061). */
 export const ElementsTab: React.FunctionComponent<Props> = ({
   hasTree,
   testRunId,
@@ -123,7 +123,7 @@ export const ElementsTab: React.FunctionComponent<Props> = ({
 
   const [query, setQuery] = React.useState("");
   const [onlyMarked, setOnlyMarked] = React.useState(false);
-  // what is unfolded, per tree: set when a tree first comes (REQ-060-05)
+  // what is unfolded, per tree: set when a tree first comes (REQ-061-05)
   const [open, setOpen] = React.useState<Record<TreeSide, Set<number>>>({
     current: new Set(),
     baseline: new Set(),
@@ -160,7 +160,7 @@ export const ElementsTab: React.FunctionComponent<Props> = ({
       return { ...all, [side]: next };
     });
 
-  // a node chosen on the screenshot: its way down is unfolded and its row brought into view (REQ-060-12)
+  // a node chosen on the screenshot: its way down is unfolded and its row brought into view (REQ-061-12)
   const listRef = React.useRef<HTMLDivElement>(null);
   const [scrollTop, setScrollTop] = React.useState(0);
   const [viewHeight, setViewHeight] = React.useState(PANEL_TREE_HEIGHT);
@@ -570,7 +570,7 @@ interface CardProps {
   side: TreeSide;
   node: InspectorNode;
   nodes: InspectorNode[];
-  // the same element on the baseline tree, for what it held there (REQ-060-18)
+  // the same element on the baseline tree, for what it held there (REQ-061-18)
   baseline?: InspectorNode;
   // on the baseline tree: the same element now
   current?: InspectorNode;

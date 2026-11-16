@@ -178,3 +178,75 @@ test("highlights travel to the new item instead of jumping", async ({
     (run) => run.testId === "navIndicator" && run.property === "transform",
   );
 });
+
+// every enter played with the Web Animations API, recorded as it starts
+const recordEnters = (page: Page) =>
+  page.addInitScript(() => {
+    const enters: unknown[] = [];
+    Object.assign(window, { enters });
+    const animate = Element.prototype.animate;
+    Element.prototype.animate = function (keyframes, options) {
+      enters.push({
+        tag: this.tagName,
+        id: this.id,
+        from: (keyframes as Keyframe[])[0]?.transform,
+        duration: (options as KeyframeAnimationOptions)?.duration,
+      });
+      return animate.call(this, keyframes, options);
+    };
+  });
+type Enter = { tag: string; id: string; from: string; duration: number };
+const enters = (page: Page) =>
+  page.evaluate(() => (window as unknown as { enters: Enter[] }).enters);
+
+test("screens and build tabs settle in instead of snapping", async ({
+  openProjectPage,
+  page,
+}) => {
+  await recordEnters(page);
+  await openProjectPage(project.id, build.id);
+  await expect(page.getByRole("tab", { name: /All checks/ })).toBeVisible();
+  // opening the page is the cascade's job, not one more enter on top
+  expect(await enters(page)).toEqual([]);
+
+  // a tab to the left of All checks: its content comes in from the left
+  await page.getByRole("tab", { name: /Overview/ }).click();
+  await expect
+    .poll(() => enters(page))
+    .toContainEqual(
+      expect.objectContaining({ from: "translateX(-24px)", duration: 240 }),
+    );
+  await page.getByRole("tab", { name: /All checks/ }).click();
+  await expect
+    .poll(() => enters(page))
+    .toContainEqual(expect.objectContaining({ from: "translateX(24px)" }));
+
+  // another screen from the rail rises into place
+  await page
+    .getByRole("navigation", { name: "Main" })
+    .getByRole("link")
+    .nth(2)
+    .click();
+  await expect
+    .poll(() => enters(page))
+    .toContainEqual(
+      expect.objectContaining({ tag: "MAIN", from: "translateY(8px)" }),
+    );
+});
+
+test("screens change at once with reduced motion", async ({
+  openProjectPage,
+  page,
+}) => {
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await recordEnters(page);
+  await openProjectPage(project.id, build.id);
+  await page.getByRole("tab", { name: /Overview/ }).click();
+  await page
+    .getByRole("navigation", { name: "Main" })
+    .getByRole("link")
+    .nth(2)
+    .click();
+  await page.waitForTimeout(300);
+  expect(await enters(page)).toEqual([]);
+});

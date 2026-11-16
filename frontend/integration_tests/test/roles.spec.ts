@@ -49,7 +49,7 @@ for (const role of ["editor", "guest"] as const) {
     });
 
     test("has no users item in the sidebar", async ({ projectListPage }) => {
-      await expect(projectListPage.sideNav.item("Projects")).toBeVisible();
+      await expect(projectListPage.sideNav.logo).toBeVisible();
       await expect(projectListPage.sideNav.item("Users")).toHaveCount(0);
     });
   });

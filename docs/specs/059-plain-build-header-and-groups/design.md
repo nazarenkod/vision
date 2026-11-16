@@ -9,6 +9,9 @@
 сама кнопка з тим самим `aria-label` («Open …»), тож відкриття екрана й тести на нього не змінились;
 назва екрана — коли група охоплює кілька екранів (REQ-059-02).
 
+Кнопку згортання групи й `Collapse` прибрано: група — кілька рядків, тож згортання нічого не
+заощаджувало; ключі `groups.collapse`/`groups.expand` прибрано (REQ-059-03).
+
 ## Компоненти
 
 | Компонент | Шлях | Роль |
@@ -32,3 +35,4 @@
 |---|---|
 | REQ-059-01 | `frontend/integration_tests/test/buildOverview.spec.ts › keeps the counts and the status bar out of the build header on every tab`; `manual: збірка, що триває, — під шапкою лінія прогресу` |
 | REQ-059-02 | `frontend/integration_tests/test/projec.spec.ts › lists a group's screens as rows without pictures, and a row opens its screen` |
+| REQ-059-03 | `frontend/integration_tests/test/projec.spec.ts › shows every change group open, with no fold in its header` |

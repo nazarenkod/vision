@@ -60,7 +60,7 @@ export const insightsService = {
     get<StructureInfo | null>(`/test-runs/${testRunId}/structure`).then(
       (structure) => structure || null,
     ),
-  // one side of the check's UI tree for the Elements tab (060); null without that tree
+  // one side of the check's UI tree for the Elements tab (061); null without that tree
   getUiTree: (testRunId: string, side: TreeSide) =>
     get<InspectorTree | null>(
       `/test-runs/${testRunId}/ui-tree?side=${side}`,

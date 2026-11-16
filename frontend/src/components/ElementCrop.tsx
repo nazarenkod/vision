@@ -3,7 +3,7 @@ import { Box } from "@mui/material";
 import { staticService } from "../services";
 import { radius, tokens } from "../theme";
 import type { Rect } from "../types";
-import { cropLayout } from "../_helpers/screenSearch.helper";
+import { cropLayout } from "../_helpers/elementCrop.helper";
 
 interface Props {
   imageName: string | null;

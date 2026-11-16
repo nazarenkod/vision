@@ -14,7 +14,7 @@ const IDLE: TreeLoad = { status: "idle" };
 
 /**
  * Both trees of a check, fetched only once someone looks at them: a tree can
- * be megabytes, and the comparison works without it (REQ-060-08).
+ * be megabytes, and the comparison works without it (REQ-061-08).
  */
 export function useInspectorTrees(
   testRunId: string | undefined,

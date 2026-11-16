@@ -19,7 +19,7 @@ export const routes = {
   SEARCH_PAGE: "/search",
   // a build's report, opened to print it (031)
   PRINT_REPORT: "/report/:buildId",
-  // one check's UI tree on the whole window (060): `/inspect/${testRunId}?tree=…&node=…`
+  // one check's UI tree on the whole window (061): `/inspect/${testRunId}?tree=…&node=…`
   INSPECT_PAGE: "/inspect/:testRunId",
 
   // admin

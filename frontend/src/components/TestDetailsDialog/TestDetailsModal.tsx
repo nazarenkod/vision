@@ -241,10 +241,10 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
   const [a11yOverlay, setA11yOverlay] = useState(true);
   // issue boxes only while their tab is open, so they do not cover the changes (REQ-058-02)
   const [panelTab, setPanelTab] = useState<PanelTab>("changes");
-  // the UI tree beside the screenshots (060): which tree, the node chosen and the one pointed at
+  // the UI tree beside the screenshots (061): which tree, the node chosen and the one pointed at
   const location = useLocation();
   const navigate = useNavigate();
-  // back from the inspector page, the address names the tab and the node (REQ-060-35)
+  // back from the inspector page, the address names the tab and the node (REQ-061-35)
   const [panelPlace] = useState(() => readPanelPlace(location.search));
   const [treeSide, setTreeSide] = useState<TreeSide>(
     panelPlace?.side ?? "current",
@@ -951,7 +951,7 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
     return marks;
   };
   const selectingNow = pickMode || !!selection || !!previewElement;
-  // on the Elements tab the screenshots answer to the tree, unless selecting or drawing (REQ-060-10…13, 20)
+  // on the Elements tab the screenshots answer to the tree, unless selecting or drawing (REQ-061-10…13, 20)
   const treePicking =
     panelTab === "elements" &&
     !pickMode &&
@@ -977,7 +977,7 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
     const node = nodeAt(point, treeNodes(side));
     setTreePointed(node ? { side, index: node.index } : undefined);
   };
-  // a click on the baseline turns the tab to the baseline's tree (REQ-060-20)
+  // a click on the baseline turns the tab to the baseline's tree (REQ-061-20)
   const treePick = (side: Side, point: { x: number; y: number }) => {
     const node = nodeAt(point, treeNodes(side));
     if (!node) return;
@@ -2064,49 +2064,6 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
         display="flex"
         sx={{ flex: 1, minHeight: 0, bgcolor: tokens.lightbox }}
       >
-        {pickMode && !several && (
-          <Box
-            role="status"
-            data-testid="selectingBar"
-            sx={{
-              position: "absolute",
-              top: 8,
-              left: "calc(50% - 190px)",
-              transform: "translateX(-50%)",
-              zIndex: 2,
-              display: "flex",
-              alignItems: "center",
-              gap: 1.5,
-              pl: 1.75,
-              pr: 1,
-              py: 0.75,
-              borderRadius: radius.control,
-              bgcolor: tokens.text,
-              color: tokens.surface,
-              boxShadow: tokens.shadowPop,
-              fontSize: type.small,
-            }}
-          >
-            {selection?.adding ? t("select.adding") : t("select.hint")}
-            <Button
-              size="small"
-              onClick={toggleSelecting}
-              sx={{
-                color: "inherit",
-                // tinted by its own text: the bar is inverted, dark on light and light on dark
-                bgcolor: "color-mix(in srgb, currentColor 16%, transparent)",
-                "&:hover": {
-                  bgcolor: "color-mix(in srgb, currentColor 26%, transparent)",
-                },
-                minWidth: 0,
-                px: 1.25,
-                fontWeight: 600,
-              }}
-            >
-              {t("select.done")}
-            </Button>
-          </Box>
-        )}
         <Box
           flex={1}
           minWidth={0}
@@ -2124,6 +2081,56 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
             visibility: panesShown ? "visible" : "hidden",
           }}
         >
+          {pickMode && (
+            // the screenshots get a green frame and a tab hanging from it, instead of
+            // a bright bar over the screen; it takes no clicks, Esc or the button ends it
+            <Box
+              aria-hidden="true"
+              data-testid="selectingFrame"
+              sx={{
+                position: "absolute",
+                inset: 0,
+                zIndex: 2,
+                pointerEvents: "none",
+                borderRadius: radius.card,
+                boxShadow: `inset 0 0 0 2px color-mix(in srgb, ${tokens.brand} 70%, transparent), inset 0 0 32px color-mix(in srgb, ${tokens.brand} 14%, transparent)`,
+                "@keyframes selectingIn": { from: { opacity: 0 } },
+                animation: `selectingIn ${motion.fast}ms ${motion.easing}`,
+              }}
+            />
+          )}
+          {pickMode && !several && (
+            <Box
+              role="status"
+              data-testid="selectingBar"
+              sx={{
+                position: "absolute",
+                top: 0,
+                left: "50%",
+                transform: "translateX(-50%)",
+                zIndex: 3,
+                pointerEvents: "none",
+                display: "flex",
+                alignItems: "center",
+                gap: 0.75,
+                px: 1.25,
+                py: 0.375,
+                whiteSpace: "nowrap",
+                borderRadius: `0 0 ${radius.card} ${radius.card}`,
+                bgcolor: tokens.brand,
+                color: tokens.brandInk,
+                fontSize: type.caption,
+                fontWeight: 600,
+                "@keyframes selectingTab": {
+                  from: { opacity: 0, transform: "translate(-50%, -100%)" },
+                },
+                animation: `selectingTab ${motion.base}ms ${motion.easing}`,
+              }}
+            >
+              <AdsClickOutlined aria-hidden sx={{ fontSize: type.body }} />
+              {selection?.adding ? t("select.adding") : t("select.hint")}
+            </Box>
+          )}
           {selectionPanel()}
           {baselinePanel()}
           {isDiffShown

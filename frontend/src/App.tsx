@@ -19,6 +19,7 @@ import {
 } from "./contexts";
 import { useLocation } from "react-router-dom";
 import Router from "./Router";
+import { useEnterOnChange } from "./components/motion/useEnterOnChange";
 import { LanguageProvider, useT } from "./i18n";
 
 // The sidebar for signed-in users (ADR-0028) and the page filling the rest.
@@ -26,6 +27,9 @@ const Shell: React.FunctionComponent = () => {
   const { loggedIn } = useUserState();
   // a report, by its link or to print, is the sheet alone (031)
   const { pathname } = useLocation();
+  // a new screen settles into place instead of snapping in (REQ-018-20)
+  const main = React.useRef<HTMLElement>(null);
+  useEnterOnChange(main, pathname);
   if (/^\/(r|report)\//.test(pathname)) {
     return (
       <Box component="main" sx={{ height: "100%", overflow: "auto" }}>
@@ -45,7 +49,11 @@ const Shell: React.FunctionComponent = () => {
         }}
       >
         <BackupWarning />
-        <Box component="main" sx={{ flex: 1, minHeight: 0, overflow: "auto" }}>
+        <Box
+          component="main"
+          ref={main}
+          sx={{ flex: 1, minHeight: 0, overflow: "auto" }}
+        >
           <Router />
         </Box>
       </Box>

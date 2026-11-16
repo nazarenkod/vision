@@ -30,9 +30,12 @@ import {
   ViewSidebarOutlined,
 } from "@mui/icons-material";
 import { useSnackbar } from "notistack";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { useBuildElements } from "../useBuildElements";
-import { buildTestRunLocation } from "../../_helpers/route.helpers";
+import {
+  buildTestRunLocation,
+  getQueryParams,
+} from "../../_helpers/route.helpers";
 import { v4 as uuid } from "uuid";
 import { useProjectState, useUserState } from "../../contexts";
 import { insightsService, testRunService } from "../../services";
@@ -143,9 +146,9 @@ interface Props {
   // folded to a strip with a button, so the screens take its width (REQ-046-07)
   folded?: boolean;
   onFoldedChange?: (folded: boolean) => void;
-  // the check's UI tree beside the screenshot (060), made by the dialog that draws its outlines
+  // the check's UI tree beside the screenshot (061), made by the dialog that draws its outlines
   elementsTab?: React.ReactNode;
-  // the tab to open on, when the address names one (REQ-060-35)
+  // the tab to open on, when the address names one (REQ-061-35)
   initialTab?: PanelTab;
 }
 
@@ -221,8 +224,17 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
   const canEdit = user?.role === "admin" || user?.role === "editor";
   const withUiTree = hasUiTree(testRun);
 
-  // deciding on the changes is the review's main job, so it opens on them (REQ-058-01)
-  const [tab, setTab] = React.useState<PanelTab>(initialTab ?? "changes");
+  // deciding on the changes is the review's main job, so it opens on them (REQ-058-01);
+  // a screen opened from the build's Accessibility tab opens on its problems (REQ-058-04),
+  // and one the inspector page returns to, on its Elements tab (REQ-061-35)
+  const { search } = useLocation();
+  const [tab, setTab] = React.useState<PanelTab>(
+    () =>
+      initialTab ??
+      (withUiTree && getQueryParams(search).tab === "a11y"
+        ? "a11y"
+        : "changes"),
+  );
   React.useEffect(() => {
     onTabChange?.(tab);
   }, [tab, onTabChange]);
@@ -252,7 +264,7 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
 
   // the tab stays when moving between devices of a check; without a UI tree only Changes has content
   React.useEffect(() => {
-    // the Elements tab explains a missing tree itself (REQ-060-07)
+    // the Elements tab explains a missing tree itself (REQ-061-07)
     if (!withUiTree) setTab((now) => (now === "elements" ? now : "changes"));
   }, [withUiTree, testRun.id]);
 

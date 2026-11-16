@@ -101,7 +101,7 @@ function tab(props: Partial<React.ComponentProps<typeof ElementsTab>> = {}) {
   return { onChoose, onSideChange, ...view };
 }
 
-describe("ElementsTab (060)", () => {
+describe("ElementsTab (061)", () => {
   beforeEach(() => {
     getLocators.mockReset();
     getLocators.mockResolvedValue({

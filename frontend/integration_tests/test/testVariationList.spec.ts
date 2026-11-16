@@ -267,12 +267,11 @@ test("chooses the project in the sidebar, not on the page", async ({
   await expect(listPage.getCard(TEST_VARIATION_ONE.name)).toBeVisible();
 
   await expect(page.locator("#page-project-select")).toHaveCount(0);
-  await expect(listPage.sideNav.projectSwitcher).toContainText(
+  await expect(listPage.sideNav.projectHeading).toContainText(
     TEST_PROJECT.name,
   );
 
-  await page.locator("#project-select").click();
-  await page.getByRole("option", { name: /Other shop/ }).click();
+  await listPage.sideNav.projectTile("Other shop").click();
   await expect(page).toHaveURL(`/variations/${other.id}`);
   await expect(listPage.cards).toHaveCount(0);
 });

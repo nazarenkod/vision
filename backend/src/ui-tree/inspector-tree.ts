@@ -5,7 +5,7 @@ import { Rect, UiNode, UiTree } from './ui-tree.types';
 import { positionAmongSameClass } from './xpath-selector';
 
 /**
- * The UI tree as the Elements tab shows it (060): every node with the attributes Vision keeps,
+ * The UI tree as the Elements tab shows it (061): every node with the attributes Vision keeps,
  * named as the platform's page source names them, so QA reads it as in Appium Inspector.
  */
 export interface InspectorNode {
@@ -21,7 +21,7 @@ export interface InspectorNode {
   // what the element says: its text, else its label
   text: string;
   attributes: Array<[string, string]>;
-  // where it is on the screenshot, in its pixels; null when it cannot be shown there (REQ-060-15)
+  // where it is on the screenshot, in its pixels; null when it cannot be shown there (REQ-061-15)
   bounds: Rect | null;
   hidden?: 'unpositioned' | 'invisible' | 'empty';
 }
@@ -38,7 +38,7 @@ export interface Locator {
   // id:, text:, xpath: for Vision; id, accessibility id, -ios predicate string, xpath, css for tests
   kind: string;
   value: string;
-  // how many nodes of this tree it finds (REQ-060-30)
+  // how many nodes of this tree it finds (REQ-061-30)
   matches: number;
 }
 
@@ -125,7 +125,7 @@ function hiddenWhy(tree: UiTree, node: UiNode): InspectorNode['hidden'] | undefi
   return undefined;
 }
 
-/** Every node of a tree with what the Elements tab shows about it (REQ-060-03, 06, 15). */
+/** Every node of a tree with what the Elements tab shows about it (REQ-061-03, 06, 15). */
 export function inspectorTree(tree: UiTree): InspectorTree {
   return {
     format: tree.format,
@@ -277,7 +277,7 @@ function webLocators(tree: UiTree, node: UiNode): Locator[] {
 
 /**
  * How to find a node: Vision's selectors for rules, as Select elements offers them, and the
- * locators a test would use, each with how many nodes of the tree it finds (REQ-060-23, 30).
+ * locators a test would use, each with how many nodes of the tree it finds (REQ-061-23, 30).
  */
 export function nodeLocators(tree: UiTree, node: UiNode): NodeLocators {
   const vision: Locator[] = [];

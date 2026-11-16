@@ -512,14 +512,14 @@ export class TestRunsService {
     return testRun ? this.uiTreeService.structure(testRun) : null;
   }
 
-  /** The run's or its baseline's UI tree as the Elements tab shows it (060); null without that tree. */
+  /** The run's or its baseline's UI tree as the Elements tab shows it (061); null without that tree. */
   async getUiTree(id: string, side: 'current' | 'baseline'): Promise<InspectorTree | null> {
     const testRun = await this.findOne(id);
     if (!testRun) throw new NotFoundException('Test run not found');
     return this.uiTreeService.inspector(testRun, side);
   }
 
-  /** How to find one node of that tree in a rule and in a test (REQ-060-23, 30). */
+  /** How to find one node of that tree in a rule and in a test (REQ-061-23, 30). */
   async getUiTreeLocators(id: string, side: 'current' | 'baseline', index: number): Promise<NodeLocators> {
     const testRun = await this.findOne(id);
     if (!testRun) throw new NotFoundException('Test run not found');

@@ -47,6 +47,7 @@
 | Хук лічильника | `frontend/src/components/motion/useCountUp.tsx` | доводить число до значення за 600 ms, одразу при reduced motion |
 | Каскад | `frontend/src/components/motion/Stagger.tsx` | `staggered(i)`: клас входу й затримка рядка каскаду |
 | Сегменти | `frontend/src/components/motion/SlidingToggleGroup.tsx` | `ToggleButtonGroup`, підсвітка якого переїжджає; `rememberAs` — для перемикача, що монтується наново (Table/Grid) |
+| Поява екрана й вкладки | `frontend/src/components/motion/useEnterOnChange.tsx` | коли змінюється ключ (адреса в `App.tsx`, збірка й вкладка в `ProjectPage.tsx`), елемент за 240 ms проявляється й осідає на 8 px угору або на 24 px убік, куди рушила вкладка (`enterDirection`, `enterKeyframes` у `motion.helper.ts`); через Web Animations, без перемонтування, тож стан сторінки не губиться; при першій появі не грає — там уже каскад; після екрана, що простояв менше 180 ms (перенаправлення), теж; при reduced motion не грає зовсім |
 | Заготовки | `frontend/src/components/SkeletonList.tsx` | відблиск замість спінера |
 
 ### Шапка, навігація, меню
@@ -197,7 +198,7 @@ Undo на сервері дозволене до 30 s після рішення:
 | REQ-018-10 | `frontend/src/components/BrandMark.test.tsx › draws the nest mark and the two square dots` |
 | REQ-018-11 | `frontend/src/components/BrandMark.test.tsx › has no magenta at rest` |
 | REQ-018-12 | `frontend/src/components/BrandMark.test.tsx › plays once on mount and again on hover` |
-| REQ-018-20 | `frontend/src/theme.test.ts › motion durations stay between 180 and 320 ms with one easing` |
+| REQ-018-20 | `frontend/src/theme.test.ts › motion durations stay between 180 and 320 ms with one easing`; `frontend/src/_helpers/motion.helper.test.ts › brings a tab's content in from the side the user moved towards`, `› enters by settling into place and leaves nothing behind`; `frontend/integration_tests/test/motion.spec.ts › screens and build tabs settle in instead of snapping`, `› screens change at once with reduced motion` (REQ-018-26) |
 | REQ-018-21 | `frontend/src/_helpers/motion.helper.test.ts › staggers rows by 34 ms and ends the cascade by 700 ms` |
 | REQ-018-22 | `frontend/integration_tests/test/motion.spec.ts › highlights travel to the new item instead of jumping` (рейка, вкладка збірки, сегмент Table/Grid); Appearance — той самий `SlidingToggleGroup` |
 | REQ-018-23 | `frontend/src/_helpers/motion.helper.test.ts › counts up to the value in 600 ms` |
@@ -228,7 +229,7 @@ Undo на сервері дозволене до 30 s після рішення:
 | REQ-018-52 | `frontend/integration_tests/test/projectList.spec.ts › creates a project from three fields and opens its settings` |
 | REQ-018-53 | `backend/src/projects/settings-conflict.spec.ts › reports settings someone changed after the page was opened` |
 | REQ-018-60 | `frontend/integration_tests/test/testRunGrid.spec.ts › shows phone screenshots as portrait cards` |
-| REQ-018-61 | `frontend/integration_tests/test/projec.spec.ts › collapses a change group from its header` |
+| REQ-018-61 | `frontend/integration_tests/test/projec.spec.ts › shows every change group open, with no fold in its header` |
 | REQ-018-62 | `frontend/integration_tests/test/testVariationList.spec.ts › filters with chips and hides merge behind a button` |
 | REQ-018-63 | `frontend/integration_tests/test/testVariationDetails.spec.ts › shows the picked baseline next to the one before` |
 | REQ-018-64 | `frontend/src/_helpers/insights.helper.test.ts › sizes each bar against the largest value of its table` |

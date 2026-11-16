@@ -1,5 +1,5 @@
 import React from "react";
-import { Route, Routes, Navigate } from "react-router-dom";
+import { Route, Routes, Navigate, useParams } from "react-router-dom";
 import LoginPage from "./pages/LoginPage";
 import ProjectsListPage from "./pages/ProjectListPage";
 import ProjectPage from "./pages/ProjectPage";
@@ -8,7 +8,6 @@ import { routes } from "./constants";
 import ProfilePage from "./pages/ProfilePage";
 import TestVariationListPage from "./pages/TestVariationListPage";
 import InsightsPage from "./pages/InsightsPage";
-import ScreenSearchPage from "./pages/ScreenSearchPage";
 import InspectorPage from "./pages/InspectorPage";
 import UserListPage from "./pages/UserListPage";
 import BackupsPage from "./pages/BackupsPage";
@@ -22,6 +21,13 @@ import { PrintReportPage, PublicReportPage } from "./pages/ReportPage";
 function RegisterRoute() {
   const { user } = useUserState();
   return <Navigate to={user ? routes.HOME : routes.LOGIN} replace />;
+}
+
+// screen search left the interface (spec 060): an old link opens the project's
+// builds, where project access is checked as for any other page (REQ-061-51)
+function SearchRedirect() {
+  const { projectId } = useParams();
+  return <Navigate to={`${routes.HOME}${projectId}`} replace />;
 }
 
 function Router() {
@@ -70,9 +76,9 @@ function Router() {
       />
       <Route
         path={`${routes.SEARCH_PAGE}/:projectId`}
-        element={<PrivateRoute component={ScreenSearchPage} />}
+        element={<SearchRedirect />}
       />
-      {/* one check's UI tree on the whole window (060) */}
+      {/* one check's UI tree on the whole window (061) */}
       <Route
         path={routes.INSPECT_PAGE}
         element={<PrivateRoute component={InspectorPage} />}

@@ -7,7 +7,7 @@ import {
 import { buildTestRunLocation } from "./route.helpers";
 import { routes } from "../constants";
 
-/** What the Elements tab says about a node on its row (REQ-060-17). */
+/** What the Elements tab says about a node on its row (REQ-061-17). */
 export interface NodeMark {
   change?: StructuralChange["kind"];
   a11y?: number;
@@ -67,7 +67,7 @@ const ancestorsOf = (nodes: InspectorNode[], index: number): number[] => {
 
 /**
  * What is unfolded when the tab opens: the first two levels, and the way to
- * every changed or flagged node (REQ-060-05).
+ * every changed or flagged node (REQ-061-05).
  */
 export function initialOpen(
   nodes: InspectorNode[],
@@ -95,7 +95,7 @@ export function openTo(
   return next;
 }
 
-/** Whether a search finds the node: its class, id, text or label, whatever the case (REQ-060-22). */
+/** Whether a search finds the node: its class, id, text or label, whatever the case (REQ-061-22). */
 export function matchesQuery(node: InspectorNode, query: string): boolean {
   const needle = query.trim().toLowerCase();
   if (!needle) return true;
@@ -109,7 +109,7 @@ export function matchesQuery(node: InspectorNode, query: string): boolean {
   );
 }
 
-/** The nodes a test keeps, with every ancestor, so each stays in its place (REQ-060-21, 22). */
+/** The nodes a test keeps, with every ancestor, so each stays in its place (REQ-061-21, 22). */
 export function keepWithAncestors(
   nodes: InspectorNode[],
   test: (node: InspectorNode) => boolean,
@@ -134,7 +134,7 @@ export interface TreeRow {
 }
 
 /**
- * The rows shown, in tree order: what folded nodes hold is left out (REQ-060-04).
+ * The rows shown, in tree order: what folded nodes hold is left out (REQ-061-04).
  * While a search or a filter is on, everything it keeps is shown unfolded.
  */
 export function visibleRows(
@@ -171,7 +171,7 @@ const contains = (rect: Rect, point: { x: number; y: number }) =>
   point.y >= rect.y &&
   point.y < rect.y + rect.height;
 
-/** The smallest node with a place on the screenshot under a point (REQ-060-12, 13). */
+/** The smallest node with a place on the screenshot under a point (REQ-061-12, 13). */
 export function nodeAt(
   point: { x: number; y: number } | null,
   nodes: InspectorNode[],
@@ -194,7 +194,7 @@ export const sameNode = (
   other: InspectorNode[] | undefined,
 ) => (node && other ? other.find((item) => item.key === node.key) : undefined);
 
-/** Attributes whose value the baseline has otherwise: name → the baseline's value (REQ-060-18). */
+/** Attributes whose value the baseline has otherwise: name → the baseline's value (REQ-061-18). */
 export function baselineValues(
   node: InspectorNode,
   baseline: InspectorNode | undefined,
@@ -212,7 +212,7 @@ export function baselineValues(
 export type TreeKeyAction =
   { select: number } | { open: number } | { fold: number } | null;
 
-/** What an arrow key does in the tree (REQ-060-25). */
+/** What an arrow key does in the tree (REQ-061-25). */
 export function keyAction(
   key: string,
   rows: TreeRow[],
@@ -237,7 +237,7 @@ export function keyAction(
   return null;
 }
 
-/** A node outlined on a screenshot: the one chosen solid, the one pointed at dashed (REQ-060-10, 11). */
+/** A node outlined on a screenshot: the one chosen solid, the one pointed at dashed (REQ-061-10, 11). */
 export interface TreeOutline {
   id: string;
   rect: Rect;
@@ -250,7 +250,7 @@ const outlineLabel = (node: InspectorNode) =>
 
 /**
  * The outlines for one screenshot. A node is shown where its own tree is; on
- * the other screenshot, the node with the same key is (REQ-060-11).
+ * the other screenshot, the node with the same key is (REQ-061-11).
  */
 export function treeOutlines(
   screenshot: TreeSide,
@@ -285,7 +285,7 @@ export function treeOutlines(
   return outlines;
 }
 
-/** The inspector page of a check, on one tree and node (REQ-060-31, 33). */
+/** The inspector page of a check, on one tree and node (REQ-061-31, 33). */
 export function inspectorLocation(
   testRunId: string,
   side: TreeSide,
@@ -309,7 +309,7 @@ export function readTreePlace(search: string): {
   return node === undefined ? { side } : { side, node };
 }
 
-/** Back to the comparison of the check, on the Elements tab with the node (REQ-060-35). */
+/** Back to the comparison of the check, on the Elements tab with the node (REQ-061-35). */
 export function comparisonLocation(
   projectId: string,
   buildId: string,

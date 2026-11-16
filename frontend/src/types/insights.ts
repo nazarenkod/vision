@@ -650,7 +650,7 @@ export interface BugDraft {
   cached: boolean;
 }
 
-/** A node of a check's UI tree as the Elements tab shows it (060). */
+/** A node of a check's UI tree as the Elements tab shows it (061). */
 export interface InspectorNode {
   index: number;
   parent: number | null;
@@ -684,7 +684,7 @@ export interface Locator {
   matches: number;
 }
 
-/** How to find a node: Vision's selectors for rules and locators for tests (REQ-060-23). */
+/** How to find a node: Vision's selectors for rules and locators for tests (REQ-061-23). */
 export interface NodeLocators {
   vision: Locator[];
   test: Locator[];

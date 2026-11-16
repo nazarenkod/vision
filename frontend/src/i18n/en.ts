@@ -33,6 +33,8 @@ export const en = {
   "nav.builds": "Builds",
   "nav.baselines": "Baselines",
   "nav.insights": "Insights",
+  "presence.here": "Open now: {names}",
+  "presence.alsoHere": "here too",
   "nav.search": "Search",
   "nav.users": "Users",
   "nav.profile": "Profile",

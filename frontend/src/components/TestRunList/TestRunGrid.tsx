@@ -1,4 +1,5 @@
 import React from "react";
+import { PresenceAvatars } from "../PresenceAvatars";
 import {
   Box,
   Card,
@@ -219,6 +220,9 @@ export const TestRunGrid: React.FunctionComponent<{
                 data-testid="cardStatus"
               >
                 <TestStatusChip status={run.status} />
+              </Box>
+              <Box position="absolute" bottom={8} right={8}>
+                <PresenceAvatars testRunId={run.id} />
               </Box>
               <Checkbox
                 size="small"

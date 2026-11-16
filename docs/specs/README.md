@@ -122,6 +122,7 @@ docs/specs/NNN-коротка-назва/
 | [053](053-screen-search/spec.md) | Пошук екранів за UI-деревом (підказки й вирізки — бета) | Implemented |
 | [054](054-rules-from-noise-history/spec.md) | Правила з історії шуму | Approved |
 | [055](055-bulk-decisions-by-query/spec.md) | Рев'ю за елементом (бета) | Implemented |
+| [056](056-review-together/spec.md) | Рев'ю удвох: хто зараз дивиться екран | Implemented |
 
 Статусу `Verified` поки немає в жодної: інтеграцію з реальною Jira Cloud і прогони на сервері
 команда ще не підтвердила.

@@ -28,6 +28,8 @@ export const uk: Messages = {
   "nav.builds": "Збірки",
   "nav.baselines": "Еталони",
   "nav.insights": "Аналітика",
+  "presence.here": "Зараз відкрито: {names}",
+  "presence.alsoHere": "теж тут",
   "nav.search": "Пошук",
   "nav.users": "Користувачі",
   "nav.profile": "Профіль",
@@ -977,7 +979,8 @@ export const uk: Messages = {
   "elements.approve": "Прийняти {count}",
   "elements.reject": "Відхилити {count}",
   "elements.alsoElsewhere": "На цьому екрані змінилось ще щось",
-  "elements.noElements": "Жоден елемент не змінився більше ніж на одному екрані",
+  "elements.noElements":
+    "Жоден елемент не змінився більше ніж на одному екрані",
   "elements.loadFailed": "Не вдалося завантажити елементи: {error}",
   "elements.moreScreens": {
     one: "ще {count} екран",

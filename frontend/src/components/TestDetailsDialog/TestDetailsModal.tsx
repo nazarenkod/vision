@@ -1462,7 +1462,6 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
         branchName={testRun.baselineBranchName}
         imageName={testRun.baselineName}
         image={baselineImage}
-        ignoreAreas={[]}
         onHistory={testRun.testVariationId ? openHistoryTab : undefined}
       />,
       <DrawArea
@@ -1507,7 +1506,6 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
         branchName={branchName}
         imageName={imageName}
         image={image}
-        ignoreAreas={readAreas(testRun.tempIgnoreAreas)}
         sizeDiffers={!!isImageSizeDiffer}
       />,
       <DrawArea

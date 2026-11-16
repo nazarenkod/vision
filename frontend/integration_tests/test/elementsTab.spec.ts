@@ -22,7 +22,7 @@ import {
   unfoldPanel,
 } from "utils/mocks";
 
-// Spec 061: the check's UI tree beside the screenshots, and on its own page.
+// Spec 062: the check's UI tree beside the screenshots, and on its own page.
 
 const project = TEST_PROJECT;
 const build = TEST_BUILD_FAILED;
@@ -182,7 +182,7 @@ const clickAt = async (
 const chosenRow = (page: Page) =>
   page.locator('[data-testid="treeRow"][aria-selected="true"]');
 
-test.describe("Elements tab (061)", () => {
+test.describe("Elements tab (062)", () => {
   test.beforeEach(async ({ page }) => mockApi(page));
 
   test("lists Elements third, opens on Changes and picks from the screenshots", async ({
@@ -217,7 +217,7 @@ test.describe("Elements tab (061)", () => {
       fullPage: true,
     });
 
-    // a click on the baseline turns the tab to its tree (REQ-061-20)
+    // a click on the baseline turns the tab to its tree (REQ-062-20)
     await clickAt(page, "baseline", 1000, 340);
     await expect(page.getByTestId("treeBaseline")).toHaveAttribute(
       "aria-pressed",

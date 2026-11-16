@@ -275,7 +275,7 @@ export class TestRunsController {
 
   @ProjectFrom(inParam('id', 'testRun'))
   @Get(':id/ui-tree/locators')
-  @ApiOkResponse({ description: "Vision selectors and test locators of one node of the run's UI tree (061)" })
+  @ApiOkResponse({ description: "Vision selectors and test locators of one node of the run's UI tree (062)" })
   @ApiQuery({ name: 'side', required: true, enum: ['current', 'baseline'] })
   @ApiQuery({ name: 'index', required: true })
   @ApiBearerAuth()
@@ -290,7 +290,7 @@ export class TestRunsController {
 
   @ProjectFrom(inParam('id', 'testRun'))
   @Get(':id/ui-tree')
-  @ApiOkResponse({ description: "The run's or its baseline's UI tree, node by node, for the Elements tab (061)" })
+  @ApiOkResponse({ description: "The run's or its baseline's UI tree, node by node, for the Elements tab (062)" })
   @ApiQuery({ name: 'side', required: true, enum: ['current', 'baseline'] })
   @ApiBearerAuth()
   @UseGuards(MixedGuard)

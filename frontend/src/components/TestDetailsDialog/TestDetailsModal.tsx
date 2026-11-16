@@ -241,10 +241,10 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
   const [a11yOverlay, setA11yOverlay] = useState(true);
   // issue boxes only while their tab is open, so they do not cover the changes (REQ-058-02)
   const [panelTab, setPanelTab] = useState<PanelTab>("changes");
-  // the UI tree beside the screenshots (061): which tree, the node chosen and the one pointed at
+  // the UI tree beside the screenshots (062): which tree, the node chosen and the one pointed at
   const location = useLocation();
   const navigate = useNavigate();
-  // back from the inspector page, the address names the tab and the node (REQ-061-35)
+  // back from the inspector page, the address names the tab and the node (REQ-062-35)
   const [panelPlace] = useState(() => readPanelPlace(location.search));
   const [treeSide, setTreeSide] = useState<TreeSide>(
     panelPlace?.side ?? "current",
@@ -951,7 +951,7 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
     return marks;
   };
   const selectingNow = pickMode || !!selection || !!previewElement;
-  // on the Elements tab the screenshots answer to the tree, unless selecting or drawing (REQ-061-10…13, 20)
+  // on the Elements tab the screenshots answer to the tree, unless selecting or drawing (REQ-062-10…13, 20)
   const treePicking =
     panelTab === "elements" &&
     !pickMode &&
@@ -977,7 +977,7 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
     const node = nodeAt(point, treeNodes(side));
     setTreePointed(node ? { side, index: node.index } : undefined);
   };
-  // a click on the baseline turns the tab to the baseline's tree (REQ-061-20)
+  // a click on the baseline turns the tab to the baseline's tree (REQ-062-20)
   const treePick = (side: Side, point: { x: number; y: number }) => {
     const node = nodeAt(point, treeNodes(side));
     if (!node) return;

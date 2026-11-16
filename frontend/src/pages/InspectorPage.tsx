@@ -131,7 +131,7 @@ const Screen: React.FunctionComponent<{
   );
 };
 
-/** One check's UI tree on the whole window, with an address to share (REQ-061-31…37). */
+/** One check's UI tree on the whole window, with an address to share (REQ-062-31…37). */
 const InspectorPage: React.FunctionComponent = () => {
   const { t } = useT();
   const { testRunId = "" } = useParams();
@@ -183,7 +183,7 @@ const InspectorPage: React.FunctionComponent = () => {
     place.node !== undefined
       ? { side: place.side, index: place.node }
       : undefined;
-  // the address holds the tree and the node, so the page can be shared (REQ-061-33)
+  // the address holds the tree and the node, so the page can be shared (REQ-062-33)
   const go = (side: TreeSide, node?: number) =>
     navigate(inspectorLocation(testRunId, side, node), { replace: true });
   const notFound =
@@ -286,7 +286,7 @@ const InspectorPage: React.FunctionComponent = () => {
           gap: 3,
           p: 2,
           minWidth: 0,
-          // a narrow window: the screens, the tree and the card one under another (REQ-061-36)
+          // a narrow window: the screens, the tree and the card one under another (REQ-062-36)
           [NARROW]: { flexDirection: "column", alignItems: "stretch" },
         }}
       >

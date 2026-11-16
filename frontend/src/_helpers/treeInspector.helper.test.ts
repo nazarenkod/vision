@@ -73,7 +73,7 @@ const tree: InspectorNode[] = [
 const shown = (rows: ReturnType<typeof visibleRows>) =>
   rows.map((row) => row.index);
 
-describe("tree inspector (061)", () => {
+describe("tree inspector (062)", () => {
   it("opens two levels and the way to every marked node", () => {
     const open = initialOpen(tree, (n) => n.index === 6);
     // root and content: the first two levels; promo: on the way to the marked text

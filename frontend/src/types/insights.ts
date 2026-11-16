@@ -409,6 +409,8 @@ export interface SelectorVariant {
   // the stable element: its id without the package, or its text
   anchor: string;
   anchorKind: "id" | "text";
+  // found by the start of its text, which anchor then is in full (spec 061)
+  anchorMatch?: "start";
   // how many levels apart the element and the anchor are: 1 is a child or a parent
   levels?: number;
   // how many elements the selector takes on this screenshot
@@ -650,7 +652,7 @@ export interface BugDraft {
   cached: boolean;
 }
 
-/** A node of a check's UI tree as the Elements tab shows it (061). */
+/** A node of a check's UI tree as the Elements tab shows it (062). */
 export interface InspectorNode {
   index: number;
   parent: number | null;
@@ -684,7 +686,7 @@ export interface Locator {
   matches: number;
 }
 
-/** How to find a node: Vision's selectors for rules and locators for tests (REQ-061-23). */
+/** How to find a node: Vision's selectors for rules and locators for tests (REQ-062-23). */
 export interface NodeLocators {
   vision: Locator[];
   test: Locator[];

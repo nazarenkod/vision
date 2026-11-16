@@ -329,7 +329,7 @@ export class UiTreeService {
     }
   }
 
-  /** One side of a run's tree, node by node, for the Elements tab (061). */
+  /** One side of a run's tree, node by node, for the Elements tab (062). */
   async inspector(testRun: TestRun, side: 'current' | 'baseline'): Promise<InspectorTree | null> {
     const tree = await this.load(side === 'current' ? testRun.uiTreeName : testRun.baselineUiTreeName);
     return tree ? inspectorTree(tree) : null;

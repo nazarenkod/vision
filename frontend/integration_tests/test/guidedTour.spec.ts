@@ -152,10 +152,10 @@ test.describe("Guided Tour", () => {
   });
 });
 
-test("shows the Vision version in the help menu", async ({
+test("shows the Vision version in the account menu", async ({
   projectListPage,
 }) => {
-  await projectListPage.sideNav.helpMenuButton.click();
+  await projectListPage.sideNav.openAvatarMenu();
   // env-config.js is written from env.defaults, as in the image
-  await expect(projectListPage.sideNav.helpMenu).toContainText("Vision 1.0.0");
+  await expect(projectListPage.sideNav.version).toHaveText("Vision 1.0.0");
 });

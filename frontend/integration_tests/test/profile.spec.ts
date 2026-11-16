@@ -42,7 +42,9 @@ test("updates the user details", async ({ profilePage, page }) => {
   await expect(profilePage.notification.message).toHaveText("User updated");
   // the sidebar shows the saved user, and it is kept for the next visit
   await expect(profilePage.sideNav.avatarButton).toContainText("JD");
-  await expect(profilePage.sideNav.avatarButton).toContainText("Jane Doe");
+  await profilePage.sideNav.openAvatarMenu();
+  await expect(profilePage.sideNav.avatarMenu).toContainText("Jane Doe");
+  await page.keyboard.press("Escape");
   const stored = await page.evaluate(() =>
     JSON.parse(window.localStorage.getItem("user") ?? "{}"),
   );

@@ -11,7 +11,7 @@ import { buildDuration, buildPeriod } from "../_helpers/buildPeriod.helper";
 /**
  * Build header: identity and when it ran. How the screens came out is the
  * Overview's tiles and the tabs' badges (REQ-031-15); a bar of it only
- * repeated them (REQ-058-01).
+ * repeated them (REQ-059-01).
  */
 const BuildDetails: React.FunctionComponent<{
   // what can be done with the build: Report, Review (031)

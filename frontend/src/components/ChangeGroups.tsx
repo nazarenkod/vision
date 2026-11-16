@@ -113,7 +113,7 @@ const Tag: React.FunctionComponent<{
 );
 
 // one row a screen: which device, how much changed; it opens the screen.
-// No picture: at a glance a thumbnail showed little, and took the room (REQ-058-02)
+// No picture: at a glance a thumbnail showed little, and took the room (REQ-059-02)
 const ScreenRow: React.FunctionComponent<{
   run: TestRun;
   // a group across several screens says which one the row is

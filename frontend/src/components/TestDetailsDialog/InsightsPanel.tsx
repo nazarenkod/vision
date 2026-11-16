@@ -99,7 +99,7 @@ interface Props {
   onReportChanged: () => void;
   highlightedId?: string;
   onHighlight: (violation: A11yViolation) => void;
-  // the issue boxes on the screenshot follow the tab (REQ-057-02, 03)
+  // the issue boxes on the screenshot follow the tab (REQ-058-02, 03)
   onTabChange?: (tab: PanelTab) => void;
   aiEnabled: boolean;
   // element-level changes, rules and warnings, loaded by the dialog for the overlay too
@@ -215,7 +215,7 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
   const canEdit = user?.role === "admin" || user?.role === "editor";
   const withUiTree = hasUiTree(testRun);
 
-  // deciding on the changes is the review's main job, so it opens on them (REQ-057-01)
+  // deciding on the changes is the review's main job, so it opens on them (REQ-058-01)
   const [tab, setTab] = React.useState<PanelTab>("changes");
   React.useEffect(() => {
     onTabChange?.(tab);

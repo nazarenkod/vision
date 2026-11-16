@@ -83,7 +83,7 @@ test.beforeEach(async ({ page }) => {
   );
 });
 
-// the review opens on Changes (REQ-057-01): the problems are a tab away
+// the review opens on Changes (REQ-058-01): the problems are a tab away
 const openA11yTab = (page: Page) =>
   page
     .getByRole("complementary")
@@ -147,7 +147,7 @@ test("shows a problem filed on another screen as covered", async ({
     covered.getByRole("button", { name: "Create Jira bug" }),
   ).toHaveCount(0);
   await expect(
-    covered.getByRole("button", { name: "Unlink on every screen" }),
+    covered.getByRole("button", { name: "Unlink in every check" }),
   ).toBeVisible();
 });
 
@@ -202,7 +202,7 @@ test("shows the frames on the screenshot only on the Accessibility tab, which co
 
   const panel = page.getByRole("complementary");
   const tabs = panel.getByRole("tab");
-  // Changes first and chosen, and no issue boxes over the changes (REQ-057-01, 02)
+  // Changes first and chosen, and no issue boxes over the changes (REQ-058-01, 02)
   await expect(tabs.first()).toContainText("Changes");
   await expect(tabs.nth(1)).toContainText("Accessibility");
   await expect(tabs.first()).toHaveAttribute("aria-selected", "true");
@@ -216,7 +216,7 @@ test("shows the frames on the screenshot only on the Accessibility tab, which co
   await panel.getByTestId("a11yMarksSwitch").click();
   await expect.poll(() => frameAlpha(page, leftEdge)).toBe(0);
 
-  // switched back on, they still leave with the tab (REQ-057-02, 03)
+  // switched back on, they still leave with the tab (REQ-058-02, 03)
   await panel.getByTestId("a11yMarksSwitch").click();
   await expect.poll(() => frameAlpha(page, leftEdge)).toBeGreaterThan(0);
   await tabs.first().click();

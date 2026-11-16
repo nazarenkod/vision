@@ -228,7 +228,7 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
   const announce = useDecisionSnackbar(enqueueSnackbar);
   const [a11yReport, setA11yReport] = useState<A11yReport | null | undefined>();
   const [a11yOverlay, setA11yOverlay] = useState(true);
-  // issue boxes only while their tab is open, so they do not cover the changes (REQ-057-02)
+  // issue boxes only while their tab is open, so they do not cover the changes (REQ-058-02)
   const [panelTab, setPanelTab] = useState<PanelTab>("changes");
   const [highlightedViolation, setHighlightedViolation] = useState<string>();
   // what the pointer is over in the side panel (REQ-018-36)

@@ -1,11 +1,11 @@
-# 057 — Дизайн
+# 058 — Дизайн
 
 ## Підхід
 
 Вкладка панелі порівняння (`InsightsPanel`) типово «Зміни» для будь-якого знімка, і вкладка «Зміни»
-стоїть першою (REQ-057-01). Панель повідомляє діалогу обрану вкладку через `onTabChange`; діалог
+стоїть першою (REQ-058-01). Панель повідомляє діалогу обрану вкладку через `onTabChange`; діалог
 (`TestDetailsModal`) малює рамки знахідок на поточному знімку лише тоді, коли обрано «Доступність» і
-перемикач «Підсвічувати на поточному» увімкнено (REQ-057-02, 03). Стан перемикача окремий від
+перемикач «Підсвічувати на поточному» увімкнено (REQ-058-02, 03). Стан перемикача окремий від
 вкладки: повернувшись на «Доступність», QA бачить рамки такими, як лишив.
 
 ## Компоненти
@@ -29,6 +29,6 @@
 
 | Вимога | Перевірка |
 |---|---|
-| REQ-057-01 | `frontend/integration_tests/test/a11yProblems.spec.ts › shows the frames on the screenshot only on the Accessibility tab, which comes after Changes` |
-| REQ-057-02 | `frontend/integration_tests/test/a11yProblems.spec.ts › shows the frames on the screenshot only on the Accessibility tab, which comes after Changes` |
-| REQ-057-03 | `frontend/integration_tests/test/a11yProblems.spec.ts › shows the frames on the screenshot only on the Accessibility tab, which comes after Changes` |
+| REQ-058-01 | `frontend/integration_tests/test/a11yProblems.spec.ts › shows the frames on the screenshot only on the Accessibility tab, which comes after Changes` |
+| REQ-058-02 | `frontend/integration_tests/test/a11yProblems.spec.ts › shows the frames on the screenshot only on the Accessibility tab, which comes after Changes` |
+| REQ-058-03 | `frontend/integration_tests/test/a11yProblems.spec.ts › shows the frames on the screenshot only on the Accessibility tab, which comes after Changes` |

@@ -60,7 +60,7 @@ test("renders", async ({ openProjectPage, page }) => {
   const projectPage = await openProjectPage(project.id);
   await projectPage.buildList.getBuildLocator(TEST_BUILD_FAILED.number).click();
   // a build opens on its Overview (031); these are about the list of runs
-  await page.getByRole("tab", { name: /All screens|Усі екрани/ }).click();
+  await page.getByRole("tab", { name: /All checks|Усі перевірки/ }).click();
 
   await expect(page).toHaveScreenshot("project-page-test-run-list.png");
 
@@ -78,7 +78,7 @@ test("renders the build and the review in Ukrainian", async ({
   const projectPage = await openProjectPage(project.id);
   await projectPage.buildList.getBuildLocator(TEST_BUILD_FAILED.number).click();
   // a build opens on its Overview (031); these are about the list of runs
-  await page.getByRole("tab", { name: /All screens|Усі екрани/ }).click();
+  await page.getByRole("tab", { name: /All checks|Усі перевірки/ }).click();
 
   await expect(page).toHaveScreenshot("project-page-test-run-list-uk.png");
 
@@ -96,7 +96,7 @@ test("renders the review in Ukrainian in the dark theme", async ({
   const projectPage = await openProjectPage(project.id);
   await projectPage.buildList.getBuildLocator(TEST_BUILD_FAILED.number).click();
   // a build opens on its Overview (031); these are about the list of runs
-  await page.getByRole("tab", { name: /All screens|Усі екрани/ }).click();
+  await page.getByRole("tab", { name: /All checks|Усі перевірки/ }).click();
   await projectPage.testRunList.getRow(TEST_UNRESOLVED.id).click();
 
   await expect(page).toHaveScreenshot(
@@ -427,7 +427,7 @@ test("can download images", async ({ openProjectPage }) => {
   await projectPage.modal.confirmBtn.click();
 
   await expect(projectPage.notification.message).toHaveText(
-    "2 screens processed.",
+    "2 checks processed.",
   );
 });
 
@@ -864,7 +864,7 @@ test("lists a group's screens as rows without pictures, and a row opens its scre
 
   const group = page.getByTestId("changeGroup");
   const row = group.getByTestId("groupScreen");
-  // a row with the device and how much changed, no thumbnail (REQ-058-02)
+  // a row with the device and how much changed, no thumbnail (REQ-059-02)
   await expect(row).toHaveCount(1);
   await expect(row).toContainText("8.5%");
   await expect(group.locator("img")).toHaveCount(0);

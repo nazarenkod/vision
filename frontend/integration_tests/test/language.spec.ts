@@ -77,7 +77,7 @@ test("shows the project settings in Ukrainian", async ({ page, authUser }) => {
   await expect(page.getByTestId("section-mobile")).toBeVisible();
 });
 
-test("names the build tab All screens in both languages", async ({
+test("names the build tab All checks in both languages", async ({
   openProjectPage,
   page,
 }) => {
@@ -86,14 +86,14 @@ test("names the build tab All screens in both languages", async ({
   await mockGetTestRuns(page, TEST_BUILD_FAILED.id, []);
   await openProjectPage(TEST_PROJECT.id, TEST_BUILD_FAILED.id);
 
-  // a build image is a screen (REQ-046-17)
-  await expect(page.getByRole("tab", { name: /^All screens/ })).toBeVisible();
-  await expect(page.getByRole("tab", { name: /All tests/ })).toHaveCount(0);
+  // a build result is a check, not a screen (REQ-057-01)
+  await expect(page.getByRole("tab", { name: /^All checks/ })).toBeVisible();
+  await expect(page.getByRole("tab", { name: /All screens/ })).toHaveCount(0);
 
   await inUkrainian(page);
   await page.reload();
-  await expect(page.getByRole("tab", { name: /^Усі екрани/ })).toBeVisible();
-  await expect(page.getByRole("tab", { name: /Усі перевірки/ })).toHaveCount(0);
+  await expect(page.getByRole("tab", { name: /^Усі перевірки/ })).toBeVisible();
+  await expect(page.getByRole("tab", { name: /Усі екрани/ })).toHaveCount(0);
 });
 
 // Ukrainian texts run longer: nothing is cut off or wrapped mid-word

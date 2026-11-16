@@ -1,3 +1,4 @@
+import { InspectorTree, NodeLocators } from '../ui-tree/inspector-tree';
 import {
   BadRequestException,
   forwardRef,
@@ -509,6 +510,22 @@ export class TestRunsService {
   async getStructure(id: string): Promise<StructureInfo | null> {
     const testRun = await this.findOne(id);
     return testRun ? this.uiTreeService.structure(testRun) : null;
+  }
+
+  /** The run's or its baseline's UI tree as the Elements tab shows it (062); null without that tree. */
+  async getUiTree(id: string, side: 'current' | 'baseline'): Promise<InspectorTree | null> {
+    const testRun = await this.findOne(id);
+    if (!testRun) throw new NotFoundException('Test run not found');
+    return this.uiTreeService.inspector(testRun, side);
+  }
+
+  /** How to find one node of that tree in a rule and in a test (REQ-062-23, 30). */
+  async getUiTreeLocators(id: string, side: 'current' | 'baseline', index: number): Promise<NodeLocators> {
+    const testRun = await this.findOne(id);
+    if (!testRun) throw new NotFoundException('Test run not found');
+    const locators = await this.uiTreeService.locators(testRun, side, index);
+    if (!locators) throw new NotFoundException('No such element in this UI tree');
+    return locators;
   }
 
   /** The check's last runs up to this one, for the trend in the comparison header (REQ-046-08). */

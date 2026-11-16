@@ -651,3 +651,45 @@ export interface BugDraft {
   expected: string;
   cached: boolean;
 }
+
+/** A node of a check's UI tree as the Elements tab shows it (062). */
+export interface InspectorNode {
+  index: number;
+  parent: number | null;
+  // matches the node on the other tree, and the changes and findings about it
+  key: string;
+  className: string;
+  // the class without its package, the iOS type without XCUIElementType, the tag on the web
+  name: string;
+  // the id without the app's package
+  id: string;
+  text: string;
+  // named as the platform's page source names them
+  attributes: Array<[string, string]>;
+  // on the screenshot, in its pixels; null when it cannot be shown there
+  bounds: Rect | null;
+  hidden?: "unpositioned" | "invisible" | "empty";
+}
+
+export interface InspectorTree {
+  format: UiTreeFormat;
+  positioned: boolean;
+  width: number;
+  height: number;
+  nodes: InspectorNode[];
+}
+
+export interface Locator {
+  kind: string;
+  value: string;
+  // how many nodes of the tree it finds
+  matches: number;
+}
+
+/** How to find a node: Vision's selectors for rules and locators for tests (REQ-062-23). */
+export interface NodeLocators {
+  vision: Locator[];
+  test: Locator[];
+}
+
+export type TreeSide = "current" | "baseline";

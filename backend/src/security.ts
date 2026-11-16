@@ -3,7 +3,7 @@ import { NextFunction, Request, Response } from 'express';
 /**
  * How the API faces browsers (045). Only Vision's own interface may read answers in a script,
  * the documentation is off unless turned on, and every answer carries the standard headers a
- * security scan of the bank looks for. The SDK and the CLI are no browsers: CORS does not touch them.
+ * security scan looks for. The SDK and the CLI are no browsers: CORS does not touch them.
  */
 
 /** The origin of Vision's interface, from APP_FRONTEND_URL; false lets no other site read answers. */

@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
 # After the new Vision started on a fresh copy of production VRT: compares what Vision holds with
-# production, and checks what the first start had to do (docs/security/bank-readiness-plan.md,
-# «Перехід на нову версію», step 5).
+# production, and checks what the first start had to do (docs/guides/upgrade-to-1.0.md, step 8).
 #
 # Both databases are only read: counts and checks with SELECT. Production keeps working while
 # this runs, so it may already hold more than the copy; that is reported, not a problem.
@@ -79,7 +78,7 @@ WITHOUT_ACCESS="$(vision_sql "select count(*) as without_access from \"User\" u 
 [ "$WITHOUT_ACCESS" = "0" ] && echo "    everyone sees their projects, as in VRT" ||
   echo "    $WITHOUT_ACCESS person(s) see no project: an admin gives access in a project's settings"
 if [ -z "${VISION_JIRA_HOSTS:-}" ]; then
-  echo "    VISION_JIRA_HOSTS is empty: Vision calls no Jira until it lists the bank's Jira host"
+  echo "    VISION_JIRA_HOSTS is empty: Vision calls no Jira until it lists your Jira host"
 fi
 
 if [ "$PROBLEMS" -gt 0 ]; then

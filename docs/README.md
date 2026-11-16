@@ -18,13 +18,14 @@
 | Jira | [005](specs/005-jira-bugs/spec.md), [ADR-0010](decisions/0010-personal-jira-tokens.md) |
 | Порівняння мобільних екранів | [002](specs/002-ui-tree-analysis/spec.md), [001](specs/001-check-identity/spec.md) |
 | Розгортання й оновлення сервера | [DEPLOY.md](../DEPLOY.md), [011](specs/011-deployment-safety/spec.md), [ADR-0002](decisions/0002-production-is-read-only.md) |
-| Перехід на версію для банку на сервері | [bank-cutover](guides/bank-cutover.md), [DEPLOY.md §11](../DEPLOY.md), [план](security/bank-readiness-plan.md) |
+| Перехід зі старішої версії на 1.0 | [upgrade-to-1.0](guides/upgrade-to-1.0.md), [DEPLOY.md §11](../DEPLOY.md) |
 | Бекапи: налаштувати й перевірити на сервері | [google-drive-access](guides/google-drive-access.md), [backup-trial](guides/backup-trial.md), [DEPLOY.md §12](../DEPLOY.md), [013](specs/013-backups-and-secrets/spec.md), [017](specs/017-backup-settings-ui/spec.md) |
 | Підключення автотестів, SDK | [DEPLOY.md §7–8](../DEPLOY.md), [012](specs/012-java-sdk/spec.md) |
 | Ручні перевірки | [009](specs/009-manual-checks-cli-mcp/spec.md) |
 | Локальний запуск | [development](guides/development.md) |
 | Тести й перевірка змін | [testing](guides/testing.md) |
-| Заведення в банківський контур: аудит і план | [аудит](security/audit-2026-11-04.md), [план](security/bank-readiness-plan.md) |
+| Вимоги до сервера, змінні, експлуатація | [вимоги](admin/requirements.md), [налаштування](admin/configuration.md), [експлуатація](admin/operations.md) |
+| Безпека й ліцензії | [огляд безпеки](security/overview.md), [звіт аудиту](../audit/security-audit-2026-11.md), [сторонні компоненти](security/third-party-licenses.md) |
 
 ## Будова
 
@@ -38,6 +39,8 @@
 | `specs/` | довідка (контракт) | що система повинна робити: `spec.md`, як зроблено й чим перевірено: `design.md`, кроки: `tasks.md` |
 | `decisions/` | пояснення | чому саме так (ADR) |
 | `guides/` | інструкції (how-to) | як запустити, перевірити, працювати агентом, писати документацію |
+| `admin/` | довідка, інструкції | вимоги до середовища, змінні, експлуатація |
+| `security/` | пояснення, довідка | як захищено, залишкові ризики, ліцензії; звіт аудиту — у [`audit/`](../audit/security-audit-2026-11.md) |
 
 [DEPLOY.md](../DEPLOY.md) (рос.) — інструкція для того, хто розгортає Vision поруч із продом;
 [DEMO.md](../DEMO.md) (англ.) — для показу. Інженерні деталі — тут.

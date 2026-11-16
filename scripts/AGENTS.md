@@ -12,7 +12,7 @@
 | `vision-restore.sh` | відновлення з бекапу, майстер-адміністратор |
 | `vision-convert-env.py` | налаштування старішого Vision для цієї версії: `VRT_*` → `VISION_*`, `VISION_SECRET_KEY`, `VISION_JIRA_HOSTS`, новий `JWT_SECRET`, колишня `POSTGRES_DB`; показує зміни без секретів, пише лише після `yes`, старий файл лишає поруч |
 | `vision-check-cutover.sh` | після першого старту на копії VRT: `/health`, міграції, кількості рядків проти проду (лише `SELECT`), чи анульовані ключі й зашифровані токени |
-| `export-without-history.sh` | код коміту як новий репозиторій з одним комітом, без історії (план 3.6): лише відстежувані файли, нічого не пушить; запуск — лише за рішенням власника |
+| `export-without-history.sh` | код коміту як новий репозиторій з одним комітом, без історії: лише відстежувані файли, нічого не пушить; запуск — лише за рішенням власника |
 | `lib/vision-backup.sh` | спільне для бекапу: секретні колонки, дамп в одному знімку бази |
 | `build-sdk-jar.sh` | збирає jar SDK `ua.vision:vision-sdk` (версія з `sdk-java/build.gradle`) у `dist/sdk-java/` (не в git), прибирає звідти старі jar; `VISION_GRADLE_FLAGS=--offline` — без мережі |
 | `upload-uitree-samples.py` | надсилає пари PNG + XML з папки як перевірки (для демо без пристрою) |
@@ -31,7 +31,7 @@
 | `tests/test_prod_read_only.py` | копія з проду лише читає VRT (`SELECT` і `pg_dump`), картинки VRT не змінюються, запобіжники зупиняють до запису; замінник `docker`, працює й на macOS; так само перевірка після переходу (`vision-check-cutover.sh`) |
 | `tests/test_vision_convert_env.py` | конвертація налаштувань: перейменування, ключі, база, без секретів у виводі, копія старого файла |
 | `tests/test_export_without_history.py` | експорт без історії на тимчасовому репозиторії: один коміт, без старих версій файлів і невідстежуваного |
-| `tests/test_api_hardening.py` | compose передає в API всі `LDAP_*`/`OIDC_*` і `VISION_SWAGGER`; nginx інтерфейсу ставить ті самі заголовки безпеки (045) |
+| `tests/test_api_hardening.py` | compose передає в API всі `LDAP_*`/`OIDC_*` і `VISION_SWAGGER`, а в `ui` — кожне налаштування з `frontend/env.defaults`; nginx інтерфейсу ставить ті самі заголовки безпеки (045) |
 | `tests/test_project_access_migration.py` | міграція доступу до проєктів дає кожному наявному кожен наявний проєкт і нічого більше (042); на локальному Postgres, без нього пропускається |
 | `tests/test_protected_images.py` | жодної прямої видачі збережених файлів: ні статики в API, ні `/static/imageUploads` в nginx, ні тому картинок у контейнері `ui` (043) |
 | `tests/test_vision_backup.py` | бекап, відновлення й бекап перед копією проду на локальному Postgres (замінники `docker`, `rclone`) |

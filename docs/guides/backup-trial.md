@@ -98,12 +98,12 @@ git pull
 
 ## Крок 2. OAuth-клієнт Google (робить людина)
 
-Агент цього не робить: потрібен браузер і права в Google Cloud проєкті банку. Попроси людину
+Агент цього не робить: потрібен браузер і права в Google Cloud проєкті організації. Попроси людину
 (якщо ще не зроблено) пройти [google-drive-access](google-drive-access.md), кроки 1–3, коротко:
 
-1. Google Cloud Console → проєкт банку → «APIs & Services» → «Library» → **Google Drive API** → Enable.
+1. Google Cloud Console → проєкт організації → «APIs & Services» → «Library» → **Google Drive API** → Enable.
 2. «OAuth consent screen» → тип **Internal**. Якщо Internal недоступний — зупинись: проєкт поза
-   організацією банку, доступ зникав би кожні 7 днів.
+   організацією, доступ зникав би кожні 7 днів.
 3. «Credentials» → «Create credentials» → «OAuth client ID» → тип **TVs and Limited Input
    devices** → зберегти Client ID і Client secret.
 

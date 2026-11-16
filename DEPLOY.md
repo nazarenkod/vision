@@ -107,7 +107,7 @@ cp .env.demo.example .env.demo
 |---|---|
 | `JWT_SECRET` | новый случайный секрет (`openssl rand -base64 32`), **не** секрет рабочего VRT: с общим секретом вход в Vision открывал бы и рабочий VRT. API не стартует со значением из примера, с секретом короче 32 символов и с тем же значением, что у `VISION_SECRET_KEY` ([051](docs/specs/051-security-quick-fixes/spec.md)) |
 | `VISION_SECRET_KEY` | длинный случайный ключ (`openssl rand -base64 32`), **хранить навсегда**: им зашифрованы токены Jira и ключи Gemini в базе. Без него API не стартует; новый ключ — все вводят токены заново ([044](docs/specs/044-secrets-at-rest/spec.md)). Те же требования, что к `JWT_SECRET` ([051](docs/specs/051-security-quick-fixes/spec.md)) |
-| `VISION_JIRA_HOSTS` | хосты Jira через запятую, куда можно отправлять личные токены, например `jira.bank.example`: токен уходит только по `https` на стандартный порт и не идёт за переадресацией. Jira на другом порту или по `http` — запись со схемой и портом, например `https://jira.bank.example:8443` ([051](docs/specs/051-security-quick-fixes/spec.md)). Пусто — Vision в Jira не ходит, а адрес Jira в проекте не сохранить |
+| `VISION_JIRA_HOSTS` | хосты Jira через запятую, куда можно отправлять личные токены, например `jira.example.com`: токен уходит только по `https` на стандартный порт и не идёт за переадресацией. Jira на другом порту или по `http` — запись со схемой и портом, например `https://jira.example.com:8443` ([051](docs/specs/051-security-quick-fixes/spec.md)). Пусто — Vision в Jira не ходит, а адрес Jira в проекте не сохранить |
 | `DEMO_UI_URL` | адрес UI так, как его видит браузер, например `http://vision-host:18080` |
 | `DEMO_API_URL` | адрес API так, как его видит браузер и автотесты, например `http://vision-host:14200` |
 | `PROD_PG_CONTAINER` | имя контейнера Postgres прода, **или** |
@@ -390,7 +390,7 @@ mvn install:install-file -Dfile=dist/sdk-java/vision-sdk-1.0.0.jar -DpomFile=dis
 Maven предупредит о `system` scope, это нормально.
 
 `1.0.0` покрыта тестами SDK (`gradle test`) и контрольным сценарием (`./scripts/control-scenario.sh`:
-настоящий SDK против настоящего сервера). Maven-проектом в банке её ещё не прогоняли.
+настоящий SDK против настоящего сервера). Во внешнем Maven-проекте её ещё не прогоняли.
 Публикация в Nexus настроена (`gradle publish -PrepoUrl=...`, см. `sdk-java/README.md`).
 
 ### 7.1. Веб: Selenide
@@ -584,19 +584,19 @@ git pull
 docker run --rm --user 0 --entrypoint chown -v "$PWD/demo-data:/data" vision-api -R "$(id -u):$(id -g)" /data/imageUploads /data/backup-config /data/backup-status
 ```
 
-### Переход на версию для банка (с версии до 1.0.0 SDK)
+### Переход на версию 1.0 (с версии до 1.0.0 SDK)
 
 Новая версия шифрует секреты, закрывает снимки подписью и делит проекты по доступу
 ([042](docs/specs/042-project-access/spec.md)–[044](docs/specs/044-secrets-at-rest/spec.md)), поэтому
 переход — по шагам, а не одним `git pull`. Прод VRT при этом только читается.
-Та же инструкция по-украински, с тем, что именно читается из VRT, — [bank-cutover](docs/guides/bank-cutover.md).
+Та же инструкция по-украински, с тем, что именно читается из VRT, — [upgrade-to-1.0](docs/guides/upgrade-to-1.0.md).
 
 1. Остановить старый Vision: `./scripts/vision.sh stop`.
 2. Забрать код: `git pull`.
 3. Перевести настройки (покажет изменения, спросит `yes`, старый файл сохранит рядом):
 
    ```bash
-   python3 -I scripts/vision-convert-env.py --jira-hosts jira.bank.example
+   python3 -I scripts/vision-convert-env.py --jira-hosts jira.example.com
    ```
 
    Появятся `VISION_SECRET_KEY` (храните его: без него токены Jira не прочитать), `VISION_JIRA_HOSTS`,
@@ -633,11 +633,11 @@ Drive рабочего аккаунта администратора ([013](docs
 
 ### Настроить один раз
 
-1. **OAuth-клиент** в [Google Cloud Console](https://console.cloud.google.com), в проекте банка
+1. **OAuth-клиент** в [Google Cloud Console](https://console.cloud.google.com), в проекте вашей организации
    (подробно, с ошибками и почему так — [google-drive-access](docs/guides/google-drive-access.md)):
    - «APIs & Services» → «Library» → **Google Drive API** → «Enable»;
    - «OAuth consent screen» (или «Google Auth Platform») → тип **Internal**, название `Vision
-     backups`. Если Internal недоступен, проект создан вне организации банка: создайте его в ней.
+     backups`. Если Internal недоступен, проект создан вне вашей организации: создайте его в ней.
      У типа External в режиме Testing доступ пропадает через 7 дней;
    - «Credentials» → «Create credentials» → «OAuth client ID» → тип **TVs and Limited Input
      devices** → «Create». Сохраните Client ID и Client secret.
@@ -687,7 +687,7 @@ Drive рабочего аккаунта администратора ([013](docs
 Берёт последний бэкап (или указанный: `./scripts/vision-restore.sh vision-20261027T031700Z.tar`),
 показывает план и ждёт `yes`. На чистой машине: §2–3 (код и `.env.demo`), шаги 1–3 выше, войти
 пользователем по умолчанию пустого Vision (`DEFAULT_USER_EMAIL` / `DEFAULT_USER_PASSWORD` из
-`.env.demo`; если не заданы — `visual-regression-tracker@example.com` / `123456`), подключить Drive
+`.env.demo`; если не заданы — `admin@vision.local` / `123456`), подключить Drive
 на странице Backups тем же рабочим аккаунтом и тем же OAuth-клиентом (Vision видит только файлы
 своего клиента), затем restore:
 подключение лежит в `demo-data/backup-config` и восстановлением базы не затирается.

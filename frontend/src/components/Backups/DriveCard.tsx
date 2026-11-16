@@ -21,7 +21,7 @@ interface Props {
 }
 
 /**
- * Google Drive is connected with a device code: Vision is served over http inside the bank's
+ * Google Drive is connected with a device code: Vision is served over http inside a company's
  * network, where Google does not redirect sign-ins. The secret never comes back from the API.
  */
 export const DriveCard: React.FunctionComponent<Props> = ({

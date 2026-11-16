@@ -11,8 +11,8 @@
 [ADR-0024](0024-own-vision-sdk.md) почав відходити від вихідного проєкту кроками: головні класи вже
 `Vision*`, але пакет `io.visual_regression_tracker.sdk_java`, змінні `VRT_*`, файл `vrt.json`,
 Maven-координати `com.github.Visual-Regression-Tracker:sdk-java` і версія `4.3.1-vision.N` ще
-називають чужий продукт. Vision іде в банківський контур, і власник вирішив, що від VRT
-лишаються лише `LICENSE` і `NOTICE` ([план](../security/bank-readiness-plan.md)). Тестові проєкти
+називають чужий продукт. Власник вирішив, що Vision — власний продукт і від VRT лишаються лише
+`LICENSE` і `NOTICE` ([ADR-0027](0027-vision-own-product.md)). Тестові проєкти
 переходять на новий jar разом із запуском нової версії сервера. Специфікація —
 [040](../specs/040-uitree-limits-and-sdk-names/spec.md).
 

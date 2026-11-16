@@ -16,10 +16,14 @@ import unittest
 ROOT = pathlib.Path(__file__).resolve().parents[2]
 
 
-def api_environment():
+def service_environment(name):
     text = (ROOT / "docker-compose.demo.yml").read_text(encoding="utf-8")
-    service = re.search(r"^  api:\n((?:    .*\n|\s*\n)*)", text, re.M).group(1)
+    service = re.search(rf"^  {name}:\n((?:    .*\n|\s*\n)*)", text, re.M).group(1)
     return set(re.findall(r"^      ([A-Z][A-Z0-9_]*):", service, re.M))
+
+
+def api_environment():
+    return service_environment("api")
 
 
 class ApiHardeningTest(unittest.TestCase):
@@ -29,6 +33,12 @@ class ApiHardeningTest(unittest.TestCase):
         self.assertGreater(len(read), 15)
         self.assertEqual(sorted(read - api_environment()), [])
         self.assertIn("VISION_SWAGGER", api_environment())
+
+    def test_passes_every_setting_of_the_interface_to_the_ui(self):
+        defaults = (ROOT / "frontend" / "env.defaults").read_text(encoding="utf-8")
+        settings = {line.split("=", 1)[0] for line in defaults.splitlines() if "=" in line}
+        self.assertIn("REACT_APP_OIDC_AUTO_REDIRECT", settings)
+        self.assertEqual(sorted(settings - service_environment("ui")), [])
 
     def test_the_interface_sends_the_same_headers(self):
         nginx = (ROOT / "frontend" / "nginx" / "default.conf").read_text(encoding="utf-8")

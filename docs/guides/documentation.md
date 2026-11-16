@@ -36,7 +36,8 @@
 | Нова таблиця, колонка, файл, ендпоінт | `architecture/data-model.md`, `api.md` |
 | Нова команда, пастка, правило пакета | `AGENTS.md` пакета |
 | Нове непорушне правило | `AGENTS.md` (корінь), hook і його тест |
-| Змінилось розгортання чи налаштування для користувача | `DEPLOY.md` (рос.), за потреби `DEMO.md` |
+| Змінилось розгортання чи налаштування для користувача | `DEPLOY.md` (рос.), за потреби `DEMO.md`; нова змінна — `docs/admin/configuration.md` |
+| Нова поставка | `CHANGELOG.md`; оновили залежності — `docs/security/third-party-licenses.md` |
 | Новий термін | `product/glossary.md` |
 | Перейменовано тест або файл | `python3 -I scripts/check-docs.py` покаже, де оновити |
 

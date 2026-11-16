@@ -6,7 +6,7 @@ FROM ${NODE_IMAGE}
 RUN apt-get update && apt-get install -y --no-install-recommends openssl && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
 RUN chown node:node /app
-# A mirror of the npm registry and of Prisma's engines (e.g. the bank's); empty: the public ones
+# A mirror of the npm registry and of Prisma's engines (e.g. a company Nexus); empty: the public ones
 ARG NPM_REGISTRY=
 ARG PRISMA_ENGINES_MIRROR=
 ENV CHECKPOINT_DISABLE=1 PRISMA_ENGINES_MIRROR=${PRISMA_ENGINES_MIRROR}

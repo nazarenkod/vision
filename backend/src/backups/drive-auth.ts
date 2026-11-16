@@ -1,6 +1,6 @@
 /**
  * Google Drive for backups, signed in from the Backups page with a device code: Vision runs
- * on plain http inside the bank's network, and Google redirects OAuth only to https or
+ * on plain http inside a company network, and Google redirects OAuth only to https or
  * localhost. Pure functions; BackupsService does the calls and the files.
  */
 

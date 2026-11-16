@@ -1,4 +1,4 @@
-# 057 — Дизайн
+# 060 — Дизайн
 
 ## Підхід
 
@@ -20,10 +20,10 @@
   Ендпоінт `screen-search` і індекс у пам'яті (ADR-0030) не змінюються: індекс наповнюється лише
   на запит, тож без викликів не тримає пам'яті. Повернути пошук в інтерфейс можна без змін сервера.
 - Старі посилання `/search/:projectId…` маршрутизатор перенаправляє на Збірки проєкту
-  (REQ-057-51); доступ перевіряє вже наявний шлях Збірок ([042](../042-project-access/spec.md)).
+  (REQ-060-51); доступ перевіряє вже наявний шлях Збірок ([042](../042-project-access/spec.md)).
 - `BetaChip` і `ElementCrop` лишаються: ними користується «Рев'ю за елементом» (055).
 
-Скорочення назви (REQ-057-02): назва до 3 символів — як є («iOS», «AOS», «Web»); кілька слів —
+Скорочення назви (REQ-060-02): назва до 3 символів — як є («iOS», «AOS», «Web»); кілька слів —
 перші літери до трьох слів великими («Mobile Shop Android» → «MSA»); одне довше слово — перші дві
 літери, перша велика («Android» → «An»). Повна назва — у `aria-label` і підказці.
 
@@ -64,7 +64,7 @@ flowchart LR
 |---|---|
 | Скриншот-еталони Playwright усіх сторінок з меню зміняться | оновлюємо в Docker одним кроком наприкінці; кожен отриманий знімок переглядаємо |
 | Однакові скорочення двох проєктів | різняться підказкою й `aria-label`; у тесті хелпера — пара «Mobile iOS» / «Mobile Android» |
-| Хтось має закладку на пошук | REQ-057-51: перенаправлення на Збірки, а не 404 |
+| Хтось має закладку на пошук | REQ-060-51: перенаправлення на Збірки, а не 404 |
 | Тур (`GuidedTour`) вказує на старі елементи меню (`LOCATOR_SIDE_NAV_PROJECT`) | кроки туру переводимо на рейку; тест туру в задачах |
 | Серверний пошук лишається без користувача в інтерфейсі | позначено в `docs/architecture/api.md`, що його викликає лише API; рішення переглядаємо, якщо пошук не повернеться |
 
@@ -72,23 +72,23 @@ flowchart LR
 
 | Вимога | Перевірка |
 |---|---|
-| REQ-057-01 | `frontend/integration_tests/test/sideNav.spec.ts › shows the logo, a tile per project, the plus tile and the account in the rail` |
-| REQ-057-02 | `frontend/src/_helpers/sideNav.helper.test.ts › shortens a project name to at most three characters` |
-| REQ-057-03 | `frontend/integration_tests/test/sideNav.spec.ts › marks the chosen project tile as current` |
-| REQ-057-04 | `frontend/src/_helpers/sideNav.helper.test.ts › keeps the section when switching the project` |
-| REQ-057-05 | `frontend/integration_tests/test/sideNav.spec.ts › opens New project from the plus tile for an editor only` |
-| REQ-057-06 | `frontend/integration_tests/test/sideNav.spec.ts › scrolls only the tiles and keeps the chosen one in view` |
-| REQ-057-07 | `frontend/integration_tests/test/sideNav.spec.ts › opens Projects from the logo` |
-| REQ-057-10 | `frontend/src/_helpers/sideNav.helper.test.ts › lists the project sections under the project's name` |
-| REQ-057-11 | `frontend/src/_helpers/sideNav.helper.test.ts › says Choose project and disables project items until one is picked` |
-| REQ-057-12 | `frontend/src/_helpers/sideNav.helper.test.ts › says No projects yet without any project` |
-| REQ-057-13 | `frontend/src/_helpers/sideNav.helper.test.ts › puts Users and Backups under Administration for an admin only` |
-| REQ-057-14 | `frontend/integration_tests/test/sideNav.spec.ts › has no Projects, Search or Help item and no version` |
-| REQ-057-15 | `frontend/integration_tests/test/sideNav.spec.ts › keeps every sidebar label whole in Ukrainian` |
-| REQ-057-20 | `frontend/integration_tests/test/sideNav.spec.ts › holds all projects, help and the version in the account menu` |
-| REQ-057-30 | `frontend/integration_tests/test/sideNav.spec.ts › keeps only the rail with section icons below 1100 px` |
-| REQ-057-40 | `frontend/integration_tests/test/sideNav.spec.ts › marks the open section without glow or green text` |
-| REQ-057-41 | manual: обидві теми, 1280 px — бренд-колір лише на логотипі, кільці обраної плитки й іконці активного пункту; аватар і плитки нейтральні (перевірено 2026-11-16 знімками меню в обох темах) |
-| REQ-057-42 | `frontend/src/theme.test.ts › text on every surface has at least 4.5:1 in both themes` |
-| REQ-057-50 | `frontend/integration_tests/test/sideNav.spec.ts › does not open a search on the slash key` |
-| REQ-057-51 | `frontend/integration_tests/test/sideNav.spec.ts › sends an old search link to the project's builds` |
+| REQ-060-01 | `frontend/integration_tests/test/sideNav.spec.ts › shows the logo, a tile per project, the plus tile and the account in the rail` |
+| REQ-060-02 | `frontend/src/_helpers/sideNav.helper.test.ts › shortens a project name to at most three characters` |
+| REQ-060-03 | `frontend/integration_tests/test/sideNav.spec.ts › marks the chosen project tile as current` |
+| REQ-060-04 | `frontend/src/_helpers/sideNav.helper.test.ts › keeps the section when switching the project` |
+| REQ-060-05 | `frontend/integration_tests/test/sideNav.spec.ts › opens New project from the plus tile for an editor only` |
+| REQ-060-06 | `frontend/integration_tests/test/sideNav.spec.ts › scrolls only the tiles and keeps the chosen one in view` |
+| REQ-060-07 | `frontend/integration_tests/test/sideNav.spec.ts › opens Projects from the logo` |
+| REQ-060-10 | `frontend/src/_helpers/sideNav.helper.test.ts › lists the project sections under the project's name` |
+| REQ-060-11 | `frontend/src/_helpers/sideNav.helper.test.ts › says Choose project and disables project items until one is picked` |
+| REQ-060-12 | `frontend/src/_helpers/sideNav.helper.test.ts › says No projects yet without any project` |
+| REQ-060-13 | `frontend/src/_helpers/sideNav.helper.test.ts › puts Users and Backups under Administration for an admin only` |
+| REQ-060-14 | `frontend/integration_tests/test/sideNav.spec.ts › has no Projects, Search or Help item and no version` |
+| REQ-060-15 | `frontend/integration_tests/test/sideNav.spec.ts › keeps every sidebar label whole in Ukrainian` |
+| REQ-060-20 | `frontend/integration_tests/test/sideNav.spec.ts › holds all projects, help and the version in the account menu` |
+| REQ-060-30 | `frontend/integration_tests/test/sideNav.spec.ts › keeps only the rail with section icons below 1100 px` |
+| REQ-060-40 | `frontend/integration_tests/test/sideNav.spec.ts › marks the open section without glow or green text` |
+| REQ-060-41 | manual: обидві теми, 1280 px — бренд-колір лише на логотипі, кільці обраної плитки й іконці активного пункту; аватар і плитки нейтральні (перевірено 2026-11-16 знімками меню в обох темах) |
+| REQ-060-42 | `frontend/src/theme.test.ts › text on every surface has at least 4.5:1 in both themes` |
+| REQ-060-50 | `frontend/integration_tests/test/sideNav.spec.ts › does not open a search on the slash key` |
+| REQ-060-51 | `frontend/integration_tests/test/sideNav.spec.ts › sends an old search link to the project's builds` |

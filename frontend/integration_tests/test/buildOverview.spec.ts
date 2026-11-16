@@ -332,7 +332,7 @@ test("each number opens its tab or queue", async ({
   await openProjectPage(project.id, build.id, undefined, "overview");
 
   await page.getByTestId("overviewTile-screens").click();
-  await expect(page.getByRole("tab", { name: /All screens/ })).toHaveAttribute(
+  await expect(page.getByRole("tab", { name: /All checks/ })).toHaveAttribute(
     "aria-selected",
     "true",
   );
@@ -402,7 +402,7 @@ test("sums up a finished queue and offers the next one", async ({
   await expect(done).toContainText("Image changed · done");
   await expect(done).toContainText("1 approved · 0 rejected");
   await expect(page.getByTestId("queueNext")).toContainText(
-    "Next: New screens · 1",
+    "Next: New checks · 1",
   );
 
   await page.keyboard.press("Enter");
@@ -432,17 +432,22 @@ test("Esc returns to where the review was opened, focus on the same row", async 
   expect(new URL(page.url()).searchParams.get("queue")).toBeNull();
 });
 
-test("keeps the counts out of the build header on every tab", async ({
+test("keeps the counts and the status bar out of the build header on every tab", async ({
   openProjectPage,
   page,
 }) => {
   await openProjectPage(project.id, build.id, undefined, "overview");
   await expect(page.getByTestId("overviewTile-screens")).toBeVisible();
   await expect(page.getByTestId("buildCounts")).toHaveCount(0);
+  await expect(page.getByTestId("buildStatusBar")).toHaveCount(0);
 
-  await page.getByRole("tab", { name: /All screens/ }).click();
-  await expect(page.getByTestId("buildStatusBar")).toBeVisible();
+  await page.getByRole("tab", { name: /All checks/ }).click();
+  await expect(page.getByRole("tab", { name: /All checks/ })).toHaveAttribute(
+    "aria-selected",
+    "true",
+  );
   await expect(page.getByTestId("buildCounts")).toHaveCount(0);
+  await expect(page.getByTestId("buildStatusBar")).toHaveCount(0);
 });
 
 test("shows every feature at once, those with changes first", async ({
@@ -674,8 +679,8 @@ test("puts the count of All tests in a pill like the tabs beside it", async ({
   page,
 }) => {
   await openProjectPage(project.id, build.id, undefined, "overview");
-  const tab = page.getByRole("tab", { name: /All screens/ });
-  await expect(tab).toHaveText(new RegExp(`^All screens\\s*${runs.length}$`));
+  const tab = page.getByRole("tab", { name: /All checks/ });
+  await expect(tab).toHaveText(new RegExp(`^All checks\\s*${runs.length}$`));
 });
 
 test("shows a device's screen size when the run sent no viewport", async ({
@@ -751,7 +756,7 @@ test("lays out the Accessibility tab like the Overview", async ({
     /only issues this build introduced/,
   );
   await expect(page.getByTestId("a11yCaption-checked")).toHaveText(
-    "of 4 screens",
+    "of 4 checks",
   );
 
   const rows = page.getByTestId("a11yScreen");
@@ -837,7 +842,7 @@ test("shows the devices of the build in its header on every tab", async ({
   ).toHaveCount(0);
   await expect(page.getByTestId("overviewDevices")).toHaveCount(0);
 
-  for (const tab of [/Changes/, /All screens/, /Accessibility/]) {
+  for (const tab of [/Changes/, /All checks/, /Accessibility/]) {
     await page.getByRole("tab", { name: tab }).click();
     await expect(page.getByTestId("buildDevice")).toHaveCount(3);
   }

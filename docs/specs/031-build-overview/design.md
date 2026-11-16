@@ -120,7 +120,7 @@ sequenceDiagram
 | REQ-031-12 | `backend/src/builds/build-overview.spec.ts › says first build when the branch has no earlier one`; `frontend/src/components/BuildReport/ReportDocument.test.tsx › says first build on the branch when there is no earlier one` |
 | REQ-031-13 | `frontend/src/components/BuildOverview/useBuildOverview.test.tsx › updates the numbers when a run of the build changes` |
 | REQ-031-14 | знято 2026-11-01 — перевірки немає |
-| REQ-031-15 | `frontend/integration_tests/test/buildOverview.spec.ts › keeps the counts out of the build header on every tab` |
+| REQ-031-15 | `frontend/integration_tests/test/buildOverview.spec.ts › keeps the counts and the status bar out of the build header on every tab` |
 | REQ-031-16 | `frontend/src/_helpers/buildPeriod.helper.test.ts › shows the start and the end, the end without the date on the same day`; `frontend/src/_helpers/buildPeriod.helper.test.ts › shows the start alone until the build runs on` |
 | REQ-031-17 | `frontend/integration_tests/test/buildOverview.spec.ts › shows a device's screen size when the run sent no viewport`; `frontend/src/components/BuildReport/ReportDocument.test.tsx › summary names the project, build, branch, time, devices and numbers` |
 | REQ-031-18 | `frontend/integration_tests/test/buildOverview.spec.ts › puts the count of All tests in a pill like the tabs beside it` |

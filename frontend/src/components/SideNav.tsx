@@ -29,7 +29,7 @@ import { AccountMenu } from "./AccountMenu";
 import { SIDE_NAV_TEST_ID } from "./SideNav.locators";
 import { motion, radius, tokens, type } from "../theme";
 
-/** Below this window width only the rail stays, with the sections as icons (REQ-057-30). */
+/** Below this window width only the rail stays, with the sections as icons (REQ-060-30). */
 export const SIDE_NAV_FOLD_QUERY = "(max-width: 1099.98px)";
 
 const ICONS: Record<SideNavKey, React.ReactNode> = {
@@ -48,7 +48,7 @@ const ellipsis = {
 } as const;
 
 /**
- * The sidebar after sign-in (spec 057, ADR-0028): a rail of projects with the
+ * The sidebar after sign-in (spec 060, ADR-0028): a rail of projects with the
  * account, and next to it the chosen project's sections and, for admins,
  * Administration. Below 1100 px the panel folds into icons in the rail.
  */
@@ -67,7 +67,7 @@ const SideNav: React.FunctionComponent = () => {
   const active = activeSideNavItem(pathname);
   const heading = projectHeadingState(projectList, selectedProjectId);
 
-  // the highlight travels to the new item instead of jumping (REQ-018-22, REQ-057-40)
+  // the highlight travels to the new item instead of jumping (REQ-018-22, REQ-060-40)
   const nodes = React.useRef<Partial<Record<SideNavKey, HTMLElement | null>>>(
     {},
   );

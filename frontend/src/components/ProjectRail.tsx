@@ -40,7 +40,7 @@ const initials = (first?: string, last?: string, email?: string) =>
   (email?.[0] ?? "?").toUpperCase();
 
 /**
- * The rail of the sidebar (spec 057): the logo to Projects, a tile per project the
+ * The rail of the sidebar (spec 060): the logo to Projects, a tile per project the
  * user can see, a plus tile for those who may create one, and the account. Below
  * 1100 px the panel's sections come into the rail as `sections`.
  */
@@ -73,7 +73,7 @@ export const ProjectRail: React.FunctionComponent<{
   const tilesRef = React.useRef<HTMLDivElement | null>(null);
   const canCreate = !!role && PROJECT_CREATOR_ROLES.has(role);
 
-  // the chosen project stays in sight when the tiles scroll (REQ-057-06)
+  // the chosen project stays in sight when the tiles scroll (REQ-060-06)
   React.useLayoutEffect(() => {
     const box = tilesRef.current;
     const tile = box?.querySelector<HTMLElement>('[aria-current="true"]');

@@ -119,7 +119,7 @@ test("shows stale baselines, unstable screens and accessibility, nothing else", 
     page.getByRole("heading", { level: 2 }).allTextContents(),
   ).resolves.toEqual([
     "Stale baselines",
-    "Unstable screens",
+    "Unstable checks",
     "Accessibility",
     "Most frequent problems",
   ]);

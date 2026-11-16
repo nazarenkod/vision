@@ -109,13 +109,13 @@ flowchart LR
 | REQ-046-14 | `frontend/src/theme.test.ts › colours every link with the brand` |
 | REQ-046-15 | `frontend/src/components/DeviceTags.test.tsx › shows tags and the branch as one grey chip shape` |
 | REQ-046-16 | `frontend/integration_tests/test/projectList.spec.ts › names the create button New project` |
-| REQ-046-17 | `frontend/integration_tests/test/language.spec.ts › names the build tab All screens in both languages` |
+| REQ-046-17 | замінено [057](../057-checks-not-screens/spec.md): `frontend/integration_tests/test/language.spec.ts › names the build tab All checks in both languages` |
 | REQ-046-18 | `frontend/integration_tests/test/testVariationDetails.spec.ts › labels the pair Selected and Previous` |
-| REQ-046-20 | manual: замінено 057 (рейка проєктів) |
+| REQ-046-20 | manual: замінено 060 (рейка проєктів) |
 | REQ-046-21 | `frontend/integration_tests/test/sideNav.spec.ts › shows no top bar after sign-in` |
 | REQ-046-22 | `frontend/src/_helpers/sideNav.helper.test.ts › says Choose project and disables project items until one is picked` |
 | REQ-046-23 | `frontend/integration_tests/test/sideNav.spec.ts › holds all projects, help and the version in the account menu` |
-| REQ-046-24 | manual: замінено 057 (версія в меню акаунта) |
+| REQ-046-24 | manual: замінено 060 (версія в меню акаунта) |
 | REQ-046-25 | `frontend/integration_tests/test/sideNav.spec.ts › keeps only the rail with section icons below 1100 px` |
 | REQ-046-26 | `frontend/integration_tests/test/login.spec.ts › keeps language and theme in the corner of the sign-in page` |
 | REQ-046-27 | `frontend/src/_helpers/sideNav.helper.test.ts › says No projects yet without any project` |

@@ -4,13 +4,14 @@ import { BuildStatusChip } from "./BuildStatusChip";
 import { useBuildState } from "../contexts";
 import { LOCATOR_BUILD_DETAILS } from "../constants/help";
 import { Tooltip } from "./Tooltip";
-import { motion, tokens, radius } from "../theme";
+import { tokens } from "../theme";
 import { useT } from "../i18n";
 import { buildDuration, buildPeriod } from "../_helpers/buildPeriod.helper";
 
 /**
- * Build header: identity, when it ran and a bar of how the screenshots came
- * out. The numbers are the Overview's tiles and the tabs' badges (REQ-031-15).
+ * Build header: identity and when it ran. How the screens came out is the
+ * Overview's tiles and the tabs' badges (REQ-031-15); a bar of it only
+ * repeated them (REQ-059-01).
  */
 const BuildDetails: React.FunctionComponent<{
   // what can be done with the build: Report, Review (031)
@@ -28,12 +29,6 @@ const BuildDetails: React.FunctionComponent<{
   if (!selectedBuild) {
     return null;
   }
-
-  const total =
-    selectedBuild.unresolvedCount +
-    selectedBuild.failedCount +
-    selectedBuild.passedCount;
-  const share = (count: number) => (total ? `${(count * 100) / total}%` : "0%");
 
   return (
     <Box
@@ -132,47 +127,6 @@ const BuildDetails: React.FunctionComponent<{
         )}
       </Box>
 
-      <Box sx={{ display: "flex", flexDirection: "column", gap: 0.75 }}>
-        <Box
-          // a new build fills its bar again (REQ-018-23)
-          key={selectedBuild.id}
-          data-testid="buildStatusBar"
-          role="img"
-          aria-label={t("builds.statusBar", {
-            unresolved: selectedBuild.unresolvedCount,
-            failed: selectedBuild.failedCount,
-            passed: selectedBuild.passedCount,
-          })}
-          sx={{
-            display: "flex",
-            height: 6,
-            borderRadius: radius.pill,
-            overflow: "hidden",
-            gap: "2px",
-            bgcolor: tokens.subtle,
-            animation: `v-fill ${motion.fill}ms ${motion.easing} both ${motion.fast}ms`,
-          }}
-        >
-          <Box
-            sx={{
-              width: share(selectedBuild.unresolvedCount),
-              bgcolor: tokens.status.changed.bar,
-            }}
-          />
-          <Box
-            sx={{
-              width: share(selectedBuild.failedCount),
-              bgcolor: tokens.status.failed.bar,
-            }}
-          />
-          <Box
-            sx={{
-              width: share(selectedBuild.passedCount),
-              bgcolor: tokens.status.passed.bar,
-            }}
-          />
-        </Box>
-      </Box>
       {selectedBuild.isRunning && <LinearProgress />}
     </Box>
   );

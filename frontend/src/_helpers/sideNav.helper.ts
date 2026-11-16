@@ -2,7 +2,7 @@ import { routes } from "../constants/routes";
 import type { MessageKey } from "../i18n";
 import type { User } from "../types";
 
-// The sidebar with a project rail (spec 057, ADR-0028): which items the section
+// The sidebar with a project rail (spec 060, ADR-0028): which items the section
 // panel holds, which one is the page on screen, what its heading says and what
 // a project's tile reads.
 
@@ -40,7 +40,7 @@ const PROJECT_ITEMS: Array<{
 /**
  * The project's sections, always there so the panel does not jump but inactive
  * until a project the user can see is chosen, then Users and Backups for admins
- * (REQ-057-10, -11, -12, -13).
+ * (REQ-060-10, -11, -12, -13).
  */
 export function sideNavItems(
   role: User["role"] | undefined,
@@ -129,7 +129,7 @@ export function projectSectionPath(pathname: string, projectId: string) {
 }
 
 /**
- * What a project's tile reads (REQ-057-02): a name of three characters or fewer
+ * What a project's tile reads (REQ-060-02): a name of three characters or fewer
  * as it is (iOS, AOS, Web); several words by their first letters, three at most;
  * one longer word by its first two letters. The full name is the tile's label.
  */

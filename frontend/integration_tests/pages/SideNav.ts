@@ -11,7 +11,7 @@ import {
 import { TAKE_TOUR_BUTTON_TEST_ID } from "~client/components/GuidedTour.locators";
 import { TourModal } from "./TourModal";
 
-/** The sidebar after sign-in: a rail of projects and the project's sections (spec 057). */
+/** The sidebar after sign-in: a rail of projects and the project's sections (spec 060). */
 export class SideNav {
   nav: Locator;
   rail: Locator;

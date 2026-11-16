@@ -165,7 +165,7 @@ describe("ReportDocument", () => {
     const summary = screen.getByTestId("reportSection-sum");
     for (const label of [
       "47",
-      "Screens",
+      "Checks",
       "5",
       "To review",
       "Rejected",

@@ -6,15 +6,13 @@ import {
   Skeleton,
   Tooltip,
   ButtonBase,
-  IconButton,
-  Collapse,
 } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 import { useSnackbar } from "notistack";
 import { v4 as uuid } from "uuid";
-import { AccessTimeOutlined, ExpandMore } from "@mui/icons-material";
+import { AccessTimeOutlined } from "@mui/icons-material";
 import { useTestRunState } from "../contexts";
-import { insightsService, staticService, testRunService } from "../services";
+import { insightsService, testRunService } from "../services";
 import {
   AiStatus,
   ChangeGroup,
@@ -33,7 +31,7 @@ import { DeviceTags } from "./DeviceTags";
 import { useDecisionSnackbar } from "./useDecisionSnackbar";
 import { english, MessageKey, Text, useT } from "../i18n";
 
-const MAX_THUMBS = 6;
+const MAX_SCREENS = 6;
 const MAX_AUTO_SUMMARIES = 10;
 const REFRESH_DELAY_MS = 800;
 
@@ -112,10 +110,14 @@ const Tag: React.FunctionComponent<{
   </Box>
 );
 
-const Thumb: React.FunctionComponent<{ run: TestRun; onOpen: () => void }> = ({
-  run,
-  onOpen,
-}) => {
+// one row a screen: which device, how much changed; it opens the screen.
+// No picture: at a glance a thumbnail showed little, and took the room (REQ-059-02)
+const ScreenRow: React.FunctionComponent<{
+  run: TestRun;
+  // a group across several screens says which one the row is
+  named: boolean;
+  onOpen: () => void;
+}> = ({ run, named, onOpen }) => {
   const { t, formatFixed } = useT();
   return (
     <ButtonBase
@@ -124,65 +126,55 @@ const Thumb: React.FunctionComponent<{ run: TestRun; onOpen: () => void }> = ({
         name: run.name,
         variant: variantLabel(run),
       })}
+      data-testid="groupScreen"
       sx={{
         display: "flex",
-        flexDirection: "column",
-        alignItems: "stretch",
-        gap: 0.75,
-        width: 112,
-        borderRadius: radius.card,
-        "&:hover .thumb, &:focus-visible .thumb": {
-          transform: "translateY(-2px)",
-        },
+        alignItems: "center",
+        justifyContent: "flex-start",
+        flexWrap: "wrap",
+        gap: 1,
+        width: "100%",
+        minHeight: 36,
+        px: 1,
+        py: 0.5,
+        borderRadius: radius.control,
+        textAlign: "left",
+        fontSize: type.caption,
+        fontVariantNumeric: "tabular-nums",
+        transition: `background-color ${motion.base}ms ${motion.easing}`,
+        "&:hover, &:focus-visible": { bgcolor: tokens.subtle },
       }}
     >
-      <Box
-        className="thumb"
-        component="img"
-        src={staticService.getImage(
-          run.diffThumbnailName ?? run.imageThumbnailName ?? run.imageName,
-        )}
-        alt=""
-        loading="lazy"
-        sx={{
-          width: 112,
-          height: 160,
-          // whole screen: a change at the bottom (a menu) must show too
-          objectFit: "contain",
-          borderRadius: radius.card,
-          p: 0.75,
-          boxSizing: "border-box",
-          background: tokens.lightbox,
-          boxShadow: tokens.shadowShot,
-          transition: `transform ${motion.base}ms ${motion.easing}`,
-        }}
-      />
-      {/* the OS too: two versions of Android on one model look alike (REQ-037-07) */}
-      <DeviceTags parts={run} dense />
-      {(run.customTags || run.diffPercent > 0) && (
-        <Box
+      {named && (
+        <Typography
+          noWrap
           sx={{
-            display: "flex",
-            justifyContent: "space-between",
-            gap: 0.5,
-            fontSize: type.caption,
-            fontVariantNumeric: "tabular-nums",
+            font: "inherit",
+            fontWeight: 600,
+            minWidth: 0,
+            maxWidth: "50%",
           }}
         >
-          <Typography
-            noWrap
-            sx={{ font: "inherit", color: tokens.textSecondary }}
-          >
-            {run.customTags}
-          </Typography>
-          {run.diffPercent > 0 && (
-            <span style={{ color: tokens.diff, flexShrink: 0 }}>
-              {formatFixed(run.diffPercent, 1)}%
-            </span>
-          )}
-        </Box>
+          {run.name}
+        </Typography>
+      )}
+      {/* the OS too: two versions of Android on one model look alike (REQ-037-07) */}
+      <DeviceTags parts={run} dense />
+      {run.customTags && (
+        <Typography
+          noWrap
+          sx={{ font: "inherit", color: tokens.textSecondary, minWidth: 0 }}
+        >
+          {run.customTags}
+        </Typography>
       )}
       <RunFlags run={run} />
+      <Box sx={{ flex: 1 }} />
+      {run.diffPercent > 0 && (
+        <span style={{ color: tokens.diff, flexShrink: 0 }}>
+          {formatFixed(run.diffPercent, 1)}%
+        </span>
+      )}
     </ButtonBase>
   );
 };
@@ -239,15 +231,6 @@ export const ChangeGroups: React.FunctionComponent<Props> = ({
     action: "approve" | "reject";
   } | null>(null);
   const [busy, setBusy] = React.useState(false);
-  const [collapsed, setCollapsed] = React.useState<Set<string>>(new Set());
-  const toggleGroup = (id: string) =>
-    setCollapsed((current) => {
-      const next = new Set(current);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-
   // refetch when a decision changes what still needs one
   const pendingKey = React.useMemo(
     () =>
@@ -396,7 +379,6 @@ export const ChangeGroups: React.FunctionComponent<Props> = ({
         const summary = summaries[group.id];
         const many = group.testRuns.length > 1;
         const noise = group.noise;
-        const expanded = !collapsed.has(group.id);
         return (
           <Box
             key={group.id}
@@ -422,21 +404,6 @@ export const ChangeGroups: React.FunctionComponent<Props> = ({
                 gap: "8px 12px",
               }}
             >
-              <IconButton
-                size="small"
-                aria-label={t(expanded ? "groups.collapse" : "groups.expand")}
-                aria-expanded={expanded}
-                data-testid="toggleGroup"
-                onClick={() => toggleGroup(group.id)}
-                sx={{ ml: -0.75, color: tokens.textMuted }}
-              >
-                <ExpandMore
-                  sx={{
-                    transform: expanded ? "none" : "rotate(-90deg)",
-                    transition: `transform ${motion.nav}ms ${motion.easing}`,
-                  }}
-                />
-              </IconButton>
               {noise && (
                 <AccessTimeOutlined
                   sx={{ color: tokens.textMuted, fontSize: 20 }}
@@ -502,123 +469,126 @@ export const ChangeGroups: React.FunctionComponent<Props> = ({
               </Button>
             </Box>
 
-            <Collapse in={expanded} timeout={motion.slow}>
-              <Box
-                sx={{
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: 1.5,
-                  pt: 1.5,
-                }}
-              >
-                {noise && (
-                  <Typography variant="body2" color="textSecondary">
-                    {noise.message}
-                  </Typography>
-                )}
+            {/* always open: a group is a few rows, folding it saved nothing (REQ-059-03) */}
+            <Box
+              sx={{
+                display: "flex",
+                flexDirection: "column",
+                gap: 1.5,
+                pt: 1.5,
+              }}
+            >
+              {noise && (
+                <Typography variant="body2" color="textSecondary">
+                  {noise.message}
+                </Typography>
+              )}
 
-                {!!group.alsoChangedElsewhere?.length && (
-                  <Typography variant="body2" color="textSecondary">
-                    {tx("groups.alsoElsewhere", {
-                      runs: group.alsoChangedElsewhere.map((run, index) => (
-                        <React.Fragment key={run.id}>
-                          {index > 0 && ", "}
-                          <ButtonBase
-                            onClick={() => open(run)}
-                            sx={{
-                              font: "inherit",
-                              color: tokens.brand,
-                              textDecoration: "underline",
-                              verticalAlign: "baseline",
-                            }}
-                          >
-                            {run.name}
-                          </ButtonBase>
-                        </React.Fragment>
-                      )),
-                    })}
-                  </Typography>
-                )}
+              {!!group.alsoChangedElsewhere?.length && (
+                <Typography variant="body2" color="textSecondary">
+                  {tx("groups.alsoElsewhere", {
+                    runs: group.alsoChangedElsewhere.map((run, index) => (
+                      <React.Fragment key={run.id}>
+                        {index > 0 && ", "}
+                        <ButtonBase
+                          onClick={() => open(run)}
+                          sx={{
+                            font: "inherit",
+                            color: tokens.brand,
+                            textDecoration: "underline",
+                            verticalAlign: "baseline",
+                          }}
+                        >
+                          {run.name}
+                        </ButtonBase>
+                      </React.Fragment>
+                    )),
+                  })}
+                </Typography>
+              )}
 
-                {group.changes.slice(0, 3).map((change) => (
-                  <Box
-                    key={`${change.kind}:${change.key}`}
-                    sx={{
-                      display: "flex",
-                      gap: 1,
-                      alignItems: "baseline",
-                      fontSize: type.small,
-                    }}
-                  >
-                    <Tag>{t("groups.uiTree")}</Tag>
-                    <span>{describeChange(change, t)}</span>
-                  </Box>
-                ))}
+              {group.changes.slice(0, 3).map((change) => (
+                <Box
+                  key={`${change.kind}:${change.key}`}
+                  sx={{
+                    display: "flex",
+                    gap: 1,
+                    alignItems: "baseline",
+                    fontSize: type.small,
+                  }}
+                >
+                  <Tag>{t("groups.uiTree")}</Tag>
+                  <span>{describeChange(change, t)}</span>
+                </Box>
+              ))}
 
-                {group.kind !== "new" && aiStatus?.enabled && (
-                  <Box
-                    sx={{
-                      display: "flex",
-                      flexWrap: "wrap",
-                      gap: 1,
-                      alignItems: "baseline",
-                      fontSize: type.small,
-                    }}
-                  >
-                    <Tag color={tokens.brand}>AI</Tag>
-                    {summary === "loading" || summary === undefined ? (
-                      <Skeleton width={360} />
-                    ) : summary === "error" ? (
-                      <Button size="small" onClick={() => summarize(group)}>
-                        {t("groups.explain")}
-                      </Button>
-                    ) : (
-                      <>
-                        <span>{summary.summary}</span>
-                        <StatusPill
-                          tone={VERDICT[summary.verdict].tone}
-                          label={`${t(VERDICT[summary.verdict].label)} · ${formatFixed(summary.confidence, 2)}`}
-                          title={
-                            summary.source === "rules"
-                              ? t("groups.byRules")
-                              : t("groups.model", {
-                                  model: summary.model ?? "",
-                                })
-                          }
-                        />
-                      </>
-                    )}
-                  </Box>
-                )}
-
+              {group.kind !== "new" && aiStatus?.enabled && (
                 <Box
                   sx={{
                     display: "flex",
                     flexWrap: "wrap",
-                    gap: 1.5,
-                    // the screenshots line up at the top whatever the tags under them
-                    alignItems: "flex-start",
+                    gap: 1,
+                    alignItems: "baseline",
+                    fontSize: type.small,
                   }}
                 >
-                  {group.testRuns.slice(0, MAX_THUMBS).map((run) => (
-                    <Thumb key={run.id} run={run} onOpen={() => open(run)} />
-                  ))}
-                  {group.testRuns.length > MAX_THUMBS && (
-                    <Tooltip title={t("groups.openFirst")}>
-                      <Typography
-                        variant="body2"
-                        color="textSecondary"
-                        sx={{ alignSelf: "center" }}
-                      >
-                        {t("groups.more", {
-                          count: group.testRuns.length - MAX_THUMBS,
-                        })}
-                      </Typography>
-                    </Tooltip>
+                  <Tag color={tokens.brand}>AI</Tag>
+                  {summary === "loading" || summary === undefined ? (
+                    <Skeleton width={360} />
+                  ) : summary === "error" ? (
+                    <Button size="small" onClick={() => summarize(group)}>
+                      {t("groups.explain")}
+                    </Button>
+                  ) : (
+                    <>
+                      <span>{summary.summary}</span>
+                      <StatusPill
+                        tone={VERDICT[summary.verdict].tone}
+                        label={`${t(VERDICT[summary.verdict].label)} · ${formatFixed(summary.confidence, 2)}`}
+                        title={
+                          summary.source === "rules"
+                            ? t("groups.byRules")
+                            : t("groups.model", {
+                                model: summary.model ?? "",
+                              })
+                        }
+                      />
+                    </>
                   )}
                 </Box>
+              )}
+
+              <Box
+                sx={{
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: 0.25,
+                  mx: -1,
+                }}
+              >
+                {group.testRuns.slice(0, MAX_SCREENS).map((run) => (
+                  <ScreenRow
+                    key={run.id}
+                    run={run}
+                    named={group.screens.length > 1}
+                    onOpen={() => open(run)}
+                  />
+                ))}
+                {group.testRuns.length > MAX_SCREENS && (
+                  <Tooltip title={t("groups.openFirst")}>
+                    <Typography
+                      variant="body2"
+                      color="textSecondary"
+                      sx={{ px: 1 }}
+                    >
+                      {t("groups.more", {
+                        count: group.testRuns.length - MAX_SCREENS,
+                      })}
+                    </Typography>
+                  </Tooltip>
+                )}
               </Box>
-            </Collapse>
+            </Box>
           </Box>
         );
       })}

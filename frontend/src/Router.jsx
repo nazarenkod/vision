@@ -22,8 +22,8 @@ function RegisterRoute() {
   return <Navigate to={user ? routes.HOME : routes.LOGIN} replace />;
 }
 
-// screen search left the interface (spec 057): an old link opens the project's
-// builds, where project access is checked as for any other page (REQ-057-51)
+// screen search left the interface (spec 060): an old link opens the project's
+// builds, where project access is checked as for any other page (REQ-060-51)
 function SearchRedirect() {
   const { projectId } = useParams();
   return <Navigate to={`${routes.HOME}${projectId}`} replace />;

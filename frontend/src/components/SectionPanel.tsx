@@ -15,8 +15,8 @@ const ellipsis = {
 } as const;
 
 /**
- * The panel next to the rail (spec 057): the chosen project's name, its sections,
- * and Administration at the bottom for admins (REQ-057-10…15).
+ * The panel next to the rail (spec 060): the chosen project's name, its sections,
+ * and Administration at the bottom for admins (REQ-060-10…15).
  */
 export const SectionPanel: React.FunctionComponent<{
   heading: HeadingState;

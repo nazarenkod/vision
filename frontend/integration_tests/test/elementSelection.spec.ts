@@ -309,7 +309,7 @@ test("shows actions next to a clicked element", async ({
     "Allow 5%",
   );
   await expect(
-    popover.getByRole("button", { name: "This screen" }),
+    popover.getByRole("button", { name: "This check" }),
   ).toHaveAttribute("aria-pressed", "true");
 
   // a click beside every element puts the actions away, selecting stays on;
@@ -362,7 +362,7 @@ test("keeps compare only to this screen", async ({ openProjectPage, page }) => {
   await startSelecting(page);
   await clickElement(page, pay);
   const popover = page.getByTestId("elementPopover");
-  await popover.getByRole("button", { name: "All screens" }).click();
+  await popover.getByRole("button", { name: "All checks" }).click();
 
   await expect(popover.getByTestId("elementAction-compare")).toBeDisabled();
   await expect(popover.getByTestId("elementAction-ignore")).toBeEnabled();
@@ -488,7 +488,7 @@ test("shows the selection panel for two elements", async ({
   await expect(panel.getByTestId("elementAction-compare")).toBeVisible();
   await expect(panel.getByTestId("elementAction-tolerate")).toBeVisible();
   await expect(
-    panel.getByRole("button", { name: "This screen" }),
+    panel.getByRole("button", { name: "This check" }),
   ).toHaveAttribute("aria-pressed", "true");
   await expect(panel.getByTestId("selectionClear")).toBeVisible();
 });
@@ -685,7 +685,7 @@ test("keeps compare only to this screen for several", async ({
   await openReview(page, openProjectPage);
   await startSelecting(page);
   await selectTwo(page);
-  await panelOf(page).getByRole("button", { name: "All screens" }).click();
+  await panelOf(page).getByRole("button", { name: "All checks" }).click();
 
   await expect(
     panelOf(page).getByTestId("elementAction-compare"),
@@ -753,7 +753,7 @@ test("asks before removing a rule for every screen with others", async ({
   const remove = panelOf(page).getByTestId("selectionRemoveRules");
   await remove.click();
   expect(calls.removed).toEqual([]);
-  await expect(remove).toContainText("Remove on every screen");
+  await expect(remove).toContainText("Remove in every check");
   await remove.click();
 
   await expect
@@ -807,13 +807,13 @@ test("offers to remove the rule an element is under", async ({
   await clickElement(page, clock);
   const popover = page.getByTestId("elementPopover");
   await expect(popover).toContainText("Ignored");
-  await expect(popover).toContainText("All screens");
+  await expect(popover).toContainText("All checks");
   await expect(popover.getByTestId("elementAction-ignore")).toHaveCount(0);
 
   // a rule for every screen is asked about first
   await popover.getByTestId("elementRemoveRule").click();
   expect(calls.removed).toEqual([]);
-  await popover.getByRole("button", { name: "Remove on every screen" }).click();
+  await popover.getByRole("button", { name: "Remove in every check" }).click();
   await expect
     .poll(() => calls.removed)
     .toEqual([{ scope: "project", ruleId: "rule-4" }]);
@@ -1072,9 +1072,9 @@ test("counts what a nameless element's selector finds", async ({
   await clickElement(page, plus);
 
   const popover = page.getByTestId("elementPopover");
-  await expect(popover).not.toContainText("on this screen");
+  await expect(popover).not.toContainText("on this screenshot");
   await popover.getByTestId("elementVariant-up").click();
-  await expect(popover).toContainText("3 on this screen");
+  await expect(popover).toContainText("3 on this screenshot");
 });
 
 test("shows what a typed selector finds and why it cannot be saved", async ({

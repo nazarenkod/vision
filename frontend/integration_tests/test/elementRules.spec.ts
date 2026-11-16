@@ -129,11 +129,11 @@ test("lists the rules for this screen and for every screen", async ({
   await openProjectPage(project.id, build.id, testRun.id);
   await unfoldPanel(page);
   await expect(rule(page, "id:balance")).toContainText("±5%");
-  await expect(rule(page, "id:balance")).toContainText("this screen");
+  await expect(rule(page, "id:balance")).toContainText("this check");
   // a rule for every screen that found nothing here is folded away (REQ-030-23)
   await expect(page.getByTestId("elementRule")).toHaveCount(1);
   await page.getByTestId("outsideToggle").click();
-  await expect(rule(page, "id:clock")).toContainText("all screens");
+  await expect(rule(page, "id:clock")).toContainText("all checks");
   await expect(rule(page, "id:clock")).toContainText("nothing found");
   // the selector and what it found are in the row's tooltip (REQ-019-02)
   await rule(page, "id:clock").hover();
@@ -142,7 +142,7 @@ test("lists the rules for this screen and for every screen", async ({
   );
   // a rule that found nothing changes nothing in the summary; the run's saved and test areas count
   await expect(page.getByTestId("comparedSummary")).toHaveText(
-    "Whole screen, with exceptions",
+    "Whole screenshot, with exceptions",
   );
 });
 
@@ -457,7 +457,7 @@ test("removes a rule for this screen at once", async ({
   await expect(page.getByText("Rule removed; compared again")).toBeVisible();
   expect(removed).toEqual([{ scope: "screen", ruleId: "balance" }]);
   await expect(
-    page.getByRole("dialog", { name: "Remove a rule for every screen?" }),
+    page.getByRole("dialog", { name: "Remove a rule for every check?" }),
   ).toHaveCount(0);
 });
 
@@ -474,12 +474,12 @@ test("asks before removing a rule for every screen", async ({
   });
   await rule(page, "id:clock").hover();
   const confirm = page.getByRole("dialog", {
-    name: "Remove a rule for every screen?",
+    name: "Remove a rule for every check?",
   });
 
   await remove.click();
   await expect(confirm).toContainText("id:clock");
-  await expect(confirm).toContainText("every screen of the project");
+  await expect(confirm).toContainText("every check of the project");
   await confirm.getByRole("button", { name: "Cancel" }).click();
   await expect(confirm).toHaveCount(0);
   expect(removed).toEqual([]);

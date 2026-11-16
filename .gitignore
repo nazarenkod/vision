@@ -12,6 +12,5 @@ __pycache__/
 
 # settings and secrets of a checkout; examples are .env.example and .env.demo.example
 .env
-# build output; the SDK jar in dist/sdk-java/ is kept in git, so tests can take it ready-made
-dist/*
-!dist/sdk-java/
+# built SDK jar (./scripts/build-sdk-jar.sh)
+dist/

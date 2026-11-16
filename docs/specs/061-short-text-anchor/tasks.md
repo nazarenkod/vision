@@ -18,7 +18,7 @@
   - Файли: `frontend/src/types/insights.ts`, `ElementPopover.tsx`, `ElementPopover.test.tsx`,
     `frontend/src/i18n/en.ts`, `uk.ts`.
   - Готово, коли: `names the start of the text the rule hangs on` зелений; тексти є обома мовами.
-- [ ] **T4** Документація: статус spec → `Implemented` (після T5); у 027 позначки «Замінено 2026-11-16 [061] …»
+- [x] **T4** Документація: статус spec → `Implemented` (рішення власника 2026-11-16, до T5); у 027 позначки «Замінено 2026-11-16 [061] …»
   біля REQ-027-11, -12, -15, -30, -31 і оновлені граничні випадки; «Поза межами» 027 без
   `starts-with()`; глосарій «Опора»; доповнення в ADR-0021; рядок у `docs/specs/README.md`.
 - [ ] **T5** `/verify`: тести, типи, лінт, `scripts/check-docs.py`; сценарій US-1 вручну на

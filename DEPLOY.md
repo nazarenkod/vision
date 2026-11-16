@@ -87,6 +87,9 @@ registry.npmjs.org или binaries.prisma.sh) задайте в `.env.demo` `VIS
 
 ## 2. Код
 
+Адрес репозитория — тот git, где хранится Vision (в банке — его собственный, см.
+[передачу в банк](docs/handover/README.md#перенесення-коду-в-git-банку)):
+
 ```bash
 git clone https://github.com/nazarenkod/vision.git
 ```
@@ -687,7 +690,7 @@ Drive рабочего аккаунта администратора ([013](docs
 Берёт последний бэкап (или указанный: `./scripts/vision-restore.sh vision-20261027T031700Z.tar`),
 показывает план и ждёт `yes`. На чистой машине: §2–3 (код и `.env.demo`), шаги 1–3 выше, войти
 пользователем по умолчанию пустого Vision (`DEFAULT_USER_EMAIL` / `DEFAULT_USER_PASSWORD` из
-`.env.demo`; если не заданы — `visual-regression-tracker@example.com` / `123456`), подключить Drive
+`.env.demo`; если не заданы — `admin@vision.local` / `123456`), подключить Drive
 на странице Backups тем же рабочим аккаунтом и тем же OAuth-клиентом (Vision видит только файлы
 своего клиента), затем restore:
 подключение лежит в `demo-data/backup-config` и восстановлением базы не затирается.

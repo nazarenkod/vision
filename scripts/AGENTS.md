@@ -31,7 +31,7 @@
 | `tests/test_prod_read_only.py` | копія з проду лише читає VRT (`SELECT` і `pg_dump`), картинки VRT не змінюються, запобіжники зупиняють до запису; замінник `docker`, працює й на macOS; так само перевірка після переходу (`vision-check-cutover.sh`) |
 | `tests/test_vision_convert_env.py` | конвертація налаштувань: перейменування, ключі, база, без секретів у виводі, копія старого файла |
 | `tests/test_export_without_history.py` | експорт без історії на тимчасовому репозиторії: один коміт, без старих версій файлів і невідстежуваного |
-| `tests/test_api_hardening.py` | compose передає в API всі `LDAP_*`/`OIDC_*` і `VISION_SWAGGER`; nginx інтерфейсу ставить ті самі заголовки безпеки (045) |
+| `tests/test_api_hardening.py` | compose передає в API всі `LDAP_*`/`OIDC_*` і `VISION_SWAGGER`, а в `ui` — кожне налаштування з `frontend/env.defaults`; nginx інтерфейсу ставить ті самі заголовки безпеки (045) |
 | `tests/test_project_access_migration.py` | міграція доступу до проєктів дає кожному наявному кожен наявний проєкт і нічого більше (042); на локальному Postgres, без нього пропускається |
 | `tests/test_protected_images.py` | жодної прямої видачі збережених файлів: ні статики в API, ні `/static/imageUploads` в nginx, ні тому картинок у контейнері `ui` (043) |
 | `tests/test_vision_backup.py` | бекап, відновлення й бекап перед копією проду на локальному Postgres (замінники `docker`, `rclone`) |

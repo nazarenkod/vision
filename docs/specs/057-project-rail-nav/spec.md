@@ -2,10 +2,10 @@
 
 | | |
 |---|---|
-| Статус | Draft |
+| Статус | Approved |
 | Власник | Дмитро Назаренко |
 | Оновлено | 2026-11-16 |
-| Дизайн | design.md з'явиться після `Approved`; [макет](https://claude.ai/artifact/EooHwVkKpobSihRJwP5woc) (сторінка «Обраний: рейка проєктів») |
+| Дизайн | [design.md](design.md), [tasks.md](tasks.md); [макет](https://claude.ai/artifact/EooHwVkKpobSihRJwP5woc) (сторінка «Обраний: рейка проєктів») |
 | Пов'язане | змінює [046](../046-design-review-refresh/spec.md) REQ-046-20 (склад меню), REQ-046-22 і REQ-046-27 (вибір проєкту), REQ-046-23 (меню акаунта), REQ-046-24 (версія біля Help), REQ-046-25 (вузьке вікно); знімає [053](../053-screen-search/spec.md) (пошук екранів прибрано з інтерфейсу); узгоджено з [018](../018-ui-redesign/spec.md) REQ-018-22, REQ-018-26, [042](../042-project-access/spec.md) |
 
 ## Контекст і проблема

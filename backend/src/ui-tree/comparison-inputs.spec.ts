@@ -9,6 +9,7 @@ import {
   parseSelector,
   parseUiTreeSettings,
   resolveRules,
+  textParts,
 } from './comparison-inputs';
 import { diffTrees } from './structure-diff';
 import { outsideAreas } from './ui-tree.service';
@@ -373,5 +374,122 @@ describe('resolveRules: variable text (spec 033)', () => {
     const tree = withFee('Комісія 15 грн');
     const find = (selector: string) => tree.nodes.filter((node) => matchesSelector(node, parseSelector(selector)));
     expect(find('text:/^\\p{L}+\\s+.*?\\s+\\p{L}+$/u')).toHaveLength(1);
+  });
+});
+
+describe('resolveRules: variable text leaves out only the text (spec 066)', () => {
+  // a tile like the bank's "History" button: an icon and the shown text inside a labelled button
+  const tile = (o: { label?: string; text?: string; icon?: string; width?: number } = {}) => {
+    const right = 400 + (o.width ?? 0);
+    return parse(`<?xml version='1.0' encoding='UTF-8' standalone='yes' ?>
+<hierarchy index="0" class="hierarchy" rotation="0" width="1080" height="2400">
+  <android.widget.FrameLayout index="0" class="android.widget.FrameLayout" text="" resource-id="" bounds="[0,0][1080,2400]" displayed="true">
+    <android.view.View index="0" class="android.view.View" text="" content-desc="${o.label ?? 'History'}" resource-id="" clickable="true" bounds="[100,1000][${right},1100]" displayed="true">
+      <android.widget.ImageView index="0" class="android.widget.ImageView" text="" content-desc="${o.icon ?? 'clock'}" resource-id="com.bank.app:id/history_icon" bounds="[110,1010][190,1090]" displayed="true" />
+      <android.widget.TextView index="1" class="android.widget.TextView" text="${o.text ?? 'History'}" resource-id="" bounds="[200,1020][380,1080]" displayed="true" />
+      <android.widget.TextView index="2" class="android.widget.TextView" text="new" resource-id="com.bank.app:id/badge" bounds="[385,1000][${right},1030]" displayed="true" />
+    </android.view.View>
+  </android.widget.FrameLayout>
+</hierarchy>`);
+  };
+  const words = [{ pattern: '\\p{L}+', sample: 'History' }];
+  const rule = { id: 'v', selector: 'class:android.view.View', action: 'variable' as const, parts: words };
+  const button = (tree: ReturnType<typeof parse>) =>
+    tree.nodes.find((node) => node.label === 'History' || node.className === 'android.view.View');
+  const byText = (tree: ReturnType<typeof parse>, text: string) => tree.nodes.find((node) => node.text === text);
+  const padded = ({ x, y, width, height }: { x: number; y: number; width: number; height: number }) => ({
+    x: x - 2,
+    y: y - 2,
+    width: width + 4,
+    height: height + 4,
+  });
+
+  it('takes as text parts the descendants whose text passes the check', () => {
+    const tree = tile();
+    const digitsOnly = [{ pattern: '\\d+' }];
+    expect(textParts(tree, button(tree), [{ pattern: '\\p{L}+' }]).map((node) => node.text)).toEqual([
+      'History',
+      'new',
+    ]);
+    expect(textParts(tree, button(tree), [{ pattern: 'Hist\\p{L}+' }]).map((node) => node.text)).toEqual(['History']);
+    expect(textParts(tree, button(tree), digitsOnly)).toEqual([]);
+  });
+
+  it('takes the label as the shown text on iOS, but not the label of an image', () => {
+    const ios = parseUiTree(
+      `<?xml version="1.0" encoding="UTF-8"?>
+<XCUIElementTypeApplication type="XCUIElementTypeApplication" name="Bank" label="Bank" enabled="true" visible="true" accessible="false" x="0" y="0" width="390" height="844" index="0">
+  <XCUIElementTypeButton type="XCUIElementTypeButton" name="history" label="History" enabled="true" visible="true" accessible="true" x="16" y="300" width="160" height="44" index="0">
+    <XCUIElementTypeImage type="XCUIElementTypeImage" name="clock" label="clock" enabled="true" visible="true" accessible="false" x="20" y="306" width="32" height="32" index="0"/>
+    <XCUIElementTypeStaticText type="XCUIElementTypeStaticText" label="History" enabled="true" visible="true" accessible="true" x="60" y="310" width="100" height="24" index="1"/>
+  </XCUIElementTypeButton>
+</XCUIElementTypeApplication>`,
+      { imageWidth: 1170, imageHeight: 2532 }
+    );
+    const history = ios.nodes.find((node) => node.resourceId === 'history');
+    expect(textParts(ios, history, [{ pattern: '\\p{L}+' }]).map((node) => node.className)).toEqual([
+      'XCUIElementTypeStaticText',
+    ]);
+  });
+
+  it('leaves out only the text parts when the element keeps its size', () => {
+    const history = { ...rule, parts: [{ pattern: 'Hist\\p{L}+', sample: 'History' }] };
+    const current = tile({ text: 'Historie' });
+    const baseline = tile();
+    const resolved = resolveRules([history], [current, baseline]);
+    expect(resolved.ignore).toEqual([
+      padded(byText(current, 'Historie').bounds),
+      padded(byText(baseline, 'History').bounds),
+    ]);
+    expect(resolved.leftOut.v).toEqual([
+      { side: 'current', element: button(current).bounds, areas: [byText(current, 'Historie').bounds] },
+      { side: 'baseline', element: button(baseline).bounds, areas: [byText(baseline, 'History').bounds] },
+    ]);
+  });
+
+  it('leaves out the whole element when its text is its own or its size changed', () => {
+    const own = resolveRules(
+      [
+        {
+          id: 'v',
+          selector: 'id:tv_fee',
+          action: 'variable',
+          parts: [{ text: 'Commission ' }, { pattern: '\\d+' }, { text: ' UAH' }],
+        },
+      ],
+      [parse(xml), parse(xml)]
+    );
+    expect(own.leftOut.v.map((item) => item.reason)).toEqual(['own-text', 'own-text']);
+    expect(own.leftOut.v[0].areas).toEqual([own.leftOut.v[0].element]);
+
+    const history = { ...rule, parts: [{ pattern: 'Hist\\p{L}+', sample: 'History' }] };
+    const wider = resolveRules([history], [tile({ width: 60 }), tile()]);
+    expect(wider.leftOut.v.map((item) => item.reason)).toEqual(['resized', 'resized']);
+    expect(wider.ignore).toEqual([padded(button(tile({ width: 60 })).bounds), padded(button(tile()).bounds)]);
+
+    const noBaseline = resolveRules([history], [tile(), null]);
+    expect(noBaseline.leftOut.v).toEqual([
+      { side: 'current', element: button(tile()).bounds, areas: [button(tile()).bounds], reason: 'unpaired' },
+    ]);
+  });
+
+  it('counts a change of the icon next to a variable text', () => {
+    const history = { ...rule, parts: [{ pattern: 'Hist\\p{L}+', sample: 'History' }] };
+    const current = tile({ text: 'Historie', icon: 'calendar' });
+    const baseline = tile();
+    const changes = diffTrees(baseline, current);
+    const resolved = resolveRules([history], [current, baseline]);
+    const counted = outsideAreas(changes, resolved.ignore, resolved.quietKeys);
+    expect(counted.map((change) => [change.kind, change.resourceId])).toEqual([
+      ['label', 'com.bank.app:id/history_icon'],
+    ]);
+  });
+
+  it('keeps the changes of the element a variable-text rule found out of the element changes', () => {
+    const history = { ...rule, parts: [{ pattern: 'Hist\\p{L}+', sample: 'History' }] };
+    const current = tile({ text: 'Historie', label: 'Historie' });
+    const baseline = tile();
+    const resolved = resolveRules([{ ...history, selector: 'class:android.view.View' }], [current, baseline]);
+    expect(outsideAreas(diffTrees(baseline, current), resolved.ignore, resolved.quietKeys)).toEqual([]);
   });
 });

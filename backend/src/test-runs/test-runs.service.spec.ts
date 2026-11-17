@@ -111,7 +111,7 @@ const initService = async ({
             toleranceAreas: [],
             moves: [],
             systemBars: [],
-            rules: { ignore: [], tolerate: [], matches: {}, found: {}, variable: {} },
+            rules: { ignore: [], tolerate: [], matches: {}, found: {}, variable: {}, leftOut: {}, quietKeys: [] },
             variableProblems: [],
             settings: null,
             compareOnly: { active: false, moves: [], keep: [], compared: [], ignoreOutside: [], problems: [] },
@@ -470,7 +470,7 @@ describe('TestRunsService', () => {
       toleranceAreas: [],
       moves: [],
       systemBars: [],
-      rules: { ignore: [], tolerate: [], matches: {}, found: {}, variable: {} },
+      rules: { ignore: [], tolerate: [], matches: {}, found: {}, variable: {}, leftOut: {}, quietKeys: [] },
       variableProblems: [],
       settings: null,
       compareOnly: {
@@ -512,7 +512,7 @@ describe('TestRunsService', () => {
       moves: [],
       systemBars: [],
       systemBarsFrom: null,
-      rules: { ignore: [], tolerate: [], matches: {}, found: {}, variable: {} },
+      rules: { ignore: [], tolerate: [], matches: {}, found: {}, variable: {}, leftOut: {}, quietKeys: [] },
       variableProblems: [],
       settings: null,
       compareOnly: {

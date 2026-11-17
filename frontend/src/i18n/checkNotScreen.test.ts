@@ -17,6 +17,7 @@ const LITERAL_SCREEN = new Set([
   "filters.viewport",
   "review.fit",
   "review.attr.viewport",
+  "select.shownText", // the text drawn on the device screen, not a label (REQ-066-08)
   // an accessibility problem names the app screen its tree titles
   "panel.elsewhereIgnored",
   "panel.elsewhereFiling",

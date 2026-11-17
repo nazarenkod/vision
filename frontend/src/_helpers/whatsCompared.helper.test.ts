@@ -464,6 +464,32 @@ describe("variable text (spec 033)", () => {
     expect(result.summary).toEqual({ kind: "except", count: 4 });
   });
 
+  it("maps what a variable-text rule leaves out", () => {
+    const button = rect(40, 400, 300, 80);
+    const text = rect(120, 410, 180, 40);
+    const result = overview(
+      structure({
+        rules: [
+          {
+            ...variable("history", [button]),
+            leftOut: [
+              { side: "current", element: button, areas: [text] },
+              { side: "baseline", element: button, areas: [text] },
+            ],
+          },
+        ],
+      }),
+      [],
+      [],
+    );
+    expect(result.variable[0]).toMatchObject({
+      rects: [button],
+      leftOut: [text],
+    });
+    // still one place: the element, not each of its text parts (REQ-066-07)
+    expect(result.summary).toEqual({ kind: "except", count: 1 });
+  });
+
   it("puts a failed variable text first in the verdict", () => {
     const failed = {
       ruleId: "updated",

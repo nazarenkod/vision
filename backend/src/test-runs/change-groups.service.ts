@@ -205,7 +205,8 @@ export class ChangeGroupsService {
       ]);
       if (!tree || !baseline) return null;
       // a new date in a marked text would make every screen a group of its own (REQ-033-33)
-      const changes = outsideAreas(diffTrees(baseline, tree), variableTextAreas(settings, run, [tree, baseline]));
+      const variable = variableTextAreas(settings, run, [tree, baseline]);
+      const changes = outsideAreas(diffTrees(baseline, tree), variable.areas, variable.keys);
       const fingerprint = changeFingerprint(changes);
       if (!fingerprint) return null;
       // Every changed area has to sit on an element the tree says changed.

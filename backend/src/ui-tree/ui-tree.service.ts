@@ -28,6 +28,7 @@ import {
   parseJsonArray,
   parseUiTreeSettings,
   resolveRules,
+  shownText,
   ResolvedRules,
   rulePatternProblem,
   UiTreeSettings,
@@ -133,19 +134,22 @@ export interface PickableElement {
   text?: string;
   // a text with no id of its own: a path down from the nearest id, which a new value does not break (REQ-033-27)
   stableSelector?: string;
+  // its text is a label not drawn on the screen (content-desc, aria-label): the shown text may sit inside (REQ-065-08)
+  labelOnly?: boolean;
 }
 
 // an element covering nearly the whole screen is a container, not something to pick
 const MAX_PICKABLE_SCREEN_SHARE = 0.9;
 
 /** A text element's text and, without an id of its own, a path to it from an id above. */
-function textFields(tree: UiTree, node: UiNode): Pick<PickableElement, 'text' | 'stableSelector'> {
+function textFields(tree: UiTree, node: UiNode): Pick<PickableElement, 'text' | 'stableSelector' | 'labelOnly'> {
   const text = (node.text || node.label).trim();
   if (!text) return {};
-  if (stableKind(node) === 'id') return { text };
+  const own = shownText(tree, node).trim() ? { text } : { text, labelOnly: true };
+  if (stableKind(node) === 'id') return own;
   // built, not evaluated: checking a path costs a walk of the tree, for every text on screen
   const fromId = pathFromIdAbove(tree, node);
-  return fromId ? { text, stableSelector: fromId } : { text };
+  return fromId ? { ...own, stableSelector: fromId } : own;
 }
 
 /** How a rule finds this element: its own id, else its text or label. */
@@ -226,14 +230,22 @@ export function variableProblems(
   return insideKeep(problems, compareOnly.active ? compareOnly.keep : null);
 }
 
-/** Element changes outside the ignored areas (element rules, system bars). */
-export function outsideAreas(changes: StructuralChange[], areas: Rect[]): StructuralChange[] {
+/**
+ * Element changes outside the ignored areas (element rules, system bars), less
+ * the changes of elements variable-text rules found (REQ-033-16, REQ-065-04).
+ */
+export function outsideAreas(
+  changes: StructuralChange[],
+  areas: Rect[],
+  quietKeys: readonly string[] = []
+): StructuralChange[] {
+  const quiet = new Set(quietKeys);
   const inside = (outer: Rect, inner: Rect) =>
     inner.x >= outer.x &&
     inner.y >= outer.y &&
     inner.x + inner.width <= outer.x + outer.width &&
     inner.y + inner.height <= outer.y + outer.height;
-  return changes.filter((change) => !areas.some((area) => inside(area, change.bounds)));
+  return changes.filter((change) => !quiet.has(change.key) && !areas.some((area) => inside(area, change.bounds)));
 }
 
 export function parseRegions(value: string | null): Rect[] {
@@ -399,7 +411,10 @@ export class UiTreeService {
     const regions = parseRegions(testRun.diffRegions);
     const inputs = await this.comparisonInputs(testRun);
     const changes = baselineTree
-      ? insideCompared(outsideAreas(diffTrees(baselineTree, tree), inputs.ignoreAreas), inputs.compareOnly)
+      ? insideCompared(
+          outsideAreas(diffTrees(baselineTree, tree), inputs.ignoreAreas, inputs.rules.quietKeys),
+          inputs.compareOnly
+        )
       : [];
     const clickable = new Set(
       [...tree.nodes, ...(baselineTree?.nodes ?? [])].filter((node) => node.clickable).map((node) => node.key)
@@ -431,7 +446,10 @@ export class UiTreeService {
     const regions = parseRegions(testRun.diffRegions);
     const inputs = await this.comparisonInputs(testRun);
     const changes = baselineTree
-      ? insideCompared(outsideAreas(diffTrees(baselineTree, tree), inputs.ignoreAreas), inputs.compareOnly)
+      ? insideCompared(
+          outsideAreas(diffTrees(baselineTree, tree), inputs.ignoreAreas, inputs.rules.quietKeys),
+          inputs.compareOnly
+        )
       : [];
     const clickable = new Set(
       [...tree.nodes, ...(baselineTree?.nodes ?? [])].filter((node) => node.clickable).map((node) => node.key)
@@ -488,7 +506,10 @@ export class UiTreeService {
     const size = imageBuffer ? pngSize(imageBuffer) : { width: tree?.width ?? 0, height: tree?.height ?? 0 };
     const changes =
       tree && baselineTree
-        ? insideCompared(outsideAreas(diffTrees(baselineTree, tree), inputs.ignoreAreas), inputs.compareOnly)
+        ? insideCompared(
+            outsideAreas(diffTrees(baselineTree, tree), inputs.ignoreAreas, inputs.rules.quietKeys),
+            inputs.compareOnly
+          )
         : [];
     const clickable = new Set(
       [...(tree?.nodes ?? []), ...(baselineTree?.nodes ?? [])].filter((n) => n.clickable).map((n) => n.key)
@@ -502,6 +523,8 @@ export class UiTreeService {
         matches: inputs.rules.matches[rule.id] ?? 0,
         found: inputs.rules.found[rule.id] ?? { current: [], baseline: [] },
         ...(inputs.rules.variable[rule.id] ? { check: inputs.rules.variable[rule.id] } : {}),
+        // what of each element it found is not compared: its text or all of it (spec 065)
+        ...(inputs.rules.leftOut[rule.id] ? { leftOut: inputs.rules.leftOut[rule.id] } : {}),
         // saved before Vision stopped running back-references and look-around: finds nothing (REQ-051-12)
         ...(rulePatternProblem(rule) ? { problem: 'pattern' as const } : {}),
       }));
@@ -593,7 +616,10 @@ export class UiTreeService {
       tree,
       baselineTree,
       regions: elementsUnderRegions(tree, parseRegions(testRun.diffRegions)),
-      changes: insideCompared(outsideAreas(diffTrees(baselineTree, tree), inputs.ignoreAreas), inputs.compareOnly),
+      changes: insideCompared(
+        outsideAreas(diffTrees(baselineTree, tree), inputs.ignoreAreas, inputs.rules.quietKeys),
+        inputs.compareOnly
+      ),
     };
   }
 
@@ -640,7 +666,7 @@ export class UiTreeService {
       moves: [],
       systemBars: [],
       systemBarsFrom: null,
-      rules: { ignore: [], tolerate: [], matches: {}, found: {}, variable: {} },
+      rules: { ignore: [], tolerate: [], matches: {}, found: {}, variable: {}, leftOut: {}, quietKeys: [] },
       settings: null,
       compareOnly: planCompareOnly([], null, null),
       variableProblems: [],

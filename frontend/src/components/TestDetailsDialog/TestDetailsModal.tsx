@@ -63,6 +63,11 @@ import {
 } from "../../types";
 import { OverlayRect } from "./DrawArea";
 import {
+  leftOutFor,
+  leftOutMarks,
+  textOnScreen,
+} from "../../_helpers/variableText.helper";
+import {
   ElementRule,
   ElementRuleAction,
   Rect,
@@ -148,6 +153,8 @@ interface Selection {
   adding?: boolean;
   // the last click tried to add one past the limit (REQ-028-05)
   refused?: boolean;
+  // the element the marking of a variable text moved to from the one around it (REQ-065-09)
+  marking?: PickableElement;
 }
 
 interface TestDetailsModalProps {
@@ -836,18 +843,53 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
                 dashed: true,
               }))
             : []),
-          ...structure.rules.flatMap((rule) =>
-            (rule.found?.[side] ?? []).map((rect, i) => {
-              // a text that does not hold is drawn like a gone element: red, dashed (REQ-033-30)
-              const failed =
-                rule.action === "variable" &&
-                side === "current" &&
-                !!rule.check?.items.some(
-                  (item) =>
-                    !item.ok &&
-                    item.bounds.x === rect.x &&
-                    item.bounds.y === rect.y,
-                );
+          ...structure.rules.flatMap((rule) => {
+            // a text that does not hold is drawn like a gone element: red, dashed (REQ-033-30)
+            const failedAt = (rect: Rect) =>
+              rule.action === "variable" &&
+              side === "current" &&
+              !!rule.check?.items.some(
+                (item) =>
+                  !item.ok &&
+                  item.bounds.x === rect.x &&
+                  item.bounds.y === rect.y,
+              );
+            // only the text may be left out: hatched there, the element framed (REQ-065-05)
+            const leftOut =
+              rule.action === "variable" ? leftOutMarks(rule, side) : null;
+            if (leftOut) {
+              const failed = (rect: Rect) => failedAt(rect);
+              return leftOut
+                .filter(
+                  // a failed element is one red frame, whatever was left out of it
+                  (item, i) =>
+                    !failed(item.element) ||
+                    leftOut.findIndex(
+                      (other) => other.element === item.element,
+                    ) === i,
+                )
+                .map((item, i): OverlayRect => ({
+                  id: `${ruleMarkId(rule.id)}:${i}`,
+                  ...(failed(item.element) ? item.element : item.rect),
+                  color: failed(item.element)
+                    ? canvas.status.failed.fg
+                    : canvas.variable,
+                  hatched: !failed(item.element) && item.mark === "hatch",
+                  dashed: failed(item.element),
+                  // one name per element: on its frame, or on it when all of it is left out
+                  ...(failed(item.element) ||
+                  item.mark === "frame" ||
+                  !leftOut.some(
+                    (other) =>
+                      other.element === item.element && other.mark === "frame",
+                  )
+                    ? { label: t("select.ruleVariable") }
+                    : {}),
+                  labelOnHighlight: true,
+                }));
+            }
+            return (rule.found?.[side] ?? []).map((rect, i) => {
+              const failed = failedAt(rect);
               return {
                 id: `${ruleMarkId(rule.id)}:${i}`,
                 ...rect,
@@ -872,8 +914,8 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
                       : rule.selector,
                 labelOnHighlight: rule.action !== "tolerate",
               };
-            }),
-          ),
+            });
+          }),
           ...(side === "current" && previewMark?.startsWith("area:")
             ? ignoreAreas
                 .filter((area) => areaMarkId(area.id) === previewMark)
@@ -2211,6 +2253,43 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
             setSelection((current) => current && { ...current, adding: true })
           }
           onVariable={actVariable}
+          leftOut={(() => {
+            const rule = ruleFor(
+              selection.picked.element,
+              structure.rules,
+              selection.side,
+            );
+            return rule?.action === "variable"
+              ? leftOutFor(
+                  rule,
+                  selection.side,
+                  selection.picked.element.bounds,
+                )
+              : undefined;
+          })()}
+          shownText={
+            textOnScreen(
+              selection.picked.element,
+              elementsOf(selection.side),
+            ) ?? undefined
+          }
+          onShownText={() =>
+            setSelection((current) => {
+              const shown =
+                current &&
+                textOnScreen(current.picked.element, elementsOf(current.side));
+              return current && shown
+                ? {
+                    ...current,
+                    picked: { element: shown, trail: [] },
+                    selected: [shown],
+                    anchor: anchorOf(current.side, shown) ?? current.anchor,
+                    marking: shown,
+                  }
+                : current;
+            })
+          }
+          startMarking={selection.marking === selection.picked.element}
           other={otherText(selection.side, selection.picked.element)}
           countFor={countFor(selection.side)}
           onDrawArea={toggleAreas}

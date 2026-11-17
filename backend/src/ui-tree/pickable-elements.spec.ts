@@ -147,6 +147,13 @@ describe('pickableElements: elements with no name (spec 027)', () => {
 });
 
 describe('pickableElements: texts for variable-text rules (spec 033)', () => {
+  it('tells an element whose text is only a label not drawn on the screen (REQ-065-08)', () => {
+    const elements = pickableElements(parse(xml));
+    // the help button's content-desc is read aloud, not drawn; the fee is drawn text
+    expect(elements.find((e) => e.selector === 'id:btn_help')?.labelOnly).toBe(true);
+    expect(elements.find((e) => e.selector === 'id:tv_fee')?.labelOnly).toBeUndefined();
+  });
+
   it('offers a path from the nearest id for a text without an id', () => {
     const elements = pickableElements(parse(xml));
     const template = elements.find((e) => e.text === 'Use template');

@@ -12,6 +12,7 @@ import {
 import { MoreHoriz } from "@mui/icons-material";
 import {
   ElementRuleAction,
+  LeftOut,
   PickableElement,
   RuleScope,
   ScreenRule,
@@ -33,6 +34,7 @@ import {
   plainText,
   splitPieces,
   variableSelector,
+  wordsOnly,
 } from "../../_helpers/variableText.helper";
 import { tokens, type, radius } from "../../theme";
 import { useT } from "../../i18n";
@@ -76,6 +78,13 @@ interface ElementPopoverProps {
   // how many elements a selector finds on this screenshot, where that can be told
   countFor?: (selector: string) => number | null;
   onDrawArea?: () => void;
+  // what the element's variable-text rule leaves out of the comparison here (REQ-065-06)
+  leftOut?: LeftOut;
+  // the one text drawn inside an element whose own text is a label, and moving to it (REQ-065-08, 09)
+  shownText?: PickableElement;
+  onShownText?: () => void;
+  // open with the text in pieces: the marking moved here from the element around (REQ-065-09)
+  startMarking?: boolean;
 }
 
 /**
@@ -103,6 +112,10 @@ export const ElementPopover: React.FunctionComponent<ElementPopoverProps> = ({
   other,
   countFor,
   onDrawArea,
+  leftOut,
+  shownText,
+  onShownText,
+  startMarking,
 }) => {
   const { t } = useT();
   const [scope, setScope] = React.useState<RuleScope>("screen");
@@ -115,8 +128,18 @@ export const ElementPopover: React.FunctionComponent<ElementPopoverProps> = ({
   const [variable, setVariable] = React.useState<{
     marked: Set<number>;
     replaces?: ScreenRule;
-  } | null>(null);
-  React.useEffect(() => setVariable(null), [element.selector, element.index]);
+  } | null>(() =>
+    startMarking && plainText(element.text ?? "")
+      ? { marked: new Set<number>() }
+      : null,
+  );
+  // another element: start over; the one it opened on keeps the marking moved to it (REQ-065-09)
+  const opened = React.useRef(`${element.selector}|${element.index}`);
+  React.useEffect(() => {
+    if (opened.current === `${element.selector}|${element.index}`) return;
+    opened.current = `${element.selector}|${element.index}`;
+    setVariable(null);
+  }, [element.selector, element.index]);
   const startVariable = (replaces?: ScreenRule) => {
     if (!text) return;
     setVariable({
@@ -393,6 +416,30 @@ export const ElementPopover: React.FunctionComponent<ElementPopoverProps> = ({
                 gap: 1.25,
               }}
             >
+              {shownText && onShownText && !variable.replaces && (
+                <Box
+                  data-testid="variableShownText"
+                  sx={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 1,
+                    flexWrap: "wrap",
+                  }}
+                >
+                  <Typography
+                    sx={{ fontSize: 12, color: tokens.textMuted, flexGrow: 1 }}
+                  >
+                    {t("select.shownText", { text: shownText.text ?? "" })}
+                  </Typography>
+                  <Button
+                    size="small"
+                    onClick={onShownText}
+                    data-testid="variableMarkInIt"
+                  >
+                    {t("select.markInIt")}
+                  </Button>
+                </Box>
+              )}
               <Box
                 role="group"
                 aria-label={t("select.variableClick")}
@@ -467,6 +514,22 @@ export const ElementPopover: React.FunctionComponent<ElementPopoverProps> = ({
                     ),
                     text: other.text,
                   })}
+                </Typography>
+              )}
+              {marked && wordsOnly(parts) && (
+                <Typography
+                  data-testid="variableWordsOnly"
+                  sx={{
+                    fontSize: 12,
+                    lineHeight: 1.4,
+                    color: tokens.status.changed.fg,
+                    bgcolor: tokens.status.changed.bg,
+                    borderRadius: radius.control,
+                    px: 1.25,
+                    py: 1,
+                  }}
+                >
+                  {t("select.variableWordsOnly")}
                 </Typography>
               )}
               {marked && !selector && (
@@ -582,6 +645,42 @@ export const ElementPopover: React.FunctionComponent<ElementPopoverProps> = ({
                 )}
               </Typography>
             )}
+            {rule.action === "variable" && leftOut && (
+              <Typography
+                data-testid="variableLeftOut"
+                sx={{ fontSize: 12, color: tokens.textMuted }}
+              >
+                {leftOut.reason
+                  ? t("select.leftOutWhole", {
+                      reason: t(
+                        leftOut.reason === "resized"
+                          ? "select.leftOutResized"
+                          : leftOut.reason === "unpaired"
+                            ? "select.leftOutUnpaired"
+                            : "select.leftOutOwnText",
+                      ),
+                    })
+                  : t("select.leftOutText")}
+              </Typography>
+            )}
+            {rule.action === "variable" &&
+              rule.parts &&
+              wordsOnly(rule.parts) && (
+                <Typography
+                  data-testid="variableWordsOnly"
+                  sx={{
+                    fontSize: 12,
+                    lineHeight: 1.4,
+                    color: tokens.status.changed.fg,
+                    bgcolor: tokens.status.changed.bg,
+                    borderRadius: radius.control,
+                    px: 1.25,
+                    py: 1,
+                  }}
+                >
+                  {t("select.variableWordsOnly")}
+                </Typography>
+              )}
             <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
               {text &&
                 (rule.action === "variable" || rule.action === "ignore") && (

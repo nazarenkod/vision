@@ -1,4 +1,10 @@
-import { PickableElement, TextPart } from "../types/insights";
+import {
+  LeftOut,
+  PickableElement,
+  Rect,
+  ScreenRule,
+  TextPart,
+} from "../types/insights";
 
 /**
  * Marking the part of a text that changes between runs (spec 033): the text
@@ -231,4 +237,92 @@ export function markedFrom(parts: TextPart[], text: string): Set<number> {
     position = end;
   }
   return marked;
+}
+
+// --- what a rule leaves out of the comparison (spec 065) ---
+
+/**
+ * Whether a check only asks for words: no fixed part with a letter or a digit,
+ * and every place letters only. Any word then passes, which is close to
+ * ignoring the element (REQ-065-10).
+ */
+export function wordsOnly(parts: TextPart[]): boolean {
+  if (!parts.some(isPlace)) return false;
+  return parts.every((part) => {
+    if (!isPlace(part)) return !/[\p{L}\p{N}]/u.test(part.text);
+    // a place made before samples were kept: judged by its pattern
+    if (part.sample === undefined) return !/\\d|\[0-9/.test(part.pattern);
+    return /^[\p{L}\s]+$/u.test(part.sample) && /\p{L}/u.test(part.sample);
+  });
+}
+
+const sameRect = (a: Rect, b: Rect) =>
+  a.x === b.x && a.y === b.y && a.width === b.width && a.height === b.height;
+
+/** What the rule leaves out of this element on this screenshot, if the server says (REQ-065-06). */
+export function leftOutFor(
+  rule: Pick<ScreenRule, "leftOut">,
+  side: LeftOut["side"],
+  bounds: Rect,
+): LeftOut | undefined {
+  return rule.leftOut?.find(
+    (item) => item.side === side && sameRect(item.element, bounds),
+  );
+}
+
+/**
+ * How a variable-text rule is drawn on a screenshot (REQ-065-05): what is not
+ * compared hatched, and the element framed when only its text is left out.
+ * Null from a server that does not say: the found elements are drawn as before.
+ */
+export function leftOutMarks(
+  rule: Pick<ScreenRule, "leftOut">,
+  side: LeftOut["side"],
+): Array<{ rect: Rect; mark: "hatch" | "frame"; element: Rect }> | null {
+  if (!rule.leftOut) return null;
+  return rule.leftOut
+    .filter((item) => item.side === side)
+    .flatMap((item) => [
+      ...(item.reason
+        ? []
+        : [
+            {
+              rect: item.element,
+              mark: "frame" as const,
+              element: item.element,
+            },
+          ]),
+      ...item.areas.map((rect) => ({
+        rect,
+        mark: "hatch" as const,
+        element: item.element,
+      })),
+    ]);
+}
+
+/**
+ * The text shown inside an element whose own text is only a label: the one
+ * element inside it with a text, or null when there is none or several
+ * (REQ-065-08).
+ */
+export function textOnScreen(
+  element: PickableElement,
+  elements: PickableElement[],
+): PickableElement | null {
+  if (!element.labelOnly || element.index === undefined) return null;
+  const byIndex = new Map(elements.map((item) => [item.index, item]));
+  const inside = (item: PickableElement) => {
+    let parent = item.parent;
+    while (parent !== null && parent !== undefined) {
+      if (parent === element.index) return true;
+      parent = byIndex.get(parent)?.parent;
+    }
+    return false;
+  };
+  // an icon's label is not drawn: it is no text on the screen
+  const shown = elements.filter(
+    (item) =>
+      item !== element && !!item.text && !item.labelOnly && inside(item),
+  );
+  return shown.length === 1 ? shown[0] : null;
 }

@@ -1,6 +1,10 @@
 import {
   expectedOf,
   fitsParts,
+  leftOutFor,
+  leftOutMarks,
+  textOnScreen,
+  wordsOnly,
   partsOf,
   patternFor,
   placesIn,
@@ -126,5 +130,92 @@ describe("what is there now and what was expected", () => {
       { text: "Updated at ", place: false },
       { text: "14:07", place: true, pattern: "\\d+:\\d{2}" },
     ]);
+  });
+});
+
+describe("what a variable-text rule leaves out (spec 065)", () => {
+  const button = { x: 100, y: 1000, width: 300, height: 100 };
+  const text = { x: 200, y: 1020, width: 180, height: 60 };
+
+  it("marks the text parts hatched and frames the element", () => {
+    const rule = {
+      leftOut: [
+        { side: "current" as const, element: button, areas: [text] },
+        {
+          side: "baseline" as const,
+          element: button,
+          areas: [button],
+          reason: "resized" as const,
+        },
+      ],
+    };
+    expect(leftOutMarks(rule, "current")).toEqual([
+      { rect: button, mark: "frame", element: button },
+      { rect: text, mark: "hatch", element: button },
+    ]);
+    expect(leftOutMarks(rule, "baseline")).toEqual([
+      { rect: button, mark: "hatch", element: button },
+    ]);
+    expect(leftOutMarks({}, "current")).toBeNull();
+    expect(leftOutFor(rule, "current", { ...button })?.areas).toEqual([text]);
+    expect(leftOutFor(rule, "current", text)).toBeUndefined();
+  });
+
+  it("tells a check of words only", () => {
+    expect(wordsOnly(marking("Історія", "Історія"))).toBe(true);
+    expect(wordsOnly(marking("Олена Петренко", "Олена", "Петренко"))).toBe(
+      true,
+    );
+    expect(wordsOnly(marking("Привіт, Олена", "Олена"))).toBe(false);
+    expect(wordsOnly(marking("₴ 1 250,00", "₴", "1 250,00"))).toBe(false);
+    expect(
+      wordsOnly(marking("11 серпня, 11:41", "11", "серпня", "11:41")),
+    ).toBe(false);
+    expect(wordsOnly([{ text: "Історія" }])).toBe(false);
+    expect(wordsOnly([{ pattern: "\\p{L}+" }])).toBe(true);
+    expect(wordsOnly([{ pattern: "\\d+" }])).toBe(false);
+  });
+});
+
+describe("textOnScreen", () => {
+  const rect = { x: 0, y: 0, width: 10, height: 10 };
+  const tile = {
+    index: 1,
+    parent: null,
+    selector: "text:Додати сервіс або шаблон",
+    element: "View",
+    bounds: rect,
+    text: "Додати сервіс або шаблон",
+    labelOnly: true,
+  };
+  const icon = {
+    index: 2,
+    parent: 1,
+    selector: "id:plus",
+    element: "Image",
+    bounds: rect,
+    text: "plus",
+    labelOnly: true,
+  };
+  const label = {
+    index: 3,
+    parent: 1,
+    selector: "text:Додати",
+    element: "TextView",
+    bounds: rect,
+    text: "Додати",
+  };
+  const elsewhere = { ...label, index: 4, parent: null, selector: "text:Інше" };
+
+  it("finds the one text drawn inside an element whose own text is a label", () => {
+    expect(textOnScreen(tile, [tile, icon, label, elsewhere])).toBe(label);
+  });
+
+  it("finds nothing for an element with a drawn text or several texts inside", () => {
+    expect(
+      textOnScreen({ ...tile, labelOnly: undefined }, [tile, label]),
+    ).toBeNull();
+    const second = { ...label, index: 5, selector: "text:сервіс" };
+    expect(textOnScreen(tile, [tile, label, second])).toBeNull();
   });
 });

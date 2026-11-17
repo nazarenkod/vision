@@ -76,6 +76,7 @@ function analyzing(prisma: Record<string, unknown>, trees: Record<string, unknow
   jest.spyOn(instance as never, 'decode').mockResolvedValue(undefined as never);
   jest.spyOn(instance, 'comparisonInputs').mockResolvedValue({
     ignoreAreas: [],
+    rules: { quietKeys: [] },
     compareOnly: { active: false, moves: [], keep: [], compared: [], ignoreOutside: [], problems: [] },
   } as never);
   return { instance, load };
@@ -116,6 +117,7 @@ describe('UiTreeService.analyze', () => {
     jest.spyOn(instance as never, 'decode').mockResolvedValue(undefined as never);
     jest.spyOn(instance, 'comparisonInputs').mockResolvedValue({
       ignoreAreas: [],
+      rules: { quietKeys: [] },
       compareOnly: { active: false, moves: [], keep: [], compared: [], ignoreOutside: [], problems: [] },
     } as never);
 
@@ -274,7 +276,7 @@ describe('UiTreeService, compare only', () => {
       moves: [],
       systemBars: [],
       systemBarsFrom: null,
-      rules: { ignore: [], tolerate: [], matches: {}, found: {}, variable: {} },
+      rules: { ignore: [], tolerate: [], matches: {}, found: {}, variable: {}, leftOut: {}, quietKeys: [] },
       variableProblems: [],
       settings: null,
       compareOnly: { active: false, moves: [], keep: [], compared: [], ignoreOutside: [], problems: [] },

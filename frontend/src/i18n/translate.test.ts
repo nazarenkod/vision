@@ -13,6 +13,13 @@ import {
 const dictionaries = { en, uk } as unknown as Parameters<typeof translate>[0];
 
 describe("dictionaries", () => {
+  it("asks to press, not click, the part of a text that changes", () => {
+    // the rest of the interface says «Натисніть» (REQ-069-09)
+    expect(uk["select.variableClick"]).toBe(
+      "Натисніть частину, що змінюється.",
+    );
+  });
+
   it("has every text in both languages with the same placeholders", () => {
     // tsc makes uk have every key of en; this checks what types cannot
     expect(Object.keys(uk).sort()).toEqual(Object.keys(en).sort());

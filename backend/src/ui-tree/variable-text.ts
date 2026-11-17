@@ -71,7 +71,7 @@ function skeleton(parts: TextPart[]): LinearRegex | null {
 
 /**
  * Whether a text keeps the whole fixed text of a check, whatever is in the
- * places: a list row of the same kind as the one the rule was made on (REQ-069-01).
+ * places: a list row of the same kind as the one the rule was made on (REQ-070-01).
  * A text too long to check is kept, so it is still reported as such (REQ-033-24).
  */
 export function fitsSkeleton(parts: TextPart[], text: string): boolean {

@@ -65,6 +65,7 @@ export const generateTestVariation = (
     baselineName: 'baselineName',
     baselineUiTreeName: null,
     elementRules: null,
+    featureName: null,
     os: 'OS',
     browser: 'browser',
     viewport: 'viewport',

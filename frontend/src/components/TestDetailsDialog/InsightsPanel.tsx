@@ -50,12 +50,12 @@ import {
   hasUiTree,
 } from "../../types";
 import { StatusPill } from "../StatusPill";
-import { describeChange } from "../ChangeGroups";
 import { JiraBugDialog } from "./JiraBugDialog";
 import { motion, tokens, type, radius } from "../../theme";
 import { labelOf, useT } from "../../i18n";
 import { a11yMessage, a11yTitle } from "../../_helpers/a11yText.helper";
 import { WhatsCompared } from "./WhatsCompared";
+import { BeforeAfter } from "./BeforeAfter";
 import { ComparisonVerdict } from "./ComparisonVerdict";
 import { overview, verdict } from "../../_helpers/whatsCompared.helper";
 import { expectedOf } from "../../_helpers/variableText.helper";
@@ -141,8 +141,6 @@ interface Props {
   // findings framed on the screenshot, switched beside them (REQ-003-14)
   a11yMarks?: boolean;
   onA11yMarksChange?: (on: boolean) => void;
-  // turns on selecting elements on the screenshots (REQ-030-51)
-  onSelectElements?: () => void;
   // folded to a strip with a button, so the screens take its width (REQ-046-07)
   folded?: boolean;
   onFoldedChange?: (folded: boolean) => void;
@@ -195,7 +193,6 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
   onBugMarksChange,
   a11yMarks = true,
   onA11yMarksChange,
-  onSelectElements,
   folded = false,
   onFoldedChange,
   elementsTab,
@@ -1120,6 +1117,10 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
       readAreas(testRun.tempIgnoreAreas),
     );
     const rows = changeRows(structure.regions, structure.changes);
+    // a row keyed by its change is the change the pixels missed (REQ-069-03)
+    const invisible = new Set(
+      structure.invisible.map((change) => `${change.kind}:${change.key}`),
+    );
     const changeCount = countRows(rows);
     // a long text is cut in the row; the whole of it is in the tooltip
     const clip = (text: string) =>
@@ -1151,6 +1152,14 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
     };
     const whatChanged = (row: ChangeRow) => {
       const change = row.change;
+      // a text shows as it was and is, the differing words marked (REQ-069-04)
+      if (change && (change.kind === "text" || change.kind === "label"))
+        return (
+          <BeforeAfter
+            before={String(change.before ?? "")}
+            after={String(change.after ?? "")}
+          />
+        );
       if (change && change.kind !== "moved") {
         const params = {
           before: String(change.before ?? ""),
@@ -1160,8 +1169,9 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
       }
       if (!row.element) return t("changes.looseWhat");
       // one place whose text changed says so instead of counting (REQ-038-04)
-      if (row.places.length === 1 && labelOf(row.places[0], row)?.before)
-        return placeText(row.places[0], row);
+      const only = row.places.length === 1 && labelOf(row.places[0], row);
+      if (only && only.before)
+        return <BeforeAfter before={only.before} after={only.now ?? ""} />;
       return t("changes.spots", { count: row.places.length });
     };
     return (
@@ -1287,20 +1297,29 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
           onUseElement={onUseElement}
           onPreview={(id) => onPreviewMark?.(id)}
           startOpen={changeCount === 0}
-          onSelectElements={
-            canEdit && withUiTree ? onSelectElements : undefined
-          }
-          onAddRule={canEdit && withUiTree ? () => openRule(null) : undefined}
         />
         {structure.invisible.length > 0 && (
-          <Alert severity="error" sx={{ py: 0 }}>
-            <b>{t("panel.invisible")}</b>
-            {structure.invisible.map((change) => (
-              <div key={`${change.kind}:${change.key}`}>
-                {describeChange(change, t)}
-              </div>
-            ))}
-          </Alert>
+          // one line; the changes themselves are the marked rows below (REQ-069-01…03)
+          <Box
+            data-testid="invisibleStrip"
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              gap: 1,
+              px: 1.25,
+              py: 0.75,
+              borderRadius: radius.control,
+              bgcolor: tokens.status.changed.bg,
+              color: tokens.status.changed.fg,
+              fontSize: type.small,
+              lineHeight: 1.4,
+            }}
+          >
+            <VisibilityOffOutlined sx={{ fontSize: type.section }} />
+            {t("panel.invisibleCount", {
+              count: structure.invisible.length,
+            })}
+          </Box>
         )}
         {structure.hints.map((hint) => (
           <Alert
@@ -1382,7 +1401,7 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
                         cursor: many ? "pointer" : "default",
                         display: "grid",
                         gridTemplateColumns: "20px minmax(0, 1fr)",
-                        alignItems: "center",
+                        alignItems: "start",
                         columnGap: 0.75,
                         minWidth: 0,
                         borderRadius: "6px",
@@ -1396,6 +1415,9 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
                         sx={{
                           display: "flex",
                           justifyContent: "center",
+                          alignItems: "center",
+                          // the height of the name's line: the mark sits beside the name
+                          height: 19,
                           color: tokens.textMuted,
                         }}
                       >
@@ -1407,6 +1429,18 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
                               transition: "transform 160ms",
                             }}
                           />
+                        )}
+                        {!many && invisible.has(row.key) && (
+                          <Tooltip title={t("panel.invisibleRow")}>
+                            <VisibilityOffOutlined
+                              data-testid="invisibleMark"
+                              aria-label={t("panel.invisibleRow")}
+                              sx={{
+                                fontSize: type.section,
+                                color: tokens.status.changed.fg,
+                              }}
+                            />
+                          </Tooltip>
                         )}
                       </Box>
                       <Box sx={{ minWidth: 0 }}>

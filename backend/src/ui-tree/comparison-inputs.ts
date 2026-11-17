@@ -174,7 +174,7 @@ export function findBySelector(tree: UiTree, selector: string): UiNode[] | null 
 /**
  * The elements a rule takes on a tree. A variable-text rule by id takes only
  * those whose text keeps the rule's fixed text: the rows of a list share the
- * id, and a row of another kind is not the one the rule was made on (REQ-069-01).
+ * id, and a row of another kind is not the one the rule was made on (REQ-070-01).
  */
 export function ruleNodes(tree: UiTree, rule: Pick<ElementRule, 'selector' | 'action' | 'parts'>): UiNode[] {
   const nodes = findBySelector(tree, rule.selector) ?? [];
@@ -409,7 +409,7 @@ export function resolveRules(rules: ElementRule[], trees: Array<UiTree | null>):
     if (rule.action === 'variable' && rule.parts?.length && current) {
       const byId = findBySelector(current, rule.selector);
       let nodes = ruleNodes(current, rule).filter((node) => !ignored.has(node));
-      // rows with the id are here, none keeps the fixed text the baseline's did: the text broke (REQ-069-03)
+      // rows with the id are here, none keeps the fixed text the baseline's did: the text broke (REQ-070-03)
       const broke = !result.found[rule.id].current.length && byId.length > 0;
       if (broke && result.found[rule.id].baseline.length) nodes = byId.filter((node) => !ignored.has(node));
       result.variable[rule.id] = {

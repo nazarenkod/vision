@@ -225,11 +225,16 @@ test("says the count once and lists the changes straight under it", async ({
     "Balance",
     "2 spots outside elements",
   ]);
+  // a changed text reads as before and after, the differing word marked (REQ-069-04)
   await expect(rows.getByTestId("changedAreaWhat")).toHaveText([
     "Changed in 7 spots",
-    "Text: “1 200” → “1 250”",
+    "Before1 200After1 250",
     "Not part of any element",
   ]);
+  const balance = rows.nth(1);
+  await expect(balance.getByTestId("changedBefore")).toHaveText("1 200");
+  await expect(balance.getByTestId("changedAfter")).toHaveText("1 250");
+  await expect(balance.getByTestId("changedWord")).toHaveText(["200", "250"]);
   // headings read as sentences, not capitals (REQ-036-30)
   await expect(page.getByText("Comparison scope")).toHaveText(
     "Comparison scope",
@@ -299,10 +304,73 @@ test("names a changed place by the text in it, as it was and is", async ({
   await openProjectPage(project.id, build.id, testRun.id);
   await unfoldPanel(page);
   // one place whose text changed says so instead of "Changed in 1 spot" (REQ-038-04)
-  await expect(page.getByTestId("changedAreaWhat")).toHaveText(
-    "“12 450,00 ₴” → “9 870,00 ₴”",
-  );
+  await expect(page.getByTestId("changedBefore")).toHaveText("12 450,00 ₴");
+  await expect(page.getByTestId("changedAfter")).toHaveText("9 870,00 ₴");
   await expect(page.getByTestId("changedAreaName")).toHaveText("Card");
+});
+
+test("shows a change the pixels miss once, as before and after", async ({
+  openProjectPage,
+  page,
+}) => {
+  const label = {
+    kind: "label" as const,
+    key: "top-up",
+    element: 'Button "Зі своєї картки *8352 +3.00 UAH 11 серпн"',
+    resourceId: "com.bank:id/activity_list_item",
+    before: "Зі своєї картки *8353 +5.00 UAH 11 серпня, 11:25",
+    after: "Зі своєї картки *8352 +3.00 UAH 11 серпня, 11:25",
+    bounds: { x: 0, y: 1200, width: 1080, height: 120 },
+  };
+  const disabled = {
+    kind: "state" as const,
+    key: "pay",
+    element: 'Button "Pay"',
+    resourceId: "com.bank:id/pay",
+    before: "enabled",
+    after: "disabled",
+    bounds: { x: 0, y: 1400, width: 1080, height: 120 },
+  };
+  await withStructure(page, {
+    ...structure,
+    size: { width: 1080, height: 2400 },
+    changes: [label, disabled],
+    invisible: [label, disabled],
+  });
+  await openProjectPage(project.id, build.id, testRun.id);
+  await unfoldPanel(page);
+  // one line says how many; the changes are the rows, not a block above them (REQ-069-01, 02)
+  await expect(page.getByTestId("invisibleStrip")).toHaveText(
+    "2 changes the pixels do not show: only the UI tree saw them",
+  );
+  await expect(page.getByText(label.before)).toHaveCount(1);
+  const rows = page.getByTestId("changedArea");
+  await expect(rows).toHaveCount(2);
+  // each such row carries the strip's mark (REQ-069-03)
+  await expect(rows.getByTestId("invisibleMark")).toHaveCount(2);
+  const first = rows.first();
+  await expect(first.getByTestId("changedWord")).toHaveText([
+    "*8353",
+    "+5.00",
+    "*8352",
+    "+3.00",
+  ]);
+  // a change that is not a text keeps its own line, and the mark (REQ-069-06)
+  await expect(rows.nth(1).getByTestId("changedAreaWhat")).toHaveText(
+    "State: enabled → disabled",
+  );
+});
+
+test("leaves the strip out when the pixels show every change", async ({
+  openProjectPage,
+  page,
+}) => {
+  await withStructure(page, changed);
+  await openProjectPage(project.id, build.id, testRun.id);
+  await unfoldPanel(page);
+  await expect(page.getByTestId("whatChanged")).toBeVisible();
+  await expect(page.getByTestId("invisibleStrip")).toHaveCount(0);
+  await expect(page.getByTestId("invisibleMark")).toHaveCount(0);
 });
 
 test("folds the comparison scope while there are changes to look at", async ({

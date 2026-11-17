@@ -494,7 +494,7 @@ describe('resolveRules: variable text leaves out only the text (spec 066)', () =
   });
 });
 
-describe('resolveRules: variable text on the rows of a list (spec 069)', () => {
+describe('resolveRules: variable text on the rows of a list (spec 070)', () => {
   // the bank's history: every row is one merged button with the same id, its text only in the label
   const history = (labels: string[]) =>
     parse(`<?xml version='1.0' encoding='UTF-8' standalone='yes' ?>

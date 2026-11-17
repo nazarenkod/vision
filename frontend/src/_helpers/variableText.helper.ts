@@ -145,7 +145,7 @@ export function fitsParts(parts: TextPart[], text: string): boolean {
 
 /**
  * Whether a text keeps the whole fixed text of a check, any value in the
- * places: a list row of the same kind as the one the rule is made on (REQ-069-01).
+ * places: a list row of the same kind as the one the rule is made on (REQ-070-01).
  */
 export function fitsSkeleton(parts: TextPart[], text: string): boolean {
   const source = parts
@@ -159,7 +159,7 @@ export function fitsSkeleton(parts: TextPart[], text: string): boolean {
 /**
  * How many elements a variable-text rule would take on a screenshot while
  * its pieces are marked (REQ-033-29): by its text pattern, or by id only those
- * that keep the fixed text (REQ-069-04); null for a path, the server's to follow.
+ * that keep the fixed text (REQ-070-04); null for a path, the server's to follow.
  */
 export function variableCount(
   selector: string,

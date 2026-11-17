@@ -929,6 +929,12 @@ export const uk: Messages = {
   "a11ySummary.screensChecked": "Перевірок з UI-деревом",
   "a11ySummary.screensWithNew": "Перевірок з новими знахідками",
   "a11ySummary.screen": "Перевірка",
+  "a11ySummary.problems": {
+    one: "{count} проблема",
+    few: "{count} проблеми",
+    many: "{count} проблем",
+    other: "{count} проблеми",
+  },
   "a11ySummary.device": "Пристрій",
   "a11ySummary.new": "Нові",
   "a11ySummary.open": "Відкриті",

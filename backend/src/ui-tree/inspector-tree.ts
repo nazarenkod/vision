@@ -3,6 +3,7 @@ import { selectorVariants } from './selector-variants';
 import { selectorForNode } from './ui-tree.service';
 import { Rect, UiNode, UiTree } from './ui-tree.types';
 import { positionAmongSameClass } from './xpath-selector';
+import { decodeCharRefs } from './ui-tree.parser';
 
 /**
  * The UI tree as the Elements tab shows it (062): every node with the attributes Vision keeps,
@@ -21,6 +22,12 @@ export interface InspectorNode {
   // what the element says: its text, else its label
   text: string;
   attributes: Array<[string, string]>;
+  // can be tapped or clicked: a container that can is not a mere wrapper (REQ-063-01)
+  clickable: boolean;
+  // no id, text, label or hint, not clickable, with children: only lays the others out (REQ-063-01)
+  wrapper: boolean;
+  // how a rule finds it, as Select elements names it; absent without an id or a text (REQ-063-15)
+  selector?: string;
   // where it is on the screenshot, in its pixels; null when it cannot be shown there (REQ-062-15)
   bounds: Rect | null;
   hidden?: 'unpositioned' | 'invisible' | 'empty';
@@ -125,8 +132,22 @@ function hiddenWhy(tree: UiTree, node: UiNode): InspectorNode['hidden'] | undefi
   return undefined;
 }
 
+// UiAutomator writes a line break or an emoji as a character reference, which the XML parser
+// leaves as it is: people read them decoded, and a test's locator holds the real character (REQ-063-04)
+const readable = (node: UiNode): UiNode => ({
+  ...node,
+  resourceId: decodeCharRefs(node.resourceId),
+  text: decodeCharRefs(node.text),
+  label: decodeCharRefs(node.label),
+  hint: decodeCharRefs(node.hint),
+});
+
+const readableTree = (tree: UiTree): UiTree => ({ ...tree, nodes: tree.nodes.map(readable) });
+
 /** Every node of a tree with what the Elements tab shows about it (REQ-062-03, 06, 15). */
-export function inspectorTree(tree: UiTree): InspectorTree {
+export function inspectorTree(source: UiTree): InspectorTree {
+  const tree = readableTree(source);
+  const hasChildren = new Set(tree.nodes.flatMap((node) => (node.parent === null ? [] : [node.parent])));
   return {
     format: tree.format,
     positioned: tree.positioned !== false,
@@ -143,6 +164,17 @@ export function inspectorTree(tree: UiTree): InspectorTree {
         id: node.resourceId.replace(/^.*:id\//, ''),
         text: (node.text || node.label).trim(),
         attributes: attributesOf(tree, node),
+        clickable: node.clickable,
+        wrapper:
+          hasChildren.has(node.index) &&
+          !node.clickable &&
+          !node.resourceId &&
+          !node.text.trim() &&
+          !node.label.trim() &&
+          !node.hint.trim(),
+        ...(selectorForNode(source.nodes[node.index])
+          ? { selector: selectorForNode(source.nodes[node.index]) }
+          : {}),
         bounds: hidden ? null : node.bounds,
         ...(hidden ? { hidden } : {}),
       };
@@ -290,11 +322,14 @@ export function nodeLocators(tree: UiTree, node: UiNode): NodeLocators {
       vision.push({ kind: 'xpath', value: variant.selector, matches: variant.count });
     }
   }
+  // a test finds the real characters, not the references the page source wrote (REQ-063-04)
+  const view = readableTree(tree);
+  const shown = view.nodes[node.index];
   const test =
-    tree.format === 'appium-ios'
-      ? iosLocators(tree, node)
-      : tree.format === 'web'
-        ? webLocators(tree, node)
-        : androidLocators(tree, node);
+    view.format === 'appium-ios'
+      ? iosLocators(view, shown)
+      : view.format === 'web'
+        ? webLocators(view, shown)
+        : androidLocators(view, shown);
   return { vision, test };
 }

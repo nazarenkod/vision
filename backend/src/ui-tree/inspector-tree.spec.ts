@@ -76,6 +76,45 @@ describe('inspectorTree', () => {
   });
 });
 
+describe('inspectorTree for reading (063)', () => {
+  const TABS = `<?xml version="1.0" encoding="UTF-8"?>
+<AppiumAUT>
+  <XCUIElementTypeApplication type="XCUIElementTypeApplication" name="Bank" label="Bank" x="0" y="0" width="390" height="844">
+    <XCUIElementTypeOther type="XCUIElementTypeOther" x="0" y="0" width="390" height="844">
+      <XCUIElementTypeOther type="XCUIElementTypeOther" x="0" y="760" width="390" height="84">
+        <XCUIElementTypeStaticText type="XCUIElementTypeStaticText" label="Кредити&#10;Вкладка 2 з 5" x="80" y="770" width="78" height="62" />
+      </XCUIElementTypeOther>
+      <XCUIElementTypeButton type="XCUIElementTypeButton" name="Сканувати#PbButton" label="Сканувати" x="16" y="700" width="120" height="44" />
+    </XCUIElementTypeOther>
+  </XCUIElementTypeApplication>
+</AppiumAUT>`;
+  const tree = () => parseUiTree(TABS, { imageWidth: 1170, imageHeight: 2532 });
+
+  it('reads character references as people do, and a test finds the real characters', () => {
+    const source = tree();
+    const tab = inspectorTree(source).nodes.find((n) => n.name === 'StaticText');
+    expect(tab.text).toBe('Кредити\nВкладка 2 з 5');
+    expect(Object.fromEntries(tab.attributes).label).toBe('Кредити\nВкладка 2 з 5');
+    const { test } = nodeLocators(source, source.nodes[tab.index]);
+    expect(test[0]).toEqual({ kind: 'accessibility id', value: 'Кредити\nВкладка 2 з 5', matches: 1 });
+  });
+
+  it('tells a wrapper from an element that only holds others', () => {
+    const nodes = inspectorTree(tree()).nodes;
+    // the two Other with no id, text or action only lay the rest out
+    expect(nodes.filter((n) => n.wrapper).map((n) => n.name)).toEqual(['Other', 'Other']);
+    // the application has a name; the text and the button have no children
+    expect(nodes.find((n) => n.name === 'Application').wrapper).toBe(false);
+    expect(nodes.find((n) => n.name === 'Button')).toMatchObject({ wrapper: false, clickable: true });
+  });
+
+  it('names the selector a rule finds each node by', () => {
+    const nodes = inspectorTree(tree()).nodes;
+    expect(nodes.find((n) => n.name === 'Button').selector).toBe('id:Сканувати#PbButton');
+    expect(nodes.find((n) => n.name === 'Other').selector).toBeUndefined();
+  });
+});
+
 describe('nodeLocators', () => {
   it('builds an id, accessibility id and xpath for an Android element', () => {
     const tree = android();

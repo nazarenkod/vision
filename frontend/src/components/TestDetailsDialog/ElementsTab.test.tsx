@@ -33,6 +33,8 @@ const node = (
   text: "",
   attributes: [["class", `android.widget.${name}`]],
   bounds: { x: 0, y: 0, width: 1080, height: 2400 },
+  clickable: false,
+  wrapper: false,
   ...extra,
 });
 
@@ -236,5 +238,194 @@ describe("ElementsTab (062)", () => {
     fireEvent.keyDown(screen.getByTestId("tree"), { key: "ArrowDown" });
     expect(onChoose).toHaveBeenLastCalledWith(2);
     await waitFor(() => expect(getLocators).toHaveBeenCalled());
+  });
+});
+
+// 0 Application ─ 1 Other ─ 2 Other ─┬ 3 StaticText "Кредити" (resized)
+//                                    ├ 4 Button #scan#PbButton (a11y)
+//                                    └ 5 Image
+const deep: InspectorTree = {
+  ...current,
+  nodes: [
+    node(0, null, "Application", { text: "Bank" }),
+    node(1, 0, "Other", { wrapper: true }),
+    node(2, 1, "Other", { wrapper: true }),
+    node(3, 2, "StaticText", {
+      key: "k3",
+      text: "Кредити\nВкладка 2 з 5",
+      selector: "text:Кредити",
+      attributes: [
+        ["label", "Кредити"],
+        ["value", ""],
+      ],
+    }),
+    node(4, 2, "Button", {
+      key: "k4",
+      id: "scan#PbButton",
+      clickable: true,
+      selector: "id:scan#PbButton",
+    }),
+    node(5, 2, "Image", {}),
+  ],
+};
+const deepStructure = {
+  changes: [
+    {
+      kind: "resized" as const,
+      key: "k3",
+      element: "StaticText",
+      resourceId: "",
+      bounds: { x: 0, y: 0, width: 1, height: 1 },
+    },
+  ],
+  invisible: [],
+} as unknown as React.ComponentProps<typeof ElementsTab>["structure"];
+const deepReport = {
+  violations: [{ id: "v", nodeKey: "k4", title: "Small", message: "38 dp" }],
+} as unknown as React.ComponentProps<typeof ElementsTab>["report"];
+
+const rowsShown = () =>
+  screen.getAllByTestId("treeRow").map((row) => row.dataset.index);
+const rowOf = (index: number) =>
+  screen
+    .getAllByTestId("treeRow")
+    .find((row) => row.dataset.index === String(index)) as HTMLElement;
+
+function deepTab(
+  props: Partial<React.ComponentProps<typeof ElementsTab>> = {},
+) {
+  return tab({
+    trees: ready(deep, null),
+    structure: deepStructure,
+    report: deepReport,
+    ...props,
+  });
+}
+
+describe("ElementsTab: a readable tree (063)", () => {
+  beforeEach(() => {
+    getLocators.mockReset();
+    getLocators.mockResolvedValue({ vision: [], test: [] });
+    window.localStorage.clear();
+  });
+
+  it("shows wrappers when asked, hidden by default with how many", () => {
+    deepTab();
+    expect(rowsShown()).toEqual(["0", "3", "4", "5"]);
+    expect(within(rowOf(3)).getByTestId("treeSkipped").textContent).toBe("+2");
+    fireEvent.click(
+      screen.getByTestId("treeWrappers").querySelector("input") as HTMLElement,
+    );
+    expect(rowsShown()).toEqual(["0", "1", "2", "3", "4", "5"]);
+  });
+
+  it("shows a line break as ↵, the component apart and each kind's icon", () => {
+    deepTab();
+    expect(rowOf(3).textContent).toContain("“Кредити ↵ Вкладка 2 з 5”");
+    expect(within(rowOf(4)).getByTestId("treeComponent").textContent).toBe(
+      "PbButton",
+    );
+    expect(rowOf(4).textContent).toContain("#scan");
+    const kinds = [3, 4, 5].map((i) =>
+      rowOf(i).querySelector("[data-kind]")?.getAttribute("data-kind"),
+    );
+    expect(kinds).toEqual(["text", "button", "image"]);
+  });
+
+  it("counts the children of a folded node", () => {
+    deepTab();
+    fireEvent.click(screen.getByTestId("treeCollapseAll"));
+    expect(rowsShown()).toEqual(["0"]);
+    expect(rowOf(0).textContent).toContain("3");
+    fireEvent.click(screen.getByTestId("treeExpandAll"));
+    expect(rowsShown()).toEqual(["0", "3", "4", "5"]);
+  });
+
+  it("marks search matches and steps through them with Enter", () => {
+    const { onChoose } = deepTab();
+    const search = screen.getByTestId("treeSearch");
+    fireEvent.change(search, { target: { value: "кред" } });
+    expect(rowOf(3).querySelector("mark")?.textContent).toBe("Кред");
+    expect(screen.getByTestId("treeHits").textContent).toBe("1 of 1");
+    fireEvent.keyDown(search, { key: "Enter" });
+    expect(onChoose).toHaveBeenLastCalledWith(3);
+  });
+
+  it("clears the search with Esc without closing the comparison", () => {
+    const outside = jest.fn();
+    deepTab();
+    document.addEventListener("keydown", outside);
+    const search = screen.getByTestId("treeSearch");
+    fireEvent.change(search, { target: { value: "scan" } });
+    fireEvent.keyDown(search, { key: "Escape" });
+    expect((search as HTMLInputElement).value).toBe("");
+    expect(outside).not.toHaveBeenCalled();
+    document.removeEventListener("keydown", outside);
+  });
+
+  it("filters by a chip with its count", () => {
+    deepTab();
+    const changed = screen.getByTestId("treeChip-changed");
+    expect(changed.textContent).toContain("1");
+    fireEvent.click(changed);
+    expect(rowsShown()).toEqual(["0", "3"]);
+    fireEvent.click(screen.getByTestId("treeChip-clickable"));
+    expect(rowsShown()).toEqual(["0", "4"]);
+  });
+
+  it("goes to the next change with N and with the button", () => {
+    const { onChoose } = deepTab({ chosen: 3 });
+    fireEvent.keyDown(screen.getByTestId("tree"), { key: "n" });
+    expect(onChoose).toHaveBeenLastCalledWith(4);
+    fireEvent.click(screen.getByTestId("treeNextChange"));
+    expect(onChoose).toHaveBeenLastCalledWith(4);
+  });
+
+  it("copies the rule's selector from the row and with C", () => {
+    const writeText = jest.fn().mockResolvedValue(undefined);
+    Object.assign(navigator, { clipboard: { writeText } });
+    deepTab({ chosen: 4 });
+    fireEvent.click(within(rowOf(3)).getByTestId("rowCopy"));
+    expect(writeText).toHaveBeenLastCalledWith("text:Кредити");
+    fireEvent.keyDown(screen.getByTestId("tree"), { key: "c" });
+    expect(writeText).toHaveBeenLastCalledWith("id:scan#PbButton");
+  });
+
+  it("answers / and * in the tree", () => {
+    deepTab({ chosen: 0 });
+    fireEvent.click(screen.getByTestId("treeCollapseAll"));
+    fireEvent.keyDown(screen.getByTestId("tree"), { key: "*" });
+    expect(rowsShown()).toEqual(["0", "3", "4", "5"]);
+    fireEvent.keyDown(screen.getByTestId("tree"), { key: "/" });
+    expect(document.activeElement).toBe(screen.getByTestId("treeSearch"));
+  });
+
+  it("keeps the tree height it is given", () => {
+    const { unmount } = deepTab();
+    const handle = screen.getByTestId("treeResize");
+    fireEvent.keyDown(handle, { key: "ArrowDown" });
+    expect(handle.getAttribute("aria-valuenow")).toBe("384");
+    unmount();
+    deepTab();
+    expect(screen.getByTestId("treeResize").getAttribute("aria-valuenow")).toBe(
+      "384",
+    );
+  });
+
+  it("hides empty attributes until asked", async () => {
+    deepTab({ chosen: 3 });
+    const attributes = await screen.findByTestId("nodeAttributes");
+    expect(attributes.textContent).not.toContain("value");
+    fireEvent.click(
+      screen
+        .getByTestId("treeOnlyFilled")
+        .querySelector("input") as HTMLElement,
+    );
+    expect(screen.getByTestId("nodeAttributes").textContent).toContain("value");
+  });
+
+  it("shows the wrappers when a link names one", () => {
+    deepTab({ chosen: 1 });
+    expect(rowsShown()).toContain("1");
   });
 });

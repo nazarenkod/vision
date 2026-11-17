@@ -666,6 +666,11 @@ export interface InspectorNode {
   text: string;
   // named as the platform's page source names them
   attributes: Array<[string, string]>;
+  clickable: boolean;
+  // only lays the others out: no id, text, label or hint, no action, with children (063)
+  wrapper: boolean;
+  // how a rule finds it; absent without an id or a text
+  selector?: string;
   // on the screenshot, in its pixels; null when it cannot be shown there
   bounds: Rect | null;
   hidden?: "unpositioned" | "invisible" | "empty";

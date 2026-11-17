@@ -1,5 +1,5 @@
 import React from "react";
-import { fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen } from "@testing-library/react";
 import { ElementPopover } from "./ElementPopover";
 import { PickableElement } from "../../types/insights";
 
@@ -16,6 +16,7 @@ function popover(
 ) {
   const onVariable = jest.fn();
   const onAct = jest.fn();
+  const onClose = jest.fn();
   render(
     <ElementPopover
       anchor={{ x: 100, y: 100 }}
@@ -29,13 +30,13 @@ function popover(
       onMore={jest.fn()}
       onAct={onAct}
       onRemove={jest.fn()}
-      onClose={jest.fn()}
+      onClose={onClose}
       onAddMore={jest.fn()}
       onVariable={onVariable}
       {...props}
     />,
   );
-  return { onVariable, onAct };
+  return { onVariable, onAct, onClose };
 }
 
 const pieces = () =>
@@ -186,6 +187,93 @@ describe("ElementPopover: an anchor found by the start of its text (spec 061)", 
     });
     expect(screen.getByTestId("elementTextAnchor")).toHaveTextContent(
       "Found through a text: the rule stops working when the text changes",
+    );
+  });
+});
+
+describe("ElementPopover: tidier and closed by a click outside (spec 066)", () => {
+  // the listener starts after the click that opened the popover
+  const settle = () =>
+    act(() => new Promise((resolve) => setTimeout(resolve, 0)));
+
+  it("closes on a click outside it", async () => {
+    const { onClose } = popover();
+    await settle();
+    fireEvent.mouseDown(document.body);
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
+  it("stays open on a click inside it and leaves the screenshots to pick", async () => {
+    const stage = document.createElement("div");
+    stage.className = "konvajs-content";
+    const canvas = document.createElement("canvas");
+    stage.appendChild(canvas);
+    document.body.appendChild(stage);
+    const { onClose } = popover();
+    await settle();
+    fireEvent.mouseDown(screen.getByTestId("elementTitle"));
+    fireEvent.mouseDown(canvas);
+    expect(onClose).not.toHaveBeenCalled();
+    stage.remove();
+  });
+
+  it("asks where the rule goes before what it does", () => {
+    popover();
+    const scope = screen.getByRole("button", { name: "This check" });
+    const ignore = screen.getByTestId("elementAction-ignore");
+    expect(
+      scope.compareDocumentPosition(ignore) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+  });
+
+  it("keeps the step down in place, disabled when there is nowhere to go", () => {
+    popover({ canGoDown: false });
+    expect(screen.getByTestId("elementChild")).toBeDisabled();
+  });
+
+  const plus: PickableElement = {
+    index: 9,
+    selector: "xpath://*[@resource-id='card']/android.widget.ImageView[1]",
+    element: "ImageView",
+    nameless: true,
+    bounds: { x: 0, y: 0, width: 20, height: 20 },
+    variants: [
+      {
+        selector: "xpath://*[@resource-id='card']/android.widget.ImageView[1]",
+        direction: "down",
+        anchor: "card",
+        anchorKind: "id",
+        levels: 1,
+        count: 1,
+      },
+      {
+        selector:
+          "xpath://*[@resource-id='activity_list_item_transaction_tail_badge']/..",
+        direction: "up",
+        anchor: "activity_list_item_transaction_tail_badge",
+        anchorKind: "id",
+        levels: 1,
+        count: 3,
+      },
+    ],
+  };
+
+  it("names a nameless element by its class once the ways to find it are listed", () => {
+    popover({ element: plus });
+    expect(screen.getByTestId("elementTitle")).toHaveTextContent(/^ImageView$/);
+    expect(screen.getByTestId("elementVariant-down")).toHaveTextContent(
+      /^inside card$/,
+    );
+  });
+
+  it("counts only the ways that find other than one element", () => {
+    popover({ element: plus });
+    const counts = screen.getAllByTestId("elementVariantCount");
+    expect(counts).toHaveLength(1);
+    expect(counts[0]).toHaveTextContent("3 found");
+    // the anchor is cut in the middle, the whole selector stays in the title
+    expect(screen.getByTestId("elementVariant-up")).toHaveTextContent(
+      /^parent of activity_list…n_tail_badge3 found$/,
     );
   });
 });

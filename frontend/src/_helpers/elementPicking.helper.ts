@@ -74,6 +74,17 @@ export const relationTo = (
     { anchor: variant.anchor },
   );
 
+/**
+ * A long anchor cut in the middle, where an id is least telling: its start
+ * says whose it is and its end what it is (REQ-066-03).
+ */
+export function shortAnchor(anchor: string, max = 26): string {
+  if (anchor.length <= max) return anchor;
+  const head = Math.ceil((max - 1) / 2);
+  const tail = max - 1 - head;
+  return `${anchor.slice(0, head)}…${anchor.slice(anchor.length - tail)}`;
+}
+
 /** "ImageView · inside offers_list" for an element found by a path (REQ-027-03). */
 export function elementLabel(
   element: PickableElement,

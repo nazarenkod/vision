@@ -3,13 +3,14 @@ import {
   Box,
   Button,
   ButtonBase,
+  ClickAwayListener,
   IconButton,
   Paper,
   Popper,
   Tooltip,
   Typography,
 } from "@mui/material";
-import { MoreHoriz } from "@mui/icons-material";
+import { Check, MoreHoriz } from "@mui/icons-material";
 import {
   ElementRuleAction,
   PickableElement,
@@ -22,6 +23,7 @@ import {
   chosenVariant,
   elementLabel,
   relationTo,
+  shortAnchor,
 } from "../../_helpers/elementPicking.helper";
 import {
   fitsParts,
@@ -46,6 +48,8 @@ import {
 interface ElementPopoverProps {
   // where the element was clicked, in the window
   anchor: { x: number; y: number };
+  // where the element is in the window: the popover stands beside it, not over it (REQ-066-01)
+  elementRect?: () => DOMRect | undefined;
   element: PickableElement;
   // how many elements the element's selector takes on its screenshot
   sameSelector: number;
@@ -85,6 +89,7 @@ interface ElementPopoverProps {
  */
 export const ElementPopover: React.FunctionComponent<ElementPopoverProps> = ({
   anchor,
+  elementRect,
   element,
   sameSelector,
   rule,
@@ -152,12 +157,15 @@ export const ElementPopover: React.FunctionComponent<ElementPopoverProps> = ({
   const act = (action: ElementRuleAction, actScope: RuleScope) =>
     action === "variable" ? startVariable() : onAct(action, actScope);
 
+  const { x, y, width, height } = element.bounds;
   const virtualAnchor = React.useMemo(
     () => ({
       getBoundingClientRect: () =>
-        new DOMRect(anchor.x, anchor.y, 0, 0) as DOMRect,
+        elementRect?.() ?? (new DOMRect(anchor.x, anchor.y, 0, 0) as DOMRect),
     }),
-    [anchor.x, anchor.y],
+    // a step up or down moves the popover to the new element's side
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [anchor.x, anchor.y, x, y, width, height],
   );
 
   useActionKeys({
@@ -173,6 +181,9 @@ export const ElementPopover: React.FunctionComponent<ElementPopoverProps> = ({
   const name = elementLabel(element, t);
   const variant = chosenVariant(element);
   const variants = element.variants ?? [];
+  const choosing = !rule && !variable && variants.length > 1;
+  // the ways to find it say how it is found; the title only names it (REQ-066-02)
+  const title = choosing ? element.element : name;
 
   const ruleLabel = rule
     ? rule.action === "ignore"
@@ -189,292 +200,311 @@ export const ElementPopover: React.FunctionComponent<ElementPopoverProps> = ({
     <Popper
       open
       anchorEl={virtualAnchor}
-      placement="right"
-      modifiers={[{ name: "offset", options: { offset: [0, 14] } }]}
+      placement={elementRect ? "right-start" : "right"}
+      modifiers={[
+        { name: "offset", options: { offset: [0, 14] } },
+        {
+          name: "flip",
+          options: { fallbackPlacements: ["left-start", "bottom", "top"] },
+        },
+      ]}
       sx={{ zIndex: 1400 }}
     >
-      <Paper
-        role="dialog"
-        aria-label={name}
-        data-testid="elementPopover"
-        sx={{
-          width: 256,
-          borderRadius: radius.card,
-          boxShadow: tokens.shadowPop,
-          overflow: "hidden",
+      <ClickAwayListener
+        mouseEvent="onMouseDown"
+        touchEvent="onTouchStart"
+        onClickAway={(event) => {
+          // the screenshots decide for themselves: a click there picks another
+          // element or, beside every element, closes this (REQ-024-11)
+          const target = event.target as Element | null;
+          if (target?.closest?.(".konvajs-content")) return;
+          onClose();
         }}
       >
-        <Box
+        <Paper
+          role="dialog"
+          aria-label={name}
+          data-testid="elementPopover"
           sx={{
-            display: "flex",
-            alignItems: "center",
-            gap: 0.75,
-            pl: 1.75,
-            pr: 1.25,
-            py: 1.25,
-            borderBottom: `1px solid ${tokens.border}`,
+            width: 300,
+            borderRadius: radius.card,
+            boxShadow: tokens.shadowPop,
+            overflow: "hidden",
           }}
         >
-          <Box sx={{ flexGrow: 1, minWidth: 0 }}>
-            <Typography
-              noWrap
-              sx={{ fontSize: type.body, fontWeight: 600 }}
-              title={element.selector}
-            >
-              {name}
-            </Typography>
-            {(variable ? (count ?? 0) : sameSelector) > 1 && (
-              <Typography sx={{ fontSize: 12, color: tokens.textMuted }}>
-                {t("select.onScreen", {
-                  count: variable ? (count ?? 0) : sameSelector,
-                })}
-              </Typography>
-            )}
-          </Box>
-          <Tooltip title={t("select.parent")}>
-            <span>
-              <IconButton
-                size="small"
-                disabled={!canGoUp}
-                onClick={onUp}
-                aria-label={t("select.parent")}
-                data-testid="elementParent"
-                sx={{ fontSize: 13, width: 28, height: 28 }}
-              >
-                ↑
-              </IconButton>
-            </span>
-          </Tooltip>
-          {canGoDown && (
-            <Tooltip title={t("select.child")}>
-              <IconButton
-                size="small"
-                onClick={onDown}
-                aria-label={t("select.child")}
-                sx={{ fontSize: 13, width: 28, height: 28 }}
-              >
-                ↓
-              </IconButton>
-            </Tooltip>
-          )}
-          <Tooltip title={t("select.more")}>
-            <IconButton
-              size="small"
-              onClick={onMore}
-              aria-label={t("select.more")}
-              data-testid="elementMore"
-              sx={{ width: 28, height: 28 }}
-            >
-              <MoreHoriz fontSize="small" />
-            </IconButton>
-          </Tooltip>
-        </Box>
-        {!variable && variant?.anchorKind === "text" && (
-          <Typography
-            data-testid="elementTextAnchor"
+          <Box
             sx={{
-              px: 1.75,
-              py: 1,
-              fontSize: 12,
-              color: tokens.status.changed.fg,
-              bgcolor: tokens.status.changed.bg,
+              display: "flex",
+              alignItems: "center",
+              gap: 0.75,
+              pl: 1.75,
+              pr: 1.25,
+              py: 1.25,
               borderBottom: `1px solid ${tokens.border}`,
             }}
           >
-            {variant.anchorMatch === "start"
-              ? t("select.textAnchorStart", { text: variant.anchor })
-              : t("select.textAnchor")}
-          </Typography>
-        )}
-        {!rule && !variable && variants.length > 1 && (
-          <Box
-            role="radiogroup"
-            aria-label={t("select.foundBy")}
-            sx={{ p: 0.75, borderBottom: `1px solid ${tokens.border}` }}
-          >
-            {variants.map((item) => {
-              const chosen = item.selector === variant?.selector;
-              return (
-                <ButtonBase
-                  key={item.selector}
-                  role="radio"
-                  aria-checked={chosen}
-                  title={item.selector}
-                  onClick={() => onChooseVariant?.(item)}
-                  data-testid={`elementVariant-${item.direction}`}
-                  sx={{
-                    display: "flex",
-                    gap: 1,
-                    width: "100%",
-                    borderRadius: radius.control,
-                    px: 1.25,
-                    py: 0.75,
-                    font: "inherit",
-                    fontSize: 13,
-                    fontWeight: chosen ? 600 : 500,
-                    color: chosen ? tokens.text : tokens.textSecondary,
-                    bgcolor: chosen ? tokens.subtle : "transparent",
-                    "&:hover, &.Mui-focusVisible": { bgcolor: tokens.subtle },
-                  }}
-                >
-                  <Box
-                    component="span"
-                    sx={{
-                      flexGrow: 1,
-                      textAlign: "left",
-                      overflow: "hidden",
-                      textOverflow: "ellipsis",
-                      whiteSpace: "nowrap",
-                    }}
-                  >
-                    {relationTo(item, t)}
-                  </Box>
-                  <Box
-                    component="span"
-                    sx={{ fontSize: type.caption, color: tokens.textMuted }}
-                  >
-                    {t("select.found", { count: item.count })}
-                  </Box>
-                </ButtonBase>
-              );
-            })}
-          </Box>
-        )}
-        {variable ? (
-          <>
-            <Box sx={{ p: 0.75, pb: 0 }}>
-              <ButtonBase
-                onClick={() => setVariable(null)}
-                aria-label={t("select.variableBack")}
-                data-testid="variableBack"
-                sx={{
-                  display: "flex",
-                  gap: 1.25,
-                  justifyContent: "flex-start",
-                  width: "100%",
-                  borderRadius: radius.control,
-                  px: 1.25,
-                  py: 1,
-                  font: "inherit",
-                  fontSize: 14,
-                  fontWeight: 600,
-                  color: tokens.text,
-                  bgcolor: tokens.subtle,
-                }}
-              >
-                <Box
-                  component="span"
-                  sx={{ color: tokens.textMuted, width: 16 }}
-                >
-                  ←
-                </Box>
-                <Box sx={swatch("variable")} />
-                <Box component="span" sx={{ flexGrow: 1, textAlign: "left" }}>
-                  {t("select.variable")}
-                </Box>
-                <Box
-                  component="span"
-                  sx={{
-                    fontSize: type.caption,
-                    fontWeight: 500,
-                    color: tokens.textMuted,
-                  }}
-                >
-                  V
-                </Box>
-              </ButtonBase>
-            </Box>
-            <Box
-              sx={{
-                px: 1.75,
-                py: 1.5,
-                display: "flex",
-                flexDirection: "column",
-                gap: 1.25,
-              }}
-            >
-              <Box
-                role="group"
-                aria-label={t("select.variableClick")}
-                sx={{ display: "flex", flexWrap: "wrap", gap: 0.5 }}
-              >
-                {pieces.map((piece, index) => {
-                  const on = variable.marked.has(index);
-                  const button = (
-                    <ButtonBase
-                      key={index}
-                      aria-pressed={on}
-                      data-testid="variablePiece"
-                      onClick={() => toggle(index)}
-                      sx={{
-                        border: `1px solid ${on ? tokens.variable : tokens.border}`,
-                        bgcolor: on ? tokens.variableSoft : tokens.surface,
-                        color: on ? tokens.variable : tokens.text,
-                        borderRadius: "6px",
-                        px: 0.875,
-                        py: 0.375,
-                        font: "inherit",
-                        fontSize: 13,
-                        fontWeight: on ? 600 : 500,
-                        "&.Mui-focusVisible": {
-                          outline: `2px solid ${tokens.brand}`,
-                          outlineOffset: 1,
-                        },
-                      }}
-                    >
-                      {piece.text}
-                    </ButtonBase>
-                  );
-                  // the pattern is one hover away, not a line of its own (REQ-033-06)
-                  return on ? (
-                    <Tooltip
-                      key={index}
-                      title={t("select.variablePattern", {
-                        pattern: patternFor(piece.text),
-                      })}
-                    >
-                      {button}
-                    </Tooltip>
-                  ) : (
-                    button
-                  );
-                })}
-              </Box>
+            <Box sx={{ flexGrow: 1, minWidth: 0 }}>
               <Typography
-                data-testid="variableHint"
-                sx={{ fontSize: 12, color: tokens.textMuted }}
+                noWrap
+                sx={{ fontSize: type.body, fontWeight: 600 }}
+                title={element.selector}
+                data-testid="elementTitle"
               >
-                {marked ? t("select.variableRest") : t("select.variableClick")}
+                {title}
               </Typography>
-              {!otherFits && other && (
-                <Typography
-                  data-testid="variableOther"
-                  sx={{
-                    fontSize: 12,
-                    lineHeight: 1.4,
-                    color: tokens.status.changed.fg,
-                    bgcolor: tokens.status.changed.bg,
-                    borderRadius: radius.control,
-                    px: 1.25,
-                    py: 1,
-                  }}
-                >
-                  {t("select.variableOther", {
-                    side: t(
-                      other.side === "baseline"
-                        ? "select.variableSideBaseline"
-                        : "select.variableSideCurrent",
-                    ),
-                    text: other.text,
+              {(variable ? (count ?? 0) : sameSelector) > 1 && (
+                <Typography sx={{ fontSize: 12, color: tokens.textMuted }}>
+                  {t("select.onScreen", {
+                    count: variable ? (count ?? 0) : sameSelector,
                   })}
                 </Typography>
               )}
-              {marked && !selector && (
-                <Box
-                  data-testid="variableNoAnchor"
-                  sx={{ display: "flex", flexDirection: "column", gap: 0.5 }}
+            </Box>
+            <Tooltip title={t("select.parent")}>
+              <span>
+                <IconButton
+                  size="small"
+                  disabled={!canGoUp}
+                  onClick={onUp}
+                  aria-label={t("select.parent")}
+                  data-testid="elementParent"
+                  sx={{ fontSize: 13, width: 28, height: 28 }}
                 >
+                  ↑
+                </IconButton>
+              </span>
+            </Tooltip>
+            {/* always there, as ↑ is, so the buttons beside it stay put (REQ-066-05) */}
+            <Tooltip title={t("select.child")}>
+              <span>
+                <IconButton
+                  size="small"
+                  disabled={!canGoDown}
+                  onClick={onDown}
+                  aria-label={t("select.child")}
+                  data-testid="elementChild"
+                  sx={{ fontSize: 13, width: 28, height: 28 }}
+                >
+                  ↓
+                </IconButton>
+              </span>
+            </Tooltip>
+            <Tooltip title={t("select.more")}>
+              <IconButton
+                size="small"
+                onClick={onMore}
+                aria-label={t("select.more")}
+                data-testid="elementMore"
+                sx={{ width: 28, height: 28 }}
+              >
+                <MoreHoriz fontSize="small" />
+              </IconButton>
+            </Tooltip>
+          </Box>
+          {!variable && variant?.anchorKind === "text" && (
+            <Typography
+              data-testid="elementTextAnchor"
+              sx={{
+                px: 1.75,
+                py: 1,
+                fontSize: 12,
+                color: tokens.status.changed.fg,
+                bgcolor: tokens.status.changed.bg,
+                borderBottom: `1px solid ${tokens.border}`,
+              }}
+            >
+              {variant.anchorMatch === "start"
+                ? t("select.textAnchorStart", { text: variant.anchor })
+                : t("select.textAnchor")}
+            </Typography>
+          )}
+          {choosing && (
+            <Box
+              role="radiogroup"
+              aria-label={t("select.foundBy")}
+              sx={{ p: 0.75, borderBottom: `1px solid ${tokens.border}` }}
+            >
+              {variants.map((item) => {
+                const chosen = item.selector === variant?.selector;
+                return (
+                  <ButtonBase
+                    key={item.selector}
+                    role="radio"
+                    aria-checked={chosen}
+                    title={item.selector}
+                    onClick={() => onChooseVariant?.(item)}
+                    data-testid={`elementVariant-${item.direction}`}
+                    sx={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 1,
+                      width: "100%",
+                      borderRadius: radius.control,
+                      px: 1,
+                      py: 0.75,
+                      font: "inherit",
+                      fontSize: 13,
+                      fontWeight: chosen ? 600 : 500,
+                      color: chosen ? tokens.text : tokens.textSecondary,
+                      bgcolor: chosen ? tokens.subtle : "transparent",
+                      "&:hover, &.Mui-focusVisible": { bgcolor: tokens.subtle },
+                    }}
+                  >
+                    <Check
+                      aria-hidden
+                      sx={{
+                        fontSize: type.body,
+                        color: tokens.brand,
+                        visibility: chosen ? "visible" : "hidden",
+                      }}
+                    />
+                    <Box
+                      component="span"
+                      sx={{
+                        flexGrow: 1,
+                        textAlign: "left",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      {relationTo(
+                        { ...item, anchor: shortAnchor(item.anchor) },
+                        t,
+                      )}
+                    </Box>
+                    {/* one is what is expected; only more, or none, needs a look (REQ-066-04) */}
+                    {item.count !== 1 && (
+                      <Box
+                        component="span"
+                        data-testid="elementVariantCount"
+                        sx={{
+                          flexShrink: 0,
+                          whiteSpace: "nowrap",
+                          fontSize: type.caption,
+                          fontWeight: 600,
+                          color: tokens.status.changed.fg,
+                        }}
+                      >
+                        {t("select.found", { count: item.count })}
+                      </Box>
+                    )}
+                  </ButtonBase>
+                );
+              })}
+            </Box>
+          )}
+          {variable ? (
+            <>
+              <Box sx={{ p: 0.75, pb: 0 }}>
+                <ButtonBase
+                  onClick={() => setVariable(null)}
+                  aria-label={t("select.variableBack")}
+                  data-testid="variableBack"
+                  sx={{
+                    display: "flex",
+                    gap: 1.25,
+                    justifyContent: "flex-start",
+                    width: "100%",
+                    borderRadius: radius.control,
+                    px: 1.25,
+                    py: 1,
+                    font: "inherit",
+                    fontSize: 14,
+                    fontWeight: 600,
+                    color: tokens.text,
+                    bgcolor: tokens.subtle,
+                  }}
+                >
+                  <Box
+                    component="span"
+                    sx={{ color: tokens.textMuted, width: 16 }}
+                  >
+                    ←
+                  </Box>
+                  <Box sx={swatch("variable")} />
+                  <Box component="span" sx={{ flexGrow: 1, textAlign: "left" }}>
+                    {t("select.variable")}
+                  </Box>
+                  <Box
+                    component="span"
+                    sx={{
+                      fontSize: type.caption,
+                      fontWeight: 500,
+                      color: tokens.textMuted,
+                    }}
+                  >
+                    V
+                  </Box>
+                </ButtonBase>
+              </Box>
+              <Box
+                sx={{
+                  px: 1.75,
+                  py: 1.5,
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: 1.25,
+                }}
+              >
+                <Box
+                  role="group"
+                  aria-label={t("select.variableClick")}
+                  sx={{ display: "flex", flexWrap: "wrap", gap: 0.5 }}
+                >
+                  {pieces.map((piece, index) => {
+                    const on = variable.marked.has(index);
+                    const button = (
+                      <ButtonBase
+                        key={index}
+                        aria-pressed={on}
+                        data-testid="variablePiece"
+                        onClick={() => toggle(index)}
+                        sx={{
+                          border: `1px solid ${on ? tokens.variable : tokens.border}`,
+                          bgcolor: on ? tokens.variableSoft : tokens.surface,
+                          color: on ? tokens.variable : tokens.text,
+                          borderRadius: "6px",
+                          px: 0.875,
+                          py: 0.375,
+                          font: "inherit",
+                          fontSize: 13,
+                          fontWeight: on ? 600 : 500,
+                          "&.Mui-focusVisible": {
+                            outline: `2px solid ${tokens.brand}`,
+                            outlineOffset: 1,
+                          },
+                        }}
+                      >
+                        {piece.text}
+                      </ButtonBase>
+                    );
+                    // the pattern is one hover away, not a line of its own (REQ-033-06)
+                    return on ? (
+                      <Tooltip
+                        key={index}
+                        title={t("select.variablePattern", {
+                          pattern: patternFor(piece.text),
+                        })}
+                      >
+                        {button}
+                      </Tooltip>
+                    ) : (
+                      button
+                    );
+                  })}
+                </Box>
+                <Typography
+                  data-testid="variableHint"
+                  sx={{ fontSize: 12, color: tokens.textMuted }}
+                >
+                  {marked
+                    ? t("select.variableRest")
+                    : t("select.variableClick")}
+                </Typography>
+                {!otherFits && other && (
                   <Typography
+                    data-testid="variableOther"
                     sx={{
                       fontSize: 12,
                       lineHeight: 1.4,
@@ -485,192 +515,220 @@ export const ElementPopover: React.FunctionComponent<ElementPopoverProps> = ({
                       py: 1,
                     }}
                   >
-                    {t("select.variableNoAnchor")}
+                    {t("select.variableOther", {
+                      side: t(
+                        other.side === "baseline"
+                          ? "select.variableSideBaseline"
+                          : "select.variableSideCurrent",
+                      ),
+                      text: other.text,
+                    })}
                   </Typography>
-                  {canGoUp && (
-                    <Button
-                      size="small"
-                      onClick={onUp}
-                      sx={{ alignSelf: "flex-start" }}
-                    >
-                      ↑ {t("select.parent")}
-                    </Button>
-                  )}
-                  {onDrawArea && (
-                    <Button
-                      size="small"
-                      onClick={onDrawArea}
-                      sx={{ alignSelf: "flex-start" }}
-                    >
-                      {t("select.drawArea")}
-                    </Button>
-                  )}
-                </Box>
-              )}
-            </Box>
-            <Box
-              sx={{
-                p: 1.25,
-                pt: 1,
-                borderTop: `1px solid ${tokens.border}`,
-                display: "flex",
-                alignItems: "center",
-                gap: 1,
-              }}
-            >
-              <Box sx={{ flexGrow: 1 }}>
-                {variable.replaces ? (
-                  <Typography sx={{ fontSize: 12, color: tokens.textMuted }}>
-                    {variable.replaces.scope === "project"
-                      ? t("select.allScreens")
-                      : t("select.thisScreen")}
-                  </Typography>
-                ) : (
-                  <ScopeToggle scope={scope} onScope={setScope} />
                 )}
-              </Box>
-              <Button
-                size="small"
-                variant="contained"
-                disableElevation
-                disabled={!canSave}
-                onClick={save}
-                data-testid="variableSave"
-              >
-                {t("select.variableSave")}
-              </Button>
-            </Box>
-          </>
-        ) : rule ? (
-          <Box
-            sx={{ p: 1.5, display: "flex", flexDirection: "column", gap: 1 }}
-          >
-            <Box sx={{ display: "flex", alignItems: "center", gap: 1.25 }}>
-              <Box sx={swatch(rule.action)} />
-              <Typography sx={{ fontSize: 14, fontWeight: 600, flexGrow: 1 }}>
-                {ruleLabel}
-              </Typography>
-              <Typography sx={{ fontSize: 12, color: tokens.textMuted }}>
-                {rule.scope === "project"
-                  ? t("select.allScreens")
-                  : t("select.thisScreen")}
-              </Typography>
-            </Box>
-            {rule.action === "variable" && rule.parts && text && (
-              <Typography
-                sx={{ fontSize: type.small }}
-                data-testid="variableRuleText"
-              >
-                {placesIn(rule.parts, text).map((segment, i) =>
-                  segment.place ? (
-                    <Box
-                      key={i}
-                      component="span"
+                {marked && !selector && (
+                  <Box
+                    data-testid="variableNoAnchor"
+                    sx={{ display: "flex", flexDirection: "column", gap: 0.5 }}
+                  >
+                    <Typography
                       sx={{
-                        fontWeight: 600,
-                        color: tokens.variable,
-                        bgcolor: tokens.variableSoft,
+                        fontSize: 12,
+                        lineHeight: 1.4,
+                        color: tokens.status.changed.fg,
+                        bgcolor: tokens.status.changed.bg,
                         borderRadius: radius.control,
-                        px: 0.5,
+                        px: 1.25,
+                        py: 1,
                       }}
                     >
-                      {segment.text}
-                    </Box>
-                  ) : (
-                    <span key={i}>{segment.text}</span>
-                  ),
+                      {t("select.variableNoAnchor")}
+                    </Typography>
+                    {canGoUp && (
+                      <Button
+                        size="small"
+                        onClick={onUp}
+                        sx={{ alignSelf: "flex-start" }}
+                      >
+                        ↑ {t("select.parent")}
+                      </Button>
+                    )}
+                    {onDrawArea && (
+                      <Button
+                        size="small"
+                        onClick={onDrawArea}
+                        sx={{ alignSelf: "flex-start" }}
+                      >
+                        {t("select.drawArea")}
+                      </Button>
+                    )}
+                  </Box>
                 )}
-              </Typography>
-            )}
-            <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
-              {text &&
-                (rule.action === "variable" || rule.action === "ignore") && (
-                  <Button
-                    size="small"
-                    disabled={busy}
-                    data-testid="variableStart"
-                    onClick={() => startVariable(rule)}
-                  >
-                    {rule.action === "variable"
-                      ? t("select.change")
-                      : t("select.checkText")}
-                  </Button>
-                )}
-              <Button
-                size="small"
-                color={confirming ? "error" : "primary"}
-                variant={confirming ? "contained" : "text"}
-                disabled={busy}
-                data-testid="elementRemoveRule"
-                // a rule for every screen is asked about: it changes the whole project
-                onClick={() =>
-                  rule.scope === "project" && !confirming
-                    ? setConfirming(true)
-                    : onRemove(rule)
-                }
-              >
-                {confirming ? t("select.confirmRemove") : t("select.remove")}
-              </Button>
-            </Box>
-          </Box>
-        ) : (
-          <>
-            <Box sx={{ p: 0.75 }}>
-              <ActionButtons
-                scope={scope}
-                busy={busy}
-                onAct={act}
-                compareLabel={t("select.compareSelected")}
-                variableBlocked={text ? undefined : t("select.variableNoText")}
-              />
-            </Box>
-            <Box
-              sx={{ p: 1.25, pt: 1, borderTop: `1px solid ${tokens.border}` }}
-            >
-              <ScopeToggle scope={scope} onScope={setScope} />
-            </Box>
-          </>
-        )}
-        {!variable && (
-          <Box sx={{ p: 1.25, pt: 0 }}>
-            <ButtonBase
-              onClick={onAddMore}
-              data-testid="elementAddMore"
-              sx={{
-                display: "flex",
-                gap: 1,
-                width: "100%",
-                borderRadius: radius.control,
-                border: `1px dashed ${tokens.borderStrong}`,
-                px: 1.25,
-                py: 0.75,
-                font: "inherit",
-                fontSize: 13,
-                fontWeight: 600,
-                color: tokens.text,
-                "&:hover, &.Mui-focusVisible": {
-                  borderColor: tokens.brand,
-                  bgcolor: tokens.brandSoft,
-                },
-              }}
-            >
-              <Box component="span" sx={{ flexGrow: 1, textAlign: "left" }}>
-                {t("select.addMore")}
               </Box>
               <Box
-                component="span"
                 sx={{
-                  fontSize: type.caption,
-                  fontWeight: 500,
-                  color: tokens.textMuted,
+                  p: 1.25,
+                  pt: 1,
+                  borderTop: `1px solid ${tokens.border}`,
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 1,
                 }}
               >
-                {t("select.addMoreShift")}
+                <Box sx={{ flexGrow: 1 }}>
+                  {variable.replaces ? (
+                    <Typography sx={{ fontSize: 12, color: tokens.textMuted }}>
+                      {variable.replaces.scope === "project"
+                        ? t("select.allScreens")
+                        : t("select.thisScreen")}
+                    </Typography>
+                  ) : (
+                    <ScopeToggle scope={scope} onScope={setScope} />
+                  )}
+                </Box>
+                <Button
+                  size="small"
+                  variant="contained"
+                  disableElevation
+                  disabled={!canSave}
+                  onClick={save}
+                  data-testid="variableSave"
+                >
+                  {t("select.variableSave")}
+                </Button>
               </Box>
-            </ButtonBase>
-          </Box>
-        )}
-      </Paper>
+            </>
+          ) : rule ? (
+            <Box
+              sx={{ p: 1.5, display: "flex", flexDirection: "column", gap: 1 }}
+            >
+              <Box sx={{ display: "flex", alignItems: "center", gap: 1.25 }}>
+                <Box sx={swatch(rule.action)} />
+                <Typography sx={{ fontSize: 14, fontWeight: 600, flexGrow: 1 }}>
+                  {ruleLabel}
+                </Typography>
+                <Typography sx={{ fontSize: 12, color: tokens.textMuted }}>
+                  {rule.scope === "project"
+                    ? t("select.allScreens")
+                    : t("select.thisScreen")}
+                </Typography>
+              </Box>
+              {rule.action === "variable" && rule.parts && text && (
+                <Typography
+                  sx={{ fontSize: type.small }}
+                  data-testid="variableRuleText"
+                >
+                  {placesIn(rule.parts, text).map((segment, i) =>
+                    segment.place ? (
+                      <Box
+                        key={i}
+                        component="span"
+                        sx={{
+                          fontWeight: 600,
+                          color: tokens.variable,
+                          bgcolor: tokens.variableSoft,
+                          borderRadius: radius.control,
+                          px: 0.5,
+                        }}
+                      >
+                        {segment.text}
+                      </Box>
+                    ) : (
+                      <span key={i}>{segment.text}</span>
+                    ),
+                  )}
+                </Typography>
+              )}
+              <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
+                {text &&
+                  (rule.action === "variable" || rule.action === "ignore") && (
+                    <Button
+                      size="small"
+                      disabled={busy}
+                      data-testid="variableStart"
+                      onClick={() => startVariable(rule)}
+                    >
+                      {rule.action === "variable"
+                        ? t("select.change")
+                        : t("select.checkText")}
+                    </Button>
+                  )}
+                <Button
+                  size="small"
+                  color={confirming ? "error" : "primary"}
+                  variant={confirming ? "contained" : "text"}
+                  disabled={busy}
+                  data-testid="elementRemoveRule"
+                  // a rule for every screen is asked about: it changes the whole project
+                  onClick={() =>
+                    rule.scope === "project" && !confirming
+                      ? setConfirming(true)
+                      : onRemove(rule)
+                  }
+                >
+                  {confirming ? t("select.confirmRemove") : t("select.remove")}
+                </Button>
+              </Box>
+            </Box>
+          ) : (
+            <>
+              {/* where the rule goes is chosen before what it does: an action saves at once (REQ-066-06) */}
+              <Box sx={{ p: 1.25, pb: 0.5 }}>
+                <ScopeToggle scope={scope} onScope={setScope} />
+              </Box>
+              <Box sx={{ p: 0.75, pt: 0 }}>
+                <ActionButtons
+                  scope={scope}
+                  busy={busy}
+                  onAct={act}
+                  compareLabel={t("select.compareSelected")}
+                  variableBlocked={
+                    text ? undefined : t("select.variableNoText")
+                  }
+                />
+              </Box>
+            </>
+          )}
+          {!variable && (
+            // a hint more than an action: one quiet line (REQ-066-07)
+            <Box sx={{ p: 0.75, borderTop: `1px solid ${tokens.border}` }}>
+              <ButtonBase
+                onClick={onAddMore}
+                data-testid="elementAddMore"
+                sx={{
+                  display: "flex",
+                  gap: 1,
+                  width: "100%",
+                  borderRadius: radius.control,
+                  px: 1.25,
+                  py: 0.75,
+                  font: "inherit",
+                  fontSize: type.small,
+                  fontWeight: 500,
+                  color: tokens.textSecondary,
+                  "&:hover, &.Mui-focusVisible": {
+                    color: tokens.text,
+                    bgcolor: tokens.subtle,
+                  },
+                }}
+              >
+                <Box component="span" sx={{ flexGrow: 1, textAlign: "left" }}>
+                  {t("select.addMore")}
+                </Box>
+                <Box
+                  component="span"
+                  sx={{
+                    fontSize: type.caption,
+                    fontWeight: 500,
+                    color: tokens.textMuted,
+                  }}
+                >
+                  {t("select.addMoreShift")}
+                </Box>
+              </ButtonBase>
+            </Box>
+          )}
+        </Paper>
+      </ClickAwayListener>
     </Popper>
   );
 };

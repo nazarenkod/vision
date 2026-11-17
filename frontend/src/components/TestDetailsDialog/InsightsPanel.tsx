@@ -54,7 +54,7 @@ import { JiraBugDialog } from "./JiraBugDialog";
 import { motion, tokens, type, radius } from "../../theme";
 import { labelOf, useT } from "../../i18n";
 import { a11yMessage, a11yTitle } from "../../_helpers/a11yText.helper";
-import { WhatsCompared } from "./WhatsCompared";
+import { groupTitleSx, WhatsCompared } from "./WhatsCompared";
 import { BeforeAfter } from "./BeforeAfter";
 import { ComparisonVerdict } from "./ComparisonVerdict";
 import {
@@ -1357,10 +1357,7 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
             // each change on its own tile, apart from the next (REQ-069-12)
             sx={{ display: "flex", flexDirection: "column", gap: 1 }}
           >
-            <Box
-              data-testid="changesTitle"
-              sx={{ fontSize: 13, fontWeight: 500, color: tokens.textMuted }}
-            >
+            <Box data-testid="changesTitle" sx={groupTitleSx}>
               {t("panel.changes")}
             </Box>
             {rows.map((row) => {

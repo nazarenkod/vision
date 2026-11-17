@@ -1388,6 +1388,10 @@ export const uk: Messages = {
   "select.leftOutOwnText": "текст записаний на самому елементі",
   "select.leftOutResized": "розмір елемента змінився",
   "select.leftOutUnpaired": "елемента немає на іншому знімку",
+  "select.leftOutPieces": "Не порівнюються лише позначені шматки",
+  "select.leftOutNotFoundCurrent": "«{value}» не знайдено на знімку",
+  "select.leftOutNotFoundBaseline": "«{value}» не знайдено на еталоні",
+  "select.leftOutTimeout": "не вдалося знайти шматки вчасно",
   "select.shownText": "Текст на екрані: «{text}»",
   "select.markInIt": "Позначати в ньому",
   "select.variableWordsOnly":

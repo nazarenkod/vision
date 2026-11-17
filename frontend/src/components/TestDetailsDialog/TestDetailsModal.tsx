@@ -66,6 +66,7 @@ import {
   leftOutFor,
   leftOutMarks,
   textOnScreen,
+  variableCount,
 } from "../../_helpers/variableText.helper";
 import {
   ElementRule,
@@ -704,23 +705,9 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
       setRuleBusy(false);
     }
   };
-  // what a variable-text rule would find here: by id or by its text pattern; a path is the server's to follow
-  const countFor = (side: Side) => (selector: string) => {
-    const regex = /^text:\/(.+)\/u$/.exec(selector);
-    if (regex) {
-      try {
-        const pattern = new RegExp(regex[1], "u");
-        return elementsOf(side).filter(
-          (element) => element.text && pattern.test(element.text.trim()),
-        ).length;
-      } catch {
-        return null;
-      }
-    }
-    return selector.startsWith("id:")
-      ? countBySelector(selector, elementsOf(side))
-      : null;
-  };
+  // what a variable-text rule would find here (REQ-033-29, REQ-070-04); a path is the server's to follow
+  const countFor = (side: Side) => (selector: string, parts: TextPart[]) =>
+    variableCount(selector, parts, elementsOf(side));
   // the same element on the other screenshot, by the selector it was picked with
   const otherText = (side: Side, element: PickableElement) => {
     const otherSide: Side = side === "current" ? "baseline" : "current";

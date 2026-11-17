@@ -126,8 +126,18 @@ export interface LeftOut {
   element: Rect;
   // what is not compared: its text parts, or the element itself
   areas: Rect[];
-  // set when the whole element is left out, and why (REQ-066-06)
-  reason?: "own-text" | "resized" | "unpaired";
+  // set when the whole element is left out, and why (REQ-066-06, REQ-071-10)
+  reason?:
+    | "own-text"
+    | "resized"
+    | "unpaired"
+    | "not-found-current"
+    | "not-found-baseline"
+    | "timeout";
+  // the first marked value not found on a screenshot, with not-found-*
+  missing?: string;
+  // the areas are the marked pieces found on the pixels (spec 071)
+  located?: boolean;
 }
 
 export interface VariableTextProblem {

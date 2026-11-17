@@ -1,0 +1,79 @@
+import { readFileSync } from 'fs';
+import path from 'path';
+import { PNG } from 'pngjs';
+import { StaticService } from '../static/static.service';
+import { LocateCandidate, locatedKey } from './comparison-inputs';
+import { RecognisedWord } from './text-locate';
+import { MAX_LOCATED_ELEMENTS, TextLocatorService } from './text-locator.service';
+import { placesOf, TextPart } from './variable-text';
+
+// a history row drawn in a browser like the bank's (no real screenshot in the repository)
+const row = PNG.sync.read(readFileSync(path.join(__dirname, '__fixtures__', 'variable-text-row.png')));
+const text = 'Зі своєї картки *1051 +12.50 UAH 17 серпня, 09:05';
+const parts: TextPart[] = [
+  { text: 'Зі своєї картки *' },
+  { pattern: '\\d+', sample: '1050' },
+  { text: ' ' },
+  { pattern: '[+\\-−]?\\d+\\.\\d{2}', sample: '+1.01' },
+  { text: ' UAH 17 серпня, ' },
+  { pattern: '\\d+:\\d{2}', sample: '13:59' },
+];
+const side = (bounds = { x: 0, y: 0, width: row.width, height: row.height }) => ({ bounds, ...placesOf(parts, text) });
+const candidate = (key = 'row', bounds?: { x: number; y: number; width: number; height: number }): LocateCandidate => ({
+  ruleId: 'v',
+  key,
+  current: side(bounds),
+  baseline: side(bounds),
+});
+const images = { current: 'now.png', baseline: 'was.png' };
+const staticService = { getImage: jest.fn().mockResolvedValue(row) } as unknown as StaticService;
+
+describe('TextLocatorService', () => {
+  it('finds the pieces of a rendered history row offline, the same each time', async () => {
+    const runs = [];
+    for (let i = 0; i < 2; i++) {
+      // a new service each time: nothing remembered between the two
+      const locator = new TextLocatorService(staticService);
+      runs.push((await locator.locate([candidate()], images)).get(locatedKey('v', 'row')));
+      await locator.onModuleDestroy();
+    }
+    const found = runs[0] as { current: Array<{ x: number; y: number; width: number; height: number }> };
+    expect(found.current).toHaveLength(3);
+    // "*1051" on the first line left of the middle, "+12.50" right, "09:05" on the second line
+    const [number, sum, time] = found.current;
+    expect(number.x).toBeLessThan(row.width / 2);
+    expect(sum.x).toBeGreaterThan(row.width / 2);
+    expect(time.y).toBeGreaterThan(sum.y + sum.height / 2);
+    expect(runs[1]).toEqual(runs[0]);
+  }, 60_000);
+
+  class Stubbed extends TextLocatorService {
+    calls = 0;
+    constructor(private readonly words: () => Promise<RecognisedWord[]>) {
+      super(staticService);
+      this.timeoutMs = 50;
+    }
+    protected recognize(): Promise<RecognisedWord[]> {
+      this.calls++;
+      return this.words();
+    }
+  }
+
+  it('gives up on an element after five seconds', async () => {
+    const locator = new Stubbed(() => new Promise(() => undefined));
+    const found = await locator.locate([candidate()], images);
+    expect(found.get(locatedKey('v', 'row'))).toEqual({ reason: 'timeout' });
+  });
+
+  it('looks in at most twenty elements of a screenshot', async () => {
+    const locator = new Stubbed(async () => []);
+    const many = Array.from({ length: MAX_LOCATED_ELEMENTS + 1 }, (_, i) =>
+      candidate(`row${i}`, { x: 0, y: i, width: row.width, height: row.height - i })
+    );
+    const found = await locator.locate(many, images);
+    // nothing recognised, so each is not found on the snapshot and the baseline is not looked at
+    expect(locator.calls).toBe(MAX_LOCATED_ELEMENTS);
+    expect(found.get(locatedKey('v', 'row0'))).toEqual({ reason: 'not-found-current', missing: '1051' });
+    expect(found.get(locatedKey('v', `row${MAX_LOCATED_ELEMENTS}`))).toEqual({ reason: 'timeout' });
+  });
+});

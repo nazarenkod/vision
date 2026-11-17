@@ -1312,6 +1312,10 @@ export const en = {
   "select.leftOutOwnText": "its text is on the element itself",
   "select.leftOutResized": "its size changed",
   "select.leftOutUnpaired": "it is not on the other screenshot",
+  "select.leftOutPieces": "Only the marked pieces are not compared",
+  "select.leftOutNotFoundCurrent": "«{value}» was not found on the snapshot",
+  "select.leftOutNotFoundBaseline": "«{value}» was not found on the baseline",
+  "select.leftOutTimeout": "the pieces could not be found in time",
   "select.shownText": "Text on the screen: “{text}”",
   "select.markInIt": "Mark in it",
   "select.variableWordsOnly":

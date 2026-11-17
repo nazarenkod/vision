@@ -46,3 +46,4 @@ Architecture Decision Record фіксує важливе рішення: кон�
 | [ADR-0028](0028-sidebar-instead-of-top-bar.md) | Навігація — бічне меню з підписами замість верхньої смуги й рейки іконок | Accepted | 2026-11-05 |
 | [ADR-0029](0029-web-tree-as-augmented-html.md) | Дерево вебсторінки — HTML з доповненнями `data-vision-*`, а не власний JSON | Accepted | 2026-11-15 |
 | [ADR-0030](0030-screen-search-index-in-memory.md) | Пошук екранів — індекс у пам'яті API, а не таблиця елементів у базі | Proposed | 2026-11-15 |
+| [ADR-0031](0031-ocr-to-locate-variable-text.md) | OCR на сервері, щоб знайти на знімку позначені шматки тексту | Accepted | 2026-11-17 |

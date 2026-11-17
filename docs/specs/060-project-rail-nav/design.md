@@ -14,7 +14,7 @@
 - **Вибір проєкту в меню більше не випадний список.** `ProjectSelect` у варіанті `sidebar` з
   меню зникає; компактний `ProjectSelect` у заголовках сторінок лишається без змін.
 - **Довідка переїжджає в `AccountMenu`:** тур (`GuidedTour`), ручні перевірки
-  (`ManualChecksDialog`), «Повідомити про проблему», «Усі проєкти» і рядок версії. Кнопки
+  (`ManualChecksDialog`), «Повідомити про проблему», «Проєкти» і рядок версії. Кнопки
   Help і `HELP_MENU_*` локаторів більше немає.
 - **Пошук екранів прибираємо з інтерфейсу, сервер лишаємо** (рішення власника 2026-11-16).
   Ендпоінт `screen-search` і індекс у пам'яті (ADR-0030) не змінюються: індекс наповнюється лише
@@ -35,7 +35,7 @@
 | Бічне меню | `frontend/src/components/SideNav.tsx` | збирає рейку й панель, вузький режим, переїзд позначки (як у [018](../018-ui-redesign/spec.md)), без клавіші `/` і `SearchPalette` |
 | Рейка | `frontend/src/components/ProjectRail.tsx` | логотип → Projects, плитки з прокруткою, «+» для admin/editor (`/projects?create=1`), аватар |
 | Панель розділів | `frontend/src/components/SectionPanel.tsx` | заголовок проєкту / «Choose project» / «No projects yet», розділи, «Адміністрування» |
-| Меню акаунта | `frontend/src/components/AccountMenu.tsx` | «Усі проєкти», тур, ручні перевірки, «Повідомити про проблему», версія |
+| Меню акаунта | `frontend/src/components/AccountMenu.tsx` | «Проєкти», тур, ручні перевірки, «Повідомити про проблему», версія |
 | Локатори | `frontend/src/components/SideNav.locators.ts` | `PROJECT_RAIL_TEST_ID`, `projectTile(id)`, без `HELP_MENU_*` |
 | Вибір проєкту | `frontend/src/components/ProjectSelect.tsx` | прибрати варіант `sidebar`/`folded` |
 | Маршрути | `frontend/src/Router.jsx`, `src/constants/routes.ts` | `/search/:projectId` → `Navigate` на Збірки |

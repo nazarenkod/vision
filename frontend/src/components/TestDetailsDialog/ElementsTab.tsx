@@ -49,6 +49,7 @@ import { describeChange } from "../ChangeGroups";
 import {
   baselineValues,
   foldedPath,
+  indentPlan,
   initialOpen,
   isMarked,
   isShown,
@@ -73,8 +74,10 @@ import { InspectorTrees, treeOf } from "./useInspectorTrees";
 const ROW = 30;
 // rows drawn above and below the view, so a quick scroll shows no gap
 const SPARE_ROWS = 12;
-// one level of the tree: the line sits under the chevron of the level above
-const LEVEL = 16;
+// a level's line sits under the chevron of the level above
+const LINE_AT = 7;
+// the place for a row's level number while the top levels are left out (REQ-063-09)
+const DEPTH_SLOT = 26;
 // the tree's height in the panel: dragged between these, kept in this browser (REQ-063-16)
 const TREE_HEIGHT = { initial: 360, min: 160, max: 800, step: 24 };
 const TREE_HEIGHT_KEY = "vision.treeHeight";
@@ -366,6 +369,7 @@ export const ElementsTab: React.FunctionComponent<Props> = ({
   const [scrollTop, setScrollTop] = React.useState(0);
   const [height, setHeight] = React.useState(readHeight);
   const [viewHeight, setViewHeight] = React.useState(height);
+  const [treeWidth, setTreeWidth] = React.useState(0);
   React.useEffect(() => {
     if (chosen === undefined || !nodes[chosen]) return;
     setOpen((all) => {
@@ -384,11 +388,13 @@ export const ElementsTab: React.FunctionComponent<Props> = ({
   React.useLayoutEffect(() => {
     const list = listRef.current;
     if (!list) return;
-    setViewHeight(list.clientHeight || height);
+    const measure = () => {
+      setViewHeight(list.clientHeight || height);
+      setTreeWidth(list.clientWidth);
+    };
+    measure();
     if (typeof ResizeObserver === "undefined") return;
-    const observer = new ResizeObserver(() =>
-      setViewHeight(list.clientHeight || height),
-    );
+    const observer = new ResizeObserver(measure);
     observer.observe(list);
     return () => observer.disconnect();
   }, [tree, height]);
@@ -403,6 +409,15 @@ export const ElementsTab: React.FunctionComponent<Props> = ({
   // the level the chosen node lies on: its line is lit (REQ-063-06)
   const chosenRow = rows.find((row) => row.index === chosen);
   const litLevel = chosenRow?.parent ?? null;
+  // a deep tree narrows its levels so every row's own part stays in view (REQ-063-09)
+  const indent = React.useMemo(
+    () =>
+      indentPlan(
+        treeWidth,
+        rows.reduce((deepest, item) => Math.max(deepest, item.depth), 0),
+      ),
+    [treeWidth, rows],
+  );
 
   const [copiedRow, setCopiedRow] = React.useState<number | null>(null);
   React.useEffect(() => {
@@ -854,19 +869,47 @@ export const ElementsTab: React.FunctionComponent<Props> = ({
           "&:hover .rowCopy": { visibility: "visible" },
         }}
       >
-        {item.levels.map((level) => (
+        {indent.skip > 0 && (
           <Box
-            key={level}
-            aria-hidden
+            component="span"
+            data-testid="treeDepth"
+            title={t("tree.level", { level: item.depth + 1 })}
             sx={{
+              width: DEPTH_SLOT,
               flexShrink: 0,
-              alignSelf: "stretch",
-              width: LEVEL - 7,
-              ml: "7px",
-              borderLeft: `1px solid ${level === litLevel ? tokens.brand : tokens.border}`,
+              font: `500 ${type.caption}px ${tokens.mono}`,
+              color: tokens.textMuted,
+              fontVariantNumeric: "tabular-nums",
             }}
-          />
-        ))}
+          >
+            {item.depth + 1}
+          </Box>
+        )}
+        {item.levels.slice(indent.skip).map((level) => {
+          const lit = level === litLevel;
+          const line = lit ? tokens.brand : tokens.border;
+          return (
+            <Box
+              key={level}
+              aria-hidden
+              data-testid="treeLevel"
+              sx={{
+                flexShrink: 0,
+                alignSelf: "stretch",
+                width: indent.level,
+                // narrow levels keep only the lit line: dense lines read as a hatch
+                ...(indent.lines || lit
+                  ? {
+                      backgroundImage: `linear-gradient(${line}, ${line})`,
+                      backgroundSize: "1px 100%",
+                      backgroundRepeat: "no-repeat",
+                      backgroundPosition: `${Math.min(LINE_AT, indent.level - 1)}px 0`,
+                    }
+                  : {}),
+              }}
+            />
+          );
+        })}
         {item.hasChildren ? (
           <IconButton
             size="small"

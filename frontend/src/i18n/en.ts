@@ -1703,6 +1703,7 @@ export const en = {
   "tree.inside": "Elements inside",
   "tree.resize": "Tree height",
   "tree.onlyFilled": "Only filled",
+  "tree.level": "Level {level}",
   "tree.pick": "Choose an element in the tree or click it on the screenshot.",
   "tree.change.text": "text",
   "tree.change.label": "label",

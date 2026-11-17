@@ -1,4 +1,5 @@
 import {
+  indentPlan,
   foldedPath,
   nodeKind,
   oneLine,
@@ -403,5 +404,20 @@ describe("readable tree (063)", () => {
     );
     expect(nodeAt({ x: 300, y: 650 }, covering)?.index).toBe(0);
     expect(nodeAt({ x: 100, y: 800 }, covering)?.index).toBe(4);
+  });
+});
+
+describe("a deep tree in a narrow panel (063)", () => {
+  it("narrows its levels so a row's own part stays in view", () => {
+    // shallow: full levels with their lines
+    expect(indentPlan(420, 5)).toEqual({ level: 16, skip: 0, lines: true });
+    // twenty levels in 420 px: 10 px each, lines still apart
+    expect(indentPlan(420, 20)).toEqual({ level: 10, skip: 0, lines: true });
+    // thirty: 6 px each, no lines, they would read as a hatch
+    expect(indentPlan(420, 30)).toEqual({ level: 6, skip: 0, lines: false });
+    // past that, the top levels are left out and the row says its level
+    expect(indentPlan(400, 40)).toEqual({ level: 6, skip: 10, lines: false });
+    // not measured yet: as before
+    expect(indentPlan(0, 40)).toEqual({ level: 16, skip: 0, lines: true });
   });
 });

@@ -15,6 +15,8 @@ export interface BuildPlace {
   queue?: string;
   // All tests opened on one status, from a number of the overview (REQ-031-06)
   status?: string;
+  // the accessibility issue the review opens selected, from the Accessibility tab (REQ-065-08)
+  issue?: string;
 }
 
 export const buildTestRunLocation = (
@@ -28,6 +30,7 @@ export const buildTestRunLocation = (
   if (place.tab && place.tab !== "overview") params.set("tab", place.tab);
   if (place.status) params.set("status", place.status);
   if (testRunId && place.queue) params.set("queue", place.queue);
+  if (testRunId && place.issue) params.set("issue", place.issue);
   if (testRunId) params.set("testId", testRunId);
   return { search: params.toString() };
 };
@@ -46,6 +49,7 @@ export const getQueryParams = (guery: string): QueryParams => {
     tab: tab && BUILD_TABS.includes(tab) ? tab : "overview",
     queue: (queryParams.queue as string) || undefined,
     status: (queryParams.status as string) || undefined,
+    issue: (queryParams.issue as string) || undefined,
   };
 };
 

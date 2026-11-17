@@ -19,6 +19,8 @@ import {
   A11yIssueStatus,
   decidingProblem,
   findingsOf,
+  listedProblemsOf,
+  ListedA11yProblem,
   indexProblems,
   ProblemIndex,
   ReviewContext,
@@ -276,6 +278,22 @@ export class A11yIssuesService implements OnModuleInit {
       }
     }
     return { bugs: [...bugs.values()], problems };
+  }
+
+  /** Each run's open problems, grouped as the review groups them: the build's Accessibility tab (065). */
+  async problemListsOn(
+    runs: Array<Pick<TestRun, 'id' | 'projectId' | 'name' | 'uiTreeName' | 'a11yReportName' | 'a11yTotalCount'>>
+  ): Promise<Array<{ testRunId: string; problems: ListedA11yProblem[] }>> {
+    const withIssues = runs.filter((run) => run.a11yReportName && run.a11yTotalCount);
+    if (!withIssues.length) return [];
+    const settings = await this.settingsFor(withIssues[0].projectId);
+    const lists: Array<{ testRunId: string; problems: ListedA11yProblem[] }> = [];
+    for (const run of withIssues) {
+      const report = await this.reportOf(run, settings);
+      if (!report) continue;
+      lists.push({ testRunId: run.id, problems: listedProblemsOf(await this.review(run, report)) });
+    }
+    return lists;
   }
 
   /** Counts to keep on the row: new issues nobody has acted on, and all counted issues. */

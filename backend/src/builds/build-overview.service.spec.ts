@@ -87,6 +87,11 @@ const setup = () => {
       bugs: [],
       problems: [{ testRunId: 'b', rule: 'touch-target', element: 'Pay', isNew: true }],
     }),
+    problemListsOn: jest
+      .fn()
+      .mockResolvedValue([
+        { testRunId: 'b', problems: [{ rule: 'touch-target', element: 'Pay', count: 1, state: 'new' }] },
+      ]),
   };
   // a PNG header: signature, IHDR length and type, then width and height
   const png = (width: number, height: number) => {
@@ -105,7 +110,7 @@ const setup = () => {
     a11y as unknown as A11yIssuesService,
     storage as unknown as StaticService
   );
-  return { service, prisma, storage };
+  return { service, prisma, storage, a11y };
 };
 
 describe('BuildOverviewService', () => {
@@ -159,5 +164,18 @@ describe('BuildOverviewService', () => {
     const overview = await service.overview('b128');
 
     expect(overview.devices[0].screen).toBe('');
+  });
+
+  it('lists the problems of every run of the build for its Accessibility tab', async () => {
+    const { service, a11y } = setup();
+
+    const lists = await service.a11yProblems('b128');
+
+    expect(a11y.problemListsOn).toHaveBeenCalledWith([
+      expect.objectContaining({ id: 'a' }),
+      expect.objectContaining({ id: 'b' }),
+      expect.objectContaining({ id: 'c' }),
+    ]);
+    expect(lists).toEqual([{ testRunId: 'b', problems: [expect.objectContaining({ element: 'Pay', state: 'new' })] }]);
   });
 });

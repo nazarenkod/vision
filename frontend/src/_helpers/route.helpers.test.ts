@@ -28,10 +28,28 @@ describe("build address", () => {
       tab: "all",
       queue: "device:iPhone 15|iOS 17||",
       status: undefined,
+      issue: undefined,
     });
     // closing the review drops the queue and keeps the tab
     expect(
       buildTestRunLocation("b", undefined, { tab: "all", queue: "all" }).search,
     ).toBe("buildId=b&tab=all");
+  });
+
+  it("opens a run with the accessibility problem chosen on the Accessibility tab", () => {
+    const { search } = buildTestRunLocation("b", "r1", {
+      tab: "a11y",
+      issue: "touch-target|id:tailBadge",
+    });
+    expect(search).toBe(
+      "buildId=b&tab=a11y&issue=touch-target%7Cid%3AtailBadge&testId=r1",
+    );
+    expect(getQueryParams(`?${search}`).issue).toBe(
+      "touch-target|id:tailBadge",
+    );
+    // the problem belongs to the run: closing the review drops it
+    expect(
+      buildTestRunLocation("b", undefined, { tab: "a11y", issue: "x" }).search,
+    ).toBe("buildId=b&tab=a11y");
   });
 });

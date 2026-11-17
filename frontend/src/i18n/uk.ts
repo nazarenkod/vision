@@ -41,7 +41,7 @@ export const uk: Messages = {
   "nav.pickProjectFirst": "Спершу виберіть проєкт",
 
   "account.menu": "Обліковий запис",
-  "account.allProjects": "Усі проєкти",
+  "account.allProjects": "Проєкти",
   "account.profile": "Профіль",
   "account.language": "Мова",
   "account.theme": "Тема",

@@ -75,7 +75,7 @@ export const ComparedMap: React.FunctionComponent<ComparedMapProps> = ({
   const layers: Array<{ layer: Layer; rect: Rect }> = [
     ...overview.keep.map((rect) => ({ layer: "keep" as const, rect })),
     ...applying.flatMap((row) =>
-      // a variable text leaves out its text, not always the whole element (REQ-065-07)
+      // a variable text leaves out its text, not always the whole element (REQ-066-07)
       (row.leftOut ?? row.rects).map((rect) => ({
         layer:
           row.action === "tolerate"

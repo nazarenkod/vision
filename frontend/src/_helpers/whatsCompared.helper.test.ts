@@ -486,7 +486,7 @@ describe("variable text (spec 033)", () => {
       rects: [button],
       leftOut: [text],
     });
-    // still one place: the element, not each of its text parts (REQ-065-07)
+    // still one place: the element, not each of its text parts (REQ-066-07)
     expect(result.summary).toEqual({ kind: "except", count: 1 });
   });
 

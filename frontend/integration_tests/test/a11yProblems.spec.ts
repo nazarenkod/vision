@@ -236,3 +236,19 @@ test("opens a screen from the build's Accessibility tab on its problems", async 
   ).toHaveAttribute("aria-selected", "true");
   await expect(page.getByTestId("a11yProblem")).toHaveCount(2);
 });
+
+test("opens a screen with the problem chosen on the build's Accessibility tab", async ({
+  openProjectPage,
+  page,
+}) => {
+  await openProjectPage(project.id, build.id);
+  const issue = encodeURIComponent(button("Адреса роботи").id);
+  await page.goto(
+    `${project.id}?buildId=${build.id}&tab=a11y&issue=${issue}&testId=${run.id}`,
+  );
+
+  // the card of the problem chosen there is the one selected here (REQ-065-08)
+  const problems = page.getByTestId("a11yProblem");
+  await expect(problems.first()).toHaveAttribute("aria-current", "true");
+  await expect(problems.nth(1)).not.toHaveAttribute("aria-current");
+});

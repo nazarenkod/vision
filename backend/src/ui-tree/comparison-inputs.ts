@@ -222,7 +222,7 @@ export interface VariableCheck {
 
 /**
  * What a variable-text rule leaves out of the comparison for one element it
- * found, on one side (spec 065): the element's text parts, or the element
+ * found, on one side (spec 066): the element's text parts, or the element
  * itself when the tree cannot tell where its text is drawn.
  */
 export interface LeftOut {
@@ -232,7 +232,7 @@ export interface LeftOut {
   // what is not compared
   areas: Rect[];
   // set when the whole element is left out: its text is its own, its size changed,
-  // or it has no counterpart on the other screenshot (REQ-065-03, 06)
+  // or it has no counterpart on the other screenshot (REQ-066-03, 06)
   reason?: 'own-text' | 'resized' | 'unpaired';
 }
 
@@ -245,9 +245,9 @@ export interface ResolvedRules {
   found: Record<string, { current: Rect[]; baseline: Rect[] }>;
   // per variable-text rule, how its texts on the snapshot fared
   variable: Record<string, VariableCheck>;
-  // per variable-text rule, what of each element it found is not compared (spec 065)
+  // per variable-text rule, what of each element it found is not compared (spec 066)
   leftOut: Record<string, LeftOut[]>;
-  // elements variable-text rules found: their own changes are not changes (REQ-033-16, REQ-065-04)
+  // elements variable-text rules found: their own changes are not changes (REQ-033-16, REQ-066-04)
   quietKeys: string[];
 }
 
@@ -255,7 +255,7 @@ const textOf = (node: UiNode) => node.text || node.label;
 
 /**
  * The text drawn on the screen: an Android content-desc or a web aria-label is
- * not drawn, so an icon's label is no text part (REQ-065-01); iOS gives the
+ * not drawn, so an icon's label is no text part (REQ-066-01); iOS gives the
  * drawn text as the label, which an image's label is not.
  */
 export function shownText(tree: UiTree, node: UiNode): string {
@@ -280,7 +280,7 @@ function childrenOf(tree: UiTree, node: UiNode): UiNode[] {
 }
 
 /**
- * The descendants of an element whose text passes the rule's check (REQ-065-01):
+ * The descendants of an element whose text passes the rule's check (REQ-066-01):
  * where the checked text is drawn when the element is a button or a tile around it.
  * The element itself is not one: a text of its own has no bounds of its own.
  */
@@ -298,7 +298,7 @@ export function textParts(tree: UiTree, node: UiNode, parts: TextPart[]): UiNode
 
 /**
  * What of each element a variable-text rule found is left out, on both sides
- * (REQ-065-02, 03): only its text parts when the same element is on both
+ * (REQ-066-02, 03): only its text parts when the same element is on both
  * screenshots, keeps its size and has text parts on both; else all of it.
  */
 export function leftOutOf(
@@ -415,7 +415,7 @@ export function resolveRules(rules: ElementRule[], trees: Array<UiTree | null>):
 /**
  * What a check's variable-text rules leave out, on both trees, and the elements
  * they found: a change there is not a change of the screen (REQ-033-16, 33,
- * REQ-065-04). Rules come from the project and the check's own, as saved.
+ * REQ-066-04). Rules come from the project and the check's own, as saved.
  */
 export function variableTextAreas(
   settings: UiTreeSettings,

@@ -133,7 +133,7 @@ describe("what is there now and what was expected", () => {
   });
 });
 
-describe("what a variable-text rule leaves out (spec 065)", () => {
+describe("what a variable-text rule leaves out (spec 066)", () => {
   const button = { x: 100, y: 1000, width: 300, height: 100 };
   const text = { x: 200, y: 1020, width: 180, height: 60 };
 

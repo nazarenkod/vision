@@ -13,7 +13,7 @@
 | Розрахунок | `backend/src/analytics/insights.ts` | `computeInsights`, `deviceOf` |
 | Дані | `backend/src/analytics/analytics.service.ts` | `projectInsights`; `MAX_RUNS` |
 | API | `backend/src/analytics/analytics.controller.ts` | `GET /analytics/:projectId?days=` (7–730, типово 90) |
-| UI | `frontend/src/pages/InsightsPage.tsx` | `PERIODS` 30/90/180/365, масове видалення еталонів; чотири блоки без підзаголовків (REQ-008-11) |
+| UI | `frontend/src/pages/InsightsPage.tsx` | `PERIODS` 30/90/180/365, масове видалення еталонів; чотири блоки без підзаголовків (REQ-008-11); рядок і назва ведуть у перевірку (`run` у відповіді — прогін і збірка, REQ-008-13) |
 
 ## Перевірка вимог
 
@@ -30,4 +30,5 @@
 | REQ-008-07 | `backend/src/analytics/insights.spec.ts › counts reviews waiting for a decision by the newest run of each baseline` |
 | REQ-008-11 | `frontend/integration_tests/test/insights.spec.ts › shows stale baselines, unstable screens and accessibility, nothing else` |
 | REQ-008-12 | `frontend/integration_tests/test/insights.spec.ts › shows stale baselines, unstable screens and accessibility, nothing else` |
+| REQ-008-13 | `backend/src/analytics/insights.spec.ts › opens an unstable screen on its newest change, and a hotspot on the device with the most issues`; `frontend/integration_tests/test/insights.spec.ts › opens a stale baseline, and an unstable check or a hotspot on its comparison` |
 | REQ-008-08 | `backend/src/analytics/insights.spec.ts › judges only the history that is left when older builds were removed`; `frontend/integration_tests/test/insights.spec.ts › says from when the history is kept in one line by the period` |

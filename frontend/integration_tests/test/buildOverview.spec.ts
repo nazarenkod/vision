@@ -246,9 +246,45 @@ const overview: BuildOverview = {
   asOf: "2026-10-31T11:05:00Z",
 };
 
+// each check's problems on the Accessibility tab (065)
+const a11yProblems = [
+  {
+    testRunId: "pay",
+    problems: [
+      {
+        rule: "missing-label",
+        element: "tailBadge",
+        count: 2,
+        state: "new",
+        jiraKey: null,
+        violationId: "missing-label|id:tailBadge",
+      },
+      {
+        rule: "touch-target",
+        element: "Pay",
+        count: 1,
+        state: "reported",
+        jiraKey: "MOB-4821",
+        violationId: "touch-target|id:pay",
+      },
+      {
+        rule: "low-contrast",
+        element: "11 Aug",
+        count: 1,
+        state: "known",
+        jiraKey: null,
+        violationId: "low-contrast|t:11 Aug",
+      },
+    ],
+  },
+];
+
 const mockOverview = async (page: Page) => {
   await page.route(`${API_URL}/builds/${build.id}/overview`, (route) =>
     route.fulfill({ json: overview }),
+  );
+  await page.route(`${API_URL}/builds/${build.id}/a11y-problems`, (route) =>
+    route.fulfill({ json: a11yProblems }),
   );
   await page.route(`${API_URL}/test-runs/groups?buildId=${build.id}`, (route) =>
     route.fulfill({ json: groups }),
@@ -852,9 +888,9 @@ test("lays out the Accessibility tab like the Overview", async ({
     "title",
     /only issues this build introduced/,
   );
-  await expect(page.getByTestId("a11yCaption-checked")).toHaveText(
-    "of 4 checks",
-  );
+  // the count alone: the total of checks is on the Overview already
+  await expect(page.getByTestId("a11yTile-checked")).toContainText("2");
+  await expect(page.getByTestId("a11yCaption-checked")).toHaveCount(0);
 
   const rows = page.getByTestId("a11yScreen");
   await expect(rows).toHaveCount(2);
@@ -867,6 +903,36 @@ test("lays out the Accessibility tab like the Overview", async ({
 
   await rows.first().click();
   await expect(page).toHaveURL(/tab=a11y.*testId=pay$/);
+});
+
+test("lists every accessibility problem under its check, new first", async ({
+  openProjectPage,
+  page,
+}) => {
+  await openProjectPage(project.id, build.id, undefined, "a11y");
+
+  const lists = page.getByTestId("a11yProblems");
+  // Login has no problems listed: nothing under its row
+  await expect(lists).toHaveCount(1);
+  const lines = lists.getByTestId("a11yProblem");
+  await expect(lines).toHaveText([
+    /^New\s*Control has no label\s*· tailBadge ×2$/,
+    /^MOB-4821\s*Touch target too small\s*· Pay$/,
+    /^Known\s*Low text contrast\s*· 11 Aug$/,
+  ]);
+});
+
+test("opens the review with the problem chosen on the Accessibility tab", async ({
+  openProjectPage,
+  page,
+}) => {
+  await openProjectPage(project.id, build.id, undefined, "a11y");
+
+  await page.getByTestId("a11yProblem").first().click();
+
+  await expect(page).toHaveURL(
+    /tab=a11y&issue=missing-label%7Cid%3AtailBadge&testId=pay$/,
+  );
 });
 
 test("keeps tile numbers neutral and colours only the marker", async ({

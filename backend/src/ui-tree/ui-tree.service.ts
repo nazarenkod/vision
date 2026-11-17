@@ -134,7 +134,7 @@ export interface PickableElement {
   text?: string;
   // a text with no id of its own: a path down from the nearest id, which a new value does not break (REQ-033-27)
   stableSelector?: string;
-  // its text is a label not drawn on the screen (content-desc, aria-label): the shown text may sit inside (REQ-065-08)
+  // its text is a label not drawn on the screen (content-desc, aria-label): the shown text may sit inside (REQ-066-08)
   labelOnly?: boolean;
 }
 
@@ -232,7 +232,7 @@ export function variableProblems(
 
 /**
  * Element changes outside the ignored areas (element rules, system bars), less
- * the changes of elements variable-text rules found (REQ-033-16, REQ-065-04).
+ * the changes of elements variable-text rules found (REQ-033-16, REQ-066-04).
  */
 export function outsideAreas(
   changes: StructuralChange[],
@@ -523,7 +523,7 @@ export class UiTreeService {
         matches: inputs.rules.matches[rule.id] ?? 0,
         found: inputs.rules.found[rule.id] ?? { current: [], baseline: [] },
         ...(inputs.rules.variable[rule.id] ? { check: inputs.rules.variable[rule.id] } : {}),
-        // what of each element it found is not compared: its text or all of it (spec 065)
+        // what of each element it found is not compared: its text or all of it (spec 066)
         ...(inputs.rules.leftOut[rule.id] ? { leftOut: inputs.rules.leftOut[rule.id] } : {}),
         // saved before Vision stopped running back-references and look-around: finds nothing (REQ-051-12)
         ...(rulePatternProblem(rule) ? { problem: 'pattern' as const } : {}),

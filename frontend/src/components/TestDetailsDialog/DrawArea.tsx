@@ -19,6 +19,7 @@ import Konva from "konva";
 import { makeStyles } from "@mui/styles";
 import { clampScale } from "../../_helpers/scale.helper";
 import { clampToImage } from "../../_helpers/ignoreArea.helper";
+import { frameInside, labelTop } from "../../_helpers/overlayRect.helper";
 import { tokens } from "../../theme";
 
 // label text drawn on a coloured tag inside the canvas: always white on those
@@ -587,6 +588,14 @@ export const DrawArea: FunctionComponent<IDrawArea> = ({
                       rect.id.startsWith(`${highlightedOverlayId}:`));
                   // the stage is scaled by CSS, so line widths are divided by the scale to stay crisp
                   const px = (value: number) => value / stageScale;
+                  const line = px(highlighted ? 4 : 2);
+                  // a full-screen element's frame and label stay on the screenshot
+                  const frame = frameInside(rect, line, {
+                    x: 0,
+                    y: 0,
+                    width: stageWidth,
+                    height: stageHeight,
+                  });
                   return (
                     <React.Fragment key={rect.id}>
                       {rect.hatched && (
@@ -616,12 +625,12 @@ export const DrawArea: FunctionComponent<IDrawArea> = ({
                         />
                       )}
                       <Rect
-                        x={rect.x}
-                        y={rect.y}
-                        width={rect.width}
-                        height={rect.height}
+                        x={frame.x}
+                        y={frame.y}
+                        width={frame.width}
+                        height={frame.height}
                         stroke={rect.color}
-                        strokeWidth={px(highlighted ? 4 : 2)}
+                        strokeWidth={line}
                         dash={rect.dashed ? [px(6), px(4)] : undefined}
                         fill={highlighted ? `${rect.color}22` : undefined}
                         cornerRadius={px(3)}
@@ -650,7 +659,7 @@ export const DrawArea: FunctionComponent<IDrawArea> = ({
                       )}
                       {rect.label &&
                         (!rect.labelOnHighlight || highlighted) && (
-                          <Label x={rect.x} y={rect.y - px(20)}>
+                          <Label x={frame.x} y={labelTop(frame, px(20))}>
                             <Tag fill={rect.color} cornerRadius={px(4)} />
                             <Text
                               text={rect.label}

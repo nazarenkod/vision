@@ -78,12 +78,12 @@ interface ElementPopoverProps {
   // how many elements a selector finds on this screenshot, where that can be told
   countFor?: (selector: string) => number | null;
   onDrawArea?: () => void;
-  // what the element's variable-text rule leaves out of the comparison here (REQ-065-06)
+  // what the element's variable-text rule leaves out of the comparison here (REQ-066-06)
   leftOut?: LeftOut;
-  // the one text drawn inside an element whose own text is a label, and moving to it (REQ-065-08, 09)
+  // the one text drawn inside an element whose own text is a label, and moving to it (REQ-066-08, 09)
   shownText?: PickableElement;
   onShownText?: () => void;
-  // open with the text in pieces: the marking moved here from the element around (REQ-065-09)
+  // open with the text in pieces: the marking moved here from the element around (REQ-066-09)
   startMarking?: boolean;
 }
 
@@ -133,7 +133,7 @@ export const ElementPopover: React.FunctionComponent<ElementPopoverProps> = ({
       ? { marked: new Set<number>() }
       : null,
   );
-  // another element: start over; the one it opened on keeps the marking moved to it (REQ-065-09)
+  // another element: start over; the one it opened on keeps the marking moved to it (REQ-066-09)
   const opened = React.useRef(`${element.selector}|${element.index}`);
   React.useEffect(() => {
     if (opened.current === `${element.selector}|${element.index}`) return;

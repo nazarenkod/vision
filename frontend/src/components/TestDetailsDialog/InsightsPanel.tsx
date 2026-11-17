@@ -434,6 +434,7 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
         key={ids.join(",")}
         component="article"
         data-testid="a11yProblem"
+        aria-current={highlighted || undefined}
         onClick={() => onHighlight(violation)}
         onMouseEnter={() => onPreviewViolation?.(violation.id)}
         onMouseLeave={() => onPreviewViolation?.(undefined)}

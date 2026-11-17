@@ -119,14 +119,14 @@ export interface VariableCheck {
   overridden: boolean;
 }
 
-/** What a variable-text rule leaves out for one element it found, on one side (spec 065). */
+/** What a variable-text rule leaves out for one element it found, on one side (spec 066). */
 export interface LeftOut {
   side: "current" | "baseline";
   // the element the rule found
   element: Rect;
   // what is not compared: its text parts, or the element itself
   areas: Rect[];
-  // set when the whole element is left out, and why (REQ-065-06)
+  // set when the whole element is left out, and why (REQ-066-06)
   reason?: "own-text" | "resized" | "unpaired";
 }
 
@@ -311,7 +311,7 @@ export type ScreenRule = ElementRule & {
   found?: { current: Rect[]; baseline: Rect[] };
   // a variable-text rule: how its texts fared (spec 033)
   check?: VariableCheck;
-  // a variable-text rule: what of each element it found is not compared (spec 065)
+  // a variable-text rule: what of each element it found is not compared (spec 066)
   leftOut?: LeftOut[];
   // saved with a pattern Vision no longer runs: it finds nothing (051)
   problem?: "pattern";
@@ -413,7 +413,7 @@ export interface PickableElement {
   text?: string;
   // a text without an id: a path down from the nearest id (REQ-033-27)
   stableSelector?: string;
-  // its text is only a label: the text shown may sit inside it (REQ-065-08)
+  // its text is only a label: the text shown may sit inside it (REQ-066-08)
   labelOnly?: boolean;
 }
 
@@ -458,6 +458,12 @@ export interface DeviceProfile {
   viewport: string;
 }
 
+/** A run of a check, enough to open its comparison from Insights. */
+export interface InsightsRun {
+  id: string;
+  buildId: string;
+}
+
 export interface ProjectInsights {
   days: number;
   windowStart: string;
@@ -497,6 +503,8 @@ export interface ProjectInsights {
     flips: number;
     baselineChanges: number;
     lastChangeAt: string | null;
+    // the comparison a click opens: the newest change; absent from an older server
+    run?: InsightsRun;
   }>;
   a11yScreens: Array<{
     name: string;
@@ -505,6 +513,8 @@ export interface ProjectInsights {
     newIssues: number;
     reported: number;
     ignored: number;
+    // the newest run of the device with the most issues; absent from an older server
+    run?: InsightsRun;
   }>;
   a11yRules: Array<{ rule: string; count: number }>;
   noise: Array<{

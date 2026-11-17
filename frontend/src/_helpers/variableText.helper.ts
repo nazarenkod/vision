@@ -239,12 +239,12 @@ export function markedFrom(parts: TextPart[], text: string): Set<number> {
   return marked;
 }
 
-// --- what a rule leaves out of the comparison (spec 065) ---
+// --- what a rule leaves out of the comparison (spec 066) ---
 
 /**
  * Whether a check only asks for words: no fixed part with a letter or a digit,
  * and every place letters only. Any word then passes, which is close to
- * ignoring the element (REQ-065-10).
+ * ignoring the element (REQ-066-10).
  */
 export function wordsOnly(parts: TextPart[]): boolean {
   if (!parts.some(isPlace)) return false;
@@ -259,7 +259,7 @@ export function wordsOnly(parts: TextPart[]): boolean {
 const sameRect = (a: Rect, b: Rect) =>
   a.x === b.x && a.y === b.y && a.width === b.width && a.height === b.height;
 
-/** What the rule leaves out of this element on this screenshot, if the server says (REQ-065-06). */
+/** What the rule leaves out of this element on this screenshot, if the server says (REQ-066-06). */
 export function leftOutFor(
   rule: Pick<ScreenRule, "leftOut">,
   side: LeftOut["side"],
@@ -271,7 +271,7 @@ export function leftOutFor(
 }
 
 /**
- * How a variable-text rule is drawn on a screenshot (REQ-065-05): what is not
+ * How a variable-text rule is drawn on a screenshot (REQ-066-05): what is not
  * compared hatched, and the element framed when only its text is left out.
  * Null from a server that does not say: the found elements are drawn as before.
  */
@@ -303,7 +303,7 @@ export function leftOutMarks(
 /**
  * The text shown inside an element whose own text is only a label: the one
  * element inside it with a text, or null when there is none or several
- * (REQ-065-08).
+ * (REQ-066-08).
  */
 export function textOnScreen(
   element: PickableElement,

@@ -69,7 +69,7 @@ export interface CompareRow {
   effect: RowEffect;
   // on the checkpoint, for the screen map and for what lies where
   rects: Rect[];
-  // what is not compared, when it is less than the rects: a variable text's text parts (REQ-065-07)
+  // what is not compared, when it is less than the rects: a variable text's text parts (REQ-066-07)
   leftOut?: Rect[];
   rule?: ScreenRule;
   area?: IgnoreArea;

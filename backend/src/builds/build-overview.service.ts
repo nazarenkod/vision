@@ -13,7 +13,7 @@ import {
   OverviewBugInput,
   OverviewRun,
 } from './build-overview';
-import { A11yFinding } from '../a11y/a11y-issues';
+import { A11yFinding, ListedA11yProblem } from '../a11y/a11y-issues';
 
 // a11y bugs are worked out from report files; the overview asks again on every
 // event of the build, so they are kept until a run of the build changes, and a
@@ -76,6 +76,12 @@ export class BuildOverviewService {
     private a11yIssuesService: A11yIssuesService,
     private staticService: StaticService
   ) {}
+
+  /** Every open accessibility problem of the build, per run: the build's Accessibility tab (065). */
+  async a11yProblems(buildId: string): Promise<Array<{ testRunId: string; problems: ListedA11yProblem[] }>> {
+    const runs = await this.prismaService.testRun.findMany({ where: { buildId }, select: RUN_FIELDS });
+    return this.a11yIssuesService.problemListsOn(runs);
+  }
 
   async overview(buildId: string): Promise<BuildOverviewResponse> {
     const build = await this.prismaService.build.findUnique({

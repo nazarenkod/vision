@@ -190,7 +190,7 @@ describe("ElementPopover: an anchor found by the start of its text (spec 061)", 
   });
 });
 
-describe("ElementPopover: what a variable text leaves out (spec 065)", () => {
+describe("ElementPopover: what a variable text leaves out (spec 066)", () => {
   const history: PickableElement = {
     index: 3,
     parent: null,

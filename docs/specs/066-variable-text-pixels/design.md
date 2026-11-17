@@ -1,4 +1,4 @@
-# 065 — Дизайн
+# 066 — Дизайн
 
 ## Підхід
 
@@ -8,10 +8,10 @@
 `leftOut`: на кожне правило нестабільного тексту й кожен знайдений елемент — що з нього
 прибрано з порівняння на кожному боці (текстові частини або весь елемент) і чому весь.
 
-- **Текстові частини (REQ-065-01).** Нащадки знайденого вузла (за ланцюжком `parent`), видимі й
+- **Текстові частини (REQ-066-01).** Нащадки знайденого вузла (за ланцюжком `parent`), видимі й
   ненульові, чий видимий текст проходить `checkVariableText(rule.parts, …)`. Видимий текст — `text`; `label` лише на iOS і не в зображень: content-desc і aria-label не намальовані, і значок із підписом «clock» під правилом «будь-яке слово» інакше став би текстовою частиною. Сам вузол — не
   частина: якщо текст лише на ньому, частин немає.
-- **Пара еталон ↔ знімок (REQ-065-02, 03).** Знайдений вузол знімка зіставляємо з вузлом еталона
+- **Пара еталон ↔ знімок (REQ-066-02, 03).** Знайдений вузол знімка зіставляємо з вузлом еталона
   за `key` (той самий, що й у `diffTrees`). Нема пари, нема дерева еталона, у будь-якого боку нема
   частин або ширина чи висота в пікселях різні → увесь елемент на обох боках, як досі
   (`reason: 'own-text'`, `'resized'` або `'unpaired'`). Рівність розміру — точна: запасний шлях (увесь елемент)
@@ -19,21 +19,21 @@
   (елемент зник, «Елемента немає» у 033) — увесь елемент, як досі.
 - **Пікселі.** У `ignore` ідуть області з `leftOut` з тим самим `RULE_PADDING_PX`, а не межі
   елемента.
-- **Зміни за деревом (REQ-065-04; у 033 зміна тексту й розміру знайденого елемента — не зміна).** Досі їх відсікала та сама область: усе, що
+- **Зміни за деревом (REQ-066-04; у 033 зміна тексту й розміру знайденого елемента — не зміна).** Досі їх відсікала та сама область: усе, що
   всередині елемента, мовчало, зокрема значок. Тепер `ResolvedRules.quietKeys` — ключі самих
   знайдених вузлів на обох боках: їхні зміни (текст, підпис, розмір, новий ключ безіменного вузла)
   не рахуються, як і раніше; зміни текстових частин відсікає їхня область; зміни значка й інших
   нащадків рахуються. Фільтр `outsideAreas` отримує ці ключі; `variableTextAreas` для груп змін
   (так у 033) повертає області з `leftOut` і ключі.
-- **Показ (REQ-065-05…07).** `structure.rules[*].leftOut` іде у фронтенд. Позначки на знімку
+- **Показ (REQ-066-05…07).** `structure.rules[*].leftOut` іде у фронтенд. Позначки на знімку
   малюють штриховку по `areas`, а коли прибрано лише текст — рамку без штриховки по `element`.
   Схема знімка штрихує `areas` поточного боку. Поповер знаходить запис свого елемента за межами
   й показує рядок «Не порівнюється лише текст» або «Не порівнюється весь елемент» з причиною.
   Без `leftOut` (старий сервер) — як досі, за `found`.
-- **Текст на екрані (REQ-065-08, 09).** `PickableElement` отримує `labelOnly: true`, коли текст
+- **Текст на екрані (REQ-066-08, 09).** `PickableElement` отримує `labelOnly: true`, коли текст
   елемента — лише підпис. Фронтенд серед вибираних елементів шукає нащадків (за `parent`) з
   текстом; рівно один → рядок і дія, що переводить вибір на нього й одразу відкриває шматки.
-- **Лише слова (REQ-065-10…12).** Чиста функція `wordsOnly(parts)` у
+- **Лише слова (REQ-066-10…12).** Чиста функція `wordsOnly(parts)` у
   `_helpers/variableText.helper.ts`: жодна незмінна частина не має літери чи цифри, а кожне місце
   (за `sample`, без нього — за виразом без `\d`) — лише літери й пробіли. Рядок під шматками
   після попередження про еталон і в блоці правила.
@@ -88,15 +88,15 @@ flowchart LR
 
 | Вимога | Перевірка |
 |---|---|
-| REQ-065-01 | `backend/src/ui-tree/comparison-inputs.spec.ts › takes as text parts the descendants whose text passes the check` |
-| REQ-065-02 | `backend/src/ui-tree/comparison-inputs.spec.ts › leaves out only the text parts when the element keeps its size` |
-| REQ-065-03 | `backend/src/ui-tree/comparison-inputs.spec.ts › leaves out the whole element when its text is its own or its size changed` |
-| REQ-065-04 | `backend/src/ui-tree/comparison-inputs.spec.ts › counts a change of the icon next to a variable text` |
-| REQ-065-05 | `frontend/src/_helpers/variableText.helper.test.ts › marks the text parts hatched and frames the element` |
-| REQ-065-06 | `frontend/src/components/TestDetailsDialog/ElementPopover.test.tsx › says what of the element is not compared` |
-| REQ-065-07 | `frontend/src/_helpers/whatsCompared.helper.test.ts › maps what a variable-text rule leaves out` |
-| REQ-065-08 | `frontend/src/components/TestDetailsDialog/ElementPopover.test.tsx › offers the text shown on the screen for a label-only element` |
-| REQ-065-09 | `frontend/src/components/TestDetailsDialog/ElementPopover.test.tsx › moves the marking to the shown text` |
-| REQ-065-10 | `frontend/src/_helpers/variableText.helper.test.ts › tells a check of words only` |
-| REQ-065-11 | `frontend/src/components/TestDetailsDialog/ElementPopover.test.tsx › warns on a saved rule that checks words only` |
-| REQ-065-12 | `frontend/src/components/TestDetailsDialog/ElementPopover.test.tsx › shows the baseline warning before the words-only one` |
+| REQ-066-01 | `backend/src/ui-tree/comparison-inputs.spec.ts › takes as text parts the descendants whose text passes the check` |
+| REQ-066-02 | `backend/src/ui-tree/comparison-inputs.spec.ts › leaves out only the text parts when the element keeps its size` |
+| REQ-066-03 | `backend/src/ui-tree/comparison-inputs.spec.ts › leaves out the whole element when its text is its own or its size changed` |
+| REQ-066-04 | `backend/src/ui-tree/comparison-inputs.spec.ts › counts a change of the icon next to a variable text` |
+| REQ-066-05 | `frontend/src/_helpers/variableText.helper.test.ts › marks the text parts hatched and frames the element` |
+| REQ-066-06 | `frontend/src/components/TestDetailsDialog/ElementPopover.test.tsx › says what of the element is not compared` |
+| REQ-066-07 | `frontend/src/_helpers/whatsCompared.helper.test.ts › maps what a variable-text rule leaves out` |
+| REQ-066-08 | `frontend/src/components/TestDetailsDialog/ElementPopover.test.tsx › offers the text shown on the screen for a label-only element` |
+| REQ-066-09 | `frontend/src/components/TestDetailsDialog/ElementPopover.test.tsx › moves the marking to the shown text` |
+| REQ-066-10 | `frontend/src/_helpers/variableText.helper.test.ts › tells a check of words only` |
+| REQ-066-11 | `frontend/src/components/TestDetailsDialog/ElementPopover.test.tsx › warns on a saved rule that checks words only` |
+| REQ-066-12 | `frontend/src/components/TestDetailsDialog/ElementPopover.test.tsx › shows the baseline warning before the words-only one` |

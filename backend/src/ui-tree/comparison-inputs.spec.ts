@@ -377,7 +377,7 @@ describe('resolveRules: variable text (spec 033)', () => {
   });
 });
 
-describe('resolveRules: variable text leaves out only the text (spec 065)', () => {
+describe('resolveRules: variable text leaves out only the text (spec 066)', () => {
   // a tile like the bank's "History" button: an icon and the shown text inside a labelled button
   const tile = (o: { label?: string; text?: string; icon?: string; width?: number } = {}) => {
     const right = 400 + (o.width ?? 0);

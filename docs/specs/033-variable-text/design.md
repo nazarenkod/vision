@@ -126,4 +126,4 @@
 | REQ-033-31 | `frontend/src/_helpers/whatsCompared.helper.test.ts › puts variable-text rules in their own group` |
 | REQ-033-32 | `frontend/src/_helpers/whatsCompared.helper.test.ts › counts each variable-text element as one place` |
 | REQ-033-33 | `backend/src/test-runs/change-groups.service.spec.ts › leaves variable-text changes out of the fingerprint` |
-| REQ-033-34 | `frontend/src/_helpers/whatsCompared.helper.test.ts › puts a failed variable text first in the verdict` |
+| REQ-033-34 | `frontend/src/_helpers/whatsCompared.helper.test.ts › says that the variable text changed shape in one line` |

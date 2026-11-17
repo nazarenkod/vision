@@ -46,7 +46,7 @@ test("deletes a variation", async ({ openTestVariationListPage, page }) => {
   const listPage = await openTestVariationListPage(TEST_PROJECT.id);
 
   await listPage.deleteBtn(TEST_VARIATION_TWO.name).click();
-  // one short question, said once (REQ-074-05)
+  // one short question, said once (REQ-075-05)
   await expect(listPage.modal.dialog).toHaveText(
     "Delete this baseline?CancelDelete",
   );

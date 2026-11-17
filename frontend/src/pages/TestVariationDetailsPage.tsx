@@ -60,7 +60,7 @@ const TestVariationDetailsPage: React.FunctionComponent = () => {
   const before = baselines[pickedIndex + 1];
 
   // the same delete as on the baseline's card, so a baseline found by its
-  // history can be removed without going back to the list (REQ-074-02)
+  // history can be removed without going back to the list (REQ-075-02)
   const [confirmDelete, setConfirmDelete] = React.useState(false);
   const handleDelete = (variation: TestVariation) => {
     setConfirmDelete(false);
@@ -107,7 +107,7 @@ const TestVariationDetailsPage: React.FunctionComponent = () => {
           borderBottom: `1px solid ${tokens.border}`,
         }}
       >
-        {/* as written, not in capitals (REQ-074-01) */}
+        {/* as written, not in capitals (REQ-075-01) */}
         <Typography
           data-testid={`${testId}Title`}
           sx={{ fontSize: type.small, fontWeight: 600, color: tokens.text }}
@@ -384,7 +384,7 @@ const TestVariationDetailsPage: React.FunctionComponent = () => {
           open
           // the question is the title, said once: the name and the device are
           // on the page already, and a check's name can run to a paragraph
-          // (REQ-074-04)
+          // (REQ-075-04)
           title={t("baselines.deleteThis")}
           submitButtonText={t("baselines.delete")}
           onCancel={() => setConfirmDelete(false)}

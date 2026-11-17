@@ -337,7 +337,7 @@ const TestVariationList: React.FunctionComponent<IProps> = ({
           open={!!selectedItem}
           // the question is the title, said once: the card already shows the
           // check and the device, and a check's name can run to a paragraph
-          // (REQ-074-05)
+          // (REQ-075-05)
           title={t("baselines.deleteThis")}
           submitButtonText={t("baselines.delete")}
           onCancel={handleClose}

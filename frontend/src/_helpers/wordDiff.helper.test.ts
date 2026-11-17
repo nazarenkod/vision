@@ -1,4 +1,4 @@
-import { wordDiff } from "./wordDiff.helper";
+import { inlineDiff, wordDiff } from "./wordDiff.helper";
 
 const changed = (pieces: { text: string; changed: boolean }[]) =>
   pieces.filter((piece) => piece.changed).map((piece) => piece.text);
@@ -35,5 +35,24 @@ describe("wordDiff", () => {
     const diff = wordDiff("", "New label");
     expect(diff.before).toEqual([]);
     expect(changed(diff.after)).toEqual(["New", "label"]);
+  });
+});
+
+describe("inlineDiff", () => {
+  it("puts removed words right before the added ones in one line", () => {
+    expect(
+      inlineDiff(
+        "Зі своєї картки *1050 +1.01 UAH 17 серпня",
+        "Зі своєї картки *1051 +1.05 UAH 17 серпня",
+      ),
+    ).toEqual([
+      { text: "Зі своєї картки ", kind: "same" },
+      { text: "*1050 +1.01", kind: "removed" },
+      { text: " ", kind: "same" },
+      { text: "*1051 +1.05", kind: "added" },
+      { text: " UAH 17 серпня", kind: "same" },
+    ]);
+    expect(inlineDiff("Pay", "Pay")).toEqual([{ text: "Pay", kind: "same" }]);
+    expect(inlineDiff("", "New")).toEqual([{ text: "New", kind: "added" }]);
   });
 });

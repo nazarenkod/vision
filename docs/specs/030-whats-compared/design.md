@@ -90,12 +90,12 @@ flowchart LR
 | REQ-030-10 | `frontend/src/_helpers/whatsCompared.helper.test.ts › sums up what is compared in places` |
 | REQ-030-11 | `frontend/src/components/TestDetailsDialog/ComparedMap.test.tsx › draws the compared, ignored, tolerated and changed parts to scale` |
 | REQ-030-12 | `frontend/src/_helpers/whatsCompared.helper.test.ts › groups rows by what they do` |
-| REQ-030-13 | `frontend/src/_helpers/whatsCompared.helper.test.ts › names where each row comes from`; `frontend/integration_tests/test/elementRules.spec.ts › explains why the folded rows do not count` |
+| REQ-030-13 | `frontend/src/_helpers/whatsCompared.helper.test.ts › names where each row comes from`; `frontend/integration_tests/test/elementRules.spec.ts › explains why the rows under No effect do not count` |
 | REQ-030-14 | `frontend/src/_helpers/whatsCompared.helper.test.ts › lists the system bars as an ignored row` |
 | REQ-030-15 | `frontend/integration_tests/test/elementRules.spec.ts › lists the rules for this screen and for every screen`; `frontend/integration_tests/test/elementRules.spec.ts › opens an area of the summary in the Areas menu`; `frontend/integration_tests/test/elementRules.spec.ts › removes a rule for this screen at once`; `frontend/integration_tests/test/elementSelection.spec.ts › highlights a rule's elements on hover` |
 | REQ-030-20 | `frontend/src/_helpers/whatsCompared.helper.test.ts › puts what applies inside a compared element under it` |
-| REQ-030-21 | `frontend/src/_helpers/whatsCompared.helper.test.ts › folds away what lies outside the compared elements`; `frontend/integration_tests/test/elementRules.spec.ts › keeps rows outside the compared elements folded` |
-| REQ-030-22 | `frontend/integration_tests/test/elementRules.spec.ts › explains why the folded rows do not count` |
+| REQ-030-21 | `frontend/src/_helpers/whatsCompared.helper.test.ts › folds away what lies outside the compared elements`; `frontend/integration_tests/test/elementRules.spec.ts › lists rows outside the compared elements muted, under No effect` |
+| REQ-030-22 | `frontend/integration_tests/test/elementRules.spec.ts › explains why the rows under No effect do not count` |
 | REQ-030-23 | `frontend/src/_helpers/whatsCompared.helper.test.ts › folds away rules that found nothing`; `frontend/integration_tests/test/elementRules.spec.ts › lists the rules for this screen and for every screen` |
 | REQ-030-24 | `backend/src/ui-tree/ui-tree.service.spec.ts › says how far a compared element moved, in dp`; `backend/src/ui-tree/compare-only.spec.ts › names each compared element and how far it moved` |
 | REQ-030-30 | `backend/src/ui-tree/compare-only.spec.ts › compares the element at its place when only one side has a tree`; `backend/src/ui-tree/ui-tree.service.spec.ts › compares the element at its place when only one side has a tree` |
@@ -104,5 +104,5 @@ flowchart LR
 | REQ-030-33 | `backend/src/ui-tree/compare-only.spec.ts › compares the whole screen when neither side has a tree`; `frontend/src/_helpers/whatsCompared.helper.test.ts › says the whole screenshot is compared when neither side has a tree`; `backend/src/ui-tree/ui-tree.service.spec.ts › never passes a compare-only run without a UI tree` |
 | REQ-030-40 | `frontend/src/_helpers/whatsCompared.helper.test.ts › tells which compared elements are gone, new or unchanged` |
 | REQ-030-41 | `frontend/integration_tests/test/elementRules.spec.ts › removes a gone element from what is compared, with Undo` |
-| REQ-030-50 | `frontend/integration_tests/test/elementRules.spec.ts › says the count once and lists the changes straight under it` |
+| REQ-030-50 | `frontend/integration_tests/test/elementRules.spec.ts › lists changes under a plain Changes heading, each marked by how it was seen` |
 | REQ-030-51 | `frontend/integration_tests/test/elementSelection.spec.ts › leaves element selection to the toolbar, not the Changes tab` |

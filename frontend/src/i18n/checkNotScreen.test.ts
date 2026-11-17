@@ -12,6 +12,7 @@ const LITERAL_SCREEN = new Set([
   "section.mobileFormer",
   "general.newProjectHint",
   "comparison.lookSameHelp", // text-heavy screens of the app
+  "changes.mostOfScreen", // most of the app's screen changed (REQ-074-30)
   "mobile.title",
   "a11y.reader.screenReader",
   "filters.viewport",

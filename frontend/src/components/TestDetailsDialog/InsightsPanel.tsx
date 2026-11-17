@@ -372,7 +372,7 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
       t("panel.ignoreAreaAdded"),
     );
 
-  const numberBadge = (number: number, isNew: boolean) => (
+  const numberBadge = (number: number) => (
     <Box
       key={number}
       sx={{
@@ -380,8 +380,9 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
         height: 20,
         borderRadius: radius.pill,
         flexShrink: 0,
-        bgcolor: isNew ? tokens.a11y : tokens.a11yExisting,
-        // a number on an orange or grey dot reads in white in both themes
+        // orange like the box on the screenshot, new or known (REQ-058-07)
+        bgcolor: tokens.a11y,
+        // a number on an orange dot reads in white in both themes
         color: "white",
         font: "600 11px/20px Inter, sans-serif",
         textAlign: "center",
@@ -451,7 +452,7 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
       >
         <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
           <Box sx={{ display: "flex", gap: 0.25, flexShrink: 0 }}>
-            {numbers.slice(0, 3).map((number) => numberBadge(number, isNew))}
+            {numbers.slice(0, 3).map((number) => numberBadge(number))}
             {numbers.length > 3 && (
               <Typography
                 component="span"

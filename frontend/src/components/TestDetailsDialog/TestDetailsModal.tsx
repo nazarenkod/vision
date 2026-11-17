@@ -1074,10 +1074,12 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
         ? a11yReport.violations.map((violation, index) => {
             const tracked =
               violation.status === "existing" || !!violation.issue;
+            // one colour with the card's frame, so the chosen card and its box
+            // read as one; a known problem differs by the dashed line (REQ-058-07)
             return {
               id: violation.id,
               ...violation.bounds,
-              color: tracked ? canvas.a11yExisting : canvas.a11y,
+              color: canvas.a11y,
               dashed: tracked,
               label: String(index + 1),
             };

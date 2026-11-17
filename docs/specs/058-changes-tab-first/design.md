@@ -21,6 +21,10 @@
 `DIMMED_FRAME` (0,3), а виділену — лінією 5 px і заливкою 25 %. Так поводяться всі рамки на
 знімку (правила, баги, елементи), бо причина та сама: виділене губиться серед однакових рамок.
 
+Колір знахідок (REQ-058-07): рамка в `TestDetailsModal` і номер на картці в `InsightsPanel` завжди
+`a11y` (помаранчевий); сірий `a11yExisting` лишився для системних смуг і груп змін. Наявна чи з
+багом знахідка відрізняється пунктиром рамки, а картка — нейтральною рамкою й позначкою «Наявна».
+
 ## Компоненти
 
 | Компонент | Шлях | Роль |
@@ -48,3 +52,4 @@
 | REQ-058-04 | `frontend/integration_tests/test/a11yProblems.spec.ts › opens a screen from the build's Accessibility tab on its problems` |
 | REQ-058-05 | `frontend/integration_tests/test/a11yProblems.spec.ts › turns Highlight diff off on the Accessibility tab, so the red diff does not cover the frames` |
 | REQ-058-06 | `frontend/integration_tests/test/a11yProblems.spec.ts › dims the other frames while a problem is pointed at, so its frame stands out`; `frontend/src/_helpers/overlayRect.helper.test.ts › litLast` |
+| REQ-058-07 | `frontend/integration_tests/test/a11yProblems.spec.ts › draws known problems in the same orange as new ones` |

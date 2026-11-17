@@ -46,6 +46,7 @@ import { motion, radius, tokens, type } from "../../theme";
 import { StatusPill, PillTone } from "../StatusPill";
 import { SlidingToggleGroup } from "../motion/SlidingToggleGroup";
 import { describeChange } from "../ChangeGroups";
+import { a11yMessage, a11yTitle } from "../../_helpers/a11yText.helper";
 import {
   baselineValues,
   foldedPath,
@@ -1430,7 +1431,7 @@ const NodeCard: React.FunctionComponent<CardProps> = ({
       ))}
       {problems.map((problem) => (
         <Alert key={problem.id} severity="warning" icon={false} sx={{ py: 0 }}>
-          <b>{problem.title}</b> {problem.message}
+          <b>{a11yTitle(t, problem)}</b> {a11yMessage(t, problem)}
         </Alert>
       ))}
       <Box>

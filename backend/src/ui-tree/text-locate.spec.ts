@@ -173,3 +173,30 @@ describe('shrinkMask', () => {
     expect(shrinkMask(mask, 1)).toBe(mask);
   });
 });
+
+describe('placeAreas: emoji and line breaks the tree keeps as references', () => {
+  it('reads "телефон&#128241;" as the word on the screen and breaks words at "&#10;"', () => {
+    const banner: TextPart[] = [{ pattern: '\\p{L}+', sample: 'Закинь' }, { text: ' на телефон&#128241;' }];
+    const found = placesOf(banner, 'Закинь на телефон&#128241;');
+    expect(
+      placeAreas(found.text, found.places, [
+        word('Закинь', 0, 0, 90, 30),
+        word('на', 100, 0, 130, 30),
+        word('телефон', 140, 0, 260, 30),
+      ])
+    ).toEqual({
+      areas: [{ x: 0, y: 0, width: 90, height: 30 }],
+    });
+    const service: TextPart[] = [{ text: 'Автобус&#10;Видалити&#10;' }, { pattern: '\\p{L}+', sample: 'Автобус' }];
+    const label = placesOf(service, 'Автобус&#10;Видалити&#10;Автобус');
+    // the screen shows the name once, under the icon: the last word of the label is not on it
+    expect(placeAreas(label.text, label.places, [word('Автобус', 10, 100, 90, 120)])).toEqual({ missing: 'Автобус' });
+    expect(
+      placeAreas(label.text, label.places, [
+        word('Автобус', 10, 100, 90, 120),
+        word('Видалити', 0, 0, 1, 1),
+        word('Автобус', 10, 100, 90, 120),
+      ])
+    ).toEqual({ areas: [{ x: 10, y: 100, width: 80, height: 20 }] });
+  });
+});

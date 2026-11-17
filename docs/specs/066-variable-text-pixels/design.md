@@ -98,5 +98,5 @@ flowchart LR
 | REQ-066-08 | `frontend/src/components/TestDetailsDialog/ElementPopover.test.tsx › offers the text shown on the screen for a label-only element` |
 | REQ-066-09 | `frontend/src/components/TestDetailsDialog/ElementPopover.test.tsx › moves the marking to the shown text` |
 | REQ-066-10 | `frontend/src/_helpers/variableText.helper.test.ts › tells a check of words only` |
-| REQ-066-11 | `frontend/src/components/TestDetailsDialog/ElementPopover.test.tsx › warns on a saved rule that checks words only` |
-| REQ-066-12 | `frontend/src/components/TestDetailsDialog/ElementPopover.test.tsx › shows the baseline warning before the words-only one` |
+| REQ-066-11 | `frontend/src/components/TestDetailsDialog/ElementPopover.test.tsx › says plainly that any word may stand in a saved rule's whole-word place` |
+| REQ-066-12 | `manual: знято в 073 — окремого попередження немає` |

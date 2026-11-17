@@ -47,6 +47,21 @@ describe('TextLocatorService', () => {
     expect(runs[1]).toEqual(runs[0]);
   }, 60_000);
 
+  it('finds a word inside the frame of a button, read with Latin letters', async () => {
+    const button = PNG.sync.read(readFileSync(path.join(__dirname, '__fixtures__', 'variable-text-button.png')));
+    const words: TextPart[] = [{ pattern: '\\p{L}+', sample: 'Історія' }];
+    const bounds = { x: 0, y: 0, width: button.width, height: button.height };
+    const place = { bounds, ...placesOf(words, 'Історія') };
+    const locator = new TextLocatorService({ getImage: async () => button } as unknown as StaticService);
+    const found = await locator.locate([{ ruleId: 'v', key: 'history', current: place, baseline: place }], images);
+    await locator.onModuleDestroy();
+    const areas = (found.get(locatedKey('v', 'history')) as { current: Array<{ x: number; width: number }> }).current;
+    // the word, right of the clock icon, not the whole button
+    expect(areas).toHaveLength(1);
+    expect(areas[0].x).toBeGreaterThan(button.width / 4);
+    expect(areas[0].width).toBeLessThan(button.width * 0.75);
+  }, 60_000);
+
   class Stubbed extends TextLocatorService {
     calls = 0;
     constructor(private readonly words: () => Promise<RecognisedWord[]>) {

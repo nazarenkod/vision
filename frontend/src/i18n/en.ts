@@ -540,6 +540,7 @@ export const en = {
   "filters.customTags": "Custom tags",
   "filters.status": "Status",
   "filters.branch": "Branch",
+  "filters.feature": "Feature",
   "filters.reset": "Reset",
   "filters.search": "Search checks",
   "filters.title": "Filters",

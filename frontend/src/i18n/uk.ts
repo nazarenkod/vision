@@ -571,6 +571,7 @@ export const uk: Messages = {
   "filters.customTags": "Теги",
   "filters.status": "Статус",
   "filters.branch": "Гілка",
+  "filters.feature": "Фіча",
   "filters.reset": "Скинути",
   "filters.search": "Пошук перевірок",
   "filters.title": "Фільтри",

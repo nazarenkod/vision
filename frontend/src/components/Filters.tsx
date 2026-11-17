@@ -34,6 +34,8 @@ interface IProps {
   customTagsState: FilterState;
   testStatusState?: FilterState;
   branchNameState?: FilterState;
+  // baselines only: the feature the test named (068)
+  featureState?: FilterState;
 }
 
 type Filter = FilterField & {
@@ -56,6 +58,7 @@ const Filters: React.FunctionComponent<IProps> = ({
   customTagsState,
   testStatusState,
   branchNameState,
+  featureState,
 }) => {
   const { t } = useT();
   const [query, setQuery] = queryState;
@@ -83,6 +86,21 @@ const Filters: React.FunctionComponent<IProps> = ({
   });
 
   const filters: Filter[] = [
+    ...(featureState
+      ? [
+          filter(
+            "feature",
+            t("filters.feature"),
+            featureState[0],
+            featureState[1],
+            distinctValues(
+              (list as TestVariation[]).map((item) => item.featureName?.trim()),
+            ).sort((a, b) =>
+              a.localeCompare(b, undefined, { sensitivity: "base" }),
+            ),
+          ),
+        ]
+      : []),
     filter(
       "os",
       t("filters.os"),

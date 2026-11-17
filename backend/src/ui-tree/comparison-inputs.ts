@@ -220,6 +220,22 @@ export interface VariableCheck {
   overridden: boolean;
 }
 
+/**
+ * What a variable-text rule leaves out of the comparison for one element it
+ * found, on one side (spec 066): the element's text parts, or the element
+ * itself when the tree cannot tell where its text is drawn.
+ */
+export interface LeftOut {
+  side: 'current' | 'baseline';
+  // the element the rule found
+  element: Rect;
+  // what is not compared
+  areas: Rect[];
+  // set when the whole element is left out: its text is its own, its size changed,
+  // or it has no counterpart on the other screenshot (REQ-066-03, 06)
+  reason?: 'own-text' | 'resized' | 'unpaired';
+}
+
 export interface ResolvedRules {
   ignore: Rect[];
   tolerate: Array<Rect & { maxDiffPercent: number }>;
@@ -229,9 +245,100 @@ export interface ResolvedRules {
   found: Record<string, { current: Rect[]; baseline: Rect[] }>;
   // per variable-text rule, how its texts on the snapshot fared
   variable: Record<string, VariableCheck>;
+  // per variable-text rule, what of each element it found is not compared (spec 066)
+  leftOut: Record<string, LeftOut[]>;
+  // elements variable-text rules found: their own changes are not changes (REQ-033-16, REQ-066-04)
+  quietKeys: string[];
 }
 
 const textOf = (node: UiNode) => node.text || node.label;
+
+/**
+ * The text drawn on the screen: an Android content-desc or a web aria-label is
+ * not drawn, so an icon's label is no text part (REQ-066-01); iOS gives the
+ * drawn text as the label, which an image's label is not.
+ */
+export function shownText(tree: UiTree, node: UiNode): string {
+  if (node.text) return node.text;
+  return tree.format === 'appium-ios' && !/Image$|Icon$/.test(node.className) ? node.label : '';
+}
+
+const childrenByTree = new WeakMap<UiTree, Map<number, UiNode[]>>();
+function childrenOf(tree: UiTree, node: UiNode): UiNode[] {
+  let children = childrenByTree.get(tree);
+  if (!children) {
+    children = new Map();
+    for (const item of tree.nodes) {
+      if (item.parent === null) continue;
+      const list = children.get(item.parent) ?? [];
+      list.push(item);
+      children.set(item.parent, list);
+    }
+    childrenByTree.set(tree, children);
+  }
+  return children.get(node.index) ?? [];
+}
+
+/**
+ * The descendants of an element whose text passes the rule's check (REQ-066-01):
+ * where the checked text is drawn when the element is a button or a tile around it.
+ * The element itself is not one: a text of its own has no bounds of its own.
+ */
+export function textParts(tree: UiTree, node: UiNode, parts: TextPart[]): UiNode[] {
+  const found: UiNode[] = [];
+  const queue = [...childrenOf(tree, node)];
+  while (queue.length) {
+    const item = queue.shift();
+    const text = shownText(tree, item);
+    if (shown(item) && text.trim() && checkVariableText(parts, text).ok) found.push(item);
+    queue.push(...childrenOf(tree, item));
+  }
+  return found;
+}
+
+/**
+ * What of each element a variable-text rule found is left out, on both sides
+ * (REQ-066-02, 03): only its text parts when the same element is on both
+ * screenshots, keeps its size and has text parts on both; else all of it.
+ */
+export function leftOutOf(
+  parts: TextPart[] | undefined,
+  current: { tree: UiTree | null; nodes: UiNode[] },
+  baseline: { tree: UiTree | null; nodes: UiNode[] }
+): LeftOut[] {
+  const result: LeftOut[] = [];
+  const paired = new Set<UiNode>();
+  const whole = (side: LeftOut['side'], node: UiNode, reason: LeftOut['reason']): LeftOut => ({
+    side,
+    element: node.bounds,
+    areas: [node.bounds],
+    reason,
+  });
+  for (const node of current.nodes) {
+    const was = baseline.nodes.find((item) => item.key === node.key && !paired.has(item));
+    if (!was) {
+      result.push(whole('current', node, 'unpaired'));
+      continue;
+    }
+    paired.add(was);
+    const nowParts = parts?.length && current.tree ? textParts(current.tree, node, parts) : [];
+    const wasParts = parts?.length && baseline.tree ? textParts(baseline.tree, was, parts) : [];
+    const sameSize = node.bounds.width === was.bounds.width && node.bounds.height === was.bounds.height;
+    const reason = !sameSize ? 'resized' : !nowParts.length || !wasParts.length ? 'own-text' : undefined;
+    if (reason) {
+      result.push(whole('current', node, reason), whole('baseline', was, reason));
+    } else {
+      result.push(
+        { side: 'current', element: node.bounds, areas: nowParts.map((item) => item.bounds) },
+        { side: 'baseline', element: was.bounds, areas: wasParts.map((item) => item.bounds) }
+      );
+    }
+  }
+  for (const node of baseline.nodes) {
+    if (!paired.has(node)) result.push(whole('baseline', node, 'unpaired'));
+  }
+  return result;
+}
 
 /**
  * Areas the rules cover, taken from both trees (current first, then the
@@ -241,7 +348,15 @@ const textOf = (node: UiNode) => node.text || node.label;
  * instead, unless an ignore rule takes the same element (REQ-033-22).
  */
 export function resolveRules(rules: ElementRule[], trees: Array<UiTree | null>): ResolvedRules {
-  const result: ResolvedRules = { ignore: [], tolerate: [], matches: {}, found: {}, variable: {} };
+  const result: ResolvedRules = {
+    ignore: [],
+    tolerate: [],
+    matches: {},
+    found: {},
+    variable: {},
+    leftOut: {},
+    quietKeys: [],
+  };
   const current = trees[0] ?? null;
   const ignored = new Set<UiNode>();
   for (const rule of rules) {
@@ -252,17 +367,30 @@ export function resolveRules(rules: ElementRule[], trees: Array<UiTree | null>):
   for (const rule of rules) {
     if (selectorProblem(rule.selector)) continue;
     const sides: Rect[][] = [];
+    const sideNodes: UiNode[][] = [];
     for (const tree of trees) {
       const bounds: Rect[] = [];
-      for (const node of tree ? findBySelector(tree, rule.selector) : []) {
+      const nodes = tree ? findBySelector(tree, rule.selector) : [];
+      sideNodes.push(nodes);
+      for (const node of nodes) {
         bounds.push(node.bounds);
-        if (rule.action === 'ignore' || rule.action === 'variable') {
+        if (rule.action === 'ignore') {
           result.ignore.push(pad(node.bounds, RULE_PADDING_PX));
         } else if (rule.action === 'tolerate') {
           result.tolerate.push({ ...node.bounds, maxDiffPercent: rule.maxDiffPercent ?? 5 });
         }
       }
       sides.push(bounds);
+    }
+    if (rule.action === 'variable') {
+      const leftOut = leftOutOf(
+        rule.parts,
+        { tree: trees[0] ?? null, nodes: sideNodes[0] ?? [] },
+        { tree: trees[1] ?? null, nodes: sideNodes[1] ?? [] }
+      );
+      result.leftOut[rule.id] = leftOut;
+      result.ignore.push(...leftOut.flatMap((item) => item.areas.map((area) => pad(area, RULE_PADDING_PX))));
+      result.quietKeys.push(...sideNodes.flat().map((node) => node.key));
     }
     // the same element is usually in both trees, so the count is the larger of the two
     result.matches[rule.id] = Math.max(0, ...sides.map((bounds) => bounds.length));
@@ -285,21 +413,24 @@ export function resolveRules(rules: ElementRule[], trees: Array<UiTree | null>):
 }
 
 /**
- * Where a check's variable-text rules found elements, on both trees: a change
- * there is not a change of the screen (REQ-033-16, 33). Rules come from the
- * project and the check's own, as saved in the settings.
+ * What a check's variable-text rules leave out, on both trees, and the elements
+ * they found: a change there is not a change of the screen (REQ-033-16, 33,
+ * REQ-066-04). Rules come from the project and the check's own, as saved.
  */
 export function variableTextAreas(
   settings: UiTreeSettings,
   check: { name: string; customTags?: string | null },
   trees: Array<UiTree | null>
-): Rect[] {
+): { areas: Rect[]; keys: string[] } {
   const rules = [...settings.elementRules, ...(settings.checkRules[checkKey(check)] ?? [])].filter(
     (rule) => rule.action === 'variable'
   );
-  if (!rules.length) return [];
+  if (!rules.length) return { areas: [], keys: [] };
   const resolved = resolveRules(rules, trees);
-  return Object.values(resolved.found).flatMap((found) => [...found.current, ...found.baseline]);
+  return {
+    areas: Object.values(resolved.leftOut).flatMap((items) => items.flatMap((item) => item.areas)),
+    keys: resolved.quietKeys,
+  };
 }
 
 const STATUS_BAR_IDS = ['android:id/statusBarBackground', 'android:id/navigationBarBackground'];

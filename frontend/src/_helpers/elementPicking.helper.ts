@@ -76,7 +76,7 @@ export const relationTo = (
 
 /**
  * A long anchor cut in the middle, where an id is least telling: its start
- * says whose it is and its end what it is (REQ-066-03).
+ * says whose it is and its end what it is (REQ-067-03).
  */
 export function shortAnchor(anchor: string, max = 26): string {
   if (anchor.length <= max) return anchor;

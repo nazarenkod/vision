@@ -1,7 +1,7 @@
 import React from "react";
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import { ElementPopover } from "./ElementPopover";
-import { PickableElement } from "../../types/insights";
+import { PickableElement, ScreenRule } from "../../types/insights";
 
 const updated: PickableElement = {
   index: 7,
@@ -191,7 +191,7 @@ describe("ElementPopover: an anchor found by the start of its text (spec 061)", 
   });
 });
 
-describe("ElementPopover: tidier and closed by a click outside (spec 066)", () => {
+describe("ElementPopover: tidier and closed by a click outside (spec 067)", () => {
   // the listener starts after the click that opened the popover
   const settle = () =>
     act(() => new Promise((resolve) => setTimeout(resolve, 0)));
@@ -275,5 +275,121 @@ describe("ElementPopover: tidier and closed by a click outside (spec 066)", () =
     expect(screen.getByTestId("elementVariant-up")).toHaveTextContent(
       /^parent of activity_list…n_tail_badge3 found$/,
     );
+  });
+});
+
+describe("ElementPopover: what a variable text leaves out (spec 066)", () => {
+  const history: PickableElement = {
+    index: 3,
+    parent: null,
+    selector: "id:history",
+    element: 'View "History"',
+    bounds: { x: 100, y: 1000, width: 300, height: 100 },
+    text: "History",
+    labelOnly: true,
+  };
+  const shown: PickableElement = {
+    index: 5,
+    parent: 3,
+    selector: "text:History",
+    element: 'TextView "History"',
+    bounds: { x: 200, y: 1020, width: 180, height: 60 },
+    text: "History",
+  };
+  const historyRule: ScreenRule = {
+    id: "r",
+    selector: "id:history",
+    action: "variable",
+    scope: "screen",
+    matches: 1,
+    parts: [{ pattern: "\\p{L}+", sample: "History" }],
+  };
+
+  it("says what of the element is not compared", () => {
+    popover({
+      element: history,
+      rule: historyRule,
+      leftOut: {
+        side: "current",
+        element: history.bounds,
+        areas: [shown.bounds],
+      },
+    });
+    expect(screen.getByTestId("variableLeftOut")).toHaveTextContent(
+      "Only the text is not compared",
+    );
+  });
+
+  it("says why the whole element is not compared", () => {
+    popover({
+      element: history,
+      rule: historyRule,
+      leftOut: {
+        side: "current",
+        element: history.bounds,
+        areas: [history.bounds],
+        reason: "resized",
+      },
+    });
+    expect(screen.getByTestId("variableLeftOut")).toHaveTextContent(
+      "The whole element is not compared: its size changed",
+    );
+  });
+
+  it("warns on a saved rule that checks words only", () => {
+    popover({ element: history, rule: historyRule });
+    expect(screen.getByTestId("variableWordsOnly")).toHaveTextContent(
+      "Only checks that a word is here — almost like Ignore",
+    );
+  });
+
+  it("offers the text shown on the screen for a label-only element", () => {
+    popover({ element: history, shownText: shown, onShownText: jest.fn() });
+    fireEvent.click(screen.getByTestId("elementAction-variable"));
+    expect(screen.getByTestId("variableShownText")).toHaveTextContent(
+      "Text on the screen: “History”",
+    );
+  });
+
+  it("moves the marking to the shown text", () => {
+    const onShownText = jest.fn();
+    popover({ element: history, shownText: shown, onShownText });
+    fireEvent.click(screen.getByTestId("elementAction-variable"));
+    fireEvent.click(screen.getByTestId("variableMarkInIt"));
+    expect(onShownText).toHaveBeenCalled();
+    // the shown text opens with its pieces, not the actions
+    render(
+      <ElementPopover
+        anchor={{ x: 100, y: 100 }}
+        element={shown}
+        sameSelector={1}
+        canGoUp
+        canGoDown={false}
+        busy={false}
+        onUp={jest.fn()}
+        onDown={jest.fn()}
+        onMore={jest.fn()}
+        onAct={jest.fn()}
+        onRemove={jest.fn()}
+        onClose={jest.fn()}
+        onAddMore={jest.fn()}
+        onVariable={jest.fn()}
+        startMarking
+      />,
+    );
+    expect(screen.getAllByTestId("variablePiece").at(-1)).toHaveTextContent(
+      "History",
+    );
+  });
+
+  it("shows the baseline warning before the words-only one", () => {
+    popover({ element: shown, other: { side: "baseline", text: "12:00" } });
+    fireEvent.click(screen.getByTestId("elementAction-variable"));
+    fireEvent.click(screen.getByText("History"));
+    const other = screen.getByTestId("variableOther");
+    const words = screen.getByTestId("variableWordsOnly");
+    expect(
+      other.compareDocumentPosition(words) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
   });
 });

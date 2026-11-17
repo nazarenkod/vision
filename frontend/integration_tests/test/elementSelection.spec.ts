@@ -349,7 +349,7 @@ test("puts the actions away on a click outside them and leaves the element in vi
   await startSelecting(page);
   await clickElement(page, pay);
 
-  // beside the element, not over it (REQ-066-01)
+  // beside the element, not over it (REQ-067-01)
   const popover = page.getByTestId("elementPopover");
   const box = await popover.boundingBox();
   const corner = await at(page, "current", pay.bounds.x, pay.bounds.y);
@@ -366,7 +366,7 @@ test("puts the actions away on a click outside them and leaves the element in vi
     box.y + box.height > corner.y;
   expect(overlaps).toBe(false);
 
-  // anywhere outside the popover and the screenshots puts it away (REQ-066-08)
+  // anywhere outside the popover and the screenshots puts it away (REQ-067-08)
   await page
     .locator(".MuiDialog-root")
     .getByText("test run name unresolved")
@@ -1081,7 +1081,7 @@ test("warns when a nameless element hangs on a text", async ({
   // found through an id, nothing to warn about
   await page.keyboard.press("Escape");
   await clickElement(page, plus);
-  // the ways to find it say how; the title only names it (REQ-066-02)
+  // the ways to find it say how; the title only names it (REQ-067-02)
   await expect(popover.getByTestId("elementTitle")).toHaveText("ImageView");
   await expect(popover.getByTestId("elementVariant-down")).toHaveText(
     "inside card",

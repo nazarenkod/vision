@@ -69,6 +69,8 @@ export interface CompareRow {
   effect: RowEffect;
   // on the checkpoint, for the screen map and for what lies where
   rects: Rect[];
+  // what is not compared, when it is less than the rects: a variable text's text parts (REQ-066-07)
+  leftOut?: Rect[];
   rule?: ScreenRule;
   area?: IgnoreArea;
   index?: number;
@@ -128,6 +130,10 @@ function ruleRow(rule: ScreenRule): CompareRow {
   const nothing = found
     ? !found.current.length && !found.baseline.length
     : !rule.matches;
+  const side = found?.current.length ? "current" : "baseline";
+  const leftOut = rule.leftOut
+    ?.filter((item) => item.side === side)
+    .flatMap((item) => item.areas);
   return {
     key: ruleMarkId(rule.id),
     kind: "rule",
@@ -139,6 +145,7 @@ function ruleRow(rule: ScreenRule): CompareRow {
         ? "overridden"
         : "applies",
     rects,
+    ...(leftOut ? { leftOut } : {}),
     rule,
   };
 }

@@ -11,6 +11,8 @@ import { ElementsTab } from "./ElementsTab";
 import { InspectorTrees } from "./useInspectorTrees";
 import { insightsService } from "../../services";
 import { InspectorNode, InspectorTree } from "../../types/insights";
+import { LanguageProvider } from "../../i18n";
+import { STORAGE_KEY } from "../../i18n/translate";
 
 jest.mock("../../services", () => ({
   insightsService: { getLocators: jest.fn() },
@@ -433,5 +435,47 @@ describe("ElementsTab: a readable tree (063)", () => {
   it("shows the wrappers when a link names one", () => {
     deepTab({ chosen: 1 });
     expect(rowsShown()).toContain("1");
+  });
+});
+
+describe("ElementsTab: accessibility findings", () => {
+  afterEach(() => window.localStorage.removeItem(STORAGE_KEY));
+
+  it("shows an element's finding in the interface language", () => {
+    window.localStorage.setItem(STORAGE_KEY, "uk");
+    getLocators.mockResolvedValue({ vision: [], test: [] });
+    render(
+      <LanguageProvider>
+        <ElementsTab
+          hasTree
+          testRunId="r1"
+          trees={ready(deep, null)}
+          structure={undefined}
+          report={
+            {
+              violations: [
+                {
+                  id: "v",
+                  rule: "duplicate-label",
+                  nodeKey: "k4",
+                  title: "Same label on several controls",
+                  message:
+                    '2 controls are announced as "історія"; users cannot tell them apart.',
+                },
+              ],
+            } as unknown as React.ComponentProps<typeof ElementsTab>["report"]
+          }
+          side="current"
+          chosen={4}
+          onSideChange={jest.fn()}
+          onChoose={jest.fn()}
+          onPoint={jest.fn()}
+        />
+      </LanguageProvider>,
+    );
+    const text = document.body.textContent ?? "";
+    expect(text).toContain("Однаковий підпис у кількох елементів");
+    expect(text).toContain("озвучуються як «історія»");
+    expect(text).not.toContain("users cannot tell them apart");
   });
 });

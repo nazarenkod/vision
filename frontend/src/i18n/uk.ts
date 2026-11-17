@@ -1827,8 +1827,6 @@ export const uk: Messages = {
   "tree.change.removed": "зникло",
   "tree.change.resized": "розмір",
   "tree.change.moved": "зсув",
-  "tree.a11y": "a11y",
-  "tree.a11yTitle": "Проблема доступності",
   "inspect.back": "Назад до порівняння",
   "inspect.title": "Елементи · {name}",
   "inspect.loading": "Відкриваємо перевірку…",

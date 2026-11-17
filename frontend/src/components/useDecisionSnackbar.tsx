@@ -13,20 +13,28 @@ import {
   DecisionKind,
 } from "../_helpers/undo.helper";
 import { useT } from "../i18n";
+import { useQueueEnd } from "./TestDetailsDialog/queueEnd.context";
 
 type Enqueue = (
   message: SnackbarMessage,
   options?: OptionsObject,
 ) => SnackbarKey;
 
+// the last decision's notification, wherever it was raised: when a decision
+// ends a queue its card is the one message, so this one goes (REQ-064-01)
+let lastDecisionSnack: SnackbarKey | null = null;
+
 /**
  * Tells about a decision with Undo for 8 seconds (REQ-018-70). Pass the
  * dialog's own enqueue to keep its placement and its one-at-a-time rule.
+ * Given the decided `ids` inside a review queue, a decision that ends the
+ * queue is told by the queue's card instead (064).
  */
 export function useDecisionSnackbar(enqueue?: Enqueue) {
   const app = useSnackbar();
   const show = enqueue ?? app.enqueueSnackbar;
   const { t } = useT();
+  const claimQueueEnd = useQueueEnd();
   return React.useCallback(
     (
       kind: DecisionKind,
@@ -37,9 +45,18 @@ export function useDecisionSnackbar(enqueue?: Enqueue) {
       extra?: {
         message?: string;
         action?: { label: string; testId: string; onClick: () => void };
+        ids?: string[];
       },
     ) => {
-      const decisionId = decision?.decisionId;
+      const endsQueue =
+        !!extra?.ids && !!claimQueueEnd?.(extra.ids, kind, decision);
+      if (endsQueue) {
+        if (lastDecisionSnack !== null) app.closeSnackbar(lastDecisionSnack);
+        lastDecisionSnack = null;
+        // a bug filed with the decision is news of its own; Undo is on the card
+        if (!extra?.message) return undefined;
+      }
+      const decisionId = endsQueue ? undefined : decision?.decisionId;
       const more = extra?.action;
       const undo = (snackKey: SnackbarKey) =>
         decisionId ? (
@@ -94,8 +111,9 @@ export function useDecisionSnackbar(enqueue?: Enqueue) {
               )
             : undefined,
       });
+      lastDecisionSnack = key;
       return key;
     },
-    [show, app, t],
+    [show, app, t, claimQueueEnd],
   );
 }

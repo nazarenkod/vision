@@ -65,7 +65,9 @@ export const DeviceStrip: React.FunctionComponent<{
         pending.map((run) => run.id),
         pending.some((run) => run.merge),
       );
-      announce("approve", pending.length, decision);
+      announce("approve", pending.length, decision, {
+        ids: pending.map((run) => run.id),
+      });
     } catch (error) {
       enqueueSnackbar(String(error), { variant: "error" });
     }

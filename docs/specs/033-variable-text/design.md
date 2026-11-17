@@ -94,7 +94,7 @@
 
 | Вимога | Перевірка |
 |---|---|
-| REQ-033-01 | `frontend/src/components/TestDetailsDialog/ElementPopover.test.tsx › offers Variable text as the fourth action with V` |
+| REQ-033-01 | `frontend/src/components/TestDetailsDialog/ElementPopover.test.tsx › offers Variable text as the fourth action, its key unnamed` |
 | REQ-033-02 | `frontend/src/components/TestDetailsDialog/ElementPopover.test.tsx › folds the other actions and shows the pieces after V` |
 | REQ-033-03 | `frontend/src/_helpers/variableText.helper.test.ts › splits a text into words, numbers with their separators and single signs` |
 | REQ-033-04 | `frontend/src/_helpers/variableText.helper.test.ts › joins marked pieces with only spaces between into one place` |

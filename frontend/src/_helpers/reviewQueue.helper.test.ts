@@ -2,6 +2,7 @@ import { run } from "./testRun.fixture";
 import { TestStatus } from "../types/testStatus";
 import { ChangeGroup } from "../types/insights";
 import {
+  closesQueue,
   nextQueue,
   nextWaiting,
   parseQueue,
@@ -162,5 +163,19 @@ describe("review queues", () => {
     expect(
       nextQueue({ kind: "feature", name: "Login" }, after, groups)?.key,
     ).toEqual({ kind: "all" });
+  });
+
+  it("closes a queue only with the decision on its last waiting run", () => {
+    const ids = ["login-ios", "pay-aos", "home"];
+    // pay-aos still waits
+    expect(closesQueue(ids, runs, ["login-ios"])).toBe(false);
+    // the list has not heard of the decision yet: what was decided counts
+    expect(closesQueue(ids, runs, ["login-ios", "pay-aos"])).toBe(true);
+    const later = runs.map((r) =>
+      r.id === "pay-aos" ? { ...r, status: TestStatus.approved } : r,
+    );
+    expect(closesQueue(ids, later, ["login-ios"])).toBe(true);
+    // a decision on a run outside the queue closes nothing
+    expect(closesQueue(ids, later, ["onb"])).toBe(false);
   });
 });

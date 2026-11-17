@@ -215,21 +215,26 @@ test("keeps the review layout and its keys", async ({
   await expect(page.getByTestId("approveButton")).toBeHidden();
 });
 
-test("shows the A and X keys on Approve and Reject", async ({
+test("shows no keys on the buttons of the review", async ({
   openProjectPage,
   page,
 }) => {
   await openProjectPage(project.id, build.id, TEST_UNRESOLVED.id);
-  const keyOf = (testId: string) =>
+  const drawn = (testId: string) =>
     page
       .getByTestId(testId)
       .evaluate((el) => getComputedStyle(el, "::after").content);
 
-  expect(await keyOf("approveButton")).toBe('"A"');
-  expect(await keyOf("rejectButton")).toBe('"X"');
-  // the hint is drawn, not written: the buttons still read Approve and Reject
-  await expect(page.getByTestId("approveButton")).toHaveText("Approve");
-  await expect(page.getByTestId("rejectButton")).toHaveText("Reject");
+  // the keys still work (REQ-064-23); nothing on screen names them (REQ-064-20)
+  expect(await drawn("approveButton")).toBe("none");
+  expect(await drawn("rejectButton")).toBe("none");
+  await expect(
+    page.getByRole("button", { name: "Approve", exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Reject", exact: true }),
+  ).toBeVisible();
+  await expect(page.locator("kbd")).toHaveCount(0);
 });
 
 test("shows a check on Approve instead of a toast", async ({

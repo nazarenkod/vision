@@ -1010,19 +1010,6 @@ export const WhatsCompared: React.FunctionComponent<WhatsComparedProps> = ({
             sx={{ flexShrink: 0, bgcolor: tokens.surface }}
           >
             {t("select.button")}
-            <Box
-              component="kbd"
-              sx={{
-                ml: 0.75,
-                font: `500 ${type.caption}px ${tokens.mono}`,
-                border: `1px solid ${tokens.borderStrong}`,
-                borderRadius: radius.control,
-                px: 0.5,
-                color: tokens.textSecondary,
-              }}
-            >
-              E
-            </Box>
           </Button>
           {onAddRule && (
             <>

@@ -389,7 +389,7 @@ test("opens the queue of a device from the build header", async ({
   await expect(page).toHaveURL(/queue=run%3Agalaxy.*testId=galaxy$/);
 });
 
-test("sums up a finished queue and offers the next one", async ({
+test("offers the next queue on the card when someone decided it all", async ({
   openProjectPage,
   page,
 }) => {
@@ -399,16 +399,113 @@ test("sums up a finished queue and offers the next one", async ({
   );
 
   const done = page.getByTestId("queueDone");
-  await expect(done).toContainText("Image changed · done");
-  await expect(done).toContainText("1 approved · 0 rejected");
-  await expect(page.getByTestId("queueNext")).toContainText(
-    "Next: New checks · 1",
-  );
+  // no decision of this reviewer to tell about or take back (REQ-064-09)
+  await expect(page.getByTestId("queueStatus")).toHaveText("All decided");
+  await expect(page.getByTestId("queueUndo")).toHaveCount(0);
+  await expect(page.getByTestId("queueNext")).toHaveText("Next");
+  await expect(done).not.toContainText("Image changed");
 
   await page.keyboard.press("Enter");
   await expect(page).toHaveURL(/queue=group%3Anew.*testId=fresh$/);
   await expect(page.getByTestId("screenName")).toHaveText("Onboarding. Step 3");
   void openProjectPage;
+});
+
+// the queue of new screenshots holds one: rejecting it ends the queue (064)
+const endQueue = async (page: Page) => {
+  await page.route(`${API_URL}/test-runs/reject`, (route) =>
+    route.fulfill({ json: { decisionId: "d-9" } }),
+  );
+  await page.goto(
+    `/${project.id}?buildId=${build.id}&testId=fresh&queue=group%3Anew`,
+  );
+  await expect(page.getByTestId("screenName")).toHaveText("Onboarding. Step 3");
+  await page.getByTestId("rejectButton").click();
+  await expect(page.getByTestId("queueDone")).toBeVisible();
+};
+
+test("ends a queue with one card and no toast", async ({
+  openProjectPage,
+  page,
+}) => {
+  // signs in; the queue is opened by its address
+  void openProjectPage;
+  await endQueue(page);
+
+  await expect(page.getByTestId("queueStatus")).toHaveText("Rejected");
+  await expect(page.getByTestId("queueUndo")).toHaveText("Undo");
+  await expect(page.getByTestId("queueNext")).toHaveText("Next");
+  // the card is the one message: no toast, no Undo of its own, no bug offer
+  await expect(page.locator("#notistack-snackbar")).toHaveCount(0);
+  await expect(page.getByTestId("undoDecision")).toHaveCount(0);
+  await expect(page.getByTestId("reportBugAfterReject")).toHaveCount(0);
+  // nothing but the status and two actions (REQ-064-04)
+  const card = page.getByRole("dialog", { name: "Queue reviewed" });
+  await expect(card.getByRole("button")).toHaveCount(2);
+  await expect(card).not.toContainText("New screenshots");
+  await expect(card).not.toContainText("approved");
+  await expect(card.locator("kbd")).toHaveCount(0);
+});
+
+test("takes the last decision back from the card", async ({
+  openProjectPage,
+  page,
+}) => {
+  // signs in; the queue is opened by its address
+  void openProjectPage;
+  await page.route(`${API_URL}/test-runs/undo/d-9`, (route) =>
+    route.fulfill({ json: { undone: 1 } }),
+  );
+  await endQueue(page);
+  // no timer on the card's Undo, unlike the toast's 8 s (REQ-064-05)
+  await page.waitForTimeout(9000);
+
+  const [undo] = await Promise.all([
+    page.waitForRequest(`${API_URL}/test-runs/undo/d-9`),
+    page.getByTestId("queueUndo").click(),
+  ]);
+  expect(undo.method()).toBe("POST");
+  await expect(page.getByTestId("queueDone")).toHaveCount(0);
+  await expect(page.getByText("Undone")).toBeVisible();
+  await expect(page.getByTestId("screenName")).toHaveText("Onboarding. Step 3");
+  expect(new URL(page.url()).searchParams.get("queue")).toBe("group:new");
+});
+
+test("keeps the card and says why when Undo is refused", async ({
+  openProjectPage,
+  page,
+}) => {
+  // signs in; the queue is opened by its address
+  void openProjectPage;
+  await page.route(`${API_URL}/test-runs/undo/d-9`, (route) =>
+    route.fulfill({
+      status: 409,
+      json: { message: "Someone approved this screen again." },
+    }),
+  );
+  await endQueue(page);
+
+  await page.getByTestId("queueUndo").click();
+
+  await expect(
+    page.getByText("Could not undo: Someone approved this screen again."),
+  ).toBeVisible();
+  await expect(page.getByTestId("queueDone")).toBeVisible();
+});
+
+test("closes the review with a click beside the card", async ({
+  openProjectPage,
+  page,
+}) => {
+  // signs in; the queue is opened by its address
+  void openProjectPage;
+  await endQueue(page);
+
+  await page.getByTestId("queueDone").click({ position: { x: 8, y: 8 } });
+
+  await expect(page.getByTestId("queueDone")).toHaveCount(0);
+  await expect(page.getByTestId("rejectButton")).toHaveCount(0);
+  expect(new URL(page.url()).searchParams.get("testId")).toBeNull();
 });
 
 test("Esc returns to where the review was opened, focus on the same row", async ({

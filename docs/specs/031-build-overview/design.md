@@ -133,7 +133,7 @@ sequenceDiagram
 | REQ-031-23 | `frontend/src/_helpers/reviewQueue.helper.test.ts › opens the run a bug was filed from, decided or not` |
 | REQ-031-24 | `frontend/integration_tests/test/compareLayout.spec.ts › shows neither the position nor the queue in the header` |
 | REQ-031-25 | `frontend/integration_tests/test/compareLayout.spec.ts › shows neither the position nor the queue in the header` |
-| REQ-031-26 | `frontend/integration_tests/test/buildOverview.spec.ts › sums up a finished queue and offers the next one` |
+| REQ-031-26 | `frontend/integration_tests/test/buildOverview.spec.ts › offers the next queue on the card when someone decided it all` |
 | REQ-031-27 | `frontend/src/_helpers/reviewQueue.helper.test.ts › skips runs someone else decided` |
 | REQ-031-28 | `frontend/integration_tests/test/buildOverview.spec.ts › Esc returns to where the review was opened, focus on the same row` |
 | REQ-031-29 | `frontend/src/_helpers/route.helpers.test.ts › keeps build, run and queue in the address` |

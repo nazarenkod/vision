@@ -50,8 +50,9 @@ export const ArrowButtons: React.FunctionComponent<{
   return (
     <>
       {testRuns.length > selectedTestRunIndex + 1 && (
-        <Tooltip title={t("review.hotkeyRight")}>
+        <Tooltip title={t("compare.next")}>
           <IconButton
+            aria-label={t("compare.next")}
             color="secondary"
             className={classes.button}
             style={{
@@ -65,8 +66,9 @@ export const ArrowButtons: React.FunctionComponent<{
         </Tooltip>
       )}
       {selectedTestRunIndex > 0 && (
-        <Tooltip title={t("review.hotkeyLeft")}>
+        <Tooltip title={t("compare.previous")}>
           <IconButton
+            aria-label={t("compare.previous")}
             color="secondary"
             className={classes.button}
             style={{

@@ -10,6 +10,7 @@ import {
   Tag,
   Text,
   Shape,
+  Group,
 } from "react-konva";
 import Rectangle, { MIN_RECT_SIDE_PIXEL } from "../Rectangle";
 import { IgnoreArea } from "../../types/ignoreArea";
@@ -19,7 +20,12 @@ import Konva from "konva";
 import { makeStyles } from "@mui/styles";
 import { clampScale } from "../../_helpers/scale.helper";
 import { clampToImage } from "../../_helpers/ignoreArea.helper";
-import { frameInside, labelTop } from "../../_helpers/overlayRect.helper";
+import {
+  DIMMED_FRAME,
+  frameInside,
+  labelTop,
+  litLast,
+} from "../../_helpers/overlayRect.helper";
 import { tokens } from "../../theme";
 
 // label text drawn on a coloured tag inside the canvas: always white on those
@@ -580,99 +586,97 @@ export const DrawArea: FunctionComponent<IDrawArea> = ({
                     }}
                   />
                 )}
-                {(overlayRects ?? []).map((rect) => {
-                  // a rule lights up every rect it found: rule:<id> highlights rule:<id>:<n>
-                  const highlighted =
-                    !!highlightedOverlayId &&
-                    (rect.id === highlightedOverlayId ||
-                      rect.id.startsWith(`${highlightedOverlayId}:`));
-                  // the stage is scaled by CSS, so line widths are divided by the scale to stay crisp
-                  const px = (value: number) => value / stageScale;
-                  const line = px(highlighted ? 4 : 2);
-                  // a full-screen element's frame and label stay on the screenshot
-                  const frame = frameInside(rect, line, {
-                    x: 0,
-                    y: 0,
-                    width: stageWidth,
-                    height: stageHeight,
-                  });
-                  return (
-                    <React.Fragment key={rect.id}>
-                      {rect.hatched && (
-                        <Shape
-                          sceneFunc={(context) => {
-                            const ctx = nativeContext(context);
-                            const step = px(HATCH_STEP);
-                            ctx.save();
-                            ctx.beginPath();
-                            ctx.rect(rect.x, rect.y, rect.width, rect.height);
-                            ctx.clip();
-                            ctx.beginPath();
-                            for (
-                              let d = -rect.height;
-                              d < rect.width;
-                              d += step
-                            ) {
-                              ctx.moveTo(rect.x + d, rect.y + rect.height);
-                              ctx.lineTo(rect.x + d + rect.height, rect.y);
-                            }
-                            ctx.strokeStyle = rect.color;
-                            ctx.globalAlpha = highlighted ? 0.7 : 0.45;
-                            ctx.lineWidth = px(2);
-                            ctx.stroke();
-                            ctx.restore();
-                          }}
+                {litLast(overlayRects ?? [], highlightedOverlayId).map(
+                  ({ rect, highlighted, dimmed }) => {
+                    // the stage is scaled by CSS, so line widths are divided by the scale to stay crisp
+                    const px = (value: number) => value / stageScale;
+                    const line = px(highlighted ? 5 : 2);
+                    // a full-screen element's frame and label stay on the screenshot
+                    const frame = frameInside(rect, line, {
+                      x: 0,
+                      y: 0,
+                      width: stageWidth,
+                      height: stageHeight,
+                    });
+                    return (
+                      // twenty frames of one colour hide the one chosen, so the rest step back
+                      <Group key={rect.id} opacity={dimmed ? DIMMED_FRAME : 1}>
+                        {rect.hatched && (
+                          <Shape
+                            sceneFunc={(context) => {
+                              const ctx = nativeContext(context);
+                              const step = px(HATCH_STEP);
+                              ctx.save();
+                              ctx.beginPath();
+                              ctx.rect(rect.x, rect.y, rect.width, rect.height);
+                              ctx.clip();
+                              ctx.beginPath();
+                              for (
+                                let d = -rect.height;
+                                d < rect.width;
+                                d += step
+                              ) {
+                                ctx.moveTo(rect.x + d, rect.y + rect.height);
+                                ctx.lineTo(rect.x + d + rect.height, rect.y);
+                              }
+                              ctx.strokeStyle = rect.color;
+                              ctx.globalAlpha = highlighted ? 0.7 : 0.45;
+                              ctx.lineWidth = px(2);
+                              ctx.stroke();
+                              ctx.restore();
+                            }}
+                          />
+                        )}
+                        <Rect
+                          x={frame.x}
+                          y={frame.y}
+                          width={frame.width}
+                          height={frame.height}
+                          stroke={rect.color}
+                          strokeWidth={line}
+                          dash={rect.dashed ? [px(6), px(4)] : undefined}
+                          fill={highlighted ? `${rect.color}40` : undefined}
+                          cornerRadius={px(3)}
                         />
-                      )}
-                      <Rect
-                        x={frame.x}
-                        y={frame.y}
-                        width={frame.width}
-                        height={frame.height}
-                        stroke={rect.color}
-                        strokeWidth={line}
-                        dash={rect.dashed ? [px(6), px(4)] : undefined}
-                        fill={highlighted ? `${rect.color}22` : undefined}
-                        cornerRadius={px(3)}
-                      />
-                      {rect.badge && (
-                        <>
-                          <Circle
-                            x={rect.x}
-                            y={rect.y}
-                            radius={px(10)}
-                            fill={rect.color}
-                          />
-                          <Text
-                            x={rect.x - px(10)}
-                            y={rect.y - px(10)}
-                            width={px(20)}
-                            height={px(20)}
-                            align="center"
-                            verticalAlign="middle"
-                            text={rect.badge}
-                            fontSize={px(12)}
-                            fontStyle="bold"
-                            fill={TAG_TEXT}
-                          />
-                        </>
-                      )}
-                      {rect.label &&
-                        (!rect.labelOnHighlight || highlighted) && (
-                          <Label x={frame.x} y={labelTop(frame, px(20))}>
-                            <Tag fill={rect.color} cornerRadius={px(4)} />
+                        {rect.badge && (
+                          <>
+                            <Circle
+                              x={rect.x}
+                              y={rect.y}
+                              radius={px(10)}
+                              fill={rect.color}
+                            />
                             <Text
-                              text={rect.label}
+                              x={rect.x - px(10)}
+                              y={rect.y - px(10)}
+                              width={px(20)}
+                              height={px(20)}
+                              align="center"
+                              verticalAlign="middle"
+                              text={rect.badge}
                               fontSize={px(12)}
                               fontStyle="bold"
-                              padding={px(4)}
                               fill={TAG_TEXT}
                             />
-                          </Label>
+                          </>
                         )}
-                    </React.Fragment>
-                  );
-                })}
+                        {rect.label &&
+                          (!rect.labelOnHighlight || highlighted) && (
+                            <Label x={frame.x} y={labelTop(frame, px(20))}>
+                              <Tag fill={rect.color} cornerRadius={px(4)} />
+                              <Text
+                                text={rect.label}
+                                fontSize={px(12)}
+                                fontStyle="bold"
+                                padding={px(4)}
+                                fill={TAG_TEXT}
+                              />
+                            </Label>
+                          )}
+                      </Group>
+                    );
+                  },
+                )}
               </Layer>
             )}
           </Stage>

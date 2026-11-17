@@ -281,3 +281,44 @@ test("opens a screen from the build's Accessibility tab without Highlight diff",
     page.getByRole("checkbox", { name: "Highlight diff" }),
   ).not.toBeChecked();
 });
+
+test("dims the other frames while a problem is pointed at, so its frame stands out", async ({
+  openProjectPage,
+  page,
+}) => {
+  const first = { x: 200, y: 200, width: 200, height: 100 };
+  const second = { x: 200, y: 600, width: 200, height: 100 };
+  await page.route(`${API_URL}/test-runs/${run.id}/a11y`, (route) =>
+    route.fulfill({
+      body: JSON.stringify({
+        ...report,
+        violations: [
+          { ...button("Pay"), bounds: first },
+          { ...icon, bounds: second },
+        ],
+      }),
+    }),
+  );
+  await openProjectPage(project.id, build.id, run.id);
+  await openA11yTab(page);
+  const edgeOf = (box: typeof first) => ({
+    x: box.x - 2,
+    y: box.y + 20,
+    width: 4,
+    height: 60,
+  });
+  await expect
+    .poll(() => frameAlpha(page, edgeOf(second)))
+    .toBeGreaterThan(200);
+  const unlit = await frameAlpha(page, edgeOf(first));
+
+  // REQ-058-06
+  await page.getByTestId("a11yProblem").first().hover();
+  await expect.poll(() => frameAlpha(page, edgeOf(second))).toBeLessThan(120);
+  expect(await frameAlpha(page, edgeOf(first))).toBeGreaterThanOrEqual(unlit);
+
+  await page.mouse.move(0, 0);
+  await expect
+    .poll(() => frameAlpha(page, edgeOf(second)))
+    .toBeGreaterThan(200);
+});

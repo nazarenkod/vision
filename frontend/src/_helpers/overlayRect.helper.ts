@@ -33,3 +33,29 @@ export function labelTop(frame: Box, labelHeight: number, stageTop = 0) {
   const above = frame.y - labelHeight;
   return above >= stageTop ? above : frame.y;
 }
+
+/** How opaque the other marks are while one is chosen. */
+export const DIMMED_FRAME = 0.3;
+
+/**
+ * The marks in drawing order with whether each is the chosen one. A rule
+ * lights every rect it found (rule:<id> lights rule:<id>:<n>). With twenty
+ * frames of one colour a thicker line went unnoticed, so while a mark is
+ * chosen the others are dimmed and it is drawn last, on top of its neighbours.
+ */
+export function litLast<T extends { id: string }>(
+  rects: T[],
+  highlightedId?: string,
+): { rect: T; highlighted: boolean; dimmed: boolean }[] {
+  const marks = rects.map((rect) => ({
+    rect,
+    highlighted:
+      !!highlightedId &&
+      (rect.id === highlightedId || rect.id.startsWith(`${highlightedId}:`)),
+  }));
+  const anyLit = marks.some((mark) => mark.highlighted);
+  return [
+    ...marks.filter((mark) => !mark.highlighted),
+    ...marks.filter((mark) => mark.highlighted),
+  ].map((mark) => ({ ...mark, dimmed: anyLit && !mark.highlighted }));
+}

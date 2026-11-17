@@ -494,3 +494,34 @@ export function readPanelPlace(
   const params = new URLSearchParams(search);
   return params.get("panel") === "elements" ? readTreePlace(search) : null;
 }
+
+/** How deep rows are drawn: the width of a level, levels left out at the top, and whether lines fit. */
+export interface IndentPlan {
+  level: number;
+  skip: number;
+  lines: boolean;
+}
+
+const FULL_LEVEL = 16;
+const MIN_LEVEL = 6;
+// a level line is drawn only where a level is wide enough to tell lines apart
+const LINES_FROM = 10;
+// what a row needs beside its indent: the chevron, the icon and a name
+const ROW_CONTENT = 220;
+
+/**
+ * Narrower levels for a deep tree, so a row's own part always fits; past what
+ * fits even then, the top levels are left out (REQ-063-09).
+ */
+export function indentPlan(width: number, maxDepth: number): IndentPlan {
+  if (!width || maxDepth <= 0)
+    return { level: FULL_LEVEL, skip: 0, lines: true };
+  const room = Math.max(0, width - ROW_CONTENT);
+  const fit = Math.floor(room / maxDepth);
+  if (fit >= MIN_LEVEL) {
+    const level = Math.min(FULL_LEVEL, fit);
+    return { level, skip: 0, lines: level >= LINES_FROM };
+  }
+  const shown = Math.floor(room / MIN_LEVEL);
+  return { level: MIN_LEVEL, skip: maxDepth - shown, lines: false };
+}

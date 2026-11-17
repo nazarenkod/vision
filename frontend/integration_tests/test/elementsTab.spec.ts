@@ -326,3 +326,69 @@ test.describe("A readable tree (063)", () => {
     await page.screenshot({ path: "test-results/readable-tree.png" });
   });
 });
+
+test.describe("A deep tree with its wrappers shown (063)", () => {
+  test.beforeEach(async ({ page }) => mockApi(page));
+
+  // twenty levels of Other above the amount, as an iOS screen has them
+  const deepest = (): InspectorTree => {
+    const wrappers = Array.from({ length: 20 }, (_, i) =>
+      node(i + 1, i, "Other", { wrapper: true }),
+    );
+    return {
+      format: "appium-ios",
+      positioned: true,
+      ...IMAGE,
+      nodes: [
+        node(0, null, "Application", { text: "Bank" }),
+        ...wrappers,
+        node(21, 20, "StaticText", {
+          key: "id:amount",
+          text: "1 200 ₴",
+          bounds: { x: 820, y: 80, width: 200, height: 60 },
+        }),
+      ],
+    };
+  };
+
+  const rowInView = async (page: Page) => {
+    const tree = page.getByTestId("tree");
+    const amount = page.locator('[data-testid="treeRow"][data-index="21"]');
+    await expect(amount).toBeVisible();
+    const box = await tree.boundingBox();
+    const name = await amount
+      .getByText("StaticText", { exact: true })
+      .boundingBox();
+    if (!box || !name) throw new Error("not on screen");
+    // the row's own name is wholly inside the tree, not pushed out by the levels
+    expect(name.x + name.width).toBeLessThanOrEqual(box.x + box.width);
+    expect(
+      await tree.evaluate((el) => el.scrollWidth - el.clientWidth),
+    ).toBeLessThanOrEqual(0);
+  };
+
+  test("keeps every row readable in the panel and on the inspector page", async ({
+    page,
+    openProjectPage,
+  }) => {
+    await page.route(
+      (url) => url.pathname === `/test-runs/${run.id}/ui-tree`,
+      (route) => route.fulfill({ body: JSON.stringify(deepest()) }),
+    );
+    await openProjectPage(project.id, build.id, run.id);
+    await unfoldPanel(page);
+    await page.getByTestId("elementsTabButton").click();
+    await page.getByTestId("treeWrappers").click();
+    await page.getByTestId("treeExpandAll").click();
+    await rowInView(page);
+    await page.screenshot({ path: "test-results/deep-panel.png" });
+
+    await page.locator('[data-testid="treeRow"][data-index="21"]').click();
+    await page.getByTestId("treeFullScreen").click();
+    await expect(page.getByTestId("inspectorPage")).toBeVisible();
+    await page.getByTestId("treeWrappers").click();
+    await page.getByTestId("treeExpandAll").click();
+    await rowInView(page);
+    await page.screenshot({ path: "test-results/deep-inspector.png" });
+  });
+});

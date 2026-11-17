@@ -1827,6 +1827,7 @@ export const uk: Messages = {
   "tree.inside": "Елементів усередині",
   "tree.resize": "Висота дерева",
   "tree.onlyFilled": "Лише заповнені",
+  "tree.level": "Рівень {level}",
   "tree.pick": "Виберіть елемент у дереві або клацніть його на знімку.",
   "tree.change.text": "текст",
   "tree.change.label": "підпис",

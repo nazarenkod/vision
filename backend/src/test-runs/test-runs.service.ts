@@ -195,7 +195,7 @@ export class TestRunsService {
           createTestRequestDto: {
             projectId: testRun.projectId,
             branchName: testRun.branchName,
-            // the branch's baseline starts in the feature its snapshot named (067)
+            // the branch's baseline starts in the feature its snapshot named (068)
             featureName: testRun.featureName ?? undefined,
             ...getTestVariationUniqueData(testRun),
           },

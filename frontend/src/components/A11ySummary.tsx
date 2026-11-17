@@ -1,5 +1,6 @@
 import React from "react";
 import { Box, ButtonBase } from "@mui/material";
+import { ChevronRight, ExpandMore } from "@mui/icons-material";
 import { useNavigate } from "react-router-dom";
 import { useTestRunState } from "../contexts";
 import { buildTestRunLocation } from "../_helpers/route.helpers";
@@ -54,6 +55,16 @@ export const A11ySummary: React.FunctionComponent<{ buildId: string }> = ({
   const [problems, setProblems] = React.useState<
     Map<string, BuildA11yProblem[]>
   >(new Map());
+  // the lists start folded (REQ-065-10); the review opens over the tab, so a
+  // list someone unfolded is still unfolded when they come back from it
+  const [unfolded, setUnfolded] = React.useState<Set<string>>(new Set());
+  const toggle = (runId: string) =>
+    setUnfolded((current) => {
+      const next = new Set(current);
+      if (next.has(runId)) next.delete(runId);
+      else next.add(runId);
+      return next;
+    });
   React.useEffect(() => {
     let current = true;
     buildOverviewService
@@ -162,6 +173,8 @@ export const A11ySummary: React.FunctionComponent<{ buildId: string }> = ({
           <ProblemList
             key={`${run.id}:problems`}
             problems={problems.get(run.id) ?? []}
+            open={unfolded.has(run.id)}
+            onToggle={() => toggle(run.id)}
             onOpen={(problem) =>
               navigate(
                 buildTestRunLocation(buildId, run.id, {
@@ -183,10 +196,42 @@ export const A11ySummary: React.FunctionComponent<{ buildId: string }> = ({
  */
 const ProblemList: React.FunctionComponent<{
   problems: BuildA11yProblem[];
+  open: boolean;
+  onToggle: () => void;
+  onOpen: (problem: BuildA11yProblem) => void;
+}> = ({ problems, open, onToggle, onOpen }) => {
+  const { t } = useT();
+  if (!problems.length) return null;
+  const Chevron = open ? ExpandMore : ChevronRight;
+  return (
+    <Box sx={{ px: 1, pb: open ? 0 : 1 }}>
+      <ButtonBase
+        data-testid="a11yProblemsToggle"
+        aria-expanded={open}
+        onClick={onToggle}
+        sx={{
+          gap: 0.5,
+          px: 1,
+          py: 0.5,
+          borderRadius: radius.control,
+          fontSize: type.small,
+          color: tokens.textSecondary,
+          "&:hover": { bgcolor: tokens.subtle, color: tokens.text },
+        }}
+      >
+        <Chevron fontSize="small" aria-hidden />
+        {t("a11ySummary.problems", { count: problems.length })}
+      </ButtonBase>
+      {open && <Lines problems={problems} onOpen={onOpen} />}
+    </Box>
+  );
+};
+
+const Lines: React.FunctionComponent<{
+  problems: BuildA11yProblem[];
   onOpen: (problem: BuildA11yProblem) => void;
 }> = ({ problems, onOpen }) => {
   const { t } = useT();
-  if (!problems.length) return null;
   return (
     <Box
       component="ul"
@@ -194,8 +239,8 @@ const ProblemList: React.FunctionComponent<{
       sx={{
         listStyle: "none",
         m: 0,
-        // lined up with the check's name; the next row draws the line under it
-        px: 1,
+        // the next row draws the line under it
+        px: 0,
         pt: 0,
         pb: 1.25,
         display: "flex",

@@ -306,10 +306,10 @@ test.describe("A readable tree (063)", () => {
     const tree = page.getByTestId("tree");
     await expect(tree).toBeVisible();
 
-    // the texts sit on the second level, ten wrappers folded into +10
+    // the texts sit on the second level, the ten wrappers above them left unsaid (REQ-063-20)
     const amount = page.locator('[data-testid="treeRow"][data-index="11"]');
     await expect(amount).toHaveAttribute("aria-level", "2");
-    await expect(amount.getByTestId("treeSkipped")).toHaveText("+10");
+    await expect(amount.getByTestId("treeSkipped")).toHaveCount(0);
     await expect(amount).toContainText("Кредити ↵ Вкладка 2 з 5");
 
     const sideways = await tree.evaluate(

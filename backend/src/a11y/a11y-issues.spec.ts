@@ -122,6 +122,15 @@ describe('findingsOf', () => {
     expect(findingsOf(reviewed).map((finding) => finding.rule)).toEqual(['touch-target', 'low-contrast']);
   });
 
+  it('names the element by its label as people read it: emoji and line breaks decoded, on one line', () => {
+    expect(
+      elementNameOf({ label: 'Головний&#10;Вкладка 1 з 5', resourceId: '', className: 'android.widget.FrameLayout' })
+    ).toBe('Головний Вкладка 1 з 5');
+    expect(elementNameOf({ label: 'Купуй квитки&#128646;', resourceId: '', className: 'android.widget.Button' })).toBe(
+      'Купуй квитки🚆'
+    );
+  });
+
   it('names the element by its label, else its id without the package, else its class', () => {
     expect(elementNameOf({ label: ' Pay ', resourceId: 'com.app:id/pay', className: 'android.widget.Button' })).toBe(
       'Pay'

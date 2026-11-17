@@ -14,7 +14,7 @@ export interface TestVariation {
   projectId: string;
   baselines: Baseline[];
   comment?: string;
-  // the feature the test last named for this check (067); groups the baselines page
+  // the feature the test last named for this check (068); groups the baselines page
   featureName?: string | null;
   updatedAt?: string;
 }

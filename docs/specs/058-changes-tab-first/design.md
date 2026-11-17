@@ -11,6 +11,16 @@
 Виняток (REQ-058-04): коли в адресі `tab=a11y` (знімок відкрито з вкладки «Доступність» збірки,
 `buildTestRunLocation(…, { tab: "a11y" })`) і в знімка є UI-дерево, панель починає з «Доступності».
 
+Підсвітка різниці (REQ-058-05): ефект у `TestDetailsModal` вимикає `isDiffShown`, коли
+`panelTab === "a11y"`. Він залежить і від знімка й оголошений після скидання стану при зміні знімка
+(яке вмикає різницю), тож на наступному знімку цієї вкладки різниця теж вимкнена. Повернення на
+«Зміни» її не вмикає: QA вирішує сам.
+
+Виділена знахідка (REQ-058-06): `litLast` в `_helpers/overlayRect.helper.ts` ставить виділені рамки
+в кінець (поверх) і позначає решту притухлими; `DrawArea` малює притухлі з прозорістю
+`DIMMED_FRAME` (0,3), а виділену — лінією 5 px і заливкою 25 %. Так поводяться всі рамки на
+знімку (правила, баги, елементи), бо причина та сама: виділене губиться серед однакових рамок.
+
 ## Компоненти
 
 | Компонент | Шлях | Роль |
@@ -36,3 +46,5 @@
 | REQ-058-02 | `frontend/integration_tests/test/a11yProblems.spec.ts › shows the frames on the screenshot only on the Accessibility tab, which comes after Changes` |
 | REQ-058-03 | `frontend/integration_tests/test/a11yProblems.spec.ts › shows the frames on the screenshot only on the Accessibility tab, which comes after Changes` |
 | REQ-058-04 | `frontend/integration_tests/test/a11yProblems.spec.ts › opens a screen from the build's Accessibility tab on its problems` |
+| REQ-058-05 | `frontend/integration_tests/test/a11yProblems.spec.ts › turns Highlight diff off on the Accessibility tab, so the red diff does not cover the frames` |
+| REQ-058-06 | `frontend/integration_tests/test/a11yProblems.spec.ts › dims the other frames while a problem is pointed at, so its frame stands out`; `frontend/src/_helpers/overlayRect.helper.test.ts › litLast` |

@@ -130,7 +130,7 @@ const initService = async ({
           find: testVariationFindMock,
           getDetails: testVariationGetDetailsMock,
           update: testVariationUpdateMock,
-          // the baseline's feature (067) is TestVariationsService's own concern
+          // the baseline's feature (068) is TestVariationsService's own concern
           keepFeature: jest.fn((variation) => Promise.resolve(variation)),
         },
       },

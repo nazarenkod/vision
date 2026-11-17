@@ -34,7 +34,7 @@ interface IProps {
   customTagsState: FilterState;
   testStatusState?: FilterState;
   branchNameState?: FilterState;
-  // baselines only: the feature the test named (067)
+  // baselines only: the feature the test named (068)
   featureState?: FilterState;
 }
 

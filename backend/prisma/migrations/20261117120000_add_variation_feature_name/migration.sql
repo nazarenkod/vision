@@ -1,4 +1,4 @@
--- The feature of a baseline (067): one nullable column without a default (ADR-0003).
+-- The feature of a baseline (068): one nullable column without a default (ADR-0003).
 -- Postgres adds it without rewriting the table.
 ALTER TABLE "TestVariation" ADD COLUMN "featureName" TEXT;
 

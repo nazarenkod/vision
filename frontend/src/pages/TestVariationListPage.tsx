@@ -88,7 +88,7 @@ const TestVariationListPage: React.FunctionComponent = () => {
     setFilteredItems(
       testVariations.filter(
         (t) =>
-          matchesBaselineQuery(t, query) && // by name or feature (067)
+          matchesBaselineQuery(t, query) && // by name or feature (068)
           (feature ? t.featureName?.trim() === feature : true) && // by feature
           (branchName ? t.branchName === branchName : true) && // by branchName
           (os ? t.os === os : true) && // by OS
@@ -131,7 +131,7 @@ const TestVariationListPage: React.FunctionComponent = () => {
     () => groupByCheck(filteredItems),
     [filteredItems],
   );
-  // a page holds as many cards as before; feature frames do not count (REQ-067-08)
+  // a page holds as many cards as before; feature frames do not count (REQ-068-08)
   const sections = React.useMemo(() => baselineSections(groups), [groups]);
   const pageCount = Math.max(1, Math.ceil(groups.length / pageSize));
   const currentPage = Math.min(page, pageCount);

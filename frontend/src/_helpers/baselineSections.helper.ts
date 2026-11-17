@@ -1,7 +1,7 @@
 import { TestVariation } from "../types";
 
 /**
- * The checks of one feature on the baselines page (067), or, with no feature,
+ * The checks of one feature on the baselines page (068), or, with no feature,
  * the checks that belong to none: those are plain cards, not a group.
  * `count` is the whole section's, also on a page that shows only part of it.
  */
@@ -16,7 +16,7 @@ const featureOf = (variation: TestVariation) =>
 
 /**
  * The feature of a check card: the one of its device whose baseline changed
- * last. A device without a feature has no say (REQ-067-07).
+ * last. A device without a feature has no say (REQ-068-07).
  */
 export function featureOfCheck(devices: TestVariation[]): string | null {
   const named = devices.filter((device) => featureOf(device));
@@ -27,15 +27,15 @@ export function featureOfCheck(devices: TestVariation[]): string | null {
   return featureOf(latest);
 }
 
-// "Конверти" and "конверти" stay two features: the test names them (067)
+// "Конверти" and "конверти" stay two features: the test names them (068)
 const byName = (a: string, b: string) =>
   a.localeCompare(b, undefined, { sensitivity: "base" }) ||
   (a < b ? -1 : a > b ? 1 : 0);
 
 /**
  * Features by name, ignoring case, then the checks without a feature
- * (REQ-067-04, 05, 13). With no feature anywhere, one plain section: the
- * page as it was (REQ-067-06).
+ * (REQ-068-04, 05, 13). With no feature anywhere, one plain section: the
+ * page as it was (REQ-068-06).
  */
 export function baselineSections(checks: TestVariation[][]): BaselineSection[] {
   const byFeature = new Map<string, TestVariation[][]>();
@@ -59,7 +59,7 @@ export function baselineSections(checks: TestVariation[][]): BaselineSection[] {
 
 /**
  * One page of cards, counted as without sections; a section the page cuts
- * shows again on the next one, with its whole count (REQ-067-08).
+ * shows again on the next one, with its whole count (REQ-068-08).
  */
 export function pageOfSections(
   sections: BaselineSection[],
@@ -84,7 +84,7 @@ export function pageOfSections(
 
 /**
  * Search on the baselines page: the check's name as before, or its feature's
- * name, ignoring case (REQ-067-11).
+ * name, ignoring case (REQ-068-11).
  */
 export function matchesBaselineQuery(
   variation: TestVariation,

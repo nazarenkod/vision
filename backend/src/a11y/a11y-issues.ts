@@ -1,6 +1,7 @@
 import { A11yIssueState, A11yProblem } from '@prisma/client';
 import { A11yReport, A11yRule, A11yViolation } from './a11y.types';
 import { facetsFromKey, facetsOf, problemCode, problemKeyOf, ProblemFacets } from './a11y-problems';
+import { decodeCharRefs } from '../ui-tree/ui-tree.parser';
 
 export type A11yIssueStatus = 'reported' | 'ignored';
 // a bug for the problem is being created right now
@@ -187,7 +188,10 @@ export interface A11yFinding {
 
 /** What people know the element by: what a screen reader says, else its id without the package, else its class. */
 export function elementNameOf(violation: Pick<A11yViolation, 'label' | 'resourceId' | 'className'>): string {
-  const label = violation.label?.trim();
+  // the label is kept as the tree has it (keys depend on it); people read it decoded, on one line
+  const label = decodeCharRefs(violation.label ?? '')
+    .replace(/\s+/g, ' ')
+    .trim();
   if (label) return label;
   const id = violation.resourceId?.split(':id/').pop()?.trim();
   if (id) return id;

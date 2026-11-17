@@ -221,7 +221,7 @@ const CARD_GRID = {
 } as const;
 
 /**
- * A feature's checks in a frame with its name and count (067); the checks
+ * A feature's checks in a frame with its name and count (068); the checks
  * without a feature are plain cards after the frames, in no group of their
  * own. Frames do not collapse, as change groups do not (059).
  */

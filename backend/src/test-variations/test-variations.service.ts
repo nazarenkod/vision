@@ -82,7 +82,7 @@ export class TestVariationsService {
   }
 
   /**
-   * The baseline keeps the feature the test named last (067). Only a baseline
+   * The baseline keeps the feature the test named last (068). Only a baseline
    * of the snapshot's own branch: a feature branch comparing with the main
    * branch's baseline has none of its own yet. The date stays as it was, since
    * `find` chooses between the branch's and the main branch's baseline by it,
@@ -157,7 +157,7 @@ export class TestVariationsService {
         project: { connect: { id: createTestRequestDto.projectId } },
         testRuns: testRunId ? { connect: { id: testRunId } } : undefined,
         branchName: createTestRequestDto.branchName,
-        // a new baseline starts in the feature the test named (067); a merge passes the source's on
+        // a new baseline starts in the feature the test named (068); a merge passes the source's on
         featureName: createTestRequestDto.featureName?.trim() || null,
         ...getTestVariationUniqueData(createTestRequestDto),
       },
@@ -242,7 +242,7 @@ export class TestVariationsService {
         if (destintionBranchTestVariation?.branchName !== toBranch) {
           destintionBranchTestVariation = await this.create({ createTestRequestDto });
         } else {
-          // the merged snapshot names the source's feature, as a test's would (067)
+          // the merged snapshot names the source's feature, as a test's would (068)
           destintionBranchTestVariation = await this.keepFeature(destintionBranchTestVariation, createTestRequestDto);
         }
 

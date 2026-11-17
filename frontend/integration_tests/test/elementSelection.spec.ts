@@ -341,6 +341,40 @@ test("shows actions next to a clicked element", async ({
   );
 });
 
+test("puts the actions away on a click outside them and leaves the element in view", async ({
+  openProjectPage,
+  page,
+}) => {
+  await openReview(page, openProjectPage);
+  await startSelecting(page);
+  await clickElement(page, pay);
+
+  // beside the element, not over it (REQ-067-01)
+  const popover = page.getByTestId("elementPopover");
+  const box = await popover.boundingBox();
+  const corner = await at(page, "current", pay.bounds.x, pay.bounds.y);
+  const end = await at(
+    page,
+    "current",
+    pay.bounds.x + pay.bounds.width,
+    pay.bounds.y + pay.bounds.height,
+  );
+  const overlaps =
+    box.x < end.x &&
+    box.x + box.width > corner.x &&
+    box.y < end.y &&
+    box.y + box.height > corner.y;
+  expect(overlaps).toBe(false);
+
+  // anywhere outside the popover and the screenshots puts it away (REQ-067-08)
+  await page
+    .locator(".MuiDialog-root")
+    .getByText("test run name unresolved")
+    .click();
+  await expect(popover).toHaveCount(0);
+  await expect(page.getByTestId("selectingBar")).toBeVisible();
+});
+
 test("ignores a clicked element and compares again", async ({
   openProjectPage,
   page,
@@ -1047,7 +1081,11 @@ test("warns when a nameless element hangs on a text", async ({
   // found through an id, nothing to warn about
   await page.keyboard.press("Escape");
   await clickElement(page, plus);
-  await expect(popover).toContainText("ImageView · inside card");
+  // the ways to find it say how; the title only names it (REQ-067-02)
+  await expect(popover.getByTestId("elementTitle")).toHaveText("ImageView");
+  await expect(popover.getByTestId("elementVariant-down")).toHaveText(
+    "inside card",
+  );
   await expect(popover.getByTestId("elementTextAnchor")).toHaveCount(0);
 });
 
@@ -1069,7 +1107,9 @@ test("ignores a nameless element with the chosen selector", async ({
     "aria-checked",
     "true",
   );
-  await expect(popover).toContainText("ImageView · parent of plus_icon");
+  await expect(popover.getByTestId("elementVariant-up")).toContainText(
+    "parent of plus_icon",
+  );
   await page.keyboard.press("i");
 
   await expect

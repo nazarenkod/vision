@@ -1,4 +1,4 @@
-// The feature of a baseline (067): the test names it with every snapshot, and the
+// The feature of a baseline (068): the test names it with every snapshot, and the
 // baselines page groups by it. It is not part of the check's identity.
 
 /**

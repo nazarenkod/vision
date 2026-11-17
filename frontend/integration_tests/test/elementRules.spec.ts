@@ -334,6 +334,15 @@ test("shows a change the pixels miss once, as before and after", async ({
   await withStructure(page, {
     ...structure,
     size: { width: 1080, height: 2400 },
+    // a change the pixels show too, so the rows need telling apart
+    regions: [
+      {
+        region: { x: 0, y: 100, width: 50, height: 20 },
+        key: "next",
+        element: 'Button "Next"',
+        resourceId: null,
+      },
+    ],
     changes: [label, disabled],
     invisible: [label, disabled],
   });
@@ -345,10 +354,11 @@ test("shows a change the pixels miss once, as before and after", async ({
   );
   await expect(page.getByText(label.before)).toHaveCount(1);
   const rows = page.getByTestId("changedArea");
-  await expect(rows).toHaveCount(2);
-  // each such row carries the strip's mark (REQ-069-03)
+  await expect(rows).toHaveCount(3);
+  // each such row carries the strip's mark, the visible one does not (REQ-069-03)
+  await expect(rows.first().getByTestId("invisibleMark")).toHaveCount(0);
   await expect(rows.getByTestId("invisibleMark")).toHaveCount(2);
-  const first = rows.first();
+  const first = rows.nth(1);
   await expect(first.getByTestId("changedWord")).toHaveText([
     "*8353",
     "+5.00",
@@ -356,9 +366,36 @@ test("shows a change the pixels miss once, as before and after", async ({
     "+3.00",
   ]);
   // a change that is not a text keeps its own line, and the mark (REQ-069-06)
-  await expect(rows.nth(1).getByTestId("changedAreaWhat")).toHaveText(
+  await expect(rows.nth(2).getByTestId("changedAreaWhat")).toHaveText(
     "State: enabled → disabled",
   );
+});
+
+test("marks no row when the pixels miss every change", async ({
+  openProjectPage,
+  page,
+}) => {
+  const label = {
+    kind: "label" as const,
+    key: "top-up",
+    element: 'Button "Top up"',
+    resourceId: "com.bank:id/activity_list_item",
+    before: "From card *8353 +5.00",
+    after: "From card *8352 +3.00",
+    bounds: { x: 0, y: 1200, width: 1080, height: 120 },
+  };
+  await withStructure(page, {
+    ...structure,
+    size: { width: 1080, height: 2400 },
+    changes: [label],
+    invisible: [label],
+  });
+  await openProjectPage(project.id, build.id, testRun.id);
+  await unfoldPanel(page);
+  // the strip says it for all of them; a mark on each row would repeat it (REQ-069-10)
+  await expect(page.getByTestId("invisibleStrip")).toBeVisible();
+  await expect(page.getByTestId("changedArea")).toHaveCount(1);
+  await expect(page.getByTestId("invisibleMark")).toHaveCount(0);
 });
 
 test("leaves the strip out when the pixels show every change", async ({

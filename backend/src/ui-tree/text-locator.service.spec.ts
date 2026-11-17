@@ -68,11 +68,26 @@ describe('TextLocatorService', () => {
       super(staticService);
       this.timeoutMs = 50;
     }
+    protected ready(): Promise<unknown> {
+      return Promise.resolve();
+    }
     protected recognize(): Promise<RecognisedWord[]> {
       this.calls++;
       return this.words();
     }
   }
+
+  it('times an element from when its recognition starts, not while it waits behind others', async () => {
+    const slow = () => new Promise<RecognisedWord[]>((resolve) => setTimeout(() => resolve([]), 30));
+    const locator = new Stubbed(slow);
+    // three runs at once, 30 ms each against a 50 ms limit: the last waits 60 ms in the queue
+    const runs = await Promise.all(
+      [0, 1, 2].map((i) => locator.locate([candidate(`row${i}`, { x: 0, y: i, width: 10, height: 10 })], images))
+    );
+    expect(runs.map((found, i) => found.get(locatedKey('v', `row${i}`)))).toEqual(
+      [0, 1, 2].map(() => ({ reason: 'not-found-current', missing: '1051' }))
+    );
+  });
 
   it('gives up on an element after five seconds', async () => {
     const locator = new Stubbed(() => new Promise(() => undefined));

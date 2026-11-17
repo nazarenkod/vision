@@ -80,6 +80,30 @@ export function textMask(png: PNG, threshold = INK_THRESHOLD): PNG {
   return out;
 }
 
+/** A black and white mask made smaller by a factor of at most 1: a pixel is black when most of its block was. */
+export function shrinkMask(mask: PNG, scale: number): PNG {
+  if (scale >= 1) return mask;
+  const width = Math.max(1, Math.round(mask.width * scale));
+  const height = Math.max(1, Math.round(mask.height * scale));
+  const out = new PNG({ width, height });
+  for (let y = 0; y < height; y++) {
+    const fromY = Math.floor(y / scale);
+    const toY = Math.min(mask.height, Math.max(fromY + 1, Math.floor((y + 1) / scale)));
+    for (let x = 0; x < width; x++) {
+      const fromX = Math.floor(x / scale);
+      const toX = Math.min(mask.width, Math.max(fromX + 1, Math.floor((x + 1) / scale)));
+      let sum = 0;
+      for (let yy = fromY; yy < toY; yy++)
+        for (let xx = fromX; xx < toX; xx++) sum += mask.data[(yy * mask.width + xx) * 4];
+      const value = sum / ((toY - fromY) * (toX - fromX)) < 160 ? 0 : 255;
+      const i = (y * width + x) * 4;
+      out.data[i] = out.data[i + 1] = out.data[i + 2] = value;
+      out.data[i + 3] = 255;
+    }
+  }
+  return out;
+}
+
 /** The part of a picture inside a rectangle, clamped to the picture. */
 export function cropPng(png: PNG, rect: Rect): PNG {
   const x0 = Math.max(0, Math.round(rect.x));

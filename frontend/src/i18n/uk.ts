@@ -1397,8 +1397,7 @@ export const uk: Messages = {
   "select.leftOutTimeout": "не вдалося знайти шматки вчасно",
   "select.shownText": "Текст на екрані: «{text}»",
   "select.markInIt": "Позначати в ньому",
-  "select.variableWordsOnly":
-    "Перевіряється лише, що тут є слово — майже як «Ігнорувати»",
+  "select.variableAnyWord": "Тут може бути будь-яке слово.",
   "select.change": "Змінити",
   "selection.eachRule": "по правилу на кожен",
   "selection.clear": "Очистити",

@@ -6,7 +6,7 @@ import { PNG } from 'pngjs';
 import { createWorker, OEM, Worker } from 'tesseract.js';
 import { StaticService } from '../static/static.service';
 import { LocateCandidate, Located, locatedKey } from './comparison-inputs';
-import { cropPng, placeAreas, RecognisedWord, textMask } from './text-locate';
+import { cropPng, placeAreas, RecognisedWord, shrinkMask, textMask } from './text-locate';
 import { Rect } from './ui-tree.types';
 
 // how long the marked pieces of one element may be looked for, both screenshots together (REQ-071-07)
@@ -15,6 +15,8 @@ export const LOCATE_TIMEOUT_MS = 5000;
 export const MAX_LOCATED_ELEMENTS = 20;
 // screenshots never change under a name, so what was found stays true; a reopened run need not look again
 const CACHE_SIZE = 500;
+// widest picture recognition gets: a 1440 px row is halved, its text still ~20 px tall, read 3× sooner
+const MAX_WIDTH = 720;
 
 const LANGUAGES = ['ukr', 'eng'];
 
@@ -75,14 +77,15 @@ export class TextLocatorService implements OnModuleDestroy {
         result.set(key, { reason: 'timeout' });
         continue;
       }
-      const deadline = Date.now() + this.timeoutMs;
+      // the time spent recognising both screenshots of this element, not waiting for others
+      const budget = { left: this.timeoutMs };
       try {
-        const now = await this.side(images.current, candidate.current, picture, deadline);
+        const now = await this.side(images.current, candidate.current, picture, budget);
         if ('missing' in now) {
           result.set(key, { reason: 'not-found-current', missing: now.missing });
           continue;
         }
-        const then = await this.side(images.baseline, candidate.baseline, picture, deadline);
+        const then = await this.side(images.baseline, candidate.baseline, picture, budget);
         result.set(
           key,
           'missing' in then
@@ -101,32 +104,52 @@ export class TextLocatorService implements OnModuleDestroy {
     imageName: string,
     element: LocateCandidate['current'],
     picture: (name: string) => Promise<PNG>,
-    deadline: number
+    budget: { left: number }
   ): Promise<SideResult> {
     const { bounds } = element;
     const cacheKey = JSON.stringify([imageName, bounds, element.text, element.places]);
     const known = this.cache.get(cacheKey);
     if (known) return known;
+    if (budget.left <= 0) throw new TimedOut();
     const crop = cropPng(await picture(imageName), bounds);
+    // a phone screenshot's text is far taller than recognition needs: smaller reads as well, much sooner
+    const scale = Math.min(1, MAX_WIDTH / crop.width);
+    const mask = shrinkMask(textMask(crop), scale);
     // a mask of black and white needs no compression; deflating it took longer than reading it
-    const mask = PNG.sync.write(textMask(crop), { deflateLevel: 0, filterType: 0 });
-    const words = await this.inTime(this.recognize(mask), deadline);
+    const { words, ms } = await this.run(PNG.sync.write(mask, { deflateLevel: 0, filterType: 0 }), budget.left);
+    budget.left -= ms;
+    const back = (value: number) => Math.round(value / scale);
     const found = placeAreas(
       element.text,
       element.places,
       words.map((word) => ({
         text: word.text,
         bbox: {
-          x0: word.bbox.x0 + bounds.x,
-          y0: word.bbox.y0 + bounds.y,
-          x1: word.bbox.x1 + bounds.x,
-          y1: word.bbox.y1 + bounds.y,
+          x0: back(word.bbox.x0) + bounds.x,
+          y0: back(word.bbox.y0) + bounds.y,
+          x1: back(word.bbox.x1) + bounds.x,
+          y1: back(word.bbox.y1) + bounds.y,
         },
       }))
     );
     if (this.cache.size >= CACHE_SIZE) this.cache.delete(this.cache.keys().next().value as string);
     this.cache.set(cacheKey, found);
     return found;
+  }
+
+  /**
+   * One recognition at a time, timed from when it starts: waiting behind the
+   * other runs of a build, or for the worker to start, is not this element's time.
+   */
+  private run(png: Buffer, limitMs: number): Promise<{ words: RecognisedWord[]; ms: number }> {
+    const job = this.queue.then(async () => {
+      await this.ready();
+      const started = Date.now();
+      const words = await this.inTime(this.recognize(png), started + limitMs);
+      return { words, ms: Date.now() - started };
+    });
+    this.queue = job.catch(() => undefined);
+    return job;
   }
 
   private async inTime<T>(work: Promise<T>, deadline: number): Promise<T> {
@@ -145,19 +168,20 @@ export class TextLocatorService implements OnModuleDestroy {
     }
   }
 
+  /** The worker, started if it is not yet. */
+  protected ready(): Promise<unknown> {
+    return this.startWorker();
+  }
+
   /** The words recognition finds in a picture, with their bounds in it. */
-  protected recognize(png: Buffer): Promise<RecognisedWord[]> {
-    const job = this.queue.then(async () => {
-      const worker = await this.startWorker();
-      const { data } = await worker.recognize(png, {}, { blocks: true });
-      return (data.blocks ?? []).flatMap((block) =>
-        block.paragraphs.flatMap((paragraph) =>
-          paragraph.lines.flatMap((line) => line.words.map(({ text, bbox }) => ({ text, bbox })))
-        )
-      );
-    });
-    this.queue = job.catch(() => undefined);
-    return job;
+  protected async recognize(png: Buffer): Promise<RecognisedWord[]> {
+    const worker = await this.startWorker();
+    const { data } = await worker.recognize(png, {}, { blocks: true });
+    return (data.blocks ?? []).flatMap((block) =>
+      block.paragraphs.flatMap((paragraph) =>
+        paragraph.lines.flatMap((line) => line.words.map(({ text, bbox }) => ({ text, bbox })))
+      )
+    );
   }
 
   private startWorker(): Promise<Worker> {

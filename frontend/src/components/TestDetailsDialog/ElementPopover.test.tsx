@@ -396,10 +396,10 @@ describe("ElementPopover: what a variable text leaves out (spec 066)", () => {
     );
   });
 
-  it("warns on a saved rule that checks words only", () => {
+  it("says plainly that any word may stand in a saved rule's whole-word place", () => {
     popover({ element: history, rule: historyRule });
     expect(screen.getByTestId("variableWordsOnly")).toHaveTextContent(
-      "Only checks that a word is here — almost like Ignore",
+      "Any word may stand here.",
     );
   });
 
@@ -442,14 +442,13 @@ describe("ElementPopover: what a variable text leaves out (spec 066)", () => {
     );
   });
 
-  it("shows the baseline warning before the words-only one", () => {
-    popover({ element: shown, other: { side: "baseline", text: "12:00" } });
+  it("says any word may stand there instead of the rest being exact", () => {
+    popover({ element: shown });
     fireEvent.click(screen.getByTestId("elementAction-variable"));
     fireEvent.click(screen.getByText("History"));
-    const other = screen.getByTestId("variableOther");
-    const words = screen.getByTestId("variableWordsOnly");
-    expect(
-      other.compareDocumentPosition(words) & Node.DOCUMENT_POSITION_FOLLOWING,
-    ).toBeTruthy();
+    expect(screen.getByTestId("variableHint")).toHaveTextContent(
+      "Any word may stand here.",
+    );
+    expect(screen.queryByTestId("variableWordsOnly")).toBeNull();
   });
 });

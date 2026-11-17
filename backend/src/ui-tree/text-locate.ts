@@ -14,28 +14,89 @@ export interface RecognisedWord {
   bbox: { x0: number; y0: number; x1: number; y1: number };
 }
 
-// how far a pixel's brightness may differ from its row's before it counts as ink
+// how far a pixel's brightness may differ from its background before it counts as ink
 const INK_THRESHOLD = 40;
+// rows above and below whose pixels decide a row's background: a stroke of text is thinner
+const BAND = 15;
 
 /**
- * Black where a pixel stands out from the most common brightness of its own
- * pixel row, white elsewhere: grey small print and text on a coloured banner
- * come out as black on white, which recognition reads far better (on the
- * bank's history, the grey date line is not found at all without it).
+ * Black where a pixel stands out from the background around it, white
+ * elsewhere, with long straight lines taken out: grey small print and text on
+ * a coloured banner come out as black on white, which recognition reads far
+ * better (the grey date line of the bank's history is not found without it).
+ * The background of a row is the commonest brightness in a band of rows round
+ * it, so a row crossing a word's strokes keeps white as its background; the
+ * frame of a button is no text, and recognition reads none inside one.
  */
 export function textMask(png: PNG, threshold = INK_THRESHOLD): PNG {
   const { width, height, data } = png;
   const out = new PNG({ width, height });
-  const row = new Float64Array(width);
+  const lum = new Float64Array(width * height);
+  const bins = Array.from({ length: height }, () => new Uint32Array(32));
   for (let y = 0; y < height; y++) {
     for (let x = 0; x < width; x++) {
       const i = (y * width + x) * 4;
-      row[x] = 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
+      const value = 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
+      lum[y * width + x] = value;
+      bins[y][Math.min(31, Math.floor(value / 8))]++;
     }
-    const background = Float64Array.from(row).sort()[width >> 1];
+  }
+  const ink = new Uint8Array(width * height);
+  for (let y = 0; y < height; y++) {
+    const band = new Uint32Array(32);
+    for (let k = Math.max(0, y - BAND); k <= Math.min(height - 1, y + BAND); k++) {
+      for (let b = 0; b < 32; b++) band[b] += bins[k][b];
+    }
+    let common = 0;
+    for (let b = 1; b < 32; b++) if (band[b] > band[common]) common = b;
+    const background = common * 8 + 4;
+    for (let x = 0; x < width; x++) ink[y * width + x] = Math.abs(lum[y * width + x] - background) > threshold ? 1 : 0;
+  }
+  // a run of ink across half the width or most of the height is a frame or a rule, not a letter
+  const line = new Uint8Array(width * height);
+  for (let y = 0; y < height; y++) {
+    for (let x = 0, run = 0; x <= width; x++) {
+      if (x < width && ink[y * width + x]) run++;
+      else {
+        if (run > width / 2) for (let k = x - run; k < x; k++) line[y * width + k] = 1;
+        run = 0;
+      }
+    }
+  }
+  for (let x = 0; x < width; x++) {
+    for (let y = 0, run = 0; y <= height; y++) {
+      if (y < height && ink[y * width + x]) run++;
+      else {
+        if (run > height * 0.6) for (let k = y - run; k < y; k++) line[k * width + x] = 1;
+        run = 0;
+      }
+    }
+  }
+  for (let i = 0; i < width * height; i++) {
+    const value = ink[i] && !line[i] ? 0 : 255;
+    out.data[i * 4] = out.data[i * 4 + 1] = out.data[i * 4 + 2] = value;
+    out.data[i * 4 + 3] = 255;
+  }
+  return out;
+}
+
+/** A black and white mask made smaller by a factor of at most 1: a pixel is black when most of its block was. */
+export function shrinkMask(mask: PNG, scale: number): PNG {
+  if (scale >= 1) return mask;
+  const width = Math.max(1, Math.round(mask.width * scale));
+  const height = Math.max(1, Math.round(mask.height * scale));
+  const out = new PNG({ width, height });
+  for (let y = 0; y < height; y++) {
+    const fromY = Math.floor(y / scale);
+    const toY = Math.min(mask.height, Math.max(fromY + 1, Math.floor((y + 1) / scale)));
     for (let x = 0; x < width; x++) {
+      const fromX = Math.floor(x / scale);
+      const toX = Math.min(mask.width, Math.max(fromX + 1, Math.floor((x + 1) / scale)));
+      let sum = 0;
+      for (let yy = fromY; yy < toY; yy++)
+        for (let xx = fromX; xx < toX; xx++) sum += mask.data[(yy * mask.width + xx) * 4];
+      const value = sum / ((toY - fromY) * (toX - fromX)) < 160 ? 0 : 255;
       const i = (y * width + x) * 4;
-      const value = Math.abs(row[x] - background) > threshold ? 0 : 255;
       out.data[i] = out.data[i + 1] = out.data[i + 2] = value;
       out.data[i + 3] = 255;
     }
@@ -57,11 +118,26 @@ export function cropPng(png: PNG, rect: Rect): PNG {
 }
 
 // letters recognition mixes up, made one; signs around a word are not what tells two words apart
+// Latin letters that look like Cyrillic ones: recognition reads "Історія" as "IcTopis"
+const LOOKALIKE: Record<string, string> = {
+  a: 'а',
+  b: 'в',
+  c: 'с',
+  e: 'е',
+  h: 'н',
+  k: 'к',
+  m: 'м',
+  o: 'о',
+  p: 'р',
+  t: 'т',
+  x: 'х',
+  y: 'у',
+};
 const fold = (text: string) =>
   text
     .toLowerCase()
     .replace(/[.,:;*+\-−'"«»()]/g, '')
-    .replace(/[oо]/g, 'о')
+    .replace(/[abcehkmoptxy]/g, (letter) => LOOKALIKE[letter])
     .replace(/[il1|іI]/g, '1');
 
 function distance(a: string, b: string): number {

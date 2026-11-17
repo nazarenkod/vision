@@ -1,5 +1,5 @@
 import { PNG } from 'pngjs';
-import { alignPlaces, placeAreas, RecognisedWord, textMask } from './text-locate';
+import { alignPlaces, placeAreas, RecognisedWord, shrinkMask, textMask } from './text-locate';
 import { placesOf, TextPart } from './variable-text';
 
 // "Зі своєї картки *1050 +1.01 UAH 17 серпня, 13:59" with the number, sum and time marked
@@ -96,18 +96,42 @@ describe('placeAreas', () => {
 });
 
 describe('textMask', () => {
-  it('makes grey text on white and white text on a coloured band black, the backgrounds white', () => {
-    const png = new PNG({ width: 10, height: 2 });
-    const paint = (x: number, y: number, [r, g, b]: number[]) => png.data.set([r, g, b, 255], (y * 10 + x) * 4);
-    for (let x = 0; x < 10; x++) {
-      paint(x, 0, [255, 255, 255]);
-      paint(x, 1, [200, 210, 255]);
+  const picture = (width: number, height: number, colour: (x: number, y: number) => number[]) => {
+    const png = new PNG({ width, height });
+    for (let y = 0; y < height; y++) {
+      for (let x = 0; x < width; x++) png.data.set([...colour(x, y), 255], (y * width + x) * 4);
     }
-    paint(3, 0, [153, 153, 153]);
-    paint(6, 1, [255, 255, 255]);
-    const mask = textMask(png);
-    const at = (x: number, y: number) => mask.data[(y * 10 + x) * 4];
-    expect([at(3, 0), at(4, 0), at(6, 1), at(5, 1)]).toEqual([0, 255, 0, 255]);
+    return png;
+  };
+  const at = (mask: PNG, x: number, y: number) => mask.data[(y * mask.width + x) * 4];
+
+  it('makes grey text on white and white text on a coloured band black, the backgrounds white', () => {
+    const mask = textMask(
+      picture(40, 80, (x, y) =>
+        x === 3 && y === 10
+          ? [153, 153, 153]
+          : y < 40
+            ? [255, 255, 255]
+            : x === 6 && y === 60
+              ? [255, 255, 255]
+              : [200, 210, 255]
+      )
+    );
+    expect([at(mask, 3, 10), at(mask, 4, 10), at(mask, 6, 60), at(mask, 5, 60)]).toEqual([0, 255, 0, 255]);
+  });
+
+  it('keeps white the background of a row that crosses the strokes of a word', () => {
+    // more than half of this row is ink, as where the letters of a short word meet
+    const mask = textMask(
+      picture(40, 40, (x, y) => (y === 20 && x % 3 !== 0 && x < 36 ? [76, 175, 80] : [255, 255, 255]))
+    );
+    expect([at(mask, 2, 20), at(mask, 3, 20), at(mask, 38, 20), at(mask, 30, 5)]).toEqual([0, 255, 255, 255]);
+  });
+
+  it('takes out the frame of a button', () => {
+    const framed = (x: number, y: number) => x < 2 || y < 2 || x > 77 || y > 37 || (x === 40 && y === 20);
+    const mask = textMask(picture(80, 40, (x, y) => (framed(x, y) ? [76, 175, 80] : [255, 255, 255])));
+    expect([at(mask, 0, 20), at(mask, 40, 0), at(mask, 40, 20)]).toEqual([255, 255, 0]);
   });
 });
 
@@ -134,5 +158,18 @@ describe('alignPlaces', () => {
 
   it('cannot tell a place in a row of another kind', () => {
     expect(alignPlaces(now.text, now.places, 'Повернення коштів')).toBeNull();
+  });
+});
+
+describe('shrinkMask', () => {
+  it('makes a mask smaller, keeping a stroke black', () => {
+    const mask = new PNG({ width: 40, height: 20 });
+    for (let i = 0; i < 40 * 20; i++) mask.data.set([255, 255, 255, 255], i * 4);
+    // a stroke two pixels wide
+    for (let y = 0; y < 20; y++) for (const x of [10, 11]) mask.data.set([0, 0, 0, 255], (y * 40 + x) * 4);
+    const small = shrinkMask(mask, 0.5);
+    expect([small.width, small.height]).toEqual([20, 10]);
+    expect([small.data[(5 * 20 + 5) * 4], small.data[(5 * 20 + 15) * 4]]).toEqual([0, 255]);
+    expect(shrinkMask(mask, 1)).toBe(mask);
   });
 });

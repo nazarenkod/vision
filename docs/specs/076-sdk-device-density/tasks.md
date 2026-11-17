@@ -9,4 +9,4 @@
 - [x] **T3** (REQ-076-06) README SDK: приклад з Appium; `AGENTS.md` і `sdk-java/AGENTS.md` —
   перелік змін SDK.
 - [x] **T4** Документація: статус spec → `Implemented`, «Перевірка вимог» заповнена.
-- [ ] **T5** `/verify`.
+- [x] **T5** `/verify`: свої тести зелені; падіння, що були до зміни, — у PR.

@@ -6,7 +6,7 @@
 | Власник | Дмитро Назаренко |
 | Оновлено | 2026-11-05 |
 | Дизайн | [design.md](design.md) |
-| Пов'язане | [аудит](../../../audit/security-audit-2026-11.md) S-2, S-3; [ADR-0025](../../decisions/0025-admin-made-accounts-personal-tokens.md) (лише особисті токени Jira), [013](../013-backups-and-secrets/spec.md) (бекапи без секретів); змінює [018](../018-ui-redesign/spec.md): REQ-018-68 (ключ API видно лише при створенні) |
+| Пов'язане | аудит безпеки 2026-11 S-2, S-3; [ADR-0025](../../decisions/0025-admin-made-accounts-personal-tokens.md) (лише особисті токени Jira), [013](../013-backups-and-secrets/spec.md) (бекапи без секретів); змінює [018](../018-ui-redesign/spec.md): REQ-018-68 (ключ API видно лише при створенні) |
 
 ## Контекст і проблема
 

@@ -90,7 +90,7 @@ registry.npmjs.org або binaries.prisma.sh) задайте в `.env.demo` `VIS
 ## 2. Код
 
 ```bash
-git clone https://github.com/nazarenkod/vision.git
+git clone <адреса репозиторію Vision> vision
 ```
 
 ```bash

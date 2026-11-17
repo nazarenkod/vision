@@ -75,7 +75,7 @@ Vision сам слухає HTTP. **Для робочої установки — 
 | Gemini (`generativelanguage.googleapis.com`) | лише на вимогу людини | ні; лише з погодженням ІБ |
 
 Телеметрію вимкнено під час збирання (`CHECKPOINT_DISABLE=1`, `SCARF_ANALYTICS=false`); у роботі
-Vision нікуди, крім перелічених адрес, не звертається ([аудит](../../audit/security-audit-2026-11.md#вихідні-зєднання)).
+Vision нікуди, крім перелічених адрес, не звертається.
 
 Проксі, що переписує TLS: його CA — у `VISION_EXTRA_CA_FILE` (PEM). Перевірку TLS не вимикаємо.
 

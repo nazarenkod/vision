@@ -24,10 +24,14 @@ def clone_with_origin(url=None):
 
 NO_REPOSITORY = clone_with_origin()
 
+# the tests own their config, so changing .claude/repository.json for another git host keeps them green
+TEST_CONFIG = pathlib.Path(tempfile.mkdtemp()) / "repository.json"
+TEST_CONFIG.write_text(json.dumps({"pushRemote": "vision", "repository": "git.vision.test/qa/vision"}))
 
-def run(command, tool="Bash", cwd=NO_REPOSITORY, config=None):
+
+def run(command, tool="Bash", cwd=NO_REPOSITORY, config=str(TEST_CONFIG)):
     payload = json.dumps({"tool_name": tool, "tool_input": {"command": command}, "cwd": cwd})
-    env = dict(os.environ, VISION_GUARD_CONFIG=config) if config else None
+    env = dict(os.environ, VISION_GUARD_CONFIG=config)
     done = subprocess.run([sys.executable, "-I", str(GUARD)], input=payload, capture_output=True, text=True, env=env)
     return done.returncode, done.stderr
 
@@ -77,10 +81,10 @@ class AgentGuardTest(unittest.TestCase):
         self.assertAllowed("git status && git log --oneline -3")
 
     def test_pushes_a_feature_branch_to_origin_only_where_origin_is_visions_repository(self):
-        vision = clone_with_origin("https://github.com/nazarenkod/vision")
+        vision = clone_with_origin("https://git.vision.test/qa/vision")
         upstream = clone_with_origin("https://github.com/Visual-Regression-Tracker/Visual-Regression-Tracker.git")
         self.assertAllowed("git push -u origin spec/028-allowed-devices", cwd=vision)
-        self.assertAllowed("git push origin spec/028-allowed-devices", cwd=clone_with_origin("git@github.com:nazarenkod/vision.git"))
+        self.assertAllowed("git push origin spec/028-allowed-devices", cwd=clone_with_origin("git@git.vision.test:qa/vision.git"))
         self.assertBlocked("git push -u origin spec/028-allowed-devices", "vision", cwd=upstream)
         self.assertBlocked("git push origin main", "vision", cwd=vision)
         self.assertBlocked("git push origin HEAD", "vision", cwd=vision)

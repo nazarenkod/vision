@@ -37,7 +37,7 @@
 | Нова команда, пастка, правило пакета | `AGENTS.md` пакета |
 | Нове непорушне правило | `AGENTS.md` (корінь), hook і його тест |
 | Змінилось розгортання чи налаштування для користувача | `DEPLOY.md`, за потреби `DEMO.md`; нова змінна — `docs/admin/configuration.md` |
-| Нова поставка | `CHANGELOG.md`; оновили залежності — `docs/security/third-party-licenses.md` |
+| Нова поставка | оновили залежності — `docs/security/third-party-licenses.md` |
 | Новий термін | `product/glossary.md` |
 | Перейменовано тест або файл | `python3 -I scripts/check-docs.py` покаже, де оновити |
 
@@ -56,5 +56,5 @@
 - що кожна вимога не-чернетки простежена в `design.md`, а названі тести й шляхи існують;
 - обов'язкові розділи ADR.
 
-Запускається в `/verify` і в CI (`.github/workflows/docs.yml`). У Claude Code аудит інструкцій
+Запускається в `/verify` (`python3 -I scripts/verify.py`). У Claude Code аудит інструкцій
 (суперечності, застарілі правила) дає `/doctor prompt-audit`.

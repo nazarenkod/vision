@@ -145,3 +145,21 @@ export interface PublicReport {
   language?: "en" | "uk";
   createdBy?: string | null;
 }
+
+// a problem of one check on the build's Accessibility tab (065): one line, as
+// the review shows one card
+export interface BuildA11yProblem {
+  rule: A11yRule;
+  element: string;
+  // elements with the same problem
+  count: number;
+  state: "new" | "reported" | "known";
+  jiraKey: string | null;
+  // the review selects this issue when the line is opened
+  violationId: string;
+}
+
+export interface BuildA11yProblems {
+  testRunId: string;
+  problems: BuildA11yProblem[];
+}

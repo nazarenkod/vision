@@ -1,10 +1,13 @@
 import React from "react";
-import { Box } from "@mui/material";
+import { Box, ButtonBase } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 import { useTestRunState } from "../contexts";
 import { buildTestRunLocation } from "../_helpers/route.helpers";
 import { StatusPill } from "./StatusPill";
-import { tokens } from "../theme";
+import { radius, tokens, type } from "../theme";
+import { buildOverviewService } from "../services";
+import { BuildA11yProblem } from "../types/buildOverview";
+import { RULE_LABEL } from "./ProjectForm/A11yRulesSettings";
 import { EmptyState } from "./EmptyState";
 import { DeviceTags } from "./DeviceTags";
 import { labelOf, useT } from "../i18n";
@@ -43,6 +46,31 @@ export const A11ySummary: React.FunctionComponent<{ buildId: string }> = ({
     0,
   );
   const screenshots = testRuns.filter((run) => run.buildId === buildId).length;
+
+  // each check's problems (065); asked again when a count changes: a bug filed,
+  // a false positive, a screenshot of a running build
+  const countsKey = checked
+    .map((run) => `${run.id}:${run.a11yNewCount}:${run.a11yTotalCount}`)
+    .join(",");
+  const [problems, setProblems] = React.useState<
+    Map<string, BuildA11yProblem[]>
+  >(new Map());
+  React.useEffect(() => {
+    let current = true;
+    buildOverviewService
+      .a11yProblems(buildId)
+      .then((lists) => {
+        if (current)
+          setProblems(
+            new Map(lists.map((list) => [list.testRunId, list.problems])),
+          );
+      })
+      // the counts above still say how many; the list is a bonus
+      .catch(() => current && setProblems(new Map()));
+    return () => {
+      current = false;
+    };
+  }, [buildId, countsKey]);
 
   if (!checked.length) {
     return (
@@ -106,7 +134,7 @@ export const A11ySummary: React.FunctionComponent<{ buildId: string }> = ({
             [t("a11ySummary.screenshot")],
           ]}
         />
-        {checked.map((run) => (
+        {checked.map((run) => [
           <Row
             key={run.id}
             columns={COLUMNS}
@@ -132,9 +160,115 @@ export const A11ySummary: React.FunctionComponent<{ buildId: string }> = ({
                 label={labelOf(t, "testStatus", run.status)}
               />
             </Box>
-          </Row>
-        ))}
+          </Row>,
+          <ProblemList
+            key={`${run.id}:problems`}
+            problems={problems.get(run.id) ?? []}
+            onOpen={(problem) =>
+              navigate(
+                buildTestRunLocation(buildId, run.id, {
+                  tab: "a11y",
+                  issue: problem.violationId,
+                }),
+              )
+            }
+          />,
+        ])}
       </Card>
+    </Box>
+  );
+};
+
+/**
+ * Every open problem of a check under its row (065): state, rule and element,
+ * new first; a line opens the review with that problem selected.
+ */
+const ProblemList: React.FunctionComponent<{
+  problems: BuildA11yProblem[];
+  onOpen: (problem: BuildA11yProblem) => void;
+}> = ({ problems, onOpen }) => {
+  const { t } = useT();
+  if (!problems.length) return null;
+  return (
+    <Box
+      component="ul"
+      data-testid="a11yProblems"
+      sx={{
+        listStyle: "none",
+        m: 0,
+        // lined up with the check's name; the next row draws the line under it
+        px: 1,
+        pt: 0,
+        pb: 1.25,
+        display: "flex",
+        flexDirection: "column",
+      }}
+    >
+      {problems.map((problem) => {
+        const rule = RULE_LABEL[problem.rule]
+          ? t(RULE_LABEL[problem.rule])
+          : problem.rule;
+        const state =
+          problem.state === "reported"
+            ? (problem.jiraKey ?? "")
+            : t(
+                problem.state === "new"
+                  ? "overview.a11yIssueNew"
+                  : "overview.a11yIssueKnown",
+              );
+        const element =
+          problem.count > 1
+            ? `${problem.element} ×${problem.count}`
+            : problem.element;
+        return (
+          <li key={problem.violationId}>
+            <ButtonBase
+              data-testid="a11yProblem"
+              onClick={() => onOpen(problem)}
+              aria-label={`${state}: ${rule} · ${element}`}
+              sx={{
+                width: "100%",
+                justifyContent: "flex-start",
+                alignItems: "baseline",
+                gap: 1.25,
+                px: 1,
+                py: 0.625,
+                borderRadius: radius.control,
+                fontSize: type.small,
+                textAlign: "left",
+                "&:hover": { bgcolor: tokens.subtle },
+              }}
+            >
+              <Box
+                component="span"
+                sx={{
+                  width: 72,
+                  flexShrink: 0,
+                  fontSize: type.caption,
+                  fontWeight: problem.state === "known" ? 400 : 600,
+                  color:
+                    problem.state === "new"
+                      ? tokens.a11y
+                      : problem.state === "reported"
+                        ? tokens.textSecondary
+                        : tokens.textMuted,
+                }}
+              >
+                {state}
+              </Box>
+              <Box component="span" sx={{ color: tokens.text }}>
+                {rule}
+              </Box>
+              <Box
+                component="span"
+                sx={{ color: tokens.textSecondary, minWidth: 0 }}
+              >
+                · {element}
+              </Box>
+            </ButtonBase>
+          </li>
+        );
+      })}
     </Box>
   );
 };

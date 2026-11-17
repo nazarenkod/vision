@@ -110,6 +110,7 @@ import { clampScale } from "../../_helpers/scale.helper";
 import { fitScale } from "../../_helpers/fit.helper";
 import { panelStartsFolded } from "../../_helpers/review.helper";
 import { canCompareToBaseline } from "../../_helpers/testRunStatus.helper";
+import { getQueryParams } from "../../_helpers/route.helpers";
 import TestStatusChip from "../TestStatusChip";
 import { PresenceAvatars } from "../PresenceAvatars";
 import { useT } from "../../i18n";
@@ -1706,6 +1707,20 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
       y: violation.bounds.y * stageScale - 48 + stagePos.y,
     });
   };
+
+  // a problem opened from the build's Accessibility tab comes selected (REQ-065-08);
+  // once per screen, so choosing another one afterwards is not undone
+  const issueShown = React.useRef<string>();
+  useEffect(() => {
+    const issue = getQueryParams(location.search).issue;
+    if (!issue || !a11yReport || issueShown.current === testRun.id) return;
+    const violation = a11yReport.violations.find((v) => v.id === issue);
+    if (!violation) return;
+    issueShown.current = testRun.id;
+    highlightViolation(violation);
+    // highlightViolation reads the stage as it is now; it is not a reason to run again
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [a11yReport, location.search, testRun.id]);
 
   // what is on screen and how the check went before (REQ-046-08, REQ-048-08)
   const header = () => (

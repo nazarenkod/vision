@@ -1,3 +1,4 @@
+import { ListedA11yProblem } from '../a11y/a11y-issues';
 import {
   Controller,
   Get,
@@ -77,6 +78,17 @@ export class BuildsController {
   @UseGuards(JwtAuthGuard)
   getOverview(@Param('id', new ParseUUIDPipe()) id: string): Promise<BuildOverviewResponse> {
     return this.buildOverviewService.overview(id);
+  }
+
+  // the build's Accessibility tab: each check's problems (065)
+  @ProjectFrom(inParam('id', 'build'))
+  @Get(':id/a11y-problems')
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  getA11yProblems(
+    @Param('id', new ParseUUIDPipe()) id: string
+  ): Promise<Array<{ testRunId: string; problems: ListedA11yProblem[] }>> {
+    return this.buildOverviewService.a11yProblems(id);
   }
 
   @ProjectFrom(inParam('id', 'build'))

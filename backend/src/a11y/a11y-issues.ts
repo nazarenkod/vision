@@ -194,6 +194,55 @@ export function elementNameOf(violation: Pick<A11yViolation, 'label' | 'resource
   return violation.className?.split('.').pop() ?? '';
 }
 
+/** A problem of one check as the build's Accessibility tab lists it (065). */
+export interface ListedA11yProblem {
+  rule: A11yRule;
+  element: string;
+  // elements with the same problem: one line «tailBadge ×2», as the review shows one card
+  count: number;
+  state: 'new' | 'reported' | 'known';
+  jiraKey: string | null;
+  // the first element's issue: the review selects it when the line is opened
+  violationId: string;
+}
+
+const STATE_ORDER: Record<ListedA11yProblem['state'], number> = { new: 0, reported: 1, known: 2 };
+
+/**
+ * The open problems of a reviewed report, grouped the way the review's
+ * Accessibility panel groups them (same problem, same decision), so a line here
+ * is a card there; advice is left out, false positives are not in `violations`.
+ */
+export function listedProblemsOf(reviewed: Pick<ReviewedA11yReport, 'violations'>): ListedA11yProblem[] {
+  const groups = new Map<string, ReportViolation[]>();
+  for (const violation of reviewed.violations) {
+    if (violation.severity === 'info') continue;
+    const decision = violation.issue ? `${violation.issue.status}:${violation.issue.jiraKey ?? ''}` : 'open';
+    const key = `${violation.group}|${decision}`;
+    groups.set(key, [...(groups.get(key) ?? []), violation]);
+  }
+  return [...groups.values()]
+    .map((group): ListedA11yProblem => {
+      const [first] = group;
+      const jiraKey = first.issue?.jiraKey ?? null;
+      const isNew = !first.issue && group.some((v) => v.status === 'new');
+      return {
+        rule: first.rule,
+        element: elementNameOf(first),
+        count: group.length,
+        state: jiraKey ? 'reported' : isNew ? 'new' : 'known',
+        jiraKey,
+        violationId: first.id,
+      };
+    })
+    .sort(
+      (a, b) =>
+        STATE_ORDER[a.state] - STATE_ORDER[b.state] ||
+        a.rule.localeCompare(b.rule) ||
+        a.element.localeCompare(b.element)
+    );
+}
+
 /** The counted problems of a reviewed report, one per issue; advice and false positives are not counted. */
 export function findingsOf(reviewed: Pick<ReviewedA11yReport, 'violations'>): A11yFinding[] {
   return reviewed.violations

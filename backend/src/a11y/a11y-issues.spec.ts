@@ -1,6 +1,6 @@
 import { A11yIssueState, A11yProblem } from '@prisma/client';
 import { PNG } from 'pngjs';
-import { elementNameOf, findingsOf, reviewReport, ReviewContext } from './a11y-issues';
+import { elementNameOf, findingsOf, listedProblemsOf, reviewReport, ReviewContext } from './a11y-issues';
 import { facetsOf, problemCode } from './a11y-problems';
 import { A11yReport, A11yViolation } from './a11y.types';
 import { JiraClient, JiraError } from './jira.client';
@@ -130,6 +130,63 @@ describe('findingsOf', () => {
     expect(elementNameOf({ label: '', resourceId: '', className: 'XCUIElementTypeButton' })).toBe(
       'XCUIElementTypeButton'
     );
+  });
+});
+
+describe('listedProblemsOf', () => {
+  const badge = { resourceId: '', className: 'XCUIElementTypeButton', label: '' };
+  const stored = report([
+    {
+      ...violation('touch-target|t1', { rule: 'touch-target', severity: 'warning', label: 'All' }),
+      status: 'existing',
+    },
+    { ...violation('missing-label|b1', { ...badge, resourceId: 'tailBadge', nodeKey: 'id:tailBadge' }), status: 'new' },
+    {
+      ...violation('missing-label|b2', { ...badge, resourceId: 'tailBadge', nodeKey: 'id:tailBadge#2' }),
+      status: 'new',
+    },
+    { ...violation('low-contrast|c', { rule: 'low-contrast', label: '11 Aug' }), status: 'existing' },
+    { ...violation('redundant-role|d', { rule: 'redundant-role', severity: 'info' }), status: 'new' },
+    { ...violation('missing-label|s', { resourceId: 'searchButton' }), status: 'new' },
+  ]);
+
+  it('lists one line per problem, new first, the way the review shows one card', () => {
+    const reviewed = reviewReport(stored, ctx([state('missing-label|s', 'reported', 'MOB-1')]));
+
+    expect(listedProblemsOf(reviewed)).toEqual([
+      {
+        rule: 'missing-label',
+        element: 'tailBadge',
+        count: 2,
+        state: 'new',
+        jiraKey: null,
+        violationId: 'missing-label|b1',
+      },
+      {
+        rule: 'missing-label',
+        element: 'searchButton',
+        count: 1,
+        state: 'reported',
+        jiraKey: 'MOB-1',
+        violationId: 'missing-label|s',
+      },
+      {
+        rule: 'low-contrast',
+        element: '11 Aug',
+        count: 1,
+        state: 'known',
+        jiraKey: null,
+        violationId: 'low-contrast|c',
+      },
+      { rule: 'touch-target', element: 'All', count: 1, state: 'known', jiraKey: null, violationId: 'touch-target|t1' },
+    ]);
+  });
+
+  it('leaves out advice and false positives', () => {
+    const reviewed = reviewReport(stored, ctx([state('low-contrast|c', 'ignored')]));
+
+    expect(listedProblemsOf(reviewed).map((problem) => problem.rule)).not.toContain('low-contrast');
+    expect(listedProblemsOf(reviewed).map((problem) => problem.rule)).not.toContain('redundant-role');
   });
 });
 

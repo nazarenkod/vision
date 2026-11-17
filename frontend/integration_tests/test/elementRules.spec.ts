@@ -246,6 +246,30 @@ test("says the count once and lists the changes straight under it", async ({
   );
 });
 
+test("sets each change apart on its own tile", async ({
+  openProjectPage,
+  page,
+}) => {
+  await withStructure(page, changed);
+  await openProjectPage(project.id, build.id, testRun.id);
+  await unfoldPanel(page);
+  const rows = page.getByTestId("changedArea");
+  // a tile of its own, a gap to the next, the name in bold (REQ-069-12)
+  const first = await rows.nth(0).boundingBox();
+  const second = await rows.nth(1).boundingBox();
+  const bottom = (first?.y ?? 0) + (first?.height ?? 0);
+  expect((second?.y ?? 0) - bottom).toBeGreaterThanOrEqual(6);
+  const style = await rows
+    .nth(1)
+    .evaluate((row) => getComputedStyle(row).backgroundColor);
+  expect(style).not.toBe("rgba(0, 0, 0, 0)");
+  const weight = await rows
+    .nth(1)
+    .getByTestId("changedAreaName")
+    .evaluate((name) => getComputedStyle(name).fontWeight);
+  expect(Number(weight)).toBeGreaterThanOrEqual(600);
+});
+
 test("opens a row into its spots, five at a time", async ({
   openProjectPage,
   page,

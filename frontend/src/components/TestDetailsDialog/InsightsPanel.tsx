@@ -1054,12 +1054,7 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
     gridTemplateColumns: "minmax(0, 1fr) auto",
     alignItems: "center",
     columnGap: 1,
-    py: 0.5,
-    px: 1,
-    mx: -1,
-    borderRadius: radius.control,
     "& .acts": { opacity: 0, transition: "opacity 120ms" },
-    "&:hover": { bgcolor: tokens.subtle },
     "&:hover .acts, &:focus-within .acts": { opacity: 1 },
   } as const;
   const quietIcon = {
@@ -1358,7 +1353,8 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
           <Box
             data-testid="whatChanged"
             aria-label={t("changes.list")}
-            sx={{ display: "flex", flexDirection: "column", mt: -1 }}
+            // each change on its own tile, apart from the next (REQ-069-12)
+            sx={{ display: "flex", flexDirection: "column", gap: 1 }}
           >
             {rows.map((row) => {
               const many = row.places.length > 1;
@@ -1381,7 +1377,20 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
                     row.bounds && onPreviewRegion?.(row.bounds)
                   }
                   onMouseLeave={() => onPreviewRegion?.(undefined)}
-                  sx={{ display: "flex", flexDirection: "column" }}
+                  sx={{
+                    display: "flex",
+                    flexDirection: "column",
+                    bgcolor: tokens.subtle,
+                    borderRadius: radius.control,
+                    px: 1,
+                    py: 0.75,
+                    // the tile lights up with its place on the screenshots
+                    boxShadow: `inset 0 0 0 1px transparent`,
+                    transition: "box-shadow 120ms",
+                    "&:hover": {
+                      boxShadow: `inset 0 0 0 1px ${tokens.borderStrong}`,
+                    },
+                  }}
                 >
                   <Box sx={changeRowSx}>
                     <Box
@@ -1450,6 +1459,7 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
                           data-testid="changedAreaName"
                           sx={{
                             fontSize: 14,
+                            fontWeight: 600,
                             lineHeight: 1.35,
                             color: tokens.text,
                             whiteSpace: "nowrap",
@@ -1578,7 +1588,7 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
                             fontSize: 13,
                             color: tokens.textSecondary,
                             "&:hover": {
-                              bgcolor: tokens.subtle,
+                              bgcolor: tokens.surface,
                               color: tokens.text,
                             },
                           }}

@@ -31,12 +31,7 @@ import { BRAND } from "../constants/brand";
 import { labelOf, LanguageSwitch, useT } from "../i18n";
 import { ThemePreference } from "../_helpers/themeMode.helper";
 import { SlidingToggleGroup } from "./motion/SlidingToggleGroup";
-import {
-  ACCOUNT_MENU_ID,
-  LOGOUT_BUTTON_TEST_ID,
-  VERSION_TEST_ID,
-} from "./SideNav.locators";
-import GuidedTour from "./GuidedTour";
+import { ACCOUNT_MENU_ID, LOGOUT_BUTTON_TEST_ID } from "./SideNav.locators";
 import { ManualChecksDialog } from "./ManualChecksDialog";
 import { tokens, type, radius } from "../theme";
 
@@ -61,8 +56,8 @@ const rowSx = {
 };
 
 /**
- * Who is signed in, all projects, the profile, language, theme, the help that
- * used to have its own button, Log out and the version (REQ-060-20).
+ * Who is signed in, all projects, the profile, language, theme, manual checks
+ * and Log out (REQ-060-20).
  */
 export const AccountMenu: React.FunctionComponent<{
   anchorEl: HTMLElement | null;
@@ -73,7 +68,6 @@ export const AccountMenu: React.FunctionComponent<{
   const { preference, setPreference } = useThemeMode();
   const { t } = useT();
   const [manualChecksOpen, setManualChecksOpen] = React.useState(false);
-  const version = window._env_?.VISION_VERSION;
   const name =
     [user?.firstName, user?.lastName].filter(Boolean).join(" ") || user?.email;
 
@@ -85,8 +79,6 @@ export const AccountMenu: React.FunctionComponent<{
         open={!!anchorEl}
         onClose={onClose}
         anchorOrigin={{ vertical: "top", horizontal: "right" }}
-        // the tour lives in its item, so it must outlive the menu closing
-        keepMounted
         transformOrigin={{ vertical: "bottom", horizontal: "left" }}
         slotProps={{ paper: { sx: { minWidth: 280, p: 0.75, ml: 1 } } }}
       >
@@ -162,9 +154,6 @@ export const AccountMenu: React.FunctionComponent<{
           </SlidingToggleGroup>
         </Box>
         <Divider sx={{ my: 0.75 }} />
-        <MenuItem onClick={onClose} sx={{ ...accountItemSx, p: 0 }}>
-          <GuidedTour />
-        </MenuItem>
         <MenuItem
           onClick={() => {
             onClose();
@@ -199,14 +188,6 @@ export const AccountMenu: React.FunctionComponent<{
           <Logout />
           {t("account.logout")}
         </MenuItem>
-        <Typography
-          component="div"
-          variant="caption"
-          data-testid={VERSION_TEST_ID}
-          sx={{ px: 1.25, pt: 0.75, pb: 0.25, color: tokens.textMuted }}
-        >
-          {BRAND.name} {version}
-        </Typography>
       </Menu>
       <ManualChecksDialog
         open={manualChecksOpen}

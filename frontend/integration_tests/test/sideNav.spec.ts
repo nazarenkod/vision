@@ -179,7 +179,7 @@ test("scrolls only the tiles and keeps the chosen one in view", async ({
   ).toBe(0);
 });
 
-test("holds all projects, help and the version in the account menu", async ({
+test("holds all projects and manual checks, but no tour or version, in the account menu", async ({
   openProjectPage,
   page,
 }) => {
@@ -191,7 +191,6 @@ test("holds all projects, help and the version in the account menu", async ({
   for (const name of [
     "All projects",
     "Profile",
-    "Take a tour",
     "Manual checks (CLI)",
     "Log out",
   ]) {
@@ -199,8 +198,10 @@ test("holds all projects, help and the version in the account menu", async ({
   }
   await expect(menu.getByTestId("languageSwitch")).toBeVisible();
   await expect(menu.getByRole("group", { name: "Theme" })).toBeVisible();
-  // env-config.js is written from env.defaults, as in the image
-  await expect(sideNav.version).toHaveText("Vision 1.0.0");
+  await expect(menu.getByRole("menuitem", { name: "Take a tour" })).toHaveCount(
+    0,
+  );
+  await expect(menu).not.toContainText("Vision 1.0.0");
 
   await sideNav.avatarMenuItem("All projects").click();
   await expect(page).toHaveURL(/\/projects$/);

@@ -1,8 +1,14 @@
 import {
+  bugStandsOut,
+  changeMark,
   compareOnlyApplied,
+  CompareRow,
   countChanges,
   foundOn,
+  ignoreZoneGroups,
+  mostOfScreen,
   overview,
+  showVerdict,
   verdict,
 } from "./whatsCompared.helper";
 import {
@@ -526,7 +532,7 @@ describe("variable text (spec 033)", () => {
     expect(result.summary).toEqual({ kind: "except", count: 1 });
   });
 
-  it("puts a failed variable text first in the verdict", () => {
+  it("says that the variable text changed shape in one line", () => {
     const failed = {
       ruleId: "updated",
       kind: "failed" as const,
@@ -535,41 +541,20 @@ describe("variable text (spec 033)", () => {
       reason: "pattern" as const,
       bounds: updated,
     };
-    expect(
-      verdict({
-        problems: [],
-        variableProblems: [failed],
-        changes: 3,
-        hasDiff: true,
-        only: false,
-      }),
-    ).toEqual({
+    const base = { problems: [], changes: 3, hasDiff: true, only: false };
+    // first, before the changes, and without the sentence that repeats the row (REQ-074-13)
+    expect(verdict({ ...base, variableProblems: [failed] })).toEqual({
       tone: "failed",
-      title: "The value does not look as expected",
-      reason: "Now it says “Updated at undefined”.",
+      title: "The variable text changed shape",
+      reason: "",
     });
-    // with the text as it was, the reason says what was expected (REQ-033-34)
+    expect(
+      verdict({ ...base, variableProblems: [{ ...failed, reason: "text" }] })
+        .title,
+    ).toBe("The variable text changed shape");
     expect(
       verdict({
-        problems: [],
-        variableProblems: [{ ...failed, expected: "Updated at 14:07" }],
-        changes: 0,
-        hasDiff: false,
-        only: false,
-      }).reason,
-    ).toBe("Now “Updated at undefined”, expected like “Updated at 14:07”.");
-    expect(
-      verdict({
-        problems: [],
-        variableProblems: [{ ...failed, reason: "text" }],
-        changes: 0,
-        hasDiff: false,
-        only: false,
-      }).title,
-    ).toBe("The text around the value changed");
-    expect(
-      verdict({
-        problems: [],
+        ...base,
         variableProblems: [
           {
             ruleId: "updated",
@@ -578,13 +563,97 @@ describe("variable text (spec 033)", () => {
             bounds: updated,
           },
         ],
-        changes: 0,
-        hasDiff: false,
-        only: false,
       }),
-    ).toMatchObject({
-      title: "The element is gone",
-      reason: "id:tv_updated is not on the current screenshot.",
+    ).toEqual({ tone: "failed", title: "The element is gone", reason: "" });
+  });
+});
+
+describe("what the Changes tab shows (spec 074)", () => {
+  const base = { problems: [], changes: 0, hasDiff: false, only: false };
+
+  it("hides the verdict when it only repeats the status", () => {
+    expect(showVerdict(verdict(base))).toBe(false);
+    expect(showVerdict(verdict({ ...base, changes: 4 }))).toBe(false);
+    // a diff without rows, a problem or a missing tree still say something
+    expect(showVerdict(verdict({ ...base, hasDiff: true }))).toBe(true);
+    expect(
+      showVerdict(
+        verdict({
+          ...base,
+          problems: [
+            {
+              kind: "disappeared",
+              ruleId: "card",
+              selector: "id:card",
+              element: "Card",
+            },
+          ],
+        }),
+      ),
+    ).toBe(true);
+    expect(
+      showVerdict(verdict({ ...base, problems: [{ kind: "no-tree" }] })),
+    ).toBe(true);
+  });
+
+  it("marks a change by how it was seen", () => {
+    const invisible = new Set(["text:b"]);
+    expect(changeMark({ key: "text:b", element: "TextView" }, invisible)).toBe(
+      "invisible",
+    );
+    expect(changeMark({ key: "a", element: 'Button "Pay"' }, invisible)).toBe(
+      "visible",
+    );
+    expect(changeMark({ key: "loose", element: null }, invisible)).toBe(
+      "loose",
+    );
+  });
+
+  it("groups ignore zones by where they come from", () => {
+    const row = (key: string, source: CompareRow["source"]): CompareRow => ({
+      key,
+      kind: "area",
+      action: "ignore",
+      source,
+      effect: "applies",
+      rects: [],
     });
+    const groups = ignoreZoneGroups([
+      row("bars", "projectSetting"),
+      row("drawn", "drawn"),
+      row("sent", "test"),
+      row("rule", "screen"),
+      row("everywhere", "project"),
+      row("setting", "testSetting"),
+    ]);
+    expect(
+      groups.map((item) => [item.group, item.rows.map((r) => r.key)]),
+    ).toEqual([
+      ["test", ["sent", "setting"]],
+      ["project", ["bars", "everywhere"]],
+      ["manual", ["drawn", "rule"]],
+    ]);
+    // a group with nothing in it is not shown
+    expect(ignoreZoneGroups([row("sent", "test")])).toHaveLength(1);
+  });
+
+  it("calls more than a quarter of the screen most of the screen", () => {
+    expect(mostOfScreen(47.2, 38)).toBe(true);
+    expect(mostOfScreen(25, 38)).toBe(false);
+    expect(mostOfScreen(null, 3)).toBe(false);
+    // everything in ignore zones: no list to replace
+    expect(mostOfScreen(60, 0)).toBe(false);
+  });
+
+  it("makes the bug button stand out when a rule failed or most of the screen changed", () => {
+    expect(bugStandsOut({ failed: true, diffPercent: 0, changes: 0 })).toBe(
+      true,
+    );
+    expect(bugStandsOut({ failed: false, diffPercent: 40, changes: 5 })).toBe(
+      true,
+    );
+    expect(bugStandsOut({ failed: false, diffPercent: 3, changes: 5 })).toBe(
+      false,
+    );
   });
 });

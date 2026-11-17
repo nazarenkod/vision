@@ -129,21 +129,50 @@ test("lists the rules for this screen and for every screen", async ({
   await openProjectPage(project.id, build.id, testRun.id);
   await unfoldPanel(page);
   await expect(rule(page, "id:balance")).toContainText("±5%");
-  await expect(rule(page, "id:balance")).toContainText("this check");
-  // a rule for every screen that found nothing here is folded away (REQ-030-23)
-  await expect(page.getByTestId("elementRule")).toHaveCount(1);
-  await page.getByTestId("outsideToggle").click();
-  await expect(rule(page, "id:clock")).toContainText("all checks");
+  // where a rule comes from is no chip on its row any more (REQ-074-08, 11)
+  await expect(rule(page, "id:balance")).not.toContainText("this check");
+  // a rule for every screen that found nothing here waits under "No effect" (REQ-030-23)
+  await expect(
+    page.getByTestId("outsideGroup").getByTestId("elementRule"),
+  ).toHaveText(/id:clock/);
   await expect(rule(page, "id:clock")).toContainText("nothing found");
   // the selector and what it found are in the row's tooltip (REQ-019-02)
   await rule(page, "id:clock").hover();
   await expect(page.getByRole("tooltip")).toHaveText(
     "id:clock · 0 found here, 0 on the baseline",
   );
-  // a rule that found nothing changes nothing in the summary; the run's saved and test areas count
-  await expect(page.getByTestId("comparedSummary")).toHaveText(
-    "Whole screenshot, with exceptions",
+});
+
+test("shows the map and every rule group open, without a summary or a toggle", async ({
+  openProjectPage,
+  page,
+}) => {
+  await withStructure(page, changed);
+  await openProjectPage(project.id, build.id, testRun.id);
+  await unfoldPanel(page);
+  // nothing to unfold and no sentence that repeats the rows (REQ-074-05)
+  await expect(page.getByTestId("comparedToggle")).toHaveCount(0);
+  await expect(page.getByTestId("comparedSummary")).toHaveCount(0);
+  await expect(page.getByText("Comparison scope")).toHaveCount(0);
+  await expect(page.getByTestId("toleratedGroup")).toHaveText(
+    /^Allows changes/,
   );
+  await expect(page.getByTestId("elementRule")).toHaveCount(2);
+  // the map stands left of the groups, in a quiet frame (REQ-074-06)
+  const map = await page.getByTestId("comparedMap").boundingBox();
+  const zones = await page.getByTestId("ignoredGroup").boundingBox();
+  expect((map?.x ?? 0) + (map?.width ?? 0)).toBeLessThanOrEqual(zones?.x ?? 0);
+  // ignore zones under where they were set, no chip on each (REQ-074-07, 08)
+  const groups = page.getByTestId("ignoredGroup");
+  await expect(groups).toHaveText(/^Ignore zones/);
+  await expect(groups.getByTestId("ignoreZones")).toHaveText([
+    /^Sent from the test/,
+    /^Added by hand/,
+  ]);
+  await expect(page.getByTestId("comparedTestArea")).not.toContainText(
+    "from the test",
+  );
+  await expect(page.getByTestId("comparedArea")).not.toContainText("drawn");
 });
 
 test("shows the result once, at the top of the Changes tab", async ({
@@ -206,44 +235,43 @@ const changed: StructureInfo = {
   ],
 };
 
-test("says the count once and lists the changes straight under it", async ({
+test("lists changes under a plain Changes heading, each marked by how it was seen", async ({
   openProjectPage,
   page,
 }) => {
   await withStructure(page, changed);
   await openProjectPage(project.id, build.id, testRun.id);
   await unfoldPanel(page);
-  // each spot outside the elements counts, as before (REQ-036-16)
-  await expect(page.getByTestId("verdictTitle")).toHaveText("4 changes");
-  await expect(page.getByTestId("verdictReason")).toHaveCount(0);
+  // the count is on the tab; no heading repeats it (REQ-074-01, 02)
+  await expect(page.getByTestId("comparisonVerdict")).toHaveCount(0);
   const list = page.getByTestId("whatChanged");
-  await expect(list).not.toContainText("What changed");
-  await expect(list).not.toContainText("4");
+  await expect(list.getByTestId("changesTitle")).toHaveText("Changes");
   const rows = list.getByTestId("changedArea");
   await expect(rows.getByTestId("changedAreaName")).toHaveText([
     "Next",
     "Balance",
     "2 spots outside elements",
   ]);
-  // a changed text reads as before and after, the differing word marked (REQ-069-04)
+  // a square says how the change was seen (REQ-074-03)
+  await expect(rows.getByTestId("changeMark")).toHaveCount(3);
+  expect(
+    await rows
+      .getByTestId("changeMark")
+      .evaluateAll((marks) => marks.map((mark) => mark.dataset.mark)),
+  ).toEqual(["visible", "visible", "loose"]);
+  // a changed text in one line: the old word crossed out before the new (REQ-074-04)
   await expect(rows.getByTestId("changedAreaWhat")).toHaveText([
     "Changed in 7 spots",
-    "Before1 200After1 250",
+    "1 200 250",
     "Not part of any element",
   ]);
   const balance = rows.nth(1);
-  await expect(balance.getByTestId("changedBefore")).toHaveText("1 200");
-  await expect(balance.getByTestId("changedAfter")).toHaveText("1 250");
-  await expect(balance.getByTestId("changedWord")).toHaveText(["200", "250"]);
-  // in plain case, like every heading of the tab (REQ-036-30)
-  await expect(balance.getByTestId("beforeLabel")).toHaveText("Before", {
-    useInnerText: true,
-  });
-  // headings read as sentences, not capitals (REQ-036-30)
-  await expect(page.getByText("Comparison scope")).toHaveText(
-    "Comparison scope",
-    { useInnerText: true },
-  );
+  await expect(balance.getByTestId("changedBefore")).toHaveText("200");
+  await expect(balance.getByTestId("changedAfter")).toHaveText("250");
+  // the changes come before the rules
+  const top = async (testId: string) =>
+    (await page.getByTestId(testId).boundingBox())?.y ?? 0;
+  expect(await top("whatChanged")).toBeLessThan(await top("whatsCompared"));
 });
 
 test("sets each change apart on its own tile", async ({
@@ -332,8 +360,8 @@ test("names a changed place by the text in it, as it was and is", async ({
   await openProjectPage(project.id, build.id, testRun.id);
   await unfoldPanel(page);
   // one place whose text changed says so instead of "Changed in 1 spot" (REQ-038-04)
-  await expect(page.getByTestId("changedBefore")).toHaveText("12 450,00 ₴");
-  await expect(page.getByTestId("changedAfter")).toHaveText("9 870,00 ₴");
+  await expect(page.getByTestId("changedBefore")).toHaveText("12 450,00");
+  await expect(page.getByTestId("changedAfter")).toHaveText("9 870,00");
   await expect(page.getByTestId("changedAreaName")).toHaveText("Card");
 });
 
@@ -376,30 +404,25 @@ test("shows a change the pixels miss once, as before and after", async ({
   });
   await openProjectPage(project.id, build.id, testRun.id);
   await unfoldPanel(page);
-  // one line says how many; the changes are the rows, not a block above them (REQ-069-01, 02)
-  await expect(page.getByTestId("invisibleStrip")).toHaveText(
-    "2 changes the pixels do not show: only the UI tree saw them",
-  );
-  await expect(page.getByText(label.before)).toHaveCount(1);
+  // no strip: the changes are the rows, each marked by how it was seen (REQ-069-01, REQ-074-03)
+  await expect(page.getByTestId("invisibleStrip")).toHaveCount(0);
   const rows = page.getByTestId("changedArea");
   await expect(rows).toHaveCount(3);
-  // each such row carries the strip's mark, the visible one does not (REQ-069-03)
-  await expect(rows.first().getByTestId("invisibleMark")).toHaveCount(0);
-  await expect(rows.getByTestId("invisibleMark")).toHaveCount(2);
+  expect(
+    await rows
+      .getByTestId("changeMark")
+      .evaluateAll((marks) => marks.map((mark) => mark.dataset.mark)),
+  ).toEqual(["visible", "invisible", "invisible"]);
   const first = rows.nth(1);
-  await expect(first.getByTestId("changedWord")).toHaveText([
-    "*8353",
-    "+5.00",
-    "*8352",
-    "+3.00",
-  ]);
+  await expect(first.getByTestId("changedBefore")).toHaveText("*8353 +5.00");
+  await expect(first.getByTestId("changedAfter")).toHaveText("*8352 +3.00");
   // a change that is not a text keeps its own line, and the mark (REQ-069-06)
   await expect(rows.nth(2).getByTestId("changedAreaWhat")).toHaveText(
     "State: enabled → disabled",
   );
 });
 
-test("marks no row when the pixels miss every change", async ({
+test("marks every row the pixels miss, without a strip", async ({
   openProjectPage,
   page,
 }) => {
@@ -420,10 +443,13 @@ test("marks no row when the pixels miss every change", async ({
   });
   await openProjectPage(project.id, build.id, testRun.id);
   await unfoldPanel(page);
-  // the strip says it for all of them; a mark on each row would repeat it (REQ-069-10)
-  await expect(page.getByTestId("invisibleStrip")).toBeVisible();
+  // the square says it on the row itself (REQ-074-03)
+  await expect(page.getByTestId("invisibleStrip")).toHaveCount(0);
   await expect(page.getByTestId("changedArea")).toHaveCount(1);
-  await expect(page.getByTestId("invisibleMark")).toHaveCount(0);
+  await expect(page.getByTestId("changeMark")).toHaveAttribute(
+    "data-mark",
+    "invisible",
+  );
 });
 
 test("leaves the strip out when the pixels show every change", async ({
@@ -435,67 +461,40 @@ test("leaves the strip out when the pixels show every change", async ({
   await unfoldPanel(page);
   await expect(page.getByTestId("whatChanged")).toBeVisible();
   await expect(page.getByTestId("invisibleStrip")).toHaveCount(0);
-  await expect(page.getByTestId("invisibleMark")).toHaveCount(0);
+  await expect(page.locator('[data-mark="invisible"]')).toHaveCount(0);
 });
 
-test("folds the comparison scope while there are changes to look at", async ({
-  openProjectPage,
-  page,
-}) => {
-  await withStructure(page, changed);
-  await openProjectPage(project.id, build.id, testRun.id);
-  await unfoldPanel(page);
-  const toggle = page.getByTestId("comparedToggle");
-  await expect(toggle).toContainText("Comparison scope");
-  await expect(toggle).toHaveAttribute("aria-expanded", "false");
-  await expect(page.getByTestId("elementRule")).toHaveCount(0);
-  await toggle.click();
-  await expect(page.getByTestId("elementRule")).toHaveCount(1);
-  await expect(page.getByTestId("toleratedGroup")).toHaveText(
-    /^Allows changes/,
-  );
-  await expect(page.getByTestId("toleratedGroup")).not.toContainText("· 1");
-});
-
-test("keeps rows outside the compared elements folded", async ({
+test("lists rows outside the compared elements muted, under No effect", async ({
   openProjectPage,
   page,
 }) => {
   await withStructure(page, compareOnly());
   await openProjectPage(project.id, build.id, testRun.id);
   await unfoldPanel(page);
-  await expect(page.getByTestId("comparedSummary")).toHaveText(
-    "Only the chosen elements",
-  );
+  await expect(page.getByTestId("comparedSummary")).toHaveCount(0);
   await expect(page.getByTestId("comparedElement")).toContainText(
     'Button "Pay"',
   );
   // the run's drawn and test areas lie above the button: they change nothing
-  // the group's name carries no count (REQ-036-33)
-  await expect(page.getByTestId("outsideToggle")).toHaveText(
-    "No effectoutside what is compared",
+  await expect(page.getByTestId("outsideGroup")).toHaveText(/^No effect/);
+  await expect(page.getByTestId("comparedArea")).toHaveAttribute(
+    "data-effect",
+    "outside",
   );
-  await expect(page.getByTestId("comparedArea")).toHaveCount(0);
-  await expect(page.getByTestId("comparedTestArea")).toHaveCount(0);
+  await expect(page.getByTestId("comparedTestArea")).toBeVisible();
 });
 
-test("explains why the folded rows do not count", async ({
+test("explains why the rows under No effect do not count", async ({
   openProjectPage,
   page,
 }) => {
   await withStructure(page, compareOnly());
   await openProjectPage(project.id, build.id, testRun.id);
   await unfoldPanel(page);
-  await page.getByTestId("outsideToggle").click();
-  await expect(page.getByTestId("outsideGroup")).toContainText(
+  // one hover away, not a sentence in the panel
+  await page.getByTestId("outsideGroup").getByText("No effect").hover();
+  await expect(page.getByRole("tooltip")).toContainText(
     "They lie outside the chosen elements, so they change nothing.",
-  );
-  await expect(page.getByTestId("comparedArea")).toHaveAttribute(
-    "data-effect",
-    "outside",
-  );
-  await expect(page.getByTestId("comparedTestArea")).toContainText(
-    "from the test",
   );
 });
 
@@ -540,8 +539,10 @@ test("lights an area the test sent on the screenshot until clicked again", async
   await openProjectPage(project.id, build.id, testRun.id);
   await unfoldPanel(page);
   const area = page.getByTestId("comparedTestArea");
-  // where it comes from, and nothing more
-  await expect(area).toContainText("from the test");
+  // its group says where it comes from (REQ-074-08)
+  await expect(
+    page.getByTestId("ignoreZones").filter({ has: area }),
+  ).toHaveText(/^Sent from the test/);
   await expect(area).not.toContainText("test code");
   await area.click();
   await expect(area).toHaveAttribute("aria-pressed", "true");
@@ -601,7 +602,6 @@ test("asks before removing a rule for every screen", async ({
   await openProjectPage(project.id, build.id, testRun.id);
   await unfoldPanel(page);
   // it found nothing here, so it waits under "No effect"
-  await page.getByTestId("outsideToggle").click();
   const remove = rule(page, "id:clock").getByRole("button", {
     name: "Remove rule",
   });
@@ -675,13 +675,180 @@ test("says why a rule with a pattern Vision no longer runs finds nothing", async
   });
   await openProjectPage(project.id, build.id, testRun.id);
   await unfoldPanel(page);
-  if (await page.getByTestId("outsideToggle").isVisible()) {
-    await page.getByTestId("outsideToggle").click();
-  }
   await expect(rule(page, "text:/(Pay)\\1/")).toContainText(
     "back-reference, look-around or another part Vision does not run",
   );
   // the other rules read as before
   await expect(rule(page, "id:clock")).toContainText("nothing found");
   await expect(rule(page, "id:balance")).toContainText("±5%");
+});
+
+// a variable text: "Зі своєї картки *1051 +1.05 UAH" whose number may change (spec 033, 073)
+const row = { x: 0, y: 1200, width: 1080, height: 120 };
+const variableText = (
+  now: string,
+  ok: boolean,
+  baseline = "Зі своєї картки *1051 +1.05 UAH",
+): StructureInfo => ({
+  ...structure,
+  hasUiTree: true,
+  hasBaselineUiTree: true,
+  size: { width: 1080, height: 2400 },
+  rules: [
+    {
+      id: "card",
+      selector: "id:card_row",
+      action: "variable",
+      scope: "screen",
+      matches: 1,
+      found: { current: [row], baseline: [row] },
+      parts: [
+        { text: "Зі своєї картки *" },
+        { pattern: "\\d{4}", sample: "1051" },
+        { text: " +1.05 UAH" },
+      ],
+      check: {
+        items: [
+          {
+            text: now,
+            ok,
+            reason: ok ? undefined : "pattern",
+            bounds: row,
+            element: `TextView «${now}»`,
+          },
+        ],
+        gone: false,
+        overridden: false,
+      },
+    },
+  ],
+  elements: [
+    {
+      selector: "id:card_row",
+      element: `TextView «${now}»`,
+      bounds: row,
+      text: now,
+    },
+  ],
+  baselineElements: [
+    {
+      selector: "id:card_row",
+      element: `TextView «${baseline}»`,
+      bounds: row,
+      text: baseline,
+    },
+  ],
+  variableProblems: ok
+    ? []
+    : [
+        {
+          ruleId: "card",
+          kind: "failed",
+          element: `TextView «${now}»`,
+          text: now,
+          reason: "pattern",
+          bounds: row,
+        },
+      ],
+});
+
+test("a variable text that holds shows a tick, one that broke turns red without the help box", async ({
+  openProjectPage,
+  page,
+}) => {
+  await withStructure(
+    page,
+    variableText("Зі своєї картки *2122 +1.05 UAH", true),
+  );
+  await openProjectPage(project.id, build.id, testRun.id);
+  await unfoldPanel(page);
+  const text = page.getByTestId("variableRule");
+  // what it was, crossed out, before what it is (REQ-074-10)
+  await expect(text.getByTestId("variableWas")).toHaveText("1051");
+  await expect(text.getByTestId("variableNow")).toHaveText(
+    "Зі своєї картки *1051 2122 +1.05 UAH",
+  );
+  // a tick instead of words, and no chip saying where the rule comes from (REQ-074-11)
+  await expect(text.getByTestId("variableHolds")).toBeVisible();
+  await expect(text).not.toContainText("fits");
+  await expect(text).not.toContainText("this check");
+
+  await withStructure(
+    page,
+    variableText("Зі своєї картки *XXXX +1.05 UAH", false),
+  );
+  await page.reload();
+  await unfoldPanel(page);
+  // one short line on top, the row red with what was expected (REQ-074-12, 13)
+  await expect(page.getByTestId("verdictTitle")).toHaveText(
+    "The variable text changed shape",
+  );
+  await expect(page.getByTestId("verdictReason")).toHaveCount(0);
+  await expect(text).toHaveAttribute("data-state", "failed");
+  await expect(text.getByTestId("variableHolds")).toHaveCount(0);
+  await expect(text.getByTestId("variableExpected")).toHaveText(
+    "expected “Зі своєї картки *1051 +1.05 UAH”",
+  );
+  // no help box under it (REQ-074-14)
+  await expect(page.getByTestId("variableProblem")).toHaveCount(0);
+  await expect(page.getByText(/If it is a bug/)).toHaveCount(0);
+  // the bug button comes forward (REQ-074-21)
+  await expect(page.getByTestId("reportBug")).toHaveAttribute(
+    "data-stands-out",
+    "true",
+  );
+});
+
+test("the menu of a variable text edits, shows and removes its rule", async ({
+  openProjectPage,
+  page,
+}) => {
+  await withStructure(
+    page,
+    variableText("Зі своєї картки *2122 +1.05 UAH", true),
+  );
+  await openProjectPage(project.id, build.id, testRun.id);
+  await unfoldPanel(page);
+  const menu = page.getByTestId("variableMenu");
+  await menu.click();
+  await expect(page.getByRole("menuitem")).toHaveText([
+    "Change rule",
+    "Show on screenshot",
+    "Remove rule",
+  ]);
+  // the element opens with its rule, as a click on it does (REQ-074-15)
+  await page.getByTestId("variableEdit").click();
+  await expect(page.getByTestId("elementPopover")).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(page.getByTestId("elementPopover")).toHaveCount(0);
+
+  await menu.click();
+  await page.getByTestId("variableRemove").click();
+  await expect(page.getByText("Rule removed; compared again")).toBeVisible();
+  expect(removed).toEqual([{ scope: "screen", ruleId: "card" }]);
+});
+
+test("shows one card instead of the list when most of the screen changed", async ({
+  openProjectPage,
+  page,
+}) => {
+  await mockTestRun(page, { ...testRun, diffPercent: 47.4 });
+  await mockGetTestRuns(page, build.id, [{ ...testRun, diffPercent: 47.4 }]);
+  await withStructure(page, changed);
+  await openProjectPage(project.id, build.id, testRun.id);
+  await unfoldPanel(page);
+  // one number, not a long list (REQ-074-30)
+  const card = page.getByTestId("mostOfScreen");
+  await expect(card).toContainText("47 %");
+  await expect(card).toContainText("Most of the screen changed");
+  await expect(card).toContainText("4 changes");
+  await expect(page.getByTestId("whatChanged")).toHaveCount(0);
+  await expect(page.getByTestId("reportBug")).toHaveAttribute(
+    "data-stands-out",
+    "true",
+  );
+  // the list is one click away (REQ-074-31)
+  await card.getByTestId("showAllChanges").click();
+  await expect(page.getByTestId("mostOfScreen")).toHaveCount(0);
+  await expect(page.getByTestId("changedArea")).toHaveCount(3);
 });

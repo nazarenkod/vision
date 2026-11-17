@@ -452,3 +452,29 @@ export function otherDiffers(
     return { value: inPlaces.join(" ") };
   return null;
 }
+
+/**
+ * A variable text as the row shows it (REQ-074-10): what it says now, and in
+ * each place the value it had before, when that differs. Before is the
+ * baseline's text of the element when there is one; else the value the rule
+ * was made from.
+ */
+export function variableShown(
+  parts: TextPart[],
+  now: string,
+  before?: string,
+): Array<{ text: string; place: boolean; was?: string }> {
+  const shown = placesIn(parts, now);
+  const fromBaseline = before === undefined ? null : placesIn(parts, before);
+  const lines = (side: Array<{ place: boolean }>) =>
+    side.length === shown.length &&
+    side.every((segment, i) => segment.place === shown[i].place);
+  const was =
+    fromBaseline && lines(fromBaseline) ? fromBaseline : expectedOf(parts);
+  if (!lines(was)) return shown;
+  return shown.map((segment, i) =>
+    segment.place && was[i].text !== segment.text && was[i].text !== "…"
+      ? { ...segment, was: was[i].text }
+      : segment,
+  );
+}

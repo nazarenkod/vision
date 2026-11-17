@@ -939,9 +939,8 @@ test("dims the screenshot outside the compared elements", async ({
   }
   await openChanges(page);
   // the run's saved and test areas lie outside the button: only it is compared
-  await expect(page.getByTestId("comparedSummary")).toHaveText(
-    "Only the chosen elements",
-  );
+  await expect(page.getByTestId("comparedGroup")).toHaveText(/^Compared/);
+  await expect(page.getByTestId("outsideGroup")).toHaveText(/^No effect/);
 });
 
 test("leaves element selection to the toolbar, not the Changes tab", async ({

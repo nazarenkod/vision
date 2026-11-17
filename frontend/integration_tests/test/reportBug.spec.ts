@@ -131,6 +131,22 @@ test("shows Report bug next to the decisions when Jira is set up", async ({
   await expect(page.getByTestId("reportBug")).toBeEnabled();
 });
 
+test("shows Report bug turned off with a hint when the project has no Jira", async ({
+  openProjectPage,
+  page,
+}) => {
+  await mockApi(page);
+  await mockGetProjects(page, [{ ...project, jiraUrl: "" } as never]);
+  await openProjectPage(project.id, build.id, run.id);
+  // always there, so people know a bug can be filed from here (REQ-074-20)
+  const report = page.getByTestId("reportBug");
+  await expect(report).toBeDisabled();
+  await report.locator("..").hover();
+  await expect(page.getByRole("tooltip")).toHaveText(
+    "Set the Jira address in the project settings",
+  );
+});
+
 test.describe("without a personal Jira token", () => {
   test.use({ userJiraToken: false });
 

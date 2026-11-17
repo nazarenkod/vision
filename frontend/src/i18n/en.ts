@@ -867,10 +867,6 @@ export const en = {
     "Accessibility is checked when a check comes with its Appium page source. In Java or Kotlin add {code} to the TestRunOptions; for manual testing use the CLI (help menu, Manual checks).",
   "a11ySummary.newHint":
     "Compared with each check's baseline: only issues this build introduced. Filed bugs and false positives do not count.",
-  "a11ySummary.ofScreenshots": {
-    one: "of {count} check",
-    other: "of {count} checks",
-  },
   "a11ySummary.newIssues": "New issues",
   "a11ySummary.openIssues": "All open issues",
   "a11ySummary.screensChecked": "Checks with a UI tree",

@@ -42,7 +42,6 @@ export const A11ySummary: React.FunctionComponent<{ buildId: string }> = ({
     (sum, run) => sum + (run.a11yTotalCount ?? 0),
     0,
   );
-  const screenshots = testRuns.filter((run) => run.buildId === buildId).length;
 
   if (!checked.length) {
     return (
@@ -85,7 +84,6 @@ export const A11ySummary: React.FunctionComponent<{ buildId: string }> = ({
             key: "checked",
             value: checked.length,
             label: t("a11ySummary.screensChecked"),
-            caption: t("a11ySummary.ofScreenshots", { count: screenshots }),
           },
           {
             key: "withNew",

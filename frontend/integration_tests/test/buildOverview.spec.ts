@@ -852,9 +852,9 @@ test("lays out the Accessibility tab like the Overview", async ({
     "title",
     /only issues this build introduced/,
   );
-  await expect(page.getByTestId("a11yCaption-checked")).toHaveText(
-    "of 4 checks",
-  );
+  // the count alone: the total of checks is on the Overview already
+  await expect(page.getByTestId("a11yTile-checked")).toContainText("2");
+  await expect(page.getByTestId("a11yCaption-checked")).toHaveCount(0);
 
   const rows = page.getByTestId("a11yScreen");
   await expect(rows).toHaveCount(2);

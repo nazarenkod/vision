@@ -217,7 +217,7 @@ test("filters with one Filters button and removable chips", async ({
   await expect(page.getByTestId("clearFilters")).toHaveCount(0);
 });
 
-test("lays out a baseline card as name, one row of tags, History and delete", async ({
+test("lays out a baseline card as name, tags and delete, all cards one height", async ({
   openTestVariationListPage,
 }) => {
   const listPage = await openTestVariationListPage(TEST_PROJECT.id);
@@ -243,17 +243,36 @@ test("lays out a baseline card as name, one row of tags, History and delete", as
   await expect(tags.getByTestId("branchTag")).toHaveText("branch name");
   await expect(tags).toContainText("customTags");
 
-  // History on the left, delete on the right, in one footer row
-  const history = await card.getByTestId("baselineHistory").boundingBox();
-  const remove = await card.getByTestId("baselineDelete").boundingBox();
-  expect(history.x).toBeLessThan(remove.x);
-  expect(
-    Math.abs(history.y + history.height / 2 - (remove.y + remove.height / 2)),
-  ).toBeLessThan(4);
-  await expect(card.getByTestId("baselineHistory")).toHaveAttribute(
+  // no separate History link: the card itself leads there
+  await expect(card.getByText("History", { exact: true })).toHaveCount(0);
+  await expect(card.getByRole("link")).toHaveAttribute(
     "href",
     `/variations/details/${TEST_VARIATION_ONE.id}`,
   );
+
+  // every card is as tall as the next, whatever its name and tags (layout
+  // height: the entry animation scales cards for a moment)
+  const heights = await listPage.cards.evaluateAll((cards) =>
+    cards.map((el) => (el as HTMLElement).offsetHeight),
+  );
+  expect(new Set(heights).size).toBe(1);
+});
+
+test("opens a baseline's history from anywhere on its card, but not from delete", async ({
+  openTestVariationListPage,
+  page,
+}) => {
+  const listPage = await openTestVariationListPage(TEST_PROJECT.id);
+  const card = listPage.getCard(TEST_VARIATION_ONE.name);
+
+  await listPage.deleteBtn(TEST_VARIATION_ONE.name).click();
+  await expect(listPage.modal.dialog).toBeVisible();
+  await expect(page).toHaveURL(`/variations/${TEST_PROJECT.id}`);
+  await listPage.modal.cancelBtn.click();
+
+  // a click on the picture, which is no link of its own, opens history
+  await card.click({ position: { x: 40, y: 40 } });
+  await expect(page).toHaveURL(`/variations/details/${TEST_VARIATION_ONE.id}`);
 });
 
 test("chooses the project in the sidebar, not on the page", async ({

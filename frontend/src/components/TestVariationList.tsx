@@ -44,11 +44,18 @@ export function groupByCheck(items: TestVariation[]): TestVariation[][] {
 }
 
 /**
- * A check's card as the mock-up draws it (046): no coloured edge; the name;
- * one wrapping row of grey tags (the device, then the branch and the custom
- * tags); History on the left and delete on the right. A check on several
- * devices shows one at a time, picked from a menu after its tags.
+ * A check's card: no coloured edge; the name (two lines at most); grey tags
+ * (the device, then the branch and the custom tags, three rows at most); the
+ * device picker and delete at the bottom. Every card is as tall as the next,
+ * so the grid keeps its rows. The whole card opens the shown device's
+ * history: the name is a link stretched over the card, and only the picker
+ * and delete sit above it, so they stay buttons of their own.
  */
+const CARD_HEIGHT = 490;
+
+/** Lifts a control over the card-wide link, so it gets its own clicks. */
+const aboveCardLink = { position: "relative", zIndex: 1 } as const;
+
 const CheckCard: React.FunctionComponent<{
   devices: TestVariation[];
   onDelete: (variation: TestVariation) => void;
@@ -68,6 +75,10 @@ const CheckCard: React.FunctionComponent<{
       {...staggered(index, 12)}
       data-testid="baselineCard"
       sx={{
+        position: "relative",
+        height: CARD_HEIGHT,
+        display: "flex",
+        flexDirection: "column",
         transition: `transform ${motion.base}ms ${motion.easing}, border-color ${motion.base}ms, box-shadow ${motion.base}ms`,
         "&:hover": {
           transform: "translateY(-2px)",
@@ -81,6 +92,7 @@ const CheckCard: React.FunctionComponent<{
         // phone screens: as tall as they are
         sx={{
           height: 300,
+          flexShrink: 0,
           objectFit: "contain",
           boxSizing: "border-box",
           p: 1.25,
@@ -94,14 +106,45 @@ const CheckCard: React.FunctionComponent<{
         sx={{
           display: "flex",
           flexDirection: "column",
+          flex: 1,
+          minHeight: 0,
           gap: 1,
           p: 1.5,
           "&:last-child": { pb: 1 },
         }}
       >
-        <Typography sx={{ fontWeight: 600, fontSize: type.body }}>
+        <MuiLink
+          component={Link}
+          to={`${routes.VARIATION_DETAILS_PAGE}/${shown.id}`}
+          underline="none"
+          color="inherit"
+          title={check.name}
+          data-testid="baselineHistory"
+          sx={{
+            fontWeight: 600,
+            fontSize: type.body,
+            flexShrink: 0,
+            display: "-webkit-box",
+            WebkitLineClamp: 2,
+            WebkitBoxOrient: "vertical",
+            overflow: "hidden",
+            overflowWrap: "anywhere",
+            outline: "none",
+            // the link covers the whole card, so a click anywhere opens history
+            "&::after": {
+              content: '""',
+              position: "absolute",
+              inset: 0,
+              borderRadius: "inherit",
+            },
+            "&:focus-visible::after": {
+              outline: `2px solid ${tokens.brand}`,
+              outlineOffset: -2,
+            },
+          }}
+        >
           {check.name}
-        </Typography>
+        </MuiLink>
         <Box
           data-testid="baselineTags"
           sx={{
@@ -110,26 +153,15 @@ const CheckCard: React.FunctionComponent<{
             alignItems: "center",
             gap: 0.5,
             minWidth: 0,
+            // three rows of small chips; more would push the card taller
+            maxHeight: 80,
+            overflow: "hidden",
           }}
         >
           {/* the device's tags flow in the same row as the branch and the tags */}
           <DeviceTags parts={shown} sx={{ display: "contents" }} />
           <BranchTag branch={check.branchName} />
           {check.customTags && <Chip size="small" label={check.customTags} />}
-          {devices.length > 1 && (
-            <Chip
-              size="small"
-              variant="outlined"
-              clickable
-              onClick={(event) => setMenu(event.currentTarget)}
-              onDelete={(event) => setMenu(event.currentTarget)}
-              deleteIcon={<ExpandMore />}
-              aria-haspopup="menu"
-              aria-expanded={!!menu}
-              label={t("baselines.devices", { count: devices.length })}
-              data-testid="baselineDevices"
-            />
-          )}
         </Box>
         <Menu anchorEl={menu} open={!!menu} onClose={() => setMenu(null)}>
           {devices.map((device) => (
@@ -148,23 +180,29 @@ const CheckCard: React.FunctionComponent<{
         </Menu>
         <Box
           data-testid="baselineFooter"
-          sx={{ display: "flex", alignItems: "center", gap: 1 }}
+          sx={{ display: "flex", alignItems: "center", gap: 1, mt: "auto" }}
         >
-          <MuiLink
-            component={Link}
-            to={`${routes.VARIATION_DETAILS_PAGE}/${shown.id}`}
-            underline="hover"
-            data-testid="baselineHistory"
-            sx={{ fontSize: type.small, fontWeight: 600, color: tokens.brand }}
-          >
-            {t("baselines.history")}
-          </MuiLink>
+          {devices.length > 1 && (
+            <Chip
+              size="small"
+              variant="outlined"
+              clickable
+              onClick={(event) => setMenu(event.currentTarget)}
+              onDelete={(event) => setMenu(event.currentTarget)}
+              deleteIcon={<ExpandMore />}
+              aria-haspopup="menu"
+              aria-expanded={!!menu}
+              label={t("baselines.devices", { count: devices.length })}
+              data-testid="baselineDevices"
+              sx={aboveCardLink}
+            />
+          )}
           <IconButton
             onClick={() => onDelete(shown)}
             size="small"
             aria-label={t("baselines.deleteOf", { device: shownLabel })}
             data-testid="baselineDelete"
-            sx={{ ml: "auto", color: tokens.textSecondary }}
+            sx={{ ...aboveCardLink, ml: "auto", color: tokens.textSecondary }}
           >
             <DeleteOutline fontSize="small" />
           </IconButton>

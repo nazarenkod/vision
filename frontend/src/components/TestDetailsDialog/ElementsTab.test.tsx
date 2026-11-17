@@ -309,14 +309,20 @@ describe("ElementsTab: a readable tree (063)", () => {
     window.localStorage.clear();
   });
 
-  it("shows wrappers when asked, hidden by default with how many", () => {
+  it("shows wrappers when asked, hidden by default", () => {
     deepTab();
     expect(rowsShown()).toEqual(["0", "3", "4", "5"]);
-    expect(within(rowOf(3)).getByTestId("treeSkipped").textContent).toBe("+2");
     fireEvent.click(
       screen.getByTestId("treeWrappers").querySelector("input") as HTMLElement,
     );
     expect(rowsShown()).toEqual(["0", "1", "2", "3", "4", "5"]);
+  });
+
+  it("keeps rows free of hidden-wrapper counts and accessibility marks", () => {
+    deepTab();
+    expect(screen.queryByTestId("treeSkipped")).toBeNull();
+    expect(rowOf(3).textContent).not.toContain("+2");
+    expect(rowOf(4).textContent).not.toContain("a11y");
   });
 
   it("shows a line break as ↵, the component apart and each kind's icon", () => {

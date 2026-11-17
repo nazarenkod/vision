@@ -12,6 +12,13 @@
 маршрут, а не поле в `/builds/:id/overview`: огляд обмежує проблеми двадцятьма й кешує свої
 підрахунки, а вкладці потрібні всі й лише коли її відкрили.
 
+Список кожної перевірки згорнутий (REQ-065-10): під рядком перевірки — перемикач «N проблем» з
+`aria-expanded`, а не стрілка в самому рядку, бо рядок — кнопка, що відкриває порівняння. Що
+розгорнуто — стан вкладки: порівняння відкривається поверх неї, тож після Esc усе як було.
+
+Назву елемента для людей `elementNameOf` розкодовує (`&#10;` → пробіл, `&#128646;` → емодзі),
+а ключі проблем і далі беруть текст як у дереві.
+
 Фронтенд вантажить список, коли відкрито вкладку, і ще раз, коли змінюється будь-яке число
 доступності знімків збірки. Так список іде за таблицею наживо, як і її числа: заведений баг,
 хибна знахідка чи новий знімок збірки, що ще йде. Під рядком знімка — список рядків-кнопок; клік
@@ -66,4 +73,5 @@
 | REQ-065-06 | `backend/src/a11y/a11y-issues.spec.ts › leaves out advice and false positives` |
 | REQ-065-07 | `frontend/integration_tests/test/buildOverview.spec.ts › lists every accessibility problem under its check, new first` |
 | REQ-065-08 | `frontend/integration_tests/test/buildOverview.spec.ts › opens the review with the problem chosen on the Accessibility tab`; `frontend/integration_tests/test/a11yProblems.spec.ts › opens a screen with the problem chosen on the build's Accessibility tab`; `frontend/src/_helpers/route.helpers.test.ts › opens a run with the accessibility problem chosen on the Accessibility tab` |
+| REQ-065-10 | `frontend/integration_tests/test/buildOverview.spec.ts › lists every accessibility problem under its check, new first`; `frontend/integration_tests/test/buildOverview.spec.ts › opens the review with the problem chosen on the Accessibility tab` |
 | REQ-065-09 | manual: перемкнути мову на English — стани «New»/«Known» і назви правил англійською; тексти беруться з наявних ключів словника, `tsc` не пропускає ключ без перекладу |

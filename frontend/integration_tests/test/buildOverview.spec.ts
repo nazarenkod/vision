@@ -911,15 +911,24 @@ test("lists every accessibility problem under its check, new first", async ({
 }) => {
   await openProjectPage(project.id, build.id, undefined, "a11y");
 
-  const lists = page.getByTestId("a11yProblems");
   // Login has no problems listed: nothing under its row
-  await expect(lists).toHaveCount(1);
-  const lines = lists.getByTestId("a11yProblem");
-  await expect(lines).toHaveText([
+  const toggle = page.getByTestId("a11yProblemsToggle");
+  await expect(toggle).toHaveCount(1);
+  // folded until someone unfolds it (REQ-065-10)
+  await expect(toggle).toHaveText("3 problems");
+  await expect(toggle).toHaveAttribute("aria-expanded", "false");
+  await expect(page.getByTestId("a11yProblem")).toHaveCount(0);
+
+  await toggle.click();
+  await expect(toggle).toHaveAttribute("aria-expanded", "true");
+  await expect(page.getByTestId("a11yProblem")).toHaveText([
     /^New\s*Control has no label\s*· tailBadge ×2$/,
     /^MOB-4821\s*Touch target too small\s*· Pay$/,
     /^Known\s*Low text contrast\s*· 11 Aug$/,
   ]);
+
+  await toggle.click();
+  await expect(page.getByTestId("a11yProblem")).toHaveCount(0);
 });
 
 test("opens the review with the problem chosen on the Accessibility tab", async ({
@@ -927,11 +936,21 @@ test("opens the review with the problem chosen on the Accessibility tab", async 
   page,
 }) => {
   await openProjectPage(project.id, build.id, undefined, "a11y");
+  await page.getByTestId("a11yProblemsToggle").click();
 
   await page.getByTestId("a11yProblem").first().click();
 
   await expect(page).toHaveURL(
     /tab=a11y&issue=missing-label%7Cid%3AtailBadge&testId=pay$/,
+  );
+  // back from the review, the list is as it was left
+  await expect(page.getByRole("dialog")).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  await expect(page).toHaveURL(/tab=a11y$/);
+  await expect(page.getByTestId("a11yProblemsToggle")).toHaveAttribute(
+    "aria-expanded",
+    "true",
   );
 });
 

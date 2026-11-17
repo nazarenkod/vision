@@ -872,6 +872,11 @@ export const en = {
   "a11ySummary.screensChecked": "Checks with a UI tree",
   "a11ySummary.screensWithNew": "Checks with new issues",
   "a11ySummary.screen": "Check",
+  // the folded list of a check's problems on the build's Accessibility tab (065)
+  "a11ySummary.problems": {
+    one: "{count} problem",
+    other: "{count} problems",
+  },
   "a11ySummary.device": "Device",
   "a11ySummary.new": "New",
   "a11ySummary.open": "Open issues",

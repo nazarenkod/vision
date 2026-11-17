@@ -3,6 +3,7 @@ import {
   fitsParts,
   leftOutFor,
   leftOutMarks,
+  otherDiffers,
   textOnScreen,
   wordsOnly,
   partsOf,
@@ -138,7 +139,7 @@ describe("what a variable-text rule leaves out (spec 066)", () => {
   const button = { x: 100, y: 1000, width: 300, height: 100 };
   const text = { x: 200, y: 1020, width: 180, height: 60 };
 
-  it("marks the text parts hatched and frames the element", () => {
+  it("marks the text parts hatched, with no frame round the element", () => {
     const rule = {
       leftOut: [
         { side: "current" as const, element: button, areas: [text] },
@@ -150,8 +151,8 @@ describe("what a variable-text rule leaves out (spec 066)", () => {
         },
       ],
     };
+    // the hatch only, no frame round the element (REQ-072-07)
     expect(leftOutMarks(rule, "current")).toEqual([
-      { rect: button, mark: "frame", element: button },
       { rect: text, mark: "hatch", element: button },
     ]);
     expect(leftOutMarks(rule, "baseline")).toEqual([
@@ -162,7 +163,7 @@ describe("what a variable-text rule leaves out (spec 066)", () => {
     expect(leftOutFor(rule, "current", text)).toBeUndefined();
   });
 
-  it("marks the found pieces hatched and frames the merged element", () => {
+  it("marks the found pieces of a merged element hatched", () => {
     const row = { x: 40, y: 400, width: 1000, height: 270 };
     const sum = { x: 880, y: 420, width: 100, height: 40 };
     const time = { x: 400, y: 480, width: 80, height: 30 };
@@ -177,7 +178,6 @@ describe("what a variable-text rule leaves out (spec 066)", () => {
       ],
     };
     expect(leftOutMarks(rule, "current")).toEqual([
-      { rect: row, mark: "frame", element: row },
       { rect: sum, mark: "hatch", element: row },
       { rect: time, mark: "hatch", element: row },
     ]);
@@ -265,5 +265,26 @@ describe("variableCount", () => {
     expect(
       variableCount("xpath://*[@resource-id='list']/*[1]", parts, rows),
     ).toBeNull();
+  });
+});
+
+describe("otherDiffers", () => {
+  const row = "Зі своєї картки *1051 +1.05 UAH 17 серпня, 13:59";
+  const baseline = "Зі своєї картки *1050 +1.01 UAH 17 серпня, 13:59";
+
+  it("names the words of the other text that differ where nothing is marked", () => {
+    expect(otherDiffers(marking(row, "13:59"), row, baseline)).toEqual({
+      words: ["*1050", "+1.01"],
+    });
+    expect(
+      otherDiffers(marking(row, "1051", "+1.05", "13:59"), row, baseline),
+    ).toBeNull();
+  });
+
+  it("tells a marked value of another kind on the other text", () => {
+    const updated = "Updated at 14:07";
+    expect(
+      otherDiffers(marking(updated, "14:07"), updated, "Updated at 6 pm"),
+    ).toEqual({ value: "6 pm" });
   });
 });

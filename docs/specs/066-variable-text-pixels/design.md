@@ -92,7 +92,7 @@ flowchart LR
 | REQ-066-02 | `backend/src/ui-tree/comparison-inputs.spec.ts › leaves out only the text parts when the element keeps its size` |
 | REQ-066-03 | `backend/src/ui-tree/comparison-inputs.spec.ts › leaves out the whole element when its text is its own or its size changed` |
 | REQ-066-04 | `backend/src/ui-tree/comparison-inputs.spec.ts › counts a change of the icon next to a variable text` |
-| REQ-066-05 | `frontend/src/_helpers/variableText.helper.test.ts › marks the text parts hatched and frames the element` |
+| REQ-066-05 | `frontend/src/_helpers/variableText.helper.test.ts › marks the text parts hatched, with no frame round the element` |
 | REQ-066-06 | `frontend/src/components/TestDetailsDialog/ElementPopover.test.tsx › says what of the element is not compared` |
 | REQ-066-07 | `frontend/src/_helpers/whatsCompared.helper.test.ts › maps what a variable-text rule leaves out` |
 | REQ-066-08 | `frontend/src/components/TestDetailsDialog/ElementPopover.test.tsx › offers the text shown on the screen for a label-only element` |

@@ -1295,10 +1295,12 @@ export const en = {
   "select.variableClick": "Click the part that changes.",
   "select.variableRest": "The rest of the text stays word for word.",
   "select.variablePattern": "Format: {pattern}",
-  "select.variableOther":
-    "On the {side} it says “{text}” here — it will not fit.",
-  "select.variableSideBaseline": "baseline",
-  "select.variableSideCurrent": "current",
+  "select.variableOtherWords":
+    "{side} it says something else here: {words}. Mark them if they change — otherwise the snapshot goes to review.",
+  "select.variableOtherValue":
+    "{side} it says “{value}” here — not like the marked value. The snapshot goes to review.",
+  "select.variableSideBaseline": "On the baseline",
+  "select.variableSideCurrent": "On the snapshot",
   "select.variableNoAnchor":
     "This element cannot be found next run: it has no id and nothing fixed in its text or above it.",
   "select.variableNoText": "The element has no text",

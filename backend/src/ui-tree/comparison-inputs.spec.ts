@@ -7,6 +7,7 @@ import {
   findSystemBars,
   locateCandidates,
   locatedKey,
+  variableNodes,
   matchesSelector,
   parseSelector,
   parseUiTreeSettings,
@@ -674,5 +675,56 @@ describe('resolveRules: the marked pieces of a merged element, found on the pixe
     expect(outsideAreas(changes, resolved.ignore, resolved.quietKeys).some((change) => change.key === row.key)).toBe(
       false
     );
+  });
+});
+
+describe('resolveRules: the same row on the baseline (spec 072)', () => {
+  const history = (labels: string[]) =>
+    parse(`<?xml version='1.0' encoding='UTF-8' standalone='yes' ?>
+<hierarchy index="0" class="hierarchy" rotation="0" width="1080" height="2400">
+  <android.widget.FrameLayout index="0" class="android.widget.FrameLayout" text="" resource-id="" bounds="[0,0][1080,2400]" displayed="true">
+${labels
+  .map(
+    (label, n) =>
+      `    <android.widget.Button index="${n}" class="android.widget.Button" text="" content-desc="${label}" resource-id="activity_list_item" bounds="[40,${400 + n * 300}][1040,${650 + n * 300}]" displayed="true" />`
+  )
+  .join('\n')}
+  </android.widget.FrameLayout>
+</hierarchy>`);
+  const other = 'На свою картку *7101 -5.03 UAH 11 серпня, 11:41';
+  // only the time marked, on the snapshot's row
+  const rule = {
+    id: 'v',
+    selector: 'id:activity_list_item',
+    action: 'variable' as const,
+    parts: [{ text: 'Зі своєї картки *1051 +1.05 UAH 17 серпня, ' }, { pattern: '\\d+:\\d{2}', sample: '13:59' }],
+  };
+  const current = history([other, 'Зі своєї картки *1051 +1.05 UAH 17 серпня, 13:59']);
+  const baseline = history([other, 'Зі своєї картки *1050 +1.01 UAH 17 серпня, 13:59']);
+
+  it('pairs a row with the same row of the baseline even when its fixed words differ', () => {
+    const [now, was] = variableNodes(rule, current, baseline);
+    expect(now.map((node) => node.key)).toEqual([was[0].key]);
+    expect(was[0].label).toBe('Зі своєї картки *1050 +1.01 UAH 17 серпня, 13:59');
+    expect(resolveRules([rule], [current, baseline]).leftOut.v.map((item) => item.reason)).toEqual([
+      'own-text',
+      'own-text',
+    ]);
+  });
+
+  it('looks for the place on the baseline between the words both texts share', () => {
+    const [candidate] = locateCandidates([rule], [current, baseline]);
+    expect(candidate.baseline.places.map(({ value }) => value)).toEqual(['13:59']);
+  });
+
+  it('compares the unmarked words of the row once the place is found', () => {
+    const [candidate] = locateCandidates([rule], [current, baseline]);
+    const time = { x: 300, y: 760, width: 80, height: 30 };
+    const located = new Map([[locatedKey('v', candidate.key), { current: [time], baseline: [time] }]]);
+    const resolved = resolveRules([rule], [current, baseline], located);
+    expect(resolved.ignore).toEqual([
+      { x: 298, y: 758, width: 84, height: 34 },
+      { x: 298, y: 758, width: 84, height: 34 },
+    ]);
   });
 });

@@ -1,5 +1,6 @@
 import { PNG } from 'pngjs';
 import { Rect } from './ui-tree.types';
+import { normalize } from './variable-text';
 
 /**
  * Finding on a screenshot where the marked places of a variable text are drawn
@@ -140,4 +141,66 @@ export function placeAreas(
     areas.push({ x: x0, y: y0, width: x1 - x0, height: y1 - y0 });
   }
   return { areas };
+}
+
+type Place = { value: string; start: number; end: number };
+
+const wordsOf = (text: string) =>
+  [...text.matchAll(/\S+/g)].map((match) => ({
+    text: match[0],
+    start: match.index,
+    end: match.index + match[0].length,
+  }));
+
+/**
+ * Where the marked places of one text stand in another text of the same element,
+ * whose fixed words differ (REQ-072-02): the words of both are lined up (the
+ * longest run they share), and a place is the words of the other text between
+ * the same shared words around it, word for word when there are as many on
+ * both sides. Null when a place cannot be told.
+ */
+export function alignPlaces(
+  text: string,
+  places: Place[],
+  otherText: string
+): { text: string; places: Place[] } | null {
+  const a = wordsOf(text);
+  const other = normalize(otherText);
+  const b = wordsOf(other);
+  // longest common run of words; a row is tens of words
+  const table = Array.from({ length: a.length + 1 }, () => new Array<number>(b.length + 1).fill(0));
+  for (let i = a.length - 1; i >= 0; i--) {
+    for (let j = b.length - 1; j >= 0; j--) {
+      table[i][j] = a[i].text === b[j].text ? table[i + 1][j + 1] + 1 : Math.max(table[i + 1][j], table[i][j + 1]);
+    }
+  }
+  const twin = new Array<number>(a.length).fill(-1);
+  for (let i = 0, j = 0; i < a.length && j < b.length;) {
+    if (a[i].text === b[j].text) twin[i++] = j++;
+    else if (table[i + 1][j] >= table[i][j + 1]) i++;
+    else j++;
+  }
+  const result: Place[] = [];
+  for (const place of places) {
+    const inPlace = a.flatMap((word, i) => (word.start < place.end && place.start < word.end ? [i] : []));
+    if (!inPlace.length) return null;
+    const first = inPlace[0];
+    const last = inPlace[inPlace.length - 1];
+    let before = first - 1;
+    while (before >= 0 && twin[before] < 0) before--;
+    let after = last + 1;
+    while (after < a.length && twin[after] < 0) after++;
+    const fromA = before + 1;
+    const toA = after - 1;
+    const fromB = before >= 0 ? twin[before] + 1 : 0;
+    const toB = after < a.length ? twin[after] - 1 : b.length - 1;
+    let range: [number, number] | null = null;
+    if (toA - fromA === toB - fromB) range = [fromB + first - fromA, fromB + last - fromA];
+    else if (fromA === first && toA === last && toB >= fromB) range = [fromB, toB];
+    if (!range) return null;
+    const start = b[range[0]].start;
+    const end = b[range[1]].end;
+    result.push({ value: other.slice(start, end), start, end });
+  }
+  return { text: other, places: result };
 }

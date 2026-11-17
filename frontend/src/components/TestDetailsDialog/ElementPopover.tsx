@@ -30,6 +30,7 @@ import {
   fitsParts,
   hasPlace,
   markedFrom,
+  otherDiffers,
   partsOf,
   patternFor,
   placesIn,
@@ -168,7 +169,9 @@ export const ElementPopover: React.FunctionComponent<ElementPopoverProps> = ({
   const parts = variable ? partsOf(text, pieces, variable.marked) : [];
   const marked = !!variable && hasPlace(parts);
   const selector = marked ? variableSelector(element, parts) : null;
-  const otherFits = !other || !marked || fitsParts(parts, other.text);
+  // what the same element says differently on the other screenshot (REQ-072-04, 05)
+  const differs =
+    other && marked ? otherDiffers(parts, text, other.text) : null;
   const canSave = marked && !!selector && fitsParts(parts, text) && !busy;
   const save = () => {
     if (!variable || !canSave || !selector) return;
@@ -563,7 +566,7 @@ export const ElementPopover: React.FunctionComponent<ElementPopoverProps> = ({
                     ? t("select.variableRest")
                     : t("select.variableClick")}
                 </Typography>
-                {!otherFits && other && (
+                {differs && other && (
                   <Typography
                     data-testid="variableOther"
                     sx={{
@@ -576,14 +579,25 @@ export const ElementPopover: React.FunctionComponent<ElementPopoverProps> = ({
                       py: 1,
                     }}
                   >
-                    {t("select.variableOther", {
-                      side: t(
-                        other.side === "baseline"
-                          ? "select.variableSideBaseline"
-                          : "select.variableSideCurrent",
-                      ),
-                      text: other.text,
-                    })}
+                    {"words" in differs
+                      ? t("select.variableOtherWords", {
+                          side: t(
+                            other.side === "baseline"
+                              ? "select.variableSideBaseline"
+                              : "select.variableSideCurrent",
+                          ),
+                          words: differs.words
+                            .map((word) => `«${word}»`)
+                            .join(", "),
+                        })
+                      : t("select.variableOtherValue", {
+                          side: t(
+                            other.side === "baseline"
+                              ? "select.variableSideBaseline"
+                              : "select.variableSideCurrent",
+                          ),
+                          value: differs.value,
+                        })}
                   </Typography>
                 )}
                 {marked && wordsOnly(parts) && (

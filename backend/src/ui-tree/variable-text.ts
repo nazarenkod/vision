@@ -18,7 +18,7 @@ const isPlace = (part: TextPart): part is { pattern: string; sample?: string } =
 
 // non-breaking and narrow spaces are how apps print amounts; to a reader they are spaces
 const spaces = (text: string) => text.replace(/[\u00a0\u202f\u2007]/g, ' ').replace(/\s+/g, ' ');
-const normalize = (text: string) => spaces(text).trim();
+export const normalize = (text: string) => spaces(text).trim();
 
 const escape = (text: string) => text.replace(/[.*+?^${}()|[\]\\/]/g, '\\$&');
 

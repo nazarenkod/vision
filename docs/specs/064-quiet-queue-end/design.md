@@ -1,4 +1,4 @@
-# 061 — Дизайн
+# 064 — Дизайн
 
 ## Підхід
 
@@ -9,7 +9,7 @@
 контекст функцію `claim`: оголошення передає їй id знімків, яких стосується рішення, і чиста
 функція `closesQueue` вирішує, чи після цього в зафіксованій черзі ще щось чекає. Якщо ні,
 порівняння запам'ятовує «останнє рішення» (вид, `decisionId`, знімок), а оголошення не показує
-сповіщення (REQ-061-01) і закриває попереднє сповіщення про рішення, якщо воно ще висить — інакше
+сповіщення (REQ-064-01) і закриває попереднє сповіщення про рішення, якщо воно ще висить — інакше
 на екрані знову два повідомлення. Поза порівнянням контексту немає, і все працює як раніше.
 
 Картка показується, щойно рішення «закрило» чергу, не чекаючи, доки нові статуси прийдуть
@@ -17,7 +17,7 @@
 приходять, умова `queueDone` (031) і далі тримає картку.
 
 `QueueDone` переписано: один рядок статусу (`undo.approved` / `undo.rejected` у кольорі статусу,
-або `queue.allDecided`, коли останнього рішення цієї людини немає — REQ-061-09), «Скасувати»
+або `queue.allDecided`, коли останнього рішення цієї людини немає — REQ-064-09), «Скасувати»
 (лише з `decisionId`) і «Наступна» (лише з наступною чергою). Клік по затемненню закриває
 порівняння тим самим `navigateById()`, що й Esc. Enter відкриває наступну чергу, як і раніше.
 
@@ -27,12 +27,12 @@
 
 Якщо рішення прийшло разом з повідомленням про баг (заведено й відхилено), повідомлення про баг
 лишається — воно про інше, — але без Undo: Undo у картці. Пропозиції завести баг у картці немає
-(REQ-061-10).
+(REQ-064-10).
 
 **Підказки клавіш.** Прибираємо значки `kbd`/`::after` з кнопок і меню, літери біля дій
 елемента, і фрази «Hotkey: …» / «Клавіша: …» зі словників. Підказку, що була лише клавішею
 (Approve, Reject, стрілки), прибираємо разом з `Tooltip`. Обробники клавіш не чіпаємо
-(REQ-061-23). Тест словників не дає клавішам повернутися в тексти.
+(REQ-064-23). Тест словників не дає клавішам повернутися в тексти.
 
 ## Компоненти
 
@@ -81,17 +81,17 @@ sequenceDiagram
 
 | Вимога | Перевірка |
 |---|---|
-| REQ-061-01 | `frontend/integration_tests/test/buildOverview.spec.ts › ends a queue with one card and no toast` |
-| REQ-061-02 | `frontend/integration_tests/test/buildOverview.spec.ts › ends a queue with one card and no toast` |
-| REQ-061-03 | `frontend/integration_tests/test/buildOverview.spec.ts › offers the next queue on the card when someone decided it all` |
-| REQ-061-04 | `frontend/integration_tests/test/buildOverview.spec.ts › ends a queue with one card and no toast` |
-| REQ-061-05 | `frontend/integration_tests/test/buildOverview.spec.ts › takes the last decision back from the card` |
-| REQ-061-06 | `frontend/integration_tests/test/buildOverview.spec.ts › takes the last decision back from the card` |
-| REQ-061-07 | `frontend/integration_tests/test/buildOverview.spec.ts › keeps the card and says why when Undo is refused` |
-| REQ-061-08 | `frontend/integration_tests/test/buildOverview.spec.ts › closes the review with a click beside the card` |
-| REQ-061-09 | `frontend/integration_tests/test/buildOverview.spec.ts › offers the next queue on the card when someone decided it all` |
-| REQ-061-10 | `frontend/integration_tests/test/buildOverview.spec.ts › ends a queue with one card and no toast` |
-| REQ-061-20 | `frontend/integration_tests/test/testDetailsDialog.spec.ts › shows no keys on the buttons of the review` |
-| REQ-061-21 | `frontend/src/i18n/noKeyHints.test.ts › names no keys in any text` |
-| REQ-061-22 | `frontend/integration_tests/test/testDetailsDialog.spec.ts › shows no keys on the buttons of the review` |
-| REQ-061-23 | `frontend/integration_tests/test/testDetailsDialog.spec.ts › keeps the review layout and its keys` |
+| REQ-064-01 | `frontend/integration_tests/test/buildOverview.spec.ts › ends a queue with one card and no toast` |
+| REQ-064-02 | `frontend/integration_tests/test/buildOverview.spec.ts › ends a queue with one card and no toast` |
+| REQ-064-03 | `frontend/integration_tests/test/buildOverview.spec.ts › offers the next queue on the card when someone decided it all` |
+| REQ-064-04 | `frontend/integration_tests/test/buildOverview.spec.ts › ends a queue with one card and no toast` |
+| REQ-064-05 | `frontend/integration_tests/test/buildOverview.spec.ts › takes the last decision back from the card` |
+| REQ-064-06 | `frontend/integration_tests/test/buildOverview.spec.ts › takes the last decision back from the card` |
+| REQ-064-07 | `frontend/integration_tests/test/buildOverview.spec.ts › keeps the card and says why when Undo is refused` |
+| REQ-064-08 | `frontend/integration_tests/test/buildOverview.spec.ts › closes the review with a click beside the card` |
+| REQ-064-09 | `frontend/integration_tests/test/buildOverview.spec.ts › offers the next queue on the card when someone decided it all` |
+| REQ-064-10 | `frontend/integration_tests/test/buildOverview.spec.ts › ends a queue with one card and no toast` |
+| REQ-064-20 | `frontend/integration_tests/test/testDetailsDialog.spec.ts › shows no keys on the buttons of the review` |
+| REQ-064-21 | `frontend/src/i18n/noKeyHints.test.ts › names no keys in any text` |
+| REQ-064-22 | `frontend/integration_tests/test/testDetailsDialog.spec.ts › shows no keys on the buttons of the review` |
+| REQ-064-23 | `frontend/integration_tests/test/testDetailsDialog.spec.ts › keeps the review layout and its keys` |

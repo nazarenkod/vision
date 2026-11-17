@@ -8,6 +8,7 @@ import { routes } from "./constants";
 import ProfilePage from "./pages/ProfilePage";
 import TestVariationListPage from "./pages/TestVariationListPage";
 import InsightsPage from "./pages/InsightsPage";
+import InspectorPage from "./pages/InspectorPage";
 import UserListPage from "./pages/UserListPage";
 import BackupsPage from "./pages/BackupsPage";
 import TestVariationDetailsPage from "./pages/TestVariationDetailsPage";
@@ -23,7 +24,7 @@ function RegisterRoute() {
 }
 
 // screen search left the interface (spec 060): an old link opens the project's
-// builds, where project access is checked as for any other page (REQ-060-51)
+// builds, where project access is checked as for any other page (REQ-062-51)
 function SearchRedirect() {
   const { projectId } = useParams();
   return <Navigate to={`${routes.HOME}${projectId}`} replace />;
@@ -76,6 +77,11 @@ function Router() {
       <Route
         path={`${routes.SEARCH_PAGE}/:projectId`}
         element={<SearchRedirect />}
+      />
+      {/* one check's UI tree on the whole window (062) */}
+      <Route
+        path={routes.INSPECT_PAGE}
+        element={<PrivateRoute component={InspectorPage} />}
       />
       <Route
         path={`${routes.INSIGHTS_PAGE}/:projectId`}

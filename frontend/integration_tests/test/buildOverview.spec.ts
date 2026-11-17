@@ -399,7 +399,7 @@ test("offers the next queue on the card when someone decided it all", async ({
   );
 
   const done = page.getByTestId("queueDone");
-  // no decision of this reviewer to tell about or take back (REQ-061-09)
+  // no decision of this reviewer to tell about or take back (REQ-064-09)
   await expect(page.getByTestId("queueStatus")).toHaveText("All decided");
   await expect(page.getByTestId("queueUndo")).toHaveCount(0);
   await expect(page.getByTestId("queueNext")).toHaveText("Next");
@@ -411,7 +411,7 @@ test("offers the next queue on the card when someone decided it all", async ({
   void openProjectPage;
 });
 
-// the queue of new screenshots holds one: rejecting it ends the queue (061)
+// the queue of new screenshots holds one: rejecting it ends the queue (064)
 const endQueue = async (page: Page) => {
   await page.route(`${API_URL}/test-runs/reject`, (route) =>
     route.fulfill({ json: { decisionId: "d-9" } }),
@@ -439,7 +439,7 @@ test("ends a queue with one card and no toast", async ({
   await expect(page.locator("#notistack-snackbar")).toHaveCount(0);
   await expect(page.getByTestId("undoDecision")).toHaveCount(0);
   await expect(page.getByTestId("reportBugAfterReject")).toHaveCount(0);
-  // nothing but the status and two actions (REQ-061-04)
+  // nothing but the status and two actions (REQ-064-04)
   const card = page.getByRole("dialog", { name: "Queue reviewed" });
   await expect(card.getByRole("button")).toHaveCount(2);
   await expect(card).not.toContainText("New screenshots");
@@ -457,7 +457,7 @@ test("takes the last decision back from the card", async ({
     route.fulfill({ json: { undone: 1 } }),
   );
   await endQueue(page);
-  // no timer on the card's Undo, unlike the toast's 8 s (REQ-061-05)
+  // no timer on the card's Undo, unlike the toast's 8 s (REQ-064-05)
   await page.waitForTimeout(9000);
 
   const [undo] = await Promise.all([

@@ -94,7 +94,7 @@ const SEVERITY_COLOR: Record<A11yViolation["severity"], string> = {
   info: tokens.textMuted,
 };
 
-export type PanelTab = "changes" | "a11y";
+export type PanelTab = "changes" | "a11y" | "elements";
 
 interface Props {
   testRun: TestRun;
@@ -146,6 +146,10 @@ interface Props {
   // folded to a strip with a button, so the screens take its width (REQ-046-07)
   folded?: boolean;
   onFoldedChange?: (folded: boolean) => void;
+  // the check's UI tree beside the screenshot (062), made by the dialog that draws its outlines
+  elementsTab?: React.ReactNode;
+  // the tab to open on, when the address names one (REQ-062-35)
+  initialTab?: PanelTab;
 }
 
 type RuleDraft = {
@@ -194,6 +198,8 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
   onSelectElements,
   folded = false,
   onFoldedChange,
+  elementsTab,
+  initialTab,
 }) => {
   const { enqueueSnackbar } = useSnackbar();
   const showRuleSnack = useRuleSnackbar();
@@ -219,10 +225,15 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
   const withUiTree = hasUiTree(testRun);
 
   // deciding on the changes is the review's main job, so it opens on them (REQ-058-01);
-  // a screen opened from the build's Accessibility tab opens on its problems (REQ-058-04)
+  // a screen opened from the build's Accessibility tab opens on its problems (REQ-058-04),
+  // and one the inspector page returns to, on its Elements tab (REQ-062-35)
   const { search } = useLocation();
-  const [tab, setTab] = React.useState<PanelTab>(() =>
-    withUiTree && getQueryParams(search).tab === "a11y" ? "a11y" : "changes",
+  const [tab, setTab] = React.useState<PanelTab>(
+    () =>
+      initialTab ??
+      (withUiTree && getQueryParams(search).tab === "a11y"
+        ? "a11y"
+        : "changes"),
   );
   React.useEffect(() => {
     onTabChange?.(tab);
@@ -253,7 +264,8 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
 
   // the tab stays when moving between devices of a check; without a UI tree only Changes has content
   React.useEffect(() => {
-    if (!withUiTree) setTab("changes");
+    // the Elements tab explains a missing tree itself (REQ-062-07)
+    if (!withUiTree) setTab((now) => (now === "elements" ? now : "changes"));
   }, [withUiTree, testRun.id]);
 
   const run = async (action: () => Promise<unknown>, done: string) => {
@@ -1747,7 +1759,15 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
         <Tabs
           value={tab}
           onChange={(_, value) => setTab(value)}
-          sx={{ px: 2, flex: 1, minWidth: 0 }}
+          // three tabs and a count fit a narrow panel in Ukrainian only this close; past that they scroll, not clip
+          variant="scrollable"
+          scrollButtons={false}
+          sx={{
+            px: 1.5,
+            flex: 1,
+            minWidth: 0,
+            "& .MuiTab-root": { minWidth: 0, px: 1.25 },
+          }}
         >
           <Tab
             value="changes"
@@ -1777,6 +1797,13 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
               </Box>
             }
           />
+          {elementsTab && (
+            <Tab
+              value="elements"
+              data-testid="elementsTabButton"
+              label={t("panel.elements")}
+            />
+          )}
         </Tabs>
         {onFoldedChange && (
           <Tooltip title={t("compare.hidePanel")} disableInteractive>
@@ -1804,21 +1831,27 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
         }}
       >
         {/* a plain page source: what needs positions is not checked (REQ-050-09) */}
-        {withUiTree && structure?.positioned === false && (
-          <Typography
-            variant="body2"
-            color="textSecondary"
-            data-testid="treeWithoutPositions"
-            sx={{
-              p: 1.25,
-              borderRadius: radius.control,
-              bgcolor: tokens.subtle,
-            }}
-          >
-            {t("panel.unpositioned")}
-          </Typography>
-        )}
-        {tab === "a11y" ? a11yTab() : changesTab()}
+        {withUiTree &&
+          structure?.positioned === false &&
+          tab !== "elements" && (
+            <Typography
+              variant="body2"
+              color="textSecondary"
+              data-testid="treeWithoutPositions"
+              sx={{
+                p: 1.25,
+                borderRadius: radius.control,
+                bgcolor: tokens.subtle,
+              }}
+            >
+              {t("panel.unpositioned")}
+            </Typography>
+          )}
+        {tab === "elements" && elementsTab
+          ? elementsTab
+          : tab === "a11y"
+            ? a11yTab()
+            : changesTab()}
       </Box>
 
       <Dialog

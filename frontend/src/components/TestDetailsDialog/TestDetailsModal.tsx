@@ -70,6 +70,7 @@ import {
   ScreenRule,
   TextPart,
   SelectorVariant,
+  TreeSide,
 } from "../../types/insights";
 import {
   chosenVariant,
@@ -113,6 +114,16 @@ import TestStatusChip from "../TestStatusChip";
 import { PresenceAvatars } from "../PresenceAvatars";
 import { useT } from "../../i18n";
 import { ignoreAreasOverLimit, MAX_IGNORE_AREAS } from "./ignoreAreaLimit";
+import { useLocation, useNavigate } from "react-router-dom";
+import { ElementsTab } from "./ElementsTab";
+import { treeOf, useInspectorTrees } from "./useInspectorTrees";
+import {
+  inspectorLocation,
+  nodeAt,
+  readPanelPlace,
+  sameNode,
+  treeOutlines,
+} from "../../_helpers/treeInspector.helper";
 
 // the height the selection panel takes at the bottom of the screenshots, with its margin
 const PANEL_ROOM = 190;
@@ -219,6 +230,35 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
   const [a11yOverlay, setA11yOverlay] = useState(true);
   // issue boxes only while their tab is open, so they do not cover the changes (REQ-058-02)
   const [panelTab, setPanelTab] = useState<PanelTab>("changes");
+  // the UI tree beside the screenshots (062): which tree, the node chosen and the one pointed at
+  const location = useLocation();
+  const navigate = useNavigate();
+  // back from the inspector page, the address names the tab and the node (REQ-062-35)
+  const [panelPlace] = useState(() => readPanelPlace(location.search));
+  const [treeSide, setTreeSide] = useState<TreeSide>(
+    panelPlace?.side ?? "current",
+  );
+  const [treeChosen, setTreeChosen] = useState<
+    { side: TreeSide; index: number } | undefined
+  >(
+    panelPlace?.node !== undefined
+      ? { side: panelPlace.side, index: panelPlace.node }
+      : undefined,
+  );
+  const [treePointed, setTreePointed] = useState<{
+    side: TreeSide;
+    index: number;
+  }>();
+  const trees = useInspectorTrees(testRun.id, panelTab === "elements");
+  const treeNodes = (side: TreeSide) => treeOf(trees[side])?.nodes ?? [];
+  // another check: what was chosen belongs to the last one's tree
+  const treeFor = React.useRef(testRun.id);
+  useEffect(() => {
+    if (treeFor.current === testRun.id) return;
+    treeFor.current = testRun.id;
+    setTreeChosen(undefined);
+    setTreePointed(undefined);
+  }, [testRun.id]);
   const [highlightedViolation, setHighlightedViolation] = useState<string>();
   // what the pointer is over in the side panel (REQ-018-36)
   const [previewViolation, setPreviewViolation] = useState<string>();
@@ -770,6 +810,8 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
   const toggleSelecting = () => {
     if (!canSelect) return;
     leaveAreasThen(() => {
+      // the red diff covers the elements and their outlines (REQ-024-13)
+      if (!pickMode) setIsDiffShown(false);
       setPickMode((on) => !on);
       setSelection(undefined);
       setHovered(undefined);
@@ -901,6 +943,39 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
     return marks;
   };
   const selectingNow = pickMode || !!selection || !!previewElement;
+  // on the Elements tab the screenshots answer to the tree, unless selecting or drawing (REQ-062-10…13, 20)
+  const treePicking =
+    panelTab === "elements" &&
+    !pickMode &&
+    !selection &&
+    !areasOpen &&
+    !isDrawMode;
+  const treeMarks = (side: Side): OverlayRect[] =>
+    panelTab === "elements" && !selectingNow
+      ? treeOutlines(
+          side,
+          { current: treeNodes("current"), baseline: treeNodes("baseline") },
+          treeChosen,
+          treePointed,
+        ).map((outline) => ({
+          id: outline.id,
+          ...outline.rect,
+          color: canvas.brand,
+          dashed: outline.dashed,
+          label: outline.label,
+        }))
+      : [];
+  const treeHover = (side: Side, point: { x: number; y: number } | null) => {
+    const node = nodeAt(point, treeNodes(side));
+    setTreePointed(node ? { side, index: node.index } : undefined);
+  };
+  // a click on the baseline turns the tab to the baseline's tree (REQ-062-20)
+  const treePick = (side: Side, point: { x: number; y: number }) => {
+    const node = nodeAt(point, treeNodes(side));
+    if (!node) return;
+    setTreeSide(side);
+    setTreeChosen({ side, index: node.index });
+  };
   // an element the pointer is over in the selection panel, or all selected
   const [litPicked, setLitPicked] = useState<number | null>(null);
   const pickedLit = litPicked === null ? "picked" : `picked:${litPicked}`;
@@ -1401,6 +1476,72 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
     </Box>
   );
 
+  const chosenHere =
+    treeChosen?.side === treeSide ? treeChosen.index : undefined;
+  const linkNode =
+    panelPlace?.node !== undefined && panelPlace.side === treeSide
+      ? panelPlace.node
+      : undefined;
+  const elementsTab = (
+    <ElementsTab
+      hasTree={withUiTree}
+      testRunId={testRun.id}
+      trees={trees}
+      structure={structure}
+      report={a11yReport}
+      side={treeSide}
+      onSideChange={(side) => {
+        // the same element on the other tree stays chosen; with none there, nothing is
+        const now = treeChosen && treeNodes(treeChosen.side)[treeChosen.index];
+        const there = sameNode(now, treeNodes(side));
+        setTreeSide(side);
+        setTreeChosen(there ? { side, index: there.index } : undefined);
+        setTreePointed(undefined);
+      }}
+      chosen={chosenHere}
+      onChoose={(index) =>
+        setTreeChosen(
+          index === undefined ? undefined : { side: treeSide, index },
+        )
+      }
+      pointed={treePointed?.side === treeSide ? treePointed.index : undefined}
+      onPoint={(index) =>
+        setTreePointed(
+          index === undefined ? undefined : { side: treeSide, index },
+        )
+      }
+      notFound={
+        linkNode !== undefined &&
+        trees[treeSide].status === "ready" &&
+        !treeNodes(treeSide)[linkNode] &&
+        treeChosen?.index === linkNode
+      }
+      canActOn={
+        canEdit
+          ? (index) =>
+              elementsOf(treeSide).some((element) => element.index === index)
+          : undefined
+      }
+      onActions={(index, anchor) => {
+        const element = elementsOf(treeSide).find(
+          (item) => item.index === index,
+        );
+        if (!element) return;
+        setSelection({
+          side: treeSide,
+          picked: { element, trail: [] },
+          selected: [element],
+          anchor,
+        });
+      }}
+      onFullScreen={() =>
+        leaveAreasThen(() =>
+          navigate(inspectorLocation(testRun.id, treeSide, chosenHere)),
+        )
+      }
+    />
+  );
+
   // one column of the comparison: its head, then the screen fitted under it
   const column = (
     itemRef: React.RefObject<HTMLDivElement>,
@@ -1434,7 +1575,6 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
         branchName={testRun.baselineBranchName}
         imageName={testRun.baselineName}
         image={baselineImage}
-        ignoreAreas={[]}
         onHistory={testRun.testVariationId ? openHistoryTab : undefined}
       />,
       <DrawArea
@@ -1452,15 +1592,24 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
         stageInitPosState={[stageInitPos, setStageInitPos]}
         stageOffsetState={[stageOffset, setStageOffset]}
         drawModeState={[false, setIsDrawMode]}
-        overlayRects={[...ruleMarks("baseline"), ...pickMarks("baseline")]}
+        overlayRects={[
+          ...ruleMarks("baseline"),
+          ...pickMarks("baseline"),
+          ...treeMarks("baseline"),
+        ]}
         highlightedOverlayId={selectingNow ? pickedLit : previewMark}
         dimOutside={dimOutside("baseline")}
-        pickMode={pickMode}
+        pickMode={pickMode || treePicking}
         onPickHover={(point) => {
+          if (!pickMode) return treeHover("baseline", point);
           const element = elementAt(point, elementsOf("baseline"));
           setHovered(element ? { side: "baseline", element } : undefined);
         }}
-        onPick={pick("baseline")}
+        onPick={(point, click) =>
+          pickMode
+            ? pick("baseline")(point, click)
+            : treePick("baseline", point)
+        }
       />,
     );
 
@@ -1479,7 +1628,6 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
         branchName={branchName}
         imageName={imageName}
         image={image}
-        ignoreAreas={readAreas(testRun.tempIgnoreAreas)}
         sizeDiffers={!!isImageSizeDiffer}
       />,
       <DrawArea
@@ -1505,6 +1653,7 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
           ...ruleMarks("current"),
           ...testAreaMarks(),
           ...(selectingNow ? pickMarks("current") : overlayRects),
+          ...treeMarks("current"),
           ...(previewRegion
             ? [{ id: "changedArea", ...previewRegion, color: canvas.diff }]
             : []),
@@ -1536,12 +1685,15 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
                 : (previewViolation ?? highlightedViolation)))
         }
         dimOutside={dimOutside("current")}
-        pickMode={pickMode}
+        pickMode={pickMode || treePicking}
         onPickHover={(point) => {
+          if (!pickMode) return treeHover("current", point);
           const element = elementAt(point, elementsOf("current"));
           setHovered(element ? { side: "current", element } : undefined);
         }}
-        onPick={pick("current")}
+        onPick={(point, click) =>
+          pickMode ? pick("current")(point, click) : treePick("current", point)
+        }
       />,
     );
 
@@ -1995,6 +2147,8 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
           onA11yMarksChange={setA11yOverlay}
           folded={panelFolded}
           onFoldedChange={setPanelFolded}
+          initialTab={panelPlace ? "elements" : undefined}
+          elementsTab={elementsTab}
         />
       </Box>
       {footer()}

@@ -1,7 +1,7 @@
 import { en } from "./en";
 import { uk } from "./uk";
 
-// the interface names no keys (REQ-061-21): the keys still work, but no text
+// the interface names no keys (REQ-064-21): the keys still work, but no text
 // tells about them
 const KEY_HINT = /hotkey|shortcut|клавіш|гаряч/i;
 

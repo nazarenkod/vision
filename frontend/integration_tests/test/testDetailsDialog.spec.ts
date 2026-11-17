@@ -225,7 +225,7 @@ test("shows no keys on the buttons of the review", async ({
       .getByTestId(testId)
       .evaluate((el) => getComputedStyle(el, "::after").content);
 
-  // the keys still work (REQ-061-23); nothing on screen names them (REQ-061-20)
+  // the keys still work (REQ-064-23); nothing on screen names them (REQ-064-20)
   expect(await drawn("approveButton")).toBe("none");
   expect(await drawn("rejectButton")).toBe("none");
   await expect(

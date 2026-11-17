@@ -278,7 +278,7 @@ export const TestDetailsDialog: React.FunctionComponent<{
     });
   }, [frozen, queueKey, allTestRuns]);
 
-  // The decision that ended the queue (061): its card shows as soon as the
+  // The decision that ended the queue (064): its card shows as soon as the
   // server answers, not when the runs' new statuses arrive by the socket —
   // without the socket there would be neither a notification nor Undo.
   const [ending, setEnding] = React.useState<{
@@ -324,7 +324,7 @@ export const TestDetailsDialog: React.FunctionComponent<{
         if (decided.runId !== selectedTestRun?.id) navigateById(decided.runId);
       })
       .catch((error) =>
-        // the reason is worth reading: someone decided again (REQ-061-07)
+        // the reason is worth reading: someone decided again (REQ-064-07)
         enqueueSnackbar(t("undo.failed", { error: String(error) }), {
           variant: "error",
         }),

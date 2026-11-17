@@ -1,0 +1,527 @@
+import {
+  InspectorNode,
+  Rect,
+  StructuralChange,
+  TreeSide,
+} from "../types/insights";
+import { buildTestRunLocation } from "./route.helpers";
+import { routes } from "../constants";
+
+/** What the Elements tab says about a node on its row (REQ-062-17). */
+export interface NodeMark {
+  change?: StructuralChange["kind"];
+  a11y?: number;
+}
+
+/**
+ * Marks by node key, from the changes and findings the other tabs show, so the
+ * tree says exactly what they say. The first change of a key wins: content
+ * changes come first in the diff.
+ */
+export function marksByKey(
+  changes: StructuralChange[],
+  violations: Array<{ nodeKey: string }>,
+): Map<string, NodeMark> {
+  const marks = new Map<string, NodeMark>();
+  for (const change of changes) {
+    const mark = marks.get(change.key) ?? {};
+    if (!mark.change) marks.set(change.key, { ...mark, change: change.kind });
+  }
+  for (const { nodeKey } of violations) {
+    const mark = marks.get(nodeKey) ?? {};
+    marks.set(nodeKey, { ...mark, a11y: (mark.a11y ?? 0) + 1 });
+  }
+  return marks;
+}
+
+export const isMarked = (mark: NodeMark | undefined) =>
+  !!mark && (!!mark.change || !!mark.a11y);
+
+/** Each node's children, in tree order. */
+export function childrenOf(nodes: InspectorNode[]): number[][] {
+  const children: number[][] = nodes.map(() => []);
+  for (const node of nodes)
+    if (node.parent !== null) children[node.parent]?.push(node.index);
+  return children;
+}
+
+/** How deep each node lies: 0 for a top one. */
+export function depthsOf(nodes: InspectorNode[]): number[] {
+  const depths: number[] = [];
+  // a parent always comes before its children
+  for (const node of nodes)
+    depths[node.index] = node.parent === null ? 0 : depths[node.parent] + 1;
+  return depths;
+}
+
+const ancestorsOf = (nodes: InspectorNode[], index: number): number[] => {
+  const up: number[] = [];
+  for (
+    let at = nodes[index]?.parent ?? null;
+    at !== null;
+    at = nodes[at].parent
+  )
+    up.push(at);
+  return up;
+};
+
+/**
+ * What is unfolded when the tab opens: the first two levels, and the way to
+ * every changed or flagged node (REQ-062-05).
+ */
+export function initialOpen(
+  nodes: InspectorNode[],
+  marked: (node: InspectorNode) => boolean,
+  levels = 2,
+): Set<number> {
+  const depths = depthsOf(nodes);
+  const open = new Set<number>();
+  for (const node of nodes) {
+    if (depths[node.index] < levels) open.add(node.index);
+    if (marked(node))
+      ancestorsOf(nodes, node.index).forEach((up) => open.add(up));
+  }
+  return open;
+}
+
+/** Unfolds everything above a node, so its row can be shown. */
+export function openTo(
+  open: Set<number>,
+  nodes: InspectorNode[],
+  index: number,
+): Set<number> {
+  const next = new Set(open);
+  ancestorsOf(nodes, index).forEach((up) => next.add(up));
+  return next;
+}
+
+/** Whether a search finds the node: its class, id, text or label, whatever the case (REQ-062-22). */
+export function matchesQuery(node: InspectorNode, query: string): boolean {
+  const needle = query.trim().toLowerCase();
+  if (!needle) return true;
+  const label =
+    node.attributes.find(
+      ([name]) =>
+        name === "content-desc" || name === "label" || name === "aria-label",
+    )?.[1] ?? "";
+  return [node.className, node.id, node.text, label].some((value) =>
+    value.toLowerCase().includes(needle),
+  );
+}
+
+/** The nodes a test keeps, with every ancestor, so each stays in its place (REQ-062-21, 22). */
+export function keepWithAncestors(
+  nodes: InspectorNode[],
+  test: (node: InspectorNode) => boolean,
+): Set<number> {
+  const keep = new Set<number>();
+  for (const node of nodes) {
+    if (!test(node) || keep.has(node.index)) continue;
+    keep.add(node.index);
+    for (const up of ancestorsOf(nodes, node.index)) {
+      if (keep.has(up)) break;
+      keep.add(up);
+    }
+  }
+  return keep;
+}
+
+export interface TreeRow {
+  index: number;
+  depth: number;
+  hasChildren: boolean;
+  open: boolean;
+  // the nearest shown ancestor: the parent, unless wrappers between are hidden
+  parent: number | null;
+  // shown ancestors, top first: one per level, for the level lines (REQ-063-06)
+  levels: number[];
+  // wrappers hidden between this node and its shown parent (REQ-063-02)
+  skipped: number;
+  // shown children, for a folded node's count (REQ-063-10)
+  childCount: number;
+}
+
+/** A node shown in the tree: wrappers only while they are asked for (REQ-063-01). */
+export const isShown = (node: InspectorNode, wrappers: boolean) =>
+  wrappers || !node.wrapper;
+
+/**
+ * The rows shown, in tree order: what folded nodes hold is left out (REQ-062-04).
+ * While a search or a filter is on, everything it keeps is shown unfolded.
+ * Hidden wrappers give their place to their children (REQ-063-01).
+ */
+export function visibleRows(
+  nodes: InspectorNode[],
+  open: Set<number>,
+  keep: Set<number> | null,
+  wrappers = true,
+): TreeRow[] {
+  const children = childrenOf(nodes);
+  // a node's shown children, through any hidden wrappers, with how many each passed
+  const shownChildren = (
+    index: number,
+    passed = 0,
+  ): Array<{ index: number; skipped: number }> =>
+    children[index].flatMap((child) =>
+      isShown(nodes[child], wrappers)
+        ? [{ index: child, skipped: passed }]
+        : shownChildren(child, passed + 1),
+    );
+  const rows: TreeRow[] = [];
+  const walk = (
+    index: number,
+    skipped: number,
+    levels: number[],
+    parent: number | null,
+  ) => {
+    if (keep && !keep.has(index)) return;
+    const kids = shownChildren(index).filter(
+      (child) => !keep || keep.has(child.index),
+    );
+    const isOpen = !!keep || open.has(index);
+    rows.push({
+      index,
+      depth: levels.length,
+      hasChildren: kids.length > 0,
+      open: kids.length > 0 && isOpen,
+      parent,
+      levels,
+      skipped,
+      childCount: kids.length,
+    });
+    if (isOpen)
+      kids.forEach((kid) =>
+        walk(kid.index, kid.skipped, [...levels, index], index),
+      );
+  };
+  const tops = nodes
+    .filter((node) => node.parent === null)
+    .flatMap((node) =>
+      isShown(node, wrappers)
+        ? [{ index: node.index, skipped: 0 }]
+        : shownChildren(node.index, 1),
+    );
+  tops.forEach((top) => walk(top.index, top.skipped, [], null));
+  return rows;
+}
+
+/** One step of the path above the tree: a node, or a run of wrappers folded into one (REQ-063-05). */
+export type PathStep =
+  | { kind: "node"; index: number }
+  | { kind: "wrappers"; index: number; count: number }
+  | { kind: "more"; count: number };
+
+const MAX_PATH = 4;
+
+export function foldedPath(nodes: InspectorNode[], index: number): PathStep[] {
+  const chain = [...ancestorsOf(nodes, index).reverse(), index];
+  const steps: PathStep[] = [];
+  chain.forEach((at, i) => {
+    const last = steps[steps.length - 1];
+    if (nodes[at].wrapper && i < chain.length - 1) {
+      if (last?.kind === "wrappers") last.count++;
+      else steps.push({ kind: "wrappers", index: at, count: 1 });
+    } else steps.push({ kind: "node", index: at });
+  });
+  if (steps.length <= MAX_PATH) return steps;
+  return [
+    steps[0],
+    { kind: "more", count: steps.length - MAX_PATH },
+    ...steps.slice(-(MAX_PATH - 1)),
+  ];
+}
+
+/** A value split round the first place a search finds in it, for marking it (REQ-063-11). */
+export function splitMatch(
+  value: string,
+  query: string,
+): { before: string; match: string; after: string } {
+  const needle = query.trim().toLowerCase();
+  const at = needle ? value.toLowerCase().indexOf(needle) : -1;
+  if (at < 0) return { before: value, match: "", after: "" };
+  return {
+    before: value.slice(0, at),
+    match: value.slice(at, at + needle.length),
+    after: value.slice(at + needle.length),
+  };
+}
+
+/** A text on one line of the tree: a line break shows as ↵ (REQ-063-04). */
+export const oneLine = (text: string) =>
+  text.replace(/\s*\n\s*/g, " ↵ ").trim();
+
+/** An id's own part and the component after #, as a Compose tag has it (REQ-063-08). */
+export function splitId(id: string): { name: string; component: string } {
+  const at = id.lastIndexOf("#");
+  return at > 0 && at < id.length - 1
+    ? { name: id.slice(0, at), component: id.slice(at + 1) }
+    : { name: id, component: "" };
+}
+
+export type NodeKind =
+  | "button"
+  | "link"
+  | "text"
+  | "input"
+  | "image"
+  | "toggle"
+  | "list"
+  | "cell"
+  | "window"
+  | "container";
+
+const KINDS: Array<[NodeKind, RegExp]> = [
+  [
+    "input",
+    /edittext|textfield|searchfield|textarea|^input$|textbox|autocomplete/,
+  ],
+  ["toggle", /switch|checkbox|radio|toggle|slider|seekbar|stepper|picker/],
+  ["link", /link|^a$/],
+  ["button", /button/],
+  ["image", /image|^img$|^svg$|icon/],
+  [
+    "list",
+    /recyclerview|listview|scrollview|table|collectionview|^ul$|^ol$|pager|gridview/,
+  ],
+  ["cell", /cell|^li$|row$/],
+  ["window", /window|application|^html$|^body$|activity/],
+  ["text", /text|label|^h[1-6]$|^p$|^span$/],
+];
+
+/** What a node is, for its icon, on any platform (REQ-063-07). */
+export function nodeKind(node: InspectorNode): NodeKind {
+  const name = node.name.toLowerCase();
+  const found = KINDS.find(([, pattern]) => pattern.test(name));
+  if (found) return found[0];
+  // a container someone can tap acts as a button
+  return node.clickable ? "button" : "container";
+}
+
+/** The next or the previous of the marked nodes, in tree order, from the chosen one (REQ-063-13). */
+export function stepMarked(
+  marked: number[],
+  current: number | undefined,
+  direction: 1 | -1,
+): number | undefined {
+  if (!marked.length) return undefined;
+  const at = current === undefined ? -1 : marked.indexOf(current);
+  if (at < 0) {
+    // from a node that is not marked, the nearest one after or before it
+    const next =
+      direction > 0
+        ? marked.find((index) => current === undefined || index > current)
+        : [...marked]
+            .reverse()
+            .find((index) => current === undefined || index < current);
+    return next ?? marked[direction > 0 ? 0 : marked.length - 1];
+  }
+  return marked[(at + direction + marked.length) % marked.length];
+}
+
+const contains = (rect: Rect, point: { x: number; y: number }) =>
+  point.x >= rect.x &&
+  point.x < rect.x + rect.width &&
+  point.y >= rect.y &&
+  point.y < rect.y + rect.height;
+
+/**
+ * The smallest node with a place on the screenshot under a point (REQ-062-12, 13).
+ * A wrapper is never chosen there: it only lays out what lies on it (REQ-063-19).
+ */
+export function nodeAt(
+  point: { x: number; y: number } | null,
+  nodes: InspectorNode[],
+): InspectorNode | undefined {
+  if (!point) return undefined;
+  let best: InspectorNode | undefined;
+  for (const node of nodes) {
+    if (node.wrapper || !node.bounds || !contains(node.bounds, point)) continue;
+    const area = node.bounds.width * node.bounds.height;
+    // the later of two the same size lies on top
+    if (!best?.bounds || area <= best.bounds.width * best.bounds.height)
+      best = node;
+  }
+  return best;
+}
+
+/** The node with the same key on the other tree. */
+export const sameNode = (
+  node: InspectorNode | undefined,
+  other: InspectorNode[] | undefined,
+) => (node && other ? other.find((item) => item.key === node.key) : undefined);
+
+/** Attributes whose value the baseline has otherwise: name → the baseline's value (REQ-062-18). */
+export function baselineValues(
+  node: InspectorNode,
+  baseline: InspectorNode | undefined,
+): Map<string, string> {
+  const differ = new Map<string, string>();
+  if (!baseline) return differ;
+  const before = new Map(baseline.attributes);
+  for (const [name, value] of node.attributes) {
+    const was = before.get(name);
+    if (was !== undefined && was !== value) differ.set(name, was);
+  }
+  return differ;
+}
+
+export type TreeKeyAction =
+  { select: number } | { open: number } | { fold: number } | null;
+
+/** What an arrow key does in the tree (REQ-062-25). */
+export function keyAction(
+  key: string,
+  rows: TreeRow[],
+  current: number | undefined,
+  nodes: InspectorNode[],
+): TreeKeyAction {
+  const at = rows.findIndex((row) => row.index === current);
+  if (at < 0) return rows.length ? { select: rows[0].index } : null;
+  const row = rows[at];
+  if (key === "ArrowDown")
+    return at + 1 < rows.length ? { select: rows[at + 1].index } : null;
+  if (key === "ArrowUp") return at > 0 ? { select: rows[at - 1].index } : null;
+  if (key === "ArrowRight") {
+    if (row.hasChildren && !row.open) return { open: row.index };
+    return row.open ? { select: rows[at + 1].index } : null;
+  }
+  if (key === "ArrowLeft") {
+    if (row.open) return { fold: row.index };
+    // the shown parent: a hidden wrapper cannot be chosen
+    const parent = row.parent ?? nodes[row.index]?.parent;
+    return parent === null || parent === undefined ? null : { select: parent };
+  }
+  return null;
+}
+
+/** A node outlined on a screenshot: the one chosen solid, the one pointed at dashed (REQ-062-10, 11). */
+export interface TreeOutline {
+  id: string;
+  rect: Rect;
+  dashed: boolean;
+  label: string;
+}
+
+const outlineLabel = (node: InspectorNode) =>
+  node.id ? `${node.name} #${node.id}` : node.name;
+
+/**
+ * The outlines for one screenshot. A node is shown where its own tree is; on
+ * the other screenshot, the node with the same key is (REQ-062-11).
+ */
+export function treeOutlines(
+  screenshot: TreeSide,
+  trees: Partial<Record<TreeSide, InspectorNode[]>>,
+  chosen: { side: TreeSide; index: number } | undefined,
+  pointed: { side: TreeSide; index: number } | undefined,
+): TreeOutline[] {
+  const here = (
+    item: { side: TreeSide; index: number } | undefined,
+  ): InspectorNode | undefined => {
+    if (!item) return undefined;
+    const node = trees[item.side]?.[item.index];
+    return item.side === screenshot ? node : sameNode(node, trees[screenshot]);
+  };
+  const outlines: TreeOutline[] = [];
+  const chosenHere = here(chosen);
+  const pointedHere = here(pointed);
+  if (pointedHere?.bounds && pointedHere !== chosenHere)
+    outlines.push({
+      id: "tree:pointed",
+      rect: pointedHere.bounds,
+      dashed: true,
+      label: outlineLabel(pointedHere),
+    });
+  if (chosenHere?.bounds)
+    outlines.push({
+      id: "tree:chosen",
+      rect: chosenHere.bounds,
+      dashed: false,
+      label: outlineLabel(chosenHere),
+    });
+  return outlines;
+}
+
+/** The inspector page of a check, on one tree and node (REQ-062-31, 33). */
+export function inspectorLocation(
+  testRunId: string,
+  side: TreeSide,
+  node?: number,
+): string {
+  const params = new URLSearchParams({ tree: side });
+  if (node !== undefined) params.set("node", String(node));
+  return `${routes.INSPECT_PAGE.replace(":testRunId", testRunId)}?${params}`;
+}
+
+/** The tree and the node an address names; the current tree when it names none. */
+export function readTreePlace(search: string): {
+  side: TreeSide;
+  node?: number;
+} {
+  const params = new URLSearchParams(search);
+  const side: TreeSide =
+    params.get("tree") === "baseline" ? "baseline" : "current";
+  const raw = params.get("node");
+  const node = raw !== null && /^\d+$/.test(raw) ? Number(raw) : undefined;
+  return node === undefined ? { side } : { side, node };
+}
+
+/** Back to the comparison of the check, on the Elements tab with the node (REQ-062-35). */
+export function comparisonLocation(
+  projectId: string,
+  buildId: string,
+  testRunId: string,
+  side: TreeSide,
+  node?: number,
+): { pathname: string; search: string } {
+  const params = new URLSearchParams(
+    buildTestRunLocation(buildId, testRunId).search,
+  );
+  params.set("panel", "elements");
+  params.set("tree", side);
+  if (node !== undefined) params.set("node", String(node));
+  // the run stays last: links and tests read it off the end
+  const testId = params.get("testId");
+  params.delete("testId");
+  if (testId) params.set("testId", testId);
+  return { pathname: `${routes.HOME}${projectId}`, search: params.toString() };
+}
+
+/** Whether an address asks the comparison to open on the Elements tab. */
+export function readPanelPlace(
+  search: string,
+): { side: TreeSide; node?: number } | null {
+  const params = new URLSearchParams(search);
+  return params.get("panel") === "elements" ? readTreePlace(search) : null;
+}
+
+/** How deep rows are drawn: the width of a level, levels left out at the top, and whether lines fit. */
+export interface IndentPlan {
+  level: number;
+  skip: number;
+  lines: boolean;
+}
+
+const FULL_LEVEL = 16;
+const MIN_LEVEL = 6;
+// a level line is drawn only where a level is wide enough to tell lines apart
+const LINES_FROM = 10;
+// what a row needs beside its indent: the chevron, the icon and a name
+const ROW_CONTENT = 220;
+
+/**
+ * Narrower levels for a deep tree, so a row's own part always fits; past what
+ * fits even then, the top levels are left out (REQ-063-09).
+ */
+export function indentPlan(width: number, maxDepth: number): IndentPlan {
+  if (!width || maxDepth <= 0)
+    return { level: FULL_LEVEL, skip: 0, lines: true };
+  const room = Math.max(0, width - ROW_CONTENT);
+  const fit = Math.floor(room / maxDepth);
+  if (fit >= MIN_LEVEL) {
+    const level = Math.min(FULL_LEVEL, fit);
+    return { level, skip: 0, lines: level >= LINES_FROM };
+  }
+  const shown = Math.floor(room / MIN_LEVEL);
+  return { level: MIN_LEVEL, skip: maxDepth - shown, lines: false };
+}

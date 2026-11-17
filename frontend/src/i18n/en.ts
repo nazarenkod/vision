@@ -589,8 +589,6 @@ export const en = {
   "review.checkpoint": "Current",
   "review.loading": "Loading...",
   "review.branch": "Branch: {branch}",
-  "review.uploadIgnore":
-    "Contains noneditable ignore areas applied during image upload.",
   "review.attr.os": "OS",
   "review.attr.device": "Device",
   "review.attr.browser": "Browser",
@@ -623,7 +621,6 @@ export const en = {
   "compare.fade": "Fade",
   "compare.highlightDiff": "Highlight diff",
   "compare.highlightDiffHelp": "Show the changed pixels on Current",
-  "compare.testAreas": "Areas from the test · {count}",
   "compare.sizeDiffers": "Size differs · {width} × {height}",
   "compare.autoNext": "Auto-next",
   "compare.autoNextHelp": "Go to the next check after Approve or Reject",
@@ -679,13 +676,12 @@ export const en = {
   "panel.treeFailed":
     "Accessibility is checked from the UI tree, and this check's tree could not be read.",
   "panel.highlightOnScreenshot": "Highlight on current",
-  "panel.checkedFrom": "Checked from the {platform} UI tree.",
+  "panel.checkedFrom": "{platform} UI tree:",
   "panel.platformWeb": "web page",
   "panel.unpositioned":
     "This page's tree came without element positions: a plain page source, not the Vision SDK. So moves, picking elements on the screenshot, contrast and tap area are not checked. Send the tree with the Vision SDK to get them.",
   "panel.newCount": "{count} new",
-  "panel.compared":
-    "Compared with the baseline: {new}, {existing} existing, {fixed} fixed{reported}.",
+  "panel.compared": "{new}, {existing} existing, {fixed} fixed{reported}.",
   "panel.withBug": ", {count} with a bug",
   "panel.noBaselineTree":
     "The baseline has no UI tree, so every issue counts as new.",
@@ -1256,6 +1252,8 @@ export const en = {
   "select.onScreen": "{count} on this screenshot",
   "select.textAnchor":
     "Found through a text: the rule stops working when the text changes",
+  "select.textAnchorStart":
+    "Found through the start of a text: the rule stops working when “{text}” changes",
   "select.foundBy": "How to find it",
   "select.relation.inside": "inside {anchor}",
   "select.relation.parent": "parent of {anchor}",
@@ -1267,13 +1265,13 @@ export const en = {
     "Vision does not run back-references (\\1), look-around ((?=…), (?<=…)) or repeats over 1000 in a pattern",
   "panel.selectorProblem.syntax": "This XPath does not parse",
   "panel.selectorProblem.anchor":
-    "Start from one stable element: //*[@resource-id='…'] or //*[@text='…']",
+    "Start from one stable element: //*[@resource-id='…'], //*[@text='…'] or //*[starts-with(@label,'…')]",
   "panel.selectorProblem.attribute":
     "Find the stable element by resource-id, text, content-desc, name or label",
   "panel.selectorProblem.axis":
     "Only a path down to descendants or up to ancestors: no siblings or other axes",
   "panel.selectorProblem.function":
-    "Functions such as contains() are not supported",
+    "Only starts-with() in the stable element; contains() and other functions are not supported",
   "panel.selectorProblem.or": "One element at a time: no “or” and no “|”",
   "panel.selectorProblem.mixed":
     "Go either down or up from the stable element, not both",
@@ -1637,6 +1635,82 @@ export const en = {
   "report.checkpoint": "Current",
   "report.textTitle": "{project} · #{number} · {branch}",
   "report.textAsOf": "As of {time}",
+  // Elements tab and inspector (062)
+  "panel.elements": "Elements",
+  "tree.label": "Elements tree",
+  "tree.fullScreen": "Open on the whole window",
+  "tree.search": "Search: id, text or class",
+  "tree.sides": "Which tree",
+  "tree.current": "Current",
+  "tree.baseline": "Baseline",
+  "tree.count": {
+    one: "{count} element",
+    other: "{count} elements",
+  },
+  "tree.nothingFound": "Nothing found. Try another id or text.",
+  "tree.none": "This check has no UI tree",
+  "tree.noneHelp":
+    "Without a tree Vision compares pixels only. Send the page source with VisionOptions.uiTree in the SDK, and its elements show here.",
+  "tree.noBaseline": "The baseline has no UI tree.",
+  "tree.loading": "Loading the UI tree…",
+  "tree.failed": "Could not load the UI tree.",
+  "tree.retry": "Try again",
+  "tree.unpositioned":
+    "This page came without element positions, so they cannot be outlined on the screenshot. Send the tree with the Vision SDK (web.WebUiTree) to get them.",
+  "tree.hidden.unpositioned": "No position: the page came without them.",
+  "tree.hidden.invisible":
+    "Not displayed, so it is not outlined on the screenshot.",
+  "tree.hidden.empty": "Zero size, so it is not outlined on the screenshot.",
+  "tree.expand": "Unfold {name}",
+  "tree.fold": "Fold {name}",
+  "tree.path": "Path to the element",
+  "tree.attributes": "Attributes",
+  "tree.inBaseline": "baseline: {value}",
+  "tree.forRules": "For Vision rules",
+  "tree.forTests": "For tests",
+  "tree.copy": "Copy",
+  "tree.copied": "Copied",
+  "tree.matches": "matches: {count}",
+  "tree.locatorsFailed": "Could not build the locators.",
+  "tree.actions": "Element actions…",
+  "tree.notFound": "The element from the link is not in this tree.",
+  // the readable tree (063)
+  "tree.hitOf": "{at} of {count}",
+  "tree.prevHit": "Previous match",
+  "tree.nextHit": "Next match",
+  "tree.chipChanged": "Changed",
+  "tree.chipA11y": "Accessibility",
+  "tree.chipClickable": "Clickable",
+  "tree.wrappers": "Wrappers",
+  "tree.wrappersHelp":
+    "Wrappers have no id, text or action and only lay the others out. Hidden, they take no levels.",
+  "tree.wrappersHidden": {
+    one: "{count} wrapper hidden here",
+    other: "{count} wrappers hidden here",
+  },
+  "tree.prevChange": "Previous change (Shift+N)",
+  "tree.nextChange": "Next change (N)",
+  "tree.expandAll": "Unfold all",
+  "tree.collapseAll": "Fold all",
+  "tree.copySelector": "Copy selector (C)",
+  "tree.inside": "Elements inside",
+  "tree.resize": "Tree height",
+  "tree.onlyFilled": "Only filled",
+  "tree.level": "Level {level}",
+  "tree.pick": "Choose an element in the tree or click it on the screenshot.",
+  "tree.change.text": "text",
+  "tree.change.label": "label",
+  "tree.change.state": "state",
+  "tree.change.added": "new",
+  "tree.change.removed": "gone",
+  "tree.change.resized": "size",
+  "tree.change.moved": "moved",
+  "tree.a11y": "a11y",
+  "tree.a11yTitle": "Accessibility problem",
+  "inspect.back": "Back to the comparison",
+  "inspect.title": "Elements · {name}",
+  "inspect.loading": "Opening the check…",
+  "inspect.failed": "Could not open this check.",
 } satisfies Record<string, Message>;
 
 export type MessageKey = keyof typeof en;

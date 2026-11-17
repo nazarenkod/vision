@@ -5,7 +5,7 @@ import { useT } from "../../i18n";
 import { decisionNotice, DecisionKind } from "../../_helpers/undo.helper";
 
 /**
- * A finished queue (061): what the last decision was, Undo, and the next queue
+ * A finished queue (064): what the last decision was, Undo, and the next queue
  * when there is one. Nothing more: the reviewer knows which queue they were
  * in. A click beside the card closes the review, as Esc does.
  */

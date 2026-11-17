@@ -315,17 +315,15 @@ test("keeps the comparison toolbar in one row at 1280 px in Ukrainian", async ({
   ).toBeVisible();
 });
 
-test("names the areas that came from the test next to Current", async ({
+test("leaves the areas from the test out of the Current header", async ({
   openProjectPage,
   page,
 }) => {
   await mockApi(page);
   await openProjectPage(project.id, build.id, run.id);
 
-  const pill = page.getByTestId("currentHeader").getByTestId("testAreasPill");
-  await expect(pill).toHaveText("Areas from the test · 1");
-  await pill.hover();
-  await expect(page.getByRole("tooltip")).toBeVisible();
+  await expect(page.getByTestId("currentHeader")).toBeVisible();
+  await expect(page.getByTestId("testAreasPill")).toHaveCount(0);
 });
 
 test("keeps a check on two devices in one toolbar row", async ({

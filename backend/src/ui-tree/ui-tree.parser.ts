@@ -269,7 +269,7 @@ export function parseUiTree(xml: string, options: ParseOptions): UiTree {
 export const ownSpeakableText = (node: UiNode): string => (node.label || node.text || node.hint).trim();
 
 // the XML parser decodes only the named entities; UiAutomator writes emoji as `&#128241;`
-const decodeCharRefs = (text: string): string =>
+export const decodeCharRefs = (text: string): string =>
   text.replace(/&#(x[0-9a-f]+|\d+);/gi, (ref, code: string) => {
     const point = code[0].toLowerCase() === 'x' ? parseInt(code.slice(1), 16) : Number(code);
     return point <= 0x10ffff ? String.fromCodePoint(point) : ref;

@@ -18,6 +18,7 @@ import { CompareOnlyPlan, ComparedElement, insideCompared, planCompareOnly } fro
 import { elementForArea } from './area-elements';
 import { addsSomething, pathFromIdAbove, selectorVariants, SelectorVariant, stableKind } from './selector-variants';
 import { insideKeep, VariableTextProblem } from './variable-text';
+import { InspectorTree, inspectorTree, NodeLocators, nodeLocators } from './inspector-tree';
 import {
   checkKey,
   computeMoves,
@@ -326,6 +327,19 @@ export class UiTreeService {
       this.logger.warn(`Cannot read UI tree ${name}: ${error}`);
       return null;
     }
+  }
+
+  /** One side of a run's tree, node by node, for the Elements tab (062). */
+  async inspector(testRun: TestRun, side: 'current' | 'baseline'): Promise<InspectorTree | null> {
+    const tree = await this.load(side === 'current' ? testRun.uiTreeName : testRun.baselineUiTreeName);
+    return tree ? inspectorTree(tree) : null;
+  }
+
+  /** Selectors and locators of one node of that tree; null when there is no such node. */
+  async locators(testRun: TestRun, side: 'current' | 'baseline', index: number): Promise<NodeLocators | null> {
+    const tree = await this.load(side === 'current' ? testRun.uiTreeName : testRun.baselineUiTreeName);
+    const node = tree?.nodes[index];
+    return node ? nodeLocators(tree, node) : null;
   }
 
   private async decode(imageName: string | null): Promise<RgbaImage | undefined> {

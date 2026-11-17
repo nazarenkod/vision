@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<AppiumAUT>
+  <XCUIElementTypeApplication type="XCUIElementTypeApplication" name="Bank" label="Bank" enabled="true" visible="true" accessible="false" x="0" y="0" width="390" height="844" index="0">
+    <XCUIElementTypeWindow type="XCUIElementTypeWindow" enabled="true" visible="true" accessible="false" x="0" y="0" width="390" height="844" index="0">
+      <XCUIElementTypeTable type="XCUIElementTypeTable" enabled="true" visible="true" accessible="false" x="0" y="90" width="390" height="500" index="0">
+        <XCUIElementTypeCell type="XCUIElementTypeCell" label="На свою картку *7101 −5.03 UAH 11 серпня, 11:41 Купуй квитки на потяг" enabled="true" visible="true" accessible="false" x="0" y="100" width="390" height="80" index="0">
+          <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="16" y="110" width="40" height="40" index="0"/>
+          <XCUIElementTypeStaticText type="XCUIElementTypeStaticText" label="На" enabled="true" visible="true" accessible="false" x="70" y="110" width="300" height="20" index="1"/>
+        </XCUIElementTypeCell>
+        <XCUIElementTypeCell type="XCUIElementTypeCell" label="Зі своєї картки *1050 +1.01 UAH 17 серпня, 13:59 Підключай автоплатежі" enabled="true" visible="true" accessible="false" x="0" y="190" width="390" height="80" index="1">
+          <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="16" y="200" width="40" height="40" index="0"/>
+          <XCUIElementTypeStaticText type="XCUIElementTypeStaticText" label="Зі" enabled="true" visible="true" accessible="false" x="70" y="200" width="300" height="20" index="1"/>
+        </XCUIElementTypeCell>
+        <XCUIElementTypeCell type="XCUIElementTypeCell" label="Зі своєї картки *1050 +1.01 UAH 17 серпня, 13:59 Повернення коштів" enabled="true" visible="true" accessible="false" x="0" y="280" width="390" height="80" index="2">
+          <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="16" y="290" width="40" height="40" index="0"/>
+          <XCUIElementTypeStaticText type="XCUIElementTypeStaticText" label="Зі" enabled="true" visible="true" accessible="false" x="70" y="290" width="300" height="20" index="1"/>
+        </XCUIElementTypeCell>
+        <XCUIElementTypeCell type="XCUIElementTypeCell" label="Переказ &quot;Мамі&quot; від 1 вересня, з коментарем it's ok, дуже дякую за все" enabled="true" visible="true" accessible="false" x="0" y="370" width="390" height="80" index="3">
+          <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="16" y="380" width="40" height="40" index="0"/>
+          <XCUIElementTypeStaticText type="XCUIElementTypeStaticText" label="Переказ" enabled="true" visible="true" accessible="false" x="70" y="380" width="300" height="20" index="1"/>
+        </XCUIElementTypeCell>
+        <XCUIElementTypeCell type="XCUIElementTypeCell" label="Глибоко" enabled="true" visible="true" accessible="false" x="0" y="470" width="390" height="80" index="4"><XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="21" y="481" width="298" height="58" index="0"><XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="22" y="482" width="296" height="56" index="0"><XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="23" y="483" width="294" height="54" index="0"><XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="24" y="484" width="292" height="52" index="0"><XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="25" y="485" width="290" height="50" index="0"><XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="26" y="486" width="288" height="48" index="0"><XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="27" y="487" width="286" height="46" index="0"><XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="28" y="488" width="284" height="44" index="0"><XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="29" y="489" width="282" height="42" index="0"><XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="30" y="490" width="280" height="40" index="0"><XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="31" y="491" width="278" height="38" index="0"><XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="32" y="492" width="276" height="36" index="0"/></XCUIElementTypeOther></XCUIElementTypeOther></XCUIElementTypeOther></XCUIElementTypeOther></XCUIElementTypeOther></XCUIElementTypeOther></XCUIElementTypeOther></XCUIElementTypeOther></XCUIElementTypeOther></XCUIElementTypeOther></XCUIElementTypeOther></XCUIElementTypeCell>
+      </XCUIElementTypeTable>
+    </XCUIElementTypeWindow>
+  </XCUIElementTypeApplication>
+</AppiumAUT>

@@ -51,7 +51,7 @@ describe("ElementPopover: variable text (spec 033)", () => {
       "elementAction-tolerate",
       "elementAction-variable",
     ]);
-    // V still works; the action names no key (REQ-061-20)
+    // V still works; the action names no key (REQ-064-20)
     expect(actions[3]).toHaveTextContent(/^Variable text$/);
   });
 
@@ -148,5 +148,44 @@ describe("ElementPopover: variable text (spec 033)", () => {
     fireEvent.keyDown(document.body, { key: "v" });
     expect(screen.queryByTestId("variableBack")).toBeNull();
     expect(onAct).not.toHaveBeenCalled();
+  });
+});
+
+describe("ElementPopover: an anchor found by the start of its text (spec 061)", () => {
+  const icon: PickableElement = {
+    index: 3,
+    selector:
+      "xpath://*[starts-with(@label,'На свою картку *7101')]/XCUIElementTypeOther[1]",
+    element: "Other",
+    bounds: { x: 16, y: 110, width: 40, height: 40 },
+    variants: [
+      {
+        selector:
+          "xpath://*[starts-with(@label,'На свою картку *7101')]/XCUIElementTypeOther[1]",
+        direction: "down",
+        anchor: "На свою картку *7101",
+        anchorKind: "text",
+        anchorMatch: "start",
+        levels: 1,
+        count: 1,
+      },
+    ],
+  };
+
+  it("names the start of the text the rule hangs on", () => {
+    popover({ element: icon });
+    expect(screen.getByTestId("elementTextAnchor")).toHaveTextContent(
+      "Found through the start of a text: the rule stops working when “На свою картку *7101” changes",
+    );
+  });
+
+  it("keeps the plain warning for a text matched whole", () => {
+    const [variant] = icon.variants ?? [];
+    popover({
+      element: { ...icon, variants: [{ ...variant, anchorMatch: undefined }] },
+    });
+    expect(screen.getByTestId("elementTextAnchor")).toHaveTextContent(
+      "Found through a text: the rule stops working when the text changes",
+    );
   });
 });

@@ -14,6 +14,8 @@ import {
   Logger,
   Patch,
   Headers,
+  ParseIntPipe,
+  BadRequestException,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -63,6 +65,11 @@ import { ProjectFrom, ProjectFromForAutotests, inBody, inParam, inQuery } from '
 // one screenshot, and text fields big enough for a page's UI tree (050)
 export const MULTIPART_LIMITS = {
   limits: { fileSize: screenshotLimits().maxBytes, files: 1, fieldSize: UI_TREE_FIELD_MAX_BYTES },
+};
+
+const treeSide = (side: string): 'current' | 'baseline' => {
+  if (side !== 'current' && side !== 'baseline') throw new BadRequestException('side must be current or baseline');
+  return side;
 };
 
 @ApiTags('test-runs')
@@ -264,6 +271,31 @@ export class TestRunsController {
   @UseGuards(MixedGuard)
   getStructure(@Param('id', new ParseUUIDPipe()) id: string) {
     return this.testRunsService.getStructure(id);
+  }
+
+  @ProjectFrom(inParam('id', 'testRun'))
+  @Get(':id/ui-tree/locators')
+  @ApiOkResponse({ description: "Vision selectors and test locators of one node of the run's UI tree (062)" })
+  @ApiQuery({ name: 'side', required: true, enum: ['current', 'baseline'] })
+  @ApiQuery({ name: 'index', required: true })
+  @ApiBearerAuth()
+  @UseGuards(MixedGuard)
+  getUiTreeLocators(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Query('side') side: string,
+    @Query('index', new ParseIntPipe()) index: number
+  ) {
+    return this.testRunsService.getUiTreeLocators(id, treeSide(side), index);
+  }
+
+  @ProjectFrom(inParam('id', 'testRun'))
+  @Get(':id/ui-tree')
+  @ApiOkResponse({ description: "The run's or its baseline's UI tree, node by node, for the Elements tab (062)" })
+  @ApiQuery({ name: 'side', required: true, enum: ['current', 'baseline'] })
+  @ApiBearerAuth()
+  @UseGuards(MixedGuard)
+  getUiTree(@Param('id', new ParseUUIDPipe()) id: string, @Query('side') side: string) {
+    return this.testRunsService.getUiTree(id, treeSide(side));
   }
 
   @ProjectFrom(inParam('id', 'testRun'))

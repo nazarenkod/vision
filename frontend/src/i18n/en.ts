@@ -592,8 +592,6 @@ export const en = {
   "review.checkpoint": "Current",
   "review.loading": "Loading...",
   "review.branch": "Branch: {branch}",
-  "review.uploadIgnore":
-    "Contains noneditable ignore areas applied during image upload.",
   "review.attr.os": "OS",
   "review.attr.device": "Device",
   "review.attr.browser": "Browser",
@@ -627,7 +625,6 @@ export const en = {
   "compare.fade": "Fade",
   "compare.highlightDiff": "Highlight diff",
   "compare.highlightDiffHelp": "Show the changed pixels on Current. Hotkey: D",
-  "compare.testAreas": "Areas from the test · {count}",
   "compare.sizeDiffers": "Size differs · {width} × {height}",
   "compare.autoNext": "Auto-next",
   "compare.autoNextHelp": "Go to the next check after Approve or Reject",

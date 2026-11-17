@@ -623,8 +623,6 @@ export const uk: Messages = {
   "review.checkpoint": "Поточний",
   "review.loading": "Завантаження…",
   "review.branch": "Гілка: {branch}",
-  "review.uploadIgnore":
-    "Містить ігноровані області з завантаження зображення; їх не змінити.",
   "review.attr.os": "ОС",
   "review.attr.device": "Пристрій",
   "review.attr.browser": "Браузер",
@@ -662,7 +660,6 @@ export const uk: Messages = {
   "compare.highlightDiff": "Підсвітити різницю",
   "compare.highlightDiffHelp":
     "Показати змінені пікселі на поточному. Клавіша: D",
-  "compare.testAreas": "З тесту · {count}",
   "compare.sizeDiffers": "Інший розмір · {width} × {height}",
   "compare.autoNext": "Автоперехід",
   "compare.autoNextHelp": "Переходити до наступної перевірки після рішення",

@@ -1,7 +1,6 @@
 import React from "react";
 import { Box, Link } from "@mui/material";
 import { WarningAmberRounded } from "@mui/icons-material";
-import { IgnoreArea } from "../../types/ignoreArea";
 import { Tooltip } from "../Tooltip";
 import { BranchTag } from "../DeviceTags";
 import { tokens, type, radius } from "../../theme";
@@ -14,7 +13,6 @@ export interface ImageDetailsProps {
   imageName: string | null;
   image: HTMLImageElement | undefined;
   branchName: string;
-  ignoreAreas?: IgnoreArea[];
   /** Current is not the baseline's size: said next to it instead of its size (REQ-046-04) */
   sizeDiffers?: boolean;
   /** the baseline's history, opened in a new tab */
@@ -30,7 +28,6 @@ const ImageDetails: React.FunctionComponent<ImageDetailsProps> = ({
   image,
   imageName,
   branchName,
-  ignoreAreas,
   sizeDiffers,
   onHistory,
 }) => {
@@ -116,29 +113,6 @@ const ImageDetails: React.FunctionComponent<ImageDetailsProps> = ({
         >
           {t("review.history")}
         </Link>
-      )}
-      {ignoreAreas && ignoreAreas.length > 0 && (
-        // a pill that says what it is, like "Size differs": a bare warning sign said nothing
-        <Tooltip title={t("review.uploadIgnore")}>
-          <Box
-            component="span"
-            tabIndex={0}
-            data-testid="testAreasPill"
-            sx={{
-              display: "inline-flex",
-              alignItems: "center",
-              height: 22,
-              px: 1,
-              borderRadius: radius.pill,
-              bgcolor: tokens.status.neutral.bg,
-              color: tokens.status.neutral.fg,
-              fontSize: type.caption,
-              fontWeight: 600,
-            }}
-          >
-            {t("compare.testAreas", { count: ignoreAreas.length })}
-          </Box>
-        </Tooltip>
       )}
     </Box>
   );

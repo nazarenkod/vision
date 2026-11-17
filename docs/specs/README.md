@@ -135,7 +135,7 @@ docs/specs/NNN-коротка-назва/
 | [066](066-variable-text-pixels/spec.md) | Нестабільний текст прибирає з порівняння лише текст, а не весь елемент | Implemented |
 | [067](067-tidier-element-popover/spec.md) | Охайніший попап елемента і закриття кліком поза ним | Implemented |
 | [068](068-baselines-by-feature/spec.md) | Еталони, згруповані за фічею | Approved |
-| [069](069-invisible-changes-before-after/spec.md) | Зміни, яких не видно в пікселях: «Було / Стало» без дубля | Draft |
+| [069](069-invisible-changes-before-after/spec.md) | Зміни, яких не видно в пікселях: «Було / Стало» без дубля | Implemented |
 
 Статусу `Verified` поки немає в жодної: інтеграцію з реальною Jira Cloud і прогони на сервері
 команда ще не підтвердила.

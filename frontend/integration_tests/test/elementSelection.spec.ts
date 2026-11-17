@@ -944,17 +944,18 @@ test("dims the screenshot outside the compared elements", async ({
   );
 });
 
-test("turns on element selection from the Changes tab", async ({
+test("leaves element selection to the toolbar, not the Changes tab", async ({
   openProjectPage,
   page,
 }) => {
   await openReview(page, openProjectPage);
   await openChanges(page);
-  await expect(page.getByTestId("selectElements")).toHaveAttribute(
-    "aria-pressed",
-    "false",
-  );
-  await page.getByTestId("selectElementsFromPanel").click();
+  // no row under the comparison scope, no rule by hand without an element (REQ-069-07, 08)
+  await expect(page.getByTestId("whatsCompared")).toBeVisible();
+  await expect(page.getByTestId("selectElementsFromPanel")).toHaveCount(0);
+  await expect(page.getByTestId("comparedMore")).toHaveCount(0);
+  await expect(page.getByText("Rule by hand…")).toHaveCount(0);
+  await page.getByTestId("selectElements").click();
   await expect(page.getByTestId("selectElements")).toHaveAttribute(
     "aria-pressed",
     "true",

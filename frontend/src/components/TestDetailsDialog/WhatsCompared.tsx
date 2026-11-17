@@ -1,17 +1,8 @@
 import React from "react";
-import {
-  Box,
-  Button,
-  IconButton,
-  Menu,
-  MenuItem,
-  Tooltip,
-  Typography,
-} from "@mui/material";
+import { Box, Button, IconButton, Tooltip, Typography } from "@mui/material";
 import {
   ChevronRightRounded,
   ExpandMoreRounded,
-  MoreHoriz,
   Close,
   WarningAmberRounded,
 } from "@mui/icons-material";
@@ -55,9 +46,6 @@ interface WhatsComparedProps {
   onPreview: (id: string | undefined) => void;
   // with changes to look at, the groups wait behind the summary (REQ-036-34)
   startOpen: boolean;
-  // both only for someone who may change the project, on a screen with a UI tree (REQ-036-40, 41)
-  onSelectElements?: () => void;
-  onAddRule?: () => void;
 }
 
 type Swatch = "compare" | "ignore" | "tolerate" | "variable" | "gone" | "off";
@@ -247,13 +235,10 @@ export const WhatsCompared: React.FunctionComponent<WhatsComparedProps> = ({
   onUseElement,
   onPreview,
   startOpen,
-  onSelectElements,
-  onAddRule,
 }) => {
   const { t } = useT();
   const [outsideOpen, setOutsideOpen] = React.useState(false);
   const [open, setOpen] = React.useState(startOpen);
-  const [menu, setMenu] = React.useState<HTMLElement | null>(null);
   const suggestions = new Map(
     (structure.areaSuggestions ?? []).map((item) => [item.areaId, item]),
   );
@@ -971,68 +956,6 @@ export const WhatsCompared: React.FunctionComponent<WhatsComparedProps> = ({
               </Box>
               {overview.outside.map((item) => row(item, true))}
             </Box>
-          )}
-        </Box>
-      )}
-
-      {onSelectElements && (
-        // what changes the comparison sits with the comparison (REQ-036-40, 42)
-        <Box
-          data-testid="changeWhatIsCompared"
-          sx={{
-            display: "flex",
-            alignItems: "center",
-            gap: 1.25,
-            mx: -1.75,
-            mb: -1.5,
-            px: 1.75,
-            py: 1.25,
-            borderTop: `1px solid ${tokens.border}`,
-            bgcolor: tokens.subtle,
-            borderRadius: "0 0 12px 12px",
-          }}
-        >
-          <Box
-            sx={{
-              flex: 1,
-              fontSize: type.small,
-              lineHeight: 1.4,
-              color: tokens.textMuted,
-            }}
-          >
-            {t("compared.selectHelp")}
-          </Box>
-          <Button
-            size="small"
-            variant="outlined"
-            data-testid="selectElementsFromPanel"
-            onClick={onSelectElements}
-            sx={{ flexShrink: 0, bgcolor: tokens.surface }}
-          >
-            {t("select.button")}
-          </Button>
-          {onAddRule && (
-            <>
-              <IconButton
-                size="small"
-                aria-label={t("compared.moreActions")}
-                data-testid="comparedMore"
-                onClick={(event) => setMenu(event.currentTarget)}
-              >
-                <MoreHoriz sx={{ fontSize: type.section }} />
-              </IconButton>
-              <Menu anchorEl={menu} open={!!menu} onClose={() => setMenu(null)}>
-                <MenuItem
-                  data-testid="addRuleFromPanel"
-                  onClick={() => {
-                    setMenu(null);
-                    onAddRule();
-                  }}
-                >
-                  {t("compared.manualRule")}
-                </MenuItem>
-              </Menu>
-            </>
           )}
         </Box>
       )}

@@ -8,5 +8,5 @@
 - [x] **T3** [P] (REQ-067-04…08, 11, 13) `baselineSections.helper.ts` з тестами.
 - [x] **T4** (REQ-067-09, 10) Рамки фіч у `TestVariationList`, фільтр «Фіча» в `Filters`, сторінка — за секціями; словники.
   - Готово, коли: `TestVariationList.test.tsx` зелений.
-- [x] **T5** Документація: статус spec → `Implemented`, словник (`featureName`).
+- [ ] **T5** Документація: статус spec → `Implemented` (після T6), словник (`featureName`) — зроблено.
 - [ ] **T6** `/verify`: тести, типи, лінт, еталони скриншотів, `scripts/check-docs.py`.

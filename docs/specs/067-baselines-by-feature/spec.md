@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| Статус | Implemented |
+| Статус | Approved |
 | Власник | Дмитро Назаренко |
 | Оновлено | 2026-11-17 |
 | Дизайн | [design.md](design.md), [tasks.md](tasks.md); [макет](https://claude.ai/artifact/6Ky7u4mbjXuuNEjdexbxuu) (полотно «Еталони за фічами») |

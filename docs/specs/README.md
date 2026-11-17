@@ -133,7 +133,7 @@ docs/specs/NNN-коротка-назва/
 | [064](064-quiet-queue-end/spec.md) | Тихий кінець черги і жодних підказок клавіш | Implemented |
 | [065](065-a11y-tab-findings/spec.md) | Проблеми доступності під кожною перевіркою на вкладці «Доступність» збірки | Implemented |
 | [066](066-variable-text-pixels/spec.md) | Нестабільний текст прибирає з порівняння лише текст, а не весь елемент | Implemented |
-| [067](067-baselines-by-feature/spec.md) | Еталони, згруповані за фічею | Implemented |
+| [067](067-baselines-by-feature/spec.md) | Еталони, згруповані за фічею | Approved |
 
 Статусу `Verified` поки немає в жодної: інтеграцію з реальною Jira Cloud і прогони на сервері
 команда ще не підтвердила.

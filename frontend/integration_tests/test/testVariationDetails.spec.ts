@@ -213,9 +213,14 @@ test("deletes the baseline from its history and goes back to the list", async ({
   const detailsPage = await openTestVariationDetailsPage(TEST_VARIATION_ONE.id);
 
   await page.getByTestId("baselineDelete").click();
-  await expect(detailsPage.modal.dialog).toContainText(
-    `Are you sure you want to delete: ${TEST_VARIATION_ONE.name}?`,
+  // one short question, without the name or the device again
+  await expect(page.getByTestId("deleteQuestion")).toHaveText(
+    "Delete this baseline?",
   );
+  await expect(detailsPage.modal.dialog).not.toContainText(
+    TEST_VARIATION_ONE.name,
+  );
+  await expect(detailsPage.modal.dialog).not.toContainText("Only the baseline");
   await Promise.all([
     page.waitForRequest(
       (request) =>

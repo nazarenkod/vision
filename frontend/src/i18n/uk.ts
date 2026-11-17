@@ -544,6 +544,7 @@ export const uk: Messages = {
   "baselines.deleteTitle": "Видалити еталон",
   "baselines.delete": "Видалити",
   "baselines.deleteConfirm": "Видалити еталон «{name}»?",
+  "baselines.deleteThis": "Видалити цей еталон?",
   "baselines.deleteScope": "Лише еталон для {device} у гілці {branch}.",
   "baselines.mergeStarted": "Об’єднання почалося у збірці {id}",
   "baselines.fromBranch": "З гілки",

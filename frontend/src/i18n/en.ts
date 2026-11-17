@@ -513,6 +513,7 @@ export const en = {
   "baselines.deleteTitle": "Delete baseline",
   "baselines.delete": "Delete",
   "baselines.deleteConfirm": "Are you sure you want to delete: {name}?",
+  "baselines.deleteThis": "Delete this baseline?",
   "baselines.deleteScope": "Only the baseline for {device} on {branch}.",
   "baselines.mergeStarted": "Merge started in build: {id}",
   "baselines.fromBranch": "From branch",

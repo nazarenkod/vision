@@ -25,7 +25,6 @@ import TestStatusChip from "../components/TestStatusChip";
 import { Baseline } from "../types/baseline";
 import { useProjectFromAddress } from "../contexts";
 import { BaseModal } from "../components/BaseModal";
-import { deviceLabel } from "../_helpers/device.helper";
 
 const TestVariationDetailsPage: React.FunctionComponent = () => {
   const navigate = useNavigate();
@@ -386,18 +385,12 @@ const TestVariationDetailsPage: React.FunctionComponent = () => {
           title={t("baselines.deleteTitle")}
           submitButtonText={t("baselines.delete")}
           onCancel={() => setConfirmDelete(false)}
+          // one short line: the name and the device are on the page already,
+          // and a check's name can run to a paragraph (REQ-074-04)
           content={
-            <>
-              <Typography>
-                {t("baselines.deleteConfirm", { name: testVariation.name })}
-              </Typography>
-              <Typography variant="body2" color="textSecondary">
-                {t("baselines.deleteScope", {
-                  device: deviceLabel(testVariation, undefined, t),
-                  branch: testVariation.branchName,
-                })}
-              </Typography>
-            </>
+            <Typography data-testid="deleteQuestion">
+              {t("baselines.deleteThis")}
+            </Typography>
           }
           onSubmit={() => handleDelete(testVariation)}
         />

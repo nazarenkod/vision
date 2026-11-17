@@ -252,3 +252,73 @@ test("opens a screen with the problem chosen on the build's Accessibility tab", 
   await expect(problems.first()).toHaveAttribute("aria-current", "true");
   await expect(problems.nth(1)).not.toHaveAttribute("aria-current");
 });
+
+test("turns Highlight diff off on the Accessibility tab, so the red diff does not cover the frames", async ({
+  openProjectPage,
+  page,
+}) => {
+  await openProjectPage(project.id, build.id, run.id);
+  const highlight = page.getByRole("checkbox", { name: "Highlight diff" });
+  await expect(highlight).toBeChecked();
+
+  // REQ-058-05
+  await openA11yTab(page);
+  await expect(highlight).not.toBeChecked();
+
+  // the reviewer may still want it here, and gets it
+  await highlight.check();
+  await expect(highlight).toBeChecked();
+});
+
+test("opens a screen from the build's Accessibility tab without Highlight diff", async ({
+  openProjectPage,
+  page,
+}) => {
+  await openProjectPage(project.id, build.id, run.id, "a11y");
+
+  // REQ-058-05
+  await expect(
+    page.getByRole("checkbox", { name: "Highlight diff" }),
+  ).not.toBeChecked();
+});
+
+test("dims the other frames while a problem is pointed at, so its frame stands out", async ({
+  openProjectPage,
+  page,
+}) => {
+  const first = { x: 200, y: 200, width: 200, height: 100 };
+  const second = { x: 200, y: 600, width: 200, height: 100 };
+  await page.route(`${API_URL}/test-runs/${run.id}/a11y`, (route) =>
+    route.fulfill({
+      body: JSON.stringify({
+        ...report,
+        violations: [
+          { ...button("Pay"), bounds: first },
+          { ...icon, bounds: second },
+        ],
+      }),
+    }),
+  );
+  await openProjectPage(project.id, build.id, run.id);
+  await openA11yTab(page);
+  const edgeOf = (box: typeof first) => ({
+    x: box.x - 2,
+    y: box.y + 20,
+    width: 4,
+    height: 60,
+  });
+  await expect
+    .poll(() => frameAlpha(page, edgeOf(second)))
+    .toBeGreaterThan(200);
+  const unlit = await frameAlpha(page, edgeOf(first));
+
+  // REQ-058-06
+  await page.getByTestId("a11yProblem").first().hover();
+  await expect.poll(() => frameAlpha(page, edgeOf(second))).toBeLessThan(120);
+  expect(await frameAlpha(page, edgeOf(first))).toBeGreaterThanOrEqual(unlit);
+
+  await page.mouse.move(0, 0);
+  await expect
+    .poll(() => frameAlpha(page, edgeOf(second)))
+    .toBeGreaterThan(200);
+});

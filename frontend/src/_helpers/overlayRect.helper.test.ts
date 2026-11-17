@@ -1,4 +1,4 @@
-import { frameInside, labelTop } from "./overlayRect.helper";
+import { frameInside, labelTop, litLast } from "./overlayRect.helper";
 
 const stage = { x: 0, y: 0, width: 1290, height: 2796 };
 
@@ -31,5 +31,33 @@ describe("labelTop", () => {
 
   it("puts the label inside a frame at the top of the screenshot", () => {
     expect(labelTop({ x: 0, y: 5, width: 10, height: 10 }, 100)).toBe(5);
+  });
+});
+
+describe("litLast", () => {
+  const rects = [{ id: "a" }, { id: "b" }, { id: "c" }];
+
+  it("draws the chosen mark last and dims the others", () => {
+    expect(litLast(rects, "b")).toEqual([
+      { rect: { id: "a" }, highlighted: false, dimmed: true },
+      { rect: { id: "c" }, highlighted: false, dimmed: true },
+      { rect: { id: "b" }, highlighted: true, dimmed: false },
+    ]);
+  });
+
+  it("lights every rect a rule found", () => {
+    const marks = litLast(
+      [{ id: "rule:1:0" }, { id: "rule:10:0" }, { id: "rule:1:1" }],
+      "rule:1",
+    );
+    expect(marks.filter((m) => m.highlighted).map((m) => m.rect.id)).toEqual([
+      "rule:1:0",
+      "rule:1:1",
+    ]);
+  });
+
+  it("dims nothing when nothing on the screenshot is chosen", () => {
+    expect(litLast(rects, "gone").every((m) => !m.dimmed)).toBe(true);
+    expect(litLast(rects).map((m) => m.rect.id)).toEqual(["a", "b", "c"]);
   });
 });

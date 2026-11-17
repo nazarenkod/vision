@@ -510,10 +510,8 @@ export const en = {
   "baselines.empty": "No baselines here",
   "baselines.emptyHint":
     "Baselines appear after the first approved check, or none match the filters.",
-  "baselines.deleteTitle": "Delete baseline",
   "baselines.delete": "Delete",
-  "baselines.deleteConfirm": "Are you sure you want to delete: {name}?",
-  "baselines.deleteScope": "Only the baseline for {device} on {branch}.",
+  "baselines.deleteThis": "Delete this baseline?",
   "baselines.mergeStarted": "Merge started in build: {id}",
   "baselines.fromBranch": "From branch",
   "baselines.toBranch": "To branch",

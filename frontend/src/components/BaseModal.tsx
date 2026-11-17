@@ -39,7 +39,8 @@ export const BaseModal: React.FunctionComponent<IProps> = ({
     >
       <DialogTitle id="form-dialog-title">{title}</DialogTitle>
       <ValidatorForm onSubmit={onSubmit} instantValidate>
-        <DialogContent>{content}</DialogContent>
+        {/* a question that is its own title needs no body */}
+        {content != null && <DialogContent>{content}</DialogContent>}
         <DialogActions>
           <Button onClick={onCancel} color="primary">
             {t("common.cancel")}

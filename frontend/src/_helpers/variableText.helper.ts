@@ -20,7 +20,24 @@ export interface Piece {
 
 // A number takes the sign right before it and its separators: "−245,90",
 // "12 480,50", "02.11.2026", "14:07" are one piece each (REQ-033-03).
-const PIECE = /[+\-−]?\d+(?:[ \u00a0\u202f.,:/-]\d+)*|\p{L}+|[^\s\p{L}\d]/gu;
+// An Android tree keeps an emoji or a line break as a character reference
+// ("&#128241;", "&#10;"): one piece, not "&", "#", "128241", ";".
+const PIECE =
+  /&#(?:x[0-9a-f]+|\d+);|[+\-−]?\d+(?:[ \u00a0\u202f.,:/-]\d+)*|\p{L}+|[^\s\p{L}\d]/giu;
+
+const CHAR_REF = /&#(x[0-9a-f]+|\d+);/gi;
+
+/** A text as people read it: character references decoded, a line break shown as ↵. */
+export function readable(text: string): string {
+  return text.replace(CHAR_REF, (ref, code: string) => {
+    const point =
+      code[0].toLowerCase() === "x"
+        ? parseInt(code.slice(1), 16)
+        : Number(code);
+    if (point === 10 || point === 13) return " ↵ ";
+    return point <= 0x10ffff ? String.fromCodePoint(point) : ref;
+  });
+}
 
 export function splitPieces(text: string): Piece[] {
   return Array.from(text.matchAll(PIECE), (match) => ({
@@ -382,7 +399,7 @@ export function otherDiffers(
     at += segment.text.length;
   }
   const words = (value: string) =>
-    [...value.matchAll(/\S+/g)].map((match) => {
+    [...value.matchAll(/(?:(?!&#(?:10|13);)\S)+/g)].map((match) => {
       const from = match.index ?? 0;
       return {
         text: match[0],

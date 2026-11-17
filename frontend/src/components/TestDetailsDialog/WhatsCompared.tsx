@@ -17,7 +17,11 @@ import {
   foundOn,
   Overview,
 } from "../../_helpers/whatsCompared.helper";
-import { expectedOf, placesIn } from "../../_helpers/variableText.helper";
+import {
+  readable,
+  expectedOf,
+  placesIn,
+} from "../../_helpers/variableText.helper";
 import { ComparedMap } from "./ComparedMap";
 import { tokens, type, radius } from "../../theme";
 import { Text, useT } from "../../i18n";
@@ -586,9 +590,9 @@ export const WhatsCompared: React.FunctionComponent<WhatsComparedProps> = ({
           >
             {segments.map((segment, i) =>
               segment.place ? (
-                place(segment.text, i, bad && !!shown && !shown.ok)
+                place(readable(segment.text), i, bad && !!shown && !shown.ok)
               ) : (
-                <span key={i}>{segment.text}</span>
+                <span key={i}>{readable(segment.text)}</span>
               ),
             )}
           </Box>
@@ -631,10 +635,10 @@ export const WhatsCompared: React.FunctionComponent<WhatsComparedProps> = ({
                       pattern: segment.pattern ?? "",
                     })}
                   >
-                    {place(segment.text, i, false)}
+                    {place(readable(segment.text), i, false)}
                   </Tooltip>
                 ) : (
-                  <span key={i}>{segment.text}</span>
+                  <span key={i}>{readable(segment.text)}</span>
                 ),
               )}
             </Box>{" "}

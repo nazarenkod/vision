@@ -31,6 +31,7 @@ import {
   hasPlace,
   markedFrom,
   otherDiffers,
+  readable,
   partsOf,
   patternFor,
   placesIn,
@@ -540,7 +541,7 @@ export const ElementPopover: React.FunctionComponent<ElementPopoverProps> = ({
                           },
                         }}
                       >
-                        {piece.text}
+                        {readable(piece.text).trim()}
                       </ButtonBase>
                     );
                     // the pattern is one hover away, not a line of its own (REQ-033-06)
@@ -589,7 +590,7 @@ export const ElementPopover: React.FunctionComponent<ElementPopoverProps> = ({
                               : "select.variableSideCurrent",
                           ),
                           words: differs.words
-                            .map((word) => `«${word}»`)
+                            .map((word) => `«${readable(word).trim()}»`)
                             .join(", "),
                         })
                       : t("select.variableOtherValue", {
@@ -598,7 +599,7 @@ export const ElementPopover: React.FunctionComponent<ElementPopoverProps> = ({
                               ? "select.variableSideBaseline"
                               : "select.variableSideCurrent",
                           ),
-                          value: differs.value,
+                          value: readable(differs.value).trim(),
                         })}
                   </Typography>
                 )}
@@ -707,10 +708,10 @@ export const ElementPopover: React.FunctionComponent<ElementPopoverProps> = ({
                           px: 0.5,
                         }}
                       >
-                        {segment.text}
+                        {readable(segment.text)}
                       </Box>
                     ) : (
-                      <span key={i}>{segment.text}</span>
+                      <span key={i}>{readable(segment.text)}</span>
                     ),
                   )}
                 </Typography>

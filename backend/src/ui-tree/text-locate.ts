@@ -133,8 +133,13 @@ const LOOKALIKE: Record<string, string> = {
   x: 'х',
   y: 'у',
 };
+// a word ends at a space and at a line break the tree keeps as "&#10;"
+const WORD = /(?:(?!&#(?:10|13);)\S)+/g;
+
 const fold = (text: string) =>
   text
+    // an emoji is no letter recognition reads: "телефон&#128241;" is the word "телефон"
+    .replace(/&#(?:x[0-9a-f]+|\d+);|\p{Extended_Pictographic}/giu, '')
     .toLowerCase()
     .replace(/[.,:;*+\-−'"«»()]/g, '')
     .replace(/[abcehkmoptxy]/g, (letter) => LOOKALIKE[letter])
@@ -179,7 +184,7 @@ export function placeAreas(
   places: Array<{ value: string; start: number; end: number }>,
   words: RecognisedWord[]
 ): { areas: Rect[] } | { missing: string } {
-  const tokens = [...text.matchAll(/\S+/g)].map((match) => ({
+  const tokens = [...text.matchAll(WORD)].map((match) => ({
     text: match[0],
     start: match.index,
     end: match.index + match[0].length,
@@ -222,7 +227,7 @@ export function placeAreas(
 type Place = { value: string; start: number; end: number };
 
 const wordsOf = (text: string) =>
-  [...text.matchAll(/\S+/g)].map((match) => ({
+  [...text.matchAll(WORD)].map((match) => ({
     text: match[0],
     start: match.index,
     end: match.index + match[0].length,

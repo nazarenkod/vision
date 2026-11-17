@@ -105,4 +105,4 @@ flowchart LR
 | REQ-030-40 | `frontend/src/_helpers/whatsCompared.helper.test.ts › tells which compared elements are gone, new or unchanged` |
 | REQ-030-41 | `frontend/integration_tests/test/elementRules.spec.ts › removes a gone element from what is compared, with Undo` |
 | REQ-030-50 | `frontend/integration_tests/test/elementRules.spec.ts › says the count once and lists the changes straight under it` |
-| REQ-030-51 | `frontend/integration_tests/test/elementSelection.spec.ts › turns on element selection from the Changes tab` |
+| REQ-030-51 | `frontend/integration_tests/test/elementSelection.spec.ts › leaves element selection to the toolbar, not the Changes tab` |

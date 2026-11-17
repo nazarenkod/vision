@@ -79,6 +79,6 @@ ADR не потрібен: модель даних і поведінка пор�
 | REQ-036-32 | `frontend/integration_tests/test/elementRules.spec.ts › lists the rules for this screen and for every screen` |
 | REQ-036-33 | `frontend/integration_tests/test/elementRules.spec.ts › folds the comparison scope while there are changes to look at` |
 | REQ-036-34 | `frontend/integration_tests/test/elementRules.spec.ts › folds the comparison scope while there are changes to look at` |
-| REQ-036-40 | `frontend/integration_tests/test/elementSelection.spec.ts › turns on element selection from the Changes tab` |
-| REQ-036-41 | `manual: «⋯» поруч з «Обрати елементи» → «Правило вручну…» відкриває повну форму правила` |
+| REQ-036-40 | `frontend/integration_tests/test/elementSelection.spec.ts › leaves element selection to the toolbar, not the Changes tab` |
+| REQ-036-41 | `manual: знято в 069 — «Правило вручну» без елемента немає; повна форма правила відкривається з дій елемента` |
 | REQ-036-42 | `manual: під блоками вкладки немає рядка «Змінити, що порівнюється» і посилання «Додати правило елемента»` |

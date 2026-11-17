@@ -506,7 +506,6 @@ export const en = {
   "baselines.merge": "Merge branches",
   "baselines.perPage": "Per page",
   "baselines.devices": { one: "{count} device", other: "{count} devices" },
-  "baselines.history": "History",
   "baselines.deleteOf": "Delete {device}",
   "baselines.empty": "No baselines here",
   "baselines.emptyHint":

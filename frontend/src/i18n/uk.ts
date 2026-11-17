@@ -537,7 +537,6 @@ export const uk: Messages = {
     many: "{count} пристроїв",
     other: "{count} пристрою",
   },
-  "baselines.history": "Історія",
   "baselines.deleteOf": "Видалити {device}",
   "baselines.empty": "Тут ще немає еталонів",
   "baselines.emptyHint":

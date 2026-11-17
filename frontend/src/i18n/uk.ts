@@ -1316,9 +1316,9 @@ export const uk: Messages = {
   "select.textAnchorStart":
     "Знайдено через початок тексту: правило перестане діяти, щойно зміниться «{text}»",
   "select.foundBy": "Як знаходити",
-  "select.relation.inside": "нащадок {anchor}",
-  "select.relation.parent": "батько {anchor}",
-  "select.relation.ancestor": "предок {anchor}",
+  "select.relation.inside": "усередині {anchor}",
+  "select.relation.parent": "одразу навколо {anchor}",
+  "select.relation.ancestor": "навколо {anchor}",
   "select.found": "знайдено {count}",
   "panel.matchCount": "{baseline} на еталоні · {current} на поточному",
   "panel.selectorProblem.prefix": "Почніть з id:, class:, text: або xpath:",

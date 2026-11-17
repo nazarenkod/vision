@@ -1241,6 +1241,11 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
     setAreasOpen(false);
     setSelectedRectId(undefined);
   }, [testRun.id, testRun.diffName]);
+  // the red diff covers the issue boxes and their numbers (REQ-058-05); declared
+  // after the reset above so the next screen opened on this tab stays without it
+  useEffect(() => {
+    if (panelTab === "a11y") setIsDiffShown(false);
+  }, [panelTab, testRun.id, testRun.diffName]);
 
   useEffect(() => {
     setIgnoreAreas(readAreas(testRun.ignoreAreas));
@@ -2234,6 +2239,15 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
           // the element, not its selector: choosing another way to find it keeps the popover
           key={`${selection.side}:${selection.picked.element.index ?? selection.picked.element.selector}:${selection.picked.element.bounds.x},${selection.picked.element.bounds.y}`}
           anchor={selection.anchor}
+          elementRect={() => {
+            const rect = onScreen(
+              selection.side,
+              selection.picked.element.bounds,
+            );
+            return rect
+              ? new DOMRect(rect.x, rect.y, rect.width, rect.height)
+              : undefined;
+          }}
           element={selection.picked.element}
           sameSelector={
             chosenVariant(selection.picked.element)?.count ??

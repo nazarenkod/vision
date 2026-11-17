@@ -1,5 +1,7 @@
 import {
   expectedOf,
+  expectedShape,
+  shapeOf,
   fitsParts,
   leftOutFor,
   leftOutMarks,
@@ -347,5 +349,23 @@ describe("character references from an Android tree", () => {
     const parts = marking("Закинь на телефон&#128241;", "Закинь");
     expect(fitsParts(parts, "Поповни на телефон&#128241;")).toBe(true);
     expect(fitsParts(parts, "Поповни на телефон📱")).toBe(false);
+  });
+});
+
+describe("shapeOf", () => {
+  it("says what a place must look like in a few words, without the value", () => {
+    expect(shapeOf("\\d{4}")).toBe("4 digits");
+    expect(shapeOf("\\d+")).toBe("a number");
+    expect(shapeOf("\\d{1,3}(?:\\s\\d{3})*")).toBe("a number");
+    expect(shapeOf("\\p{L}+")).toBe("a word");
+    // a value of several parts reads as a mask of itself
+    expect(shapeOf(patternFor("14:07"))).toBe("0:00");
+    expect(shapeOf(patternFor("02.11.2026"))).toBe("0.00.0000");
+    expect(shapeOf(patternFor("−245,90"))).toBe("±0,00");
+    // a pattern written by hand stays as it is
+    expect(shapeOf("(foo|bar)")).toBe("(foo|bar)");
+    expect(
+      expectedShape(marking("Зі своєї картки *1051 +1.05 UAH", "1051")),
+    ).toBe("a number");
   });
 });

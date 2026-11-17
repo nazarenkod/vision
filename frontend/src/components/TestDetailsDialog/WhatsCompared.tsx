@@ -28,6 +28,7 @@ import {
 } from "../../_helpers/whatsCompared.helper";
 import {
   expectedOf,
+  expectedShape,
   readable,
   variableShown,
 } from "../../_helpers/variableText.helper";
@@ -534,7 +535,7 @@ export const WhatsCompared: React.FunctionComponent<WhatsComparedProps> = ({
         ? t("compared.variable.goneLine")
         : failing
           ? t("compared.variable.expectedLine", {
-              text: readable(expected.map((segment) => segment.text).join("")),
+              text: expectedShape(parts, t),
             })
           : "";
     return (
@@ -553,9 +554,10 @@ export const WhatsCompared: React.FunctionComponent<WhatsComparedProps> = ({
           borderRadius: radius.control,
           fontSize: type.body,
           lineHeight: 1.5,
-          bgcolor: bad ? tokens.status.failed.bg : tokens.subtle,
-          outline: bad ? `1px solid ${tokens.status.failed.fg}` : "none",
-          outlineOffset: -1,
+          // the line on top says it failed; the row only leans red (REQ-074-12)
+          bgcolor: bad
+            ? `color-mix(in srgb, ${tokens.status.failed.bg} 45%, transparent)`
+            : tokens.subtle,
         }}
       >
         <Box sx={{ ...swatchSx(bad ? "gone" : "variable"), mt: 0.4 }} />

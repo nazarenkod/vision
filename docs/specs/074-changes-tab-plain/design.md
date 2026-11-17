@@ -89,7 +89,7 @@
 | REQ-074-08 | `frontend/src/_helpers/whatsCompared.helper.test.ts › groups ignore zones by where they come from` |
 | REQ-074-10 | `frontend/src/_helpers/variableText.helper.test.ts › shows the baseline value crossed out before the current one` |
 | REQ-074-11 | `frontend/integration_tests/test/elementRules.spec.ts › a variable text that holds shows a tick, one that broke turns red without the help box` |
-| REQ-074-12 | `frontend/integration_tests/test/elementRules.spec.ts › a variable text that holds shows a tick, one that broke turns red without the help box` |
+| REQ-074-12 | `frontend/integration_tests/test/elementRules.spec.ts › a variable text that holds shows a tick, one that broke turns red without the help box`; `frontend/src/_helpers/variableText.helper.test.ts › says what a place must look like in a few words, without the value` |
 | REQ-074-13 | `frontend/src/_helpers/whatsCompared.helper.test.ts › says that the variable text changed shape in one line` |
 | REQ-074-14 | `frontend/integration_tests/test/elementRules.spec.ts › a variable text that holds shows a tick, one that broke turns red without the help box` |
 | REQ-074-15 | `frontend/integration_tests/test/elementRules.spec.ts › the menu of a variable text edits, shows and removes its rule` |

@@ -80,7 +80,7 @@ interface ElementPopoverProps {
   // the same element on the other screenshot, to warn when its text will not fit (REQ-033-08)
   other?: { side: "baseline" | "current"; text: string };
   // how many elements a selector finds on this screenshot, where that can be told
-  countFor?: (selector: string) => number | null;
+  countFor?: (selector: string, parts: TextPart[]) => number | null;
   onDrawArea?: () => void;
   // what the element's variable-text rule leaves out of the comparison here (REQ-066-06)
   leftOut?: LeftOut;
@@ -217,7 +217,7 @@ export const ElementPopover: React.FunctionComponent<ElementPopoverProps> = ({
           ? t("select.ruleVariable")
           : t("select.ruleTolerate", { percent: rule.maxDiffPercent ?? 5 })
     : null;
-  const count = selector && countFor ? countFor(selector) : null;
+  const count = selector && countFor ? countFor(selector, parts) : null;
 
   return (
     <Popper

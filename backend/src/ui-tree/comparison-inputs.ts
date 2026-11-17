@@ -3,7 +3,7 @@ import { A11yNorms, DEFAULT_A11Y_NORMS, parseA11yNorms } from '../a11y/a11y-norm
 import { AllowedDevice, parseAllowedDevices } from '../projects/allowed-devices';
 import { AllowedBrowser, parseAllowedBrowsers } from '../projects/allowed-browsers';
 import { evaluateXpath, isXpathSelector, parseXpath, XPATH_PREFIX, XpathProblem, xpathProblem } from './xpath-selector';
-import { checkVariableText, TextPart, unrunnablePattern, VariableTextReason } from './variable-text';
+import { checkVariableText, fitsSkeleton, TextPart, unrunnablePattern, VariableTextReason } from './variable-text';
 import { compileLinear, isLinearRegex, LinearRegex } from './linear-regex';
 
 // compare: only the elements the check's compare rules match are compared (spec 015)
@@ -169,6 +169,17 @@ export function findBySelector(tree: UiTree, selector: string): UiNode[] | null 
   }
   const parsed = parseSelector(selector);
   return parsed ? tree.nodes.filter((node) => shown(node) && matchesSelector(node, parsed)) : null;
+}
+
+/**
+ * The elements a rule takes on a tree. A variable-text rule by id takes only
+ * those whose text keeps the rule's fixed text: the rows of a list share the
+ * id, and a row of another kind is not the one the rule was made on (REQ-069-01).
+ */
+export function ruleNodes(tree: UiTree, rule: Pick<ElementRule, 'selector' | 'action' | 'parts'>): UiNode[] {
+  const nodes = findBySelector(tree, rule.selector) ?? [];
+  if (rule.action !== 'variable' || !rule.parts?.length || !rule.selector.trim().startsWith('id:')) return nodes;
+  return nodes.filter((node) => fitsSkeleton(rule.parts, textOf(node)));
 }
 
 /** A text:/…/ pattern Vision does not run: back-references and look-around (REQ-051-10). */
@@ -370,7 +381,7 @@ export function resolveRules(rules: ElementRule[], trees: Array<UiTree | null>):
     const sideNodes: UiNode[][] = [];
     for (const tree of trees) {
       const bounds: Rect[] = [];
-      const nodes = tree ? findBySelector(tree, rule.selector) : [];
+      const nodes = tree ? ruleNodes(tree, rule) : [];
       sideNodes.push(nodes);
       for (const node of nodes) {
         bounds.push(node.bounds);
@@ -396,7 +407,11 @@ export function resolveRules(rules: ElementRule[], trees: Array<UiTree | null>):
     result.matches[rule.id] = Math.max(0, ...sides.map((bounds) => bounds.length));
     result.found[rule.id] = { current: sides[0] ?? [], baseline: sides[1] ?? [] };
     if (rule.action === 'variable' && rule.parts?.length && current) {
-      const nodes = findBySelector(current, rule.selector).filter((node) => !ignored.has(node));
+      const byId = findBySelector(current, rule.selector);
+      let nodes = ruleNodes(current, rule).filter((node) => !ignored.has(node));
+      // rows with the id are here, none keeps the fixed text the baseline's did: the text broke (REQ-069-03)
+      const broke = !result.found[rule.id].current.length && byId.length > 0;
+      if (broke && result.found[rule.id].baseline.length) nodes = byId.filter((node) => !ignored.has(node));
       result.variable[rule.id] = {
         items: nodes.map((node) => ({
           text: textOf(node),
@@ -404,7 +419,7 @@ export function resolveRules(rules: ElementRule[], trees: Array<UiTree | null>):
           element: `${shortClass(node.className)} «${textOf(node)}»`,
           ...checkVariableText(rule.parts, textOf(node)),
         })),
-        gone: !result.found[rule.id].current.length && !!result.found[rule.id].baseline.length,
+        gone: !result.found[rule.id].current.length && !!result.found[rule.id].baseline.length && !broke,
         overridden: !nodes.length && !!result.found[rule.id].current.length,
       };
     }

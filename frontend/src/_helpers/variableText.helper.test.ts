@@ -9,6 +9,7 @@ import {
   patternFor,
   placesIn,
   splitPieces,
+  variableCount,
   variableSelector,
 } from "./variableText.helper";
 
@@ -217,5 +218,29 @@ describe("textOnScreen", () => {
     ).toBeNull();
     const second = { ...label, index: 5, selector: "text:сервіс" };
     expect(textOnScreen(tile, [tile, label, second])).toBeNull();
+  });
+});
+
+describe("variableCount", () => {
+  // the bank's history: every row has the same id, its text only in the label
+  const rows = [
+    "На свою картку *7101 -5.03 UAH 11 серпня, 11:41",
+    "Зі своєї картки *8353 +5.00 UAH 11 серпня, 11:25",
+    "Зі своєї картки *1050 +1.01 UAH 17 серпня, 13:59",
+  ].map((text) => ({ selector: "id:activity_list_item", text }));
+  const parts = marking(
+    "Зі своєї картки *1050 +1.01 UAH 17 серпня, 13:59",
+    "1050",
+    "+1.01",
+    "17",
+    "серпня",
+    "13:59",
+  );
+
+  it("counts by id only the elements that keep the fixed text", () => {
+    expect(variableCount("id:activity_list_item", parts, rows)).toBe(2);
+    // nothing marked yet: every row with the id
+    expect(variableCount("id:activity_list_item", [], rows)).toBe(3);
+    expect(variableCount("xpath://*[@resource-id='list']/*[1]", parts, rows)).toBeNull();
   });
 });

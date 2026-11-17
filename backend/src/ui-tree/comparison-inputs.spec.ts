@@ -493,3 +493,80 @@ describe('resolveRules: variable text leaves out only the text (spec 066)', () =
     expect(outsideAreas(diffTrees(baseline, current), resolved.ignore, resolved.quietKeys)).toEqual([]);
   });
 });
+
+describe('resolveRules: variable text on the rows of a list (spec 069)', () => {
+  // the bank's history: every row is one merged button with the same id, its text only in the label
+  const history = (labels: string[]) =>
+    parse(`<?xml version='1.0' encoding='UTF-8' standalone='yes' ?>
+<hierarchy index="0" class="hierarchy" rotation="0" width="1080" height="2400">
+  <android.widget.FrameLayout index="0" class="android.widget.FrameLayout" text="" resource-id="" bounds="[0,0][1080,2400]" displayed="true">
+${labels
+  .map(
+    (label, n) =>
+      `    <android.widget.Button index="${n}" class="android.widget.Button" text="" content-desc="${label}" resource-id="activity_list_item" bounds="[40,${400 + n * 300}][1040,${650 + n * 300}]" displayed="true" />`
+  )
+  .join('\n')}
+  </android.widget.FrameLayout>
+</hierarchy>`);
+  const own = (number: string, sum: string, time: string) => `Зі своєї картки *${number} ${sum} UAH 17 серпня, ${time} `;
+  const other = 'На свою картку *7101 -5.03 UAH 11 серпня, 11:41 ';
+  // what the review screen saves for "Зі своєї картки *1050 +1.01 UAH 17 серпня, 13:59" with the number, sum and time marked
+  const parts = [
+    { text: 'Зі своєї картки *' },
+    { pattern: '\\d+', sample: '1050' },
+    { text: ' ' },
+    { pattern: '[+\\-−]?\\d+\\.\\d{2}', sample: '+1.01' },
+    { text: ' UAH 17 серпня, ' },
+    { pattern: '\\d+:\\d{2}', sample: '13:59' },
+  ];
+  const rule = { id: 'v', selector: 'id:activity_list_item', action: 'variable' as const, parts };
+  const row = (tree: ReturnType<typeof parse>, n: number) =>
+    tree.nodes.filter((node) => node.resourceId === 'activity_list_item')[n];
+
+  it("finds by id only the rows that keep the rule's fixed text", () => {
+    const current = history([other, own('8353', '+5.00', '11:25'), own('1051', '+1.05', '13:59')]);
+    const baseline = history([other, own('8352', '+3.00', '11:25'), own('1050', '+1.01', '13:59')]);
+    const resolved = resolveRules([rule], [current, baseline]);
+    expect(resolved.matches.v).toBe(2);
+    expect(resolved.found.v.current).toEqual([row(current, 1).bounds, row(current, 2).bounds]);
+    expect(resolved.variable.v.items.map((item) => item.ok)).toEqual([true, true]);
+  });
+
+  it('compares a row of another kind with the same id as any part of the screen', () => {
+    const current = history([other.replace('-5.03', '-7.00'), own('1051', '+1.05', '13:59')]);
+    const baseline = history([other, own('1050', '+1.01', '13:59')]);
+    const resolved = resolveRules([rule], [current, baseline]);
+    const otherRow = row(current, 0).bounds;
+    const overlaps = (area: { x: number; y: number; width: number; height: number }) =>
+      area.y < otherRow.y + otherRow.height && otherRow.y < area.y + area.height;
+    expect(resolved.ignore.some(overlaps)).toBe(false);
+    expect(resolved.quietKeys).not.toContain(row(current, 0).key);
+    const changes = diffTrees(baseline, current);
+    expect(
+      outsideAreas(changes, resolved.ignore, resolved.quietKeys).some((change) => change.key === row(current, 0).key)
+    ).toBe(true);
+  });
+
+  it('tells the text does not match when no row with the id keeps the fixed text', () => {
+    const current = history([other, 'From your card *1051 +1.05 UAH 17 серпня, 13:59']);
+    const baseline = history([other, own('1050', '+1.01', '13:59')]);
+    const resolved = resolveRules([rule], [current, baseline]);
+    expect(resolved.variable.v.gone).toBe(false);
+    expect(resolved.variable.v.items).toEqual([
+      expect.objectContaining({ ok: false, reason: 'text', text: other.trim() }),
+      expect.objectContaining({ ok: false, reason: 'text', text: 'From your card *1051 +1.05 UAH 17 серпня, 13:59' }),
+    ]);
+  });
+
+  it('still reports the element gone when no row with the id is left', () => {
+    const resolved = resolveRules([rule], [history([]), history([own('1050', '+1.01', '13:59')])]);
+    expect(resolved.variable.v).toMatchObject({ gone: true, items: [] });
+  });
+
+  it('applies to a rule saved before, by its parts', () => {
+    // a rule as 033 saved it: the same selector and parts, nothing new stored
+    const saved = JSON.parse(JSON.stringify(rule));
+    const tree = history([other, own('1050', '+1.01', '13:59')]);
+    expect(resolveRules([saved], [tree, tree]).matches.v).toBe(1);
+  });
+});

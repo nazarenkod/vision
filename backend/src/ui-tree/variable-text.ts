@@ -69,6 +69,15 @@ function skeleton(parts: TextPart[]): LinearRegex | null {
   return compile(parts.map((part) => (isPlace(part) ? '.*?' : literal(part.text))).join(''));
 }
 
+/**
+ * Whether a text keeps the whole fixed text of a check, whatever is in the
+ * places: a list row of the same kind as the one the rule was made on (REQ-069-01).
+ * A text too long to check is kept, so it is still reported as such (REQ-033-24).
+ */
+export function fitsSkeleton(parts: TextPart[], text: string): boolean {
+  return text.length > MAX_CHECKED_TEXT || !!skeleton(parts)?.test(normalize(text));
+}
+
 export interface VariableTextResult {
   ok: boolean;
   reason?: VariableTextReason;

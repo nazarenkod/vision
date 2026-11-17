@@ -135,7 +135,7 @@ docs/specs/NNN-коротка-назва/
 | [066](066-variable-text-pixels/spec.md) | Нестабільний текст прибирає з порівняння лише текст, а не весь елемент | Implemented |
 | [067](067-tidier-element-popover/spec.md) | Охайніший попап елемента і закриття кліком поза ним | Implemented |
 | [068](068-variable-text-in-merged-element/spec.md) | Нестабільний текст у злитому елементі: порівнюється все, крім змін самого тексту | Draft |
-| [069](069-variable-text-own-rows-only/spec.md) | Нестабільний текст діє лише на рядки того самого вигляду | Approved |
+| [069](069-variable-text-own-rows-only/spec.md) | Нестабільний текст діє лише на рядки того самого вигляду | Implemented |
 
 Статусу `Verified` поки немає в жодної: інтеграцію з реальною Jira Cloud і прогони на сервері
 команда ще не підтвердила.

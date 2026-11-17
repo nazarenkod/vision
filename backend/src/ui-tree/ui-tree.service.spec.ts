@@ -312,3 +312,47 @@ describe('UiTreeService.store', () => {
     expect(warn.mock.calls[0][0]).not.toContain('&a;');
   });
 });
+
+describe('UiTreeService, variable text found on the pixels (spec 071)', () => {
+  const parts = [{ text: 'Commission ' }, { pattern: '\\d+', sample: '0' }, { text: ' UAH' }];
+  const settings = JSON.stringify({
+    checkRules: { '["Payment",""]': [{ id: 'v', selector: 'id:tv_fee', action: 'variable', parts }] },
+  });
+  const fee = tree.nodes.find((node) => node.resourceId.endsWith('tv_fee')).bounds;
+  const piece = { x: fee.x + 100, y: fee.y, width: 20, height: fee.height };
+  const service = (locate: jest.Mock) => {
+    const prisma = {
+      project: { findUnique: jest.fn().mockResolvedValue({ uiTreeSettings: settings }) },
+      testVariation: { findMany: jest.fn().mockResolvedValue([]) },
+    };
+    const instance = new UiTreeService({} as never, prisma as never, undefined, { locate } as never);
+    jest.spyOn(instance, 'load').mockImplementation(async (name) => (name ? tree : null));
+    return instance;
+  };
+
+  it('looks for the pieces of an element whose text is its own and leaves out only them', async () => {
+    const locate = jest.fn(
+      async (candidates) => new Map([[`v\u0000${candidates[0].key}`, { current: [piece], baseline: [piece] }]])
+    );
+    const inputs = await service(locate).comparisonInputs(
+      run({ baselineUiTreeName: 'base.json.gz', imageName: 'now.png', baselineName: 'was.png' })
+    );
+    expect(locate).toHaveBeenCalledWith(
+      [expect.objectContaining({ ruleId: 'v', current: expect.objectContaining({ text: 'Commission 0 UAH' }) })],
+      { current: 'now.png', baseline: 'was.png' }
+    );
+    expect(inputs.ignoreAreas).toContainEqual({ x: piece.x - 2, y: piece.y - 2, width: 24, height: piece.height + 4 });
+    expect(inputs.ignoreAreas).not.toContainEqual({
+      x: fee.x - 2,
+      y: fee.y - 2,
+      width: fee.width + 4,
+      height: fee.height + 4,
+    });
+  });
+
+  it('does not look without a baseline picture', async () => {
+    const locate = jest.fn();
+    await service(locate).comparisonInputs(run({ baselineUiTreeName: 'base.json.gz', baselineName: null }));
+    expect(locate).not.toHaveBeenCalled();
+  });
+});

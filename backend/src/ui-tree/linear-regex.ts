@@ -19,6 +19,8 @@ export type PatternProblem = 'backreference' | 'lookaround' | 'unsupported' | 's
 export interface LinearRegex {
   readonly source: string;
   test(text: string): boolean;
+  // each capturing group of the first match, with where it starts in the text; null without a match
+  groups?(text: string): Array<{ value: string; start: number }> | null;
 }
 
 // JavaScript's \s: ECMAScript WhiteSpace and LineTerminator
@@ -346,7 +348,18 @@ export function compileLinear(source: string, flags = ''): LinearRegex | Pattern
     const translated = translate(source, unicode);
     try {
       const pattern = RE2JS.compile(translated, flags.includes('i') ? RE2JS.CASE_INSENSITIVE : 0);
-      result = { source, test: (text: string) => pattern.matcher(unicode ? text : halvesApart(text)).find() };
+      result = {
+        source,
+        test: (text: string) => pattern.matcher(unicode ? text : halvesApart(text)).find(),
+        groups: (text: string) => {
+          const matcher = pattern.matcher(unicode ? text : halvesApart(text));
+          if (!matcher.find()) return null;
+          return Array.from({ length: matcher.groupCount() }, (_, i) => ({
+            value: matcher.group(i + 1) ?? '',
+            start: matcher.start(i + 1),
+          }));
+        },
+      };
     } catch {
       // JavaScript takes it and RE2 cannot: said so, never a rule that silently stops working
       result = 'unsupported';

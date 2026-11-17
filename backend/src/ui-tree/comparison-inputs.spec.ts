@@ -5,6 +5,8 @@ import { parseUiTree } from './ui-tree.parser';
 import {
   computeMoves,
   findSystemBars,
+  locateCandidates,
+  locatedKey,
   matchesSelector,
   parseSelector,
   parseUiTreeSettings,
@@ -508,7 +510,8 @@ ${labels
   .join('\n')}
   </android.widget.FrameLayout>
 </hierarchy>`);
-  const own = (number: string, sum: string, time: string) => `Зі своєї картки *${number} ${sum} UAH 17 серпня, ${time} `;
+  const own = (number: string, sum: string, time: string) =>
+    `Зі своєї картки *${number} ${sum} UAH 17 серпня, ${time} `;
   const other = 'На свою картку *7101 -5.03 UAH 11 серпня, 11:41 ';
   // what the review screen saves for "Зі своєї картки *1050 +1.01 UAH 17 серпня, 13:59" with the number, sum and time marked
   const parts = [
@@ -568,5 +571,108 @@ ${labels
     const saved = JSON.parse(JSON.stringify(rule));
     const tree = history([other, own('1050', '+1.01', '13:59')]);
     expect(resolveRules([saved], [tree, tree]).matches.v).toBe(1);
+  });
+});
+
+describe('resolveRules: the marked pieces of a merged element, found on the pixels (spec 071)', () => {
+  // a history row as the bank's app gives it: one button, its text only in the label, a banner inside
+  const screen = (label: string, o: { banner?: string; height?: number } = {}) =>
+    parse(`<?xml version='1.0' encoding='UTF-8' standalone='yes' ?>
+<hierarchy index="0" class="hierarchy" rotation="0" width="1080" height="2400">
+  <android.widget.FrameLayout index="0" class="android.widget.FrameLayout" text="" resource-id="" bounds="[0,0][1080,2400]" displayed="true">
+    <android.widget.Button index="0" class="android.widget.Button" text="" content-desc="${label}" resource-id="activity_list_item" bounds="[40,400][1040,${400 + (o.height ?? 270)}]" displayed="true">
+      <android.widget.Button index="0" class="android.widget.Button" text="" content-desc="${o.banner ?? 'Підключай автоплатіж'}" resource-id="banner" bounds="[230,560][1020,650]" displayed="true" />
+    </android.widget.Button>
+  </android.widget.FrameLayout>
+</hierarchy>`);
+  const own = (number: string, sum: string, time: string) => `Зі своєї картки *${number} ${sum} UAH 17 серпня, ${time}`;
+  const parts = [
+    { text: 'Зі своєї картки *' },
+    { pattern: '\\d+', sample: '1050' },
+    { text: ' ' },
+    { pattern: '[+\\-−]?\\d+\\.\\d{2}', sample: '+1.01' },
+    { text: ' UAH 17 серпня, ' },
+    { pattern: '\\d+:\\d{2}', sample: '13:59' },
+  ];
+  const rule = { id: 'v', selector: 'id:activity_list_item', action: 'variable' as const, parts };
+  const current = screen(own('1051', '+1.05', '14:02'));
+  const baseline = screen(own('1050', '+1.01', '13:59'));
+  const row = current.nodes.find((node) => node.resourceId === 'activity_list_item');
+  const pieces = {
+    current: [
+      { x: 500, y: 420, width: 90, height: 40 },
+      { x: 880, y: 420, width: 100, height: 40 },
+      { x: 400, y: 480, width: 80, height: 30 },
+    ],
+    baseline: [
+      { x: 500, y: 420, width: 90, height: 40 },
+      { x: 890, y: 420, width: 90, height: 40 },
+      { x: 400, y: 480, width: 80, height: 30 },
+    ],
+  };
+  const located = (value: Parameters<typeof resolveRules>[2] extends ReadonlyMap<string, infer L> ? L : never) =>
+    new Map([[locatedKey('v', row.key), value]]);
+
+  it('looks for the marked pieces only in a merged element of the same size whose text holds', () => {
+    expect(locateCandidates([rule], [current, baseline])).toEqual([
+      expect.objectContaining({
+        ruleId: 'v',
+        key: row.key,
+        current: expect.objectContaining({
+          places: [
+            expect.objectContaining({ value: '1051' }),
+            expect.objectContaining({ value: '+1.05' }),
+            expect.objectContaining({ value: '14:02' }),
+          ],
+        }),
+      }),
+    ]);
+    expect(locateCandidates([rule], [screen(own('1051', '+1.05', '14:02'), { height: 300 }), baseline])).toEqual([]);
+    expect(locateCandidates([rule], [screen('Зі своєї картки *1051 NaN UAH 17 серпня, 14:02'), baseline])).toEqual([]);
+    expect(locateCandidates([rule], [current, null])).toEqual([]);
+    const ignore = { id: 'i', selector: 'id:activity_list_item', action: 'ignore' as const };
+    expect(locateCandidates([ignore, rule], [current, baseline])).toEqual([]);
+  });
+
+  it('leaves out only the found pieces and compares the rest of the row', () => {
+    const resolved = resolveRules([rule], [current, baseline], located(pieces));
+    expect(resolved.leftOut.v).toEqual([
+      { side: 'current', element: row.bounds, areas: pieces.current, located: true },
+      { side: 'baseline', element: row.bounds, areas: pieces.baseline, located: true },
+    ]);
+    const padded = (area: { x: number; y: number; width: number; height: number }) => ({
+      x: area.x - 2,
+      y: area.y - 2,
+      width: area.width + 4,
+      height: area.height + 4,
+    });
+    expect(resolved.ignore).toEqual([...pieces.current, ...pieces.baseline].map(padded));
+  });
+
+  it('leaves out the whole row when a piece is not found', () => {
+    const resolved = resolveRules(
+      [rule],
+      [current, baseline],
+      located({ reason: 'not-found-baseline', missing: '+1.01' })
+    );
+    expect(resolved.leftOut.v).toEqual([
+      { side: 'current', element: row.bounds, areas: [row.bounds], reason: 'not-found-baseline', missing: '+1.01' },
+      { side: 'baseline', element: row.bounds, areas: [row.bounds], reason: 'not-found-baseline', missing: '+1.01' },
+    ]);
+    // nothing looked for yet: as before 071
+    expect(resolveRules([rule], [current, baseline]).leftOut.v[0]).toMatchObject({ reason: 'own-text' });
+  });
+
+  it('counts a change of the icon in a merged row', () => {
+    const changed = screen(own('1051', '+1.05', '14:02'), { banner: 'Повернення коштів' });
+    const resolved = resolveRules([rule], [changed, baseline], located(pieces));
+    const changes = diffTrees(baseline, changed);
+    const banner = changes.find((change) => change.resourceId === 'banner');
+    expect(banner).toBeDefined();
+    expect(outsideAreas(changes, resolved.ignore, resolved.quietKeys)).toContainEqual(banner);
+    // the row's own text change is still not a change (REQ-033-16)
+    expect(outsideAreas(changes, resolved.ignore, resolved.quietKeys).some((change) => change.key === row.key)).toBe(
+      false
+    );
   });
 });

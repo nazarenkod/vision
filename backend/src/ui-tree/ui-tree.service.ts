@@ -1,6 +1,7 @@
 import { Injectable, Logger, Optional } from '@nestjs/common';
 import { TestRun, TestVariation } from '@prisma/client';
 import { gunzipSync, gzipSync } from 'zlib';
+import { TextLocatorService } from './text-locator.service';
 import { StaticService } from '../static/static.service';
 import { buildReport, findViolations } from '../a11y/a11y.rules';
 import { screenTitle } from '../a11y/a11y-problems';
@@ -27,6 +28,7 @@ import {
   findSystemBars,
   parseJsonArray,
   parseUiTreeSettings,
+  locateCandidates,
   resolveRules,
   shownText,
   ResolvedRules,
@@ -272,7 +274,9 @@ export class UiTreeService {
     private staticService: StaticService,
     private prismaService: PrismaService,
     // off the event loop when there is a pool; tests without one run the rules here
-    @Optional() private diffWorkerPool?: DiffWorkerPool
+    @Optional() private diffWorkerPool?: DiffWorkerPool,
+    // finds the marked pieces of a merged element on the pixels (spec 071); without it the whole element stays out
+    @Optional() private textLocator?: TextLocatorService
   ) {}
 
   private async violations(tree: UiTree, image: RgbaImage | undefined, norms: A11yNorms): Promise<A11yViolation[]> {
@@ -658,7 +662,8 @@ export class UiTreeService {
     testRun: Pick<
       TestRun,
       'projectId' | 'testVariationId' | 'uiTreeName' | 'baselineUiTreeName' | 'uiTreeOptions' | 'name' | 'customTags'
-    >
+    > &
+      Partial<Pick<TestRun, 'imageName' | 'baselineName'>>
   ): Promise<ComparisonInputs> {
     const empty: ComparisonInputs = {
       ignoreAreas: [],
@@ -693,7 +698,15 @@ export class UiTreeService {
     const excludeSystemBars = options.excludeSystemBars ?? settings.excludeSystemBars;
     const systemBarsFrom = options.excludeSystemBars !== undefined ? 'test' : 'project';
     const rules = [...settings.elementRules, ...checkRules];
-    const resolved = resolveRules(rules, [tree, baselineTree]);
+    let resolved = resolveRules(rules, [tree, baselineTree]);
+    const candidates = this.textLocator && testRun.baselineName ? locateCandidates(rules, [tree, baselineTree]) : [];
+    if (candidates.length && testRun.imageName) {
+      const located = await this.textLocator.locate(candidates, {
+        current: testRun.imageName,
+        baseline: testRun.baselineName,
+      });
+      resolved = resolveRules(rules, [tree, baselineTree], located);
+    }
     const compareOnly = planCompareOnly(checkRules, baselineTree, tree);
     const systemBars = excludeSystemBars ? findSystemBars(tree) : [];
     const clamp = (rect: Rect): Rect => {

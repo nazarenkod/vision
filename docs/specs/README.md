@@ -137,7 +137,7 @@ docs/specs/NNN-коротка-назва/
 | [068](068-baselines-by-feature/spec.md) | Еталони, згруповані за фічею | Approved |
 | [069](069-invisible-changes-before-after/spec.md) | Зміни, яких не видно в пікселях: «Було / Стало» без дубля | Implemented |
 | [070](070-variable-text-own-rows-only/spec.md) | Нестабільний текст діє лише на рядки того самого вигляду | Implemented |
-| [071](071-variable-text-found-on-screenshot/spec.md) | Нестабільний текст у злитому елементі: не порівнюються лише позначені шматки | Approved |
+| [071](071-variable-text-found-on-screenshot/spec.md) | Нестабільний текст у злитому елементі: не порівнюються лише позначені шматки | Implemented |
 
 Статусу `Verified` поки немає в жодної: інтеграцію з реальною Jira Cloud і прогони на сервері
 команда ще не підтвердила.

@@ -39,13 +39,23 @@ import {
   wordsOnly,
 } from "../../_helpers/variableText.helper";
 import { tokens, type, radius } from "../../theme";
-import { useT } from "../../i18n";
+import { useT, type MessageKey } from "../../i18n";
 import {
   ActionButtons,
   ScopeToggle,
   swatch,
   useActionKeys,
 } from "./ElementActions";
+
+// why the whole element is not compared (REQ-066-06, REQ-071-10)
+const LEFT_OUT_REASON: Record<NonNullable<LeftOut["reason"]>, MessageKey> = {
+  "own-text": "select.leftOutOwnText",
+  resized: "select.leftOutResized",
+  unpaired: "select.leftOutUnpaired",
+  "not-found-current": "select.leftOutNotFoundCurrent",
+  "not-found-baseline": "select.leftOutNotFoundBaseline",
+  timeout: "select.leftOutTimeout",
+};
 
 interface ElementPopoverProps {
   // where the element was clicked, in the window
@@ -712,15 +722,13 @@ export const ElementPopover: React.FunctionComponent<ElementPopoverProps> = ({
                 >
                   {leftOut.reason
                     ? t("select.leftOutWhole", {
-                        reason: t(
-                          leftOut.reason === "resized"
-                            ? "select.leftOutResized"
-                            : leftOut.reason === "unpaired"
-                              ? "select.leftOutUnpaired"
-                              : "select.leftOutOwnText",
-                        ),
+                        reason: t(LEFT_OUT_REASON[leftOut.reason], {
+                          value: leftOut.missing ?? "",
+                        }),
                       })
-                    : t("select.leftOutText")}
+                    : leftOut.located
+                      ? t("select.leftOutPieces")
+                      : t("select.leftOutText")}
                 </Typography>
               )}
               {rule.action === "variable" &&

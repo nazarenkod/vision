@@ -1,5 +1,11 @@
 import React from "react";
-import { act, fireEvent, render, screen } from "@testing-library/react";
+import {
+  act,
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+} from "@testing-library/react";
 import { ElementPopover } from "./ElementPopover";
 import { PickableElement, ScreenRule } from "../../types/insights";
 
@@ -333,6 +339,37 @@ describe("ElementPopover: what a variable text leaves out (spec 066)", () => {
     });
     expect(screen.getByTestId("variableLeftOut")).toHaveTextContent(
       "The whole element is not compared: its size changed",
+    );
+  });
+
+  it("says only the marked pieces are not compared, or which was not found", () => {
+    popover({
+      element: history,
+      rule: historyRule,
+      leftOut: {
+        side: "current",
+        element: history.bounds,
+        areas: [{ x: 10, y: 10, width: 20, height: 10 }],
+        located: true,
+      },
+    });
+    expect(screen.getByTestId("variableLeftOut")).toHaveTextContent(
+      "Only the marked pieces are not compared",
+    );
+    cleanup();
+    popover({
+      element: history,
+      rule: historyRule,
+      leftOut: {
+        side: "current",
+        element: history.bounds,
+        areas: [history.bounds],
+        reason: "not-found-baseline",
+        missing: "+1.01",
+      },
+    });
+    expect(screen.getByTestId("variableLeftOut")).toHaveTextContent(
+      "The whole element is not compared: «+1.01» was not found on the baseline",
     );
   });
 

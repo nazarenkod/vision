@@ -490,6 +490,42 @@ describe("variable text (spec 033)", () => {
     expect(result.summary).toEqual({ kind: "except", count: 1 });
   });
 
+  it("maps the found pieces of a merged element", () => {
+    const row = rect(40, 400, 1000, 270);
+    const sum = rect(880, 420, 100, 40);
+    const time = rect(400, 480, 80, 30);
+    const result = overview(
+      structure({
+        rules: [
+          {
+            ...variable("history", [row]),
+            leftOut: [
+              {
+                side: "current",
+                element: row,
+                areas: [sum, time],
+                located: true,
+              },
+              {
+                side: "baseline",
+                element: row,
+                areas: [sum, time],
+                located: true,
+              },
+            ],
+          },
+        ],
+      }),
+      [],
+      [],
+    );
+    expect(result.variable[0]).toMatchObject({
+      rects: [row],
+      leftOut: [sum, time],
+    });
+    expect(result.summary).toEqual({ kind: "except", count: 1 });
+  });
+
   it("puts a failed variable text first in the verdict", () => {
     const failed = {
       ruleId: "updated",

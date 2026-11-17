@@ -3,7 +3,14 @@ import { A11yNorms, DEFAULT_A11Y_NORMS, parseA11yNorms } from '../a11y/a11y-norm
 import { AllowedDevice, parseAllowedDevices } from '../projects/allowed-devices';
 import { AllowedBrowser, parseAllowedBrowsers } from '../projects/allowed-browsers';
 import { evaluateXpath, isXpathSelector, parseXpath, XPATH_PREFIX, XpathProblem, xpathProblem } from './xpath-selector';
-import { checkVariableText, fitsSkeleton, TextPart, unrunnablePattern, VariableTextReason } from './variable-text';
+import {
+  checkVariableText,
+  fitsSkeleton,
+  placesOf,
+  TextPart,
+  unrunnablePattern,
+  VariableTextReason,
+} from './variable-text';
 import { compileLinear, isLinearRegex, LinearRegex } from './linear-regex';
 
 // compare: only the elements the check's compare rules match are compared (spec 015)
@@ -243,9 +250,35 @@ export interface LeftOut {
   // what is not compared
   areas: Rect[];
   // set when the whole element is left out: its text is its own, its size changed,
-  // or it has no counterpart on the other screenshot (REQ-066-03, 06)
-  reason?: 'own-text' | 'resized' | 'unpaired';
+  // or it has no counterpart on the other screenshot (REQ-066-03, 06); for an element
+  // whose text is its own, a marked piece not found on a screenshot, or not in time (REQ-071-04, 10)
+  reason?: 'own-text' | 'resized' | 'unpaired' | 'not-found-current' | 'not-found-baseline' | 'timeout';
+  // the first value not found, with not-found-*
+  missing?: string;
+  // the areas are the marked pieces found on the screenshot, not text elements of the tree (REQ-071-03, 10)
+  located?: boolean;
 }
+
+/**
+ * An element whose text is its own, the same on both screenshots, whose marked
+ * pieces are looked for on the pixels (REQ-071-01): the values of its places
+ * on each side, where they stand in its text.
+ */
+export interface LocateCandidate {
+  ruleId: string;
+  // the element's key on the snapshot: the same element on the baseline has it too
+  key: string;
+  current: { bounds: Rect; text: string; places: Array<{ value: string; start: number; end: number }> };
+  baseline: { bounds: Rect; text: string; places: Array<{ value: string; start: number; end: number }> };
+}
+
+/** What the search on the pixels gave for a candidate: the areas on both sides, or why not. */
+export type Located =
+  | { current: Rect[]; baseline: Rect[] }
+  | { reason: 'not-found-current' | 'not-found-baseline'; missing: string }
+  | { reason: 'timeout' };
+
+export const locatedKey = (ruleId: string, key: string) => `${ruleId}\u0000${key}`;
 
 export interface ResolvedRules {
   ignore: Rect[];
@@ -315,7 +348,8 @@ export function textParts(tree: UiTree, node: UiNode, parts: TextPart[]): UiNode
 export function leftOutOf(
   parts: TextPart[] | undefined,
   current: { tree: UiTree | null; nodes: UiNode[] },
-  baseline: { tree: UiTree | null; nodes: UiNode[] }
+  baseline: { tree: UiTree | null; nodes: UiNode[] },
+  located: (key: string) => Located | undefined = () => undefined
 ): LeftOut[] {
   const result: LeftOut[] = [];
   const paired = new Set<UiNode>();
@@ -336,7 +370,20 @@ export function leftOutOf(
     const wasParts = parts?.length && baseline.tree ? textParts(baseline.tree, was, parts) : [];
     const sameSize = node.bounds.width === was.bounds.width && node.bounds.height === was.bounds.height;
     const reason = !sameSize ? 'resized' : !nowParts.length || !wasParts.length ? 'own-text' : undefined;
-    if (reason) {
+    const found = reason === 'own-text' && !nowParts.length && !wasParts.length ? located(node.key) : undefined;
+    if (found && 'current' in found) {
+      // only the marked pieces found on the pixels; the rest of the element is compared (REQ-071-03)
+      result.push(
+        { side: 'current', element: node.bounds, areas: found.current, located: true },
+        { side: 'baseline', element: was.bounds, areas: found.baseline, located: true }
+      );
+    } else if (found && 'reason' in found) {
+      const missing = 'missing' in found ? { missing: found.missing } : {};
+      result.push(
+        { ...whole('current', node, found.reason), ...missing },
+        { ...whole('baseline', was, found.reason), ...missing }
+      );
+    } else if (reason) {
       result.push(whole('current', node, reason), whole('baseline', was, reason));
     } else {
       result.push(
@@ -352,13 +399,58 @@ export function leftOutOf(
 }
 
 /**
+ * The elements whose marked pieces are to be looked for on the pixels
+ * (REQ-071-01): found by a variable-text rule on both screenshots, of the same
+ * size, with no text elements inside on either, and a text that holds on both.
+ * An element an ignore rule takes is not compared anyway (REQ-033-22).
+ */
+export function locateCandidates(rules: ElementRule[], trees: Array<UiTree | null>): LocateCandidate[] {
+  const [current, baseline] = trees;
+  if (!current || !baseline) return [];
+  const ignored = new Set<UiNode>();
+  for (const rule of rules) {
+    if (rule.action === 'ignore' && !selectorProblem(rule.selector)) {
+      findBySelector(current, rule.selector).forEach((node) => ignored.add(node));
+    }
+  }
+  const result: LocateCandidate[] = [];
+  for (const rule of rules) {
+    if (rule.action !== 'variable' || !rule.parts?.length || selectorProblem(rule.selector)) continue;
+    const was = ruleNodes(baseline, rule);
+    const paired = new Set<UiNode>();
+    for (const node of ruleNodes(current, rule)) {
+      const twin = was.find((item) => item.key === node.key && !paired.has(item));
+      if (!twin) continue;
+      paired.add(twin);
+      if (ignored.has(node)) continue;
+      if (node.bounds.width !== twin.bounds.width || node.bounds.height !== twin.bounds.height) continue;
+      if (textParts(current, node, rule.parts).length || textParts(baseline, twin, rule.parts).length) continue;
+      const now = placesOf(rule.parts, textOf(node));
+      const then = placesOf(rule.parts, textOf(twin));
+      if (!now || !then) continue;
+      result.push({
+        ruleId: rule.id,
+        key: node.key,
+        current: { bounds: node.bounds, ...now },
+        baseline: { bounds: twin.bounds, ...then },
+      });
+    }
+  }
+  return result;
+}
+
+/**
  * Areas the rules cover, taken from both trees (current first, then the
  * baseline): an element that moved is covered where it was and where it is.
  * Compare-only rules cover nothing here; planCompareOnly works them out.
  * A variable text is covered like an ignored element and its text checked
  * instead, unless an ignore rule takes the same element (REQ-033-22).
  */
-export function resolveRules(rules: ElementRule[], trees: Array<UiTree | null>): ResolvedRules {
+export function resolveRules(
+  rules: ElementRule[],
+  trees: Array<UiTree | null>,
+  located: ReadonlyMap<string, Located> = new Map()
+): ResolvedRules {
   const result: ResolvedRules = {
     ignore: [],
     tolerate: [],
@@ -397,7 +489,8 @@ export function resolveRules(rules: ElementRule[], trees: Array<UiTree | null>):
       const leftOut = leftOutOf(
         rule.parts,
         { tree: trees[0] ?? null, nodes: sideNodes[0] ?? [] },
-        { tree: trees[1] ?? null, nodes: sideNodes[1] ?? [] }
+        { tree: trees[1] ?? null, nodes: sideNodes[1] ?? [] },
+        (key) => located.get(locatedKey(rule.id, key))
       );
       result.leftOut[rule.id] = leftOut;
       result.ignore.push(...leftOut.flatMap((item) => item.areas.map((area) => pad(area, RULE_PADDING_PX))));

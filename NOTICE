@@ -13,3 +13,8 @@ Version 2.0); its ported files say so in their header.
 backend/vendor/deepmerge, backend/prisma/vendor/deepmerge and frontend/vendor/deepmerge are
 deepmerge 4.3.1 (MIT, copyright James Halliday, Josh Duff and contributors) with one change,
 described in their README.md.
+
+The backend locates marked pieces of variable text on screenshots with tesseract.js 7.0.0
+(Apache License, Version 2.0, copyright Jerome Wu and contributors) and the language models of
+@tesseract.js-data/ukr and @tesseract.js-data/eng 1.0.0 (MIT; trained data of the Tesseract OCR
+project, Apache License, Version 2.0), installed from npm and read from node_modules (ADR-0031).

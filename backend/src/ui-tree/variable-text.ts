@@ -78,6 +78,26 @@ export function fitsSkeleton(parts: TextPart[], text: string): boolean {
   return text.length > MAX_CHECKED_TEXT || !!skeleton(parts)?.test(normalize(text));
 }
 
+/**
+ * Where each marked place sits in a text that holds the check (spec 071): its
+ * value and its span in the text as the check reads it (spaces made one, ends
+ * trimmed, the text given back too). Null when the text does not hold.
+ */
+export function placesOf(
+  parts: TextPart[],
+  text: string
+): { text: string; places: Array<{ value: string; start: number; end: number }> } | null {
+  const value = normalize(text);
+  if (value.length > MAX_CHECKED_TEXT) return null;
+  // a place's own groups would shift the numbering: only the place itself captures
+  const source = parts
+    .map((part) => (isPlace(part) ? `(${part.pattern.replace(/(?<!\\)\((?!\?)/g, '(?:')})` : literal(part.text)))
+    .join('');
+  const groups = compile(source)?.groups?.(value);
+  if (!groups) return null;
+  return { text: value, places: groups.map((group) => ({ ...group, end: group.start + group.value.length })) };
+}
+
 export interface VariableTextResult {
   ok: boolean;
   reason?: VariableTextReason;

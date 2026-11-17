@@ -235,6 +235,10 @@ test("says the count once and lists the changes straight under it", async ({
   await expect(balance.getByTestId("changedBefore")).toHaveText("1 200");
   await expect(balance.getByTestId("changedAfter")).toHaveText("1 250");
   await expect(balance.getByTestId("changedWord")).toHaveText(["200", "250"]);
+  // in plain case, like every heading of the tab (REQ-036-30)
+  await expect(balance.getByTestId("beforeLabel")).toHaveText("Before", {
+    useInnerText: true,
+  });
   // headings read as sentences, not capitals (REQ-036-30)
   await expect(page.getByText("Comparison scope")).toHaveText(
     "Comparison scope",

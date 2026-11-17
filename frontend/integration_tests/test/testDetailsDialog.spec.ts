@@ -189,6 +189,15 @@ test("keeps the review layout and its keys", async ({
   // the same parts in the same places as before the redesign
   await expect(page.getByText("Baseline", { exact: true })).toBeVisible();
   await expect(page.getByText("Current", { exact: true })).toBeVisible();
+  // in plain case, not capitals (REQ-069-11)
+  await expect(page.getByText("Baseline", { exact: true })).toHaveText(
+    "Baseline",
+    { useInnerText: true },
+  );
+  await expect(page.getByText("Current", { exact: true })).toHaveText(
+    "Current",
+    { useInnerText: true },
+  );
   await expect(page.getByRole("tab", { name: "Accessibility" })).toBeVisible();
   await expect(page.getByRole("tab", { name: "Changes" })).toBeVisible();
   await expect(page.getByTestId("approveButton")).toBeVisible();

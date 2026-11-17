@@ -23,6 +23,8 @@ export interface VariationRow {
 }
 
 export interface RunRow {
+  id: string;
+  buildId: string;
   testVariationId: string | null;
   name: string;
   customTags: string | null;
@@ -96,6 +98,14 @@ export const profileOf = (row: {
   viewport: row.viewport ?? '',
 });
 
+/** The comparison a row of the page opens: the run, and the build it is in. */
+export interface RunPlace {
+  id: string;
+  buildId: string;
+}
+
+const placeOf = (run: RunRow): RunPlace => ({ id: run.id, buildId: run.buildId });
+
 const checkKeyOf = (row: { name: string; customTags?: string | null }) =>
   JSON.stringify([row.name, row.customTags ?? '']);
 
@@ -140,7 +150,10 @@ export function computeInsights(input: InsightsInput) {
     tinyApproved: number;
     hidden: number;
     lastChangeAt: Date | null;
-    latestA11y: Map<string, { at: Date; total: number; new: number }>;
+    // what a click on the check opens: its newest change, else its newest run
+    lastChangedRun: RunRow | null;
+    lastRun: RunRow | null;
+    latestA11y: Map<string, { at: Date; total: number; new: number; run: RunRow }>;
   };
   const checks = new Map<string, CheckStats>();
   const statsOf = (run: RunRow) => {
@@ -158,6 +171,8 @@ export function computeInsights(input: InsightsInput) {
         tinyApproved: 0,
         hidden: 0,
         lastChangeAt: null,
+        lastChangedRun: null,
+        lastRun: null,
         latestA11y: new Map(),
       };
       checks.set(key, stats);
@@ -175,10 +190,13 @@ export function computeInsights(input: InsightsInput) {
     const device = deviceOf(run);
     stats.devices.set(device, profileOf(run));
     stats.runs++;
+    // runs come oldest first, so the last one seen is the newest
+    stats.lastRun = run;
     const changed = CHANGED.has(run.status) || (run.diffPercent ?? 0) > 0;
     if (changed) {
       stats.changed++;
       if (!stats.lastChangeAt || run.createdAt > stats.lastChangeAt) stats.lastChangeAt = run.createdAt;
+      stats.lastChangedRun = run;
     }
     if (run.status === 'failed') stats.rejected++;
     if (
@@ -196,7 +214,12 @@ export function computeInsights(input: InsightsInput) {
     if (run.a11yTotalCount !== null) {
       const latest = stats.latestA11y.get(device);
       if (!latest || run.createdAt >= latest.at) {
-        stats.latestA11y.set(device, { at: run.createdAt, total: run.a11yTotalCount, new: run.a11yNewCount ?? 0 });
+        stats.latestA11y.set(device, {
+          at: run.createdAt,
+          total: run.a11yTotalCount,
+          new: run.a11yNewCount ?? 0,
+          run,
+        });
       }
     }
     if (run.testVariationId) {
@@ -242,6 +265,7 @@ export function computeInsights(input: InsightsInput) {
       flips: check.flips,
       baselineChanges: baselineChangesByCheck.get(check.key) ?? 0,
       lastChangeAt: check.lastChangeAt,
+      run: placeOf((check.lastChangedRun ?? check.lastRun) as RunRow),
     }))
     .sort((a, b) => b.flips - a.flips || b.changedPercent - a.changedPercent || b.runs - a.runs)
     .slice(0, LIST_LIMIT);
@@ -261,6 +285,8 @@ export function computeInsights(input: InsightsInput) {
       const issues = Math.max(...latest.map((entry) => entry.total));
       const fresh = Math.max(...latest.map((entry) => entry.new));
       const decisions = decided.get(check.name) ?? { reported: 0, ignored: 0 };
+      // the device with the most issues is the one worth opening; the newest of them on a tie
+      const worst = latest.reduce((a, b) => (b.total > a.total || (b.total === a.total && b.at > a.at) ? b : a));
       return {
         name: check.name,
         customTags: check.customTags,
@@ -268,6 +294,7 @@ export function computeInsights(input: InsightsInput) {
         newIssues: fresh,
         reported: decisions.reported,
         ignored: decisions.ignored,
+        run: placeOf(worst.run),
       };
     })
     .filter((screen) => screen.issues > 0)

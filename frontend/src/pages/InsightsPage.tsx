@@ -1,9 +1,10 @@
 import React from "react";
-import { useParams } from "react-router-dom";
+import { Link as RouterLink, useNavigate, useParams } from "react-router-dom";
 import {
   Box,
   Button,
   Checkbox,
+  Link,
   MenuItem,
   Table,
   TableBody,
@@ -28,7 +29,13 @@ import { shimmer } from "../components/SkeletonList";
 import { barShare, largest } from "../_helpers/insights.helper";
 import { MessageKey, useT } from "../i18n";
 import { DeviceTags } from "../components/DeviceTags";
-import { DeviceProfile } from "../types/insights";
+import { DeviceProfile, InsightsRun } from "../types/insights";
+import { routes } from "../constants";
+import {
+  BuildTab,
+  buildProjectPageUrl,
+  buildTestRunLocation,
+} from "../_helpers/route.helpers";
 
 // an older server sends the device as one line only: then it is one tag
 const DeviceOf: React.FunctionComponent<{
@@ -52,6 +59,45 @@ const readPeriod = () => {
 
 const checkName = (item: { name: string; customTags: string }) =>
   item.customTags ? `${item.name} [${item.customTags}]` : item.name;
+
+/** Where a row of the page leads: the stale baseline, or a check's comparison. */
+const baselineTo = (id: string) => `${routes.VARIATION_DETAILS_PAGE}/${id}`;
+const runTo = (projectId: string, run: InsightsRun, tab?: BuildTab) => ({
+  pathname: buildProjectPageUrl(projectId),
+  ...buildTestRunLocation(run.buildId, run.id, { tab }),
+});
+type To = ReturnType<typeof runTo> | string;
+
+/** The check's name as a link, so it opens in a new tab as well. */
+const CheckLink: React.FunctionComponent<{
+  to?: To;
+  children: React.ReactNode;
+}> = ({ to, children }) =>
+  to ? (
+    <Link
+      component={RouterLink}
+      to={to}
+      color="inherit"
+      underline="hover"
+      data-testid="insightsCheckLink"
+    >
+      {children}
+    </Link>
+  ) : (
+    <>{children}</>
+  );
+
+// a click anywhere on the row opens the check too; the link opens it by itself
+const rowClick = (navigate: (to: To) => void, to?: To) =>
+  to
+    ? {
+        onClick: (event: React.MouseEvent) => {
+          if ((event.target as Element).closest("a")) return;
+          navigate(to);
+        },
+        sx: { cursor: "pointer" },
+      }
+    : {};
 
 const RULE_KEY: Record<string, MessageKey> = {
   "touch-target": "a11y.rule.touchTarget",
@@ -148,6 +194,7 @@ const InsightsPage: React.FunctionComponent = () => {
   const { projectId = "" } = useParams<{ projectId: string }>();
   // the sidebar's switcher chooses the project; this page follows its address
   useProjectFromAddress(projectId);
+  const navigate = useNavigate();
   const { enqueueSnackbar } = useSnackbar();
   const { t, formatDate, formatNumber } = useT();
   // the parts toLocaleDateString shows
@@ -341,9 +388,17 @@ const InsightsPage: React.FunctionComponent = () => {
                   </TableHead>
                   <TableBody>
                     {data.unused.map((item) => (
-                      <TableRow key={item.id} hover>
+                      <TableRow
+                        key={item.id}
+                        hover
+                        {...rowClick(navigate, baselineTo(item.id))}
+                      >
                         {canEdit && (
-                          <TableCell padding="checkbox">
+                          <TableCell
+                            padding="checkbox"
+                            // ticking a baseline is not opening it
+                            onClick={(event) => event.stopPropagation()}
+                          >
                             <Checkbox
                               size="small"
                               checked={selected.has(item.id)}
@@ -357,7 +412,9 @@ const InsightsPage: React.FunctionComponent = () => {
                           </TableCell>
                         )}
                         <TableCell>
-                          {checkName(item)}{" "}
+                          <CheckLink to={baselineTo(item.id)}>
+                            {checkName(item)}
+                          </CheckLink>{" "}
                           {!item.hasBaseline && (
                             <StatusPill
                               tone="neutral"
@@ -416,8 +473,21 @@ const InsightsPage: React.FunctionComponent = () => {
                   </TableHead>
                   <TableBody>
                     {data.unstable.map((item) => (
-                      <TableRow key={checkName(item)} hover>
-                        <TableCell>{checkName(item)}</TableCell>
+                      <TableRow
+                        key={checkName(item)}
+                        hover
+                        {...rowClick(
+                          navigate,
+                          item.run && runTo(projectId, item.run),
+                        )}
+                      >
+                        <TableCell>
+                          <CheckLink
+                            to={item.run && runTo(projectId, item.run)}
+                          >
+                            {checkName(item)}
+                          </CheckLink>
+                        </TableCell>
                         <TableCell>
                           {/* a wider gap between devices than between the tags of one */}
                           <Box
@@ -492,8 +562,23 @@ const InsightsPage: React.FunctionComponent = () => {
                     </TableHead>
                     <TableBody>
                       {data.a11yScreens.map((item) => (
-                        <TableRow key={checkName(item)} hover>
-                          <TableCell>{checkName(item)}</TableCell>
+                        <TableRow
+                          key={checkName(item)}
+                          hover
+                          {...rowClick(
+                            navigate,
+                            item.run && runTo(projectId, item.run, "a11y"),
+                          )}
+                        >
+                          <TableCell>
+                            <CheckLink
+                              to={
+                                item.run && runTo(projectId, item.run, "a11y")
+                              }
+                            >
+                              {checkName(item)}
+                            </CheckLink>
+                          </TableCell>
                           <TableCell align="center">
                             <Amount
                               value={item.issues}

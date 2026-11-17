@@ -54,12 +54,12 @@
 | REQ-069-01 | `frontend/integration_tests/test/elementRules.spec.ts › shows a change the pixels miss once, as before and after` |
 | REQ-069-02 | `frontend/integration_tests/test/elementRules.spec.ts › shows a change the pixels miss once, as before and after` |
 | REQ-069-03 | `frontend/integration_tests/test/elementRules.spec.ts › shows a change the pixels miss once, as before and after` |
-| REQ-069-04 | `frontend/integration_tests/test/elementRules.spec.ts › says the count once and lists the changes straight under it` |
+| REQ-069-04 | `frontend/integration_tests/test/elementRules.spec.ts › lists changes under a plain Changes heading, each marked by how it was seen` |
 | REQ-069-05 | `frontend/src/_helpers/wordDiff.helper.test.ts › marks only the words that differ` |
 | REQ-069-06 | `frontend/integration_tests/test/elementRules.spec.ts › shows a change the pixels miss once, as before and after` |
 | REQ-069-07 | `frontend/integration_tests/test/elementSelection.spec.ts › leaves element selection to the toolbar, not the Changes tab` |
 | REQ-069-08 | `frontend/integration_tests/test/elementSelection.spec.ts › leaves element selection to the toolbar, not the Changes tab` |
 | REQ-069-09 | `frontend/src/i18n/translate.test.ts › asks to press, not click, the part of a text that changes` |
-| REQ-069-10 | `frontend/integration_tests/test/elementRules.spec.ts › marks no row when the pixels miss every change` |
-| REQ-069-11 | `frontend/integration_tests/test/testDetailsDialog.spec.ts › keeps the review layout and its keys`; `frontend/integration_tests/test/elementRules.spec.ts › says the count once and lists the changes straight under it` |
+| REQ-069-10 | `frontend/integration_tests/test/elementRules.spec.ts › marks every row the pixels miss, without a strip` |
+| REQ-069-11 | `frontend/integration_tests/test/testDetailsDialog.spec.ts › keeps the review layout and its keys`; `frontend/integration_tests/test/elementRules.spec.ts › lists changes under a plain Changes heading, each marked by how it was seen` |
 | REQ-069-12 | `frontend/integration_tests/test/elementRules.spec.ts › sets each change apart on its own tile` |

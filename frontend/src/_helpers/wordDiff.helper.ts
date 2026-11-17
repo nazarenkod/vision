@@ -55,3 +55,51 @@ export function wordDiff(before: string, after: string): WordDiff {
     }));
   return { before: mark(a, keptA), after: mark(b, keptB) };
 }
+
+export interface InlinePiece {
+  text: string;
+  // a word only the old text has, only the new one, or both
+  kind: "same" | "removed" | "added";
+}
+
+/**
+ * A changed text as one line (REQ-073-04): the shared words once, and where
+ * they differ the old words crossed out right before the new ones, so the
+ * reader does not compare two whole sentences by eye.
+ */
+export function inlineDiff(before: string, after: string): InlinePiece[] {
+  const diff = wordDiff(before, after);
+  const words = (pieces: DiffPiece[]) =>
+    pieces.filter((piece) => !isSpace(piece.text));
+  const a = words(diff.before);
+  const b = words(diff.after);
+  const out: InlinePiece[] = [];
+  const push = (text: string, kind: InlinePiece["kind"]) => {
+    const last = out[out.length - 1];
+    // neighbouring words of one kind read as one run
+    if (last && last.kind === kind) last.text += ` ${text}`;
+    else {
+      if (last) out.push({ text: " ", kind: "same" });
+      out.push({ text, kind });
+    }
+  };
+  let i = 0;
+  let j = 0;
+  while (i < a.length || j < b.length) {
+    while (i < a.length && a[i].changed) push(a[i++].text, "removed");
+    while (j < b.length && b[j].changed) push(b[j++].text, "added");
+    if (i < a.length && j < b.length) {
+      push(a[i].text, "same");
+      i++;
+      j++;
+    }
+  }
+  // the single spaces between runs belong to the plain text around them
+  return out.reduce<InlinePiece[]>((all, piece) => {
+    const last = all[all.length - 1];
+    if (last && last.kind === "same" && piece.kind === "same")
+      last.text += piece.text;
+    else all.push({ ...piece });
+    return all;
+  }, []);
+}

@@ -438,37 +438,15 @@ export function verdict(
   }
   // why the run waits for a person comes before how much changed (REQ-033-34)
   const variable = input.variableProblems ?? [];
-  const failed = variable.filter((item) => item.kind === "failed");
   if (variable.length) {
-    const first = failed[0] ?? variable[0];
-    if (first.kind === "gone") {
-      return {
-        tone: "failed",
-        title: text("verdict.variableGone"),
-        reason: text("verdict.variableGoneWhy", { element: first.element }),
-      };
-    }
+    const failed = variable.filter((item) => item.kind === "failed");
+    // one line says it; the row of the rule shows the value and what was expected (REQ-073-13)
     return {
       tone: "failed",
       title: text(
-        first.reason === "text"
-          ? "verdict.variableText"
-          : first.reason === "too-long"
-            ? "verdict.variableTooLong"
-            : "verdict.variablePattern",
+        failed.length ? "verdict.variableChanged" : "verdict.variableGone",
       ),
-      reason: text(
-        failed.length > 1
-          ? "verdict.variableWhyMany"
-          : first.expected
-            ? "verdict.variableWhyExpected"
-            : "verdict.variableWhy",
-        {
-          text: first.text ?? "",
-          expected: first.expected ?? "",
-          count: failed.length,
-        },
-      ),
+      reason: "",
     };
   }
   if (problems.some((item) => item.kind === "no-tree")) {
@@ -514,3 +492,59 @@ export function verdict(
     reason: "",
   };
 }
+
+/**
+ * Whether the heading of the Changes tab tells anything the status does not
+ * (REQ-073-01, 02): a problem, or a reason to look closer. "No changes" and
+ * "N changes" only repeat the status and the tab's count.
+ */
+export const showVerdict = (result: Verdict) =>
+  result.tone === "failed" || !!result.reason;
+
+/** How a change was seen, for the square before its row (REQ-073-03). */
+export function changeMark(
+  row: { key: string; element: string | null },
+  invisible: Set<string>,
+): "visible" | "loose" | "invisible" {
+  if (invisible.has(row.key)) return "invisible";
+  return row.element ? "visible" : "loose";
+}
+
+export type IgnoreZoneGroup = "test" | "project" | "manual";
+
+const ZONE_GROUP: Record<RowSource, IgnoreZoneGroup> = {
+  test: "test",
+  testSetting: "test",
+  project: "project",
+  projectSetting: "project",
+  screen: "manual",
+  drawn: "manual",
+};
+
+/** Ignore zones under where they were set, instead of a chip on each (REQ-073-08). */
+export function ignoreZoneGroups(
+  rows: CompareRow[],
+): Array<{ group: IgnoreZoneGroup; rows: CompareRow[] }> {
+  return (["test", "project", "manual"] as const)
+    .map((group) => ({
+      group,
+      rows: rows.filter((row) => ZONE_GROUP[row.source] === group),
+    }))
+    .filter((item) => item.rows.length > 0);
+}
+
+// past this share of changed pixels something is wrong, not a detail (REQ-073-30)
+export const MOST_OF_SCREEN = 25;
+
+/** Most of the screen changed: one card instead of a long list (REQ-073-30). */
+export const mostOfScreen = (
+  diffPercent: number | null | undefined,
+  changes: number,
+) => changes > 0 && (diffPercent ?? 0) > MOST_OF_SCREEN;
+
+/** The bug button stands out when the screen most likely is broken (REQ-073-21). */
+export const bugStandsOut = (input: {
+  failed: boolean;
+  diffPercent: number | null | undefined;
+  changes: number;
+}) => input.failed || mostOfScreen(input.diffPercent, input.changes);

@@ -49,7 +49,12 @@ import { CommentsPopper } from "../CommentsPopper";
 import { useDialogSnackbar } from "./useDialogSnackbar";
 import { APPROVED_TICK_MS, ApproveRejectButtons } from "./ApproveRejectButtons";
 import { invertIgnoreArea, readAreas } from "../../_helpers/ignoreArea.helper";
-import { compareOnlyApplied } from "../../_helpers/whatsCompared.helper";
+import {
+  bugStandsOut,
+  compareOnlyApplied,
+  countChanges,
+  verdict,
+} from "../../_helpers/whatsCompared.helper";
 import { InsightsPanel, PanelTab } from "./InsightsPanel";
 import { DeviceStrip } from "./DeviceStrip";
 import { RunFlags, useAiStatus } from "../ChangeGroups";
@@ -389,6 +394,21 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
   const [pinnedMark, setPinnedMark] = useState<string>();
   const pinMark = (id: string) =>
     setPinnedMark((current) => (current === id ? undefined : id));
+  // a rule that failed or most of the screen changed: the bug button comes forward (REQ-073-21)
+  const bugFirst =
+    !!structure &&
+    bugStandsOut({
+      failed:
+        verdict({
+          problems: structure.compareOnly?.problems ?? [],
+          variableProblems: structure.variableProblems ?? [],
+          changes: 0,
+          hasDiff: false,
+          only: false,
+        }).tone === "failed",
+      diffPercent: testRun.diffPercent,
+      changes: countChanges(structure),
+    });
   const testAreaMarks = (): OverlayRect[] =>
     readAreas(testRun.tempIgnoreAreas).flatMap((area, index) => {
       const id = testAreaMarkId(index);
@@ -556,6 +576,29 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
   const anchorOf = (side: Side, element: PickableElement) => {
     const rect = onScreen(side, element.bounds);
     return rect && { x: rect.x + rect.width, y: rect.y + rect.height / 2 };
+  };
+  // a rule's element opened with its rule, as a click on it does (REQ-073-15)
+  const editRule = (rule: ScreenRule) => {
+    const side: Side = elementsOf("current").some(
+      (item) => item.selector === rule.selector,
+    )
+      ? "current"
+      : "baseline";
+    const element = elementsOf(side).find(
+      (item) => item.selector === rule.selector,
+    );
+    if (!element) return;
+    setSelection({
+      side,
+      picked: { element, trail: [] },
+      selected: [element],
+      anchor: anchorOf(side, element) ?? {
+        x: window.innerWidth / 2,
+        y: window.innerHeight / 2,
+      },
+      adding: false,
+      refused: false,
+    });
   };
   const unselect = (element: PickableElement) =>
     setSelection((current) => {
@@ -2046,26 +2089,31 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
             }
           />
         </MuiTooltip>
-        {jiraSet && (
-          <Tooltip
-            title={
-              jiraReady ? t("reportBug.openHelp") : t("reportBug.needToken")
-            }
-          >
-            <span>
-              <Button
-                variant="outlined"
-                startIcon={<BugReport />}
-                onClick={() => reportBugFrom()}
-                disabled={!jiraReady}
-                data-testid="reportBug"
-                sx={{ whiteSpace: "nowrap", gap: 0.5 }}
-              >
-                {t("reportBug.open")}
-              </Button>
-            </span>
-          </Tooltip>
-        )}
+        {/* always there, so people know a bug can be filed from here (REQ-073-20) */}
+        <Tooltip
+          title={
+            !jiraSet
+              ? t("reportBug.noJira")
+              : jiraReady
+                ? t("reportBug.openHelp")
+                : t("reportBug.needToken")
+          }
+        >
+          <span>
+            <Button
+              variant="outlined"
+              color={bugFirst ? "error" : "primary"}
+              startIcon={<BugReport />}
+              onClick={() => reportBugFrom()}
+              disabled={!jiraReady}
+              data-testid="reportBug"
+              data-stands-out={bugFirst}
+              sx={{ whiteSpace: "nowrap", gap: 0.5 }}
+            >
+              {t("reportBug.open")}
+            </Button>
+          </span>
+        </Tooltip>
       </Box>
     </Box>
   );
@@ -2179,6 +2227,7 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
           onStructureChanged={loadStructure}
           pickedElement={pickedElement}
           onPreviewMark={setPreviewMark}
+          onEditRule={editRule}
           onUseElement={useElementForArea}
           onOpenArea={(areaId) => {
             if (!areasOpen) toggleAreas();

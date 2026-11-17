@@ -12,6 +12,7 @@ import {
   splitPieces,
   variableCount,
   variableSelector,
+  variableShown,
 } from "./variableText.helper";
 
 const texts = (text: string) => splitPieces(text).map((piece) => piece.text);
@@ -286,5 +287,36 @@ describe("otherDiffers", () => {
     expect(
       otherDiffers(marking(updated, "14:07"), updated, "Updated at 6 pm"),
     ).toEqual({ value: "6 pm" });
+  });
+});
+
+describe("variableShown", () => {
+  it("shows the baseline value crossed out before the current one", () => {
+    const parts = marking("Зі своєї картки 1051 UAH", "1051");
+    expect(
+      variableShown(
+        parts,
+        "Зі своєї картки 2122 UAH",
+        "Зі своєї картки 3030 UAH",
+      ),
+    ).toEqual([
+      { text: "Зі своєї картки ", place: false },
+      { text: "2122", place: true, was: "3030" },
+      { text: " UAH", place: false },
+    ]);
+    // without the baseline's text, the value the rule was made from
+    expect(variableShown(parts, "Зі своєї картки 2122 UAH")[1]).toEqual({
+      text: "2122",
+      place: true,
+      was: "1051",
+    });
+    // the same value is shown once
+    expect(
+      variableShown(
+        parts,
+        "Зі своєї картки 1051 UAH",
+        "Зі своєї картки 1051 UAH",
+      )[1],
+    ).toEqual({ text: "1051", place: true });
   });
 });

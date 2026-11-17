@@ -63,22 +63,22 @@ ADR не потрібен: модель даних і поведінка пор�
 | REQ-036-01 | `manual: екран зі змінами — у значку результату іконка, числа там немає` |
 | REQ-036-02 | `frontend/src/_helpers/whatsCompared.helper.test.ts › gives the count alone when there are changes` |
 | REQ-036-03 | `frontend/src/_helpers/whatsCompared.helper.test.ts › puts a compare-only problem in the heading` |
-| REQ-036-10 | `frontend/integration_tests/test/elementRules.spec.ts › says the count once and lists the changes straight under it` |
-| REQ-036-11 | `frontend/integration_tests/test/elementRules.spec.ts › says the count once and lists the changes straight under it` |
+| REQ-036-10 | `frontend/integration_tests/test/elementRules.spec.ts › lists changes under a plain Changes heading, each marked by how it was seen` |
+| REQ-036-11 | `frontend/integration_tests/test/elementRules.spec.ts › lists changes under a plain Changes heading, each marked by how it was seen` |
 | REQ-036-12 | `manual: навести на рядок — тип і id у підказці; розгорнути — тип і id над місцями` |
 | REQ-036-13 | `frontend/src/components/TestDetailsDialog/changedAreas.test.ts › keeps the id apart from a name that runs over several lines` |
 | REQ-036-14 | `frontend/src/components/TestDetailsDialog/changedAreas.test.ts › leaves rows with the same name unnumbered` |
 | REQ-036-15 | `frontend/src/components/TestDetailsDialog/changedAreas.test.ts › puts the spots no element wraps in one last row…` |
 | REQ-036-16 | `frontend/src/components/TestDetailsDialog/changedAreas.test.ts › puts the spots no element wraps in one last row…` |
 | REQ-036-17 | `frontend/integration_tests/test/elementSelection.spec.ts › offers element actions on a changed area` |
-| REQ-036-20 | `frontend/integration_tests/test/elementRules.spec.ts › says the count once and lists the changes straight under it` |
+| REQ-036-20 | `frontend/integration_tests/test/elementRules.spec.ts › lists changes under a plain Changes heading, each marked by how it was seen` |
 | REQ-036-21 | `manual: навести на рядок «Next» — на обох знімках підсвічено всі його місця` |
 | REQ-036-22 | `frontend/integration_tests/test/elementRules.spec.ts › opens a row into its spots, five at a time` |
-| REQ-036-30 | `frontend/integration_tests/test/elementRules.spec.ts › says the count once and lists the changes straight under it` |
-| REQ-036-31 | `frontend/integration_tests/test/elementRules.spec.ts › folds the comparison scope while there are changes to look at` |
+| REQ-036-30 | `frontend/integration_tests/test/elementRules.spec.ts › lists changes under a plain Changes heading, each marked by how it was seen` |
+| REQ-036-31 | `frontend/integration_tests/test/elementRules.spec.ts › shows the map and every rule group open, without a summary or a toggle` |
 | REQ-036-32 | `frontend/integration_tests/test/elementRules.spec.ts › lists the rules for this screen and for every screen` |
-| REQ-036-33 | `frontend/integration_tests/test/elementRules.spec.ts › folds the comparison scope while there are changes to look at` |
-| REQ-036-34 | `frontend/integration_tests/test/elementRules.spec.ts › folds the comparison scope while there are changes to look at` |
+| REQ-036-33 | `frontend/integration_tests/test/elementRules.spec.ts › shows the map and every rule group open, without a summary or a toggle` |
+| REQ-036-34 | `frontend/integration_tests/test/elementRules.spec.ts › shows the map and every rule group open, without a summary or a toggle` |
 | REQ-036-40 | `frontend/integration_tests/test/elementSelection.spec.ts › leaves element selection to the toolbar, not the Changes tab` |
 | REQ-036-41 | `manual: знято в 069 — «Правило вручну» без елемента немає; повна форма правила відкривається з дій елемента` |
 | REQ-036-42 | `manual: під блоками вкладки немає рядка «Змінити, що порівнюється» і посилання «Додати правило елемента»` |

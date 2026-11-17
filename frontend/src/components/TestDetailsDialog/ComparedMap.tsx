@@ -101,7 +101,7 @@ export const ComparedMap: React.FunctionComponent<ComparedMapProps> = ({
         height,
         borderRadius: radius.control,
         overflow: "hidden",
-        border: `1.5px solid ${overview.only ? tokens.borderStrong : tokens.brand}`,
+        border: `1.5px solid ${tokens.borderStrong}`,
         // dimmed where nothing is compared
         bgcolor: overview.only ? tokens.ground : tokens.subtle,
       }}

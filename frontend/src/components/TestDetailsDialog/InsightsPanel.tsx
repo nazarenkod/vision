@@ -57,8 +57,13 @@ import { a11yMessage, a11yTitle } from "../../_helpers/a11yText.helper";
 import { WhatsCompared } from "./WhatsCompared";
 import { BeforeAfter } from "./BeforeAfter";
 import { ComparisonVerdict } from "./ComparisonVerdict";
-import { overview, verdict } from "../../_helpers/whatsCompared.helper";
-import { expectedOf } from "../../_helpers/variableText.helper";
+import {
+  changeMark,
+  mostOfScreen,
+  overview,
+  showVerdict,
+  verdict,
+} from "../../_helpers/whatsCompared.helper";
 import { useRuleSnackbar } from "../useRuleSnackbar";
 import { readAreas } from "../../_helpers/ignoreArea.helper";
 import {
@@ -80,7 +85,7 @@ import {
 // a long row opens five places at a time, the rest one click away (REQ-036-22)
 const PLACES_SHOWN = 5;
 const LABEL_MAX = 40;
-import { SelectorMatches } from "../../types/insights";
+import { ScreenRule, SelectorMatches } from "../../types/insights";
 import { elementLabel } from "../../_helpers/elementPicking.helper";
 
 type JiraDialog = { mode: "link"; violationIds: string[] } | null;
@@ -120,6 +125,8 @@ interface Props {
   ) => void;
   // a rule or an area the pointer is over, lit up on the screenshots (REQ-024-24)
   onPreviewMark?: (id: string | undefined) => void;
+  // opens a rule's element with its rule, from the rule's menu (REQ-073-15)
+  onEditRule?: (rule: ScreenRule) => void;
   // replaces a saved area with a rule for the element it covers (REQ-024-51)
   onUseElement: (areaId: string) => void;
   onOpenArea: (areaId: string) => void;
@@ -182,6 +189,7 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
   onPreviewViolation,
   onPreviewRegion,
   onPreviewMark,
+  onEditRule,
   onUseElement,
   onOpenArea,
   pinnedMark,
@@ -1049,6 +1057,9 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
   // one changed row open at a time, its places five at a time (REQ-036-22)
   const [openRow, setOpenRow] = React.useState<string | null>(null);
   const [allPlaces, setAllPlaces] = React.useState(false);
+  // most of the screen changed: the list waits behind one card (REQ-073-30, 31)
+  const [allChanges, setAllChanges] = React.useState(false);
+  React.useEffect(() => setAllChanges(false), [testRun.id]);
   // the row's own actions show when it is pointed at or focused (REQ-036-17)
   const changeRowSx = {
     display: "grid",
@@ -1117,9 +1128,20 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
     const invisible = new Set(
       structure.invisible.map((change) => `${change.kind}:${change.key}`),
     );
-    // when every row is such a change the strip already says so: no mark on each (REQ-069-10)
-    const markInvisible = rows.some((row) => !invisible.has(row.key));
     const changeCount = countRows(rows);
+    const result = verdict(
+      {
+        problems: structure.compareOnly?.problems ?? [],
+        variableProblems: structure.variableProblems ?? [],
+        changes: changeCount,
+        hasDiff: !!testRun.diffName,
+        only: compared.only,
+      },
+      t,
+    );
+    // past a quarter of the screen one card says it (REQ-073-30)
+    const folded =
+      mostOfScreen(testRun.diffPercent, changeCount) && !allChanges;
     // a long text is cut in the row; the whole of it is in the tooltip
     const clip = (text: string) =>
       text.length > LABEL_MAX ? `${text.slice(0, LABEL_MAX - 1)}…` : text;
@@ -1174,35 +1196,8 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
     };
     return (
       <>
-        {testRun.baselineName && (
-          <ComparisonVerdict
-            verdict={verdict(
-              {
-                problems: structure.compareOnly?.problems ?? [],
-                // what each text was when the check was made, to say what was expected
-                variableProblems: (structure.variableProblems ?? []).map(
-                  (problem) => {
-                    const rule = structure.rules.find(
-                      (item) => item.id === problem.ruleId,
-                    );
-                    return rule?.parts
-                      ? {
-                          ...problem,
-                          expected: expectedOf(rule.parts)
-                            .map((segment) => segment.text)
-                            .join(""),
-                        }
-                      : problem;
-                  },
-                ),
-                changes: changeCount,
-                hasDiff: !!testRun.diffName,
-                only: compared.only,
-              },
-              t,
-            )}
-            changes={changeCount}
-          />
+        {testRun.baselineName && showVerdict(result) && (
+          <ComparisonVerdict verdict={result} changes={changeCount} />
         )}
         {bugs.length > 0 && (
           <Box
@@ -1279,46 +1274,6 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
             ))}
           </Box>
         )}
-        <WhatsCompared
-          structure={structure}
-          overview={compared}
-          onOpenArea={onOpenArea}
-          pinnedMark={pinnedMark}
-          onPinMark={onPinMark}
-          canEdit={canEdit}
-          busy={submitting || !!ruleBusy}
-          onRemove={(rule) =>
-            // a rule for every screen is asked about: it changes the whole project
-            rule.scope === "project" ? setRemoving(rule) : removeRule(rule)
-          }
-          onRemoveFromCompared={removeFromCompared}
-          onUseElement={onUseElement}
-          onPreview={(id) => onPreviewMark?.(id)}
-          startOpen={changeCount === 0}
-        />
-        {structure.invisible.length > 0 && (
-          // one line; the changes themselves are the marked rows below (REQ-069-01…03)
-          <Box
-            data-testid="invisibleStrip"
-            sx={{
-              display: "flex",
-              alignItems: "center",
-              gap: 1,
-              px: 1.25,
-              py: 0.75,
-              borderRadius: radius.control,
-              bgcolor: tokens.status.changed.bg,
-              color: tokens.status.changed.fg,
-              fontSize: type.small,
-              lineHeight: 1.4,
-            }}
-          >
-            <VisibilityOffOutlined sx={{ fontSize: type.section }} />
-            {t("panel.invisibleCount", {
-              count: structure.invisible.length,
-            })}
-          </Box>
-        )}
         {structure.hints.map((hint) => (
           <Alert
             key={hint.kind}
@@ -1349,15 +1304,67 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
             {hint.message}
           </Alert>
         ))}
-        {rows.length > 0 && (
-          // straight under the count, one row per changed thing (REQ-036-10…22)
+        {rows.length > 0 && folded && (
+          <Box
+            data-testid="mostOfScreen"
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              gap: 2,
+              px: 2,
+              py: 1.75,
+              borderRadius: radius.card,
+              bgcolor: tokens.subtle,
+              outline: `1px solid ${tokens.diff}`,
+              outlineOffset: -1,
+            }}
+          >
+            <Box
+              sx={{
+                fontSize: type.page,
+                fontWeight: 700,
+                lineHeight: 1,
+                color: tokens.diff,
+                fontVariantNumeric: "tabular-nums",
+                whiteSpace: "nowrap",
+              }}
+            >
+              {Math.round(testRun.diffPercent)} %
+            </Box>
+            <Box sx={{ display: "flex", flexDirection: "column", gap: 0.5 }}>
+              <Box sx={{ fontSize: type.body, fontWeight: 600 }}>
+                {t("changes.mostOfScreen")}
+              </Box>
+              <Box sx={{ fontSize: type.small, color: tokens.textMuted }}>
+                {t("changes.mostCount", { count: changeCount })} ·{" "}
+                <Link
+                  component="button"
+                  data-testid="showAllChanges"
+                  onClick={() => setAllChanges(true)}
+                  sx={{ fontSize: type.small, verticalAlign: "baseline" }}
+                >
+                  {t("changes.showAll")}
+                </Link>
+              </Box>
+            </Box>
+          </Box>
+        )}
+        {rows.length > 0 && !folded && (
+          // under a plain heading, one row per changed thing (REQ-073-02)
           <Box
             data-testid="whatChanged"
             aria-label={t("changes.list")}
             // each change on its own tile, apart from the next (REQ-069-12)
             sx={{ display: "flex", flexDirection: "column", gap: 1 }}
           >
+            <Box
+              data-testid="changesTitle"
+              sx={{ fontSize: 13, fontWeight: 500, color: tokens.textMuted }}
+            >
+              {t("panel.changes")}
+            </Box>
             {rows.map((row) => {
+              const mark = changeMark(row, invisible);
               const many = row.places.length > 1;
               const open = many && openRow === row.key;
               const shown = open
@@ -1433,27 +1440,28 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
                           color: tokens.textMuted,
                         }}
                       >
-                        {many && (
-                          <ChevronRightRounded
+                        {/* how the change was seen, as on the map (REQ-073-03) */}
+                        <Tooltip title={t(`changes.mark.${mark}` as const)}>
+                          <Box
+                            data-testid="changeMark"
+                            data-mark={mark}
+                            aria-label={t(`changes.mark.${mark}` as const)}
                             sx={{
-                              fontSize: type.title,
-                              transform: open ? "rotate(90deg)" : "none",
-                              transition: "transform 160ms",
+                              width: 14,
+                              height: 14,
+                              boxSizing: "border-box",
+                              borderRadius: radius.control,
+                              border:
+                                mark === "visible"
+                                  ? `2px solid ${tokens.diff}`
+                                  : `1.5px dashed ${
+                                      mark === "invisible"
+                                        ? tokens.status.new.fg
+                                        : tokens.diff
+                                    }`,
                             }}
                           />
-                        )}
-                        {!many && markInvisible && invisible.has(row.key) && (
-                          <Tooltip title={t("panel.invisibleRow")}>
-                            <VisibilityOffOutlined
-                              data-testid="invisibleMark"
-                              aria-label={t("panel.invisibleRow")}
-                              sx={{
-                                fontSize: type.section,
-                                color: tokens.status.changed.fg,
-                              }}
-                            />
-                          </Tooltip>
-                        )}
+                        </Tooltip>
                       </Box>
                       <Box sx={{ minWidth: 0 }}>
                         <Box
@@ -1471,6 +1479,18 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
                           {row.element
                             ? rowName(row.element)
                             : t("changes.loose", { count: row.places.length })}
+                          {many && (
+                            <ChevronRightRounded
+                              sx={{
+                                fontSize: type.title,
+                                verticalAlign: "-3px",
+                                ml: 0.25,
+                                color: tokens.textMuted,
+                                transform: open ? "rotate(90deg)" : "none",
+                                transition: "transform 160ms",
+                              }}
+                            />
+                          )}
                         </Box>
                         <Box
                           data-testid="changedAreaWhat"
@@ -1660,6 +1680,23 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
             ))}
           </Box>
         )}
+        <WhatsCompared
+          structure={structure}
+          overview={compared}
+          onOpenArea={onOpenArea}
+          pinnedMark={pinnedMark}
+          onPinMark={onPinMark}
+          canEdit={canEdit}
+          busy={submitting || !!ruleBusy}
+          onRemove={(rule) =>
+            // a rule for every screen is asked about: it changes the whole project
+            rule.scope === "project" ? setRemoving(rule) : removeRule(rule)
+          }
+          onRemoveFromCompared={removeFromCompared}
+          onUseElement={onUseElement}
+          onPreview={(id) => onPreviewMark?.(id)}
+          onEditRule={(rule) => onEditRule?.(rule)}
+        />
       </>
     );
   };

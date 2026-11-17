@@ -1,9 +1,17 @@
 import React from "react";
-import { Box, Button, IconButton, Tooltip, Typography } from "@mui/material";
 import {
-  ChevronRightRounded,
-  ExpandMoreRounded,
+  Box,
+  Button,
+  IconButton,
+  Menu,
+  MenuItem,
+  Tooltip,
+  Typography,
+} from "@mui/material";
+import {
+  CheckRounded,
   Close,
+  MoreHoriz,
   WarningAmberRounded,
 } from "@mui/icons-material";
 import {
@@ -15,9 +23,10 @@ import {
   ComparedRow,
   CompareRow,
   foundOn,
+  ignoreZoneGroups,
   Overview,
 } from "../../_helpers/whatsCompared.helper";
-import { expectedOf, placesIn } from "../../_helpers/variableText.helper";
+import { expectedOf, variableShown } from "../../_helpers/variableText.helper";
 import { ComparedMap } from "./ComparedMap";
 import { tokens, type, radius } from "../../theme";
 import { Text, useT } from "../../i18n";
@@ -44,8 +53,8 @@ interface WhatsComparedProps {
   onUseElement: (areaId: string) => void;
   // what the pointer is over, to light it up on the screenshots (REQ-024-24)
   onPreview: (id: string | undefined) => void;
-  // with changes to look at, the groups wait behind the summary (REQ-036-34)
-  startOpen: boolean;
+  // opens the rule's element with its rule, as a click on it does (REQ-073-15)
+  onEditRule: (rule: ScreenRule) => void;
 }
 
 type Swatch = "compare" | "ignore" | "tolerate" | "variable" | "gone" | "off";
@@ -116,25 +125,6 @@ const nameSx = {
   whiteSpace: "nowrap",
 } as const;
 
-const Chip: React.FunctionComponent<{ children: React.ReactNode }> = ({
-  children,
-}) => (
-  <Box
-    component="span"
-    sx={{
-      fontSize: type.caption,
-      color: tokens.textSecondary,
-      border: `1px solid ${tokens.borderStrong}`,
-      borderRadius: "999px",
-      px: 0.9,
-      flexShrink: 0,
-      whiteSpace: "nowrap",
-    }}
-  >
-    {children}
-  </Box>
-);
-
 const STATE_TONE = {
   same: "passed",
   changed: "changed",
@@ -142,15 +132,6 @@ const STATE_TONE = {
   appeared: "failed",
   resized: "failed",
   "nothing-found": "failed",
-} as const;
-
-const SOURCE_KEY = {
-  screen: "compared.source.screen",
-  project: "compared.source.project",
-  drawn: "compared.source.drawn",
-  test: "compared.source.test",
-  testSetting: "compared.source.testSetting",
-  projectSetting: "compared.source.projectSetting",
 } as const;
 
 const stateKey = {
@@ -217,10 +198,9 @@ function moveText(shift: { dx: number; dy: number }, t: Text): string {
 }
 
 /**
- * What this screenshot is compared on, second in the Changes tab
- * (REQ-030-10…24, 40, 41): a summary with a map of the screen, then rows by
- * what they do, each saying where it comes from. What changes nothing — it
- * lies outside the chosen elements or found nothing — is folded away.
+ * What this screen is compared on, under the changes (REQ-030-20…24, 40, 41;
+ * spec 073): the map of the screen on the left, the rules by what they do on
+ * the right, always open and without a summary that only repeats them.
  */
 export const WhatsCompared: React.FunctionComponent<WhatsComparedProps> = ({
   structure,
@@ -234,11 +214,14 @@ export const WhatsCompared: React.FunctionComponent<WhatsComparedProps> = ({
   onRemoveFromCompared,
   onUseElement,
   onPreview,
-  startOpen,
+  onEditRule,
 }) => {
   const { t } = useT();
-  const [outsideOpen, setOutsideOpen] = React.useState(false);
-  const [open, setOpen] = React.useState(startOpen);
+  // the variable-text row whose menu is open, and where
+  const [menu, setMenu] = React.useState<{
+    anchor: HTMLElement;
+    item: CompareRow;
+  }>();
   const suggestions = new Map(
     (structure.areaSuggestions ?? []).map((item) => [item.areaId, item]),
   );
@@ -255,8 +238,6 @@ export const WhatsCompared: React.FunctionComponent<WhatsComparedProps> = ({
         : summary.kind === "except"
           ? t("compared.except")
           : t("compared.whole");
-
-  const sourceText = (row: CompareRow) => t(SOURCE_KEY[row.source]);
 
   const rowName = (row: CompareRow) => {
     if (row.rule) return ruleName(row.rule, structure);
@@ -389,7 +370,6 @@ export const WhatsCompared: React.FunctionComponent<WhatsComparedProps> = ({
             {reason}
           </Box>
         )}
-        <Chip>{sourceText(item)}</Chip>
         {item.rule && removeButton(item.rule)}
       </Box>
     );
@@ -470,7 +450,6 @@ export const WhatsCompared: React.FunctionComponent<WhatsComparedProps> = ({
                 {t(stateKey[element.state])}
               </Box>
             )}
-            {element.rule && <Chip>{t(SOURCE_KEY[element.rule.scope])}</Chip>}
             {element.rule && removeButton(element.rule)}
           </Box>
         </Tooltip>
@@ -517,7 +496,7 @@ export const WhatsCompared: React.FunctionComponent<WhatsComparedProps> = ({
     ).values(),
   ];
 
-  // a text with its marked part: what it says now, highlighted, and whether it holds (REQ-033-31)
+  // a text with its marked part: what it was and is now, and whether it holds (REQ-073-10…12)
   const variableRow = (item: CompareRow) => {
     const rule = item.rule as ScreenRule;
     const check = rule.check;
@@ -526,150 +505,152 @@ export const WhatsCompared: React.FunctionComponent<WhatsComparedProps> = ({
     const shown = failed[0] ?? items[0];
     const parts = rule.parts ?? [];
     const expected = expectedOf(parts);
-    // what it says now; without a text on the snapshot, what it said when the check was made
-    const segments = shown ? placesIn(parts, shown.text) : expected;
+    // the baseline's text of the element, when the rule finds one there
+    const onBaseline = (structure.baselineElements ?? []).filter(
+      (element) => element.selector === rule.selector && !!element.text,
+    );
+    const before = onBaseline.length === 1 ? onBaseline[0].text : undefined;
     const bad = !!check && (check.gone || failed.length > 0);
-    const tag = !check
+    const failing = bad && !!shown && !shown.ok;
+    // what it says now; without a text on the snapshot, what it said when the check was made.
+    // A value that broke the rule needs no old one beside it: "expected" says it (REQ-073-12)
+    const segments: Array<{ text: string; place: boolean; was?: string }> =
+      shown && !failing
+        ? variableShown(parts, shown.text, before)
+        : shown
+          ? variableShown(parts, shown.text, shown.text)
+          : expected;
+
+    const others = items.filter((entry) => entry !== shown);
+    const note = !check
       ? t("compared.variable.notChecked")
       : check.gone
-        ? t("compared.variable.gone")
-        : items.length > 1
-          ? t("compared.variable.someFit", {
-              ok: items.length - failed.length,
-              count: items.length,
+        ? t("compared.variable.goneLine")
+        : failing
+          ? t("compared.variable.expectedLine", {
+              text: expected.map((segment) => segment.text).join(""),
             })
-          : failed.length
-            ? t(
-                shown?.reason === "text"
-                  ? "compared.variable.textDiffers"
-                  : shown?.reason === "too-long"
-                    ? "compared.variable.tooLong"
-                    : "compared.variable.notFit",
-              )
-            : t("compared.variable.fits");
-    const tone = !check
-      ? tokens.status.neutral
-      : bad
-        ? tokens.status.failed
-        : tokens.status.passed;
-    const others = items.filter((entry) => entry !== shown);
-    const place = (text: string, key: number, failing: boolean) => (
+          : "";
+    return (
       <Box
-        key={key}
-        component="span"
+        key={item.key}
+        data-testid="variableRule"
+        data-state={!check ? "unchecked" : bad ? "failed" : "fits"}
+        onMouseEnter={() => onPreview(item.key)}
+        onMouseLeave={() => onPreview(undefined)}
         sx={{
-          fontWeight: 600,
-          color: failing ? tokens.status.failed.fg : tokens.variable,
-          bgcolor: failing ? tokens.status.failed.bg : tokens.variableSoft,
+          display: "flex",
+          alignItems: "flex-start",
+          gap: 1.25,
+          px: 1.25,
+          py: 1,
           borderRadius: radius.control,
-          px: 0.5,
+          fontSize: type.body,
+          lineHeight: 1.5,
+          bgcolor: bad ? tokens.status.failed.bg : tokens.subtle,
+          outline: bad ? `1px solid ${tokens.status.failed.fg}` : "none",
+          outlineOffset: -1,
         }}
       >
-        {text || "\u00a0"}
-      </Box>
-    );
-    return (
-      <Box key={item.key} sx={{ display: "flex", flexDirection: "column" }}>
-        <Box
-          data-testid="variableRule"
-          data-state={!check ? "unchecked" : bad ? "failed" : "fits"}
-          onMouseEnter={() => onPreview(item.key)}
-          onMouseLeave={() => onPreview(undefined)}
-          sx={{ ...rowSx, alignItems: "flex-start", py: 0.5 }}
-        >
-          <Box sx={{ ...swatchSx(bad ? "gone" : "variable"), mt: 0.25 }} />
-          {/* the whole text: the value that broke it is the point, it must not be cut off */}
+        <Box sx={{ ...swatchSx(bad ? "gone" : "variable"), mt: 0.4 }} />
+        <Box sx={{ flex: 1, minWidth: 0 }}>
+          {/* the whole text: the value that changed is the point, it must not be cut off */}
           <Box
             component="span"
             data-testid="variableNow"
-            sx={{ flex: 1, minWidth: 0, overflowWrap: "anywhere" }}
+            sx={{ overflowWrap: "anywhere" }}
           >
             {segments.map((segment, i) =>
               segment.place ? (
-                place(segment.text, i, bad && !!shown && !shown.ok)
+                <React.Fragment key={i}>
+                  {segment.was && (
+                    <Box
+                      component="del"
+                      data-testid="variableWas"
+                      sx={{ color: tokens.textMuted }}
+                    >
+                      {segment.was}
+                    </Box>
+                  )}
+                  {segment.was && " "}
+                  <Box
+                    component="span"
+                    sx={{
+                      fontWeight: 600,
+                      color: failing
+                        ? tokens.status.failed.fg
+                        : tokens.variable,
+                    }}
+                  >
+                    {segment.text || " "}
+                  </Box>
+                </React.Fragment>
               ) : (
                 <span key={i}>{segment.text}</span>
               ),
             )}
           </Box>
-          <Box
-            component="span"
-            sx={{
-              fontSize: 12,
-              fontWeight: 600,
-              borderRadius: "999px",
-              px: 0.9,
-              flexShrink: 0,
-              color: tone.fg,
-              bgcolor: tone.bg,
-            }}
-          >
-            {tag}
-          </Box>
-          <Chip>{sourceText(item)}</Chip>
-          {removeButton(rule)}
+          {note && (
+            <Box
+              data-testid="variableExpected"
+              sx={{
+                fontSize: type.small,
+                color: tokens.textMuted,
+                overflowWrap: "anywhere",
+              }}
+            >
+              {note}
+            </Box>
+          )}
+          {others.length > 0 && (
+            <Box
+              sx={{
+                fontSize: type.small,
+                color: tokens.textMuted,
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                whiteSpace: "nowrap",
+              }}
+            >
+              {[
+                ...others.slice(0, 2).map((entry) => entry.text),
+                ...(others.length > 2
+                  ? [t("compared.variable.more", { count: others.length - 2 })]
+                  : []),
+              ].join(" · ")}
+            </Box>
+          )}
         </Box>
-        {bad && shown && !shown.ok && (
-          <Box
-            data-testid="variableExpected"
-            sx={{
-              fontSize: type.small,
-              color: tokens.textMuted,
-              pl: 3,
-              mb: 0.5,
-              overflowWrap: "anywhere",
-            }}
-          >
-            {t("compared.variable.expected")}{" "}
-            <Box component="span" sx={{ color: tokens.text }}>
-              {expected.map((segment, i) =>
-                segment.place ? (
-                  // the pattern is for whoever wants it, one hover away
-                  <Tooltip
-                    key={i}
-                    title={t("select.variablePattern", {
-                      pattern: segment.pattern ?? "",
-                    })}
-                  >
-                    {place(segment.text, i, false)}
-                  </Tooltip>
-                ) : (
-                  <span key={i}>{segment.text}</span>
-                ),
-              )}
-            </Box>{" "}
-            {t("compared.variable.sameShape")}
-          </Box>
+        {check && !bad && (
+          <Tooltip title={t("compared.variable.holds")}>
+            <CheckRounded
+              data-testid="variableHolds"
+              aria-label={t("compared.variable.holds")}
+              sx={{
+                fontSize: type.section,
+                color: tokens.status.passed.fg,
+                mt: 0.25,
+                flexShrink: 0,
+              }}
+            />
+          </Tooltip>
         )}
-        {others.length > 0 && (
-          <Box
-            sx={{
-              fontSize: type.small,
-              color: tokens.textMuted,
-              pl: 3,
-              mb: 0.5,
-              overflow: "hidden",
-              textOverflow: "ellipsis",
-              whiteSpace: "nowrap",
-            }}
+        {canEdit && (
+          <IconButton
+            size="small"
+            data-testid="variableMenu"
+            aria-label={t("compared.variable.menu")}
+            aria-haspopup="menu"
+            disabled={busy}
+            onClick={(event) => setMenu({ anchor: event.currentTarget, item })}
+            sx={{ width: 26, height: 26, flexShrink: 0, mt: -0.25 }}
           >
-            {[
-              ...others.slice(0, 2).map((entry) => entry.text),
-              ...(others.length > 2
-                ? [t("compared.variable.more", { count: others.length - 2 })]
-                : []),
-            ].join(" · ")}
-          </Box>
+            <MoreHoriz sx={{ fontSize: type.section }} />
+          </IconButton>
         )}
       </Box>
     );
   };
-  const variableFailed = overview.variable.filter(
-    (item) =>
-      !!item.rule?.check &&
-      (item.rule.check.gone ||
-        item.rule.check.items.some((entry) => !entry.ok)),
-  );
 
   const group = (title: string, rows: CompareRow[], testId: string) =>
     rows.length > 0 && (
@@ -682,283 +663,230 @@ export const WhatsCompared: React.FunctionComponent<WhatsComparedProps> = ({
       </Box>
     );
 
+  const zoneTitle = {
+    test: t("compared.zones.test"),
+    project: t("compared.zones.project"),
+    manual: t("compared.zones.manual"),
+  } as const;
+
   return (
     <Box
       component="section"
       data-testid="whatsCompared"
       aria-label={t("compared.title")}
       sx={{
-        border: `1px solid ${tokens.border}`,
-        borderRadius: "12px",
-        px: 1.75,
-        py: 1.5,
-        display: "flex",
-        flexDirection: "column",
-        gap: 1.5,
+        display: "grid",
+        gridTemplateColumns: structure.size
+          ? "auto minmax(0, 1fr)"
+          : "minmax(0, 1fr)",
+        columnGap: 2.5,
+        alignItems: "start",
       }}
     >
+      {structure.size && (
+        <ComparedMap
+          size={structure.size}
+          overview={overview}
+          changes={structure.regions.map((item) => item.region)}
+          label={t("compared.map", { summary: headline })}
+          width={104}
+        />
+      )}
       <Box
-        component="button"
-        type="button"
-        aria-expanded={open}
-        data-testid="comparedToggle"
-        onClick={() => setOpen((value) => !value)}
         sx={{
-          all: "unset",
-          cursor: "pointer",
           display: "flex",
-          alignItems: "center",
-          gap: 1.75,
-          borderRadius: radius.control,
-          "&:focus-visible": {
-            outline: `2px solid ${tokens.brand}`,
-            outlineOffset: 2,
-          },
+          flexDirection: "column",
+          gap: 2.25,
+          minWidth: 0,
         }}
       >
-        {structure.size && (
-          <ComparedMap
-            size={structure.size}
-            overview={overview}
-            changes={structure.regions.map((item) => item.region)}
-            label={t("compared.map", { summary: headline })}
-          />
-        )}
-        <Box
-          sx={{
-            display: "flex",
-            flexDirection: "column",
-            gap: 0.25,
-            minWidth: 0,
-            flex: 1,
-          }}
-        >
-          <Box sx={groupTitleSx}>{t("compared.title")}</Box>
+        {noTree && (
           <Typography
-            data-testid="comparedSummary"
-            sx={{ fontSize: type.title, fontWeight: 600, lineHeight: 1.3 }}
+            sx={{ fontSize: type.small, color: tokens.textSecondary }}
           >
-            {headline}
+            {t("compared.noTreeHelp")}
           </Typography>
-          {noTree && (
-            <Typography
-              sx={{ fontSize: type.small, color: tokens.textSecondary }}
-            >
-              {t("compared.noTreeHelp")}
-            </Typography>
-          )}
-        </Box>
-        <ExpandMoreRounded
-          sx={{
-            fontSize: 20,
-            color: tokens.textMuted,
-            transform: open ? "rotate(180deg)" : "none",
-            transition: "transform 200ms",
-          }}
-        />
-      </Box>
+        )}
 
-      {overview.compared.length > 0 && (
-        <Box
-          data-testid="comparedGroup"
-          sx={{ display: "flex", flexDirection: "column" }}
-        >
-          <Box sx={{ ...groupTitleSx, mb: 0.5 }}>
-            {t("compared.group.compared")}
+        {overview.compared.length > 0 && (
+          <Box
+            data-testid="comparedGroup"
+            sx={{ display: "flex", flexDirection: "column" }}
+          >
+            <Box sx={{ ...groupTitleSx, mb: 0.5 }}>
+              {t("compared.group.compared")}
+            </Box>
+            {overview.compared.map(comparedRow)}
           </Box>
-          {overview.compared.map(comparedRow)}
-        </Box>
-      )}
+        )}
 
-      {oneTree && (
-        <Box
-          data-testid="compareOnlyProblem"
-          sx={{
-            display: "flex",
-            gap: 1.25,
-            fontSize: 13,
-            lineHeight: 1.5,
-            borderRadius: radius.control,
-            px: 1.5,
-            py: 1.25,
-            bgcolor: tokens.status.changed.bg,
-            color: tokens.text,
-          }}
-        >
-          <WarningAmberRounded
+        {oneTree && (
+          <Box
+            data-testid="compareOnlyProblem"
             sx={{
-              fontSize: type.title,
-              color: tokens.status.changed.fg,
-              mt: 0.15,
+              display: "flex",
+              gap: 1.25,
+              fontSize: 13,
+              lineHeight: 1.5,
+              borderRadius: radius.control,
+              px: 1.5,
+              py: 1.25,
+              bgcolor: tokens.status.changed.bg,
+              color: tokens.text,
             }}
-          />
-          <span>{describeProblem(oneTree, t)}</span>
-        </Box>
-      )}
-
-      {removable.length > 0 && (
-        <Box
-          data-testid="compareOnlyProblem"
-          sx={{
-            display: "flex",
-            flexDirection: "column",
-            gap: 1,
-            fontSize: 13,
-            lineHeight: 1.5,
-            borderRadius: radius.control,
-            px: 1.5,
-            py: 1.25,
-            bgcolor: tokens.status.failed.bg,
-            color: tokens.text,
-          }}
-        >
-          <span>{t("compared.problemHelp")}</span>
-          {canEdit && (
-            <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
-              {removable.map((element) => (
-                <Button
-                  key={element.ruleId}
-                  size="small"
-                  variant="outlined"
-                  disabled={busy}
-                  data-testid="removeFromCompared"
-                  onClick={() =>
-                    element.rule && onRemoveFromCompared(element.rule)
-                  }
-                >
-                  {t("compared.removeFromCompared")}
-                  {removable.length > 1 ? `: ${element.element}` : ""}
-                </Button>
-              ))}
-            </Box>
-          )}
-        </Box>
-      )}
-
-      {open && overview.variable.length > 0 && (
-        <Box
-          data-testid="variableGroup"
-          sx={{ display: "flex", flexDirection: "column" }}
-        >
-          <Box sx={{ ...groupTitleSx, mb: 0.5 }}>
-            {t("compared.group.variable")}
+          >
+            <WarningAmberRounded
+              sx={{
+                fontSize: type.title,
+                color: tokens.status.changed.fg,
+                mt: 0.15,
+              }}
+            />
+            <span>{describeProblem(oneTree, t)}</span>
           </Box>
-          {overview.variable.map(variableRow)}
-        </Box>
-      )}
+        )}
 
-      {variableFailed.length > 0 && (
-        <Box
-          data-testid="variableProblem"
-          sx={{
-            display: "flex",
-            flexDirection: "column",
-            gap: 1,
-            fontSize: 13,
-            lineHeight: 1.5,
-            borderRadius: radius.control,
-            px: 1.5,
-            py: 1.25,
-            bgcolor: tokens.status.failed.bg,
-            color: tokens.text,
-          }}
-        >
-          <span>{t("compared.variable.failedHelp")}</span>
-          {canEdit && (
-            <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
-              {variableFailed.map((item) => (
-                <Button
-                  key={item.key}
-                  size="small"
-                  variant="outlined"
-                  disabled={busy}
-                  onClick={() => item.rule && onRemove(item.rule)}
+        {removable.length > 0 && (
+          <Box
+            data-testid="compareOnlyProblem"
+            sx={{
+              display: "flex",
+              flexDirection: "column",
+              gap: 1,
+              fontSize: 13,
+              lineHeight: 1.5,
+              borderRadius: radius.control,
+              px: 1.5,
+              py: 1.25,
+              bgcolor: tokens.status.failed.bg,
+              color: tokens.text,
+            }}
+          >
+            <span>{t("compared.problemHelp")}</span>
+            {canEdit && (
+              <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
+                {removable.map((element) => (
+                  <Button
+                    key={element.ruleId}
+                    size="small"
+                    variant="outlined"
+                    disabled={busy}
+                    data-testid="removeFromCompared"
+                    onClick={() =>
+                      element.rule && onRemoveFromCompared(element.rule)
+                    }
+                  >
+                    {t("compared.removeFromCompared")}
+                    {removable.length > 1 ? `: ${element.element}` : ""}
+                  </Button>
+                ))}
+              </Box>
+            )}
+          </Box>
+        )}
+
+        {overview.variable.length > 0 && (
+          <Box
+            data-testid="variableGroup"
+            sx={{ display: "flex", flexDirection: "column", gap: 0.75 }}
+          >
+            <Box sx={groupTitleSx}>{t("compared.group.variable")}</Box>
+            {overview.variable.map(variableRow)}
+          </Box>
+        )}
+
+        {overview.ignored.length > 0 && (
+          <Box
+            data-testid="ignoredGroup"
+            sx={{ display: "flex", flexDirection: "column", gap: 0.75 }}
+          >
+            <Box sx={groupTitleSx}>{t("compared.group.ignored")}</Box>
+            {ignoreZoneGroups(overview.ignored).map(({ group, rows }) => (
+              <Box
+                key={group}
+                data-testid="ignoreZones"
+                data-group={group}
+                sx={{ display: "flex", flexDirection: "column" }}
+              >
+                <Box
+                  sx={{
+                    fontSize: type.caption,
+                    color: tokens.textMuted,
+                    mb: 0.25,
+                  }}
                 >
-                  {t("select.remove")}
-                </Button>
-              ))}
-            </Box>
-          )}
-        </Box>
-      )}
+                  {zoneTitle[group]}
+                </Box>
+                {rows.map((item) => row(item))}
+              </Box>
+            ))}
+          </Box>
+        )}
 
-      {open &&
-        group(t("compared.group.ignored"), overview.ignored, "ignoredGroup")}
-      {open &&
-        group(
+        {group(
           t("compared.group.tolerated"),
           overview.tolerated,
           "toleratedGroup",
         )}
 
-      {open && overview.outside.length > 0 && (
-        <Box
-          data-testid="outsideGroup"
-          sx={{
-            borderTop: `1px solid ${tokens.border}`,
-            pt: 1,
-            display: "flex",
-            flexDirection: "column",
+        {overview.outside.length > 0 && (
+          <Box
+            data-testid="outsideGroup"
+            sx={{ display: "flex", flexDirection: "column" }}
+          >
+            <Tooltip
+              placement="left"
+              title={
+                overview.only
+                  ? t("compared.outsideHelp")
+                  : t("compared.nothingFoundHelp")
+              }
+            >
+              <Box sx={{ ...groupTitleSx, mb: 0.5, alignSelf: "flex-start" }}>
+                {t("compared.group.outside")}
+              </Box>
+            </Tooltip>
+            {overview.outside.map((item) => row(item, true))}
+          </Box>
+        )}
+      </Box>
+
+      <Menu
+        anchorEl={menu?.anchor}
+        open={!!menu}
+        onClose={() => setMenu(undefined)}
+        anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
+        transformOrigin={{ vertical: "top", horizontal: "right" }}
+      >
+        <MenuItem
+          data-testid="variableEdit"
+          onClick={() => {
+            if (menu?.item.rule) onEditRule(menu.item.rule);
+            setMenu(undefined);
           }}
         >
-          <Box
-            component="button"
-            type="button"
-            aria-expanded={outsideOpen}
-            data-testid="outsideToggle"
-            onClick={() => setOutsideOpen((open) => !open)}
-            sx={{
-              all: "unset",
-              cursor: "pointer",
-              display: "flex",
-              alignItems: "center",
-              gap: 1,
-              minHeight: 28,
-              borderRadius: "6px",
-              "&:focus-visible": {
-                outline: `2px solid ${tokens.brand}`,
-                outlineOffset: 2,
-              },
-            }}
-          >
-            <ChevronRightRounded
-              sx={{
-                fontSize: type.title,
-                color: tokens.textMuted,
-                transform: outsideOpen ? "rotate(90deg)" : "none",
-                transition: "transform 200ms",
-              }}
-            />
-            <Box component="span" sx={groupTitleSx}>
-              {t("compared.group.outside")}
-            </Box>
-            {overview.only && (
-              <Box
-                component="span"
-                sx={{
-                  ml: "auto",
-                  fontSize: type.small,
-                  color: tokens.textMuted,
-                }}
-              >
-                {t("compared.outsideHint")}
-              </Box>
-            )}
-          </Box>
-          {outsideOpen && (
-            <Box sx={{ display: "flex", flexDirection: "column", pt: 0.5 }}>
-              <Box
-                sx={{ fontSize: type.small, color: tokens.textMuted, mb: 0.5 }}
-              >
-                {overview.only
-                  ? t("compared.outsideHelp")
-                  : t("compared.nothingFoundHelp")}
-              </Box>
-              {overview.outside.map((item) => row(item, true))}
-            </Box>
-          )}
-        </Box>
-      )}
+          {t("compared.variable.edit")}
+        </MenuItem>
+        <MenuItem
+          data-testid="variableShow"
+          onClick={() => {
+            if (menu) onPinMark(menu.item.key);
+            setMenu(undefined);
+          }}
+        >
+          {t("compared.variable.show")}
+        </MenuItem>
+        <MenuItem
+          data-testid="variableRemove"
+          sx={{ color: tokens.status.failed.fg }}
+          onClick={() => {
+            if (menu?.item.rule) onRemove(menu.item.rule);
+            setMenu(undefined);
+          }}
+        >
+          {t("panel.removeRule")}
+        </MenuItem>
+      </Menu>
     </Box>
   );
 };

@@ -1708,8 +1708,6 @@ export const en = {
   "tree.change.removed": "gone",
   "tree.change.resized": "size",
   "tree.change.moved": "moved",
-  "tree.a11y": "a11y",
-  "tree.a11yTitle": "Accessibility problem",
   "inspect.back": "Back to the comparison",
   "inspect.title": "Elements · {name}",
   "inspect.loading": "Opening the check…",

@@ -999,25 +999,6 @@ export const ElementsTab: React.FunctionComponent<Props> = ({
             </>
           )}
         </Box>
-        {item.skipped > 0 && (
-          <Box
-            component="span"
-            data-testid="treeSkipped"
-            title={t("tree.wrappersHidden", { count: item.skipped })}
-            sx={{
-              flexShrink: 0,
-              ml: 0.75,
-              font: `500 ${type.caption}px ${tokens.mono}`,
-              color: tokens.textMuted,
-              border: `1px dashed ${tokens.borderStrong}`,
-              px: 0.5,
-              borderRadius: radius.pill,
-              lineHeight: "16px",
-            }}
-          >
-            +{item.skipped}
-          </Box>
-        )}
         {at.selector && (
           <Tooltip
             title={
@@ -1068,13 +1049,6 @@ export const ElementsTab: React.FunctionComponent<Props> = ({
             <StatusPill
               tone={CHANGE_TONE[mark.change]}
               label={t(`tree.change.${mark.change}`)}
-            />
-          )}
-          {!!mark?.a11y && (
-            <StatusPill
-              tone="changed"
-              label={t("tree.a11y")}
-              title={t("tree.a11yTitle")}
             />
           )}
         </Box>

@@ -2239,6 +2239,15 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
           // the element, not its selector: choosing another way to find it keeps the popover
           key={`${selection.side}:${selection.picked.element.index ?? selection.picked.element.selector}:${selection.picked.element.bounds.x},${selection.picked.element.bounds.y}`}
           anchor={selection.anchor}
+          elementRect={() => {
+            const rect = onScreen(
+              selection.side,
+              selection.picked.element.bounds,
+            );
+            return rect
+              ? new DOMRect(rect.x, rect.y, rect.width, rect.height)
+              : undefined;
+          }}
           element={selection.picked.element}
           sameSelector={
             chosenVariant(selection.picked.element)?.count ??

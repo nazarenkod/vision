@@ -3,6 +3,7 @@ import {
   elementAt,
   elementLabel,
   addToSelection,
+  shortAnchor,
   panelSide,
   ruleFor,
   sortSelected,
@@ -193,6 +194,15 @@ describe("elementPicking", () => {
       expect(elementLabel(higher)).toBe("ImageView · ancestor of plus_icon");
       // a named element keeps its own name
       expect(elementLabel(amount)).toBe("Balance amount");
+    });
+
+    it("cuts a long anchor in the middle, keeping its start and end", () => {
+      expect(shortAnchor("plus_icon")).toBe("plus_icon");
+      const cut = shortAnchor("activity_list_item_transaction_tail_badge");
+      expect(cut).toHaveLength(26);
+      expect(cut.startsWith("activity_list")).toBe(true);
+      expect(cut.endsWith("tail_badge")).toBe(true);
+      expect(cut).toContain("…");
     });
 
     it("steps up from a nameless element to its named parent and back", () => {

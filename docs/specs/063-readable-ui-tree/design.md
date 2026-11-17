@@ -53,7 +53,7 @@
 
 | Ризик | Що робимо |
 |---|---|
-| Сховано те, що QA шукає | «+N» біля вузла, «⋯ N» у шляху, перемикач поруч; посилання на обгортку вмикає їх |
+| Сховано те, що QA шукає | «⋯ N» у шляху (мітку «+N» у рядку прибрано, REQ-063-20), перемикач поруч; посилання на обгортку вмикає їх |
 | Клавіші вкладки й порівняння (A, X, E) | дерево відповідає лише на свої клавіші й зупиняє їхнє поширення; Esc у пошуку не закриває порівняння |
 | Розкодований текст ламає правила | селектори Vision будуються з сирого дерева, як і звіряють правила |
 
@@ -62,7 +62,7 @@
 | Вимога | Перевірка |
 |---|---|
 | REQ-063-01 | `frontend/src/_helpers/treeInspector.helper.test.ts › hides wrappers and lifts their children, counting what was hidden` |
-| REQ-063-02 | `frontend/src/components/TestDetailsDialog/ElementsTab.test.tsx › shows wrappers when asked, hidden by default with how many` |
+| REQ-063-02 | `frontend/src/components/TestDetailsDialog/ElementsTab.test.tsx › shows wrappers when asked, hidden by default` (замінено REQ-063-20) |
 | REQ-063-03 | `frontend/src/_helpers/treeInspector.helper.test.ts › shows every node once wrappers are asked for` |
 | REQ-063-04 | `backend/src/ui-tree/inspector-tree.spec.ts › reads character references as people do, and a test finds the real characters` |
 | REQ-063-05 | `frontend/src/_helpers/treeInspector.helper.test.ts › folds a run of wrappers in the path and cuts a long one` |
@@ -80,3 +80,4 @@
 | REQ-063-17 | `frontend/src/components/TestDetailsDialog/ElementsTab.test.tsx › hides empty attributes until asked` |
 | REQ-063-18 | `frontend/src/components/TestDetailsDialog/ElementsTab.test.tsx › clears the search with Esc without closing the comparison` |
 | REQ-063-19 | `frontend/src/_helpers/treeInspector.helper.test.ts › never chooses a wrapper on the screenshot` |
+| REQ-063-20 | `frontend/src/components/TestDetailsDialog/ElementsTab.test.tsx › keeps rows free of hidden-wrapper counts and accessibility marks` |

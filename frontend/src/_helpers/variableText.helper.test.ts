@@ -9,6 +9,7 @@ import {
   partsOf,
   patternFor,
   placesIn,
+  readable,
   splitPieces,
   variableCount,
   variableSelector,
@@ -318,5 +319,33 @@ describe("variableShown", () => {
         "Зі своєї картки 1051 UAH",
       )[1],
     ).toEqual({ text: "1051", place: true });
+  });
+});
+
+describe("character references from an Android tree", () => {
+  it("keeps an emoji or a line break one piece and shows it as people see it", () => {
+    expect(texts("Закинь на телефон&#128241;")).toEqual([
+      "Закинь",
+      "на",
+      "телефон",
+      "&#128241;",
+    ]);
+    expect(texts("Автобус&#10;Видалити&#10;Автобус")).toEqual([
+      "Автобус",
+      "&#10;",
+      "Видалити",
+      "&#10;",
+      "Автобус",
+    ]);
+    expect(readable("&#128241;")).toBe("📱");
+    expect(readable("Автобус&#10;Видалити").replace(/\s+/g, " ")).toBe(
+      "Автобус ↵ Видалити",
+    );
+  });
+
+  it("still checks the text as the tree has it", () => {
+    const parts = marking("Закинь на телефон&#128241;", "Закинь");
+    expect(fitsParts(parts, "Поповни на телефон&#128241;")).toBe(true);
+    expect(fitsParts(parts, "Поповни на телефон📱")).toBe(false);
   });
 });

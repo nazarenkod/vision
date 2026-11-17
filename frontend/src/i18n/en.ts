@@ -1325,8 +1325,7 @@ export const en = {
   "select.leftOutTimeout": "the pieces could not be found in time",
   "select.shownText": "Text on the screen: “{text}”",
   "select.markInIt": "Mark in it",
-  "select.variableWordsOnly":
-    "Only checks that a word is here — almost like Ignore",
+  "select.variableAnyWord": "Any word may stand here.",
   "select.change": "Change",
   "selection.eachRule": "one rule each",
   "selection.clear": "Clear",

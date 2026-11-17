@@ -542,7 +542,7 @@ describe("variable text (spec 033)", () => {
       bounds: updated,
     };
     const base = { problems: [], changes: 3, hasDiff: true, only: false };
-    // first, before the changes, and without the sentence that repeats the row (REQ-073-13)
+    // first, before the changes, and without the sentence that repeats the row (REQ-074-13)
     expect(verdict({ ...base, variableProblems: [failed] })).toEqual({
       tone: "failed",
       title: "The variable text changed shape",
@@ -568,7 +568,7 @@ describe("variable text (spec 033)", () => {
   });
 });
 
-describe("what the Changes tab shows (spec 073)", () => {
+describe("what the Changes tab shows (spec 074)", () => {
   const base = { problems: [], changes: 0, hasDiff: false, only: false };
 
   it("hides the verdict when it only repeats the status", () => {

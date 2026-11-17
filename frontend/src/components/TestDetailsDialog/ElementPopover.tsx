@@ -31,6 +31,7 @@ import {
   hasPlace,
   markedFrom,
   otherDiffers,
+  readable,
   partsOf,
   patternFor,
   placesIn,
@@ -540,7 +541,7 @@ export const ElementPopover: React.FunctionComponent<ElementPopoverProps> = ({
                           },
                         }}
                       >
-                        {piece.text}
+                        {readable(piece.text).trim()}
                       </ButtonBase>
                     );
                     // the pattern is one hover away, not a line of its own (REQ-033-06)
@@ -562,9 +563,11 @@ export const ElementPopover: React.FunctionComponent<ElementPopoverProps> = ({
                   data-testid="variableHint"
                   sx={{ fontSize: 12, color: tokens.textMuted }}
                 >
-                  {marked
-                    ? t("select.variableRest")
-                    : t("select.variableClick")}
+                  {marked && wordsOnly(parts)
+                    ? t("select.variableAnyWord")
+                    : marked
+                      ? t("select.variableRest")
+                      : t("select.variableClick")}
                 </Typography>
                 {differs && other && (
                   <Typography
@@ -587,7 +590,7 @@ export const ElementPopover: React.FunctionComponent<ElementPopoverProps> = ({
                               : "select.variableSideCurrent",
                           ),
                           words: differs.words
-                            .map((word) => `«${word}»`)
+                            .map((word) => `«${readable(word).trim()}»`)
                             .join(", "),
                         })
                       : t("select.variableOtherValue", {
@@ -596,24 +599,8 @@ export const ElementPopover: React.FunctionComponent<ElementPopoverProps> = ({
                               ? "select.variableSideBaseline"
                               : "select.variableSideCurrent",
                           ),
-                          value: differs.value,
+                          value: readable(differs.value).trim(),
                         })}
-                  </Typography>
-                )}
-                {marked && wordsOnly(parts) && (
-                  <Typography
-                    data-testid="variableWordsOnly"
-                    sx={{
-                      fontSize: 12,
-                      lineHeight: 1.4,
-                      color: tokens.status.changed.fg,
-                      bgcolor: tokens.status.changed.bg,
-                      borderRadius: radius.control,
-                      px: 1.25,
-                      py: 1,
-                    }}
-                  >
-                    {t("select.variableWordsOnly")}
                   </Typography>
                 )}
                 {marked && !selector && (
@@ -721,10 +708,10 @@ export const ElementPopover: React.FunctionComponent<ElementPopoverProps> = ({
                           px: 0.5,
                         }}
                       >
-                        {segment.text}
+                        {readable(segment.text)}
                       </Box>
                     ) : (
-                      <span key={i}>{segment.text}</span>
+                      <span key={i}>{readable(segment.text)}</span>
                     ),
                   )}
                 </Typography>
@@ -748,19 +735,12 @@ export const ElementPopover: React.FunctionComponent<ElementPopoverProps> = ({
               {rule.action === "variable" &&
                 rule.parts &&
                 wordsOnly(rule.parts) && (
+                  // a plain fact, not a warning: marking a whole word is how a word is left out (REQ-073-01)
                   <Typography
                     data-testid="variableWordsOnly"
-                    sx={{
-                      fontSize: 12,
-                      lineHeight: 1.4,
-                      color: tokens.status.changed.fg,
-                      bgcolor: tokens.status.changed.bg,
-                      borderRadius: radius.control,
-                      px: 1.25,
-                      py: 1,
-                    }}
+                    sx={{ fontSize: 12, color: tokens.textMuted }}
                   >
-                    {t("select.variableWordsOnly")}
+                    {t("select.variableAnyWord")}
                   </Typography>
                 )}
               <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>

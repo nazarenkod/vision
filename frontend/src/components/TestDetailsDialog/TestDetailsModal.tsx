@@ -394,7 +394,7 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
   const [pinnedMark, setPinnedMark] = useState<string>();
   const pinMark = (id: string) =>
     setPinnedMark((current) => (current === id ? undefined : id));
-  // a rule that failed or most of the screen changed: the bug button comes forward (REQ-073-21)
+  // a rule that failed or most of the screen changed: the bug button comes forward (REQ-074-21)
   const bugFirst =
     !!structure &&
     bugStandsOut({
@@ -577,7 +577,7 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
     const rect = onScreen(side, element.bounds);
     return rect && { x: rect.x + rect.width, y: rect.y + rect.height / 2 };
   };
-  // a rule's element opened with its rule, as a click on it does (REQ-073-15)
+  // a rule's element opened with its rule, as a click on it does (REQ-074-15)
   const editRule = (rule: ScreenRule) => {
     const side: Side = elementsOf("current").some(
       (item) => item.selector === rule.selector,
@@ -2089,7 +2089,7 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
             }
           />
         </MuiTooltip>
-        {/* always there, so people know a bug can be filed from here (REQ-073-20) */}
+        {/* always there, so people know a bug can be filed from here (REQ-074-20) */}
         <Tooltip
           title={
             !jiraSet

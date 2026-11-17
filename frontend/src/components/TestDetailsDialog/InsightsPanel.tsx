@@ -125,7 +125,7 @@ interface Props {
   ) => void;
   // a rule or an area the pointer is over, lit up on the screenshots (REQ-024-24)
   onPreviewMark?: (id: string | undefined) => void;
-  // opens a rule's element with its rule, from the rule's menu (REQ-073-15)
+  // opens a rule's element with its rule, from the rule's menu (REQ-074-15)
   onEditRule?: (rule: ScreenRule) => void;
   // replaces a saved area with a rule for the element it covers (REQ-024-51)
   onUseElement: (areaId: string) => void;
@@ -1057,7 +1057,7 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
   // one changed row open at a time, its places five at a time (REQ-036-22)
   const [openRow, setOpenRow] = React.useState<string | null>(null);
   const [allPlaces, setAllPlaces] = React.useState(false);
-  // most of the screen changed: the list waits behind one card (REQ-073-30, 31)
+  // most of the screen changed: the list waits behind one card (REQ-074-30, 31)
   const [allChanges, setAllChanges] = React.useState(false);
   React.useEffect(() => setAllChanges(false), [testRun.id]);
   // the row's own actions show when it is pointed at or focused (REQ-036-17)
@@ -1139,7 +1139,7 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
       },
       t,
     );
-    // past a quarter of the screen one card says it (REQ-073-30)
+    // past a quarter of the screen one card says it (REQ-074-30)
     const folded =
       mostOfScreen(testRun.diffPercent, changeCount) && !allChanges;
     // a long text is cut in the row; the whole of it is in the tooltip
@@ -1350,7 +1350,7 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
           </Box>
         )}
         {rows.length > 0 && !folded && (
-          // under a plain heading, one row per changed thing (REQ-073-02)
+          // under a plain heading, one row per changed thing (REQ-074-02)
           <Box
             data-testid="whatChanged"
             aria-label={t("changes.list")}
@@ -1440,7 +1440,7 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
                           color: tokens.textMuted,
                         }}
                       >
-                        {/* how the change was seen, as on the map (REQ-073-03) */}
+                        {/* how the change was seen, as on the map (REQ-074-03) */}
                         <Tooltip title={t(`changes.mark.${mark}` as const)}>
                           <Box
                             data-testid="changeMark"

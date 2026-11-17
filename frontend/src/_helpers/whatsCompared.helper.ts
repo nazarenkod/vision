@@ -440,7 +440,7 @@ export function verdict(
   const variable = input.variableProblems ?? [];
   if (variable.length) {
     const failed = variable.filter((item) => item.kind === "failed");
-    // one line says it; the row of the rule shows the value and what was expected (REQ-073-13)
+    // one line says it; the row of the rule shows the value and what was expected (REQ-074-13)
     return {
       tone: "failed",
       title: text(
@@ -495,13 +495,13 @@ export function verdict(
 
 /**
  * Whether the heading of the Changes tab tells anything the status does not
- * (REQ-073-01, 02): a problem, or a reason to look closer. "No changes" and
+ * (REQ-074-01, 02): a problem, or a reason to look closer. "No changes" and
  * "N changes" only repeat the status and the tab's count.
  */
 export const showVerdict = (result: Verdict) =>
   result.tone === "failed" || !!result.reason;
 
-/** How a change was seen, for the square before its row (REQ-073-03). */
+/** How a change was seen, for the square before its row (REQ-074-03). */
 export function changeMark(
   row: { key: string; element: string | null },
   invisible: Set<string>,
@@ -521,7 +521,7 @@ const ZONE_GROUP: Record<RowSource, IgnoreZoneGroup> = {
   drawn: "manual",
 };
 
-/** Ignore zones under where they were set, instead of a chip on each (REQ-073-08). */
+/** Ignore zones under where they were set, instead of a chip on each (REQ-074-08). */
 export function ignoreZoneGroups(
   rows: CompareRow[],
 ): Array<{ group: IgnoreZoneGroup; rows: CompareRow[] }> {
@@ -533,16 +533,16 @@ export function ignoreZoneGroups(
     .filter((item) => item.rows.length > 0);
 }
 
-// past this share of changed pixels something is wrong, not a detail (REQ-073-30)
+// past this share of changed pixels something is wrong, not a detail (REQ-074-30)
 export const MOST_OF_SCREEN = 25;
 
-/** Most of the screen changed: one card instead of a long list (REQ-073-30). */
+/** Most of the screen changed: one card instead of a long list (REQ-074-30). */
 export const mostOfScreen = (
   diffPercent: number | null | undefined,
   changes: number,
 ) => changes > 0 && (diffPercent ?? 0) > MOST_OF_SCREEN;
 
-/** The bug button stands out when the screen most likely is broken (REQ-073-21). */
+/** The bug button stands out when the screen most likely is broken (REQ-074-21). */
 export const bugStandsOut = (input: {
   failed: boolean;
   diffPercent: number | null | undefined;

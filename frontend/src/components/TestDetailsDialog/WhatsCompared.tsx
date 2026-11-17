@@ -26,7 +26,11 @@ import {
   ignoreZoneGroups,
   Overview,
 } from "../../_helpers/whatsCompared.helper";
-import { expectedOf, variableShown } from "../../_helpers/variableText.helper";
+import {
+  expectedOf,
+  readable,
+  variableShown,
+} from "../../_helpers/variableText.helper";
 import { ComparedMap } from "./ComparedMap";
 import { tokens, type, radius } from "../../theme";
 import { Text, useT } from "../../i18n";
@@ -53,7 +57,7 @@ interface WhatsComparedProps {
   onUseElement: (areaId: string) => void;
   // what the pointer is over, to light it up on the screenshots (REQ-024-24)
   onPreview: (id: string | undefined) => void;
-  // opens the rule's element with its rule, as a click on it does (REQ-073-15)
+  // opens the rule's element with its rule, as a click on it does (REQ-074-15)
   onEditRule: (rule: ScreenRule) => void;
 }
 
@@ -199,7 +203,7 @@ function moveText(shift: { dx: number; dy: number }, t: Text): string {
 
 /**
  * What this screen is compared on, under the changes (REQ-030-20…24, 40, 41;
- * spec 073): the map of the screen on the left, the rules by what they do on
+ * spec 074): the map of the screen on the left, the rules by what they do on
  * the right, always open and without a summary that only repeats them.
  */
 export const WhatsCompared: React.FunctionComponent<WhatsComparedProps> = ({
@@ -496,7 +500,7 @@ export const WhatsCompared: React.FunctionComponent<WhatsComparedProps> = ({
     ).values(),
   ];
 
-  // a text with its marked part: what it was and is now, and whether it holds (REQ-073-10…12)
+  // a text with its marked part: what it was and is now, and whether it holds (REQ-074-10…12)
   const variableRow = (item: CompareRow) => {
     const rule = item.rule as ScreenRule;
     const check = rule.check;
@@ -513,7 +517,7 @@ export const WhatsCompared: React.FunctionComponent<WhatsComparedProps> = ({
     const bad = !!check && (check.gone || failed.length > 0);
     const failing = bad && !!shown && !shown.ok;
     // what it says now; without a text on the snapshot, what it said when the check was made.
-    // A value that broke the rule needs no old one beside it: "expected" says it (REQ-073-12)
+    // A value that broke the rule needs no old one beside it: "expected" says it (REQ-074-12)
     const segments: Array<{ text: string; place: boolean; was?: string }> =
       shown && !failing
         ? variableShown(parts, shown.text, before)
@@ -528,7 +532,7 @@ export const WhatsCompared: React.FunctionComponent<WhatsComparedProps> = ({
         ? t("compared.variable.goneLine")
         : failing
           ? t("compared.variable.expectedLine", {
-              text: expected.map((segment) => segment.text).join(""),
+              text: readable(expected.map((segment) => segment.text).join("")),
             })
           : "";
     return (
@@ -569,7 +573,7 @@ export const WhatsCompared: React.FunctionComponent<WhatsComparedProps> = ({
                       data-testid="variableWas"
                       sx={{ color: tokens.textMuted }}
                     >
-                      {segment.was}
+                      {readable(segment.was)}
                     </Box>
                   )}
                   {segment.was && " "}
@@ -582,11 +586,11 @@ export const WhatsCompared: React.FunctionComponent<WhatsComparedProps> = ({
                         : tokens.variable,
                     }}
                   >
-                    {segment.text || " "}
+                    {readable(segment.text) || " "}
                   </Box>
                 </React.Fragment>
               ) : (
-                <span key={i}>{segment.text}</span>
+                <span key={i}>{readable(segment.text)}</span>
               ),
             )}
           </Box>
@@ -613,7 +617,7 @@ export const WhatsCompared: React.FunctionComponent<WhatsComparedProps> = ({
               }}
             >
               {[
-                ...others.slice(0, 2).map((entry) => entry.text),
+                ...others.slice(0, 2).map((entry) => readable(entry.text)),
                 ...(others.length > 2
                   ? [t("compared.variable.more", { count: others.length - 2 })]
                   : []),

@@ -4,7 +4,7 @@ import { tokens, type } from "../../theme";
 import { inlineDiff } from "../../_helpers/wordDiff.helper";
 
 /**
- * A text that changed, in one line (REQ-073-04): the shared words once, the
+ * A text that changed, in one line (REQ-074-04): the shared words once, the
  * old words crossed out in grey right before the new ones in green. Two whole
  * sentences, one above the other, made people hunt for the difference.
  */

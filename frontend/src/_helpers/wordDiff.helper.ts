@@ -63,7 +63,7 @@ export interface InlinePiece {
 }
 
 /**
- * A changed text as one line (REQ-073-04): the shared words once, and where
+ * A changed text as one line (REQ-074-04): the shared words once, and where
  * they differ the old words crossed out right before the new ones, so the
  * reader does not compare two whole sentences by eye.
  */

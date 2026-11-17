@@ -138,7 +138,7 @@ test("shows Report bug turned off with a hint when the project has no Jira", asy
   await mockApi(page);
   await mockGetProjects(page, [{ ...project, jiraUrl: "" } as never]);
   await openProjectPage(project.id, build.id, run.id);
-  // always there, so people know a bug can be filed from here (REQ-073-20)
+  // always there, so people know a bug can be filed from here (REQ-074-20)
   const report = page.getByTestId("reportBug");
   await expect(report).toBeDisabled();
   await report.locator("..").hover();

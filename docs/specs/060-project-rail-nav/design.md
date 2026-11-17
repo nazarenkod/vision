@@ -85,7 +85,7 @@ flowchart LR
 | REQ-060-13 | `frontend/src/_helpers/sideNav.helper.test.ts › puts Users and Backups under Administration for an admin only` |
 | REQ-060-14 | `frontend/integration_tests/test/sideNav.spec.ts › has no Projects, Search or Help item and no version` |
 | REQ-060-15 | `frontend/integration_tests/test/sideNav.spec.ts › keeps every sidebar label whole in Ukrainian` |
-| REQ-060-20 | `frontend/integration_tests/test/sideNav.spec.ts › holds all projects, help and the version in the account menu` |
+| REQ-060-20 | `frontend/integration_tests/test/sideNav.spec.ts › holds all projects and manual checks, but no tour or version, in the account menu` |
 | REQ-060-30 | `frontend/integration_tests/test/sideNav.spec.ts › keeps only the rail with section icons below 1100 px` |
 | REQ-060-40 | `frontend/integration_tests/test/sideNav.spec.ts › marks the open section without glow or green text` |
 | REQ-060-41 | manual: обидві теми, 1280 px — бренд-колір лише на логотипі, кільці обраної плитки й іконці активного пункту; аватар і плитки нейтральні (перевірено 2026-11-16 знімками меню в обох темах) |

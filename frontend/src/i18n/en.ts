@@ -1130,12 +1130,6 @@ export const en = {
   "brand.tagline": BRAND.tagline,
 
   // tour
-  "tour.take": "Take a tour",
-  "tour.back": "Back",
-  "tour.close": "Close",
-  "tour.last": "Last",
-  "tour.next": "Next",
-  "tour.skip": "Skip",
   "tour.loginAdmin": "Sign in with the email and password an admin gave you.",
   "tour.loginNoAccount":
     "No account? Nobody signs up here: an admin creates accounts in Users.",

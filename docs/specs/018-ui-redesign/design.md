@@ -56,7 +56,7 @@
 |---|---|---|
 | Шапка (з 046 — бічне меню, [ADR-0028](../../decisions/0028-sidebar-instead-of-top-bar.md)) | `frontend/src/components/SideNav.tsx`, `frontend/src/components/AccountMenu.tsx` | знак, кнопка теми, меню «?» (Guided tour, Manual checks, Report a problem, версія), меню акаунта (ім'я, пошта, роль, Profile, Users, Backups, тема з ⇧D, Log out) |
 | Ліва навігація | `frontend/src/components/SideNav.tsx` | підсвітка, що переїжджає |
-| Тур | `frontend/src/components/GuidedTour.tsx`, `frontend/src/components/GuidedTour.locators.ts` | кроки під нові елементи |
+| Тур | `GuidedTour` (прибрано 2026-11-17, [060](../060-project-rail-nav/spec.md)) | кроки під нові елементи |
 
 ### Порівняння (розкладка без змін)
 
@@ -235,7 +235,7 @@ Undo на сервері дозволене до 30 s після рішення:
 | REQ-018-64 | `frontend/src/_helpers/insights.helper.test.ts › sizes each bar against the largest value of its table` |
 | REQ-018-65 | `frontend/integration_tests/test/roles.spec.ts › account menu shows Users and Backups only to admins` |
 | REQ-018-66 | `frontend/integration_tests/test/errors.spec.ts › shows the reason and Try again when a page fails to load` |
-| REQ-018-67 | `frontend/integration_tests/test/guidedTour.spec.ts › should display all tour steps` |
+| REQ-018-67 | знято 2026-11-17 — туру немає ([060](../060-project-rail-nav/spec.md)) |
 | REQ-018-68 | `frontend/integration_tests/test/profile.spec.ts › shows a new API key once and only its ending later` |
 | REQ-018-69 | `frontend/src/_helpers/backups.helper.test.ts › marks each of the last 14 days with or without a backup` |
 | REQ-018-70 | `frontend/src/_helpers/undo.helper.test.ts › offers Undo for 8 seconds` |

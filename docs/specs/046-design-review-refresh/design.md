@@ -114,7 +114,7 @@ flowchart LR
 | REQ-046-20 | manual: замінено 060 (рейка проєктів) |
 | REQ-046-21 | `frontend/integration_tests/test/sideNav.spec.ts › shows no top bar after sign-in` |
 | REQ-046-22 | `frontend/src/_helpers/sideNav.helper.test.ts › says Choose project and disables project items until one is picked` |
-| REQ-046-23 | `frontend/integration_tests/test/sideNav.spec.ts › holds all projects, help and the version in the account menu` |
+| REQ-046-23 | `frontend/integration_tests/test/sideNav.spec.ts › holds all projects and manual checks, but no tour or version, in the account menu` |
 | REQ-046-24 | manual: замінено 060 (версія в меню акаунта) |
 | REQ-046-25 | `frontend/integration_tests/test/sideNav.spec.ts › keeps only the rail with section icons below 1100 px` |
 | REQ-046-26 | `frontend/integration_tests/test/login.spec.ts › keeps language and theme in the corner of the sign-in page` |

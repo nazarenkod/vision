@@ -42,7 +42,7 @@
 | REQ-041-01 | `frontend/src/constants/help.test.ts › names no account and no password in the login tour` |
 | REQ-041-02 | `frontend/integration_tests/test/profile.spec.ts › shows a new API key once and only its ending later` |
 | REQ-041-03 | `frontend/src/services/static.service.test.ts › saves the chosen images as vision_images.zip` |
-| REQ-041-04 | `frontend/integration_tests/test/guidedTour.spec.ts › shows the Vision version in the account menu` |
+| REQ-041-04 | знято 2026-11-17 — версії в інтерфейсі немає ([060](../060-project-rail-nav/spec.md)) |
 | REQ-041-05 | `backend/src/swagger.spec.ts › names the API documentation Vision` |
 | REQ-041-06 | `backend/prisma/test/seed.spec.ts › creates admin@vision.local when no admin email is set` |
 | REQ-041-07 | `backend/src/users/oidc/oidcusers.service.spec.ts › creates a new user and derives the admin role from the claims` |

@@ -6,10 +6,7 @@ import {
   PROJECT_HEADING_TEST_ID,
   PROJECT_RAIL_TEST_ID,
   SIDE_NAV_TEST_ID,
-  VERSION_TEST_ID,
 } from "~client/components/SideNav.locators";
-import { TAKE_TOUR_BUTTON_TEST_ID } from "~client/components/GuidedTour.locators";
-import { TourModal } from "./TourModal";
 
 /** The sidebar after sign-in: a rail of projects and the project's sections (spec 060). */
 export class SideNav {
@@ -20,8 +17,6 @@ export class SideNav {
   projectHeading: Locator;
   avatarButton: Locator;
   avatarMenu: Locator;
-  version: Locator;
-  takeTourButton: Locator;
 
   // set in the constructor: field initialisers would run before `page` is assigned
   constructor(public page: Page) {
@@ -32,15 +27,6 @@ export class SideNav {
     this.projectHeading = page.getByTestId(PROJECT_HEADING_TEST_ID);
     this.avatarButton = page.getByTestId(ACCOUNT_BUTTON_TEST_ID);
     this.avatarMenu = page.locator(`#${ACCOUNT_MENU_ID}`);
-    this.version = this.avatarMenu.getByTestId(VERSION_TEST_ID);
-    this.takeTourButton = this.avatarMenu.getByTestId(TAKE_TOUR_BUTTON_TEST_ID);
-  }
-
-  async startTour(): Promise<TourModal> {
-    await this.openAvatarMenu();
-    await this.takeTourButton.click();
-
-    return new TourModal(this.page);
   }
 
   async openAvatarMenu() {

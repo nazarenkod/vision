@@ -145,6 +145,9 @@ model TestVariation {
   baselineUiTreeName String?
   // element rules for this screen only, as JSON
   elementRules       String?
+  // the last non-empty feature the test sent for this check on this device and
+  // branch (067): groups the baselines page, not part of the check's identity
+  featureName        String?
   ignoreAreas        String     @default("[]")
   projectId          String
   comment            String?

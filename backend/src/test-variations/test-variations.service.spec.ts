@@ -131,6 +131,7 @@ describe('TestVariationsService', () => {
         baselineName: 'baselineName',
         baselineUiTreeName: null,
         elementRules: null,
+        featureName: null,
         os: 'OS',
         browser: 'browser',
         viewport: 'viewport',
@@ -218,6 +219,7 @@ describe('TestVariationsService', () => {
         baselineName: 'baselineName',
         baselineUiTreeName: null,
         elementRules: null,
+        featureName: null,
         os: 'OS',
         browser: 'browser',
         viewport: 'viewport',
@@ -279,6 +281,7 @@ describe('TestVariationsService', () => {
         baselineName: 'baselineName',
         baselineUiTreeName: null,
         elementRules: null,
+        featureName: null,
         os: 'OS',
         browser: 'browser',
         viewport: 'viewport',
@@ -297,6 +300,7 @@ describe('TestVariationsService', () => {
         baselineName: 'baselineName',
         baselineUiTreeName: null,
         elementRules: null,
+        featureName: null,
         os: 'OS',
         browser: 'browser',
         viewport: 'viewport',
@@ -427,6 +431,7 @@ describe('TestVariationsService', () => {
       baselineName: 'baselineName',
       baselineUiTreeName: null,
       elementRules: null,
+      featureName: null,
       os: 'OS',
       browser: 'browser',
       viewport: 'viewport',
@@ -445,6 +450,7 @@ describe('TestVariationsService', () => {
       baselineName: 'baselineName',
       baselineUiTreeName: null,
       elementRules: null,
+      featureName: null,
       os: 'OS',
       browser: 'browser',
       viewport: 'viewport',
@@ -463,6 +469,7 @@ describe('TestVariationsService', () => {
       baselineName: null,
       baselineUiTreeName: null,
       elementRules: null,
+      featureName: null,
       os: 'OS',
       browser: 'browser',
       viewport: 'viewport',
@@ -481,6 +488,7 @@ describe('TestVariationsService', () => {
       baselineName: 'baselineName',
       baselineUiTreeName: null,
       elementRules: null,
+      featureName: null,
       os: 'OS',
       browser: 'browser',
       viewport: 'viewport',
@@ -596,6 +604,7 @@ describe('TestVariationsService', () => {
       baselineName: 'baselineName',
       baselineUiTreeName: null,
       elementRules: null,
+      featureName: null,
       os: 'OS',
       browser: 'browser',
       viewport: 'viewport',
@@ -666,5 +675,43 @@ describe('TestVariationsService', () => {
     expect(baselineDeleteMock).toHaveBeenCalledWith({
       where: { id: baseline.id },
     });
+  });
+});
+
+describe('keepFeature (067)', () => {
+  const updatedAt = new Date('2026-11-01T10:00:00Z');
+  const variation = { id: 'v1', branchName: 'master', featureName: 'Deposits', updatedAt } as TestVariation;
+
+  it('keeps the baseline date when it stores the feature', async () => {
+    const variationUpdateMock = jest.fn().mockResolvedValue({ ...variation, featureName: 'Savings' });
+    const service = await initModule({ variationUpdateMock });
+
+    const kept = await service.keepFeature(variation, { branchName: 'master', featureName: 'Savings' });
+
+    expect(variationUpdateMock).toHaveBeenCalledWith({
+      where: { id: 'v1' },
+      data: { featureName: 'Savings', updatedAt },
+    });
+    expect(kept.featureName).toBe('Savings');
+  });
+
+  it('writes nothing when the feature is the same or the test sent none', async () => {
+    const variationUpdateMock = jest.fn();
+    const service = await initModule({ variationUpdateMock });
+
+    await service.keepFeature(variation, { branchName: 'master', featureName: 'Deposits' });
+    await service.keepFeature(variation, { branchName: 'master' });
+
+    expect(variationUpdateMock).not.toHaveBeenCalled();
+  });
+
+  it("leaves the main branch's baseline alone for a snapshot of another branch", async () => {
+    const variationUpdateMock = jest.fn();
+    const service = await initModule({ variationUpdateMock });
+
+    const kept = await service.keepFeature(variation, { branchName: 'feature-x', featureName: 'Savings' });
+
+    expect(variationUpdateMock).not.toHaveBeenCalled();
+    expect(kept).toBe(variation);
   });
 });

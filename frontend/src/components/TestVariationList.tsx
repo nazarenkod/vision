@@ -15,14 +15,15 @@ import {
 import { staticService } from "../services";
 import { Link } from "react-router-dom";
 import { routes } from "../constants";
-import { DeleteOutline, ExpandMore } from "@mui/icons-material";
+import { DeleteOutline, ExpandMore, FolderOutlined } from "@mui/icons-material";
 import { BaseModal } from "./BaseModal";
-import { motion, tokens, type } from "../theme";
+import { motion, radius, tokens, type } from "../theme";
 import { staggered } from "./motion/Stagger";
 import { EmptyState } from "./EmptyState";
 import { BranchTag, DeviceTags } from "./DeviceTags";
 import { deviceLabel } from "../_helpers/device.helper";
 import { useT } from "../i18n";
+import { BaselineSection } from "../_helpers/baselineSections.helper";
 
 /**
  * Baselines grouped by check (its name and custom tags, per branch): one card
@@ -212,13 +213,94 @@ const CheckCard: React.FunctionComponent<{
   );
 };
 
+const CARD_GRID = {
+  display: "grid",
+  gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))",
+  gap: 2,
+  alignItems: "start",
+} as const;
+
+/**
+ * A feature's checks in a frame with its name and count (067); the checks
+ * without a feature are plain cards after the frames, in no group of their
+ * own. Frames do not collapse, as change groups do not (059).
+ */
+const Section: React.FunctionComponent<{
+  section: BaselineSection;
+  firstIndex: number;
+  onDelete: (variation: TestVariation) => void;
+}> = ({ section, firstIndex, onDelete }) => {
+  const { t } = useT();
+  const cards = (
+    <Box sx={CARD_GRID}>
+      {section.checks.map((devices, index) => (
+        <Box key={devices[0].id}>
+          <CheckCard
+            devices={devices}
+            onDelete={onDelete}
+            index={firstIndex + index}
+          />
+        </Box>
+      ))}
+    </Box>
+  );
+  if (!section.feature) {
+    return <Box data-testid="baselinesWithoutFeature">{cards}</Box>;
+  }
+  return (
+    <Box
+      component="section"
+      aria-label={section.feature}
+      data-testid="baselineFeature"
+      sx={{
+        border: `1px solid ${tokens.border}`,
+        borderRadius: radius.card,
+        p: 2,
+      }}
+    >
+      <Typography
+        component="h2"
+        sx={{
+          display: "flex",
+          alignItems: "center",
+          gap: 1,
+          mb: 1.75,
+          fontSize: type.body,
+          fontWeight: 700,
+          minWidth: 0,
+        }}
+      >
+        <FolderOutlined
+          fontSize="small"
+          sx={{ color: tokens.brand }}
+          aria-hidden
+        />
+        <Box
+          component="span"
+          sx={{ overflowWrap: "anywhere" }}
+          data-testid="baselineFeatureName"
+        >
+          {section.feature}
+        </Box>
+        <Box
+          component="span"
+          sx={{ fontWeight: 400, color: tokens.textMuted, flexShrink: 0 }}
+        >
+          · {t("baselines.checks", { count: section.count })}
+        </Box>
+      </Typography>
+      {cards}
+    </Box>
+  );
+};
+
 interface IProps {
-  groups: TestVariation[][];
+  sections: BaselineSection[];
   onDeleteClick: (id: string) => void;
 }
 
 const TestVariationList: React.FunctionComponent<IProps> = ({
-  groups,
+  sections,
   onDeleteClick,
 }) => {
   const [selectedItem, setSelectedItem] = React.useState<TestVariation | null>(
@@ -232,27 +314,21 @@ const TestVariationList: React.FunctionComponent<IProps> = ({
 
   return (
     <>
-      {groups.length === 0 && (
+      {sections.length === 0 && (
         <EmptyState title={t("baselines.empty")}>
           {t("baselines.emptyHint")}
         </EmptyState>
       )}
-      <Box
-        sx={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))",
-          gap: 2,
-          alignItems: "start",
-        }}
-      >
-        {groups.map((devices, index) => (
-          <Box key={devices[0].id}>
-            <CheckCard
-              devices={devices}
-              onDelete={setSelectedItem}
-              index={index}
-            />
-          </Box>
+      <Box sx={{ display: "flex", flexDirection: "column", gap: 2.5 }}>
+        {sections.map((section, index) => (
+          <Section
+            key={section.feature ?? ""}
+            section={section}
+            firstIndex={sections
+              .slice(0, index)
+              .reduce((sum, one) => sum + one.checks.length, 0)}
+            onDelete={setSelectedItem}
+          />
         ))}
       </Box>
 

@@ -130,6 +130,8 @@ const initService = async ({
           find: testVariationFindMock,
           getDetails: testVariationGetDetailsMock,
           update: testVariationUpdateMock,
+          // the baseline's feature (067) is TestVariationsService's own concern
+          keepFeature: jest.fn((variation) => Promise.resolve(variation)),
         },
       },
       {
@@ -292,6 +294,7 @@ describe('TestRunsService', () => {
       baselineName: 'baselineName',
       baselineUiTreeName: null,
       elementRules: null,
+      featureName: null,
       diffTollerancePercent: 1,
       ignoreAreas: '[]',
       diffName: 'diffName',
@@ -313,6 +316,7 @@ describe('TestRunsService', () => {
       baselineName: 'baselineName',
       baselineUiTreeName: null,
       elementRules: null,
+      featureName: null,
       os: 'OS',
       browser: 'browser',
       viewport: 'viewport',
@@ -1004,6 +1008,7 @@ describe('TestRunsService', () => {
       baselineName: 'baselineName',
       baselineUiTreeName: null,
       elementRules: null,
+      featureName: null,
       os: 'OS',
       browser: 'browser',
       viewport: 'viewport',

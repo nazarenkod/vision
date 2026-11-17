@@ -2,6 +2,11 @@ import React from "react";
 import TestVariationList, {
   groupByCheck,
 } from "../components/TestVariationList";
+import {
+  baselineSections,
+  matchesBaselineQuery,
+  pageOfSections,
+} from "../_helpers/baselineSections.helper";
 import { useParams } from "react-router-dom";
 import { TestVariation } from "../types";
 import { testVariationService } from "../services";
@@ -49,6 +54,7 @@ const TestVariationListPage: React.FunctionComponent = () => {
   const [viewport, setViewport] = React.useState("");
   const [customTags, setCustomTags] = React.useState("");
   const [branchName, setBranchName] = React.useState("");
+  const [feature, setFeature] = React.useState("");
   const [filteredItems, setFilteredItems] = React.useState<TestVariation[]>([]);
   const [page, setPage] = React.useState(1);
   const [pageSize, setPageSize] = React.useState(PAGE_SIZE_OPTIONS[0]);
@@ -61,7 +67,7 @@ const TestVariationListPage: React.FunctionComponent = () => {
 
   React.useEffect(() => {
     setPage(1);
-  }, [query, os, device, browser, viewport, customTags, branchName]);
+  }, [query, os, device, browser, viewport, customTags, branchName, feature]);
 
   React.useEffect(() => {
     if (projectId) {
@@ -82,7 +88,8 @@ const TestVariationListPage: React.FunctionComponent = () => {
     setFilteredItems(
       testVariations.filter(
         (t) =>
-          t.name.includes(query) && // by query
+          matchesBaselineQuery(t, query) && // by name or feature (067)
+          (feature ? t.featureName?.trim() === feature : true) && // by feature
           (branchName ? t.branchName === branchName : true) && // by branchName
           (os ? t.os === os : true) && // by OS
           (device ? t.device === device : true) && // by device
@@ -99,6 +106,7 @@ const TestVariationListPage: React.FunctionComponent = () => {
     browser,
     viewport,
     customTags,
+    feature,
     testVariations,
   ]);
 
@@ -123,12 +131,11 @@ const TestVariationListPage: React.FunctionComponent = () => {
     () => groupByCheck(filteredItems),
     [filteredItems],
   );
+  // a page holds as many cards as before; feature frames do not count (REQ-067-08)
+  const sections = React.useMemo(() => baselineSections(groups), [groups]);
   const pageCount = Math.max(1, Math.ceil(groups.length / pageSize));
   const currentPage = Math.min(page, pageCount);
-  const paginatedGroups = groups.slice(
-    (currentPage - 1) * pageSize,
-    currentPage * pageSize,
-  );
+  const pageSections = pageOfSections(sections, currentPage, pageSize);
 
   return (
     <React.Fragment>
@@ -186,11 +193,12 @@ const TestVariationListPage: React.FunctionComponent = () => {
               viewportState={[viewport, setViewport]}
               customTagsState={[customTags, setCustomTags]}
               branchNameState={[branchName, setBranchName]}
+              featureState={[feature, setFeature]}
             />
           </Grid>
           <Grid item>
             <TestVariationList
-              groups={paginatedGroups}
+              sections={pageSections}
               onDeleteClick={handleDelete}
             />
           </Grid>

@@ -116,6 +116,7 @@ export class TestRunsService {
         createTestRequestDto,
       });
     }
+    testVariation = await this.testVariationService.keepFeature(testVariation, createTestRequestDto);
 
     // delete previous test run if exists
     const [previousTestRun] = await this.prismaService.testRun.findMany({
@@ -194,6 +195,8 @@ export class TestRunsService {
           createTestRequestDto: {
             projectId: testRun.projectId,
             branchName: testRun.branchName,
+            // the branch's baseline starts in the feature its snapshot named (067)
+            featureName: testRun.featureName ?? undefined,
             ...getTestVariationUniqueData(testRun),
           },
         });

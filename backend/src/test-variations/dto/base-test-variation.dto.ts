@@ -36,4 +36,7 @@ export class BaseTestVariationDto {
 
   @ApiPropertyOptional()
   comment?: string;
+
+  @ApiPropertyOptional({ description: 'The feature the test last named for this check (067)' })
+  featureName?: string | null;
 }

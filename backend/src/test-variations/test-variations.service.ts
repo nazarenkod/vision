@@ -9,6 +9,7 @@ import { CreateTestRequestDto } from '../test-runs/dto/create-test-request.dto';
 import { BuildDto } from '../builds/dto/build.dto';
 import { getTestVariationUniqueData } from '../utils';
 import { TestVariationUpdateDto } from './dto/test-variation-update.dto';
+import { featureToKeep } from './variation-feature';
 import { BaselineDataDto } from '../shared/dto/baseline-data.dto';
 
 @Injectable()
@@ -81,6 +82,26 @@ export class TestVariationsService {
   }
 
   /**
+   * The baseline keeps the feature the test named last (067). Only a baseline
+   * of the snapshot's own branch: a feature branch comparing with the main
+   * branch's baseline has none of its own yet. The date stays as it was, since
+   * `find` chooses between the branch's and the main branch's baseline by it,
+   * and a renamed feature must not change what a snapshot is compared with.
+   */
+  async keepFeature(
+    testVariation: TestVariation,
+    createTestRequestDto: Pick<CreateTestRequestDto, 'branchName' | 'featureName'>
+  ): Promise<TestVariation> {
+    if (testVariation.branchName !== createTestRequestDto.branchName) return testVariation;
+    const featureName = featureToKeep(testVariation.featureName, createTestRequestDto.featureName);
+    if (featureName === (testVariation.featureName ?? null)) return testVariation;
+    return this.prismaService.testVariation.update({
+      where: { id: testVariation.id },
+      data: { featureName, updatedAt: testVariation.updatedAt },
+    });
+  }
+
+  /**
    * Tries to get test variation for the same branch
    * Falls back to main branch if not found
    * @param projectId
@@ -136,6 +157,8 @@ export class TestVariationsService {
         project: { connect: { id: createTestRequestDto.projectId } },
         testRuns: testRunId ? { connect: { id: testRunId } } : undefined,
         branchName: createTestRequestDto.branchName,
+        // a new baseline starts in the feature the test named (067); a merge passes the source's on
+        featureName: createTestRequestDto.featureName?.trim() || null,
         ...getTestVariationUniqueData(createTestRequestDto),
       },
     });
@@ -206,6 +229,7 @@ export class TestVariationsService {
           diffTollerancePercent: 0,
           merge: true,
           ignoreAreas: JSON.parse(sourceBranchTestVariation.ignoreAreas),
+          featureName: sourceBranchTestVariation.featureName ?? undefined,
         };
 
         // get destination branch variation
@@ -217,6 +241,9 @@ export class TestVariationsService {
 
         if (destintionBranchTestVariation?.branchName !== toBranch) {
           destintionBranchTestVariation = await this.create({ createTestRequestDto });
+        } else {
+          // the merged snapshot names the source's feature, as a test's would (067)
+          destintionBranchTestVariation = await this.keepFeature(destintionBranchTestVariation, createTestRequestDto);
         }
 
         const testRun = await this.testRunsService.create({

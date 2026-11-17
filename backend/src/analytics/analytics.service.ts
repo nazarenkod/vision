@@ -46,6 +46,8 @@ export class AnalyticsService {
       this.prismaService.testRun.findMany({
         where: { projectId, createdAt: { gte: windowStart } },
         select: {
+          id: true,
+          buildId: true,
           testVariationId: true,
           name: true,
           customTags: true,

@@ -62,6 +62,7 @@ const INSIGHTS: ProjectInsights = {
       flips: 3,
       baselineChanges: 1,
       lastChangeAt: "2026-10-25T10:00:00.000Z",
+      run: { id: "run-login", buildId: "build-7" },
     },
   ],
   a11yScreens: [
@@ -72,6 +73,7 @@ const INSIGHTS: ProjectInsights = {
       newIssues: 1,
       reported: 2,
       ignored: 1,
+      run: { id: "run-payment", buildId: "build-8" },
     },
   ],
   a11yRules: [{ rule: "Touch target too small", count: 20 }],
@@ -202,6 +204,41 @@ test("deletes the selected unused baselines after confirming", async ({
     .click();
 
   await expect.poll(() => deleted).toEqual(["old-1"]);
+});
+
+test("opens a stale baseline, and an unstable check or a hotspot on its comparison", async ({
+  page,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  authUser,
+}) => {
+  await openInsights(page);
+  const link = (row: RegExp) =>
+    page.getByRole("row", { name: row }).getByTestId("insightsCheckLink");
+
+  await expect(link(/Old promo/)).toHaveAttribute(
+    "href",
+    "/variations/details/old-1",
+  );
+  await expect(link(/^Login/)).toHaveAttribute(
+    "href",
+    `/${TEST_PROJECT.id}?buildId=build-7&testId=run-login`,
+  );
+  await expect(link(/^Payment/)).toHaveAttribute(
+    "href",
+    `/${TEST_PROJECT.id}?buildId=build-8&tab=a11y&testId=run-payment`,
+  );
+
+  // ticking a baseline stays on the page
+  await page.getByRole("checkbox", { name: "Select Old promo" }).check();
+  await expect(page).toHaveURL(/\/insights\//);
+
+  // a click anywhere on the row opens it as well
+  await page
+    .getByRole("row", { name: /^Login/ })
+    .getByRole("cell")
+    .nth(2)
+    .click();
+  await expect(page).toHaveURL(/buildId=build-7&testId=run-login$/);
 });
 
 test("leaves the project to the sidebar and keeps the period", async ({

@@ -1121,6 +1121,8 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
     const invisible = new Set(
       structure.invisible.map((change) => `${change.kind}:${change.key}`),
     );
+    // when every row is such a change the strip already says so: no mark on each (REQ-069-10)
+    const markInvisible = rows.some((row) => !invisible.has(row.key));
     const changeCount = countRows(rows);
     // a long text is cut in the row; the whole of it is in the tooltip
     const clip = (text: string) =>
@@ -1430,7 +1432,7 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
                             }}
                           />
                         )}
-                        {!many && invisible.has(row.key) && (
+                        {!many && markInvisible && invisible.has(row.key) && (
                           <Tooltip title={t("panel.invisibleRow")}>
                             <VisibilityOffOutlined
                               data-testid="invisibleMark"

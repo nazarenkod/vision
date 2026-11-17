@@ -53,8 +53,7 @@ const ImageDetails: React.FunctionComponent<ImageDetailsProps> = ({
         sx={{
           fontSize: type.caption,
           fontWeight: 600,
-          letterSpacing: "0.04em",
-          textTransform: "uppercase",
+          // a name, read as one, not shouted (REQ-069-11)
           color: tokens.text,
         }}
       >

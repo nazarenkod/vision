@@ -18,7 +18,7 @@
   Червоний `Alert` з `panel.invisible` замінено смужкою `invisibleStrip` (колір
   `tokens.status.changed`, значок `VisibilityOff`) з кількістю, а рядки, чия `change` є в
   `structure.invisible` (ключ `kind:key`), отримують той самий значок у колонці перед назвою
-  (`invisibleMark`).
+  (`invisibleMark`), але лише коли в переліку є й видимі зміни (REQ-069-10).
 - **`WhatsCompared`**: прибрано нижній рядок з `compared.selectHelp`, «Обрати елементи» і меню
   «Ще дії»/«Правило вручну», разом із пропсами `onSelectElements`/`onAddRule`. Форма правила
   лишається в діях елемента (`openRule(resourceId, …)`), вибір — на панелі інструментів і E.
@@ -60,3 +60,5 @@
 | REQ-069-07 | `frontend/integration_tests/test/elementSelection.spec.ts › leaves element selection to the toolbar, not the Changes tab` |
 | REQ-069-08 | `frontend/integration_tests/test/elementSelection.spec.ts › leaves element selection to the toolbar, not the Changes tab` |
 | REQ-069-09 | `frontend/src/i18n/translate.test.ts › asks to press, not click, the part of a text that changes` |
+| REQ-069-10 | `frontend/integration_tests/test/elementRules.spec.ts › marks no row when the pixels miss every change` |
+| REQ-069-11 | `frontend/integration_tests/test/testDetailsDialog.spec.ts › keeps the review layout and its keys`; `frontend/integration_tests/test/elementRules.spec.ts › says the count once and lists the changes straight under it` |

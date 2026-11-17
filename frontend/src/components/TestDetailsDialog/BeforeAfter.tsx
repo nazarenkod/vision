@@ -56,8 +56,6 @@ export const BeforeAfter: React.FunctionComponent<{
     color: tokens.textMuted,
     fontSize: type.caption,
     fontWeight: 600,
-    letterSpacing: "0.04em",
-    textTransform: "uppercase",
     lineHeight: 1.6,
   } as const;
   return (
@@ -73,7 +71,9 @@ export const BeforeAfter: React.FunctionComponent<{
         lineHeight: 1.5,
       }}
     >
-      <Box sx={label}>{t("changes.before")}</Box>
+      <Box sx={label} data-testid="beforeLabel">
+        {t("changes.before")}
+      </Box>
       <Line pieces={diff.before} side="before" />
       <Box sx={label}>{t("changes.after")}</Box>
       <Line pieces={diff.after} side="after" />

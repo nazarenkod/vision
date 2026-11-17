@@ -541,11 +541,8 @@ export const uk: Messages = {
   "baselines.empty": "Тут ще немає еталонів",
   "baselines.emptyHint":
     "Еталони з’являються після першої прийнятої перевірки — або жоден не відповідає фільтрам.",
-  "baselines.deleteTitle": "Видалити еталон",
   "baselines.delete": "Видалити",
-  "baselines.deleteConfirm": "Видалити еталон «{name}»?",
   "baselines.deleteThis": "Видалити цей еталон?",
-  "baselines.deleteScope": "Лише еталон для {device} у гілці {branch}.",
   "baselines.mergeStarted": "Об’єднання почалося у збірці {id}",
   "baselines.fromBranch": "З гілки",
   "baselines.toBranch": "У гілку",

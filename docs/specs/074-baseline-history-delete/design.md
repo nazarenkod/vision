@@ -10,6 +10,10 @@
 `testVariationService.remove` (той самий `DELETE /test-variations/:id`), сповіщення й перехід на
 `/variations/:projectId`. Бекенд не змінюється.
 
+Картка в списку (`TestVariationList.tsx`) питає так само: `baselines.deleteThis` заголовком,
+без тіла. Ключі `baselines.deleteTitle`, `deleteConfirm`, `deleteScope` більше ніде не потрібні —
+прибрано з обох словників.
+
 ## Перевірка вимог
 
 | Вимога | Перевірка |
@@ -17,4 +21,5 @@
 | REQ-074-01 | `frontend/integration_tests/test/testVariationDetails.spec.ts › writes Selected and Previous as they are, not in capitals` |
 | REQ-074-02 | `frontend/integration_tests/test/testVariationDetails.spec.ts › deletes the baseline from its history and goes back to the list` |
 | REQ-074-04 | `frontend/integration_tests/test/testVariationDetails.spec.ts › deletes the baseline from its history and goes back to the list` |
+| REQ-074-05 | `frontend/integration_tests/test/testVariationList.spec.ts › deletes a variation` |
 | REQ-074-03 | `frontend/integration_tests/test/testVariationDetails.spec.ts › keeps the baseline when its delete is cancelled` |

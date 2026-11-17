@@ -335,22 +335,13 @@ const TestVariationList: React.FunctionComponent<IProps> = ({
       {selectedItem && (
         <BaseModal
           open={!!selectedItem}
-          title={t("baselines.deleteTitle")}
+          // the question is the title, said once: the card already shows the
+          // check and the device, and a check's name can run to a paragraph
+          // (REQ-074-05)
+          title={t("baselines.deleteThis")}
           submitButtonText={t("baselines.delete")}
           onCancel={handleClose}
-          content={
-            <>
-              <Typography>
-                {t("baselines.deleteConfirm", { name: selectedItem.name })}
-              </Typography>
-              <Typography variant="body2" color="textSecondary">
-                {t("baselines.deleteScope", {
-                  device: deviceLabel(selectedItem, undefined, t),
-                  branch: selectedItem.branchName,
-                })}
-              </Typography>
-            </>
-          }
+          content={null}
           onSubmit={() => {
             onDeleteClick(selectedItem.id);
             handleClose();

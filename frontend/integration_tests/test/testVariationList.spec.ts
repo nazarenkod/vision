@@ -46,8 +46,9 @@ test("deletes a variation", async ({ openTestVariationListPage, page }) => {
   const listPage = await openTestVariationListPage(TEST_PROJECT.id);
 
   await listPage.deleteBtn(TEST_VARIATION_TWO.name).click();
-  await expect(listPage.modal.dialog).toContainText(
-    `Are you sure you want to delete: ${TEST_VARIATION_TWO.name}?`,
+  // one short question, said once (REQ-074-05)
+  await expect(listPage.modal.dialog).toHaveText(
+    "Delete this baseline?CancelDelete",
   );
   await Promise.all([
     page.waitForRequest(

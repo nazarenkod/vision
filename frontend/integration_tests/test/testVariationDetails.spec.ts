@@ -3,6 +3,8 @@ import { test } from "fixtures";
 import {
   API_URL,
   mockApiError,
+  mockDeleteTestVariation,
+  mockGetTestVariations,
   mockGetProjects,
   mockGetTestVariationDetails,
   mockImage,
@@ -183,4 +185,69 @@ test("sets the project from the baseline", async ({
     `/variations/${TEST_PROJECT.id}`,
   );
   await expect(page.getByText("Choose project")).toHaveCount(0);
+});
+
+test("writes Selected and Previous as they are, not in capitals", async ({
+  openTestVariationDetailsPage,
+  page,
+}) => {
+  await inUkrainian(page);
+  await openTestVariationDetailsPage(TEST_VARIATION_ONE.id);
+
+  for (const [testId, text] of [
+    ["historyPickedTitle", "Вибраний"],
+    ["historyBeforeTitle", "Попередній"],
+  ]) {
+    const title = page.getByTestId(testId);
+    await expect(title).toHaveText(text);
+    await expect(title).toHaveCSS("text-transform", "none");
+  }
+});
+
+test("deletes the baseline from its history and goes back to the list", async ({
+  openTestVariationDetailsPage,
+  page,
+}) => {
+  await mockDeleteTestVariation(page, TEST_VARIATION_ONE);
+  await mockGetTestVariations(page, []);
+  const detailsPage = await openTestVariationDetailsPage(TEST_VARIATION_ONE.id);
+
+  await page.getByTestId("baselineDelete").click();
+  await expect(detailsPage.modal.dialog).toContainText(
+    `Are you sure you want to delete: ${TEST_VARIATION_ONE.name}?`,
+  );
+  await Promise.all([
+    page.waitForRequest(
+      (request) =>
+        request.method() === "DELETE" &&
+        decodeURIComponent(new URL(request.url()).pathname) ===
+          `/test-variations/${TEST_VARIATION_ONE.id}`,
+    ),
+    detailsPage.modal.confirmBtn.click(),
+  ]);
+
+  await expect(detailsPage.notification.message).toHaveText(
+    `${TEST_VARIATION_ONE.name} deleted`,
+  );
+  await expect(page).toHaveURL(`/variations/${TEST_VARIATION_ONE.projectId}`);
+});
+
+test("keeps the baseline when its delete is cancelled", async ({
+  openTestVariationDetailsPage,
+  page,
+}) => {
+  let deleted = false;
+  page.on("request", (request) => {
+    if (request.method() === "DELETE") deleted = true;
+  });
+  const detailsPage = await openTestVariationDetailsPage(TEST_VARIATION_ONE.id);
+
+  await page.getByTestId("baselineDelete").click();
+  await detailsPage.modal.cancelBtn.click();
+
+  await expect(detailsPage.modal.dialog).toBeHidden();
+  await expect(page.getByTestId("historyEntry")).toHaveCount(
+    TEST_VARIATION_ONE.baselines.length,
+  );
+  expect(deleted).toBe(false);
 });

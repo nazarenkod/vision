@@ -9,7 +9,7 @@ import {
   Link as MuiLink,
   Typography,
 } from "@mui/material";
-import { ArrowBack } from "@mui/icons-material";
+import { ArrowBack, DeleteOutline } from "@mui/icons-material";
 import { routes } from "../constants";
 import { motion, tokens, radius, type } from "../theme";
 import { recordDate } from "../_helpers/baselineHistory.helper";
@@ -24,6 +24,8 @@ import { useT } from "../i18n";
 import TestStatusChip from "../components/TestStatusChip";
 import { Baseline } from "../types/baseline";
 import { useProjectFromAddress } from "../contexts";
+import { BaseModal } from "../components/BaseModal";
+import { deviceLabel } from "../_helpers/device.helper";
 
 const TestVariationDetailsPage: React.FunctionComponent = () => {
   const navigate = useNavigate();
@@ -57,6 +59,20 @@ const TestVariationDetailsPage: React.FunctionComponent = () => {
   const baselines = testVariation?.baselines ?? [];
   const picked = baselines[pickedIndex];
   const before = baselines[pickedIndex + 1];
+
+  // the same delete as on the baseline's card, so a baseline found by its
+  // history can be removed without going back to the list (REQ-074-02)
+  const [confirmDelete, setConfirmDelete] = React.useState(false);
+  const handleDelete = (variation: TestVariation) => {
+    setConfirmDelete(false);
+    testVariationService
+      .remove(variation.id)
+      .then((item) => {
+        enqueueSnackbar(`${item.name} deleted`, { variant: "success" });
+        navigate(`${routes.VARIATION_LIST_PAGE}/${variation.projectId}`);
+      })
+      .catch((err) => enqueueSnackbar(err, { variant: "error" }));
+  };
 
   const openTestRun = (baseline: Baseline) => {
     const { testRun } = baseline;
@@ -92,9 +108,10 @@ const TestVariationDetailsPage: React.FunctionComponent = () => {
           borderBottom: `1px solid ${tokens.border}`,
         }}
       >
+        {/* as written, not in capitals (REQ-074-01) */}
         <Typography
-          variant="overline"
-          sx={{ fontWeight: 600, letterSpacing: "0.06em", color: tokens.text }}
+          data-testid={`${testId}Title`}
+          sx={{ fontSize: type.small, fontWeight: 600, color: tokens.text }}
         >
           {title}
         </Typography>
@@ -149,19 +166,33 @@ const TestVariationDetailsPage: React.FunctionComponent = () => {
             className="v-enter"
             sx={{ display: "flex", flexDirection: "column", gap: 1 }}
           >
-            <Button
-              component={Link}
-              to={`${routes.VARIATION_LIST_PAGE}/${testVariation.projectId}`}
-              startIcon={<ArrowBack />}
-              size="small"
+            <Box
               sx={{
-                alignSelf: "flex-start",
-                color: tokens.textSecondary,
-                px: 1,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                gap: 1,
               }}
             >
-              {t("baselines.title")}
-            </Button>
+              <Button
+                component={Link}
+                to={`${routes.VARIATION_LIST_PAGE}/${testVariation.projectId}`}
+                startIcon={<ArrowBack />}
+                size="small"
+                sx={{ color: tokens.textSecondary, px: 1 }}
+              >
+                {t("baselines.title")}
+              </Button>
+              <Button
+                color="error"
+                size="small"
+                startIcon={<DeleteOutline />}
+                onClick={() => setConfirmDelete(true)}
+                data-testid="baselineDelete"
+              >
+                {t("baselines.delete")}
+              </Button>
+            </Box>
             <Typography
               variant="overline"
               sx={{ color: tokens.textMuted, lineHeight: 1 }}
@@ -348,6 +379,28 @@ const TestVariationDetailsPage: React.FunctionComponent = () => {
             </Box>
           </Box>
         </Box>
+      )}
+      {testVariation && confirmDelete && (
+        <BaseModal
+          open
+          title={t("baselines.deleteTitle")}
+          submitButtonText={t("baselines.delete")}
+          onCancel={() => setConfirmDelete(false)}
+          content={
+            <>
+              <Typography>
+                {t("baselines.deleteConfirm", { name: testVariation.name })}
+              </Typography>
+              <Typography variant="body2" color="textSecondary">
+                {t("baselines.deleteScope", {
+                  device: deviceLabel(testVariation, undefined, t),
+                  branch: testVariation.branchName,
+                })}
+              </Typography>
+            </>
+          }
+          onSubmit={() => handleDelete(testVariation)}
+        />
       )}
     </Box>
   );

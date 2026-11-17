@@ -382,16 +382,13 @@ const TestVariationDetailsPage: React.FunctionComponent = () => {
       {testVariation && confirmDelete && (
         <BaseModal
           open
-          title={t("baselines.deleteTitle")}
+          // the question is the title, said once: the name and the device are
+          // on the page already, and a check's name can run to a paragraph
+          // (REQ-074-04)
+          title={t("baselines.deleteThis")}
           submitButtonText={t("baselines.delete")}
           onCancel={() => setConfirmDelete(false)}
-          // one short line: the name and the device are on the page already,
-          // and a check's name can run to a paragraph (REQ-074-04)
-          content={
-            <Typography data-testid="deleteQuestion">
-              {t("baselines.deleteThis")}
-            </Typography>
-          }
+          content={null}
           onSubmit={() => handleDelete(testVariation)}
         />
       )}

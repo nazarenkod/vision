@@ -4,8 +4,9 @@
 
 `TestVariationDetailsPage.tsx`: підпис пари — звичайний `Typography` (`type.small`, 600) замість
 `variant="overline"`, що перетворював текст на великі літери. Праворуч від «Baselines» у шапці —
-кнопка «Delete» (`baselineDelete`, `color="error"`); підтвердження — `BaseModal` із заголовком
-`baselines.deleteTitle` і одним рядком `baselines.deleteThis` (без назви й пристрою), далі
+кнопка «Delete» (`baselineDelete`, `color="error"`); підтвердження — `BaseModal`, де питання
+`baselines.deleteThis` — заголовок, а тіла немає (`content={null}`: `BaseModal` тоді не малює
+`DialogContent`), далі
 `testVariationService.remove` (той самий `DELETE /test-variations/:id`), сповіщення й перехід на
 `/variations/:projectId`. Бекенд не змінюється.
 

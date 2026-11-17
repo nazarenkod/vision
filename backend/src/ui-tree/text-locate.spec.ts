@@ -1,5 +1,5 @@
 import { PNG } from 'pngjs';
-import { placeAreas, RecognisedWord, textMask } from './text-locate';
+import { alignPlaces, placeAreas, RecognisedWord, textMask } from './text-locate';
 import { placesOf, TextPart } from './variable-text';
 
 // "Зі своєї картки *1050 +1.01 UAH 17 серпня, 13:59" with the number, sum and time marked
@@ -108,5 +108,31 @@ describe('textMask', () => {
     const mask = textMask(png);
     const at = (x: number, y: number) => mask.data[(y * 10 + x) * 4];
     expect([at(3, 0), at(4, 0), at(6, 1), at(5, 1)]).toEqual([0, 255, 0, 255]);
+  });
+});
+
+describe('alignPlaces', () => {
+  const timeOnly: TextPart[] = [{ text: 'Зі своєї картки *1051 +1.05 UAH 17 серпня, ' }, { pattern: '\\d+:\\d{2}' }];
+  const now = placesOf(timeOnly, 'Зі своєї картки *1051 +1.05 UAH 17 серпня, 14:02');
+  const values = (found: ReturnType<typeof alignPlaces>) => found?.places.map(({ value }) => value);
+
+  it('finds a place of the snapshot on a baseline whose unmarked words differ', () => {
+    expect(values(alignPlaces(now.text, now.places, 'Зі своєї картки *1050 +1.01 UAH 17 серпня, 13:59'))).toEqual([
+      '13:59',
+    ]);
+  });
+
+  it('takes the word in the same position when the words around changed as well', () => {
+    const sumOnly: TextPart[] = [
+      { text: 'Зі своєї картки *1051 ' },
+      { pattern: '[+\\-−]?\\d+\\.\\d{2}' },
+      { text: ' UAH' },
+    ];
+    const here = placesOf(sumOnly, 'Зі своєї картки *1051 +1.05 UAH');
+    expect(values(alignPlaces(here.text, here.places, 'Зі своєї картки *1050 +1.01 UAH'))).toEqual(['+1.01']);
+  });
+
+  it('cannot tell a place in a row of another kind', () => {
+    expect(alignPlaces(now.text, now.places, 'Повернення коштів')).toBeNull();
   });
 });

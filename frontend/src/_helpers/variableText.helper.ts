@@ -313,33 +313,27 @@ export function leftOutFor(
 }
 
 /**
- * How a variable-text rule is drawn on a screenshot (REQ-066-05): what is not
- * compared hatched, and the element framed when only its text is left out.
+ * How a variable-text rule is drawn on a screenshot (REQ-066-05, REQ-072-07):
+ * what is not compared hatched, nothing else.
  * Null from a server that does not say: the found elements are drawn as before.
  */
 export function leftOutMarks(
   rule: Pick<ScreenRule, "leftOut">,
   side: LeftOut["side"],
-): Array<{ rect: Rect; mark: "hatch" | "frame"; element: Rect }> | null {
+): Array<{ rect: Rect; mark: "hatch"; element: Rect }> | null {
   if (!rule.leftOut) return null;
-  return rule.leftOut
-    .filter((item) => item.side === side)
-    .flatMap((item) => [
-      ...(item.reason
-        ? []
-        : [
-            {
-              rect: item.element,
-              mark: "frame" as const,
-              element: item.element,
-            },
-          ]),
-      ...item.areas.map((rect) => ({
-        rect,
-        mark: "hatch" as const,
-        element: item.element,
-      })),
-    ]);
+  return (
+    rule.leftOut
+      .filter((item) => item.side === side)
+      // no frame round the element: it added nothing to the hatch and read as a selection
+      .flatMap((item) =>
+        item.areas.map((rect) => ({
+          rect,
+          mark: "hatch" as const,
+          element: item.element,
+        })),
+      )
+  );
 }
 
 /**
@@ -367,4 +361,77 @@ export function textOnScreen(
       item !== element && !!item.text && !item.labelOnly && inside(item),
   );
   return shown.length === 1 ? shown[0] : null;
+}
+
+/**
+ * What the other screenshot's text of the same element says differently, for
+ * the warning under the pieces (REQ-072-04, 05): its words that stand where
+ * the marked text has unmarked words, at most three; else a value in a marked
+ * place that is not of the marked kind; else nothing to warn about.
+ */
+export function otherDiffers(
+  parts: TextPart[],
+  text: string,
+  otherText: string,
+): { words: string[] } | { value: string } | null {
+  const own = spaces(text).trim();
+  let at = 0;
+  const marked: Array<[number, number]> = [];
+  for (const segment of placesIn(parts, text)) {
+    if (segment.place) marked.push([at, at + segment.text.length]);
+    at += segment.text.length;
+  }
+  const words = (value: string) =>
+    [...value.matchAll(/\S+/g)].map((match) => {
+      const from = match.index ?? 0;
+      return {
+        text: match[0],
+        marked: marked.some(
+          ([start, end]) => from < end && start < from + match[0].length,
+        ),
+      };
+    });
+  const a = words(own);
+  const b = words(spaces(otherText).trim());
+  // the longest run of words both texts share; a row is tens of words
+  const table = Array.from({ length: a.length + 1 }, () =>
+    new Array<number>(b.length + 1).fill(0),
+  );
+  for (let i = a.length - 1; i >= 0; i--)
+    for (let j = b.length - 1; j >= 0; j--)
+      table[i][j] =
+        a[i].text === b[j].text
+          ? table[i + 1][j + 1] + 1
+          : Math.max(table[i + 1][j], table[i][j + 1]);
+  const unmarked: string[] = [];
+  const inPlaces: string[] = [];
+  let i = 0;
+  let j = 0;
+  while (i < a.length || j < b.length) {
+    if (i < a.length && j < b.length && a[i].text === b[j].text) {
+      i++;
+      j++;
+      continue;
+    }
+    // a run that differs: up to the next word both share
+    const fromI = i;
+    const fromJ = j;
+    while (
+      (i < a.length || j < b.length) &&
+      !(i < a.length && j < b.length && a[i].text === b[j].text)
+    ) {
+      if (j >= b.length || (i < a.length && table[i + 1][j] >= table[i][j + 1]))
+        i++;
+      else j++;
+    }
+    const mine = a.slice(fromI, i);
+    const theirs = b.slice(fromJ, j).map((word) => word.text);
+    if (mine.some((word) => !word.marked) || (!mine.length && theirs.length))
+      unmarked.push(...theirs);
+    else inPlaces.push(...theirs);
+  }
+  if (unmarked.length) return { words: unmarked.slice(0, 3) };
+  if (!fitsParts(parts, otherText) && inPlaces.length)
+    return { value: inPlaces.join(" ") };
+  return null;
 }

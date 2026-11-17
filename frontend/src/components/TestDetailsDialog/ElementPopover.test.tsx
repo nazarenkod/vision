@@ -126,10 +126,33 @@ describe("ElementPopover: variable text (spec 033)", () => {
     expect(screen.queryByTestId("variableOther")).toBeNull();
     fireEvent.click(screen.getByText("14:07"));
     expect(screen.getByTestId("variableOther")).toHaveTextContent(
-      "On the baseline it says “Updated at 6 pm” here — it will not fit.",
+      "On the baseline it says “6 pm” here — not like the marked value. The snapshot goes to review.",
     );
     // a baseline in another format is a warning, not a stop
     expect(screen.getByTestId("variableSave")).toBeEnabled();
+  });
+
+  it("names the baseline words that differ where nothing is marked", () => {
+    popover({
+      element: {
+        ...updated,
+        selector: "id:activity_list_item",
+        text: "Зі своєї картки *1051 +1.05 UAH 17 серпня, 13:59",
+      },
+      other: {
+        side: "baseline",
+        text: "Зі своєї картки *1050 +1.01 UAH 17 серпня, 13:59",
+      },
+    });
+    fireEvent.click(screen.getByTestId("elementAction-variable"));
+    fireEvent.click(screen.getByText("13:59"));
+    expect(screen.getByTestId("variableOther")).toHaveTextContent(
+      "On the baseline it says something else here: «*1050», «+1.01». Mark them if they change — otherwise the snapshot goes to review.",
+    );
+    // marked, they no longer differ where nothing is marked
+    fireEvent.click(screen.getByText("1051"));
+    fireEvent.click(screen.getByText("+1.05"));
+    expect(screen.queryByTestId("variableOther")).toBeNull();
   });
 
   it("says when nothing would find the element next run", () => {

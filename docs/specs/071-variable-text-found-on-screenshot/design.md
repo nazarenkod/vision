@@ -100,6 +100,6 @@ flowchart LR
 | REQ-071-06 | `backend/src/ui-tree/text-locator.service.spec.ts › finds the pieces of a rendered history row offline, the same each time` |
 | REQ-071-07 | `backend/src/ui-tree/text-locator.service.spec.ts › gives up on an element after five seconds` |
 | REQ-071-08 | `backend/src/ui-tree/text-locator.service.spec.ts › looks in at most twenty elements of a screenshot` |
-| REQ-071-09 | `frontend/src/_helpers/variableText.helper.test.ts › marks the found pieces hatched and frames the merged element` |
+| REQ-071-09 | `frontend/src/_helpers/variableText.helper.test.ts › marks the found pieces of a merged element hatched` |
 | REQ-071-10 | `frontend/src/components/TestDetailsDialog/ElementPopover.test.tsx › says only the marked pieces are not compared, or which was not found` |
 | REQ-071-11 | `frontend/src/_helpers/whatsCompared.helper.test.ts › maps the found pieces of a merged element` |

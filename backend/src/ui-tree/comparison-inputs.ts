@@ -3,6 +3,7 @@ import { A11yNorms, DEFAULT_A11Y_NORMS, parseA11yNorms } from '../a11y/a11y-norm
 import { AllowedDevice, parseAllowedDevices } from '../projects/allowed-devices';
 import { AllowedBrowser, parseAllowedBrowsers } from '../projects/allowed-browsers';
 import { evaluateXpath, isXpathSelector, parseXpath, XPATH_PREFIX, XpathProblem, xpathProblem } from './xpath-selector';
+import { alignPlaces } from './text-locate';
 import {
   checkVariableText,
   fitsSkeleton,
@@ -187,6 +188,30 @@ export function ruleNodes(tree: UiTree, rule: Pick<ElementRule, 'selector' | 'ac
   const nodes = findBySelector(tree, rule.selector) ?? [];
   if (rule.action !== 'variable' || !rule.parts?.length || !rule.selector.trim().startsWith('id:')) return nodes;
   return nodes.filter((node) => fitsSkeleton(rule.parts, textOf(node)));
+}
+
+/**
+ * The elements a variable-text rule takes on the snapshot and on the baseline:
+ * on the baseline, each one's twin is the same element of the tree (by key),
+ * whatever its text now says (REQ-072-01); a baseline element with no twin on
+ * the snapshot is taken as REQ-070-01 says, so a row that is gone is still told.
+ */
+export function variableNodes(
+  rule: Pick<ElementRule, 'selector' | 'action' | 'parts'>,
+  current: UiTree | null,
+  baseline: UiTree | null
+): [UiNode[], UiNode[]] {
+  const now = current ? ruleNodes(current, rule) : [];
+  if (!baseline) return [now, []];
+  const all = findBySelector(baseline, rule.selector) ?? [];
+  const taken = new Set<UiNode>();
+  for (const node of now) {
+    const twin = all.find((item) => item.key === node.key && !taken.has(item));
+    if (twin) taken.add(twin);
+  }
+  const nowKeys = new Set(now.map((node) => node.key));
+  const alone = ruleNodes(baseline, rule).filter((node) => !taken.has(node) && !nowKeys.has(node.key));
+  return [now, [...all.filter((node) => taken.has(node)), ...alone]];
 }
 
 /** A text:/…/ pattern Vision does not run: back-references and look-around (REQ-051-10). */
@@ -416,23 +441,24 @@ export function locateCandidates(rules: ElementRule[], trees: Array<UiTree | nul
   const result: LocateCandidate[] = [];
   for (const rule of rules) {
     if (rule.action !== 'variable' || !rule.parts?.length || selectorProblem(rule.selector)) continue;
-    const was = ruleNodes(baseline, rule);
+    const [now, was] = variableNodes(rule, current, baseline);
     const paired = new Set<UiNode>();
-    for (const node of ruleNodes(current, rule)) {
+    for (const node of now) {
       const twin = was.find((item) => item.key === node.key && !paired.has(item));
       if (!twin) continue;
       paired.add(twin);
       if (ignored.has(node)) continue;
       if (node.bounds.width !== twin.bounds.width || node.bounds.height !== twin.bounds.height) continue;
       if (textParts(current, node, rule.parts).length || textParts(baseline, twin, rule.parts).length) continue;
-      const now = placesOf(rule.parts, textOf(node));
-      const then = placesOf(rule.parts, textOf(twin));
-      if (!now || !then) continue;
+      const here = placesOf(rule.parts, textOf(node));
+      // the baseline's fixed words may differ: its places stand between the words both share (REQ-072-02)
+      const there = here && (placesOf(rule.parts, textOf(twin)) ?? alignPlaces(here.text, here.places, textOf(twin)));
+      if (!here || !there) continue;
       result.push({
         ruleId: rule.id,
         key: node.key,
-        current: { bounds: node.bounds, ...now },
-        baseline: { bounds: twin.bounds, ...then },
+        current: { bounds: node.bounds, ...here },
+        baseline: { bounds: twin.bounds, ...there },
       });
     }
   }
@@ -471,9 +497,10 @@ export function resolveRules(
     if (selectorProblem(rule.selector)) continue;
     const sides: Rect[][] = [];
     const sideNodes: UiNode[][] = [];
-    for (const tree of trees) {
+    const paired = rule.action === 'variable' ? variableNodes(rule, trees[0] ?? null, trees[1] ?? null) : null;
+    for (const [side, tree] of trees.entries()) {
       const bounds: Rect[] = [];
-      const nodes = tree ? ruleNodes(tree, rule) : [];
+      const nodes = paired && side < 2 ? paired[side] : tree ? ruleNodes(tree, rule) : [];
       sideNodes.push(nodes);
       for (const node of nodes) {
         bounds.push(node.bounds);

@@ -1372,9 +1372,12 @@ export const uk: Messages = {
   "select.variableClick": "Натисніть частину, що змінюється.",
   "select.variableRest": "Решта тексту — дослівно.",
   "select.variablePattern": "Формат: {pattern}",
-  "select.variableOther": "{side} тут «{text}» — не підійде.",
-  "select.variableSideBaseline": "В еталоні",
-  "select.variableSideCurrent": "На поточному",
+  "select.variableOtherWords":
+    "{side} тут інше: {words}. Позначте їх, якщо вони змінюються, — інакше знімок піде на рев'ю.",
+  "select.variableOtherValue":
+    "{side} тут «{value}» — інший вигляд, ніж у позначеного. Знімок піде на рев'ю.",
+  "select.variableSideBaseline": "На еталоні",
+  "select.variableSideCurrent": "На знімку",
   "select.variableNoAnchor":
     "У наступній збірці цей елемент не знайти: у нього немає id, а в тексті й вище немає нічого незмінного.",
   "select.variableNoText": "У елемента немає тексту",

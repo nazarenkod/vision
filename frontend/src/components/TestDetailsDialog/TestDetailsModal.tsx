@@ -709,11 +709,15 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
   const countFor = (side: Side) => (selector: string, parts: TextPart[]) =>
     variableCount(selector, parts, elementsOf(side));
   // the same element on the other screenshot, by the selector it was picked with
+  // the same element on the other screenshot: the rows of a list share a selector, so the one at the same place (REQ-072-06)
   const otherText = (side: Side, element: PickableElement) => {
     const otherSide: Side = side === "current" ? "baseline" : "current";
-    const twin = elementsOf(otherSide).find(
+    const nth = elementsOf(side)
+      .filter((item) => item.selector === element.selector)
+      .findIndex((item) => item.index === element.index);
+    const twin = elementsOf(otherSide).filter(
       (item) => item.selector === element.selector,
-    );
+    )[Math.max(0, nth)];
     return twin?.text ? { side: otherSide, text: twin.text } : undefined;
   };
   // the rules of every selected element come off together (REQ-028-31)
@@ -842,7 +846,7 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
                   item.bounds.x === rect.x &&
                   item.bounds.y === rect.y,
               );
-            // only the text may be left out: hatched there, the element framed (REQ-066-05)
+            // only the text may be left out: hatched there (REQ-066-05, REQ-072-07)
             const leftOut =
               rule.action === "variable" ? leftOutMarks(rule, side) : null;
             if (leftOut) {
@@ -864,13 +868,11 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
                     : canvas.variable,
                   hatched: !failed(item.element) && item.mark === "hatch",
                   dashed: failed(item.element),
-                  // one name per element: on its frame, or on it when all of it is left out
+                  // one name per element: on the first thing left out of it
                   ...(failed(item.element) ||
-                  item.mark === "frame" ||
-                  !leftOut.some(
-                    (other) =>
-                      other.element === item.element && other.mark === "frame",
-                  )
+                  leftOut.findIndex(
+                    (other) => other.element === item.element,
+                  ) === i
                     ? { label: t("select.ruleVariable") }
                     : {}),
                   labelOnHighlight: true,

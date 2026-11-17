@@ -322,3 +322,64 @@ test("dims the other frames while a problem is pointed at, so its frame stands o
     .poll(() => frameAlpha(page, edgeOf(second)))
     .toBeGreaterThan(200);
 });
+
+// the reddest pixel of the frames inside a box, as [r, g, b]
+const frameColor = (
+  page: Page,
+  box: { x: number; y: number; width: number; height: number },
+) =>
+  page
+    .getByTestId("drawArea")
+    .nth(1)
+    .evaluate(
+      (pane, [area, width]) => {
+        const canvases = pane.querySelectorAll("canvas");
+        const overlay = canvases[canvases.length - 1];
+        const ratio = overlay.width / width;
+        const data =
+          overlay
+            .getContext("2d")
+            ?.getImageData(
+              Math.round(area.x * ratio),
+              Math.round(area.y * ratio),
+              Math.max(1, Math.round(area.width * ratio)),
+              Math.max(1, Math.round(area.height * ratio)),
+            ).data ?? [];
+        let best = [0, 0, 0];
+        for (let i = 0; i < data.length; i += 4)
+          if (data[i + 3] > 200 && data[i] - data[i + 2] > best[0] - best[2])
+            best = [data[i], data[i + 1], data[i + 2]];
+        return best;
+      },
+      [box, 1280] as const,
+    );
+
+test("draws known problems in the same orange as new ones", async ({
+  openProjectPage,
+  page,
+}) => {
+  const known = { x: 200, y: 600, width: 200, height: 100 };
+  await page.route(`${API_URL}/test-runs/${run.id}/a11y`, (route) =>
+    route.fulfill({
+      body: JSON.stringify({
+        ...report,
+        violations: [{ ...button("Pay"), status: "existing", bounds: known }],
+      }),
+    }),
+  );
+  await openProjectPage(project.id, build.id, run.id);
+  await openA11yTab(page);
+
+  // REQ-058-07: orange (red well above blue), not the grey it used to be
+  await expect
+    .poll(async () => {
+      const [r, , b] = await frameColor(page, {
+        x: known.x - 2,
+        y: known.y + 20,
+        width: 4,
+        height: 60,
+      });
+      return r - b;
+    })
+    .toBeGreaterThan(100);
+});

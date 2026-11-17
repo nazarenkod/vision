@@ -5,6 +5,7 @@ import {
   ScreenRule,
   TextPart,
 } from "../types/insights";
+import { english, Text } from "../i18n";
 
 /**
  * Marking the part of a text that changes between runs (spec 033): the text
@@ -477,4 +478,55 @@ export function variableShown(
       ? { ...segment, was: was[i].text }
       : segment,
   );
+}
+
+// the pieces patternFor() writes, read back for a person
+const SHAPE =
+  /(\[\+\\-−\]\?)|(\\d\{1,3\}\(\?:\\s\\d\{3\}\)\*)|\\d\{(\d+)\}|(\\d\+)|(\\p\{L\}\+)|(\\s\+)|\\(.)|([\s\S])/gu;
+
+/**
+ * What a marked place must look like, in words (REQ-074-12): "4 digits",
+ * "a number", "a word", or for a value made of several parts a mask of it,
+ * "0:00", "0,00", "±0". A pattern someone wrote by hand stays itself.
+ */
+export function shapeOf(pattern: string, text: Text = english): string {
+  const single =
+    /^(?:\\d\{(\d+)\}|(\\d\+)|(\\p\{L\}\+)|(\\d\{1,3\}\(\?:\\s\\d\{3\}\)\*))$/u.exec(
+      pattern,
+    );
+  if (single?.[1])
+    return text("compared.shape.digits", { count: Number(single[1]) });
+  if (single?.[2] || single?.[4]) return text("compared.shape.number");
+  if (single?.[3]) return text("compared.shape.word");
+  let mask = "";
+  for (const [
+    whole,
+    sign,
+    grouped,
+    count,
+    digits,
+    letters,
+    space,
+    escaped,
+    other,
+  ] of pattern.matchAll(SHAPE)) {
+    if (sign) mask += "±";
+    else if (grouped) mask += "0 000";
+    else if (count) mask += "0".repeat(Number(count));
+    else if (digits) mask += "0";
+    else if (letters) mask += "…";
+    else if (space) mask += " ";
+    else if (escaped) mask += escaped;
+    else if (other && /[\\()[\]{}|*+?^$]/.test(other)) return pattern;
+    else mask += whole;
+  }
+  return mask;
+}
+
+/** What each failing place of a text was expected to look like, for the line under it. */
+export function expectedShape(parts: TextPart[], text: Text = english): string {
+  return parts
+    .filter(isPlace)
+    .map((part) => shapeOf(part.pattern, text))
+    .join(", ");
 }

@@ -786,8 +786,9 @@ test("a variable text that holds shows a tick, one that broke turns red without 
   await expect(page.getByTestId("verdictReason")).toHaveCount(0);
   await expect(text).toHaveAttribute("data-state", "failed");
   await expect(text.getByTestId("variableHolds")).toHaveCount(0);
+  // what the value should look like, not the whole text again (REQ-074-12)
   await expect(text.getByTestId("variableExpected")).toHaveText(
-    "expected “Зі своєї картки *1051 +1.05 UAH”",
+    "expected 4 digits",
   );
   // no help box under it (REQ-074-14)
   await expect(page.getByTestId("variableProblem")).toHaveCount(0);

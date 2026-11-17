@@ -67,6 +67,18 @@ describe('web tree parser', () => {
     expect(fixture('shop-dpr2').pixelsPerDp).toBe(2);
   });
 
+  it('ignores a screen density sent with a web tree: the page scale decides', () => {
+    const dir = join(__dirname, '__fixtures__', 'web');
+    const size = JSON.parse(readFileSync(join(dir, 'shop-dpr2.json'), 'utf8'));
+    const tree = parseUiTree(readFileSync(join(dir, 'shop-dpr2.html'), 'utf8'), {
+      imageWidth: size.width,
+      imageHeight: size.height,
+      densityDpi: 480,
+    });
+
+    expect(tree.pixelsPerDp).toBe(2);
+  });
+
   it('places elements of a full-page screenshot below the scroll', () => {
     const scrolled = byId(fixture('shop-scrolled'), 'card');
     const full = byId(fixture('shop-full'), 'card');

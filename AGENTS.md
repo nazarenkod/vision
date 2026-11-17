@@ -23,7 +23,7 @@ Appium, веб через Selenide і Playwright): порівняння знім
 3. **Міграції лише додавальні:** нова таблиця, nullable-колонка, індекс; без змін enum, видалень,
    перейменувань ([ADR-0003](docs/decisions/0003-additive-schema-only.md)).
 4. **Жодних скидань і видалень бази** (`prisma migrate reset`, `DROP DATABASE`, `dropdb`).
-5. **SDK змінюється лише за специфікацією:** зараз це вихідний SDK + `VisionOptions.uiTree` (до 10 МиБ), `featureName`, `browserVersion`, `web.WebUiTree` (050),
+5. **SDK змінюється лише за специфікацією:** зараз це вихідний SDK + `VisionOptions.uiTree` (до 10 МиБ), `featureName`, `browserVersion`, `web.WebUiTree` (050), `deviceDensity` (076),
    класи `Vision`, `VisionConfig`, `VisionOptions`, `VisionResult` у пакеті `ua.vision.sdk` (`ua.vision:vision-sdk`), налаштування `VISION_*`;
    запити до сервера не ламаємо ([ADR-0024](docs/decisions/0024-own-vision-sdk.md), [ADR-0026](docs/decisions/0026-sdk-own-package-and-versions.md)).
 6. **LLM — лише на вимогу,** ніколи при прийомі знімків ([ADR-0007](docs/decisions/0007-deterministic-first-ai-on-demand.md)).
@@ -45,7 +45,7 @@ Appium, веб через Selenide і Playwright): порівняння знім
 |---|---|---|
 | `backend/` | NestJS 12 + Prisma 7 + Postgres (Node 24): API, UI-дерево, доступність, Jira, AI | [backend/AGENTS.md](backend/AGENTS.md) |
 | `frontend/` | React 18 + MUI 5 + Vite, Playwright; CLI `public/cli/vision.py` | [frontend/AGENTS.md](frontend/AGENTS.md) |
-| `sdk-java/` | Java SDK (вихідний + `uiTree`, `featureName`, `browserVersion`, `web.WebUiTree`) | [sdk-java/AGENTS.md](sdk-java/AGENTS.md) |
+| `sdk-java/` | Java SDK (вихідний + `uiTree`, `featureName`, `browserVersion`, `deviceDensity`, `web.WebUiTree`) | [sdk-java/AGENTS.md](sdk-java/AGENTS.md) |
 | `sdk-playwright/` | SDK для Playwright (`@vision/sdk-playwright`, порт `agent-playwright` VRT) | [sdk-playwright/AGENTS.md](sdk-playwright/AGENTS.md) |
 | `web-tree/` | `collect-tree.js` — один скрипт збору дерева вебсторінки для обох SDK; `make-fixtures.cjs` — фікстури бекенду | [050](docs/specs/050-web-ui-tree/spec.md) |
 | `scripts/` | `vision.sh`, копія даних проду, jar SDK, перевірка документації | [scripts/AGENTS.md](scripts/AGENTS.md) |

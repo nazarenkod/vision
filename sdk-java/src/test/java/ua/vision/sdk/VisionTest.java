@@ -239,6 +239,43 @@ public class VisionTest {
     }
 
     @Test
+    public void sendsTheScreenDensityWhenGiven() throws IOException, InterruptedException {
+        JsonObject body = sentBodyFor(VisionOptions.builder().os("Android 14").deviceDensity(420).build());
+
+        assertThat(body.get("deviceDensity").getAsInt(), is(420));
+    }
+
+    @Test
+    public void leavesOutTheScreenDensityWhenNotGiven() throws IOException, InterruptedException {
+        JsonObject body = sentBodyFor(VisionOptions.builder().os("Android 14").build());
+
+        assertThat(body.has("deviceDensity"), is(false));
+    }
+
+    @DataProvider
+    public Object[][] notADpi() {
+        return new Object[][]{{2}, {3}, {0}, {-420}, {99}, {1001}};
+    }
+
+    @Test(dataProvider = "notADpi")
+    public void leavesOutAScreenDensityNoScreenHasAndWarns(int density) throws IOException, InterruptedException {
+        ListAppender<ILoggingEvent> log = visionLog();
+
+        JsonObject body = sentBodyFor(VisionOptions.builder().os("Android 14").deviceDensity(density).build());
+
+        assertThat(body.has("deviceDensity"), is(false));
+        assertThat(body.get("name").getAsString(), is(NAME));
+        ILoggingEvent warning = log.list.stream().filter(e -> e.getLevel() == Level.WARN).findFirst().orElseThrow();
+        assertThat(warning.getFormattedMessage(), containsString(String.valueOf(density)));
+    }
+
+    @Test
+    public void sendsTheScreenDensityAtTheLimits() throws IOException, InterruptedException {
+        assertThat(sentBodyFor(VisionOptions.builder().deviceDensity(100).build()).get("deviceDensity").getAsInt(), is(100));
+        assertThat(sentBodyFor(VisionOptions.builder().deviceDensity(1000).build()).get("deviceDensity").getAsInt(), is(1000));
+    }
+
+    @Test
     public void leavesOutTheBrowserVersionWhenNotGiven() throws IOException, InterruptedException {
         JsonObject body = sentBodyFor(VisionOptions.builder().browser("chrome").build());
 

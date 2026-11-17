@@ -35,6 +35,9 @@ public class Vision {
     private static final String CONFIG_FILE_NAME = "vision.json";
     /** The largest UI tree sent, unpacked; the same limit as the server's. */
     public static final int UI_TREE_MAX_BYTES = 10 * 1024 * 1024;
+    // every Android screen falls in between (ldpi 120 … ~640); a pixel ratio such as 2.625 does not
+    static final int MIN_DEVICE_DENSITY = 100;
+    static final int MAX_DEVICE_DENSITY = 1000;
     protected static final String API_KEY_HEADER = "apiKey";
     protected static final String PROJECT_HEADER = "project";
     protected Gson gson;
@@ -162,6 +165,7 @@ public class Vision {
                 .uiTreeFormat(uiTree != null && isWebTree(options.getUiTree()) ? "web" : null)
                 .featureName(options.getFeatureName())
                 .browserVersion(options.getBrowserVersion())
+                .deviceDensity(deviceDensity(name, options.getDeviceDensity()))
                 .build();
 
         HttpRequest.BodyPublisher body = HttpRequest.BodyPublishers.ofString(gson.toJson(newTestRun));
@@ -175,6 +179,16 @@ public class Vision {
     // web trees are HTML (WebUiTree), Appium page sources are XML: the server parses them differently
     static boolean isWebTree(String uiTree) {
         return uiTree != null && WEB_TREE.matcher(uiTree).lookingAt();
+    }
+
+    // a wrong density silently skews every size in dp: better none, so the server estimates and says so
+    static Integer deviceDensity(String name, Integer dpi) {
+        if (dpi == null || (dpi >= MIN_DEVICE_DENSITY && dpi <= MAX_DEVICE_DENSITY)) {
+            return dpi;
+        }
+        log.warn("Screen density {} of <{}> is not a dpi between {} and {}: sending the screenshot without it",
+                dpi, name, MIN_DEVICE_DENSITY, MAX_DEVICE_DENSITY);
+        return null;
     }
 
     // page sources are large and repetitive: gzip keeps them well under the request size limit

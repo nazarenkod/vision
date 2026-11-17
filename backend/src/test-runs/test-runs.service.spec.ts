@@ -1059,6 +1059,38 @@ describe('TestRunsService', () => {
     expect(mocked(TestRunResultDto)).toHaveBeenCalledWith(testRun, testVariation);
   });
 
+  it('reads the UI tree at the screen density the client sent', async () => {
+    const createTestRequestDto: CreateTestRequestDto = {
+      buildId: 'buildId',
+      projectId: 'projectId',
+      name: 'Payment',
+      device: 'Pixel 8',
+      os: 'Android 14',
+      branchName: 'develop',
+      uiTree: 'gzipped page source',
+      deviceDensity: 480,
+    };
+    const testRun: TestRun = generateTestRun();
+    const service = await initService({
+      projectFindUniqueMock: jest.fn().mockResolvedValueOnce(TEST_PROJECT),
+      testVariationFindMock: jest.fn().mockResolvedValueOnce({ id: '123' }),
+      testRunFindManyMock: jest.fn().mockResolvedValueOnce([]),
+    });
+    service.create = jest.fn().mockResolvedValueOnce(testRun);
+    service.calculateDiff = jest.fn().mockResolvedValueOnce(testRun);
+    service['tryAutoApproveByPastBaselines'] = jest.fn().mockResolvedValueOnce(testRun);
+    service['tryAutoApproveByNewBaselines'] = jest.fn().mockResolvedValueOnce(testRun);
+
+    await service.postTestRun({ createTestRequestDto, imageBuffer });
+
+    expect(service['uiTreeService'].store).toHaveBeenCalledWith(
+      createTestRequestDto.uiTree,
+      expect.objectContaining({ densityDpi: 480 }),
+      imageBuffer,
+      { name: 'Payment', projectId: 'projectId' }
+    );
+  });
+
   describe('allowed devices (029)', () => {
     const project = {
       ...TEST_PROJECT,

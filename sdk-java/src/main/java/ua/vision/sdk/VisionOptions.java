@@ -34,4 +34,10 @@ public class VisionOptions {
      * not part of the check's identity, so a browser update keeps the baselines.
      */
     private final String browserVersion;
+    /**
+     * Optional: the Android screen density in dpi, e.g. 420, from Appium's
+     * {@code mobile: getDisplayDensity}. Accessibility checks then measure elements in real dp
+     * instead of estimating them. Not a pixel ratio (2.625): a value outside 100–1000 is not sent.
+     */
+    private final Integer deviceDensity;
 }

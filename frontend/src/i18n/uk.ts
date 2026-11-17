@@ -41,7 +41,7 @@ export const uk: Messages = {
   "nav.pickProjectFirst": "Спершу виберіть проєкт",
 
   "account.menu": "Обліковий запис",
-  "account.allProjects": "Усі проєкти",
+  "account.allProjects": "Проєкти",
   "account.profile": "Профіль",
   "account.language": "Мова",
   "account.theme": "Тема",
@@ -537,7 +537,6 @@ export const uk: Messages = {
     many: "{count} пристроїв",
     other: "{count} пристрою",
   },
-  "baselines.history": "Історія",
   "baselines.deleteOf": "Видалити {device}",
   "baselines.empty": "Тут ще немає еталонів",
   "baselines.emptyHint":
@@ -925,12 +924,6 @@ export const uk: Messages = {
     "Доступність перевіряється, коли перевірка надходить разом з Appium page source. У Java чи Kotlin додайте {code} до TestRunOptions; для ручного тестування скористайтеся CLI (меню довідки, «Ручні перевірки»).",
   "a11ySummary.newHint":
     "Порівняно з еталоном кожної перевірки: лише те, що з’явилося в цій збірці. Заведені баги й хибні знахідки не рахуються.",
-  "a11ySummary.ofScreenshots": {
-    one: "з {count} перевірки",
-    few: "з {count} перевірок",
-    many: "з {count} перевірок",
-    other: "з {count} перевірки",
-  },
   "a11ySummary.newIssues": "Нові знахідки",
   "a11ySummary.openIssues": "Усі відкриті знахідки",
   "a11ySummary.screensChecked": "Перевірок з UI-деревом",

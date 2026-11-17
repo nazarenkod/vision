@@ -21,6 +21,8 @@ const variation = (fields: Partial<VariationRow>): VariationRow => ({
 });
 
 const run = (fields: Partial<RunRow>): RunRow => ({
+  id: 'r',
+  buildId: 'b',
   testVariationId: 'v',
   name: 'Payment',
   customTags: '',
@@ -117,6 +119,23 @@ describe('computeInsights', () => {
     expect(result.summary.flips).toBe(2);
   });
 
+  it('opens an unstable screen on its newest change, and a hotspot on the device with the most issues', () => {
+    const result = computeInsights(
+      input({
+        runs: [
+          run({ id: 'r1', buildId: 'b1', status: 'unresolved', diffPercent: 3, createdAt: daysAgo(9) }),
+          run({ id: 'r2', buildId: 'b2', status: 'unresolved', diffPercent: 2, createdAt: daysAgo(8) }),
+          // the newest run matched: there is nothing to see in it
+          run({ id: 'r3', buildId: 'b3', status: 'ok', createdAt: daysAgo(7) }),
+          run({ id: 'a1', buildId: 'b4', device: 'Pixel 7', a11yTotalCount: 2, createdAt: daysAgo(3) }),
+          run({ id: 'a2', buildId: 'b4', device: 'Pixel 9', a11yTotalCount: 5, createdAt: daysAgo(4) }),
+        ],
+      })
+    );
+    expect(result.unstable[0].run).toEqual({ id: 'r2', buildId: 'b2' });
+    expect(result.a11yScreens[0].run).toEqual({ id: 'a2', buildId: 'b4' });
+  });
+
   it('does not call a change a flip when the baseline changed in between', () => {
     const result = computeInsights(
       input({
@@ -155,7 +174,7 @@ describe('computeInsights', () => {
         a11yRules: { 'Touch target too small': 12, 'Missing label': 30, 'Low contrast': 4 },
       })
     );
-    expect(result.a11yScreens).toEqual([
+    expect(result.a11yScreens).toMatchObject([
       { name: 'Payment', customTags: '', issues: 6, newIssues: 1, reported: 2, ignored: 1 },
       { name: 'Login', customTags: '', issues: 1, newIssues: 0, reported: 0, ignored: 0 },
     ]);

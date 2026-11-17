@@ -443,6 +443,12 @@ export interface DeviceProfile {
   viewport: string;
 }
 
+/** A run of a check, enough to open its comparison from Insights. */
+export interface InsightsRun {
+  id: string;
+  buildId: string;
+}
+
 export interface ProjectInsights {
   days: number;
   windowStart: string;
@@ -482,6 +488,8 @@ export interface ProjectInsights {
     flips: number;
     baselineChanges: number;
     lastChangeAt: string | null;
+    // the comparison a click opens: the newest change; absent from an older server
+    run?: InsightsRun;
   }>;
   a11yScreens: Array<{
     name: string;
@@ -490,6 +498,8 @@ export interface ProjectInsights {
     newIssues: number;
     reported: number;
     ignored: number;
+    // the newest run of the device with the most issues; absent from an older server
+    run?: InsightsRun;
   }>;
   a11yRules: Array<{ rule: string; count: number }>;
   noise: Array<{

@@ -54,15 +54,26 @@ Gradle: `implementation 'ua.vision:vision-sdk:1.0.0'` з `mavenLocal()`. У Nexu
 Vision vision = new Vision();
 vision.start();
 
+// щільність екрана в dpi (420, а не 2.625): досить узяти один раз на сесію
+int density = ((Number) driver.executeScript("mobile: getDisplayDensity")).intValue();
+
 vision.track("Checkout", driver.getScreenshotAs(OutputType.BASE64), VisionOptions.builder()
         .device("Pixel 8")
         .os("Android 14")
         .uiTree(driver.getPageSource())
+        .deviceDensity(density)    // Android: розміри в dp точні, а не оцінені
         .featureName("Checkout")   // необов'язково: назва фічі в багах
         .build());
 
 vision.stop();
 ```
+
+Без `deviceDensity` сервер оцінює щільність з розміру скриншота (коротка сторона ≈ 411 dp) і
+позначає розміри як приблизні: на планшетах і пристроях зі зміненим розміром інтерфейсу оцінка
+помиляється в 1,5–2 рази. `mobile: getDisplayDensity` є в UiAutomator2 з версії 2.21; на старішому
+драйвері те саме число дає `adb shell wm density`. Не плутайте з `displayDensity` з
+`mobile: deviceInfo` — це співвідношення пікселів; число поза 100–1000 SDK не надсилає й пише
+попередження в лог. Для iOS і вебу щільність не потрібна.
 
 ## Вебсторінка
 
@@ -85,6 +96,7 @@ vision.track("Cart", Selenide.screenshot(OutputType.BASE64), VisionOptions.build
 | `uiTree` | page source Appium або `WebUiTree.collect`; понад 10 МиБ не надсилається |
 | `featureName` | фіча для назви бага |
 | `browserVersion` | версія браузера, лише для показу |
+| `deviceDensity` | щільність екрана Android у dpi, для точних розмірів у dp; поза 100–1000 не надсилається |
 | `diffTollerancePercent` | допустимий відсоток змін |
 | `ignoreAreas` | області, які не порівнюються |
 

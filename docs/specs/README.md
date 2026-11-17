@@ -142,6 +142,7 @@ docs/specs/NNN-коротка-назва/
 | [073](073-variable-text-any-word-hint/spec.md) | «Тут може бути будь-яке слово» замість попередження | Implemented |
 | [074](074-changes-tab-plain/spec.md) | Вкладка «Зміни» без зайвих слів: зміни, нестабільний текст і зони ігнорування | Implemented |
 | [075](075-baseline-history-delete/spec.md) | Видалення еталона з його історії, коротке підтвердження, підписи пари без капслоку | Implemented |
+| [076](076-sdk-device-density/spec.md) | Щільність екрана Android із Java SDK | Implemented |
 
 Статусу `Verified` поки немає в жодної: інтеграцію з реальною Jira Cloud і прогони на сервері
 команда ще не підтвердила.

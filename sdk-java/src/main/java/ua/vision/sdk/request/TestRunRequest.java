@@ -27,4 +27,6 @@ public class TestRunRequest {
     private final String uiTreeFormat;
     private final String featureName;
     private final String browserVersion;
+    // Android dpi for dp-based checks; the server estimates it without one
+    private final Integer deviceDensity;
 }

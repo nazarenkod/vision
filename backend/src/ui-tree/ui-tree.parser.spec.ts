@@ -65,6 +65,12 @@ describe('parseUiTree', () => {
       expect(close.clickable).toBe(true);
     });
 
+    it('ignores a screen density sent with an iOS tree: points are already device-independent', () => {
+      const tree = parseUiTree(xml, { imageWidth: 1170, imageHeight: 2532, densityDpi: 480 });
+      expect(tree.pixelsPerDp).toBe(3);
+      expect(tree.pixelsPerDpEstimated).toBe(false);
+    });
+
     it('treats name as an identifier only when it differs from the label', () => {
       const tree = parseUiTree(xml, { imageWidth: 1170, imageHeight: 2532 });
       const pay = tree.nodes.find((n) => n.label === 'Pay');

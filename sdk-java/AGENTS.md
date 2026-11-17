@@ -5,7 +5,8 @@
 **Головне обмеження:** SDK — `ua.vision:vision-sdk`, пакет `ua.vision.sdk`: вихідний SDK 4.3.1 плюс
 необов'язкові поля `VisionOptions.uiTree` (XML page source або HTML веб-сторінки; SDK стискає його
 gzip + base64 і не надсилає понад 10 МиБ), `featureName` (назва фічі для багів) і `browserVersion`
-(спека 050; обидва не входять в ідентичність перевірки), класи `Vision`, `VisionConfig`,
+(спека 050; обидва не входять в ідентичність перевірки), `deviceDensity` (dpi Android, поза
+100–1000 не надсилається; спека 076), класи `Vision`, `VisionConfig`,
 `VisionOptions`, `VisionResult`, `web.WebUiTree` (дерево веб-сторінки спільним скриптом
 `../web-tree/collect-tree.js`; gradle копіює його в ресурси під час збірки, другої копії в
 репозиторії немає), налаштування `VISION_*` і `vision.json`. Будь-яка інша зміна API — лише за

@@ -1199,6 +1199,11 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
     setAreasOpen(false);
     setSelectedRectId(undefined);
   }, [testRun.id, testRun.diffName]);
+  // the red diff covers the issue boxes and their numbers (REQ-058-05); declared
+  // after the reset above so the next screen opened on this tab stays without it
+  useEffect(() => {
+    if (panelTab === "a11y") setIsDiffShown(false);
+  }, [panelTab, testRun.id, testRun.diffName]);
 
   useEffect(() => {
     setIgnoreAreas(readAreas(testRun.ignoreAreas));

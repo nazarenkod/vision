@@ -252,3 +252,32 @@ test("opens a screen with the problem chosen on the build's Accessibility tab", 
   await expect(problems.first()).toHaveAttribute("aria-current", "true");
   await expect(problems.nth(1)).not.toHaveAttribute("aria-current");
 });
+
+test("turns Highlight diff off on the Accessibility tab, so the red diff does not cover the frames", async ({
+  openProjectPage,
+  page,
+}) => {
+  await openProjectPage(project.id, build.id, run.id);
+  const highlight = page.getByRole("checkbox", { name: "Highlight diff" });
+  await expect(highlight).toBeChecked();
+
+  // REQ-058-05
+  await openA11yTab(page);
+  await expect(highlight).not.toBeChecked();
+
+  // the reviewer may still want it here, and gets it
+  await highlight.check();
+  await expect(highlight).toBeChecked();
+});
+
+test("opens a screen from the build's Accessibility tab without Highlight diff", async ({
+  openProjectPage,
+  page,
+}) => {
+  await openProjectPage(project.id, build.id, run.id, "a11y");
+
+  // REQ-058-05
+  await expect(
+    page.getByRole("checkbox", { name: "Highlight diff" }),
+  ).not.toBeChecked();
+});

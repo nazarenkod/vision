@@ -98,10 +98,12 @@ const swatchSx = (swatch: Swatch) => {
 };
 
 // set as a sentence: capitals shout over the rows they head (REQ-036-30)
-const groupTitleSx = {
-  fontSize: 13,
-  fontWeight: 500,
-  color: tokens.textMuted,
+// headings of the groups stand out from their rows; where a zone comes
+// from stays a quiet subheading under them
+export const groupTitleSx = {
+  fontSize: type.body,
+  fontWeight: 600,
+  color: tokens.text,
 } as const;
 
 const rowSx = {

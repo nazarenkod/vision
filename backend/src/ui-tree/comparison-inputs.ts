@@ -42,7 +42,7 @@ export interface UiTreeSettings {
   // leave the status and navigation bars out of the comparison
   excludeSystemBars: boolean;
   // compare moved elements at their new place, so a shift alone is not a difference;
-  // at any distance: a limit saved before 079 (maxMoveDp) is no longer read
+  // at any distance: a limit saved before 080 (maxMoveDp) is no longer read
   compensateMoves: boolean;
   // a changed label, state or an invisible control sends the screenshot to review
   detectSemanticChanges: boolean;

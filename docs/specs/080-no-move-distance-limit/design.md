@@ -1,4 +1,4 @@
-# 079 — Дизайн
+# 080 — Дизайн
 
 ## Підхід
 
@@ -23,6 +23,6 @@ ADR не потрібен: рішення легко повернути, при�
 
 | Вимога | Перевірка |
 |---|---|
-| REQ-079-01 | `frontend/integration_tests/test/projectSettings.spec.ts › has no distance limit under the moves switch, on or off` |
-| REQ-079-01 | `frontend/src/_helpers/projectSettings.helper.test.ts › finds only the moves switch, with no distance limit, in either language` |
-| REQ-079-02 | `backend/src/ui-tree/comparison-inputs.spec.ts › compensates a move of any distance` |
+| REQ-080-01 | `frontend/integration_tests/test/projectSettings.spec.ts › has no distance limit under the moves switch, on or off` |
+| REQ-080-01 | `frontend/src/_helpers/projectSettings.helper.test.ts › finds only the moves switch, with no distance limit, in either language` |
+| REQ-080-02 | `backend/src/ui-tree/comparison-inputs.spec.ts › compensates a move of any distance` |

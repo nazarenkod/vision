@@ -704,8 +704,9 @@ export const en = {
   "panel.ignoreArea": "Ignore area",
   "panel.areaAt": "{width} × {height} px at {x}, {y}",
   "panel.moved": "Compared at their new place",
-  "panel.movedHelp":
-    "These moved without changing, so the move alone is not counted:",
+  "panel.movedAround": "{element} · ancestor of {texts}",
+  "panel.movedQuote": '"{text}"',
+  "panel.movedWas": "was",
   "panel.down": "down {count} dp",
   "panel.up": "up {count} dp",
   "panel.right": "right {count} dp",

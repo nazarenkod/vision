@@ -29,7 +29,6 @@ const LITERAL_SCREEN = new Set([
   "bug.existingFiled",
   "bug.existingFiling",
   "bug.existingIgnored",
-  "panel.estimated",
   "brand.tagline",
   "tour.variationsTitle",
   "manual.intro",

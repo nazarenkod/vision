@@ -179,7 +179,6 @@ export interface ElementRule {
 export interface UiTreeSettings {
   excludeSystemBars: boolean;
   compensateMoves: boolean;
-  maxMoveDp: number | null;
   detectSemanticChanges: boolean;
   elementRules: ElementRule[];
   // where the screen's title is in the UI tree, first match wins; not on the
@@ -274,7 +273,6 @@ export interface A11yDecisionResult {
 export const DEFAULT_UI_TREE_SETTINGS: UiTreeSettings = {
   excludeSystemBars: true,
   compensateMoves: false,
-  maxMoveDp: null,
   detectSemanticChanges: true,
   elementRules: [],
 };

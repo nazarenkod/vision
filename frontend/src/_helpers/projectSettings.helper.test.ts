@@ -90,6 +90,15 @@ describe("project settings", () => {
     }
   });
 
+  it("finds only the moves switch, with no distance limit, in either language", () => {
+    expect(matchSettings("move").labels).toEqual([
+      "Compare moved elements at their new place",
+    ]);
+    expect(matchSettings("зсунуті", ukrainian).labels).toEqual([
+      "Порівнювати зсунуті елементи на новому місці",
+    ]);
+  });
+
   it("finds a setting by its Ukrainian or English name", () => {
     expect(matchSettings("панель навігації", ukrainian)).toEqual({
       sections: ["mobile"],

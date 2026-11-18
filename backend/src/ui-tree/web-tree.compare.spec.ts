@@ -22,7 +22,7 @@ describe('comparing web pages by element', () => {
     // the list and what is in it only moved: a move is compensated, not a change of the list
     const ofList = changes.filter((change) => ['id:list', 'a:Tea', 'a:Coffee', 'id:buy'].includes(change.key));
     expect(ofList.map((change) => change.kind)).toEqual(['moved', 'moved', 'moved', 'moved']);
-    const moves = computeMoves(before, after, null);
+    const moves = computeMoves(before, after);
     expect(moves.find((move) => move.key === 'id:list')).toMatchObject({
       to: { y: before.nodes.find((n) => n.key === 'id:list').bounds.y + 80 },
     });

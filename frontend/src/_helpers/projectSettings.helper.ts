@@ -59,7 +59,6 @@ export const SETTINGS_SECTIONS = [
       "section.mobileFormer",
       "mobile.systemBars",
       "mobile.moves",
-      "mobile.maxMove",
       "mobile.hidden",
     ],
   },
@@ -282,7 +281,6 @@ const same = (a: unknown, b: unknown) =>
 const TREE_SECTION: Record<string, SectionId> = {
   excludeSystemBars: "mobile",
   compensateMoves: "mobile",
-  maxMoveDp: "mobile",
   detectSemanticChanges: "mobile",
   screenTitle: "a11y",
   a11yNorms: "a11y",

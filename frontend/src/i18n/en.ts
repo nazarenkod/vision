@@ -286,7 +286,6 @@ export const en = {
   "mobile.hidden": "Send hidden changes to review",
   "mobile.hiddenHelp":
     "A new label, a disabled or unclickable control, an invisible button: changes the pixels do not show.",
-  "mobile.maxMove": "Only moves up to, dp (empty for any)",
 
   "a11y.norm.touchTarget": "Minimum touch target",
   "a11y.norm.contrast": "Minimum contrast",

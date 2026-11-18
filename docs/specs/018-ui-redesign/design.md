@@ -219,7 +219,7 @@ Undo на сервері дозволене до 30 s після рішення:
 | REQ-018-42 | `frontend/integration_tests/test/projectSettings.spec.ts › saves every field the old dialog had` |
 | REQ-018-43 | `frontend/src/_helpers/projectSettings.helper.test.ts › finds settings by section or field name` |
 | REQ-018-44 | `frontend/integration_tests/test/projectSettings.spec.ts › shows only the chosen engine's settings` |
-| REQ-018-45 | `frontend/integration_tests/test/projectSettings.spec.ts › shows a dependent field only when its switch is on` |
+| REQ-018-45 | Знято [079](../079-no-move-distance-limit/spec.md): `frontend/integration_tests/test/projectSettings.spec.ts › has no distance limit under the moves switch, on or off` |
 | REQ-018-46 | manual: знято [021](../021-fixed-a11y-grouping/spec.md), класів проблем більше немає |
 | REQ-018-47 | `frontend/src/_helpers/projectSettings.helper.test.ts › names the sections with unsaved changes` |
 | REQ-018-48 | `frontend/integration_tests/test/projectSettings.spec.ts › asks before leaving with unsaved changes` |

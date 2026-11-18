@@ -681,7 +681,7 @@ export const en = {
   "panel.newCount": "{count} new",
   "panel.compared": "{new}, {existing} existing, {fixed} fixed{reported}.",
   "panel.withBug": ", {count} with a bug",
-  "panel.noBaselineTree": "The baseline has no UI tree — all issues are new.",
+  "panel.noBaselineTree": "The baseline has no UI tree.",
   "panel.estimated": " Sizes are approximate (no screen density).",
   "panel.addToken":
     "Add your Jira token in your profile to file bugs from here.",

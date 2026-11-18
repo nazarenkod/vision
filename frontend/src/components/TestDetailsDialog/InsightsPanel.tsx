@@ -427,6 +427,13 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
       `${prefix}${key}`
     );
 
+  // the icon stays level with one or two lines of the note
+  const noteSx = {
+    py: 0.5,
+    alignItems: "center",
+    "& .MuiAlert-icon, & .MuiAlert-message": { py: 0 },
+  };
+
   const problemCard = (problem: A11yViolation[]) => {
     const [violation] = problem;
     const ids = problem.map((v) => v.id);
@@ -529,7 +536,7 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
                   sx={{
                     display: "flex",
                     gap: 0.75,
-                    alignItems: "baseline",
+                    alignItems: "center",
                     fontSize: type.small,
                     color: tokens.textSecondary,
                     // each finding is its own row: a frame keeps neighbours apart
@@ -830,17 +837,13 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
           </Typography>
         ) : (
           // nothing to compare with: a short note, not a sentence of reasons
-          <Alert
-            severity="info"
-            sx={{ py: 0 }}
-            data-testid="a11yNoBaselineTree"
-          >
+          <Alert severity="info" sx={noteSx} data-testid="a11yNoBaselineTree">
             {t("panel.noBaselineTree")}
             {report.pixelsPerDpEstimated && t("panel.estimated")}
           </Alert>
         )}
         {!jiraReady && canEdit && (
-          <Alert severity="info" sx={{ py: 0 }}>
+          <Alert severity="info" sx={noteSx}>
             {project?.jiraUrl ? t("panel.addToken") : t("panel.addUrl")}
           </Alert>
         )}

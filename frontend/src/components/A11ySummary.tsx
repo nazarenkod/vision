@@ -1,6 +1,6 @@
 import React from "react";
-import { Box, ButtonBase } from "@mui/material";
-import { ChevronRight, ExpandMore } from "@mui/icons-material";
+import { Box, ButtonBase, IconButton, Typography } from "@mui/material";
+import { ChevronRightRounded, ExpandMoreRounded } from "@mui/icons-material";
 import { useNavigate } from "react-router-dom";
 import { useTestRunState } from "../contexts";
 import { buildTestRunLocation } from "../_helpers/route.helpers";
@@ -12,7 +12,7 @@ import { RULE_LABEL } from "./ProjectForm/A11yRulesSettings";
 import { EmptyState } from "./EmptyState";
 import { DeviceTags } from "./DeviceTags";
 import { labelOf, useT } from "../i18n";
-import { Card, Head, NameCell, Num, Row, Tiles } from "./SummaryParts";
+import { Card, Head, NameCell, Num, Row, rowSx, Tiles } from "./SummaryParts";
 
 // wide enough for "Screenshot" over its status pill
 const COLUMNS = "minmax(0, 1fr) 200px 56px 64px 120px";
@@ -143,175 +143,172 @@ export const A11ySummary: React.FunctionComponent<{ buildId: string }> = ({
             [t("a11ySummary.screenshot")],
           ]}
         />
-        {checked.map((run) => [
-          <Row
-            key={run.id}
-            columns={COLUMNS}
-            label={run.name}
-            testId="a11yScreen"
-            onClick={() =>
-              navigate(buildTestRunLocation(buildId, run.id, { tab: "a11y" }))
-            }
-          >
-            <NameCell name={run.name} />
-            <DeviceTags parts={run} />
-            <Num value={run.a11yNewCount ?? 0} color={tokens.a11y} />
-            <Num value={run.a11yTotalCount ?? 0} />
-            <Box>
-              <StatusPill
-                tone={
-                  run.status === "unresolved"
-                    ? "changed"
-                    : run.status === "new"
-                      ? "new"
-                      : "passed"
-                }
-                label={labelOf(t, "testStatus", run.status)}
-              />
-            </Box>
-          </Row>,
-          <ProblemList
-            key={`${run.id}:problems`}
-            problems={problems.get(run.id) ?? []}
-            open={unfolded.has(run.id)}
-            onToggle={() => toggle(run.id)}
-            onOpen={(problem) =>
-              navigate(
-                buildTestRunLocation(buildId, run.id, {
-                  tab: "a11y",
-                  issue: problem.violationId,
-                }),
-              )
-            }
-          />,
-        ])}
+        {checked.map((run) => {
+          const list = problems.get(run.id) ?? [];
+          const open = unfolded.has(run.id) && list.length > 0;
+          const openRun = () =>
+            navigate(buildTestRunLocation(buildId, run.id, { tab: "a11y" }));
+          return (
+            <React.Fragment key={run.id}>
+              {/* a box, not a button: the toggle in it is a button of its own,
+                  as in the Overview's feature rows (REQ-048-02) */}
+              <Box
+                data-testid="a11yScreen"
+                data-open={open || undefined}
+                onClick={openRun}
+                sx={{ ...rowSx(COLUMNS, true), cursor: "pointer" }}
+              >
+                <Box
+                  sx={{ display: "flex", alignItems: "flex-start", gap: 0.5 }}
+                >
+                  {list.length ? (
+                    <IconButton
+                      size="small"
+                      data-testid="a11yProblemsToggle"
+                      aria-expanded={open}
+                      aria-label={t("a11ySummary.problems", {
+                        count: list.length,
+                      })}
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        toggle(run.id);
+                      }}
+                      sx={{ p: 0.25, mt: "-1px", color: tokens.textSecondary }}
+                    >
+                      {open ? (
+                        <ExpandMoreRounded sx={{ fontSize: type.title }} />
+                      ) : (
+                        <ChevronRightRounded sx={{ fontSize: type.title }} />
+                      )}
+                    </IconButton>
+                  ) : (
+                    // names stay in one column with or without a toggle
+                    <Box sx={{ width: 20, flexShrink: 0 }} aria-hidden />
+                  )}
+                  <ButtonBase
+                    aria-label={run.name}
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      openRun();
+                    }}
+                    sx={{
+                      justifyContent: "flex-start",
+                      textAlign: "left",
+                      borderRadius: radius.control,
+                      minWidth: 0,
+                    }}
+                  >
+                    <NameCell name={run.name} />
+                  </ButtonBase>
+                </Box>
+                <DeviceTags parts={run} />
+                <Num value={run.a11yNewCount ?? 0} color={tokens.a11y} />
+                <Num value={run.a11yTotalCount ?? 0} />
+                <Box>
+                  <StatusPill
+                    tone={
+                      run.status === "unresolved"
+                        ? "changed"
+                        : run.status === "new"
+                          ? "new"
+                          : "passed"
+                    }
+                    label={labelOf(t, "testStatus", run.status)}
+                  />
+                </Box>
+              </Box>
+              {open &&
+                list.map((problem) => (
+                  <ProblemRow
+                    key={`${run.id}:${problem.violationId}`}
+                    problem={problem}
+                    onOpen={() =>
+                      navigate(
+                        buildTestRunLocation(buildId, run.id, {
+                          tab: "a11y",
+                          issue: problem.violationId,
+                        }),
+                      )
+                    }
+                  />
+                ))}
+            </React.Fragment>
+          );
+        })}
       </Card>
     </Box>
   );
 };
 
 /**
- * Every open problem of a check under its row (065): state, rule and element,
- * new first; a line opens the review with that problem selected.
+ * One open problem of a check (065), a row of the checks' table under its
+ * check, like a check under its feature on the Overview: the rule, the element
+ * under it, the state where the check has its status; it opens the review with
+ * the problem chosen.
  */
-const ProblemList: React.FunctionComponent<{
-  problems: BuildA11yProblem[];
-  open: boolean;
-  onToggle: () => void;
-  onOpen: (problem: BuildA11yProblem) => void;
-}> = ({ problems, open, onToggle, onOpen }) => {
+const ProblemRow: React.FunctionComponent<{
+  problem: BuildA11yProblem;
+  onOpen: () => void;
+}> = ({ problem, onOpen }) => {
   const { t } = useT();
-  if (!problems.length) return null;
-  const Chevron = open ? ExpandMore : ChevronRight;
+  const rule = RULE_LABEL[problem.rule]
+    ? t(RULE_LABEL[problem.rule])
+    : problem.rule;
+  const state =
+    problem.state === "reported"
+      ? (problem.jiraKey ?? "")
+      : t(
+          problem.state === "new"
+            ? "overview.a11yIssueNew"
+            : "overview.a11yIssueKnown",
+        );
+  const element =
+    problem.count > 1
+      ? `${problem.element} ×${problem.count}`
+      : problem.element;
   return (
-    <Box sx={{ px: 1, pb: open ? 0 : 1 }}>
-      <ButtonBase
-        data-testid="a11yProblemsToggle"
-        aria-expanded={open}
-        onClick={onToggle}
-        sx={{
-          gap: 0.5,
-          px: 1,
-          py: 0.5,
-          borderRadius: radius.control,
-          fontSize: type.small,
-          color: tokens.textSecondary,
-          "&:hover": { bgcolor: tokens.subtle, color: tokens.text },
-        }}
-      >
-        <Chevron fontSize="small" aria-hidden />
-        {t("a11ySummary.problems", { count: problems.length })}
-      </ButtonBase>
-      {open && <Lines problems={problems} onOpen={onOpen} />}
-    </Box>
-  );
-};
-
-const Lines: React.FunctionComponent<{
-  problems: BuildA11yProblem[];
-  onOpen: (problem: BuildA11yProblem) => void;
-}> = ({ problems, onOpen }) => {
-  const { t } = useT();
-  return (
-    <Box
-      component="ul"
-      data-testid="a11yProblems"
-      sx={{
-        listStyle: "none",
-        m: 0,
-        // the next row draws the line under it
-        px: 0,
-        pt: 0,
-        pb: 1.25,
-        display: "flex",
-        flexDirection: "column",
-      }}
+    <Row
+      columns={COLUMNS}
+      label={`${rule} · ${element}: ${state}`}
+      testId="a11yProblem"
+      onClick={onOpen}
     >
-      {problems.map((problem) => {
-        const rule = RULE_LABEL[problem.rule]
-          ? t(RULE_LABEL[problem.rule])
-          : problem.rule;
-        const state =
-          problem.state === "reported"
-            ? (problem.jiraKey ?? "")
-            : t(
-                problem.state === "new"
-                  ? "overview.a11yIssueNew"
-                  : "overview.a11yIssueKnown",
-              );
-        const element =
-          problem.count > 1
-            ? `${problem.element} ×${problem.count}`
-            : problem.element;
-        return (
-          <li key={problem.violationId}>
-            <ButtonBase
-              data-testid="a11yProblem"
-              onClick={() => onOpen(problem)}
-              aria-label={`${state}: ${rule} · ${element}`}
-              sx={{
-                width: "100%",
-                justifyContent: "flex-start",
-                alignItems: "baseline",
-                gap: 1.25,
-                px: 1,
-                py: 0.625,
-                borderRadius: radius.control,
-                fontSize: type.small,
-                textAlign: "left",
-                "&:hover": { bgcolor: tokens.subtle },
-              }}
-            >
-              <Box
-                component="span"
-                sx={{
-                  width: 72,
-                  flexShrink: 0,
-                  fontSize: type.caption,
-                  fontWeight: problem.state === "known" ? 400 : 600,
-                  color:
-                    problem.state === "new"
-                      ? tokens.a11y
-                      : problem.state === "reported"
-                        ? tokens.textSecondary
-                        : tokens.textMuted,
-                }}
-              >
+      {/* under the check's name, past its toggle, and as wide as the columns
+          up to the state: a problem has no device or counts of its own */}
+      <Box sx={{ minWidth: 0, pl: 3, gridColumn: "1 / span 4" }}>
+        <Typography
+          noWrap
+          title={rule}
+          sx={{
+            fontSize: 13,
+            fontWeight: 500,
+            color: problem.state === "new" ? tokens.text : tokens.textSecondary,
+          }}
+        >
+          {rule}
+        </Typography>
+        <Typography
+          noWrap
+          title={element}
+          sx={{ fontSize: type.caption, color: tokens.textMuted }}
+        >
+          {element}
+        </Typography>
+      </Box>
+      <Box>
+        <StatusPill
+          tone={problem.state === "new" ? "changed" : "neutral"}
+          label={
+            problem.state === "reported" ? (
+              <Box component="span" sx={{ fontFamily: tokens.mono }}>
                 {state}
               </Box>
-              <Box component="span" sx={{ color: tokens.text }}>
-                {rule}
-              </Box>
-              <Box
-                component="span"
-                sx={{ color: tokens.textSecondary, minWidth: 0 }}
-              >
-                · {element}
-              </Box>
-            </ButtonBase>
-          </li>
-        );
-      })}
-    </Box>
+            ) : (
+              state
+            )
+          }
+        />
+      </Box>
+    </Row>
   );
 };

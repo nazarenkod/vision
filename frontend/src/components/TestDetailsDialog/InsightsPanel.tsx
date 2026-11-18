@@ -26,6 +26,7 @@ import {
   BugReport,
   ChevronRightRounded,
   MoreHoriz,
+  TextFieldsRounded,
   VisibilityOffOutlined,
   ViewSidebarOutlined,
 } from "@mui/icons-material";
@@ -44,6 +45,7 @@ import {
   A11yViolation,
   PickableElement,
   Rect,
+  StructuralChange,
   StructureInfo,
   TestRun,
   VisualBug,
@@ -133,6 +135,8 @@ interface Props {
   onEditRule?: (rule: ScreenRule) => void;
   // opens an element's variable text with its changed numbers marked (REQ-077-09)
   onMarkNumbers?: (change: NumberChange) => void;
+  // saves a variable-text rule for what changed in a text, when one can be made (REQ-078-01, 02)
+  quickVariable?: (change: StructuralChange) => (() => void) | null;
   // replaces a saved area with a rule for the element it covers (REQ-024-51)
   onUseElement: (areaId: string) => void;
   onOpenArea: (areaId: string) => void;
@@ -197,6 +201,7 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
   onPreviewMark,
   onEditRule,
   onMarkNumbers,
+  quickVariable,
   onUseElement,
   onOpenArea,
   pinnedMark,
@@ -1177,7 +1182,26 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
         ? t("changes.placeText", { text: fit(label.now ?? "") })
         : (label.now ?? "");
     };
-    const whatChanged = (row: ChangeRow) => {
+    const whatChanged = (row: ChangeRow) =>
+      row.more?.length ? (
+        <>
+          {whatChangedFirst(row)}
+          {row.more.map((change) => (
+            <Box key={change.kind} data-testid="changedAreaMoreChange">
+              {t(
+                `changes.${change.kind as Exclude<typeof change.kind, "moved">}` as const,
+                {
+                  before: String(change.before ?? ""),
+                  after: String(change.after ?? ""),
+                },
+              )}
+            </Box>
+          ))}
+        </>
+      ) : (
+        whatChangedFirst(row)
+      );
+    const whatChangedFirst = (row: ChangeRow) => {
       const change = row.change;
       // a text shows as it was and is, the differing words marked (REQ-069-04)
       if (change && (change.kind === "text" || change.kind === "label"))
@@ -1569,6 +1593,35 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
                     </Box>
                     {actionsCell(
                       <Box className="acts" sx={{ display: "flex" }}>
+                        {(() => {
+                          // what changed in the text, not checked from now on, in one click (REQ-078-01)
+                          const change = row.change;
+                          const save =
+                            canEdit &&
+                            change &&
+                            (change.kind === "text" ||
+                              change.kind === "label") &&
+                            quickVariable?.(change);
+                          return save ? (
+                            <Tooltip title={t("changes.quickVariable")}>
+                              <IconButton
+                                size="small"
+                                aria-label={t("select.variable")}
+                                data-testid="quickVariable"
+                                disabled={ruleBusy}
+                                onClick={(event) => {
+                                  event.stopPropagation();
+                                  save();
+                                }}
+                                sx={quietIcon}
+                              >
+                                <TextFieldsRounded
+                                  sx={{ fontSize: type.section }}
+                                />
+                              </IconButton>
+                            </Tooltip>
+                          ) : null;
+                        })()}
                         {onReportBug && row.bounds && (
                           <Tooltip title={t("reportBug.fromChange")}>
                             <IconButton

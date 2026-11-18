@@ -144,6 +144,7 @@ docs/specs/NNN-коротка-назва/
 | [075](075-baseline-history-delete/spec.md) | Видалення еталона з його історії, коротке підтвердження, підписи пари без капслоку | Implemented |
 | [076](076-sdk-device-density/spec.md) | Щільність екрана Android із Java SDK | Implemented |
 | [077](077-numbers-changed-not-new-element/spec.md) | Змінилось лише число: одна зміна тексту, а не «з'явився» і «зник» | Implemented |
+| [078](078-quick-variable-text-from-change/spec.md) | «Нестабільний текст» одним кліком з рядка зміни, один рядок на елемент | Implemented |
 
 Статусу `Verified` поки немає в жодної: інтеграцію з реальною Jira Cloud і прогони на сервері
 команда ще не підтвердила.

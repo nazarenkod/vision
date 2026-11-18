@@ -503,10 +503,18 @@ export const showVerdict = (result: Verdict) =>
 
 /** How a change was seen, for the square before its row (REQ-074-03). */
 export function changeMark(
-  row: { key: string; element: string | null },
+  row: {
+    key: string;
+    element: string | null;
+    more?: Array<{ kind: string; key: string }>;
+  },
   invisible: Set<string>,
 ): "visible" | "loose" | "invisible" {
-  if (invisible.has(row.key)) return "invisible";
+  // a row with a change the pixels show is seen, whatever else in it they missed (REQ-078-04)
+  const unseen = (row.more ?? []).every((change) =>
+    invisible.has(`${change.kind}:${change.key}`),
+  );
+  if (invisible.has(row.key) && unseen) return "invisible";
   return row.element ? "visible" : "loose";
 }
 

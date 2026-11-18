@@ -86,6 +86,8 @@ export interface StructuralChange {
   before?: string;
   after?: string;
   bounds: Rect;
+  // the element on the current tree, to act on it from the change (REQ-078-02)
+  index?: number;
 }
 
 // an element whose text changed only in its numbers (REQ-077-07)

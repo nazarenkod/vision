@@ -69,6 +69,11 @@ import {
 import { OverlayRect } from "./DrawArea";
 import {
   changedNumbers,
+  changedPieces,
+  fitsParts,
+  partsOf,
+  splitPieces,
+  variableSelector,
   leftOutFor,
   leftOutMarks,
   plainText,
@@ -79,6 +84,7 @@ import {
   ElementRule,
   ElementRuleAction,
   NumberChange,
+  StructuralChange,
   Rect,
   RuleScope,
   ScreenRule,
@@ -778,6 +784,23 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
     } finally {
       setRuleBusy(false);
     }
+  };
+  // a variable-text rule for what changed in a text, saved from the change's row (REQ-078-01…03)
+  const quickVariable = (change: StructuralChange) => {
+    const element = elementsOf("current").find(
+      (item) => item.index === change.index,
+    );
+    if (!element || change.index === undefined) return null;
+    const text = plainText(element.text ?? "");
+    // the marks stand for pieces of the text a rule checks: the one that changed
+    if (!text.trim() || text.trim() !== plainText(change.after ?? "").trim())
+      return null;
+    const marks = changedPieces(text, plainText(change.before ?? ""));
+    if (!marks?.length) return null;
+    const parts = partsOf(text, splitPieces(text), new Set(marks));
+    const selector = variableSelector(element, parts);
+    if (!selector || !fitsParts(parts, text)) return null;
+    return () => actVariable({ parts, scope: "screen", selector });
   };
   // what a variable-text rule would find here (REQ-033-29, REQ-070-04); a path is the server's to follow
   const countFor = (side: Side) => (selector: string, parts: TextPart[]) =>
@@ -2260,6 +2283,7 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
           onPreviewMark={setPreviewMark}
           onEditRule={editRule}
           onMarkNumbers={markNumbers}
+          quickVariable={quickVariable}
           onUseElement={useElementForArea}
           onOpenArea={(areaId) => {
             if (!areasOpen) toggleAreas();

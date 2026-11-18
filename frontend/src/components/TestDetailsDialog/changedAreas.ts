@@ -74,6 +74,8 @@ export interface ChangeRow {
   resourceId: string | null;
   // what the UI tree says changed in it, when it says anything
   change: StructuralChange | null;
+  // the element's other changes, a resize under its text change: one row per element (REQ-078-04)
+  more?: StructuralChange[];
   // the element's own key, which names it on other screens too (055); null for loose spots
   nodeKey: string | null;
   places: Rect[];
@@ -115,13 +117,26 @@ export function changeRows(
       places: group.regions,
       bounds: group.bounds,
     }));
-  for (const change of changes) {
-    if (change.kind === "moved") continue;
+  // what the element says first: its content, then its size (REQ-078-04)
+  const firstOf = (change: StructuralChange) =>
+    change.kind === "resized" ? 1 : 0;
+  const ordered = changes
+    .filter((change) => change.kind !== "moved")
+    .map((change, i) => ({ change, i }))
+    .sort((a, b) => firstOf(a.change) - firstOf(b.change) || a.i - b.i)
+    .map(({ change }) => change);
+  for (const change of ordered) {
     const index = byKey.get(change.key);
     const group = index === undefined ? undefined : groups[index];
     const row = group && rows.find((item) => item.element === group.element);
     if (row && !row.change) {
       row.change = change;
+      continue;
+    }
+    // the same element changed in another way too: said in its row, not a row of its own
+    const same = rows.find((item) => item.change?.key === change.key);
+    if (same) {
+      same.more = [...(same.more ?? []), change];
       continue;
     }
     rows.push({

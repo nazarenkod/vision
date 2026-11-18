@@ -1,3 +1,5 @@
+import { BadRequestException } from '@nestjs/common';
+import { PNG } from 'pngjs';
 import { sealSecret } from '../shared/secret-box';
 import { A11yIssuesService } from './a11y-issues.service';
 import { facetsOf } from './a11y-problems';
@@ -98,6 +100,13 @@ function setup(jira: (url: string, init: RequestInit) => Response) {
           data
         )
       ),
+      upsert: jest.fn(async ({ where, create, update }) => {
+        const found = byKey(where);
+        if (found) return Object.assign(found, update);
+        const row = { id: `id${rows.length}`, createdAt: new Date(), updatedAt: new Date(), ...create };
+        rows.push(row);
+        return row;
+      }),
       updateMany: jest.fn(),
       deleteMany: jest.fn(async ({ where }) => {
         const index = rows.findIndex(
@@ -366,5 +375,195 @@ describe("A11yIssuesService: the project's norms", () => {
       where: { id: 'run' },
       data: { a11yNewCount: 0, a11yTotalCount: 0 },
     });
+  });
+});
+
+// Jira answering one path its own way, the rest as the default fake
+const jiraWith =
+  (override: (url: string, init: RequestInit) => Response | undefined, found: unknown[] = []) =>
+  (url: string, init: RequestInit) =>
+    override(url, init) ?? fakeJira(found)(url, init);
+
+/*
+ * Filing a bug, as a decision table over what Vision and Jira already know. Each row is a branch
+ * a reviewer reaches in practice; the one rule across all of them: a failed filing frees the
+ * problem (no row left 'filing'), and a bug Jira created is recorded even if the extras fail.
+ */
+describe('A11yIssuesService: filing against what Jira answers', () => {
+  const file = (service: A11yIssuesService, options: Record<string, unknown> = {}) =>
+    service.fileBug('run', [report.violations[0].id], { parentKey: 'MOB-1', ...options }, 'reviewer');
+  const creates = (calls: string[]) => calls.filter((call) => call === 'POST /rest/api/2/issue').length;
+  const status = (key: string) => ({ name: key, statusCategory: { key } });
+  const markers = ['a11y-touch-target', 'a11y-component-PbButton', 'a11y-value-38x38'];
+  const fields = (values: unknown[]) => (url: string) =>
+    /\/createmeta\/MOB\/issuetypes\/[^/?]+/.test(url) ? ok({ values, isLast: true }) : undefined;
+  const types = (values: unknown[]) => (url: string) =>
+    /\/createmeta\/MOB\/issuetypes\?/.test(url) ? ok({ values, isLast: true }) : undefined;
+
+  it('refuses to file a problem marked as a false positive, without asking Jira', async () => {
+    const { service, rows, calls } = setup(fakeJira());
+    rows.push({ id: 'x', projectId: 'p', key: KEY, code: 'a11y-x', status: 'ignored', screenName: 'Інший' });
+
+    await expect(file(service)).rejects.toThrow(/false positive on screen “Інший”/);
+    expect(calls).toEqual([]);
+  });
+
+  it('files a new bug when Jira has only done ones, and names them', async () => {
+    // a fixed bug that came back is a new bug, not a reopened one
+    const done = { key: 'MOB-3', fields: { summary: 's', status: status('done'), labels: markers } };
+    const { service, rows, calls } = setup(fakeJira([done]));
+
+    const result = await file(service);
+
+    expect(result).toMatchObject({ jiraKey: 'MOB-77', alreadyFiled: false });
+    expect(result.warnings).toContainEqual(expect.stringMatching(/filed before as MOB-3 \(done\)/));
+    expect(creates(calls)).toBe(1);
+    expect(rows).toEqual([expect.objectContaining({ status: 'reported', jiraKey: 'MOB-77' })]);
+  });
+
+  it('still files when the Jira search fails, and says the duplicate check was skipped', async () => {
+    const { service, calls } = setup(
+      jiraWith((url) => (url.includes('/search') ? ok({ errorMessages: ['JQL down'] }, 500) : undefined))
+    );
+
+    const result = await file(service);
+
+    expect(result.jiraKey).toBe('MOB-77');
+    expect(result.warnings).toContainEqual(expect.stringMatching(/^Could not check Jira for a11y-/));
+    expect(creates(calls)).toBe(1);
+  });
+
+  it('names the required fields left empty, files nothing and lets the reviewer try again', async () => {
+    const team = { fieldId: 'customfield_7', name: 'Team', required: true, schema: { type: 'string' } };
+    const { service, rows, calls } = setup(jiraWith(fields([team])));
+
+    await expect(file(service)).rejects.toThrow(/still empty for "Bug": Team/);
+    expect(creates(calls)).toBe(0);
+    // no claim left behind: otherwise the next try reads "being filed right now"
+    expect(rows).toEqual([]);
+
+    const retried = await file(service, { fieldValues: { customfield_7: 'Mobile' } });
+    expect(retried).toMatchObject({ jiraKey: 'MOB-77', alreadyFiled: false });
+  });
+
+  it('refuses when the Jira project offers no issue type to create, and frees the problem', async () => {
+    const { service, rows } = setup(jiraWith(types([])));
+
+    await expect(file(service)).rejects.toThrow(/offers no issue type to create/);
+    expect(rows).toEqual([]);
+  });
+
+  it('files under the issue type the reviewer chose, not the default', async () => {
+    const { service, calls } = setup(
+      jiraWith(
+        types([
+          { id: '1', name: 'Bug', subtask: false },
+          { id: '5', name: 'Defect', subtask: false },
+        ])
+      )
+    );
+
+    await file(service, { issueTypeId: '5' });
+
+    expect(calls).toContainEqual(expect.stringContaining('/createmeta/MOB/issuetypes/5'));
+    expect(calls).not.toContainEqual(expect.stringContaining('/createmeta/MOB/issuetypes/1'));
+  });
+
+  it('links a bug to its task, but not a sub-task, which Jira already ties to its parent', async () => {
+    const bug = setup(fakeJira());
+    await file(bug.service);
+    expect(bug.calls).toContain('POST /rest/api/2/issueLink');
+
+    const subtask = setup(jiraWith(types([{ id: '9', name: 'Sub-task', subtask: true }])));
+    await file(subtask.service);
+    expect(subtask.calls).not.toContain('POST /rest/api/2/issueLink');
+  });
+
+  it('keeps a created bug when labels, the link and the screenshot fail, and warns about each', async () => {
+    // Jira created the bug: failing here would leave a bug Vision does not know about, filed twice next time
+    const { service, rows } = setup(
+      jiraWith((url, init) =>
+        (init.method === 'PUT' && url.endsWith('/issue/MOB-77')) ||
+        url.endsWith('/issueLink') ||
+        url.endsWith('/MOB-77/attachments')
+          ? ok({ errorMessages: ['nope'] }, 403)
+          : undefined
+      )
+    );
+    const png = new PNG({ width: 20, height: 20 });
+    (service as unknown as { staticService: { getImage: jest.Mock } }).staticService.getImage = jest
+      .fn()
+      .mockResolvedValue(png);
+
+    const result = await file(service);
+
+    expect(result).toMatchObject({ jiraKey: 'MOB-77', alreadyFiled: false });
+    expect(result.warnings).toEqual([
+      expect.stringMatching(/^Labels not set/),
+      expect.stringMatching(/^Not linked to MOB-1/),
+      expect.stringMatching(/^Screenshot not attached/),
+    ]);
+    expect(rows).toEqual([expect.objectContaining({ status: 'reported', jiraKey: 'MOB-77' })]);
+  });
+
+  it('files without a screenshot when the image cannot be read', async () => {
+    const { service, calls } = setup(fakeJira());
+    (service as unknown as { staticService: { getImage: jest.Mock } }).staticService.getImage = jest
+      .fn()
+      .mockRejectedValue(new Error('disk'));
+
+    await expect(file(service)).resolves.toMatchObject({ jiraKey: 'MOB-77', warnings: [] });
+    expect(calls.some((call) => call.endsWith('/attachments'))).toBe(false);
+  });
+
+  it('frees the problem when the parent task does not exist', async () => {
+    const { service, rows, calls } = setup(
+      jiraWith((url) =>
+        url.endsWith('/issue/MOB-404') ? ok({ errorMessages: ['Issue does not exist'] }, 404) : undefined
+      )
+    );
+
+    await expect(file(service, { parentKey: ' mob-404 ' })).rejects.toThrow(/does not exist/);
+    expect(rows).toEqual([]);
+    expect(creates(calls)).toBe(0);
+  });
+});
+
+describe('A11yIssuesService: linking an existing bug', () => {
+  const link = (service: A11yIssuesService, key: string) =>
+    service.link('run', [report.violations[0].id], key, 'reviewer');
+
+  it("records the bug under Jira's own key and address, whatever case it was typed in", async () => {
+    const { service, rows } = setup(
+      jiraWith((url) => (url.endsWith('/issue/MOB-5') ? ok({ ...task, key: 'MOB-5' }) : undefined))
+    );
+
+    const result = await link(service, '  mob-5 ');
+
+    expect(result).toMatchObject({ jiraKey: 'MOB-5', jiraUrl: 'https://jira/browse/MOB-5' });
+    expect(rows).toEqual([expect.objectContaining({ status: 'reported', jiraKey: 'MOB-5' })]);
+  });
+
+  it('refuses a key Jira does not know, and records nothing', async () => {
+    const { service, rows } = setup(
+      jiraWith((url) =>
+        url.endsWith('/issue/MOB-6') ? ok({ errorMessages: ['Issue does not exist'] }, 404) : undefined
+      )
+    );
+
+    await expect(link(service, 'MOB-6')).rejects.toThrow(BadRequestException);
+    expect(rows).toEqual([]);
+  });
+
+  it('keeps the key as typed when the project has no Jira', async () => {
+    const { service, rows, calls } = setup(fakeJira());
+    (service as unknown as { prismaService: { project: { findUnique: jest.Mock } } }).prismaService.project.findUnique =
+      jest.fn().mockResolvedValue({ jiraUrl: null, uiTreeSettings: null });
+
+    const result = await link(service, 'mob-8');
+
+    expect(result).toMatchObject({ jiraKey: 'MOB-8', jiraUrl: null, warnings: [] });
+    expect(rows).toEqual([expect.objectContaining({ status: 'reported', jiraKey: 'MOB-8' })]);
+    expect(calls).toEqual([]);
   });
 });

@@ -242,6 +242,8 @@ function updateBuild(dispatch: Dispatch, builds: Build[]) {
 }
 
 export {
+  // exported for its tests: live events land here, and the list must stay right
+  buildReducer,
   BuildProvider,
   useBuildState,
   useBuildDispatch,

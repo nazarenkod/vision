@@ -549,6 +549,7 @@ export class UiTreeService {
         imageWidth: size.width,
         imageHeight: size.height,
         tree,
+        changes,
       }).map((hint) => {
         // a rule for the element follows it when the layout moves; the area does not
         const element = hint.ignoreArea && elementForArea(hint.ignoreArea, elements);

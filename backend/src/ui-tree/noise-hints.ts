@@ -1,14 +1,27 @@
 import { Rect, UiTree } from './ui-tree.types';
-import { elementsUnderRegions } from './structure-diff';
+import { elementsUnderRegions, StructuralChange } from './structure-diff';
+import { onlyNumbersDiffer } from './number-change';
 import { IOS_STATUS_BAR_PT } from './comparison-inputs';
 
-export type NoiseHintKind = 'status-bar' | 'dynamic-text' | 'anti-aliasing';
+export type NoiseHintKind = 'status-bar' | 'dynamic-text' | 'anti-aliasing' | 'numbers';
+
+/** An element whose text changed only in its numbers (REQ-077-07). */
+export interface NumberChange {
+  key: string;
+  element: string;
+  // the element on the current tree, to pick it on the screenshot (REQ-077-09)
+  index: number | null;
+  before: string;
+  after: string;
+}
 
 export interface NoiseHint {
   kind: NoiseHintKind;
   message: string;
   // ignore area that would silence this noise, in screenshot pixels
   ignoreArea?: Rect;
+  // kind "numbers": the elements whose numbers changed
+  numbers?: NumberChange[];
 }
 
 // Status bar height: 24 dp on Android; on iOS the same band the comparison leaves out,
@@ -33,15 +46,61 @@ const inside = (inner: Rect, outer: Rect) =>
  * text that holds a time or an amount, a few anti-aliased pixels. Each hint
  * carries the ignore area that would stop it from coming back.
  */
+const touches = (a: Rect, b: Rect) =>
+  a.x < b.x + b.width && b.x < a.x + a.width && a.y < b.y + b.height && b.y < a.y + a.height;
+
+/**
+ * Every change that counts is a text whose numbers alone changed (REQ-077-06): a counter,
+ * a rate, an amount. Moves and resizes of those elements come with a longer number; a
+ * changed area must lie on one of them. Null when anything else changed.
+ */
+export function numbersOnlyHint(changes: StructuralChange[], regions: Rect[], tree: UiTree | null): NoiseHint | null {
+  const numeric = changes.filter(
+    (change) =>
+      (change.kind === 'text' || change.kind === 'label') && onlyNumbersDiffer(change.before ?? '', change.after ?? '')
+  );
+  if (!numeric.length) return null;
+  const keys = new Set(numeric.map((change) => change.key));
+  const rest = changes.filter((change) => !numeric.includes(change));
+  if (!rest.every((change) => (change.kind === 'moved' || change.kind === 'resized') && keys.has(change.key))) {
+    return null;
+  }
+  if (!regions.every((region) => numeric.some((change) => touches(region, change.bounds)))) return null;
+  const indexOf = new Map((tree?.nodes ?? []).map((node) => [node.key, node.index]));
+  const seen = new Set<string>();
+  const numbers = numeric.flatMap((change) => {
+    if (seen.has(change.key)) return [];
+    seen.add(change.key);
+    return [
+      {
+        key: change.key,
+        element: change.element,
+        index: indexOf.get(change.key) ?? null,
+        before: change.before ?? '',
+        after: change.after ?? '',
+      },
+    ];
+  });
+  return {
+    kind: 'numbers',
+    message: `Only numbers changed in ${numbers.length} element(s): counters, rates, amounts. Usually that is data, not a change to the app.`,
+    numbers,
+  };
+}
+
 export function findNoiseHints(input: {
   regions: Rect[];
   diffPercent: number | null;
   imageWidth: number;
   imageHeight: number;
   tree?: UiTree | null;
+  // the tree's changes left after the rules: lets numbers alone be told (REQ-077-06)
+  changes?: StructuralChange[];
 }): NoiseHint[] {
   const { regions, imageWidth, imageHeight, tree } = input;
-  if (!regions.length) return [];
+  // a number that changed in a label only shows no pixels, and is noise all the same
+  const numbers = input.changes ? numbersOnlyHint(input.changes, regions, tree ?? null) : null;
+  if (!regions.length) return numbers ? [numbers] : [];
   const hints: NoiseHint[] = [];
 
   const ios = tree?.format === 'appium-ios';
@@ -61,7 +120,10 @@ export function findNoiseHints(input: {
     });
   }
 
-  if (tree) {
+  if (numbers) {
+    // the same elements as a dynamic-text hint would name, said once
+    hints.push(numbers);
+  } else if (tree) {
     const elements = elementsUnderRegions(tree, regions);
     const nodes = elements.map((e) => (e.key ? tree.nodes.find((n) => n.key === e.key) : null));
     if (nodes.every((node) => node && DYNAMIC_TEXT.test((node.text || node.label).trim()))) {

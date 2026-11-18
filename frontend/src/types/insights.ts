@@ -88,9 +88,21 @@ export interface StructuralChange {
   bounds: Rect;
 }
 
+// an element whose text changed only in its numbers (REQ-077-07)
+export interface NumberChange {
+  key: string;
+  element: string;
+  // the element on the current tree, to pick it on the screenshot (REQ-077-09)
+  index: number | null;
+  before: string;
+  after: string;
+}
+
 export interface NoiseHint {
-  kind: "status-bar" | "dynamic-text" | "anti-aliasing";
+  kind: "status-bar" | "dynamic-text" | "anti-aliasing" | "numbers";
   message: string;
+  // kind "numbers": the elements whose numbers changed
+  numbers?: NumberChange[];
   ignoreArea?: Rect;
   // the element the noisy area stands for, when there is one (REQ-024-40)
   element?: { selector: string; element: string };

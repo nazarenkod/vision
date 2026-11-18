@@ -1,3 +1,4 @@
+import { onlyNumbersDiffer } from './number-change';
 import { describeNode, ownSpeakableText } from './ui-tree.parser';
 import { Rect, UiNode, UiTree } from './ui-tree.types';
 
@@ -33,18 +34,82 @@ const hasAppId = (node: UiNode) => !!node.resourceId && !node.resourceId.startsW
 const isMeaningful = (node: UiNode) => node.visible && (hasAppId(node) || !!ownSpeakableText(node) || node.clickable);
 
 /**
+ * Where an element stands in its tree: its parent, by key, and which of the parent's
+ * children of its class it is. Null when the parent has no twin on the other tree,
+ * since then the place means nothing there (REQ-077-05).
+ */
+function placesOf(tree: UiTree, parentKnown: (key: string) => boolean): Map<number, string> {
+  const places = new Map<number, string>();
+  const ordinals = new Map<string, number>();
+  for (const node of tree.nodes) {
+    const parent = node.parent === null ? null : tree.nodes[node.parent];
+    if (parent && !parentKnown(parent.key)) continue;
+    const group = `${parent?.key ?? ''}\u0000${node.className}`;
+    const ordinal = ordinals.get(group) ?? 0;
+    ordinals.set(group, ordinal + 1);
+    places.set(node.index, `${group}\u0000${ordinal}`);
+  }
+  return places;
+}
+
+const sameOrNumbers = (a: string, b: string) => a === b || onlyNumbersDiffer(a, b);
+
+/**
+ * Elements keyed by their text whose number changed get a new key, so by key they
+ * appeared and disappeared. Paired when they stand in the same place, are of the same
+ * class and their texts differ only in numbers (REQ-077-01); keys stay as they are
+ * (REQ-077-04). Current key → its baseline twin.
+ */
+export function pairsByPlace(baseline: UiTree, current: UiTree): Map<string, UiNode> {
+  const before = new Map(baseline.nodes.map((node) => [node.key, node]));
+  const after = new Map(current.nodes.map((node) => [node.key, node]));
+  // the text is in the key only of an element with no resource id
+  const keyedByText = (node: UiNode) => !node.resourceId && !!(node.text || node.label);
+  const lonely = (tree: UiTree, other: Map<string, UiNode>) =>
+    tree.nodes.filter((node) => keyedByText(node) && !other.has(node.key));
+  const currentLonely = lonely(current, before);
+  const baselineLonely = lonely(baseline, after);
+  if (!currentLonely.length || !baselineLonely.length) return new Map();
+
+  const currentPlaces = placesOf(current, (key) => before.has(key));
+  const baselinePlaces = placesOf(baseline, (key) => after.has(key));
+  const byPlace = new Map<string, UiNode>();
+  for (const node of baselineLonely) {
+    const place = baselinePlaces.get(node.index);
+    if (place) byPlace.set(place, node);
+  }
+  const pairs = new Map<string, UiNode>();
+  for (const node of currentLonely) {
+    const place = currentPlaces.get(node.index);
+    const old = place ? byPlace.get(place) : undefined;
+    if (
+      old &&
+      old.className === node.className &&
+      sameOrNumbers(old.text, node.text) &&
+      sameOrNumbers(old.label, node.label)
+    ) {
+      pairs.set(node.key, old);
+    }
+  }
+  return pairs;
+}
+
+/**
  * Element-level differences between the baseline's UI tree and the current
- * one. Elements are matched by key (resource id, else class + text, else path).
+ * one. Elements are matched by key (resource id, else class + text, else path),
+ * then those whose only change is a number by place (REQ-077-01).
  * Order: content changes, then added/removed, then size, then position.
  */
 export function diffTrees(baseline: UiTree, current: UiTree, limit = MAX_CHANGES): StructuralChange[] {
   const before = new Map(baseline.nodes.map((node) => [node.key, node]));
   const after = new Map(current.nodes.map((node) => [node.key, node]));
+  const paired = pairsByPlace(baseline, current);
+  const pairedBaseline = new Set([...paired.values()].map((node) => node.key));
   const changes: StructuralChange[] = [];
   const toDp = (px: number, tree: UiTree) => px / tree.pixelsPerDp;
 
   for (const node of current.nodes) {
-    const old = before.get(node.key);
+    const old = before.get(node.key) ?? paired.get(node.key);
     if (!old) {
       if (isMeaningful(node)) {
         changes.push({
@@ -80,7 +145,7 @@ export function diffTrees(baseline: UiTree, current: UiTree, limit = MAX_CHANGES
     }
   }
   for (const node of baseline.nodes) {
-    if (!after.has(node.key) && isMeaningful(node)) {
+    if (!after.has(node.key) && !pairedBaseline.has(node.key) && isMeaningful(node)) {
       changes.push({
         kind: 'removed',
         key: node.key,

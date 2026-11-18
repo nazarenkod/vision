@@ -85,7 +85,11 @@ import {
 // a long row opens five places at a time, the rest one click away (REQ-036-22)
 const PLACES_SHOWN = 5;
 const LABEL_MAX = 40;
-import { ScreenRule, SelectorMatches } from "../../types/insights";
+import {
+  NumberChange,
+  ScreenRule,
+  SelectorMatches,
+} from "../../types/insights";
 import { elementLabel } from "../../_helpers/elementPicking.helper";
 
 type JiraDialog = { mode: "link"; violationIds: string[] } | null;
@@ -127,6 +131,8 @@ interface Props {
   onPreviewMark?: (id: string | undefined) => void;
   // opens a rule's element with its rule, from the rule's menu (REQ-074-15)
   onEditRule?: (rule: ScreenRule) => void;
+  // opens an element's variable text with its changed numbers marked (REQ-077-09)
+  onMarkNumbers?: (change: NumberChange) => void;
   // replaces a saved area with a rule for the element it covers (REQ-024-51)
   onUseElement: (areaId: string) => void;
   onOpenArea: (areaId: string) => void;
@@ -190,6 +196,7 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
   onPreviewRegion,
   onPreviewMark,
   onEditRule,
+  onMarkNumbers,
   onUseElement,
   onOpenArea,
   pinnedMark,
@@ -1274,36 +1281,68 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
             ))}
           </Box>
         )}
-        {structure.hints.map((hint) => (
-          <Alert
-            key={hint.kind}
-            severity="info"
-            sx={{ py: 0 }}
-            action={
-              canEdit && hint.element ? (
-                // a rule follows the element when the layout moves; an area does not (REQ-024-40)
-                <Button
-                  size="small"
-                  data-testid="hintIgnoreElement"
-                  onClick={() =>
-                    hint.element && ignoreElement(hint.element.selector)
-                  }
+        {structure.hints.map((hint) =>
+          hint.kind === "numbers" && hint.numbers?.length ? (
+            // the numbers, not the element, are what changes: checked, not ignored (REQ-077-07, 08)
+            <Alert key={hint.kind} severity="info" data-testid="hintNumbers">
+              {t("changes.numbersOnly", { count: hint.numbers.length })}
+              {hint.numbers.map((change) => (
+                <Box
+                  key={change.key}
+                  data-testid="hintNumbersElement"
+                  sx={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 1,
+                    mt: 0.5,
+                  }}
                 >
-                  {t("panel.ignore")}
-                </Button>
-              ) : hint.ignoreArea && canEdit ? (
-                <Button
-                  size="small"
-                  onClick={() => addIgnoreArea(hint.ignoreArea!)}
-                >
-                  {t("panel.ignoreArea")}
-                </Button>
-              ) : undefined
-            }
-          >
-            {hint.message}
-          </Alert>
-        ))}
+                  <Box sx={{ flex: 1, minWidth: 0 }}>
+                    <BeforeAfter before={change.before} after={change.after} />
+                  </Box>
+                  {canEdit && onMarkNumbers && change.index !== null && (
+                    <Button
+                      size="small"
+                      data-testid="hintMarkNumbers"
+                      onClick={() => onMarkNumbers(change)}
+                    >
+                      {t("select.variable")}
+                    </Button>
+                  )}
+                </Box>
+              ))}
+            </Alert>
+          ) : (
+            <Alert
+              key={hint.kind}
+              severity="info"
+              sx={{ py: 0 }}
+              action={
+                canEdit && hint.element ? (
+                  // a rule follows the element when the layout moves; an area does not (REQ-024-40)
+                  <Button
+                    size="small"
+                    data-testid="hintIgnoreElement"
+                    onClick={() =>
+                      hint.element && ignoreElement(hint.element.selector)
+                    }
+                  >
+                    {t("panel.ignore")}
+                  </Button>
+                ) : hint.ignoreArea && canEdit ? (
+                  <Button
+                    size="small"
+                    onClick={() => addIgnoreArea(hint.ignoreArea!)}
+                  >
+                    {t("panel.ignoreArea")}
+                  </Button>
+                ) : undefined
+              }
+            >
+              {hint.message}
+            </Alert>
+          ),
+        )}
         {rows.length > 0 && folded && (
           <Box
             data-testid="mostOfScreen"

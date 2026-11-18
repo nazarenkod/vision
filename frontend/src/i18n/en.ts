@@ -1442,6 +1442,8 @@ export const en = {
   "changes.state": "State: {before} → {after}",
   "changes.added": "Appeared",
   "changes.removed": "Disappeared",
+  "changes.quickVariable":
+    "Variable text: stop comparing what changed in this text",
   "changes.numbersOnly": {
     one: "Only numbers changed in {count} element: counters, rates, amounts. Usually that is data, not a change to the app.",
     other:

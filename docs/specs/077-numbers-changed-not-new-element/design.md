@@ -67,7 +67,7 @@
 | REQ-077-02 | `backend/src/ui-tree/number-change.spec.ts › leaves appeared and gone when the words changed, not the numbers` |
 | REQ-077-03 | `backend/src/ui-tree/number-change.spec.ts › tells numbers changing inside a sentence, with the word after them in another form` |
 | REQ-077-04 | `backend/src/ui-tree/number-change.spec.ts › keeps the element's own key on a paired change` |
-| REQ-077-05 | `backend/src/ui-tree/number-change.spec.ts › pairs nothing inside an element that has no twin on the baseline` |
+| REQ-077-05 | `backend/src/ui-tree/number-change.spec.ts › pairs nothing when two look-alikes on the baseline could be either` |
 | REQ-077-06 | `backend/src/ui-tree/number-change.spec.ts › says nothing about numbers when something else changed too` |
 | REQ-077-07 | `frontend/integration_tests/test/numbersHint.spec.ts › says only numbers changed and offers variable text, not Ignore` |
 | REQ-077-08 | `frontend/integration_tests/test/numbersHint.spec.ts › shows the hint with no variable text to someone who cannot change rules` |

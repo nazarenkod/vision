@@ -106,12 +106,12 @@ describe('diffTrees for numbers that changed', () => {
     expect(diffTrees(words, other).map((change) => change.kind)).toEqual(['added', 'removed']);
   });
 
-  it('pairs nothing inside an element that has no twin on the baseline', () => {
-    const moved = (tree: string) => tree.replace('com.bank.app:id/header', 'com.bank.app:id/header_new');
+  it('pairs the one look-alike when the element around has no twin on the baseline', () => {
+    const renamed = (tree: string) => tree.replace('com.bank.app:id/header', 'com.bank.app:id/header_new');
     const changes = diffTrees(
       baseline,
       parse(
-        moved(
+        renamed(
           screen(
             'Сповіщення.Ви маєте 49 непрочитаних повідомлень',
             'Комунікації.Ви маєте 99 непрочитаних повідомлень',
@@ -122,9 +122,35 @@ describe('diffTrees for numbers that changed', () => {
     );
 
     expect(changes.filter((change) => change.key.startsWith('View:Сповіщення')).map((change) => change.kind)).toEqual([
-      'added',
-      'removed',
+      'label',
     ]);
+  });
+
+  it('pairs nothing when two look-alikes on the baseline could be either', () => {
+    const rates = (id: string, ...texts: string[]) => `<?xml version='1.0' encoding='UTF-8' standalone='yes' ?>
+<hierarchy index="0" class="hierarchy" rotation="0" width="1080" height="2400">
+  <android.view.ViewGroup index="0" class="android.view.ViewGroup" text="" resource-id="com.bank.app:id/${id}" clickable="false" enabled="true" bounds="[0,2000][1080,2400]" displayed="true">
+    ${texts
+      .map(
+        (text, i) =>
+          `<android.widget.TextView index="${i}" class="android.widget.TextView" text="${text}" resource-id="" clickable="false" enabled="true" bounds="[40,${2020 + i * 80}][1040,${2080 + i * 80}]" displayed="true" />`
+      )
+      .join('')}
+  </android.view.ViewGroup>
+</hierarchy>`;
+    const changes = diffTrees(
+      parse(rates('rates', 'Продаж 49 Гривень 77 копійок', 'Продаж 49 Гривень 78 копійок')),
+      parse(rates('rates_new', 'Продаж 49 Гривень 73 копійки'))
+    );
+
+    const rows = changes.filter((change) => change.key.startsWith('TextView:'));
+    expect(rows.map((change) => change.kind).sort()).toEqual(['added', 'removed', 'removed']);
+  });
+
+  it('names the element of the current tree on each change of it', () => {
+    const [bell] = diffTrees(baseline, current);
+
+    expect(bell.index).toBe(current.nodes.find((node) => node.key === bell.key)?.index);
   });
 });
 

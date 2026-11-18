@@ -51,6 +51,39 @@ export function splitPieces(text: string): Piece[] {
 const NUMBER_PIECE = /^[+\-−]?\d/;
 
 /**
+ * The pieces of a text that the same text elsewhere does not have where they stand, to mark
+ * them as variable in one click from a change (REQ-078-02): the pieces both share are lined
+ * up by their longest common run, the rest of this text is what changed. Null when the texts
+ * share no piece: such a rule would only check that some text is there (REQ-078-03).
+ */
+export function changedPieces(text: string, other: string): number[] | null {
+  const a = splitPieces(text).map((piece) => piece.text);
+  const b = splitPieces(other).map((piece) => piece.text);
+  // longest common subsequence of pieces, from the end, so the walk below goes forward
+  const run = Array.from({ length: a.length + 1 }, () =>
+    new Array<number>(b.length + 1).fill(0),
+  );
+  for (let i = a.length - 1; i >= 0; i--)
+    for (let j = b.length - 1; j >= 0; j--)
+      run[i][j] =
+        a[i] === b[j]
+          ? run[i + 1][j + 1] + 1
+          : Math.max(run[i + 1][j], run[i][j + 1]);
+  if (!run[0][0]) return null;
+  const changed: number[] = [];
+  let i = 0;
+  let j = 0;
+  while (i < a.length) {
+    if (j < b.length && a[i] === b[j]) {
+      i++;
+      j++;
+    } else if (j < b.length && run[i][j + 1] >= run[i + 1][j]) j++;
+    else changed.push(i++);
+  }
+  return changed;
+}
+
+/**
  * The pieces of a text that are numbers differing from the same text elsewhere, to mark
  * them from the hint that only numbers changed (REQ-077-09). Pieces line up one for one;
  * when they do not ("99+" is two pieces), every number the other text lacks.

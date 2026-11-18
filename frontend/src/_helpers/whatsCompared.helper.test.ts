@@ -609,6 +609,18 @@ describe("what the Changes tab shows (spec 074)", () => {
     );
   });
 
+  it("calls a row seen when any change in it shows on the screenshot", () => {
+    const invisible = new Set(["label:usd"]);
+    const row = { key: "label:usd", element: 'View "Курс долара"' };
+    expect(
+      changeMark(
+        { ...row, more: [{ kind: "resized", key: "usd" }] },
+        invisible,
+      ),
+    ).toBe("visible");
+    expect(changeMark({ ...row, more: [] }, invisible)).toBe("invisible");
+  });
+
   it("groups ignore zones by where they come from", () => {
     const row = (key: string, source: CompareRow["source"]): CompareRow => ({
       key,

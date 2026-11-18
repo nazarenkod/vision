@@ -1,5 +1,18 @@
 import type { AllowedBrowser, ProjectPlatform } from "./project";
 
+// an element compared at its new place (REQ-002-11, spec 079)
+export interface MovedElement {
+  key: string;
+  element: string;
+  dxDp: number;
+  dyDp: number;
+  // where it was, in the baseline's pixels, and where it is, in the checkpoint's
+  from?: Rect;
+  to?: Rect;
+  // the first texts inside a nameless one
+  around?: string[];
+}
+
 export interface Rect {
   x: number;
   y: number;
@@ -313,7 +326,7 @@ export interface StructureInfo {
   systemBarsFrom?: "test" | "project" | null;
   // of the checkpoint picture
   size?: { width: number; height: number };
-  moves: Array<{ key: string; element: string; dxDp: number; dyDp: number }>;
+  moves: MovedElement[];
   // elements a rule can be made for by clicking them on the screenshot
   elements?: PickableElement[];
   baselineElements?: PickableElement[];

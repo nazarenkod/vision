@@ -101,6 +101,8 @@ interface ElementPopoverProps {
   onShownText?: () => void;
   // open with the text in pieces: the marking moved here from the element around (REQ-066-09)
   startMarking?: boolean;
+  // pieces marked from the start: the numbers that changed (REQ-077-09)
+  startMarked?: number[];
 }
 
 /**
@@ -133,6 +135,7 @@ export const ElementPopover: React.FunctionComponent<ElementPopoverProps> = ({
   shownText,
   onShownText,
   startMarking,
+  startMarked,
 }) => {
   const { t } = useT();
   const [scope, setScope] = React.useState<RuleScope>("screen");
@@ -147,7 +150,7 @@ export const ElementPopover: React.FunctionComponent<ElementPopoverProps> = ({
     replaces?: ScreenRule;
   } | null>(() =>
     startMarking && plainText(element.text ?? "")
-      ? { marked: new Set<number>() }
+      ? { marked: new Set<number>(startMarked ?? []) }
       : null,
   );
   // another element: start over; the one it opened on keeps the marking moved to it (REQ-066-09)

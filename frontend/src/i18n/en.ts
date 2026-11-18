@@ -1445,6 +1445,11 @@ export const en = {
   "changes.state": "State: {before} → {after}",
   "changes.added": "Appeared",
   "changes.removed": "Disappeared",
+  "changes.numbersOnly": {
+    one: "Only numbers changed in {count} element: counters, rates, amounts. Usually that is data, not a change to the app.",
+    other:
+      "Only numbers changed in {count} elements: counters, rates, amounts. Usually that is data, not a change to the app.",
+  },
   "changes.resized": "Resized {before} → {after} dp",
   "verdict.same": "No changes",
   "verdict.changes": {

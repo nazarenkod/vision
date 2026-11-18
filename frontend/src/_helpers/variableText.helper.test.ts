@@ -1,4 +1,5 @@
 import {
+  changedNumbers,
   expectedOf,
   expectedShape,
   shapeOf,
@@ -367,5 +368,25 @@ describe("shapeOf", () => {
     expect(
       expectedShape(marking("Зі своєї картки *1051 +1.05 UAH", "1051")),
     ).toBe("a number");
+  });
+});
+
+describe("changedNumbers (spec 077)", () => {
+  const marked = (text: string, other: string) =>
+    changedNumbers(text, other).map((i) => texts(text)[i]);
+
+  it("marks the numbers that differ from the baseline, not the ones that stay", () => {
+    expect(
+      marked(
+        "Продаж 49 Гривень 73 копійки, . Купівля 50 Гривень 76 копійок",
+        "Продаж 49 Гривень 77 копійок, . Купівля 50 Гривень 76 копійок",
+      ),
+    ).toEqual(["73"]);
+  });
+
+  it("marks a number the baseline lacks when the pieces do not line up", () => {
+    expect(
+      marked("Ви маєте 49 повідомлень", "Ви маєте 99+ повідомлень"),
+    ).toEqual(["49"]);
   });
 });

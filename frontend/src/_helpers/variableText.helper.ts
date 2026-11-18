@@ -48,6 +48,27 @@ export function splitPieces(text: string): Piece[] {
   }));
 }
 
+const NUMBER_PIECE = /^[+\-−]?\d/;
+
+/**
+ * The pieces of a text that are numbers differing from the same text elsewhere, to mark
+ * them from the hint that only numbers changed (REQ-077-09). Pieces line up one for one;
+ * when they do not ("99+" is two pieces), every number the other text lacks.
+ */
+export function changedNumbers(text: string, other: string): number[] {
+  const mine = splitPieces(text);
+  const theirs = splitPieces(other);
+  const isNumber = (piece: Piece) => NUMBER_PIECE.test(piece.text);
+  if (mine.length === theirs.length)
+    return mine.flatMap((piece, i) =>
+      isNumber(piece) && piece.text !== theirs[i].text ? [i] : [],
+    );
+  const present = new Set(theirs.filter(isNumber).map((piece) => piece.text));
+  return mine.flatMap((piece, i) =>
+    isNumber(piece) && !present.has(piece.text) ? [i] : [],
+  );
+}
+
 const escape = (text: string) => text.replace(/[.*+?^${}()|[\]\\/]/g, "\\$&");
 
 // what the value is made of, left to right; a grouped number is one token

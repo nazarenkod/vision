@@ -68,14 +68,17 @@ import {
 } from "../../types";
 import { OverlayRect } from "./DrawArea";
 import {
+  changedNumbers,
   leftOutFor,
   leftOutMarks,
+  plainText,
   textOnScreen,
   variableCount,
 } from "../../_helpers/variableText.helper";
 import {
   ElementRule,
   ElementRuleAction,
+  NumberChange,
   Rect,
   RuleScope,
   ScreenRule,
@@ -162,6 +165,8 @@ interface Selection {
   refused?: boolean;
   // the element the marking of a variable text moved to from the one around it (REQ-066-09)
   marking?: PickableElement;
+  // the pieces marked as it opens: the numbers that changed (REQ-077-09)
+  premarked?: number[];
 }
 
 interface TestDetailsModalProps {
@@ -598,6 +603,32 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
       },
       adding: false,
       refused: false,
+    });
+  };
+  // from the hint that only numbers changed: the element's variable text, its numbers marked (REQ-077-09)
+  const markNumbers = (change: NumberChange) => {
+    const element = elementsOf("current").find(
+      (item) => item.index === change.index,
+    );
+    if (!element) return;
+    const text = plainText(element.text ?? "");
+    // the marks stand for pieces of the text the popover splits: the text that changed
+    const premarked =
+      text.trim() === plainText(change.after).trim()
+        ? changedNumbers(text, plainText(change.before))
+        : [];
+    setSelection({
+      side: "current",
+      picked: { element, trail: [] },
+      selected: [element],
+      anchor: anchorOf("current", element) ?? {
+        x: window.innerWidth / 2,
+        y: window.innerHeight / 2,
+      },
+      adding: false,
+      refused: false,
+      marking: element,
+      premarked,
     });
   };
   const unselect = (element: PickableElement) =>
@@ -2228,6 +2259,7 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
           pickedElement={pickedElement}
           onPreviewMark={setPreviewMark}
           onEditRule={editRule}
+          onMarkNumbers={markNumbers}
           onUseElement={useElementForArea}
           onOpenArea={(areaId) => {
             if (!areasOpen) toggleAreas();
@@ -2358,6 +2390,11 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
             })
           }
           startMarking={selection.marking === selection.picked.element}
+          startMarked={
+            selection.marking === selection.picked.element
+              ? selection.premarked
+              : undefined
+          }
           other={otherText(selection.side, selection.picked.element)}
           countFor={countFor(selection.side)}
           onDrawArea={toggleAreas}

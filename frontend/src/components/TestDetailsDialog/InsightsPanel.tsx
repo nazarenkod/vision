@@ -799,36 +799,46 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
             }
           />
         )}
-        <Typography variant="body2" color="textSecondary">
-          {t("panel.checkedFrom", {
-            platform:
-              report.format === "web"
-                ? t("panel.platformWeb")
-                : report.format === "appium-ios"
-                  ? "iOS"
-                  : "Android",
-          })}{" "}
-          {report.baselineChecked
-            ? tx(
-                "panel.compared",
-                {
-                  new: (
-                    <b style={{ color: tokens.text }}>
-                      {t("panel.newCount", { count: report.summary.new })}
-                    </b>
-                  ),
-                },
-                {
-                  existing: report.summary.existing,
-                  fixed: report.summary.fixed,
-                  reported: report.summary.reported
-                    ? t("panel.withBug", { count: report.summary.reported })
-                    : "",
-                },
-              )
-            : t("panel.noBaselineTree")}
-          {report.pixelsPerDpEstimated && t("panel.estimated")}
-        </Typography>
+        {report.baselineChecked ? (
+          <Typography variant="body2" color="textSecondary">
+            {t("panel.checkedFrom", {
+              platform:
+                report.format === "web"
+                  ? t("panel.platformWeb")
+                  : report.format === "appium-ios"
+                    ? "iOS"
+                    : "Android",
+            })}{" "}
+            {tx(
+              "panel.compared",
+              {
+                new: (
+                  <b style={{ color: tokens.text }}>
+                    {t("panel.newCount", { count: report.summary.new })}
+                  </b>
+                ),
+              },
+              {
+                existing: report.summary.existing,
+                fixed: report.summary.fixed,
+                reported: report.summary.reported
+                  ? t("panel.withBug", { count: report.summary.reported })
+                  : "",
+              },
+            )}
+            {report.pixelsPerDpEstimated && t("panel.estimated")}
+          </Typography>
+        ) : (
+          // nothing to compare with: a short note, not a sentence of reasons
+          <Alert
+            severity="info"
+            sx={{ py: 0 }}
+            data-testid="a11yNoBaselineTree"
+          >
+            {t("panel.noBaselineTree")}
+            {report.pixelsPerDpEstimated && t("panel.estimated")}
+          </Alert>
+        )}
         {!jiraReady && canEdit && (
           <Alert severity="info" sx={{ py: 0 }}>
             {project?.jiraUrl ? t("panel.addToken") : t("panel.addUrl")}

@@ -719,7 +719,7 @@ export const uk: Messages = {
   "panel.compared":
     "{new}, наявних: {existing}, виправлених: {fixed}{reported}.",
   "panel.withBug": ", з багом: {count}",
-  "panel.noBaselineTree": "усі знахідки нові, бо еталон без дерева.",
+  "panel.noBaselineTree": "В еталона немає UI-дерева — усі знахідки нові.",
   "panel.estimated": " Розміри приблизні (немає щільності екрана).",
   "panel.addToken":
     "Щоб заводити баги звідси, додайте свій токен Jira у профілі.",
@@ -1278,10 +1278,10 @@ export const uk: Messages = {
 
   // panel
   "panel.sameIssue": {
-    one: "Одна проблема {component} на {count} елементі — заведіть один баг.",
-    few: "Одна проблема {component} на {count} елементах — заведіть один баг.",
-    many: "Одна проблема {component} на {count} елементах — заведіть один баг.",
-    other: "Одна проблема {component} на {count} елемента — заведіть один баг.",
+    one: "{component} · {count} елемент",
+    few: "{component} · {count} елементи",
+    many: "{component} · {count} елементів",
+    other: "{component} · {count} елемента",
   },
 
   // device

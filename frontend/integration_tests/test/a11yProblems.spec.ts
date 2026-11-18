@@ -104,7 +104,7 @@ test("shows one problem for the same issue on elements of one component", async 
 
   await expect(problems).toHaveCount(2);
   await expect(problems.first()).toContainText(
-    "One PbButton problem on 2 elements",
+    "PbButton · 2 elements",
   );
   await expect(problems.first().getByTestId("a11yProblemCode")).toHaveText(
     "a11y-3f9c2a1b",

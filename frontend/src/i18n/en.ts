@@ -681,9 +681,8 @@ export const en = {
   "panel.newCount": "{count} new",
   "panel.compared": "{new}, {existing} existing, {fixed} fixed{reported}.",
   "panel.withBug": ", {count} with a bug",
-  "panel.noBaselineTree":
-    "The baseline has no UI tree, so every issue counts as new.",
-  "panel.estimated": " Sizes are estimated: the client sent no screen density.",
+  "panel.noBaselineTree": "all issues are new, the baseline has no tree.",
+  "panel.estimated": " Sizes are approximate (no screen density).",
   "panel.addToken":
     "Add your Jira token in your profile to file bugs from here.",
   "panel.addUrl":
@@ -1206,9 +1205,8 @@ export const en = {
 
   // panel
   "panel.sameIssue": {
-    one: "The same issue on {count} elements of {component}: one problem, one bug.",
-    other:
-      "The same issue on {count} elements of {component}: one problem, one bug.",
+    one: "One {component} problem on {count} element — file one bug.",
+    other: "One {component} problem on {count} elements — file one bug.",
   },
 
   // device

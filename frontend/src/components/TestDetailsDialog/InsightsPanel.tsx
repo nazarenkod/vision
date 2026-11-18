@@ -532,11 +532,16 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
                     alignItems: "baseline",
                     fontSize: type.small,
                     color: tokens.textSecondary,
+                    // each finding is its own row: a frame keeps neighbours apart
+                    border: `1px solid ${
+                      item.id === highlightedId ? tokens.a11y : tokens.border
+                    }`,
                     borderRadius: radius.control,
-                    px: 0.5,
-                    bgcolor:
-                      item.id === highlightedId ? tokens.subtle : "transparent",
-                    "&:hover": { bgcolor: tokens.subtle },
+                    bgcolor: tokens.surface,
+                    px: 1,
+                    py: 0.75,
+                    transition: "border-color 220ms",
+                    "&:hover": { borderColor: tokens.borderStrong },
                   }}
                 >
                   <b style={{ color: tokens.text }}>{numberOf.get(item.id)}</b>

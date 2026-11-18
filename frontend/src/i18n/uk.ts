@@ -720,7 +720,6 @@ export const uk: Messages = {
     "{new}, наявних: {existing}, виправлених: {fixed}{reported}.",
   "panel.withBug": ", з багом: {count}",
   "panel.noBaselineTree": "В еталоні немає UI-дерева.",
-  "panel.estimated": " Розміри приблизні (немає щільності екрана).",
   "panel.addToken":
     "Щоб заводити баги звідси, додайте свій токен Jira у профілі.",
   "panel.addUrl":

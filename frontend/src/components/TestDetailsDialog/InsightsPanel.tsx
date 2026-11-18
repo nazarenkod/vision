@@ -551,7 +551,6 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
                     "&:hover": { borderColor: tokens.borderStrong },
                   }}
                 >
-                  <b style={{ color: tokens.text }}>{numberOf.get(item.id)}</b>
                   <span>{a11yMessage(t, item)}</span>
                 </Box>
               ))}
@@ -833,13 +832,11 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
                   : "",
               },
             )}
-            {report.pixelsPerDpEstimated && t("panel.estimated")}
           </Typography>
         ) : (
           // nothing to compare with: a short note, not a sentence of reasons
           <Alert severity="info" sx={noteSx} data-testid="a11yNoBaselineTree">
             {t("panel.noBaselineTree")}
-            {report.pixelsPerDpEstimated && t("panel.estimated")}
           </Alert>
         )}
         {!jiraReady && canEdit && (

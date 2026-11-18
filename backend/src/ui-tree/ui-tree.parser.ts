@@ -275,12 +275,21 @@ export const decodeCharRefs = (text: string): string =>
     return point <= 0x10ffff ? String.fromCodePoint(point) : ref;
   });
 
+const NAME_MAX = 80;
+
 /** Short human name for a node in messages: `Button "Pay" (id/btn_pay)`. */
 export function describeNode(node: UiNode): string {
   // decoded only for people to read: keys and checks keep the text as the tree has it
-  const name = Array.from(decodeCharRefs(ownSpeakableText(node)))
-    .slice(0, 40)
-    .join('');
+  const chars = Array.from(decodeCharRefs(ownSpeakableText(node)));
+  // a cut name says so: a silent cut reads as the app's own text ending mid-word,
+  // and the list narrows it to its width anyway
+  const name =
+    chars.length > NAME_MAX
+      ? `${chars
+          .slice(0, NAME_MAX - 1)
+          .join('')
+          .trimEnd()}…`
+      : chars.join('');
   const id = node.resourceId ? ` (${node.resourceId.replace(/^.*:id\//, 'id/')})` : '';
   return `${shortClass(node.className)}${name ? ` "${name}"` : ''}${id}`;
 }

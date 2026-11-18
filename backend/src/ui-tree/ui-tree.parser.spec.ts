@@ -95,6 +95,26 @@ describe('parseUiTree', () => {
     expect(describeNode(pay)).toBe('Button "Pay" (id/btn_pay)');
   });
 
+  it('marks a long name as cut instead of ending it mid-word', () => {
+    const text = 'Курс євро. Продаж 49 Гривень 73 копійки. Купівля 48 Гривень 90 копійок. Оновлено сьогодні';
+    const tree = parseUiTree(
+      `<hierarchy><node class="android.widget.TextView" text="${text}" bounds="[0,0][500,100]" /></hierarchy>`,
+      { imageWidth: 1080, imageHeight: 2400 }
+    );
+    const name = describeNode(tree.nodes.find((n) => n.text === text));
+    expect(name).toMatch(/^TextView "Курс євро\. Продаж 49 Гривень 73 копійки\. .+…"$/);
+    expect(Array.from(name.slice('TextView "'.length, -1))).toHaveLength(80);
+  });
+
+  it('keeps a name that fits whole', () => {
+    const text = 'Курс євро. Продаж 49 Гривень 73 копійки';
+    const tree = parseUiTree(
+      `<hierarchy><node class="android.widget.TextView" text="${text}" bounds="[0,0][500,100]" /></hierarchy>`,
+      { imageWidth: 1080, imageHeight: 2400 }
+    );
+    expect(describeNode(tree.nodes.find((n) => n.text === text))).toBe(`TextView "${text}"`);
+  });
+
   it('shows emoji the dump wrote as character references', () => {
     const tree = parseUiTree(
       `<hierarchy><node class="android.widget.Button" text="Закинь на телефон&amp;#128241; &#x1F686;" resource-id="top_up" clickable="true" bounds="[0,0][500,100]" /></hierarchy>`,

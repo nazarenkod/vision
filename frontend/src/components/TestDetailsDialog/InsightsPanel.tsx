@@ -93,6 +93,7 @@ import {
   SelectorMatches,
 } from "../../types/insights";
 import { elementLabel } from "../../_helpers/elementPicking.helper";
+import { moveMarkId, moveName, movedBy } from "../../_helpers/moves.helper";
 
 type JiraDialog = { mode: "link"; violationIds: string[] } | null;
 
@@ -1748,25 +1749,60 @@ export const InsightsPanel: React.FunctionComponent<Props> = ({
         {structure.moves.length > 0 && (
           <Box sx={{ display: "flex", flexDirection: "column", gap: 0.5 }}>
             <Typography variant="subtitle2">{t("panel.moved")}</Typography>
-            <Typography variant="body2" color="textSecondary">
-              {t("panel.movedHelp")}
-            </Typography>
-            {structure.moves.slice(0, 8).map((move) => (
-              <Typography key={move.key} variant="body2">
-                {move.element}:{" "}
-                {move.dyDp
-                  ? t(move.dyDp > 0 ? "panel.down" : "panel.up", {
-                      count: Math.abs(move.dyDp),
-                    })
-                  : ""}
-                {move.dxDp && move.dyDp ? ", " : ""}
-                {move.dxDp
-                  ? t(move.dxDp > 0 ? "panel.right" : "panel.left", {
-                      count: Math.abs(move.dxDp),
-                    })
-                  : ""}
-              </Typography>
-            ))}
+            {structure.moves.slice(0, 8).map((move) => {
+              const id = moveMarkId(move.key);
+              const pinned = pinnedMark === id;
+              // lit on both screenshots while pointed at, pinned by a click (spec 079)
+              return (
+                <Box
+                  key={move.key}
+                  data-testid="movedElement"
+                  role="button"
+                  tabIndex={0}
+                  aria-pressed={pinned}
+                  onClick={() => onPinMark(id)}
+                  onKeyDown={(event: React.KeyboardEvent) => {
+                    if (event.key === "Enter" || event.key === " ") {
+                      event.preventDefault();
+                      onPinMark(id);
+                    }
+                  }}
+                  onMouseEnter={() => onPreviewMark?.(id)}
+                  onMouseLeave={() => onPreviewMark?.(undefined)}
+                  onFocus={() => onPreviewMark?.(id)}
+                  onBlur={() => onPreviewMark?.(undefined)}
+                  sx={{
+                    display: "flex",
+                    flexDirection: "column",
+                    px: 1,
+                    py: 0.5,
+                    borderRadius: radius.control,
+                    cursor: "pointer",
+                    bgcolor: pinned ? tokens.subtle : "transparent",
+                    "&:hover": { bgcolor: tokens.subtle },
+                    "&:focus-visible": {
+                      outline: `2px solid ${tokens.brand}`,
+                      outlineOffset: 1,
+                    },
+                  }}
+                >
+                  <Typography
+                    variant="body2"
+                    data-testid="movedElementName"
+                    sx={{ fontWeight: 600, overflowWrap: "anywhere" }}
+                  >
+                    {moveName(move, t)}
+                  </Typography>
+                  <Typography
+                    variant="body2"
+                    color="textSecondary"
+                    data-testid="movedElementBy"
+                  >
+                    {movedBy(move, t)}
+                  </Typography>
+                </Box>
+              );
+            })}
           </Box>
         )}
         <WhatsCompared

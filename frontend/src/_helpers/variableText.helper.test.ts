@@ -1,5 +1,6 @@
 import {
   changedNumbers,
+  changedPieces,
   expectedOf,
   expectedShape,
   shapeOf,
@@ -388,5 +389,25 @@ describe("changedNumbers (spec 077)", () => {
     expect(
       marked("Ви маєте 49 повідомлень", "Ви маєте 99+ повідомлень"),
     ).toEqual(["49"]);
+  });
+});
+
+describe("changedPieces (spec 078)", () => {
+  const marked = (text: string, other: string) =>
+    changedPieces(text, other)?.map((i) => texts(text)[i]) ?? null;
+
+  it("marks what is not where the baseline has it: numbers or words", () => {
+    expect(
+      marked(
+        "Курс долара США. Продаж 45 Гривень 30 копійок",
+        "Курс долара США. Продаж 45 Гривень 35 копійок",
+      ),
+    ).toEqual(["30"]);
+    expect(marked("Оновлено о 18:05", "Оновлено о 14:07")).toEqual(["18:05"]);
+    expect(marked("Привіт, Ірина", "Привіт, Олена")).toEqual(["Ірина"]);
+  });
+
+  it("makes no rule from texts that share nothing", () => {
+    expect(marked("Закинь на телефон", "Купуй квитки")).toBeNull();
   });
 });

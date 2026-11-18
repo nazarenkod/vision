@@ -93,6 +93,28 @@ describe("changeRows", () => {
       bounds: rect(0, y),
     }) as const;
 
+  it("shows a text change and a resize of one element in one row, the text first", () => {
+    const usd = 'View "Курс долара США"';
+    const resized = {
+      kind: "resized",
+      key: "View:usd",
+      element: usd,
+      resourceId: "",
+      before: "130×52",
+      after: "118×52",
+      bounds: rect(0, 500),
+    } as const;
+    const rows = changeRows(
+      [area(0, 500, usd, "View:usd")],
+      [resized, { ...change("View:usd", usd, 500), kind: "label" }],
+    );
+
+    expect(rows).toHaveLength(1);
+    expect(rows[0].change?.kind).toBe("label");
+    expect(rows[0].more?.map((item) => item.kind)).toEqual(["resized"]);
+    expect(countRows(rows)).toBe(1);
+  });
+
   it("puts the spots no element wraps in one last row that still counts each", () => {
     const rows = changeRows(
       [area(0, 0, null), area(0, 50, card), area(90, 0, null)],

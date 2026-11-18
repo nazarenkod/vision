@@ -13,6 +13,8 @@ export interface StructuralChange {
   after?: string;
   // current bounds; the baseline's for a removed element
   bounds: Rect;
+  // the element on the current tree, to act on it from the change (REQ-078-02); absent for a removed one
+  index?: number;
 }
 
 export interface RegionElement {
@@ -78,18 +80,24 @@ export function pairsByPlace(baseline: UiTree, current: UiTree): Map<string, UiN
     const place = baselinePlaces.get(node.index);
     if (place) byPlace.set(place, node);
   }
+  const twins = (a: UiNode, b: UiNode) =>
+    a.className === b.className && sameOrNumbers(a.text, b.text) && sameOrNumbers(a.label, b.label);
   const pairs = new Map<string, UiNode>();
   for (const node of currentLonely) {
     const place = currentPlaces.get(node.index);
     const old = place ? byPlace.get(place) : undefined;
-    if (
-      old &&
-      old.className === node.className &&
-      sameOrNumbers(old.text, node.text) &&
-      sameOrNumbers(old.label, node.label)
-    ) {
-      pairs.set(node.key, old);
-    }
+    if (old && twins(old, node)) pairs.set(node.key, old);
+  }
+  // no place to go by (a parent without a twin, siblings that differ): the one look-alike
+  // on each side is the same element; two of them could be either (REQ-078-05)
+  const taken = new Set([...pairs.values()].map((node) => node.key));
+  const leftCurrent = currentLonely.filter((node) => !pairs.has(node.key));
+  const leftBaseline = baselineLonely.filter((node) => !taken.has(node.key));
+  for (const node of leftCurrent) {
+    const candidates = leftBaseline.filter((old) => twins(old, node));
+    if (candidates.length !== 1) continue;
+    const [old] = candidates;
+    if (leftCurrent.filter((other) => twins(old, other)).length === 1) pairs.set(node.key, old);
   }
   return pairs;
 }
@@ -118,11 +126,18 @@ export function diffTrees(baseline: UiTree, current: UiTree, limit = MAX_CHANGES
           element: describeNode(node),
           resourceId: node.resourceId,
           bounds: node.bounds,
+          index: node.index,
         });
       }
       continue;
     }
-    const base = { key: node.key, element: describeNode(node), resourceId: node.resourceId, bounds: node.bounds };
+    const base = {
+      key: node.key,
+      element: describeNode(node),
+      resourceId: node.resourceId,
+      bounds: node.bounds,
+      index: node.index,
+    };
     if (old.text !== node.text) changes.push({ ...base, kind: 'text', before: old.text, after: node.text });
     if (old.label !== node.label) changes.push({ ...base, kind: 'label', before: old.label, after: node.label });
     const stateBefore = stateOf(old);

@@ -41,10 +41,9 @@ export interface ElementRule {
 export interface UiTreeSettings {
   // leave the status and navigation bars out of the comparison
   excludeSystemBars: boolean;
-  // compare moved elements at their new place, so a shift alone is not a difference
+  // compare moved elements at their new place, so a shift alone is not a difference;
+  // at any distance: a limit saved before 080 (maxMoveDp) is no longer read
   compensateMoves: boolean;
-  // only moves up to this distance are compensated; null for any distance
-  maxMoveDp: number | null;
   // a changed label, state or an invisible control sends the screenshot to review
   detectSemanticChanges: boolean;
   // rules for every screen of the project
@@ -75,7 +74,6 @@ export function checkKey(check: { name: string; customTags?: string | null }): s
 export const DEFAULT_UI_TREE_SETTINGS: UiTreeSettings = {
   excludeSystemBars: true,
   compensateMoves: false,
-  maxMoveDp: null,
   detectSemanticChanges: true,
   elementRules: [],
   checkRules: {},
@@ -604,7 +602,7 @@ const MAX_MOVE_SCREEN_SHARE = 0.9;
  * left out when its parent moved by the same offset, since the parent's copy
  * already carries it.
  */
-export function computeMoves(baseline: UiTree, current: UiTree, maxMoveDp: number | null): ElementMove[] {
+export function computeMoves(baseline: UiTree, current: UiTree): ElementMove[] {
   const before = new Map(baseline.nodes.map((node) => [node.key, node]));
   const screen = current.width * current.height;
   const offsets = new Map<string, { dx: number; dy: number }>();
@@ -622,8 +620,7 @@ export function computeMoves(baseline: UiTree, current: UiTree, maxMoveDp: numbe
       return false;
     }
     if (!node.bounds.width || !node.bounds.height) return false;
-    if ((node.bounds.width * node.bounds.height) / screen > MAX_MOVE_SCREEN_SHARE) return false;
-    return maxMoveDp === null || Math.hypot(offset.dx, offset.dy) / current.pixelsPerDp <= maxMoveDp;
+    return (node.bounds.width * node.bounds.height) / screen <= MAX_MOVE_SCREEN_SHARE;
   };
   const moving = new Set(current.nodes.filter(qualifies).map((node) => node.index));
 

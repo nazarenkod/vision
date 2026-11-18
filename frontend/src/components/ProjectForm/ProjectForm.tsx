@@ -693,23 +693,6 @@ export const MobileSettings: React.FunctionComponent<{
           toggle
         );
       })}
-      {settings.compensateMoves && (
-        <TextField
-          id="maxMoveDp"
-          size="small"
-          type="number"
-          label={t("mobile.maxMove")}
-          value={settings.maxMoveDp ?? ""}
-          onChange={(event) =>
-            save({
-              ...settings,
-              maxMoveDp:
-                event.target.value === "" ? null : Number(event.target.value),
-            })
-          }
-          sx={{ maxWidth: 280 }}
-        />
-      )}
     </Box>
   );
 };

@@ -262,16 +262,15 @@ test("shows only the chosen engine's settings", async ({
   await expect(page.getByLabel("Allow diff dimensions")).toHaveCount(0);
 });
 
-test("shows a dependent field only when its switch is on", async ({
+test("has no distance limit under the moves switch, on or off", async ({
   page,
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   authUser,
 }) => {
   await open(page);
-  const maxMove = page.getByLabel("Only moves up to, dp (empty for any)");
-  await expect(maxMove).toHaveCount(0);
   await page.getByLabel("Compare moved elements at their new place").check();
-  await expect(maxMove).toBeVisible();
+  await expect(page.locator("#maxMoveDp")).toHaveCount(0);
+  await expect(page.getByRole("spinbutton", { name: /move/i })).toHaveCount(0);
 });
 
 test("names the UI tree section Screen structure", async ({

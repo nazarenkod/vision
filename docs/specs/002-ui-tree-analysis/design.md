@@ -34,7 +34,7 @@
 | REQ-002-03 | `backend/src/ui-tree/ui-tree.parser.spec.ts › gives every node a unique key, preferring resource ids` |
 | REQ-002-04 | `backend/src/ui-tree/ui-tree.parser.spec.ts › rejects input that is neither an Appium page source nor a web page` |
 | REQ-002-10 | `backend/src/ui-tree/comparison-inputs.spec.ts › uses the status and navigation bar views when the tree has them`; `backend/src/ui-tree/comparison-inputs.spec.ts › falls back to a 24 dp band at the top` |
-| REQ-002-11 | `backend/src/ui-tree/comparison-inputs.spec.ts › only flags what is new once the move is compensated`; `backend/src/ui-tree/comparison-inputs.spec.ts › respects the maximum distance`; `backend/src/ui-tree/comparison-inputs.spec.ts › ignores elements that changed size` |
+| REQ-002-11 | `backend/src/ui-tree/comparison-inputs.spec.ts › only flags what is new once the move is compensated`; `backend/src/ui-tree/comparison-inputs.spec.ts › compensates a move of any distance`; `backend/src/ui-tree/comparison-inputs.spec.ts › ignores elements that changed size` |
 | REQ-002-14 | `backend/src/ui-tree/comparison-inputs.spec.ts › still flags a moved card that also changed` |
 | REQ-002-12 | `backend/src/ui-tree/comparison-inputs.spec.ts › matches text exactly or by regular expression`; `backend/src/ui-tree/comparison-inputs.spec.ts › clears small changes inside a tolerated area` |
 | REQ-002-15 | `backend/src/ui-tree/comparison-inputs.spec.ts › covers an element where it was and where it is now` |

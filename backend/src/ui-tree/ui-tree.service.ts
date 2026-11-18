@@ -725,8 +725,7 @@ export class UiTreeService {
         height: Math.max(0, Math.min(tree.height, Math.round(rect.y + rect.height)) - y),
       };
     };
-    const compensated =
-      settings.compensateMoves && baselineTree ? computeMoves(baselineTree, tree, settings.maxMoveDp) : [];
+    const compensated = settings.compensateMoves && baselineTree ? computeMoves(baselineTree, tree) : [];
     return {
       ignoreAreas: [
         ...[...systemBars, ...resolved.ignore].map(clamp).filter((r) => r.width && r.height),

@@ -210,6 +210,9 @@ interface Props {
   onFullScreen?: () => void;
   // the tree takes the height it is given instead of a fixed one: the inspector page
   fill?: boolean;
+  // only to look at, as in the baseline history (081): no side switch, change
+  // marks, copying or node card of its own
+  viewOnly?: boolean;
 }
 
 /** The check's UI tree beside the screenshot, as in Appium Inspector (062, 063). */
@@ -230,6 +233,7 @@ export const ElementsTab: React.FunctionComponent<Props> = ({
   onActions,
   onFullScreen,
   fill,
+  viewOnly,
 }) => {
   const { t } = useT();
   const load = trees[side];
@@ -441,13 +445,13 @@ export const ElementsTab: React.FunctionComponent<Props> = ({
       searchRef.current?.focus();
       return;
     }
-    if (key === "n" || key === "N") {
+    if (!viewOnly && (key === "n" || key === "N")) {
       event.preventDefault();
       event.stopPropagation();
       stepChange(event.shiftKey ? -1 : 1);
       return;
     }
-    if ((key === "c" || key === "C") && node) {
+    if (!viewOnly && (key === "c" || key === "C") && node) {
       event.preventDefault();
       event.stopPropagation();
       copySelector(node);
@@ -594,20 +598,22 @@ export const ElementsTab: React.FunctionComponent<Props> = ({
           }}
           sx={{ flex: 1, minWidth: 0 }}
         />
-        <SlidingToggleGroup
-          size="small"
-          exclusive
-          value={side}
-          onChange={(_, value) => value && onSideChange(value)}
-          aria-label={t("tree.sides")}
-        >
-          <ToggleButton value="current" data-testid="treeCurrent">
-            {t("tree.current")}
-          </ToggleButton>
-          <ToggleButton value="baseline" data-testid="treeBaseline">
-            {t("tree.baseline")}
-          </ToggleButton>
-        </SlidingToggleGroup>
+        {!viewOnly && (
+          <SlidingToggleGroup
+            size="small"
+            exclusive
+            value={side}
+            onChange={(_, value) => value && onSideChange(value)}
+            aria-label={t("tree.sides")}
+          >
+            <ToggleButton value="current" data-testid="treeCurrent">
+              {t("tree.current")}
+            </ToggleButton>
+            <ToggleButton value="baseline" data-testid="treeBaseline">
+              {t("tree.baseline")}
+            </ToggleButton>
+          </SlidingToggleGroup>
+        )}
       </Box>
       <Box
         sx={{
@@ -617,8 +623,9 @@ export const ElementsTab: React.FunctionComponent<Props> = ({
           flexWrap: "wrap",
         }}
       >
-        {chip("changed", t("tree.chipChanged"), tokens.status.changed.bar)}
-        {chip("a11y", t("tree.chipA11y"), tokens.a11y)}
+        {!viewOnly &&
+          chip("changed", t("tree.chipChanged"), tokens.status.changed.bar)}
+        {!viewOnly && chip("a11y", t("tree.chipA11y"), tokens.a11y)}
         {chip("clickable", t("tree.chipClickable"), tokens.brand)}
         <Box sx={{ flex: 1 }} />
         <Tooltip title={t("tree.wrappersHelp")} disableInteractive>
@@ -750,53 +757,57 @@ export const ElementsTab: React.FunctionComponent<Props> = ({
           </Typography>
         )}
       </Box>
-      <Box
-        sx={{
-          width: "1px",
-          height: 18,
-          bgcolor: tokens.borderStrong,
-          mx: 0.25,
-        }}
-      />
-      <Tooltip title={t("tree.prevChange")} disableInteractive>
-        <span>
-          <IconButton
-            size="small"
-            aria-label={t("tree.prevChange")}
-            onClick={() => stepChange(-1)}
-            disabled={!marked.length}
-            sx={{ ...smallButton, color: tokens.status.changed.fg }}
+      {!viewOnly && (
+        <>
+          <Box
+            sx={{
+              width: "1px",
+              height: 18,
+              bgcolor: tokens.borderStrong,
+              mx: 0.25,
+            }}
+          />
+          <Tooltip title={t("tree.prevChange")} disableInteractive>
+            <span>
+              <IconButton
+                size="small"
+                aria-label={t("tree.prevChange")}
+                onClick={() => stepChange(-1)}
+                disabled={!marked.length}
+                sx={{ ...smallButton, color: tokens.status.changed.fg }}
+              >
+                <KeyboardArrowUp fontSize="small" />
+              </IconButton>
+            </span>
+          </Tooltip>
+          <Typography
+            variant="caption"
+            color="textSecondary"
+            data-testid="treeChangeAt"
+            sx={{
+              fontVariantNumeric: "tabular-nums",
+              minWidth: 32,
+              textAlign: "center",
+            }}
           >
-            <KeyboardArrowUp fontSize="small" />
-          </IconButton>
-        </span>
-      </Tooltip>
-      <Typography
-        variant="caption"
-        color="textSecondary"
-        data-testid="treeChangeAt"
-        sx={{
-          fontVariantNumeric: "tabular-nums",
-          minWidth: 32,
-          textAlign: "center",
-        }}
-      >
-        {`${chosen !== undefined && marked.includes(chosen) ? marked.indexOf(chosen) + 1 : "–"}/${marked.length}`}
-      </Typography>
-      <Tooltip title={t("tree.nextChange")} disableInteractive>
-        <span>
-          <IconButton
-            size="small"
-            aria-label={t("tree.nextChange")}
-            data-testid="treeNextChange"
-            onClick={() => stepChange(1)}
-            disabled={!marked.length}
-            sx={{ ...smallButton, color: tokens.status.changed.fg }}
-          >
-            <KeyboardArrowDown fontSize="small" />
-          </IconButton>
-        </span>
-      </Tooltip>
+            {`${chosen !== undefined && marked.includes(chosen) ? marked.indexOf(chosen) + 1 : "–"}/${marked.length}`}
+          </Typography>
+          <Tooltip title={t("tree.nextChange")} disableInteractive>
+            <span>
+              <IconButton
+                size="small"
+                aria-label={t("tree.nextChange")}
+                data-testid="treeNextChange"
+                onClick={() => stepChange(1)}
+                disabled={!marked.length}
+                sx={{ ...smallButton, color: tokens.status.changed.fg }}
+              >
+                <KeyboardArrowDown fontSize="small" />
+              </IconButton>
+            </span>
+          </Tooltip>
+        </>
+      )}
       <Tooltip title={t("tree.expandAll")} disableInteractive>
         <IconButton
           size="small"
@@ -1000,7 +1011,7 @@ export const ElementsTab: React.FunctionComponent<Props> = ({
             </>
           )}
         </Box>
-        {at.selector && (
+        {at.selector && !viewOnly && (
           <Tooltip
             title={
               copiedRow === item.index
@@ -1105,7 +1116,11 @@ export const ElementsTab: React.FunctionComponent<Props> = ({
           data-testid="treeNone"
           sx={{ py: 2 }}
         >
-          {side === "baseline" ? t("tree.noBaseline") : t("tree.none")}
+          {viewOnly
+            ? t("baselines.treeNone")
+            : side === "baseline"
+              ? t("tree.noBaseline")
+              : t("tree.none")}
         </Typography>
       );
     return (
@@ -1235,7 +1250,7 @@ export const ElementsTab: React.FunctionComponent<Props> = ({
             <span />
           </Box>
         )}
-        {node ? (
+        {viewOnly ? null : node ? (
           <NodeCard
             key={`${side}:${node.index}`}
             testRunId={testRunId}
@@ -1283,7 +1298,7 @@ export const ElementsTab: React.FunctionComponent<Props> = ({
           </Button>
         </Box>
       )}
-      {(hasTree || side === "baseline") && header}
+      {(viewOnly ? !!tree : hasTree || side === "baseline") && header}
       {body()}
     </Box>
   );

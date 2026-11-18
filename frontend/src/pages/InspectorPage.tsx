@@ -3,12 +3,7 @@ import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { Alert, Box, Button, LinearProgress, Typography } from "@mui/material";
 import { ArrowBack } from "@mui/icons-material";
 import { useHotkeys } from "react-hotkeys-hook";
-import {
-  buildsService,
-  insightsService,
-  staticService,
-  testRunService,
-} from "../services";
+import { buildsService, insightsService, testRunService } from "../services";
 import { hasUiTree, TestRun } from "../types";
 import {
   A11yReport,
@@ -19,6 +14,7 @@ import {
 import { useT } from "../i18n";
 import { radius, tokens, type } from "../theme";
 import { DeviceTags } from "../components/DeviceTags";
+import { Point, TreeScreen } from "../components/TreeScreen";
 import { ElementsTab } from "../components/TestDetailsDialog/ElementsTab";
 import {
   treeOf,
@@ -31,105 +27,9 @@ import {
   readTreePlace,
   sameNode,
   treeOutlines,
-  TreeOutline,
 } from "../_helpers/treeInspector.helper";
 
-type Point = { x: number; y: number };
-
 const NARROW = "@media (max-width: 1023.98px)";
-
-/** A screenshot with the tree's outlines over it; the pointer reports in its pixels. */
-const Screen: React.FunctionComponent<{
-  title: string;
-  imageName: string | null | undefined;
-  outlines: TreeOutline[];
-  onPoint: (point: Point | null) => void;
-  onPick: (point: Point) => void;
-}> = ({ title, imageName, outlines, onPoint, onPick }) => {
-  const [size, setSize] = React.useState<{ width: number; height: number }>();
-  const at = (event: React.MouseEvent<HTMLElement>): Point | null => {
-    if (!size) return null;
-    const box = event.currentTarget.getBoundingClientRect();
-    return {
-      x: ((event.clientX - box.left) / box.width) * size.width,
-      y: ((event.clientY - box.top) / box.height) * size.height,
-    };
-  };
-  const percent = (value: number, of: number) => `${(value / of) * 100}%`;
-  return (
-    <Box
-      component="figure"
-      sx={{
-        m: 0,
-        flex: "1 1 240px",
-        minWidth: 0,
-        maxWidth: 420,
-        display: "flex",
-        flexDirection: "column",
-        gap: 1,
-      }}
-    >
-      <Typography
-        component="figcaption"
-        variant="subtitle2"
-        color="textSecondary"
-      >
-        {title}
-      </Typography>
-      {imageName ? (
-        <Box
-          data-testid={`inspectScreen-${title}`}
-          onMouseMove={(event) => onPoint(at(event))}
-          onMouseLeave={() => onPoint(null)}
-          onClick={(event) => {
-            const point = at(event);
-            if (point) onPick(point);
-          }}
-          sx={{
-            position: "relative",
-            cursor: "pointer",
-            borderRadius: radius.control,
-            overflow: "hidden",
-            boxShadow: tokens.shadowShot,
-            lineHeight: 0,
-          }}
-        >
-          <Box
-            component="img"
-            src={staticService.getImage(imageName)}
-            alt={title}
-            onLoad={(event: React.SyntheticEvent<HTMLImageElement>) =>
-              setSize({
-                width: event.currentTarget.naturalWidth,
-                height: event.currentTarget.naturalHeight,
-              })
-            }
-            sx={{ width: "100%", height: "auto", display: "block" }}
-          />
-          {size &&
-            outlines.map((outline) => (
-              <Box
-                key={outline.id}
-                aria-hidden
-                sx={{
-                  position: "absolute",
-                  pointerEvents: "none",
-                  left: percent(outline.rect.x, size.width),
-                  top: percent(outline.rect.y, size.height),
-                  width: percent(outline.rect.width, size.width),
-                  height: percent(outline.rect.height, size.height),
-                  boxSizing: "border-box",
-                  border: `2px ${outline.dashed ? "dashed" : "solid"} ${tokens.brand}`,
-                  bgcolor: outline.dashed ? "transparent" : tokens.brandSoft,
-                  opacity: outline.dashed ? 1 : 0.85,
-                }}
-              />
-            ))}
-        </Box>
-      ) : null}
-    </Box>
-  );
-};
 
 /** One check's UI tree on the whole window, with an address to share (REQ-062-31…37). */
 const InspectorPage: React.FunctionComponent = () => {
@@ -304,7 +204,7 @@ const InspectorPage: React.FunctionComponent = () => {
           }}
         >
           {testRun.baselineName && (
-            <Screen
+            <TreeScreen
               title={t("tree.baseline")}
               imageName={testRun.baselineName}
               outlines={outlines("baseline")}
@@ -312,7 +212,7 @@ const InspectorPage: React.FunctionComponent = () => {
               onPick={pick("baseline")}
             />
           )}
-          <Screen
+          <TreeScreen
             title={t("tree.current")}
             imageName={testRun.imageName}
             outlines={outlines("current")}

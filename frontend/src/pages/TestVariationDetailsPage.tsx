@@ -1,5 +1,5 @@
 import React from "react";
-import { Link, useParams, useNavigate } from "react-router-dom";
+import { Link, useLocation, useParams, useNavigate } from "react-router-dom";
 import { TestVariation } from "../types";
 import { testVariationService, staticService } from "../services";
 import {
@@ -7,6 +7,7 @@ import {
   Button,
   ButtonBase,
   Link as MuiLink,
+  ToggleButton,
   Typography,
 } from "@mui/material";
 import { ArrowBack, DeleteOutline } from "@mui/icons-material";
@@ -25,6 +26,15 @@ import TestStatusChip from "../components/TestStatusChip";
 import { Baseline } from "../types/baseline";
 import { useProjectFromAddress } from "../contexts";
 import { BaseModal } from "../components/BaseModal";
+import { SlidingToggleGroup } from "../components/motion/SlidingToggleGroup";
+import { BaselineTreePair } from "../components/BaselineTrees/BaselineTreePair";
+import { useBaselineTrees } from "../components/BaselineTrees/useBaselineTrees";
+import {
+  baselineTreesLocation,
+  historyLocation,
+  HistoryPlace,
+  readHistoryPlace,
+} from "../_helpers/baselineTrees.helper";
 
 const TestVariationDetailsPage: React.FunctionComponent = () => {
   const navigate = useNavigate();
@@ -50,14 +60,30 @@ const TestVariationDetailsPage: React.FunctionComponent = () => {
     }
   }, [testVariationId, enqueueSnackbar]);
 
+  // the version, the view and the element live in the address, so the page on
+  // the whole window comes back to them (REQ-081-09, 19)
+  const location = useLocation();
+  const place = readHistoryPlace(location.search);
+  const go = (next: HistoryPlace) =>
+    testVariationId &&
+    navigate(historyLocation(testVariationId, next), { replace: true });
+
   // newest first, as the API sends them; the one shown is compared with the
   // one before it (REQ-018-63)
-  const [pickedIndex, setPickedIndex] = React.useState(0);
-  React.useEffect(() => setPickedIndex(0), [testVariationId]);
-
   const baselines = testVariation?.baselines ?? [];
+  const pickedIndex = Math.max(
+    0,
+    baselines.findIndex((baseline) => baseline.id === place.baseline),
+  );
+  // another version keeps the view and the element, when it has it (REQ-081-09)
+  const setPickedIndex = (index: number) =>
+    go({ ...place, baseline: baselines[index]?.id });
   const picked = baselines[pickedIndex];
   const before = baselines[pickedIndex + 1];
+
+  const treeView = place.view === "tree";
+  // the trees come only once asked for (REQ-081-05)
+  const trees = useBaselineTrees(testVariationId, picked, before, treeView);
 
   // the same delete as on the baseline's card, so a baseline found by its
   // history can be removed without going back to the list (REQ-075-02)
@@ -364,17 +390,81 @@ const TestVariationDetailsPage: React.FunctionComponent = () => {
             </Box>
             <Box
               sx={{
-                display: "grid",
-                gridTemplateColumns: "1fr 1fr",
-                gap: "1px",
-                bgcolor: tokens.border,
-                border: `1px solid ${tokens.border}`,
-                borderRadius: radius.card,
-                overflow: "hidden",
+                minWidth: 0,
+                display: "flex",
+                flexDirection: "column",
+                gap: 1.5,
               }}
             >
-              {pane(t("baselines.selected"), picked, "historyPicked")}
-              {pane(t("baselines.previous"), before, "historyBefore")}
+              <Box
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  flexWrap: "wrap",
+                  gap: 1,
+                }}
+              >
+                {/* screenshots as before, or each beside its UI tree (REQ-081-01, 02) */}
+                <SlidingToggleGroup
+                  size="small"
+                  exclusive
+                  value={place.view}
+                  onChange={(_, view) =>
+                    view && go({ ...place, view, baseline: picked?.id })
+                  }
+                  aria-label={t("baselines.view")}
+                >
+                  <ToggleButton value="screens" data-testid="historyScreens">
+                    {t("baselines.viewScreens")}
+                  </ToggleButton>
+                  <ToggleButton value="tree" data-testid="historyTree">
+                    {t("baselines.viewTree")}
+                  </ToggleButton>
+                </SlidingToggleGroup>
+                <Box sx={{ flex: 1 }} />
+                {treeView && picked && (
+                  <Button
+                    size="small"
+                    data-testid="historyFullScreen"
+                    onClick={() =>
+                      navigate(
+                        baselineTreesLocation(testVariation.id, {
+                          ...place,
+                          baseline: picked.id,
+                        }),
+                      )
+                    }
+                  >
+                    {t("tree.fullScreen")}
+                  </Button>
+                )}
+              </Box>
+              {treeView && picked ? (
+                <BaselineTreePair
+                  selected={picked}
+                  previous={before}
+                  trees={trees}
+                  chosen={place.node}
+                  onChoose={(node) =>
+                    go({ ...place, baseline: picked.id, node })
+                  }
+                />
+              ) : (
+                <Box
+                  sx={{
+                    display: "grid",
+                    gridTemplateColumns: "1fr 1fr",
+                    gap: "1px",
+                    bgcolor: tokens.border,
+                    border: `1px solid ${tokens.border}`,
+                    borderRadius: radius.card,
+                    overflow: "hidden",
+                  }}
+                >
+                  {pane(t("baselines.selected"), picked, "historyPicked")}
+                  {pane(t("baselines.previous"), before, "historyBefore")}
+                </Box>
+              )}
             </Box>
           </Box>
         </Box>

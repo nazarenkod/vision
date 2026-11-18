@@ -479,3 +479,34 @@ describe("ElementsTab: accessibility findings", () => {
     expect(text).not.toContain("users cannot tell them apart");
   });
 });
+
+describe("ElementsTab view only (081)", () => {
+  it("view only keeps search and wrappers but no marks, copying or side switch", () => {
+    const withSelector: InspectorTree = {
+      ...current,
+      nodes: current.nodes.map((item) =>
+        item.index === 1 ? { ...item, selector: "id:welcome" } : item,
+      ),
+    };
+    tab({ viewOnly: true, trees: ready(withSelector), chosen: 1 });
+
+    expect(screen.getByTestId("treeSearch")).toBeInTheDocument();
+    expect(screen.getByTestId("treeWrappers")).toBeInTheDocument();
+    expect(screen.getByTestId("treeChip-clickable")).toBeInTheDocument();
+    expect(screen.queryByTestId("treeChip-changed")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("treeChip-a11y")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("treeNextChange")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("treeCurrent")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("rowCopy")).not.toBeInTheDocument();
+    // the card with the locators is the page's own, in two columns
+    expect(getLocators).not.toHaveBeenCalled();
+  });
+
+  it("says a version was accepted without a tree", () => {
+    tab({ viewOnly: true, trees: ready(null) });
+    expect(screen.getByTestId("treeNone")).toHaveTextContent(
+      "This version was accepted without a UI tree",
+    );
+    expect(screen.queryByTestId("treeSearch")).not.toBeInTheDocument();
+  });
+});

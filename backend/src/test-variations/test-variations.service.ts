@@ -1,5 +1,5 @@
 import { BaselineUser } from '../shared/dto/baseline.dto';
-import { Injectable, Inject, forwardRef, Logger } from '@nestjs/common';
+import { Injectable, Inject, forwardRef, Logger, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { TestVariation, Baseline, Build, TestRun, User } from '@prisma/client';
 import { StaticService } from '../static/static.service';
@@ -11,6 +11,8 @@ import { getTestVariationUniqueData } from '../utils';
 import { TestVariationUpdateDto } from './dto/test-variation-update.dto';
 import { featureToKeep } from './variation-feature';
 import { BaselineDataDto } from '../shared/dto/baseline-data.dto';
+import { UiTreeService } from '../ui-tree/ui-tree.service';
+import { InspectorTree } from '../ui-tree/inspector-tree';
 
 @Injectable()
 export class TestVariationsService {
@@ -22,8 +24,23 @@ export class TestVariationsService {
     @Inject(forwardRef(() => TestRunsService))
     private testRunsService: TestRunsService,
     @Inject(forwardRef(() => BuildsService))
-    private buildsService: BuildsService
+    private buildsService: BuildsService,
+    private uiTreeService: UiTreeService
   ) {}
+
+  /**
+   * The UI tree of one version in the check's baseline history, for viewing
+   * (081). A version of another check is not found: access is checked on the
+   * check in the address.
+   */
+  async getBaselineUiTree(id: string, baselineId: string): Promise<InspectorTree | null> {
+    const baseline = await this.prismaService.baseline.findFirst({
+      where: { id: baselineId, testVariationId: id },
+      select: { uiTreeName: true },
+    });
+    if (!baseline) throw new NotFoundException('Baseline not found');
+    return this.uiTreeService.inspectorOf(baseline.uiTreeName);
+  }
 
   async getDetails(
     id: string

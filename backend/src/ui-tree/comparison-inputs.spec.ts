@@ -158,7 +158,7 @@ describe('computeMoves', () => {
   const current = parse(shifted);
 
   it('lists moved elements, leaving out children carried by their parent', () => {
-    const moves = computeMoves(baseline, current, null);
+    const moves = computeMoves(baseline, current);
     const keys = moves.map((move) => move.key);
     expect(keys).toContain('id:com.bank.app:id/btn_pay');
     expect(keys).toContain('id:com.bank.app:id/row_template');
@@ -168,14 +168,19 @@ describe('computeMoves', () => {
     expect(pay.to.y - pay.from.y).toBe(100);
   });
 
-  it('respects the maximum distance', () => {
-    expect(computeMoves(baseline, current, 30)).toEqual([]);
-    expect(computeMoves(baseline, current, 40).length).toBeGreaterThan(0);
+  it('compensates a move of any distance', () => {
+    const far = parse(
+      xml.replace(/bounds="\[(\d+),(\d+)\]\[(\d+),(\d+)\]"/g, (match, x1, y1, x2, y2) =>
+        Number(y1) >= 1000 ? `bounds="[${x1},${Number(y1) - 900}][${x2},${Number(y2) - 900}]"` : match
+      )
+    );
+    const pay = computeMoves(baseline, far).find((move) => move.key === 'id:com.bank.app:id/btn_pay');
+    expect(pay.from.y - pay.to.y).toBe(900);
   });
 
   it('ignores elements that changed size', () => {
     const resized = parse(xml.replace('bounds="[42,2200][1038,2326]"', 'bounds="[42,2250][1038,2400]"'));
-    expect(computeMoves(baseline, resized, null)).toEqual([]);
+    expect(computeMoves(baseline, resized)).toEqual([]);
   });
 });
 

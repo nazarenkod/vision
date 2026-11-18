@@ -12,7 +12,7 @@ import {
   mockImage,
 } from "utils/mocks";
 
-// Spec 079: the UI trees of a baseline's two versions, side by side, only to look at.
+// Spec 081: the UI trees of a baseline's two versions, side by side, only to look at.
 
 const IMAGE = { width: 1280, height: 720 };
 
@@ -127,7 +127,7 @@ test("opens on screenshots and shows both trees on switching", async ({
     "true",
   );
   await expect(page.getByTestId("historyPicked")).toBeVisible();
-  // the trees come only once asked for (REQ-079-05)
+  // the trees come only once asked for (REQ-081-05)
   expect(asked).toEqual([]);
 
   await page.getByTestId("historyTree").click();

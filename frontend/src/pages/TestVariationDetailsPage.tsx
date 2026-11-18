@@ -61,7 +61,7 @@ const TestVariationDetailsPage: React.FunctionComponent = () => {
   }, [testVariationId, enqueueSnackbar]);
 
   // the version, the view and the element live in the address, so the page on
-  // the whole window comes back to them (REQ-079-09, 19)
+  // the whole window comes back to them (REQ-081-09, 19)
   const location = useLocation();
   const place = readHistoryPlace(location.search);
   const go = (next: HistoryPlace) =>
@@ -75,14 +75,14 @@ const TestVariationDetailsPage: React.FunctionComponent = () => {
     0,
     baselines.findIndex((baseline) => baseline.id === place.baseline),
   );
-  // another version keeps the view and the element, when it has it (REQ-079-09)
+  // another version keeps the view and the element, when it has it (REQ-081-09)
   const setPickedIndex = (index: number) =>
     go({ ...place, baseline: baselines[index]?.id });
   const picked = baselines[pickedIndex];
   const before = baselines[pickedIndex + 1];
 
   const treeView = place.view === "tree";
-  // the trees come only once asked for (REQ-079-05)
+  // the trees come only once asked for (REQ-081-05)
   const trees = useBaselineTrees(testVariationId, picked, before, treeView);
 
   // the same delete as on the baseline's card, so a baseline found by its
@@ -404,7 +404,7 @@ const TestVariationDetailsPage: React.FunctionComponent = () => {
                   gap: 1,
                 }}
               >
-                {/* screenshots as before, or each beside its UI tree (REQ-079-01, 02) */}
+                {/* screenshots as before, or each beside its UI tree (REQ-081-01, 02) */}
                 <SlidingToggleGroup
                   size="small"
                   exclusive

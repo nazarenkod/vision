@@ -210,7 +210,7 @@ interface Props {
   onFullScreen?: () => void;
   // the tree takes the height it is given instead of a fixed one: the inspector page
   fill?: boolean;
-  // only to look at, as in the baseline history (079): no side switch, change
+  // only to look at, as in the baseline history (081): no side switch, change
   // marks, copying or node card of its own
   viewOnly?: boolean;
 }

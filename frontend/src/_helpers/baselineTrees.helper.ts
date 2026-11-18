@@ -3,11 +3,11 @@ import { InspectorNode } from "../types/insights";
 import { TreeOutline } from "./treeInspector.helper";
 
 /**
- * The trees of two versions in a baseline's history, side by side (079). An
+ * The trees of two versions in a baseline's history, side by side (081). An
  * element is named by its key, so one choice shows it in both versions.
  */
 
-/** The element with this key in a version's tree (REQ-079-10). */
+/** The element with this key in a version's tree (REQ-081-10). */
 export const counterpart = (
   nodes: InspectorNode[] | undefined,
   key: string | undefined,
@@ -27,7 +27,7 @@ const shown = (value: string | undefined) =>
 /**
  * The chosen element's attributes in both versions, in the platform's order:
  * the selected version's first, then what only the previous one has
- * (REQ-079-14, 15).
+ * (REQ-081-14, 15).
  */
 export function pairCard(
   selected: InspectorNode | undefined,
@@ -48,7 +48,7 @@ export function pairCard(
 
 /**
  * The chosen element solid and the pointed one dashed, on one version's
- * screenshot, wherever that version has them (REQ-079-11, 13).
+ * screenshot, wherever that version has them (REQ-081-11, 13).
  */
 export function pairOutlines(
   nodes: InspectorNode[] | undefined,
@@ -86,7 +86,7 @@ export interface HistoryPlace {
   node?: string;
 }
 
-/** The place an address names; screenshots when it names no view (REQ-079-01). */
+/** The place an address names; screenshots when it names no view (REQ-081-01). */
 export function readHistoryPlace(search: string): HistoryPlace {
   const params = new URLSearchParams(search);
   const place: HistoryPlace = {
@@ -108,12 +108,12 @@ const query = (place: HistoryPlace, withView: boolean) => {
   return text ? `?${text}` : "";
 };
 
-/** The baseline history on a version, a view and an element (REQ-079-09, 19). */
+/** The baseline history on a version, a view and an element (REQ-081-09, 19). */
 export function historyLocation(variationId: string, place: HistoryPlace) {
   return `${routes.VARIATION_DETAILS_PAGE}/${variationId}${query(place, true)}`;
 }
 
-/** The pair with its trees on the whole window, to share (REQ-079-17, 18). */
+/** The pair with its trees on the whole window, to share (REQ-081-17, 18). */
 export function baselineTreesLocation(
   variationId: string,
   place: HistoryPlace,

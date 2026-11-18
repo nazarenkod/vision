@@ -277,6 +277,38 @@ export const decodeCharRefs = (text: string): string =>
 
 const NAME_MAX = 80;
 
+const INSIDE_MAX = 24;
+
+/**
+ * The first two texts written inside a node, in tree order, for naming a
+ * container with no id and no text of its own (REQ-079-09). Empty when the
+ * node has a name of its own or nothing written inside (REQ-079-10).
+ */
+export function textsInside(nodes: UiNode[], node: UiNode): string[] {
+  if (node.resourceId || ownSpeakableText(node)) return [];
+  const within = (other: UiNode) => {
+    let parent = other.parent;
+    while (parent !== null && parent > node.index) parent = nodes[parent].parent;
+    return parent === node.index;
+  };
+  const texts: string[] = [];
+  for (const other of nodes) {
+    if (texts.length === 2) break;
+    if (other.index <= node.index || !within(other)) continue;
+    const chars = Array.from(decodeCharRefs(ownSpeakableText(other)));
+    if (!chars.length) continue;
+    texts.push(
+      chars.length > INSIDE_MAX
+        ? `${chars
+            .slice(0, INSIDE_MAX - 1)
+            .join('')
+            .trimEnd()}…`
+        : chars.join('')
+    );
+  }
+  return texts;
+}
+
 /** Short human name for a node in messages: `Button "Pay" (id/btn_pay)`. */
 export function describeNode(node: UiNode): string {
   // decoded only for people to read: keys and checks keep the text as the tree has it

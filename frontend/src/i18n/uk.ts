@@ -280,7 +280,6 @@ export const uk: Messages = {
   "mobile.hidden": "Надсилати на перегляд невидимі зміни",
   "mobile.hiddenHelp":
     "Новий підпис, неактивний чи некликабельний елемент, невидима кнопка: зміни, яких не видно в пікселях.",
-  "mobile.maxMove": "Найбільший зсув, dp (порожньо — будь-який)",
 
   "a11y.norm.touchTarget": "Мінімальна зона тапу",
   "a11y.norm.contrast": "Мінімальний контраст",
@@ -558,7 +557,7 @@ export const uk: Messages = {
   "baselines.inUse": "діє",
   "baselines.openInReview": "Відкрити в перегляді",
   "baselines.testRun": "Перевірка",
-  // дерева двох версій еталона (079)
+  // дерева двох версій еталона (081)
   "baselines.view": "Що показувати",
   "baselines.viewScreens": "Знімки",
   "baselines.viewTree": "Знімки й дерево",
@@ -753,7 +752,9 @@ export const uk: Messages = {
   "panel.ignoreArea": "Ігнорувати область",
   "panel.areaAt": "{width} × {height} px у точці {x}, {y}",
   "panel.moved": "Порівняно на новому місці",
-  "panel.movedHelp": "Ці елементи лише зсунулися, тож сам зсув не рахується:",
+  "panel.movedAround": "{element} · навколо {texts}",
+  "panel.movedQuote": "«{text}»",
+  "panel.movedWas": "було",
   "panel.down": "вниз на {count} dp",
   "panel.up": "вгору на {count} dp",
   "panel.right": "праворуч на {count} dp",

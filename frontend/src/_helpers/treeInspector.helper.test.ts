@@ -91,7 +91,7 @@ describe("tree inspector (062)", () => {
   });
 
   it("opens two levels when nothing is marked", () => {
-    // a version in the baseline history has no marks (079)
+    // a version in the baseline history has no marks (081)
     expect([...initialOpen(tree, () => false)].sort()).toEqual([0, 1]);
   });
 

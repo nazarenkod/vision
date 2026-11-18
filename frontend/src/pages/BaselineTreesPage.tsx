@@ -17,7 +17,7 @@ import {
   readHistoryPlace,
 } from "../_helpers/baselineTrees.helper";
 
-/** A baseline's two versions with their UI trees on the whole window, with an address to share (REQ-079-17…19). */
+/** A baseline's two versions with their UI trees on the whole window, with an address to share (REQ-081-17…19). */
 const BaselineTreesPage: React.FunctionComponent = () => {
   const { t } = useT();
   const { testVariationId = "" } = useParams();
@@ -49,7 +49,7 @@ const BaselineTreesPage: React.FunctionComponent = () => {
   const before = baselines[pickedIndex + 1];
   const trees = useBaselineTrees(testVariationId, picked, before, !!picked);
 
-  // back to the history on the same pair, the trees and the element (REQ-079-19)
+  // back to the history on the same pair, the trees and the element (REQ-081-19)
   const back = () =>
     navigate(
       historyLocation(testVariationId, {

@@ -8,7 +8,7 @@ import { screenTitle } from '../a11y/a11y-problems';
 import { A11yReport, A11yViolation, RgbaImage } from '../a11y/a11y.types';
 import { A11yNorms } from '../a11y/a11y-norms';
 import { DiffWorkerPool } from '../compare/diff-worker-pool';
-import { describeNode, ownSpeakableText, parseUiTree } from './ui-tree.parser';
+import { describeNode, ownSpeakableText, parseUiTree, textsInside } from './ui-tree.parser';
 import { readUiTreeXml } from './ui-tree.intake';
 import { Rect, UiNode, UiTree, UiTreeFormat } from './ui-tree.types';
 import { diffTrees, elementsUnderRegions, RegionElement, StructuralChange } from './structure-diff';
@@ -113,7 +113,8 @@ export interface StructureInfo {
   // of the checkpoint picture, for drawing what is compared to scale
   size: { width: number; height: number };
   // compensated moves, in dp
-  moves: Array<{ key: string; element: string; dxDp: number; dyDp: number }>;
+  // `from` in the baseline's pixels, `to` in the checkpoint's; `around` names a nameless one (spec 079)
+  moves: Array<{ key: string; element: string; dxDp: number; dyDp: number; from: Rect; to: Rect; around?: string[] }>;
   // elements a rule can be made for by clicking them on the screenshot
   elements: PickableElement[];
   baselineElements: PickableElement[];
@@ -350,7 +351,7 @@ export class UiTreeService {
     return this.inspectorOf(side === 'current' ? testRun.uiTreeName : testRun.baselineUiTreeName);
   }
 
-  /** A stored tree by its file, node by node: also a version in a baseline's history (079). */
+  /** A stored tree by its file, node by node: also a version in a baseline's history (081). */
   async inspectorOf(name: string | null): Promise<InspectorTree | null> {
     const tree = await this.load(name);
     return tree ? inspectorTree(tree) : null;
@@ -570,11 +571,15 @@ export class UiTreeService {
       moves: inputs.moves.map((move) => {
         const node = nodesByKey.get(move.key);
         const ppd = tree?.pixelsPerDp || 1;
+        const around = node && tree ? textsInside(tree.nodes, node) : [];
         return {
           key: move.key,
           element: node ? describeNode(node) : move.key,
           dxDp: Math.round((move.to.x - move.from.x) / ppd),
           dyDp: Math.round((move.to.y - move.from.y) / ppd),
+          from: move.from,
+          to: move.to,
+          ...(around.length ? { around } : {}),
         };
       }),
       variableProblems: inputs.variableProblems,
@@ -725,8 +730,7 @@ export class UiTreeService {
         height: Math.max(0, Math.min(tree.height, Math.round(rect.y + rect.height)) - y),
       };
     };
-    const compensated =
-      settings.compensateMoves && baselineTree ? computeMoves(baselineTree, tree, settings.maxMoveDp) : [];
+    const compensated = settings.compensateMoves && baselineTree ? computeMoves(baselineTree, tree) : [];
     return {
       ignoreAreas: [
         ...[...systemBars, ...resolved.ignore].map(clamp).filter((r) => r.width && r.height),

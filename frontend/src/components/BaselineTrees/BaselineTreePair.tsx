@@ -21,17 +21,17 @@ const NONE: TreeLoad = { status: "ready", tree: null };
 
 interface Props {
   selected: Baseline;
-  // none for the first baseline (REQ-079-08)
+  // none for the first baseline (REQ-081-08)
   previous?: Baseline;
   trees: PairTrees;
-  // the chosen element by its key: one choice shows it in both versions (REQ-079-10)
+  // the chosen element by its key: one choice shows it in both versions (REQ-081-10)
   chosen?: string;
   onChoose: (key: string | undefined) => void;
   // the trees take the height they are given: the page on the whole window
   fill?: boolean;
 }
 
-/** Both versions of a baseline's pair, each screenshot beside its own UI tree, only to look at (079). */
+/** Both versions of a baseline's pair, each screenshot beside its own UI tree, only to look at (081). */
 export const BaselineTreePair: React.FunctionComponent<Props> = ({
   selected,
   previous,
@@ -52,7 +52,7 @@ export const BaselineTreePair: React.FunctionComponent<Props> = ({
 
   const chosenIn = (side: PairSide) => counterpart(nodesOf(side), chosen);
   const ready = versions.every(({ side }) => trees[side].status === "ready");
-  // a link to an element neither version has (REQ-079-18)
+  // a link to an element neither version has (REQ-081-18)
   const notFound =
     !!chosen && ready && versions.every(({ side }) => !chosenIn(side));
 
@@ -190,7 +190,7 @@ export const BaselineTreePair: React.FunctionComponent<Props> = ({
           border: `1px solid ${tokens.border}`,
           borderRadius: radius.card,
           overflow: "hidden",
-          // a narrow window: one version under the other (REQ-079-20)
+          // a narrow window: one version under the other (REQ-081-20)
           [NARROW]: { gridTemplateColumns: "minmax(0, 1fr)" },
         }}
       >
@@ -209,7 +209,7 @@ export const BaselineTreePair: React.FunctionComponent<Props> = ({
   );
 };
 
-/** The chosen element's attributes in both versions, side by side (REQ-079-14, 15). */
+/** The chosen element's attributes in both versions, side by side (REQ-081-14, 15). */
 export const PairNodeCard: React.FunctionComponent<{
   selected?: InspectorNode;
   previous?: InspectorNode;
@@ -246,7 +246,7 @@ export const PairNodeCard: React.FunctionComponent<{
     font: `400 ${type.caption}px ${tokens.mono}`,
     overflowWrap: "anywhere" as const,
   };
-  // a version without the element says so once, in its heading (REQ-079-15)
+  // a version without the element says so once, in its heading (REQ-081-15)
   const absent = (side: PairSide) =>
     !(side === "selected" ? selected : previous);
   const value = (side: PairSide, row: (typeof rows)[number]) => (
@@ -278,7 +278,7 @@ export const PairNodeCard: React.FunctionComponent<{
           {any.className}
         </Typography>
       </Box>
-      {/* why it is not outlined on the screenshot (REQ-079-16) */}
+      {/* why it is not outlined on the screenshot (REQ-081-16) */}
       {columns.map((side) => {
         const node = side === "selected" ? selected : previous;
         return node?.hidden ? (

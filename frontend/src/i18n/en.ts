@@ -286,7 +286,6 @@ export const en = {
   "mobile.hidden": "Send hidden changes to review",
   "mobile.hiddenHelp":
     "A new label, a disabled or unclickable control, an invisible button: changes the pixels do not show.",
-  "mobile.maxMove": "Only moves up to, dp (empty for any)",
 
   "a11y.norm.touchTarget": "Minimum touch target",
   "a11y.norm.contrast": "Minimum contrast",
@@ -527,7 +526,7 @@ export const en = {
   "baselines.inUse": "in use",
   "baselines.openInReview": "Open in review",
   "baselines.testRun": "Check",
-  // the trees of a baseline's two versions (079)
+  // the trees of a baseline's two versions (081)
   "baselines.view": "What to show",
   "baselines.viewScreens": "Screenshots",
   "baselines.viewTree": "Screenshots and tree",
@@ -715,8 +714,9 @@ export const en = {
   "panel.ignoreArea": "Ignore area",
   "panel.areaAt": "{width} × {height} px at {x}, {y}",
   "panel.moved": "Compared at their new place",
-  "panel.movedHelp":
-    "These moved without changing, so the move alone is not counted:",
+  "panel.movedAround": "{element} · ancestor of {texts}",
+  "panel.movedQuote": '"{text}"',
+  "panel.movedWas": "was",
   "panel.down": "down {count} dp",
   "panel.up": "up {count} dp",
   "panel.right": "right {count} dp",

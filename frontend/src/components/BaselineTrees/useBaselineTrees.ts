@@ -13,8 +13,8 @@ const NONE: TreeLoad = { status: "ready", tree: null };
 /**
  * The trees of both versions of a pair, fetched only once someone looks at
  * them, each on its own: one that fails leaves the other, and Try again asks
- * for the failed one only (REQ-079-05, 07). A version accepted without a tree
- * is not asked for (REQ-079-06).
+ * for the failed one only (REQ-081-05, 07). A version accepted without a tree
+ * is not asked for (REQ-081-06).
  */
 export function useBaselineTrees(
   variationId: string | undefined,

@@ -1,6 +1,7 @@
 import { readFileSync } from 'fs';
 import path from 'path';
-import { describeNode, detectFormat, parseAndroidBounds, parseUiTree } from './ui-tree.parser';
+import { describeNode, detectFormat, parseAndroidBounds, parseUiTree, textsInside } from './ui-tree.parser';
+import { UiNode } from './ui-tree.types';
 
 const fixture = (name: string) => readFileSync(path.join(__dirname, '__fixtures__', name), 'utf8');
 
@@ -142,5 +143,56 @@ describe('parseUiTree with a plain uiautomator dump (adb, no Appium)', () => {
       visible: true,
       bounds: { x: 42, y: 2200, width: 996, height: 126 },
     });
+  });
+});
+
+describe('textsInside (spec 079)', () => {
+  const node = (index: number, parent: number | null, over: Partial<UiNode> = {}): UiNode => ({
+    index,
+    parent,
+    depth: 0,
+    key: `path:${index}`,
+    className: 'android.view.View',
+    resourceId: '',
+    text: '',
+    label: '',
+    hint: '',
+    clickable: false,
+    focusable: false,
+    enabled: true,
+    visible: true,
+    accessible: true,
+    bounds: { x: 0, y: 0, width: 10, height: 10 },
+    ...over,
+  });
+
+  it('names a nameless element by the first two texts inside it, cut at 24 characters', () => {
+    const nodes = [
+      node(0, null),
+      node(1, 0),
+      node(2, 1, { text: 'IBAN' }),
+      node(3, 1, { label: '' }),
+      node(4, 1, { text: 'Для відображення в Приват24 і не лише' }),
+      node(5, 0, { text: 'Валюта рахунку' }),
+      node(6, null, { text: 'Продовжити' }),
+    ];
+    expect(textsInside(nodes, nodes[1])).toEqual(['IBAN', 'Для відображення в Прив…']);
+    expect(textsInside(nodes, nodes[0])).toEqual(['IBAN', 'Для відображення в Прив…']);
+  });
+
+  it('gives no texts for an element with nothing written inside', () => {
+    const nodes = [node(0, null), node(1, 0), node(2, null, { text: 'Поза ним' })];
+    expect(textsInside(nodes, nodes[0])).toEqual([]);
+  });
+
+  it('gives no texts for an element with an id or a text of its own', () => {
+    const nodes = [
+      node(0, null, { resourceId: 'app:id/form' }),
+      node(1, 0, { text: 'IBAN' }),
+      node(2, null, { text: 'Додати' }),
+      node(3, 2, { text: 'IBAN' }),
+    ];
+    expect(textsInside(nodes, nodes[0])).toEqual([]);
+    expect(textsInside(nodes, nodes[2])).toEqual([]);
   });
 });

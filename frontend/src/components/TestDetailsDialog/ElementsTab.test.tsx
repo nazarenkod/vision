@@ -480,7 +480,7 @@ describe("ElementsTab: accessibility findings", () => {
   });
 });
 
-describe("ElementsTab view only (079)", () => {
+describe("ElementsTab view only (081)", () => {
   it("view only keeps search and wrappers but no marks, copying or side switch", () => {
     const withSelector: InspectorTree = {
       ...current,

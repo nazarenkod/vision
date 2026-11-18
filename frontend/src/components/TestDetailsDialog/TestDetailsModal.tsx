@@ -128,6 +128,7 @@ import { Tooltip } from "../Tooltip";
 import ImageDetails, { ImageDetailsProps } from "./ImageDetails";
 import { clampScale } from "../../_helpers/scale.helper";
 import { fitScale } from "../../_helpers/fit.helper";
+import { moveMarks, shownMove } from "../../_helpers/moves.helper";
 import { panelStartsFolded } from "../../_helpers/review.helper";
 import { canCompareToBaseline } from "../../_helpers/testRunStatus.helper";
 import { getQueryParams } from "../../_helpers/route.helpers";
@@ -420,6 +421,14 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
       diffPercent: testRun.diffPercent,
       changes: countChanges(structure),
     });
+  // the moved element lit from its row, where it was and where it is (spec 079)
+  const litMove = shownMove(structure?.moves ?? [], previewMark, pinnedMark);
+  const moveMarksOn = (side: Side) =>
+    moveMarks(litMove, side, {
+      single: view !== "side",
+      color: canvas.status.changed.fg,
+      t,
+    });
   const testAreaMarks = (): OverlayRect[] =>
     readAreas(testRun.tempIgnoreAreas).flatMap((area, index) => {
       const id = testAreaMarkId(index);
@@ -504,6 +513,18 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
     setPreviewViolation(undefined);
     setPreviewRegion(undefined);
   }, [testRun.id]);
+  // Esc lets go of a pinned move before it closes the review (REQ-079-05)
+  const movePinned = !!pinnedMark?.startsWith("move:");
+  useEffect(() => {
+    if (!movePinned) return;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      event.stopPropagation();
+      setPinnedMark(undefined);
+    };
+    window.addEventListener("keydown", onKey, true);
+    return () => window.removeEventListener("keydown", onKey, true);
+  }, [movePinned]);
   const selectionRef = React.useRef(selection);
   selectionRef.current = selection;
   useEffect(() => {
@@ -1732,6 +1753,7 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
           ...ruleMarks("baseline"),
           ...pickMarks("baseline"),
           ...treeMarks("baseline"),
+          ...moveMarksOn("baseline"),
         ]}
         highlightedOverlayId={selectingNow ? pickedLit : previewMark}
         dimOutside={dimOutside("baseline")}
@@ -1790,6 +1812,7 @@ const TestDetailsModal: React.FunctionComponent<TestDetailsModalProps> = ({
           ...testAreaMarks(),
           ...(selectingNow ? pickMarks("current") : overlayRects),
           ...treeMarks("current"),
+          ...moveMarksOn("current"),
           ...(previewRegion
             ? [{ id: "changedArea", ...previewRegion, color: canvas.diff }]
             : []),

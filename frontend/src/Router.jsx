@@ -88,7 +88,7 @@ function Router() {
         path={`${routes.INSIGHTS_PAGE}/:projectId`}
         element={<PrivateRoute component={InsightsPage} />}
       />
-      {/* a baseline's two versions with their UI trees on the whole window (079) */}
+      {/* a baseline's two versions with their UI trees on the whole window (081) */}
       <Route
         path={routes.BASELINE_TREES_PAGE}
         element={<PrivateRoute component={BaselineTreesPage} />}

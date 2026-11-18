@@ -110,7 +110,7 @@ const rowIn = (side: "selected" | "previous", index: number) =>
     .getAllByTestId("treeRow")
     .find((row) => row.dataset.index === String(index)) as HTMLElement;
 
-describe("BaselineTreePair (079)", () => {
+describe("BaselineTreePair (081)", () => {
   it("explains a version without a tree and shows the other", () => {
     pair({ trees: trees({ previous: { status: "ready", tree: null } }) });
     expect(

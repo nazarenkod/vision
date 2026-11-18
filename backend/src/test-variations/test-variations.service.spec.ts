@@ -387,6 +387,8 @@ describe('TestVariationsService', () => {
         device: createRequest.device,
         customTags: createRequest.customTags,
         branchName: createRequest.branchName,
+        // no feature in the request stores null, so the variation is not tied to any feature
+        featureName: null,
         testRuns: { connect: { id: 'testRunId' } },
         project: {
           connect: {
@@ -582,6 +584,7 @@ describe('TestVariationsService', () => {
         diffTollerancePercent: 0,
         merge: true,
         ignoreAreas: JSON.parse(testVariation.ignoreAreas),
+        featureName: undefined,
       },
       imageBuffer,
     });
@@ -594,6 +597,7 @@ describe('TestVariationsService', () => {
         diffTollerancePercent: 0,
         merge: true,
         ignoreAreas: JSON.parse(testVariationSecond.ignoreAreas),
+        featureName: undefined,
       },
       imageBuffer,
     });

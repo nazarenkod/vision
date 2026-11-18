@@ -131,7 +131,7 @@ function setup() {
   };
   const eventsGateway: any = { testRunUpdated: jest.fn() };
   const uiTreeService: any = {};
-  const variations = new TestVariationsService(db, staticService, undefined as any, undefined as any);
+  const variations = new TestVariationsService(db, staticService, undefined as any, undefined as any, uiTreeService);
   const runs = new TestRunsService(
     variations,
     db,

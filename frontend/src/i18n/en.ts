@@ -527,6 +527,16 @@ export const en = {
   "baselines.inUse": "in use",
   "baselines.openInReview": "Open in review",
   "baselines.testRun": "Check",
+  // the trees of a baseline's two versions (079)
+  "baselines.view": "What to show",
+  "baselines.viewScreens": "Screenshots",
+  "baselines.viewTree": "Screenshots and tree",
+  "baselines.treeNone": "This version was accepted without a UI tree",
+  "baselines.notInVersion": "Not in this version",
+  "baselines.attribute": "Attribute",
+  "baselines.attributes": "Attributes of the element in both versions",
+  "baselines.backToHistory": "Back to the history",
+  "baselines.treesTitle": "Elements · {name}",
 
   // filters
   "filters.all": "All",

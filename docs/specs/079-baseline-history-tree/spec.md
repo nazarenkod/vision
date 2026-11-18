@@ -2,10 +2,10 @@
 
 | | |
 |---|---|
-| Статус | Draft |
+| Статус | Implemented |
 | Власник | Дмитро Назаренко |
 | Оновлено | 2026-11-18 |
-| Дизайн | design.md з'явиться після `Approved`; [макет](https://claude.ai/artifact/Ks64HMkV94DMqcbCVvmhwj) |
+| Дизайн | [design.md](design.md), [tasks.md](tasks.md); [макет](https://claude.ai/artifact/Ks64HMkV94DMqcbCVvmhwj) |
 | Пов'язане | доповнює [075](../075-baseline-history-delete/spec.md) і [046](../046-design-review-refresh/spec.md) REQ-046-18 (пара «Вибраний / Попередній» в історії еталона); вигляд і поведінка дерева — як на вкладці «Елементи» [062](../062-ui-tree-inspector/spec.md) і [063](../063-readable-ui-tree/spec.md); ключ елемента — як у порівнянні за UI-деревом ([002](../002-ui-tree-analysis/spec.md)); дерево вебу без позицій — [050](../050-web-ui-tree/spec.md); дві мови — [ADR-0017](../../decisions/0017-interface-in-two-languages.md) |
 
 ## Контекст і проблема

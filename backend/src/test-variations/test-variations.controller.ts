@@ -42,6 +42,18 @@ export class TestVariationsController {
     return this.testVariations.getDetails(id);
   }
 
+  @ProjectFrom(inParam('id', 'variation'))
+  @Get(':id/baselines/:baselineId/ui-tree')
+  @ApiOkResponse({ description: "One version's UI tree in the baseline history, node by node, or null (079)" })
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  getBaselineUiTree(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Param('baselineId', new ParseUUIDPipe()) baselineId: string
+  ) {
+    return this.testVariations.getBaselineUiTree(id, baselineId);
+  }
+
   @ProjectFrom(inQuery('projectId', 'project'))
   @Get('merge/')
   @ApiQuery({ name: 'projectId', required: true })

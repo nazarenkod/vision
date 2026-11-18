@@ -558,6 +558,16 @@ export const uk: Messages = {
   "baselines.inUse": "діє",
   "baselines.openInReview": "Відкрити в перегляді",
   "baselines.testRun": "Перевірка",
+  // дерева двох версій еталона (079)
+  "baselines.view": "Що показувати",
+  "baselines.viewScreens": "Знімки",
+  "baselines.viewTree": "Знімки й дерево",
+  "baselines.treeNone": "Цю версію еталона прийнято без UI-дерева",
+  "baselines.notInVersion": "Немає в цій версії",
+  "baselines.attribute": "Атрибут",
+  "baselines.attributes": "Атрибути елемента в обох версіях",
+  "baselines.backToHistory": "Назад до історії",
+  "baselines.treesTitle": "Елементи · {name}",
 
   // filters
   "filters.all": "Усі",

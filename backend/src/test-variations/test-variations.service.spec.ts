@@ -9,6 +9,8 @@ import { BuildsService } from '../builds/builds.service';
 import { TestRunsService } from '../test-runs/test-runs.service';
 import { TEST_PROJECT } from '../_data_';
 import { TestVariationUpdateDto } from './dto/test-variation-update.dto';
+import { UiTreeService } from '../ui-tree/ui-tree.service';
+import { NotFoundException } from '@nestjs/common';
 
 const initModule = async ({
   imageDeleteMock = jest.fn(),
@@ -19,6 +21,8 @@ const initModule = async ({
   variationUpdateMock = jest.fn(),
   variationDeleteMock = jest.fn(),
   baselineDeleteMock = jest.fn(),
+  baselineFindFirstMock = jest.fn(),
+  inspectorOfMock = jest.fn(),
   projectFindUniqueMock = jest.fn(),
   buildFindOrCreateMock = jest.fn(),
   buildUpdateMock = jest.fn(),
@@ -37,6 +41,10 @@ const initModule = async ({
           getImageBuffer: getImageBufferMock,
           deleteImage: imageDeleteMock,
         },
+      },
+      {
+        provide: UiTreeService,
+        useValue: { inspectorOf: inspectorOfMock },
       },
       {
         provide: BuildsService,
@@ -66,6 +74,7 @@ const initModule = async ({
           },
           baseline: {
             delete: baselineDeleteMock,
+            findFirst: baselineFindFirstMock,
           },
           project: {
             findUnique: projectFindUniqueMock,
@@ -713,5 +722,39 @@ describe('keepFeature (068)', () => {
 
     expect(variationUpdateMock).not.toHaveBeenCalled();
     expect(kept).toBe(variation);
+  });
+});
+
+describe('getBaselineUiTree (079)', () => {
+  const tree = { format: 'android', positioned: true, width: 1080, height: 2280, nodes: [] };
+
+  it('gives the tree of a version of this check', async () => {
+    const baselineFindFirstMock = jest.fn().mockResolvedValue({ uiTreeName: 'tree.json.gz' });
+    const inspectorOfMock = jest.fn().mockResolvedValue(tree);
+    const service = await initModule({ baselineFindFirstMock, inspectorOfMock });
+
+    await expect(service.getBaselineUiTree('variation', 'version')).resolves.toBe(tree);
+    expect(baselineFindFirstMock).toHaveBeenCalledWith({
+      where: { id: 'version', testVariationId: 'variation' },
+      select: { uiTreeName: true },
+    });
+    expect(inspectorOfMock).toHaveBeenCalledWith('tree.json.gz');
+  });
+
+  it('gives nothing for a version accepted without a tree', async () => {
+    const baselineFindFirstMock = jest.fn().mockResolvedValue({ uiTreeName: null });
+    const inspectorOfMock = jest.fn().mockResolvedValue(null);
+    const service = await initModule({ baselineFindFirstMock, inspectorOfMock });
+
+    await expect(service.getBaselineUiTree('variation', 'version')).resolves.toBeNull();
+  });
+
+  it('answers not found for a version of another check', async () => {
+    const baselineFindFirstMock = jest.fn().mockResolvedValue(null);
+    const inspectorOfMock = jest.fn();
+    const service = await initModule({ baselineFindFirstMock, inspectorOfMock });
+
+    await expect(service.getBaselineUiTree('variation', 'someone else')).rejects.toThrow(NotFoundException);
+    expect(inspectorOfMock).not.toHaveBeenCalled();
   });
 });

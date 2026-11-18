@@ -347,7 +347,12 @@ export class UiTreeService {
 
   /** One side of a run's tree, node by node, for the Elements tab (062). */
   async inspector(testRun: TestRun, side: 'current' | 'baseline'): Promise<InspectorTree | null> {
-    const tree = await this.load(side === 'current' ? testRun.uiTreeName : testRun.baselineUiTreeName);
+    return this.inspectorOf(side === 'current' ? testRun.uiTreeName : testRun.baselineUiTreeName);
+  }
+
+  /** A stored tree by its file, node by node: also a version in a baseline's history (079). */
+  async inspectorOf(name: string | null): Promise<InspectorTree | null> {
+    const tree = await this.load(name);
     return tree ? inspectorTree(tree) : null;
   }
 

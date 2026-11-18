@@ -90,6 +90,11 @@ describe("tree inspector (062)", () => {
     expect(shown(visibleRows(tree, open, null))).toEqual([0, 1, 2, 4, 5, 6]);
   });
 
+  it("opens two levels when nothing is marked", () => {
+    // a version in the baseline history has no marks (079)
+    expect([...initialOpen(tree, () => false)].sort()).toEqual([0, 1]);
+  });
+
   it("hides the children of a folded node", () => {
     const open = new Set([0, 1, 2, 5]);
     expect(shown(visibleRows(tree, open, null))).toEqual([0, 1, 2, 3, 4, 5, 6]);

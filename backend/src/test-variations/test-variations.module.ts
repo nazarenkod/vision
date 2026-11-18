@@ -4,9 +4,10 @@ import { TestVariationsController } from './test-variations.controller';
 import { TestRunsModule } from '../test-runs/test-runs.module';
 import { BuildsModule } from '../builds/builds.module';
 import { StaticModule } from '../static/static.module';
+import { UiTreeModule } from '../ui-tree/ui-tree.module';
 
 @Module({
-  imports: [forwardRef(() => TestRunsModule), forwardRef(() => BuildsModule), StaticModule],
+  imports: [forwardRef(() => TestRunsModule), forwardRef(() => BuildsModule), StaticModule, UiTreeModule],
   providers: [TestVariationsService],
   controllers: [TestVariationsController],
   exports: [TestVariationsService],

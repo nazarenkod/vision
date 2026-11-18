@@ -9,6 +9,7 @@ import ProfilePage from "./pages/ProfilePage";
 import TestVariationListPage from "./pages/TestVariationListPage";
 import InsightsPage from "./pages/InsightsPage";
 import InspectorPage from "./pages/InspectorPage";
+import BaselineTreesPage from "./pages/BaselineTreesPage";
 import UserListPage from "./pages/UserListPage";
 import BackupsPage from "./pages/BackupsPage";
 import TestVariationDetailsPage from "./pages/TestVariationDetailsPage";
@@ -86,6 +87,11 @@ function Router() {
       <Route
         path={`${routes.INSIGHTS_PAGE}/:projectId`}
         element={<PrivateRoute component={InsightsPage} />}
+      />
+      {/* a baseline's two versions with their UI trees on the whole window (079) */}
+      <Route
+        path={routes.BASELINE_TREES_PAGE}
+        element={<PrivateRoute component={BaselineTreesPage} />}
       />
       <Route
         path={`${routes.VARIATION_DETAILS_PAGE}/:testVariationId`}

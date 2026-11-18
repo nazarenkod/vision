@@ -914,17 +914,18 @@ test("lists every accessibility problem under its check, new first", async ({
   // Login has no problems listed: nothing under its row
   const toggle = page.getByTestId("a11yProblemsToggle");
   await expect(toggle).toHaveCount(1);
-  // folded until someone unfolds it (REQ-065-10)
-  await expect(toggle).toHaveText("3 problems");
+  // an arrow in the check's row, as on the Overview, folded until someone
+  // unfolds it (REQ-065-10)
+  await expect(toggle).toHaveAccessibleName("3 problems");
   await expect(toggle).toHaveAttribute("aria-expanded", "false");
   await expect(page.getByTestId("a11yProblem")).toHaveCount(0);
 
   await toggle.click();
   await expect(toggle).toHaveAttribute("aria-expanded", "true");
   await expect(page.getByTestId("a11yProblem")).toHaveText([
-    /^New\s*Control has no label\s*· tailBadge ×2$/,
-    /^MOB-4821\s*Touch target too small\s*· Pay$/,
-    /^Known\s*Low text contrast\s*· 11 Aug$/,
+    /^Control has no label\s*tailBadge ×2\s*New$/,
+    /^Touch target too small\s*Pay\s*MOB-4821$/,
+    /^Low text contrast\s*11 Aug\s*Known$/,
   ]);
 
   await toggle.click();

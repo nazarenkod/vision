@@ -103,6 +103,13 @@ describe('LdapUsersService match from ldap', () => {
     expect(service).toBeDefined();
   });
 
+  it('verifies the certificate of the directory even when LDAP_TLS_NO_VERIFY is true', () => {
+    // the config here answers 'true' to every optional setting, LDAP_TLS_NO_VERIFY included
+    const options = jest.mocked(LdapClient).mock.calls.at(-1)?.[0];
+    expect(options).toEqual({ url: 'LDAP_URL' });
+    expect(JSON.stringify(options)).not.toContain('rejectUnauthorized');
+  });
+
   it('should create new user on login', async () => {
     jest.spyOn(prismaService.user, 'findUnique').mockResolvedValue(undefined);
     const prismaUserCreateMock = jest.spyOn(prismaService.user, 'create').mockResolvedValue(user);

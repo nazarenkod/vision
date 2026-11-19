@@ -11,4 +11,9 @@
 - [x] **T3** [P] (REQ-082-08, 09) Порожні обробники помилок.
   - Файли: `backend/src/auth/guards/mixed.guard.ts` і новий `mixed.guard.spec.ts` (на старому коді
     теж зелений: поведінка та сама), `frontend/public/cli/vision.py`, `scripts/tests/test_vision_cli.py`.
+- [x] **T5** (REQ-082-10, 11) Без вимкнення перевірки TLS для OIDC і LDAP.
+  - Файли: `oidcusers.service.ts`, `ldapusers.service.ts` і їхні тести, `src/users/removed-tls-option.ts`,
+    `docker-compose.demo.yml`, `backend/docker-compose.ldap.yml`, `backend/.env.example`,
+    `.env.demo.example`, `DEPLOY.md`, `docs/admin/configuration.md`, `docs/security/overview.md`.
+  - Ручна перевірка власником: вхід через корпоративний LDAP/SSO на стенді.
 - [x] **T4** Запобіжник `scripts/tests/test_scanner_findings.py`, звіт аудиту, `/verify`.

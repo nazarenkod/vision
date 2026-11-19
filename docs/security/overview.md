@@ -45,6 +45,7 @@
 
 - Postgres не публікується на хост; назовні лише порти `ui` і `api`.
 - Контейнери не від root; базові образи закріплені за digest; TLS під час збирання не вимикається.
+- Сертифікат LDAP і провайдера SSO перевіряється завжди; вимкнути це не можна, внутрішній CA — через `VISION_EXTRA_CA_FILE` ([082](../specs/082-fortify-readiness/spec.md)).
 - Заголовки: CSP (скрипти лише з Vision), `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`,
   `Referrer-Policy: no-referrer`, HSTS за HTTPS-проксі; `server_tokens off`.
 - CORS — лише origin інтерфейсу (`DEMO_UI_URL`); Swagger вимкнено (`VISION_SWAGGER=false`).
@@ -75,7 +76,6 @@
 | Vision слухає HTTP | середній | TLS на зворотному проксі, `X-Forwarded-Proto: https`; порти `ui`/`api` закрити від усього, крім проксі |
 | Сеанс у `localStorage`, а не в httpOnly-куці (S-13) | низький | компенсується CSP без inline-скриптів і анулюванням на сервері; рішення власника — відкладено |
 | bcrypt cost 10 (S-14) | низький | прийнято; підвищення — окремою задачею |
-| `OIDC_TLS_NO_VERIFY`, `LDAP_TLS_NO_VERIFY` існують (S-12) | низький | лишати `false`; контролювати конфігурацію |
 | Бекапи не шифруються; Google Drive як місце бекапів | **високий, якщо Drive** | внутрішнє сховище (`BACKUP_REMOTE`), шифрування на боці сховища |
 | Gemini отримує знімки, якщо `AI_PROVIDER=gemini` | високий, якщо увімкнено | лишити `none` або `ollama` у своїй мережі |
 | Немає журналу аудиту дій адміністратора (окрім журналу рішень рев'ю) | низький | логи API в системі збору логів |

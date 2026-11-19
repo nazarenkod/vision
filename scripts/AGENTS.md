@@ -22,7 +22,7 @@
 | `baselines/*-tsc.txt` | відомі помилки `tsc` в успадкованому коді; оновлює `verify.py --update-baselines` |
 | `check-docs.py` | перевірка документації: посилання, статуси, вимоги ↔ тести, шляхи, ADR — `python3 -I scripts/check-docs.py` |
 | `tests/test_seed_insights_demo.py` | тести `seed-insights-demo.py`: фейковий API, відмова без Vision, SQL зсуву дат на локальному Postgres (без нього пропускаються) |
-| `tests/test_scanner_findings.py` | у коді поставки немає шаблонів, які банківський SAST (Fortify) вважає вразливостями: SHA-1/MD5, порожні `catch`/`except: pass`, пароль за замовчуванням (082) |
+| `tests/test_scanner_findings.py` | у коді поставки немає шаблонів, які банківський SAST (Fortify) вважає вразливостями: SHA-1/MD5, порожні `catch`/`except: pass`, пароль за замовчуванням, вимкнена перевірка TLS (082) |
 | `tests/test_vision_cli.py` | тести CLI `frontend/public/cli/vision.py` (фейкові API й adb) |
 | `tests/test_agent_guard.py` | тести hook'а `.claude/hooks/guard.py` |
 | `tests/test_check_docs.py` | тести `check-docs.py` |

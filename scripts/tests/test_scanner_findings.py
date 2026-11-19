@@ -29,6 +29,11 @@ WEAK_HASH = re.compile(
 # "Poor Error Handling: Empty Catch Block"
 EMPTY_CATCH = re.compile(r"catch\s*(?:\([^)]*\))?\s*\{\s*\}|\.catch\(\s*\(\)\s*=>\s*\{\s*\}\s*\)")
 EMPTY_EXCEPT = re.compile(r"^\s*except\b[^\n]*:\s*\n\s*pass\s*$", re.MULTILINE)
+# "Insecure SSL: Server Identity Verification Disabled"
+TLS_OFF = re.compile(
+    r"rejectUnauthorized\s*:\s*(?:false|!)|NODE_TLS_REJECT_UNAUTHORIZED|verify\s*=\s*False|_create_unverified_context"
+    r"|CERT_NONE|ALLOW_ALL_HOSTNAME_VERIFIER|X509TrustManager"
+)
 # "Password Management: Hardcoded Password": a password used when none is configured
 FALLBACK_PASSWORD = re.compile(r"""PASSWORD\s*(?:\|\||\?\?)\s*['"][^'"]+['"]""")
 
@@ -71,6 +76,9 @@ class ScannerFindings(unittest.TestCase):
     def test_leaves_no_python_except_empty(self):
         self.assertEqual(matches(EMPTY_EXCEPT, python=True), [])
 
+    def test_never_turns_tls_verification_off(self):
+        self.assertEqual(matches(TLS_OFF), [])
+
     def test_has_no_fallback_password(self):
         self.assertEqual(matches(FALLBACK_PASSWORD), [])
 
@@ -82,6 +90,10 @@ class ScannerFindings(unittest.TestCase):
         self.assertTrue(EMPTY_CATCH.search(".catch(() => {})"))
         self.assertTrue(EMPTY_EXCEPT.search("    except OSError:\n        pass\n"))
         self.assertFalse(EMPTY_EXCEPT.search("class VisionError(Exception):\n    pass\n"))
+        self.assertTrue(TLS_OFF.search("tlsOptions: { rejectUnauthorized: !this.config.tlsNoVerify }"))
+        self.assertTrue(TLS_OFF.search("new HttpsAgent({ rejectUnauthorized: false })"))
+        self.assertTrue(TLS_OFF.search("urlopen(url, context=ssl._create_unverified_context())"))
+        self.assertFalse(TLS_OFF.search("rejectUnauthorized: true"))
         self.assertTrue(FALLBACK_PASSWORD.search("process.env.DEFAULT_USER_PASSWORD || '123456'"))
 
 

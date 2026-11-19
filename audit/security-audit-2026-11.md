@@ -8,7 +8,7 @@
 
 | Перевірка | Інструмент | Стан |
 |---|---|---|
-| Ручний розбір коду й конфігурації | OWASP ASVS як орієнтир | 15 знахідок: 12 виправлено, 3 низькі прийнято |
+| Ручний розбір коду й конфігурації | OWASP ASVS як орієнтир | 15 знахідок: 13 виправлено, 2 низькі прийнято |
 | SAST: TypeScript/React, Java, Python, Dockerfile, bash | semgrep 1.184.0 (1081 правило), bandit 1.9.4, shellcheck 0.11.0 | 0 підтверджених; 2 знайдені виправлено |
 | Секрети в коді | detect-secrets, semgrep secrets | 0 |
 | Вразливості залежностей, prod і dev | `npm audit` | 0 у `backend`, `backend/prisma`, `frontend` |
@@ -44,7 +44,7 @@ Grype), транзитивні залежності Gradle, пентест.
 | S-9 | середній | Postgres опубліковано на всіх інтерфейсах хоста | виправлено: порт не публікується |
 | S-10 | низький | кореневий compose брав чужі образи з Docker Hub, інсталятор качав `.env` без перевірки | виправлено: лише образи, зібрані з цього коду; інсталятор прибрано |
 | S-11 | низький | немає ізоляції проєктів: кожен бачить усі | виправлено: доступ до проєктів, чужий проєкт — `404`, і для API-ключів, і для подій ([042](../docs/specs/042-project-access/spec.md)) |
-| S-12 | низький | OIDC і LDAP мають опцію вимкнути перевірку TLS | прийнято: типово `false`, лише для тестових стендів |
+| S-12 | низький | OIDC і LDAP мають опцію вимкнути перевірку TLS | виправлено 2026-11-19: опцій немає, сертифікат перевіряється завжди, внутрішній CA — `VISION_EXTRA_CA_FILE` ([082](../docs/specs/082-fortify-readiness/spec.md)) |
 | S-13 | низький | сеанс (JWT) у `localStorage`: XSS забрав би його | прийнято: CSP без inline-скриптів, у коді немає XSS-синків, «Вийти» анулює токен на сервері ([052](../docs/specs/052-sessions-and-browser-hardening/spec.md)); httpOnly-кука відкладена |
 | S-14 | низький | bcrypt з cost 10 (рекомендовано 12) | прийнято |
 | S-15 | середній | помилки API віддавали stack trace з шляхами сервера й увесь об'єкт винятку | виправлено: лише `statusCode`, `message`, `path`; stack — лише в лог ([045](../docs/specs/045-sign-in-and-api-hardening/spec.md)) |
@@ -74,7 +74,7 @@ Grype), транзитивні залежності Gradle, пентест.
 | Privacy Violation | seed друкував пароль адміністратора й рядки проєктів | виправлено: лише email і кількість ([082](../docs/specs/082-fortify-readiness/spec.md)) |
 | Weak Cryptographic Hash | SHA-1 у кодах проблем, ID груп, відбитках областей, ETag | виправлено: SHA-256; збережені коди не змінюються ([082](../docs/specs/082-fortify-readiness/spec.md)) |
 | Poor Error Handling: Empty Catch Block | `MixedGuard`, CLI (`except: pass`) | виправлено ([082](../docs/specs/082-fortify-readiness/spec.md)); запобіжник `scripts/tests/test_scanner_findings.py` |
-| Insecure SSL: Server Identity Verification Disabled | `OIDC_TLS_NO_VERIFY`, `LDAP_TLS_NO_VERIFY` (S-12) | рішення власника |
+| Insecure SSL: Server Identity Verification Disabled | `OIDC_TLS_NO_VERIFY`, `LDAP_TLS_NO_VERIFY` (S-12) | виправлено: опції прибрано ([082](../docs/specs/082-fortify-readiness/spec.md)) |
 | Path Manipulation | `hdd.service.ts`, `backups.service.ts` | Not an Issue: вихід за каталог відсікається, імена файлів бекапу задані в коді |
 | Open Redirect | `users.controller.ts` (OIDC), `static.controller.ts` | Not an Issue: адресу будує сервер з налаштувань, не з запиту |
 | Log Forging / Privacy Violation | email у логах OIDC і LDAP | Low: email без пароля й токенів; за потреби — маскувати |
@@ -129,5 +129,5 @@ Studio) видаляється під час збирання образів. MP
 ## Що лишається
 
 - Сканування Docker-образів (пакети ОС) і пентест.
-- Прийняті низькі ризики S-12, S-13, S-14 (див. таблицю).
+- Прийняті низькі ризики S-13, S-14 (див. таблицю); S-12 виправлено (082).
 - Бекапи не шифруються самим Vision: шифрування — на боці сховища.

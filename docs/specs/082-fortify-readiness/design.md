@@ -30,6 +30,16 @@ Fortify) дав перелік місць. Кожне закривається �
   `false`, і йде наступний спосіб входу; поведінка та сама. У CLI три `except: pass` явно ставлять
   значення за замовчуванням, а невдалий `chmod` файла з ключем пише попередження в `stderr`.
 
+- **TLS входу (US-3).** З `OidcUsersService` прибрано власний HTTPS-агент і `custom.http_options`,
+  з `LdapUsersService` — `tlsOptions.rejectUnauthorized`: обидва клієнти перевіряють сертифікат, як
+  Node типово. Внутрішній CA — `VISION_EXTRA_CA_FILE`, який compose уже дає API як
+  `NODE_EXTRA_CA_CERTS`; цей механізм діє для `https` і `tls` в усьому процесі.
+  - Чиста `removedTlsOptionWarning(name, value)` (`src/users/removed-tls-option.ts`) дає текст
+    попередження, коли `OIDC_TLS_NO_VERIFY` чи `LDAP_TLS_NO_VERIFY` = `true`. Compose і далі передає
+    ці змінні (порожні типово), щоб попередження дійшло; `test_api_hardening.py` цього й вимагає.
+  - LDAP-мок розробки (`backend/docker-compose.ldap.yml`) має самопідписаний сертифікат, тож іде
+    по `ldap://ldapmock:389/` усередині мережі compose.
+
 ## Перевірка вимог
 
 | Вимога | Перевірка |
@@ -42,9 +52,14 @@ Fortify) дав перелік місць. Кожне закривається �
 | REQ-082-06 | `scripts/tests/test_scanner_findings.py › test_uses_no_sha1_or_md5` |
 | REQ-082-07 | `backend/src/a11y/a11y-issues.spec.ts › keeps ids and bugs of problems decided under another grouping` |
 | REQ-082-08 | `scripts/tests/test_scanner_findings.py › test_leaves_no_catch_block_empty`, `backend/src/auth/guards/mixed.guard.spec.ts › tries the API key when the sign-in check refuses with an exception` |
+| REQ-082-10 | `backend/src/users/oidc/oidcusers.service.spec.ts › verifies the certificate of the identity provider even when OIDC_TLS_NO_VERIFY is true`, `backend/src/users/ldap/ldapusers.service.spec.ts › verifies the certificate of the directory even when LDAP_TLS_NO_VERIFY is true`, `scripts/tests/test_scanner_findings.py › test_never_turns_tls_verification_off` |
+| REQ-082-11 | `backend/src/users/removed-tls-option.spec.ts › tells someone who still turns verification off how to trust their CA instead` |
 | REQ-082-09 | `scripts/tests/test_vision_cli.py › test_warns_when_the_settings_file_cannot_be_made_private` |
 
 ## Ризики
+
+- Стенд, де вмикали `*_TLS_NO_VERIFY=true`, перестане входити через LDAP/SSO, доки не отримає CA
+  у `VISION_EXTRA_CA_FILE`. Попередження в лозі API каже про це прямо.
 
 - Хто розгортає порожній Vision за старою інструкцією без пароля, побачить зупинену міграцію.
   Повідомлення називає змінну й довжину, README і DEPLOY кажуть про неї в першому кроці.

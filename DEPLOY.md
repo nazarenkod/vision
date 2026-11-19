@@ -186,7 +186,8 @@ successfully applied`:
 ## 6. Налаштування у Vision
 
 **Вхід** ([045](docs/specs/045-sign-in-and-api-hardening/spec.md)). LDAP або SSO вмикаються в `.env.demo`
-(`LDAP_*` або `OIDC_*`, приклад — у `.env.demo.example`), і локальні акаунти від адміна працюють
+(`LDAP_*` або `OIDC_*`, приклад — у `.env.demo.example`; сертифікат сервера входу перевіряється
+завжди, внутрішній CA — у `VISION_EXTRA_CA_FILE`, [082](docs/specs/082-fortify-readiness/spec.md)), і локальні акаунти від адміна працюють
 поруч: LDAP вирішує за тих, хто є в каталозі, інші входять своїм паролем; із SSO форма пароля —
 під кнопкою SSO, а з `REACT_APP_OIDC_AUTO_REDIRECT` — за адресою `/login?local`. Пароль локального
 акаунта — від 12 символів; 5 невдалих спроб поспіль закривають вхід для цього email на 15 хвилин.

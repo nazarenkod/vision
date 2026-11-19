@@ -1,5 +1,5 @@
 import { HttpException, HttpStatus, Logger } from '@nestjs/common';
-import { Client as OidcClient, Issuer, generators, custom, TokenSet } from 'openid-client';
+import { Client as OidcClient, Issuer, generators, TokenSet } from 'openid-client';
 import { CreateUserDto } from '../dto/user-create.dto';
 import { UserLoginResponseDto } from '../dto/user-login-response.dto';
 import { PrismaService } from '../../prisma/prisma.service';
@@ -10,7 +10,7 @@ import { UserLoginRequestDto } from '../dto/user-login-request.dto';
 import { Users } from '../users.interface';
 import { ConfigService } from '@nestjs/config';
 import { genSaltSync } from 'bcryptjs';
-import { Agent as HttpsAgent } from 'node:https';
+import { removedTlsOptionWarning } from '../removed-tls-option';
 
 type OIDCConfig = {
   issuerUrl: string;
@@ -24,7 +24,6 @@ type OIDCConfig = {
   roleClaim: string;
   adminValues: string[];
   defaultRole: Role;
-  tlsNoVerify: boolean;
   requireVerifiedEmail: boolean;
 };
 
@@ -69,7 +68,6 @@ export class OidcUsersService implements Users {
         this.configService.get<string>('OIDC_DEFAULT_ROLE', 'editor').toLowerCase() === 'admin'
           ? Role.admin
           : Role.editor,
-      tlsNoVerify: this.configService.get<string>('OIDC_TLS_NO_VERIFY', 'false').toLowerCase() === 'true',
       requireVerifiedEmail:
         this.configService.get<string>('OIDC_REQUIRE_VERIFIED_EMAIL', 'true').toLowerCase() === 'true',
     };
@@ -79,49 +77,18 @@ export class OidcUsersService implements Users {
     }
     this.appFrontendUrl = appFrontendUrl;
 
-    if (this.oidcConfig.tlsNoVerify) {
-      this.logger.warn('OIDC TLS certificate verification is disabled for the configured issuer only');
-    }
-  }
-
-  /**
-   * Restricts the insecure HTTPS agent to the configured issuer, so a TLS
-   * bypass never applies to unrelated openid-client requests.
-   */
-  private getHttpOptions(): ((url: URL, options: Record<string, unknown>) => Record<string, unknown>) | null {
-    if (!this.oidcConfig.tlsNoVerify) {
-      return null;
-    }
-    const insecureAgent = new HttpsAgent({ rejectUnauthorized: false });
-    const issuerOrigin = new URL(this.oidcConfig.issuerUrl).origin;
-    return (url, options) => (url.origin === issuerOrigin ? { ...options, agent: insecureAgent } : options);
+    const removed = removedTlsOptionWarning('OIDC_TLS_NO_VERIFY', this.configService.get<string>('OIDC_TLS_NO_VERIFY'));
+    if (removed) this.logger.warn(removed);
   }
 
   private async discoverClient(): Promise<OidcClient> {
-    const httpOptions = this.getHttpOptions();
-    if (httpOptions) {
-      // Static discovery cannot be scoped per instance; the provider itself
-      // only bypasses verification for the configured issuer origin.
-      Issuer[custom.http_options] = httpOptions as never;
-    }
-
     const issuer = await Issuer.discover(this.oidcConfig.issuerUrl);
-    if (httpOptions) {
-      // The JWKS used to validate the ID token is fetched through the issuer
-      // instance, which does not inherit the static option set above.
-      issuer[custom.http_options] = httpOptions as never;
-    }
-    const client = new issuer.Client({
+    return new issuer.Client({
       client_id: this.oidcConfig.clientId,
       client_secret: this.oidcConfig.clientSecret,
       redirect_uris: [this.oidcConfig.redirectUri],
       response_types: ['code'],
     });
-
-    if (httpOptions) {
-      client[custom.http_options] = httpOptions as never;
-    }
-    return client;
   }
 
   private getClient(): Promise<OidcClient> {

@@ -1,7 +1,7 @@
+import { Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Role, User } from '@prisma/client';
 import { Issuer, custom } from 'openid-client';
-import { Agent as HttpsAgent } from 'node:https';
 import { AuthService } from '../../auth/auth.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { OidcUsersService } from './oidcusers.service';
@@ -131,31 +131,14 @@ describe('OidcUsersService', () => {
       expect(mockDiscover).toHaveBeenCalledTimes(2);
     });
 
-    it('applies the insecure TLS agent only to the issuer origin', async () => {
-      const tlsConfigService = {
-        get: jest.fn((key: string, defaultValue?: string) =>
-          key === 'OIDC_TLS_NO_VERIFY' ? 'true' : configService.get(key, defaultValue)
-        ),
-        getOrThrow: configService.getOrThrow,
-      } as unknown as ConfigService;
-      const tlsService = new OidcUsersService(tlsConfigService, prismaService, authService);
-
-      await tlsService.getAuthorizationUrl();
-
-      const provider = (Issuer as unknown as Record<string, (url: URL, options: object) => Record<string, unknown>>)[
-        custom.http_options as unknown as string
-      ];
-      expect(provider(new URL('https://idp.example.com/token'), {}).agent).toBeInstanceOf(HttpsAgent);
-      expect(provider(new URL('https://other.example.com/token'), {})).toEqual({});
-    });
-
-    it('applies the insecure TLS agent to the discovered issuer for JWKS requests', async () => {
+    it('verifies the certificate of the identity provider even when OIDC_TLS_NO_VERIFY is true', async () => {
       const issuer: Record<string, unknown> = {
         Client: class {
           authorizationUrl = mockAuthorizationUrl;
         },
       };
       mockDiscover.mockResolvedValue(issuer);
+      const warn = jest.spyOn(Logger.prototype, 'warn').mockImplementation(() => undefined);
       const tlsConfigService = {
         get: jest.fn((key: string, defaultValue?: string) =>
           key === 'OIDC_TLS_NO_VERIFY' ? 'true' : configService.get(key, defaultValue)
@@ -166,11 +149,11 @@ describe('OidcUsersService', () => {
 
       await tlsService.getAuthorizationUrl();
 
-      const provider = issuer[custom.http_options as unknown as string] as (
-        url: URL,
-        options: object
-      ) => Record<string, unknown>;
-      expect(provider(new URL('https://idp.example.com/jwks'), {}).agent).toBeInstanceOf(HttpsAgent);
+      // no HTTP options with an own agent: openid-client verifies TLS as Node does
+      expect((Issuer as unknown as Record<string, unknown>)[custom.http_options as unknown as string]).toBeUndefined();
+      expect(issuer[custom.http_options as unknown as string]).toBeUndefined();
+      expect(warn.mock.calls.flat().join(' ')).toContain('VISION_EXTRA_CA_FILE');
+      warn.mockRestore();
     });
   });
 

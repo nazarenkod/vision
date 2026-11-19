@@ -148,7 +148,7 @@ docs/specs/NNN-коротка-назва/
 | [079](079-moved-elements-highlight/spec.md) | Зсунуті елементи: видно, який це елемент і де він | Implemented |
 | [080](080-no-move-distance-limit/spec.md) | Без межі відстані для зсунутих елементів | Implemented |
 | [081](081-baseline-history-tree/spec.md) | Дерево елементів в історії еталона: Вибраний і Попередній поруч | Implemented |
-| [082](082-fortify-readiness/spec.md) | Код без знахідок банківського SAST: пароль першого адміністратора, хеші, обробка помилок | Implemented |
+| [082](082-fortify-readiness/spec.md) | Код без знахідок банківського SAST: пароль першого адміністратора, хеші, обробка помилок, TLS входу | Implemented |
 
 Статусу `Verified` поки немає в жодної: інтеграцію з реальною Jira Cloud і прогони на сервері
 команда ще не підтвердила.

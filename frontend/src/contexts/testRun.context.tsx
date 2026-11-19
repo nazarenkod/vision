@@ -272,6 +272,8 @@ function updateTestRun(dispatch: Dispatch, testRuns: TestRun[]) {
 }
 
 export {
+  // exported for its tests: live events land here, and the list must stay right
+  testRunReducer,
   TestRunProvider,
   useTestRunState,
   useTestRunDispatch,

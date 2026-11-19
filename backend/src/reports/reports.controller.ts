@@ -70,7 +70,7 @@ export class ReportsController {
     const report = await this.reportsService.publicReport(token);
     // its screens open with the report's own signature, and only while the link is valid (REQ-043-06)
     const body = JSON.stringify(withFileSignatures(report, (name) => signReportFile(token, name, this.fileKey)));
-    const etag = `"${createHash('sha1').update(body).digest('base64url')}"`;
+    const etag = `"${createHash('sha256').update(body).digest('base64url')}"`;
     res.setHeader('ETag', etag);
     // the page is served from another origin than the API: let it read the tag
     res.setHeader('Access-Control-Expose-Headers', 'ETag');

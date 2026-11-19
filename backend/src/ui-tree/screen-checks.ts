@@ -69,7 +69,7 @@ export function areaHash(image: RgbaLike, rect: Rect): string {
       bytes[o + 2] = image.data[i + 2] >> 4;
     }
   }
-  return createHash('sha1').update(bytes).digest('hex').slice(0, 16);
+  return createHash('sha256').update(bytes).digest('hex').slice(0, 16);
 }
 
 const MAX_COMPONENTS = 6;

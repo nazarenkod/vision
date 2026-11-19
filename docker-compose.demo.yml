@@ -84,7 +84,8 @@ services:
       OIDC_ADMIN_VALUES: ${OIDC_ADMIN_VALUES:-vision-admin,admin}
       OIDC_DEFAULT_ROLE: ${OIDC_DEFAULT_ROLE:-editor}
       OIDC_REQUIRE_VERIFIED_EMAIL: ${OIDC_REQUIRE_VERIFIED_EMAIL:-true}
-      OIDC_TLS_NO_VERIFY: ${OIDC_TLS_NO_VERIFY:-false}
+      # removed (082): the certificate is always verified; passed only so the API can warn about it
+      OIDC_TLS_NO_VERIFY: ${OIDC_TLS_NO_VERIFY:-}
       LDAP_ENABLED: ${LDAP_ENABLED:-false}
       LDAP_URL: ${LDAP_URL:-}
       LDAP_BIND_USER: ${LDAP_BIND_USER:-}
@@ -94,7 +95,8 @@ services:
       LDAP_ATTRIBUTE_MAIL: ${LDAP_ATTRIBUTE_MAIL:-mail}
       LDAP_ATTRIBUTE_FIRST_NAME: ${LDAP_ATTRIBUTE_FIRST_NAME:-givenName}
       LDAP_ATTRIBUTE_LAST_NAME: ${LDAP_ATTRIBUTE_LAST_NAME:-sn}
-      LDAP_TLS_NO_VERIFY: ${LDAP_TLS_NO_VERIFY:-false}
+      # removed (082), as OIDC_TLS_NO_VERIFY
+      LDAP_TLS_NO_VERIFY: ${LDAP_TLS_NO_VERIFY:-}
       # the API documentation at /api, off unless asked for (045)
       VISION_SWAGGER: ${VISION_SWAGGER:-false}
       # backups (ADR-0013): the API writes the Backups page settings for scripts/vision-backup.sh
@@ -131,7 +133,7 @@ services:
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-vision}
       DEFAULT_USER_EMAIL: ${DEFAULT_USER_EMAIL:-admin@vision.local}
-      DEFAULT_USER_PASSWORD: ${DEFAULT_USER_PASSWORD:-123456}
+      DEFAULT_USER_PASSWORD: ${DEFAULT_USER_PASSWORD:-}
       DEFAULT_USER_API_KEY: ${DEFAULT_USER_API_KEY:-}
     depends_on:
       postgres:

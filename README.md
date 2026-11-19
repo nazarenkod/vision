@@ -43,11 +43,12 @@
 ## Швидкий старт
 
 ```sh
-cp .env.demo.example .env.demo     # задайте JWT_SECRET і VISION_SECRET_KEY
+cp .env.demo.example .env.demo     # задайте JWT_SECRET, VISION_SECRET_KEY і DEFAULT_USER_PASSWORD
 ./scripts/vision.sh up -d --build
 ```
 
-Відкрийте http://localhost:18080 і увійдіть як `admin@vision.local` / `123456`.
+Відкрийте http://localhost:18080 і увійдіть як `admin@vision.local` з паролем із `DEFAULT_USER_PASSWORD`
+(щонайменше 12 символів; без нього перший адміністратор не створюється).
 Повне розгортання — у [DEPLOY.md](DEPLOY.md).
 
 ## SDK

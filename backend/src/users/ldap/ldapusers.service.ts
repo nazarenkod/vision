@@ -8,6 +8,7 @@ import { AuthService } from '../../auth/auth.service';
 import { UserLoginRequestDto } from '../dto/user-login-request.dto';
 import { Entry as LdapEntry, Client as LdapClient } from 'ldapts';
 import { Users } from '../users.interface';
+import { removedTlsOptionWarning } from '../removed-tls-option';
 import { ConfigService } from '@nestjs/config';
 import { genSaltSync } from 'bcryptjs';
 
@@ -20,7 +21,6 @@ type LDAPConfig = {
   attributeMail: string;
   attributeFirstName: string;
   attributeLastName: string;
-  tlsNoVerify: boolean;
 };
 export class LdapUsersService implements Users {
   private readonly ldapClient: LdapClient;
@@ -41,14 +41,11 @@ export class LdapUsersService implements Users {
       attributeMail: this.configService.getOrThrow<string>('LDAP_ATTRIBUTE_MAIL'),
       attributeFirstName: this.configService.getOrThrow<string>('LDAP_ATTRIBUTE_FIRST_NAME'),
       attributeLastName: this.configService.getOrThrow<string>('LDAP_ATTRIBUTE_LAST_NAME'),
-      tlsNoVerify: this.configService.get<string>('LDAP_TLS_NO_VERIFY', 'false').toLowerCase() === 'true',
     };
-    this.ldapClient = new LdapClient({
-      url: this.ldapConfig.url,
-      tlsOptions: {
-        rejectUnauthorized: !this.ldapConfig.tlsNoVerify,
-      },
-    });
+    // ldaps:// always verifies the directory's certificate; an internal CA comes from VISION_EXTRA_CA_FILE (082)
+    this.ldapClient = new LdapClient({ url: this.ldapConfig.url });
+    const removed = removedTlsOptionWarning('LDAP_TLS_NO_VERIFY', this.configService.get<string>('LDAP_TLS_NO_VERIFY'));
+    if (removed) this.logger.warn(removed);
   }
 
   /** Whether the directory has this person: then it decides their sign-in, not a local password (045). */

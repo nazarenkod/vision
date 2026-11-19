@@ -61,8 +61,9 @@ def save_json(path, data):
     path.write_text(json.dumps(data, indent=2))
     try:
         path.chmod(0o600)  # holds the API key
-    except OSError:
-        pass
+    except OSError as error:
+        # a file system without modes (a Windows share): the key is saved, the person should know it is readable
+        print(f"warning: could not make {path} private: {error}", file=sys.stderr)
 
 
 def settings(overrides=None):
@@ -184,7 +185,7 @@ def capture_adb(serial=None):
         match = re.search(r"Override density:\s*(\d+)", text) or re.search(r"Physical density:\s*(\d+)", text)
         density = int(match.group(1)) if match else None
     except VisionError:
-        pass
+        density = None  # optional: the server compares without it
 
     activity = None
     try:
@@ -193,7 +194,7 @@ def capture_adb(serial=None):
         if match:
             activity = match.group(1).split("/", 1)[1]
     except VisionError:
-        pass
+        activity = None  # optional: only names the screen
 
     release = prop("ro.build.version.release")
     return {
@@ -264,7 +265,7 @@ def capture_simulator():
                     return {"png": png, "xml": None, "format": None, "density": None, "activity": None,
                             "device": item.get("name", ""), "os": version}
     except (VisionError, ValueError):
-        pass
+        listing = None  # no simulator to name: the screenshot alone below
     print("warning: screenshot only; for the UI tree use --appium", file=sys.stderr)
     return {"png": png, "xml": None, "format": None, "density": None, "activity": None, "device": device, "os": "iOS"}
 

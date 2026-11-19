@@ -46,6 +46,18 @@ const mockDefaultUser = {
   createdAt: new Date(),
 } as const;
 
+const STRONG_PASSWORD = 'a-long-admin-password';
+
+beforeEach(() => {
+  process.env.DEFAULT_USER_PASSWORD = STRONG_PASSWORD;
+});
+
+afterEach(() => {
+  // a refused admin sets the exit code; it must not fail the test run itself
+  process.exitCode = undefined;
+  jest.restoreAllMocks();
+});
+
 describe('Defaults get created', () => {
   beforeEach(() => {
     prismaMock.user.upsert.mockResolvedValue(mockDefaultUser);
@@ -127,5 +139,57 @@ describe('Defaults do NOT get created', () => {
 
     expect(prismaMock.user.upsert).not.toHaveBeenCalled();
     expect(prismaMock.project.create).toHaveBeenCalled();
+  });
+});
+
+describe('The first admin password (082)', () => {
+  beforeEach(() => {
+    prismaMock.user.upsert.mockResolvedValue(mockDefaultUser);
+    prismaMock.project.create.mockResolvedValue(mockDefaultProject);
+    prismaMock.user.findMany.mockResolvedValue([]);
+    prismaMock.project.findMany.mockResolvedValue([]);
+  });
+
+  test.each([
+    ['is not set', undefined],
+    ['is blank', '   '],
+    ['is shorter than 12 characters', '123456'],
+  ])('creates no admin and fails the seed when DEFAULT_USER_PASSWORD %s', async (_, password) => {
+    if (password === undefined) delete process.env.DEFAULT_USER_PASSWORD;
+    else process.env.DEFAULT_USER_PASSWORD = password;
+    const error = jest.spyOn(console, 'error').mockImplementation(() => undefined);
+
+    await seed();
+
+    expect(prismaMock.user.upsert).not.toHaveBeenCalled();
+    expect(process.exitCode).toBe(1);
+    expect(error.mock.calls.flat().join(' ')).toContain('DEFAULT_USER_PASSWORD');
+    // the default project does not depend on the admin
+    expect(prismaMock.project.create).toHaveBeenCalled();
+  });
+
+  test('needs no password when an active admin exists already', async () => {
+    delete process.env.DEFAULT_USER_PASSWORD;
+    prismaMock.user.findMany.mockResolvedValue([{ ...mockDefaultUser, email: 'foo@bar.com' }]);
+
+    await seed();
+
+    expect(prismaMock.user.upsert).not.toHaveBeenCalled();
+    expect(process.exitCode).toBeUndefined();
+  });
+
+  test('never prints the admin password or project rows', async () => {
+    const printed: unknown[] = [];
+    for (const level of ['log', 'info', 'warn', 'error'] as const) {
+      jest.spyOn(console, level).mockImplementation((...args) => void printed.push(...args));
+    }
+    prismaMock.project.findMany.mockResolvedValue([{ ...mockDefaultProject, jiraToken: 'sealed-token' }]);
+
+    await seed();
+
+    expect(prismaMock.user.upsert).toHaveBeenCalled();
+    const output = printed.map((value) => (typeof value === 'string' ? value : JSON.stringify(value))).join('\n');
+    expect(output).not.toContain(STRONG_PASSWORD);
+    expect(output).not.toContain('sealed-token');
   });
 });

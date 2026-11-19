@@ -27,7 +27,7 @@
 | Змінна | Типово | Примітка |
 |---|---|---|
 | `DEFAULT_USER_EMAIL` | `admin@vision.local` | |
-| `DEFAULT_USER_PASSWORD` | `123456` | **задати свій** до першого запуску або змінити пароль одразу після входу |
+| `DEFAULT_USER_PASSWORD` | немає | **обов'язковий для порожньої бази**, щонайменше 12 символів: без нього міграція зупиняється й API не стартує; у лог пароль не виводиться ([082](../specs/082-fortify-readiness/spec.md)) |
 | `DEFAULT_USER_API_KEY` | порожньо | порожньо — ключа немає, адмін створює його в профілі |
 
 ## Мережа й порти
@@ -53,7 +53,6 @@
 | `LDAP_SEARCH_DN` | — | де шукати людей |
 | `LDAP_USERS_SEARCH_FILTER` | — | фільтр, `{{email}}` — те, що людина ввела |
 | `LDAP_ATTRIBUTE_MAIL`, `…_FIRST_NAME`, `…_LAST_NAME` | `mail`, `givenName`, `sn` | атрибути каталогу |
-| `LDAP_TLS_NO_VERIFY` | `false` | лише для тестового стенда |
 | `OIDC_ENABLED` | `false` | вхід через SSO (Keycloak, ADFS, Entra ID…) |
 | `OIDC_ISSUER_URL`, `OIDC_CLIENT_ID`, `OIDC_CLIENT_SECRET` | — | клієнт у провайдері |
 | `OIDC_REDIRECT_URI` | `<DEMO_API_URL>/users/oidc/callback` | зареєструвати в провайдері |
@@ -63,8 +62,12 @@
 | `OIDC_ADMIN_VALUES` | `vision-admin,admin` | групи, що дають роль `admin` |
 | `OIDC_DEFAULT_ROLE` | `editor` | роль нового користувача SSO |
 | `OIDC_REQUIRE_VERIFIED_EMAIL` | `true` | приймати лише підтверджений email |
-| `OIDC_TLS_NO_VERIFY` | `false` | лише для тестового стенда |
 | `REACT_APP_OIDC_AUTO_REDIRECT` | — | одразу на SSO; локальний вхід — `/login?local` |
+
+Сертифікат сервера LDAP (`ldaps://`) і провайдера SSO перевіряється завжди. Підписаний внутрішнім
+CA — дайте API цей CA у `VISION_EXTRA_CA_FILE` (PEM; кілька CA — одним файлом підряд).
+`LDAP_TLS_NO_VERIFY` і `OIDC_TLS_NO_VERIFY` прибрано: задані, вони лише дають попередження в лозі
+([082](../specs/082-fortify-readiness/spec.md)).
 
 Пароль локального акаунта — від 12 символів; 5 невдалих спроб поспіль закривають вхід для цього
 email на 15 хвилин ([045](../specs/045-sign-in-and-api-hardening/spec.md)).

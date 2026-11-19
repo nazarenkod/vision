@@ -110,6 +110,7 @@ cp .env.demo.example .env.demo
 | `JWT_SECRET` | новий випадковий секрет (`openssl rand -base64 32`), **не** секрет робочого VRT: зі спільним секретом вхід у Vision відкривав би й робочий VRT. API не стартує зі значенням із прикладу, із секретом, коротшим за 32 символи, і з тим самим значенням, що в `VISION_SECRET_KEY` ([051](docs/specs/051-security-quick-fixes/spec.md)) |
 | `VISION_SECRET_KEY` | довгий випадковий ключ (`openssl rand -base64 32`), **зберігати назавжди**: ним зашифровано токени Jira і ключі Gemini в базі. Без нього API не стартує; новий ключ — усі вводять токени заново ([044](docs/specs/044-secrets-at-rest/spec.md)). Ті самі вимоги, що й до `JWT_SECRET` ([051](docs/specs/051-security-quick-fixes/spec.md)) |
 | `VISION_JIRA_HOSTS` | хости Jira через кому, куди можна надсилати особисті токени, наприклад `jira.example.com`: токен іде лише по `https` на стандартний порт і не йде за переадресацією. Jira на іншому порту або по `http` — запис зі схемою й портом, наприклад `https://jira.example.com:8443` ([051](docs/specs/051-security-quick-fixes/spec.md)). Порожньо — Vision у Jira не ходить, а адресу Jira в проєкті не зберегти |
+| `DEFAULT_USER_PASSWORD` | пароль першого адміністратора (`DEFAULT_USER_EMAIL`, типово `admin@vision.local`), щонайменше 12 символів. Потрібен лише порожній базі: копія проду приходить зі своїми адмінами. Типового пароля немає: без нього міграція зупиняється й API не стартує ([082](docs/specs/082-fortify-readiness/spec.md)) |
 | `DEMO_UI_URL` | адреса UI так, як її бачить браузер, наприклад `http://vision-host:18080` |
 | `DEMO_API_URL` | адреса API так, як її бачать браузер і автотести, наприклад `http://vision-host:14200` |
 | `PROD_PG_CONTAINER` | назва контейнера Postgres проду, **або** |
@@ -185,7 +186,8 @@ successfully applied`:
 ## 6. Налаштування у Vision
 
 **Вхід** ([045](docs/specs/045-sign-in-and-api-hardening/spec.md)). LDAP або SSO вмикаються в `.env.demo`
-(`LDAP_*` або `OIDC_*`, приклад — у `.env.demo.example`), і локальні акаунти від адміна працюють
+(`LDAP_*` або `OIDC_*`, приклад — у `.env.demo.example`; сертифікат сервера входу перевіряється
+завжди, внутрішній CA — у `VISION_EXTRA_CA_FILE`, [082](docs/specs/082-fortify-readiness/spec.md)), і локальні акаунти від адміна працюють
 поруч: LDAP вирішує за тих, хто є в каталозі, інші входять своїм паролем; із SSO форма пароля —
 під кнопкою SSO, а з `REACT_APP_OIDC_AUTO_REDIRECT` — за адресою `/login?local`. Пароль локального
 акаунта — від 12 символів; 5 невдалих спроб поспіль закривають вхід для цього email на 15 хвилин.
@@ -689,7 +691,7 @@ Drive робочого акаунта адміністратора ([013](docs/s
 Бере останній бекап (або вказаний: `./scripts/vision-restore.sh vision-20261027T031700Z.tar`),
 показує план і чекає `yes`. На чистій машині: §2–3 (код і `.env.demo`), кроки 1–3 вище, увійти
 користувачем за замовчуванням порожнього Vision (`DEFAULT_USER_EMAIL` / `DEFAULT_USER_PASSWORD` з
-`.env.demo`; якщо не задано — `admin@vision.local` / `123456`), підключити Drive
+`.env.demo`; email типово `admin@vision.local`, пароль типового немає), підключити Drive
 на сторінці Backups тим самим робочим акаунтом і тим самим OAuth-клієнтом (Vision бачить лише файли
 свого клієнта), потім restore:
 підключення лежить у `demo-data/backup-config` і відновленням бази не затирається.

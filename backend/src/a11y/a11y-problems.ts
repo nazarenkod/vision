@@ -113,7 +113,7 @@ export function problemKeyOf(facets: ProblemFacets): string {
  * creation, and kept whatever problems are later told apart by.
  */
 export function problemCode(projectId: string, key: string): string {
-  return `a11y-${createHash('sha1').update(`${projectId}\n${key}`).digest('hex').slice(0, 8)}`;
+  return `a11y-${createHash('sha256').update(`${projectId}\n${key}`).digest('hex').slice(0, 8)}`;
 }
 
 /** The component a problem key is about, if it is a component problem. */

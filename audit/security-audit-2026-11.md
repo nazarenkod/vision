@@ -62,6 +62,25 @@ Grype), транзитивні залежності Gradle, пентест.
 `dangerouslySetInnerHTML` і `eval`; `UpdateUserDto` не дає змінити роль; CLI — стандартна
 бібліотека Python з перевіркою TLS; шрифти локальні.
 
+## Пробний прогін під Fortify (2026-11-19)
+
+Перед скануванням у банку (Fortify SAST) — semgrep 1.186 з правилами спільноти, bandit 1.9.4,
+`npm audit --omit=dev` і ручний пошук категорій, які Fortify ловить, а semgrep ні. Справжніх
+вразливостей 0, `npm audit` — 0 у всіх пакетах. Що Fortify, найімовірніше, позначив би, і стан:
+
+| Категорія Fortify | Місце | Стан |
+|---|---|---|
+| Password Management: Hardcoded Password | пароль першого адміністратора `123456` за замовчуванням (seed, compose) | виправлено: пароля за замовчуванням немає, ≥ 12 символів, інакше міграція зупиняється ([082](../docs/specs/082-fortify-readiness/spec.md)) |
+| Privacy Violation | seed друкував пароль адміністратора й рядки проєктів | виправлено: лише email і кількість ([082](../docs/specs/082-fortify-readiness/spec.md)) |
+| Weak Cryptographic Hash | SHA-1 у кодах проблем, ID груп, відбитках областей, ETag | виправлено: SHA-256; збережені коди не змінюються ([082](../docs/specs/082-fortify-readiness/spec.md)) |
+| Poor Error Handling: Empty Catch Block | `MixedGuard`, CLI (`except: pass`) | виправлено ([082](../docs/specs/082-fortify-readiness/spec.md)); запобіжник `scripts/tests/test_scanner_findings.py` |
+| Insecure SSL: Server Identity Verification Disabled | `OIDC_TLS_NO_VERIFY`, `LDAP_TLS_NO_VERIFY` (S-12) | рішення власника |
+| Path Manipulation | `hdd.service.ts`, `backups.service.ts` | Not an Issue: вихід за каталог відсікається, імена файлів бекапу задані в коді |
+| Open Redirect | `users.controller.ts` (OIDC), `static.controller.ts` | Not an Issue: адресу будує сервер з налаштувань, не з запиту |
+| Log Forging / Privacy Violation | email у логах OIDC і LDAP | Low: email без пароля й токенів; за потреби — маскувати |
+| HTML5: Local Storage | сеанс у `localStorage` (S-13) | прийнято, див. вище |
+| Hardcoded Password у тестах | фікстури `*.spec.ts`, `integration_tests` | якщо банк сканує тести — виключити їх зі сканування або позначити Not an Issue |
+
 ## Хибні спрацювання SAST
 
 semgrep дав 1311 спрацювань (ERROR 4, WARNING 1179, INFO 128), підтверджених — 0. Із них 1020 —

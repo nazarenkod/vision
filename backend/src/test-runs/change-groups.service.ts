@@ -41,7 +41,7 @@ export interface ChangeGroup {
 // for its size only then.
 const STATUS_BAR_CANDIDATE_PX = 220;
 
-const hash = (value: string) => createHash('sha1').update(value).digest('hex').slice(0, 16);
+const hash = (value: string) => createHash('sha256').update(value).digest('hex').slice(0, 16);
 
 /**
  * Groups the screenshots of a build that need a decision by the change they

@@ -16,7 +16,8 @@ let user: Partial<User> = {
 // the seeded admin (prisma/seed.ts) creates accounts: nobody signs up (035)
 const admin: UserLoginRequestDto = {
     email: process.env.DEFAULT_USER_EMAIL || 'admin@vision.local',
-    password: process.env.DEFAULT_USER_PASSWORD || '123456',
+    // the password the seed gave the first admin: there is no default one (082)
+    password: process.env.DEFAULT_USER_PASSWORD ?? '',
 }
 const loginData: UserLoginRequestDto = {
     email: user.email,

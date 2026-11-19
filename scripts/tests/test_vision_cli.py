@@ -162,6 +162,23 @@ class VisionCliTest(unittest.TestCase):
         self.assertEqual(code, 0)
         self.assertIn('"key": "•••"', out)  # the key is never printed whole
 
+    def test_warns_when_the_settings_file_cannot_be_made_private(self):
+        target = self.files / "config" / "config.json"
+        err = io.StringIO()
+        old_chmod, old_err = Path.chmod, sys.stderr
+
+        def no_modes(path, mode, **kwargs):
+            raise OSError("no file modes here")
+
+        Path.chmod, sys.stderr = no_modes, err
+        try:
+            self.cli.save_json(target, {"key": "KEY"})
+        finally:
+            Path.chmod, sys.stderr = old_chmod, old_err
+        self.assertEqual(json.loads(target.read_text()), {"key": "KEY"})
+        self.assertIn("could not make", err.getvalue())
+        self.assertNotIn("KEY", err.getvalue())
+
     def test_asks_for_settings_first(self):
         code, _, err = self.run_cli("check", "Payment", "--png", "x.png")
         self.assertEqual(code, 1)

@@ -49,9 +49,17 @@ const run = {
 const ok = (body: unknown, status = 200) =>
   ({ ok: status < 300, status, text: async () => (body === undefined ? '' : JSON.stringify(body)) }) as Response;
 
-function setup(jira: (url: string, init: RequestInit) => Response) {
+function setup(jira: (url: string, init: RequestInit) => Response, project: Record<string, unknown> = {}) {
   const rows: Array<Record<string, unknown>> = [];
   const decisions: Array<Record<string, unknown>> = [];
+  // decisions kept per issue and screen before problems existed (A11yIssueState)
+  const states: Array<Record<string, unknown>> = [];
+  const isState = (row: Record<string, unknown>, where: Record<string, unknown> = {}) =>
+    Object.entries(where).every(([field, value]) =>
+      value && typeof value === 'object' && 'in' in value
+        ? (value as { in: unknown[] }).in.includes(row[field])
+        : row[field] === value
+    );
   let version = 1;
   const unique = () => Object.assign(new Error('unique'), { code: 'P2002' });
   const byKey = (where: { projectId_key: { projectId: string; key: string } }) =>
@@ -60,10 +68,13 @@ function setup(jira: (url: string, init: RequestInit) => Response) {
     testRun: {
       findUnique: jest.fn().mockResolvedValue(run),
       findMany: jest.fn().mockResolvedValue([]),
+      findFirst: jest.fn().mockResolvedValue(run),
       update: jest.fn(),
     },
     project: {
-      findUnique: jest.fn().mockResolvedValue({ jiraUrl: 'https://jira', jiraToken: 'shared', uiTreeSettings: null }),
+      findUnique: jest
+        .fn()
+        .mockResolvedValue({ jiraUrl: 'https://jira', jiraToken: 'shared', uiTreeSettings: null, ...project }),
     },
     user: {
       findUnique: jest.fn(async ({ where }) =>
@@ -74,11 +85,32 @@ function setup(jira: (url: string, init: RequestInit) => Response) {
             : { id: where.id }
       ),
     },
-    a11yIssueState: { findMany: jest.fn().mockResolvedValue([]), deleteMany: jest.fn() },
+    a11yIssueState: {
+      findMany: jest.fn(async ({ where } = {}) => states.filter((row) => isState(row, where))),
+      deleteMany: jest.fn(async ({ where }) => {
+        const keep = states.filter((row) => !isState(row, where));
+        states.splice(0, states.length, ...keep);
+      }),
+      delete: jest.fn(
+        async ({ where }) =>
+          states.splice(
+            states.findIndex((row) => row.id === where.id),
+            1
+          )[0]
+      ),
+    },
     a11yDecision: {
       create: jest.fn(async ({ data }) => decisions.push(data)),
+      // newest first, as the service orders them
       findMany: jest.fn(async ({ where }) =>
-        decisions.filter((item) => where.jiraKey.in.includes(item.jiraKey)).reverse()
+        decisions
+          .filter(
+            (item) =>
+              item.projectId === where.projectId &&
+              where.jiraKey.in.includes(item.jiraKey) &&
+              where.action.in.includes(item.action)
+          )
+          .reverse()
       ),
     },
     a11yProblem: {
@@ -129,7 +161,7 @@ function setup(jira: (url: string, init: RequestInit) => Response) {
     { loadReport: jest.fn().mockResolvedValue(report), load: jest.fn() } as never,
     { testRunUpdated: jest.fn() } as never
   );
-  return { service, rows, calls, auth, decisions };
+  return { service, rows, calls, auth, decisions, states };
 }
 
 const task = { key: 'MOB-1', fields: { project: { key: 'MOB' }, summary: 'Task', assignee: null } };
@@ -271,7 +303,7 @@ describe('A11yIssuesService: unlinking', () => {
     code = filed.code;
     edits.length = 0;
 
-    await service.reset('run', [report.violations[0].id], 'reviewer');
+    expect(await service.reset('run', [report.violations[0].id], 'reviewer')).toEqual({ warnings: [] });
     expect(rows).toEqual([]);
     expect(JSON.parse(edits[0]).update.labels).toEqual(
       expect.arrayContaining([
@@ -565,5 +597,296 @@ describe('A11yIssuesService: linking an existing bug', () => {
     expect(result).toMatchObject({ jiraKey: 'MOB-8', jiraUrl: null, warnings: [] });
     expect(rows).toEqual([expect.objectContaining({ status: 'reported', jiraKey: 'MOB-8' })]);
     expect(calls).toEqual([]);
+  });
+});
+
+/*
+ * Decisions kept per issue and screen before problems existed. Every decision on a problem replaces
+ * the screen's own old one for those issues, and only that one: the same issue on another screen, in
+ * another project or another issue of the screen keeps its old decision until decided there.
+ */
+describe('A11yIssuesService: old per-screen decisions', () => {
+  const id = report.violations[0].id;
+  const oldDecisions = () => [
+    { id: 'this', projectId: 'p', screenName: run.name, violationId: id },
+    { id: 'other-issue', projectId: 'p', screenName: run.name, violationId: 'contrast|id:Title' },
+    { id: 'other-screen', projectId: 'p', screenName: 'Платежі', violationId: id },
+    { id: 'other-project', projectId: 'q', screenName: run.name, violationId: id },
+  ];
+  const filedAs = (status: string) => (rows: Array<Record<string, unknown>>) =>
+    rows.push({
+      id: 'filed',
+      projectId: 'p',
+      key: KEY,
+      code: 'a11y-aaaaaaaa',
+      status,
+      jiraKey: status === 'reported' ? 'MOB-3' : null,
+      screenName: run.name,
+      facets: [facetsOf(report.violations[0], 'Адреси')],
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+
+  it.each([
+    ['ignoring', (s: A11yIssuesService) => s.ignore('run', [id], 'by design', 'reviewer'), undefined],
+    ['linking', (s: A11yIssuesService) => s.link('run', [id], 'MOB-1', 'reviewer'), undefined],
+    ['filing', (s: A11yIssuesService) => s.fileBug('run', [id], { parentKey: 'MOB-1' }, 'reviewer'), undefined],
+    ['restoring', (s: A11yIssuesService) => s.reset('run', [id], 'reviewer'), filedAs('ignored')],
+  ])('%s replaces only the old decision of this screen and issue', async (_case, act, before) => {
+    const { service, states, rows } = setup(fakeJira());
+    states.push(...oldDecisions());
+    before?.(rows);
+
+    await act(service);
+
+    expect(states.map((state) => state.id)).toEqual(['other-issue', 'other-screen', 'other-project']);
+  });
+
+  it('moves an old decision to a problem that covers every screen, and records where it came from', async () => {
+    const { service, states, rows, decisions } = setup(fakeJira());
+    states.push({
+      id: 'old',
+      projectId: 'p',
+      screenName: run.name,
+      violationId: id,
+      status: 'reported',
+      jiraKey: 'MOB-3',
+      jiraUrl: 'https://jira/browse/MOB-3',
+      comment: null,
+      userId: 'anna',
+    });
+
+    expect(await service.moveIssueStates()).toBe(1);
+
+    expect(rows).toEqual([
+      expect.objectContaining({ projectId: 'p', key: KEY, status: 'reported', jiraKey: 'MOB-3', userId: 'anna' }),
+    ]);
+    expect(decisions).toEqual([
+      expect.objectContaining({ action: 'linked', jiraKey: 'MOB-3', screenName: run.name, userId: 'anna' }),
+    ]);
+    expect(states).toEqual([]);
+  });
+
+  it('moves an old false positive as ignored, and keeps the problem a colleague already decided', async () => {
+    const { service, states, rows, decisions } = setup(fakeJira());
+    states.push({ id: 'old', projectId: 'p', screenName: run.name, violationId: id, status: 'ignored', comment: 'ok' });
+    expect(await service.moveIssueStates()).toBe(1);
+    expect(rows[0]).toMatchObject({ status: 'ignored', comment: 'ok' });
+    expect(decisions[0]).toMatchObject({ action: 'ignored' });
+
+    // the same issue decided on the screen once more: the problem exists, the old decision just goes
+    states.push({ id: 'again', projectId: 'p', screenName: run.name, violationId: id, status: 'reported' });
+    expect(await service.moveIssueStates()).toBe(1);
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toMatchObject({ status: 'ignored' });
+    expect(decisions).toHaveLength(1);
+    expect(states).toEqual([]);
+  });
+
+  it('leaves an old decision whose issue the latest report no longer has, so it keeps applying on its screen', async () => {
+    const { service, states, rows } = setup(fakeJira());
+    states.push({ id: 'gone', projectId: 'p', screenName: run.name, violationId: 'touch-target|id:Removed' });
+
+    expect(await service.moveIssueStates()).toBe(0);
+
+    expect(states.map((state) => state.id)).toEqual(['gone']);
+    expect(rows).toEqual([]);
+  });
+});
+
+describe('A11yIssuesService: false positives', () => {
+  const id = report.violations[0].id;
+
+  it('marks the problem ignored for the whole project with the reason, and restoring it touches no Jira', async () => {
+    const { service, rows, decisions, calls } = setup(fakeJira());
+
+    const ignored = await service.ignore('run', [id], 'decorative', 'reviewer');
+
+    expect(ignored.problems).toEqual([rows[0].code]);
+    expect(rows[0]).toMatchObject({ key: KEY, status: 'ignored', comment: 'decorative', jiraKey: null });
+    expect(decisions).toEqual([expect.objectContaining({ action: 'ignored', comment: 'decorative' })]);
+
+    expect(await service.reset('run', [id], 'reviewer')).toEqual({ warnings: [] });
+    expect(rows).toEqual([]);
+    expect(decisions.map((item) => item.action)).toEqual(['ignored', 'restored']);
+    expect(calls).toEqual([]);
+  });
+});
+
+describe('A11yIssuesService: Vision markers on linked bugs', () => {
+  const id = report.violations[0].id;
+  const labelEdits = (calls: Array<{ url: string; body: string }>) =>
+    calls.filter((call) => call.url.endsWith('/issue/MOB-5')).map((call) => JSON.parse(call.body).update.labels);
+
+  it("puts the problem's markers on a bug linked by hand and lifts its unlinked mark", async () => {
+    const puts: Array<{ url: string; body: string }> = [];
+    const { service } = setup((url, init) => {
+      if (init.method === 'PUT') puts.push({ url, body: String(init.body) });
+      if (url.endsWith('/issue/MOB-5')) return ok({ key: 'MOB-5', fields: { project: { key: 'MOB' } } });
+      return fakeJira()(url, init);
+    });
+
+    const linked = await service.link('run', [id], 'mob-5', 'reviewer');
+
+    const code = linked.problems[0];
+    expect(labelEdits(puts)).toEqual([
+      expect.arrayContaining([
+        { add: code },
+        { add: 'a11y-touch-target' },
+        { remove: code.replace('a11y-', 'a11y-unlinked-') },
+      ]),
+    ]);
+    expect(linked.warnings).toEqual([]);
+  });
+
+  it('keeps the link when Jira refuses the markers, and says which bug lacks them', async () => {
+    const { service, rows } = setup((url, init) => {
+      if (init.method === 'PUT') return ok({ errorMessages: ['no permission'] }, 403);
+      if (url.endsWith('/issue/MOB-5')) return ok({ key: 'MOB-5', fields: { project: { key: 'MOB' } } });
+      return fakeJira()(url, init);
+    });
+
+    const linked = await service.link('run', [id], 'MOB-5', 'reviewer');
+
+    expect(rows[0]).toMatchObject({ status: 'reported', jiraKey: 'MOB-5' });
+    expect(linked.warnings).toEqual([expect.stringContaining('MOB-5')]);
+  });
+
+  it('forgets an unlinked bug in Vision even when Jira refuses to take the markers off, and says so', async () => {
+    const { service, rows } = setup((url, init) =>
+      init.method === 'PUT' ? ok({ errorMessages: ['no permission'] }, 403) : fakeJira()(url, init)
+    );
+    await service.link('run', [id], 'MOB-1', 'reviewer');
+
+    const { warnings } = await service.reset('run', [id], 'reviewer');
+
+    expect(rows).toEqual([]);
+    expect(warnings).toEqual([expect.stringContaining('MOB-1')]);
+  });
+});
+
+describe('A11yIssuesService: what the review links by itself', () => {
+  const foundUnderItsId = (key: string) => (url: string) => {
+    if (!url.includes('/search')) return ok({});
+    const code = /labels = "(a11y-[0-9a-f]{8})"/.exec(decodeURIComponent(url))[1];
+    return ok({ issues: [{ key, fields: { summary: `x [${code}]`, status: { statusCategory: { key: 'new' } } } }] });
+  };
+
+  it('links a bug that another project unlinked: an unlink holds in its own project only', async () => {
+    const { service, rows, decisions } = setup(foundUnderItsId('MOB-9'));
+    decisions.push({ projectId: 'q', jiraKey: 'MOB-9', action: 'unlinked' });
+
+    const reviewed = await service.getReviewedReport('run', 'reviewer');
+
+    expect(reviewed.violations[0].issue).toMatchObject({ jiraKey: 'MOB-9' });
+    expect(rows).toHaveLength(1);
+  });
+
+  it.each(['filed', 'linked', 'found'])('links a bug again once it was %s after unlinking', async (action) => {
+    const { service, rows, decisions } = setup(foundUnderItsId('MOB-9'));
+    decisions.push(
+      { projectId: 'p', jiraKey: 'MOB-9', action: 'unlinked' },
+      { projectId: 'p', jiraKey: 'MOB-9', action }
+    );
+
+    await service.getReviewedReport('run', 'reviewer');
+
+    expect(rows).toEqual([expect.objectContaining({ jiraKey: 'MOB-9' })]);
+  });
+
+  it('leaves a bug alone while its latest decision in this project is an unlink', async () => {
+    const { service, rows, decisions } = setup(foundUnderItsId('MOB-9'));
+    decisions.push(
+      { projectId: 'p', jiraKey: 'MOB-9', action: 'linked' },
+      { projectId: 'p', jiraKey: 'MOB-9', action: 'unlinked' }
+    );
+
+    await service.getReviewedReport('run', 'reviewer');
+
+    expect(rows).toEqual([]);
+  });
+});
+
+describe('A11yIssuesService: how a new bug is tied to its task', () => {
+  const linkTypeOf = async (chosen: string | undefined, project: Record<string, unknown>) => {
+    const links: string[] = [];
+    const { service } = setup((url, init) => {
+      if (url.endsWith('/issueLink')) links.push(JSON.parse(String(init.body)).type.name);
+      return fakeJira()(url, init);
+    }, project);
+    await service.fileBug('run', [report.violations[0].id], { parentKey: 'MOB-1', linkType: chosen }, 'reviewer');
+    return links;
+  };
+
+  // decision table: the reviewer's choice, else the project's, else Relates
+  it.each([
+    ['the reviewer chose one', 'Blocks', { jiraLinkType: 'Clones' }, 'Blocks'],
+    ['only the project set one', undefined, { jiraLinkType: 'Clones' }, 'Clones'],
+    ['nobody set one', undefined, {}, 'Relates'],
+  ])('links with the right type when %s', async (_case, chosen, project, expected) => {
+    expect(await linkTypeOf(chosen, project)).toEqual([expected]);
+  });
+});
+
+describe('A11yIssuesService: preparing a bug', () => {
+  const id = report.violations[0].id;
+  const prepare = (jira: (url: string, init: RequestInit) => Response, project = {}) => {
+    const all = setup(jira, project);
+    return { ...all, result: all.service.prepareBug('run', [id], ' mob-1 ', undefined, undefined, 'reviewer') };
+  };
+  const withLinkTypes = (names: string[]) =>
+    jiraWith((url) =>
+      url.endsWith('/issueLinkType') ? ok({ issueLinkTypes: names.map((name) => ({ name })) }) : undefined
+    );
+
+  it('offers what filing would do and changes nothing, in Vision or in Jira', async () => {
+    const { result, rows, calls } = prepare(fakeJira());
+    const prepared = await result;
+
+    expect(prepared).toMatchObject({
+      parent: { key: 'MOB-1', projectKey: 'MOB', assignee: null },
+      issueTypeId: '1',
+      existing: null,
+      inJira: [],
+    });
+    expect(prepared.summary).toContain(prepared.problem.code);
+    // the markers are the problem's own, not the labels every Vision bug gets
+    expect(prepared.markers).toEqual(expect.arrayContaining([prepared.problem.code, 'a11y-touch-target']));
+    expect(prepared.markers).not.toEqual(expect.arrayContaining(['accessibility']));
+    expect(rows).toEqual([]);
+    expect(calls.filter((call) => !call.startsWith('GET'))).toEqual([]);
+  });
+
+  // decision table for the link type offered first
+  it.each([
+    ["the project's type, in any case", ['Blocks', 'Relates', 'Clones'], { jiraLinkType: 'clones' }, 'Clones'],
+    ['a "relates" type when the project has none', ['Blocks', 'Relates'], {}, 'Relates'],
+    ['the Ukrainian one too', ['Блокує', "Пов'язано з"], {}, "Пов'язано з"],
+    ['the first type when none relates', ['Blocks', 'Clones'], {}, 'Blocks'],
+    ['nothing when Jira has no types', [], {}, null],
+  ])('offers %s first', async (_case, names, project, expected) => {
+    const { result } = prepare(withLinkTypes(names as string[]), project);
+    expect((await result).linkType).toBe(expected);
+  });
+
+  it('shows who filed the problem already instead of offering a duplicate', async () => {
+    const { service, rows } = setup(fakeJira());
+    rows.push({
+      id: 'filed',
+      projectId: 'p',
+      key: KEY,
+      code: 'a11y-aaaaaaaa',
+      status: 'reported',
+      jiraKey: 'MOB-3',
+      jiraUrl: 'https://jira/browse/MOB-3',
+      screenName: 'Платежі',
+      facets: [facetsOf(report.violations[0], 'Платежі')],
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+
+    const prepared = await service.prepareBug('run', [id], 'MOB-1', undefined, undefined, 'reviewer');
+
+    expect(prepared.existing).toMatchObject({ status: 'reported', jiraKey: 'MOB-3', screenName: 'Платежі' });
   });
 });

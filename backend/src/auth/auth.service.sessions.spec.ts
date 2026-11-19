@@ -142,6 +142,18 @@ describe('AuthService sign-in lifecycle (052)', () => {
     expect(await opens(old)).toBe('stale');
   });
 
+  it('ends a token from before sessions on a new password too, whichever sign-in it keeps', async () => {
+    // such a token has no row for updateMany to end: only the moment on the person stops it
+    const { service, jwt, signIn, opens } = setup();
+    const old = jwt.sign({ email: anna.email, iat: Math.floor(Date.now() / 1000) - 60 });
+    const here = await signIn(anna);
+
+    await service.endSessions(anna.id, service.sessionIdOf(`Bearer ${here}`));
+
+    expect(await opens(old)).toBe('stale');
+    expect(await opens(here)).toBe(anna.email);
+  });
+
   it('opens nothing for a token whose session row is gone', async () => {
     const { db, signIn, opens } = setup();
     const token = await signIn(anna);
